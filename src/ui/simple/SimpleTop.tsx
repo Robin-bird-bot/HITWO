@@ -87,7 +87,7 @@ export function DayPill({ state }: { state: GameState }) {
         <Popout
           label="Weather"
           className={styles.popout}
-          style={{ left: 768 - 130, top: 68, width: 260 }}
+          style={{ left: 768 - 130, top: 112, width: 260 }}
           ignore={[buttonRef]}
           onClose={() => setWeatherOpen(false)}
         >

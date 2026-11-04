@@ -274,3 +274,15 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     soon('watch', 'Watch', 'eye'),
   ];
 }
+
+/** Simple mode: only the actions the hiker can take right now. */
+export function readyActions(state: GameState, h: Hiker): ActionState[] {
+  return actionStates(state, h).filter((a) => a.status === 'ready');
+}
+
+/** Simple mode, when nothing is ready: why (Move's reason is the most useful). */
+export function nothingToDoReason(state: GameState, h: Hiker): string {
+  return (
+    actionStates(state, h).find((a) => a.id === 'move')?.reason ?? `${h.name} can’t act right now.`
+  );
+}

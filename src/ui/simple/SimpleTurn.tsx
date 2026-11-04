@@ -3,7 +3,7 @@
  * right now, as big buttons; abilities only when there are some; the tile;
  * and one inventory row that opens the full inventory.
  */
-import { useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { ITEMS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { ASSETS } from '../../config/assets';
@@ -17,7 +17,7 @@ import {
   type ItemInstance,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { actionStates, type ActionId } from '../panels/hikerInfo';
+import { nothingToDoReason, readyActions, type ActionId } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Popout } from '../panels/Popout';
 import { Abilities, Bag, EndButton, Equipped, Resources, TileCard } from '../panels/TurnPanel';
@@ -48,10 +48,10 @@ export function SimpleTurn({
   slot,
   activeAction,
 }: SimpleTurnProps) {
-  const ready = actionStates(state, hiker).filter((a) => a.status === 'ready');
+  const ready = readyActions(state, hiker);
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const [inventoryTop, setInventoryTop] = useState<number | null>(null);
   const hasAbilities = abilitiesFor(state, hiker).length > 0;
-  // When there's nothing to do, say why (the reason Move gives is the most useful).
-  const why = actionStates(state, hiker).find((a) => a.id === 'move')?.reason;
 
   return (
     <>
@@ -80,13 +80,33 @@ export function SimpleTurn({
               ))}
             </div>
           ) : (
-            <p className={styles.nothing}>{why ?? `${hiker.name} can’t act right now.`}</p>
+            <p className={styles.nothing}>{nothingToDoReason(state, hiker)}</p>
           ))}
         {note && <p className={styles.note}>{note}</p>}
         {hasAbilities && <Abilities state={state} hiker={hiker} onAbility={onAbility} />}
         <TileCard state={state} hiker={hiker} />
-        <InventoryRow state={state} hiker={hiker} />
+        <InventoryRow
+          state={state}
+          hiker={hiker}
+          rowRef={rowRef}
+          open={inventoryTop !== null}
+          onToggle={(top) => setInventoryTop(inventoryTop === null ? top : null)}
+        />
       </Panel>
+      {inventoryTop !== null && (
+        <Popout
+          label={`${hiker.name}'s inventory`}
+          className={styles.popout}
+          style={{ left: 1240 - 372, top: inventoryTop, width: 360 }}
+          ignore={[rowRef]}
+          onClose={() => setInventoryTop(null)}
+        >
+          <span className={styles.popoutName}>{hiker.name.toUpperCase()}’S INVENTORY</span>
+          <Equipped hiker={hiker} />
+          <Bag state={state} hiker={hiker} />
+          <Resources hiker={hiker} />
+        </Popout>
+      )}
       <div className={styles.end}>
         <EndButton state={state} onEndPhase={onEndPhase} />
       </div>
@@ -96,11 +116,22 @@ export function SimpleTurn({
 
 const MAX_ICONS = 9;
 
-/** "Bag 3/4 · Resources 7/10" with small icons; opens the full inventory. */
-function InventoryRow({ state, hiker }: { state: GameState; hiker: Hiker }) {
+/** "Bag 3/4 · Resources 7/10" with small icons; clicking opens the full inventory. */
+function InventoryRow({
+  state,
+  hiker,
+  rowRef,
+  open,
+  onToggle,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  rowRef: RefObject<HTMLButtonElement>;
+  open: boolean;
+  /** The row's top in stage pixels, to place the pop-out beside it. */
+  onToggle(top: number): void;
+}) {
   const fit = useStage();
-  const rowRef = useRef<HTMLButtonElement>(null);
-  const [top, setTop] = useState<number | null>(null);
   const slots = bagSlots(state, hiker);
   const items: ItemInstance[] = [
     ...Object.values(hiker.inventory.equipped).filter((i): i is ItemInstance => !!i),
@@ -115,61 +146,44 @@ function InventoryRow({ state, hiker }: { state: GameState; hiker: Hiker }) {
   const more = icons.length - shown.length;
 
   return (
-    <>
-      <button
-        ref={rowRef}
-        type="button"
-        className={styles.inventory}
-        aria-expanded={top !== null}
-        onClick={(e) => {
-          if (top !== null) return setTop(null);
-          const t = (e.currentTarget.getBoundingClientRect().top - fit.top) / fit.scale;
-          setTop(Math.max(16, Math.min(t - 200, 1000 - 560)));
-        }}
-      >
-        <span className={styles.inventoryHead}>
-          <span>
-            BAG {hiker.inventory.bag.length}/{slots.total} · RESOURCES {resourceCount(hiker)}/
-            {BALANCE.inventory.resourceLimit}
-          </span>
-          <Icon name="chevronDown" size={14} />
+    <button
+      ref={rowRef}
+      type="button"
+      className={styles.inventory}
+      aria-expanded={open}
+      onClick={(e) => {
+        const t = (e.currentTarget.getBoundingClientRect().top - fit.top) / fit.scale;
+        onToggle(Math.max(16, Math.min(t - 200, 1000 - 560)));
+      }}
+    >
+      <span className={styles.inventoryHead}>
+        <span>
+          BAG {hiker.inventory.bag.length}/{slots.total} · RESOURCES {resourceCount(hiker)}/
+          {BALANCE.inventory.resourceLimit}
         </span>
-        <span className={styles.icons}>
-          {shown.length === 0 && <span className={styles.muted}>Nothing yet.</span>}
-          {shown.map((icon) =>
-            icon.kind === 'item' ? (
-              <span
-                key={icon.key}
-                className={styles.icon}
-                data-item
-                title={ITEMS[icon.item.itemId]?.name}
-              >
-                <img src={ASSETS.itemCards.clothesIcon} alt={ITEMS[icon.item.itemId]?.name ?? ''} />
-              </span>
-            ) : (
-              <span key={icon.key} className={styles.icon} title={icon.r.name}>
-                <img src={ASSETS.resources[icon.r.id]} alt={icon.r.name} />
-                <span className={styles.count}>{hiker.inventory.resources[icon.r.id]}</span>
-              </span>
-            ),
-          )}
-          {more > 0 && <span className={styles.muted}>+{more}</span>}
-        </span>
-      </button>
-      {top !== null && (
-        <Popout
-          label={`${hiker.name}'s inventory`}
-          className={styles.popout}
-          style={{ left: 1240 - 372, top, width: 360 }}
-          ignore={[rowRef]}
-          onClose={() => setTop(null)}
-        >
-          <span className={styles.popoutName}>{hiker.name.toUpperCase()}’S INVENTORY</span>
-          <Equipped hiker={hiker} />
-          <Bag state={state} hiker={hiker} />
-          <Resources hiker={hiker} />
-        </Popout>
-      )}
-    </>
+        <Icon name={open ? 'chevronUp' : 'chevronDown'} size={14} />
+      </span>
+      <span className={styles.icons}>
+        {shown.length === 0 && <span className={styles.muted}>Nothing yet.</span>}
+        {shown.map((icon) =>
+          icon.kind === 'item' ? (
+            <span
+              key={icon.key}
+              className={styles.icon}
+              data-item
+              title={ITEMS[icon.item.itemId]?.name}
+            >
+              <img src={ASSETS.itemCards.clothesIcon} alt={ITEMS[icon.item.itemId]?.name ?? ''} />
+            </span>
+          ) : (
+            <span key={icon.key} className={styles.icon} title={icon.r.name}>
+              <img src={ASSETS.resources[icon.r.id]} alt={icon.r.name} />
+              <span className={styles.count}>{hiker.inventory.resources[icon.r.id]}</span>
+            </span>
+          ),
+        )}
+        {more > 0 && <span className={styles.muted}>+{more}</span>}
+      </span>
+    </button>
   );
 }
