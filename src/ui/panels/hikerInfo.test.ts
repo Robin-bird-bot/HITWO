@@ -10,10 +10,21 @@ const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
 describe('action grid', () => {
   it('marks unbuilt actions with the phase they arrive in', () => {
     const a = byId(fixtureGame(), 'ash');
-    expect(a.scavenge).toMatchObject({ status: 'soon', sub: 'Phase 4' });
-    expect(a.tend?.status).toBe('soon');
+    expect(a.watch?.status).toBe('soon');
     expect(a.fire?.reason).toBe('Sitting by the fire arrives in Phase 6.');
     expect(a.craft?.sub).toBe('Phase 9');
+  });
+
+  it('makes Scavenge ready on a tile with nodes, with its cost', () => {
+    const s = fixtureGame();
+    expect(byId(s, 'ash').scavenge).toMatchObject({
+      status: 'blocked',
+      reason: 'There’s nothing to scavenge on this tile.',
+    });
+    place(s, 'ash', 'L');
+    expect(byId(s, 'ash').scavenge).toMatchObject({ status: 'ready', sub: '−1 Appetite' });
+    place(s, 'ash', 'L', { appetite: 5 });
+    expect(byId(s, 'ash').scavenge?.reason).toMatch(/^Hungry/);
   });
 
   it('gives the engine’s reason for actions not allowed right now', () => {

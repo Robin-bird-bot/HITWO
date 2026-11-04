@@ -17,8 +17,11 @@ import {
   type GameState,
   type Hiker,
   type ItemInstance,
+  type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
+import { ITEM_TYPE_COLORS } from '../scavenge/cardLook';
+import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
 import { Panel } from './Panel';
@@ -39,6 +42,8 @@ interface TurnPanelProps {
   note?: string;
   /** A box shown under the action grid instead of the message (Move All picker, Sleep confirm). */
   slot?: ReactNode;
+  /** A resource or bag item was clicked: open its give / return menu. */
+  onPick?(pick: StashPick): void;
 }
 
 export function TurnPanel({
@@ -49,6 +54,7 @@ export function TurnPanel({
   onEndPhase,
   note,
   slot,
+  onPick,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -64,8 +70,8 @@ export function TurnPanel({
         <Abilities state={state} hiker={hiker} onAbility={onAbility} />
         <TileCard state={state} hiker={hiker} />
         <Equipped hiker={hiker} />
-        <Bag state={state} hiker={hiker} />
-        <Resources hiker={hiker} />
+        <Bag state={state} hiker={hiker} onPick={onPick} />
+        <Resources hiker={hiker} onPick={onPick} />
       </div>
       <Footer state={state} onEndPhase={onEndPhase} />
     </Panel>
@@ -158,7 +164,9 @@ export function Abilities({
                 </span>
                 <span className={styles.small}>{trait?.text}</span>
               </div>
-              {used ? (
+              {ability.scavengeReroll ? (
+                <span className={styles.muted}>{used ? 'Used' : 'When scavenging'}</span>
+              ) : used ? (
                 <span className={styles.muted}>Used</span>
               ) : (
                 <button
@@ -258,6 +266,8 @@ const EQUIP: { slot: EquipSlot; label: string; icon: 'shirt' | 'boot' | 'backpac
 /** `compact` (Simple mode): short labels with counts, and no helper text. */
 interface InventoryProps {
   compact?: boolean;
+  /** Clicking a resource or bag item opens its give / return menu. */
+  onPick?(pick: StashPick): void;
 }
 
 export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
@@ -290,26 +300,53 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
 }
 
 /** A stand-in item card (Phase 9 builds the real layered cards). */
-function ItemCard({ item, size }: { item: ItemInstance; size: 'large' | 'small' }) {
+function ItemCard({
+  item,
+  size,
+  onClick,
+}: {
+  item: ItemInstance;
+  size: 'large' | 'small';
+  onClick?(e: React.MouseEvent<HTMLElement>): void;
+}) {
   const def = ITEMS[item.itemId];
+  const name = def?.name ?? item.itemId;
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div
+    <Tag
+      {...(onClick
+        ? { type: 'button' as const, onClick, 'aria-label': `${name}: give it away` }
+        : {})}
       className={styles.itemCard}
       data-size={size}
       title={def ? `${def.name}: ${def.text}` : item.itemId}
-      style={{ backgroundImage: `url(${ASSETS.itemCards.clothesGradient})` }}
+      style={{
+        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[def?.type ?? 'clothes'].join(', ')})`,
+      }}
     >
-      <img src={ASSETS.itemCards.clothesIcon} alt="" />
-      <span>{(def?.name ?? item.itemId).toUpperCase()}</span>
-    </div>
+      <img src={ASSETS.itemCards.typeIcons[def?.type ?? 'clothes']} alt="" />
+      <span>{name.toUpperCase()}</span>
+    </Tag>
   );
+}
+
+/** A resource or bag item the player clicked, and where (stage pixels) to open its menu. */
+export type StashPick =
+  { kind: 'resource'; id: ResourceId; top: number } | { kind: 'item'; uid: string; top: number };
+
+/** The clicked element's top, in stage pixels. */
+function useStageTop() {
+  const fit = useStage();
+  return (el: HTMLElement) => (el.getBoundingClientRect().top - fit.top) / fit.scale;
 }
 
 export function Bag({
   state,
   hiker,
   compact,
+  onPick,
 }: { state: GameState; hiker: Hiker } & InventoryProps) {
+  const stageTop = useStageTop();
   const slots = bagSlots(state, hiker);
   const size = slots.total <= 4 ? 'large' : 'small';
   const items = hiker.inventory.bag;
@@ -332,7 +369,21 @@ export function Bag({
       <div className={`${styles.row} ${styles.bagRow}`} data-wrap={slots.total > 6}>
         {cells.map((cell, i) => {
           const item = items[i];
-          if (item) return <ItemCard key={i} item={item} size={size} />;
+          if (item) {
+            return (
+              <ItemCard
+                key={i}
+                item={item}
+                size={size}
+                {...(onPick
+                  ? {
+                      onClick: (e: React.MouseEvent<HTMLElement>) =>
+                        onPick({ kind: 'item', uid: item.uid, top: stageTop(e.currentTarget) }),
+                    }
+                  : {})}
+              />
+            );
+          }
           return (
             <div
               key={i}
@@ -354,8 +405,9 @@ export function Bag({
   );
 }
 
-export function Resources({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
+export function Resources({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
+  const stageTop = useStageTop();
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -366,21 +418,39 @@ export function Resources({ hiker, compact }: { hiker: Hiker } & InventoryProps)
       </div>
       {held.length === 0 ? (
         <span className={styles.muted}>
-          {compact ? 'None' : 'None yet. Scavenging arrives in Phase 4.'}
+          {compact ? 'None' : 'None yet. Scavenge to find some.'}
         </span>
       ) : (
         <div className={styles.resources}>
           {held.map((r) => {
             const icon = ASSETS.resources[r.id];
             const n = hiker.inventory.resources[r.id] ?? 0;
-            return (
-              <div key={r.id} className={styles.resource} title={`${r.name} ×${n}`}>
+            const content = (
+              <>
                 {icon ? (
                   <img src={icon} alt={r.name} />
                 ) : (
                   <span className={styles.noArt}>{r.name}</span>
                 )}
                 <span className={styles.badge}>{n}</span>
+              </>
+            );
+            return onPick ? (
+              <button
+                key={r.id}
+                type="button"
+                className={styles.resource}
+                title={`${r.name} ×${n}`}
+                aria-label={`${r.name} ×${n}: give or return`}
+                onClick={(e) =>
+                  onPick({ kind: 'resource', id: r.id, top: stageTop(e.currentTarget) })
+                }
+              >
+                {content}
+              </button>
+            ) : (
+              <div key={r.id} className={styles.resource} title={`${r.name} ×${n}`}>
+                {content}
               </div>
             );
           })}

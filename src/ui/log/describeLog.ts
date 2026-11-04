@@ -3,14 +3,16 @@
  * A move and the stat costs that follow it become one line:
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
+import { ITEMS } from '../../content';
 import type { GameEvent, GameState, HikerId, NodeKind, StatName } from '../../engine';
 import { NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
+import { resourceName, resourcesTitle } from '../scavenge/cardLook';
 
 export interface LogLine {
   id: number;
   text: string;
-  tone: 'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'debug';
+  tone: 'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'scavenge' | 'debug';
 }
 
 const STAT_LABEL: Record<StatName, string> = {
@@ -32,6 +34,11 @@ export function describeNodes(kinds: NodeKind[]): string {
   return [...counts]
     .map(([k, n]) => `${NODE_NAME[k]}${k === 'caps' ? ' node' : ''}${n > 1 ? ` ×${n}` : ''}`)
     .join(', ');
+}
+
+/** "WOOD ×2 + MOSS" → "Wood ×2 + Moss". */
+function titleCase(text: string): string {
+  return text.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 function listNames(names: string[]): string {
@@ -92,6 +99,55 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'scavenge': {
+        const { taken, next } = takeStats(i, ['Scavenge']);
+        i = next;
+        const cost = costsOf(taken, e.hikerId);
+        const found: string[] = [];
+        if (e.resources.length) found.push(titleCase(resourcesTitle(e.resources)));
+        if (e.caps) found.push(`${e.caps} acorn cap${e.caps === 1 ? '' : 's'}`);
+        for (const id of e.items ?? []) found.push(`a ${ITEMS[id]?.name ?? id}`);
+        const what = found.length ? listNames(found) : 'nothing';
+        const left = e.left ? ` ${e.left} more didn’t fit.` : '';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'tend':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} tended the ${NODE_NAME[e.node]} (${NODE_NAME[e.node]} Abundance ${e.from} → ${e.to}).`,
+          tone: 'scavenge',
+        });
+        break;
+      case 'give': {
+        const what = e.resource
+          ? resourceName(e.resource)
+          : `the ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'returned':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} returned ${resourceName(e.resource)} to nature (+1 ${NODE_NAME[e.node]}).`,
+          tone: 'scavenge',
+        });
+        break;
+      case 'recovered':
+        lines.push({
+          id: e.id,
+          text: `Overnight, ${listNames(e.nodes.map((n) => NODE_NAME[n]))} Abundance recovered (+1).`,
+          tone: 'rest',
+        });
+        break;
       case 'ability': {
         const label = e.abilityId.charAt(0).toUpperCase() + e.abilityId.slice(1);
         const { taken, next } = takeStats(i, [label]);

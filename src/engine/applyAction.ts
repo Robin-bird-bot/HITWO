@@ -4,11 +4,34 @@
  */
 import { applyDebug } from './actions/debug';
 import { applyMove, validateMove } from './actions/move';
+import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
+import {
+  applyCancel,
+  applyFlip,
+  applyScavenge,
+  applyReroll,
+  applyTake,
+  validateCancel,
+  validateFlip,
+  validateReroll,
+  validateScavenge,
+  validateTake,
+} from './actions/scavenge';
 import { applySleep, validateSleep } from './actions/sleep';
+import { applyTend, validateTend } from './actions/tend';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import type { Action, GameState } from './types';
+
+/** What can happen while a scavenge is open (plus the debug tools). */
+const SCAVENGE_STEPS = new Set<Action['type']>([
+  'scavengeFlip',
+  'scavengeCancel',
+  'scavengeTake',
+  'scavengeReroll',
+  'debug',
+]);
 
 export class InvalidActionError extends Error {
   readonly reason: string;
@@ -22,6 +45,8 @@ export class InvalidActionError extends Error {
 
 /** Why the action isn't allowed right now, for the UI to show, or null when it is. */
 export function validateAction(state: GameState, action: Action): string | null {
+  // An open scavenge waits for a card before anything else happens.
+  if (state.scavenge && !SCAVENGE_STEPS.has(action.type)) return 'Finish scavenging first.';
   switch (action.type) {
     case 'move':
       return validateMove(state, action) ?? null;
@@ -31,6 +56,22 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateSleep(state, action) ?? null;
     case 'useAbility':
       return validateUseAbility(state, action) ?? null;
+    case 'scavenge':
+      return validateScavenge(state, action) ?? null;
+    case 'scavengeFlip':
+      return validateFlip(state, action) ?? null;
+    case 'scavengeCancel':
+      return validateCancel(state) ?? null;
+    case 'scavengeTake':
+      return validateTake(state, action) ?? null;
+    case 'scavengeReroll':
+      return validateReroll(state, action) ?? null;
+    case 'tend':
+      return validateTend(state, action) ?? null;
+    case 'give':
+      return validateGive(state, action) ?? null;
+    case 'returnToNature':
+      return validateReturn(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -55,6 +96,30 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'useAbility':
       applyUseAbility(draft, action);
+      break;
+    case 'scavenge':
+      applyScavenge(draft, action);
+      break;
+    case 'scavengeFlip':
+      applyFlip(draft, action);
+      break;
+    case 'scavengeCancel':
+      applyCancel(draft);
+      break;
+    case 'scavengeTake':
+      applyTake(draft, action);
+      break;
+    case 'scavengeReroll':
+      applyReroll(draft, action);
+      break;
+    case 'tend':
+      applyTend(draft, action);
+      break;
+    case 'give':
+      applyGive(draft, action);
+      break;
+    case 'returnToNature':
+      applyReturn(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

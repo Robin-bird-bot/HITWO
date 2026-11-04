@@ -6,8 +6,19 @@
  * Tools: a new game from a seed, phases, revealing the map, stats and resources.
  */
 import { useEffect, useState } from 'react';
+import { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
 import { RESOURCES } from '../../content/resources';
-import { PHASES, STAT_NAMES, type Action, type GameState, type Hiker } from '../../engine';
+import { BALANCE } from '../../config/balance';
+import {
+  NODE_TYPES,
+  PHASES,
+  STAT_NAMES,
+  type Action,
+  type GameState,
+  type Hiker,
+  type NodeType,
+  type ScavengeCardType,
+} from '../../engine';
 import { gameStore } from '../app/gameStore';
 import styles from './DebugPanel.module.css';
 
@@ -29,7 +40,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== 'Backquote' && e.key !== '`') return;
       const target = e.target as HTMLElement | null;
-      if (target?.closest('input, textarea, select')) return;
+      if (target instanceof Element && target.closest('input, textarea, select')) return;
       e.preventDefault();
       setOpen((o) => !o);
     };
@@ -164,6 +175,30 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
         </div>
       </section>
 
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Traits</h3>
+        <TraitEditor hikers={state.hikers} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Next scavenge</h3>
+        <NextDeal state={state} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Abundance</h3>
+        <AbundanceEditor
+          key={JSON.stringify(state.abundance)}
+          abundance={state.abundance}
+          onApply={run}
+        />
+        <div className={styles.row}>
+          <a className={styles.button} href="#debug-cards">
+            Card gallery and odds
+          </a>
+        </div>
+      </section>
+
       {message && <p className={styles.message}>{message}</p>}
       <p className={styles.hint}>Press ` (backtick) to hide.</p>
     </aside>
@@ -171,6 +206,166 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 }
 
 const STAT_LABEL = { energy: 'Energy', appetite: 'Appetite', morale: 'Morale' } as const;
+const NODE_LABEL = {
+  forest: 'Forest',
+  river: 'River',
+  wildlife: 'Wildlife',
+  mountain: 'Mountain',
+} as const;
+
+/** Put any trait (or nothing) in any of a hiker's slots, to try the traits out. */
+function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [slot, setSlot] = useState(0);
+  const [traitId, setTraitId] = useState('forager');
+  const hiker = hikers.find((h) => h.id === hikerId);
+  const traits = Object.values(TRAITS).sort((a, b) => a.name.localeCompare(b.name));
+  if (!hiker) return null;
+  return (
+    <div className={styles.row}>
+      <select
+        className={styles.button}
+        value={hikerId}
+        onChange={(e) => {
+          setHikerId(e.target.value);
+          setSlot(0);
+        }}
+        aria-label="Hiker"
+      >
+        {hikers.map((h) => (
+          <option key={h.id} value={h.id}>
+            {h.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.button}
+        value={slot}
+        onChange={(e) => setSlot(Number(e.target.value))}
+        aria-label="Slot"
+      >
+        {hiker.slots.map((s, i) => (
+          <option key={i} value={i}>
+            Slot {i + 1} ({s.type}): {s.traitId ? (TRAITS[s.traitId]?.name ?? s.traitId) : 'empty'}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.button}
+        value={traitId}
+        onChange={(e) => setTraitId(e.target.value)}
+        aria-label="Trait"
+      >
+        <option value="">(empty)</option>
+        {traits.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={() =>
+          onApply({
+            type: 'debug',
+            op: { kind: 'setTrait', hikerId: hiker.id, slot, traitId: traitId || null },
+          })
+        }
+      >
+        Set trait
+      </button>
+    </div>
+  );
+}
+
+/** Make the next scavenge deal chosen card types first, to see rare cards on demand. */
+function NextDeal({ state, onApply }: { state: GameState; onApply(action: Action): void }) {
+  const [type, setType] = useState<ScavengeCardType>('choice');
+  const queued = state.debugDeal ?? [];
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={type}
+          onChange={(e) => setType(e.target.value as ScavengeCardType)}
+          aria-label="Card type"
+        >
+          {SCAVENGE_CARD_ORDER.map((t) => (
+            <option key={t} value={t}>
+              {SCAVENGE_CARDS[t].name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'nextDeal', types: [...queued, type] } })
+          }
+        >
+          Add to next deal
+        </button>
+        {queued.length > 0 && (
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => onApply({ type: 'debug', op: { kind: 'nextDeal', types: [] } })}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      {queued.length > 0 && (
+        <p className={styles.note}>
+          Next deal starts with: {queued.map((t) => SCAVENGE_CARDS[t].name).join(', ')}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** Set the four Abundance meters directly, e.g. to see low warnings. */
+function AbundanceEditor({
+  abundance,
+  onApply,
+}: {
+  abundance: Record<NodeType, number>;
+  onApply(action: Action): void;
+}) {
+  const [values, setValues] = useState(abundance);
+  return (
+    <>
+      <div className={styles.row}>
+        {NODE_TYPES.map((n) => (
+          <label key={n} className={styles.note}>
+            {NODE_LABEL[n]}{' '}
+            <input
+              className={styles.number}
+              type="number"
+              min={0}
+              max={BALANCE.abundance.max}
+              value={values[n]}
+              onChange={(e) => setValues({ ...values, [n]: Number(e.target.value) })}
+            />
+          </label>
+        ))}
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'setAbundance', abundance: values } })
+          }
+        >
+          Set Abundance
+        </button>
+      </div>
+    </>
+  );
+}
 
 /** Set any hiker's stats and injuries directly (no injury rule), e.g. to test thresholds. */
 function StatsEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {

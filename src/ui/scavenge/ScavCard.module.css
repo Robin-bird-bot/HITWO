@@ -1,0 +1,231 @@
+/* Scavenge cards (docs/mockups/ScavCard.dc.html). Stage pixels. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.2s ease;
+}
+
+.card {
+  position: relative;
+  flex: none;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 14px;
+  perspective: 900px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+button.card {
+  cursor: pointer;
+}
+
+button.card:hover {
+  transform: translateY(-3px);
+}
+
+.card[data-selected='true'] {
+  transform: translateY(-10px);
+  box-shadow:
+    0 0 0 4px var(--gold),
+    0 18px 30px rgba(0, 0, 0, 0.45);
+}
+
+.flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 300ms ease;
+}
+
+.flipper[data-face-up='false'] {
+  transform: rotateY(180deg);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.diagonal {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.rays {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* One slow turn every 75 s (off under prefers-reduced-motion, via global.css). */
+.rays[data-spin='true'] {
+  animation: spin 75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+}
+
+.hex {
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+.glyph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-callout);
+  line-height: 1;
+  color: #fff3e3;
+  text-shadow: 0 6px 0 rgba(20, 28, 25, 0.25);
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 28, 25, 0.18);
+}
+
+.texture {
+  position: absolute;
+  inset: 0;
+  background-size: 100% auto;
+  background-repeat: repeat;
+  opacity: 0.55;
+}
+
+.border {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 3px rgba(255, 243, 227, 0.85);
+  pointer-events: none;
+}
+
+.badge {
+  position: absolute;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--page);
+  font-family: var(--font-callout);
+  line-height: 1;
+  color: var(--gold);
+}
+
+.corner {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--page);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-callout);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
+.caption {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.name {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.name[data-selected='true'] {
+  color: var(--gold);
+}
+
+.text {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.rarity {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.pip {
+  width: 7px;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Item card backs on Item find and Choice item cards. */
+.itemBack {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.itemRays {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 150%;
+  width: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0.28;
+}
+
+.itemTexture {
+  position: absolute;
+  inset: 0;
+  background-size: 100% auto;
+  opacity: 0.18;
+}
+
+.itemIcon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}

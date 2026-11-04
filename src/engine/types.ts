@@ -172,6 +172,108 @@ export interface Hiker {
   level: number;
 }
 
+// ── Scavenging ─────────────────────────────────────────────────────────────
+
+/** Card rarity, from most to least common. */
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'veryRare' | 'legendary' | 'mythic';
+export const RARITIES: readonly Rarity[] = [
+  'common',
+  'uncommon',
+  'rare',
+  'veryRare',
+  'legendary',
+  'mythic',
+];
+
+/** Every kind of scavenge card (docs/design/01-design-doc.md, "Scavenge cards"). */
+export type ScavengeCardType =
+  | 'resource'
+  | 'x2'
+  | 'x3'
+  | 'pair'
+  | 'trio'
+  | 'mixed'
+  | 'wild'
+  | 'wildX2'
+  | 'varietyWild'
+  | 'varietyPair'
+  | 'varietyBundle'
+  | 'choice'
+  | 'choiceX2'
+  | 'pickOfTheWild'
+  | 'pairOfTheWild'
+  | 'bundleOfTheWild'
+  | 'caps'
+  | 'toolFind'
+  | 'foodFind'
+  | 'clothesFind'
+  | 'shelterFind'
+  | 'trinketFind'
+  | 'choiceTool'
+  | 'choiceFood'
+  | 'choiceClothes'
+  | 'choiceShelter'
+  | 'choiceTrinket';
+
+/** One dealt card. Its contents are rolled when it's dealt; a Wild's stay hidden until taken. */
+export interface ScavengeCard {
+  type: ScavengeCardType;
+  rarity: Rarity;
+  /**
+   * The node the card came from; taking it drains this node's Abundance.
+   * Null only on a tile with nothing but Cap nodes.
+   */
+  node: NodeType | null;
+  /** Mixed cards: the second node. */
+  node2?: NodeType;
+  /** Came from a Bounty node (extra Abundance cost). */
+  bounty?: true;
+  /** What the card gives, when it's fixed (Resource, ×2, Pair, Wild, Variety…). */
+  resources?: ResourceId[];
+  /** Choice cards: the player picks `count` resources from a node or from all 16, `each` of every pick. */
+  pick?: { count: number; from: NodeType | 'all'; each: number };
+  caps?: number;
+  /** Item finds: the item. Choice items: the items to pick 1 from. */
+  items?: ItemId[];
+  flipped: boolean;
+}
+
+/** A line in the scavenge window's bonuses pop-over: what's changing this draw, and why. */
+export interface ScavengeBonus {
+  source: string;
+  label: string;
+  /** Luck (green), extra cards or better odds (gold), or a drawback (red). */
+  tone: 'luck' | 'bonus' | 'warning';
+}
+
+/** Bonus resources a trait offers on this scavenge (Copier, Copydog). */
+export interface ScavengeBonusOffer {
+  source: string;
+  /** Extra copies of the first resource taken. */
+  count: number;
+  /** Appetite for each one; 0 means they come free and are always taken. */
+  appetiteEach: number;
+}
+
+/** An open scavenge: dealt, waiting for the hiker to take a card. */
+export interface PendingScavenge {
+  hikerId: HikerId;
+  tileId: TileId;
+  cards: ScavengeCard[];
+  luck: number;
+  bonuses: ScavengeBonus[];
+  /** The RNG before the deal. "Not now" puts it back, so dealing again gives the same cards. */
+  rngBefore: RngState;
+  bonusOffers?: ScavengeBonusOffer[];
+}
+
+/** Who scavenged where today (Copier, Copydog, and the night's Abundance recovery). */
+export interface ScavengeRecord {
+  hikerId: HikerId;
+  tileId: TileId;
+  nodes: NodeType[];
+}
+
 // ── Randomness ─────────────────────────────────────────────────────────────
 
 /** sfc32 state: four unsigned 32-bit integers. */
@@ -184,6 +286,28 @@ export type Action =
   | { type: 'moveAll'; hikerId: HikerId; toTileId: TileId; bring: HikerId[] }
   | { type: 'sleep'; hikerId: HikerId }
   | { type: 'useAbility'; hikerId: HikerId; abilityId: string; choice?: string }
+  /** Deals the scavenge cards, face down. Nothing is paid until a card is taken. */
+  | { type: 'scavenge'; hikerId: HikerId }
+  | { type: 'scavengeFlip'; cards: number[] }
+  /** "Not now": only before any card is flipped. Costs nothing. */
+  | { type: 'scavengeCancel' }
+  /** Takes a card, with the exact resources (Choice cards) or item (Choice items) picked. */
+  | {
+      type: 'scavengeTake';
+      card: number;
+      picks?: ResourceId[];
+      item?: ItemId;
+      /** How many paid bonus resources to take (Copier). Free ones are always taken. */
+      bonus?: number;
+    }
+  /** Rerolls one flipped card (Gambler's ability). */
+  | { type: 'scavengeReroll'; card: number }
+  /** Restores Abundance for a node on the hiker's tile (day only). */
+  | { type: 'tend'; hikerId: HikerId; node: NodeType }
+  /** A free action: hands one resource or bag item to a hiker on the same tile. */
+  | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
+  /** A free action: puts a resource back, +1 Abundance to its node. */
+  | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   | { type: 'endPhase' }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
@@ -196,7 +320,13 @@ export type DebugOp =
   /** Adds resources to a hiker, up to the resource limit. */
   | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> }
   /** Sets a hiker's stats and injuries directly, without the usual injury rules. */
-  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number };
+  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number }
+  /** Sets Abundance meters directly. */
+  | { kind: 'setAbundance'; abundance: Partial<Record<NodeType, number>> }
+  /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
+  | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
+  /** The next scavenge deals these card types first, where they can happen. */
+  | { kind: 'nextDeal'; types: ScavengeCardType[] };
 
 export type ActionType = Action['type'];
 
@@ -216,7 +346,25 @@ export type GameEventBody =
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   | { kind: 'passedOut'; hikerId: HikerId }
   | { kind: 'sleep'; hikerId: HikerId }
+  | {
+      kind: 'scavenge';
+      hikerId: HikerId;
+      tileId: TileId;
+      card: ScavengeCardType;
+      resources: ResourceId[];
+      caps?: number;
+      items?: ItemId[];
+      /** Resources that didn't fit (the hiker was nearly full). */
+      left?: number;
+      /** Bonus resources from traits (Copier, Copydog), included in resources. */
+      bonus?: number;
+    }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
+  | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
+  | { kind: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemId?: ItemId }
+  | { kind: 'returned'; hikerId: HikerId; resource: ResourceId; node: NodeType }
+  /** Overnight, nodes nobody scavenged recover. */
+  | { kind: 'recovered'; nodes: NodeType[] }
   | { kind: 'phase'; day: number; phase: Phase }
   | { kind: 'debug'; note: string };
 
@@ -236,6 +384,14 @@ export interface GameState {
   hikers: Hiker[];
   /** The party purse of acorn caps. */
   caps: number;
+  /** Each node type's Abundance meter, 0 to BALANCE.abundance.max. */
+  abundance: Record<NodeType, number>;
+  /** Who scavenged where today. Cleared each morning. */
+  scavengedToday: ScavengeRecord[];
+  /** An open scavenge, waiting for a card to be taken. */
+  scavenge?: PendingScavenge;
+  /** Debug only: card types the next scavenge deals first. */
+  debugDeal?: ScavengeCardType[];
   nextEventId: number;
   /** The most recent events, oldest first. */
   log: GameEvent[];

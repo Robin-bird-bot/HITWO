@@ -1,0 +1,355 @@
+/* The scavenge window (docs/mockups/Scavenge.png). Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(10, 14, 12, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window {
+  width: 980px;
+  box-sizing: border-box;
+  padding: 26px 32px 24px;
+  border-radius: 24px;
+  background: rgba(29, 34, 32, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(10, 14, 12, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  animation: appear 150ms ease-out;
+  outline: none;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 26px;
+  letter-spacing: 0.05em;
+}
+
+.nodes {
+  display: flex;
+  gap: 4px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.bonusWrap {
+  position: relative;
+}
+
+.pill {
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.pill[aria-expanded='true'] {
+  border-color: rgba(233, 180, 76, 0.6);
+  background: rgba(233, 180, 76, 0.18);
+}
+
+.bonuses {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 2;
+  width: 300px;
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  border-radius: 14px;
+  background: rgba(29, 34, 32, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 36px rgba(10, 14, 12, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: appear 150ms ease-out;
+}
+
+.bonus {
+  padding: 8px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.bonus[data-tone='luck'] {
+  color: #a6ddbc;
+  background: rgba(127, 194, 155, 0.14);
+}
+
+.bonus[data-tone='bonus'] {
+  color: #f2c978;
+  background: rgba(233, 180, 76, 0.12);
+}
+
+.bonus[data-tone='warning'] {
+  color: #f39a86;
+  background: rgba(229, 98, 74, 0.12);
+}
+
+.hiker {
+  height: 44px;
+  padding: 0 14px 0 5px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-muted);
+}
+
+.portrait {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.hikerName {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.change {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+}
+
+.change b {
+  font-weight: normal;
+  color: var(--gold);
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 18px;
+  min-height: 290px;
+}
+
+.chooser {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.prompt {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.chooser[data-wide='true'] .chips {
+  max-width: 900px;
+}
+
+.chip {
+  min-height: 44px;
+  padding: 0 14px 0 8px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+}
+
+.chip img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chip[aria-pressed='true'] {
+  border: 2px solid var(--gold);
+  background: rgba(233, 180, 76, 0.2);
+}
+
+.chipCount {
+  color: var(--gold);
+}
+
+.chipCost {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clear {
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.drain {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drainRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.drainRow b {
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  color: var(--gold);
+}
+
+.reason {
+  max-width: 300px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.secondary {
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.take {
+  min-height: 52px;
+  min-width: 190px;
+  padding: 0 24px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gold);
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
+.take:disabled {
+  background: rgba(233, 180, 76, 0.3);
+  color: rgba(29, 34, 32, 0.7);
+  cursor: default;
+}
+
+.result {
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  min-height: 290px;
+}
+
+.got {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.gotLabel {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.gotWhat {
+  max-width: 420px;
+  font-family: var(--font-pixel);
+  font-size: 30px;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  text-align: left;
+}

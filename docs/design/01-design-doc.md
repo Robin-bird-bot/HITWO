@@ -103,7 +103,7 @@ One trait library covers everything: a character's starting traits, level-up cho
 
 **Class labels** (Tank, Support, Resourceful, Traveller, Survivalist) only summarize a character's traits and playstyle. They're used to filter characters when picking a party.
 
-**Luck.** Each hiker has a luck value that multiplies the odds of rare draws when scavenging and crafting. High Morale gives more Luck and low Morale gives less, for both scavenging and crafting. When crafting, Luck shifts the item's Quality roll and the small chance of a higher tier. Traits and items can change it, including luck for one node type only.
+**Luck.** Each hiker has a luck value that multiplies the odds of rare draws when scavenging and crafting. High Morale gives more Luck and low Morale gives less, for both scavenging and crafting (to start: +1 Luck at Morale 7 or more, −1 at 3 or less). When crafting, Luck shifts the item's Quality roll and the small chance of a higher tier. Traits and items can change it, including luck for one node type only.
 
 **XP**
 
@@ -235,7 +235,7 @@ Scavenging draws 3 random cards weighted by the tile's nodes, Abundance and the 
 | Resource | 1 resource | Common |
 | ×2 / ×3 | 2 or 3 of the same resource; both drain 2 Abundance | Uncommon / Rare |
 | Pair / Trio | 2 or 3 different resources from the same node; both drain 2 Abundance | Uncommon / Rare |
-| Mixed | 1 resource from each node on a two-node tile | Rare |
+| Mixed | 1 resource from each node on a two-node tile; on a three-node tile, from 2 of its nodes at random | Rare |
 | Wild (?) | A random resource from that node, revealed when taken; can come as ×2 | Uncommon / Rare |
 | Variety Wild (?) | A random resource from all 16, on its own backdrop | Uncommon |
 | Variety Pair (??) | 2 random resources from all 16 | Rare |
@@ -248,7 +248,7 @@ Scavenging draws 3 random cards weighted by the tile's nodes, Abundance and the 
 | Item find | A random item of one type, on the item backdrop | Tools and food: Rare. Clothes: Very rare. Shelters and trinkets: Legendary |
 | Choice item (!) | Pick 1 of 5 random cards of one item type (Choice Tool, Choice Shelter and so on) | One step rarer than that type's find: tools and food Very rare, clothes Legendary, shelters and trinkets Mythic |
 
-Rarity runs Common, Uncommon, Rare, Very rare, Legendary, Mythic. Exact odds are set in balancing; luck shifts them toward rarer cards. Acorn caps also get their own backdrop.
+Rarity runs Common, Uncommon, Rare, Very rare, Legendary, Mythic. Luck shifts the odds toward rarer cards. Starting odds: at Luck 0, 75 / 15 / 6 / 2.5 / 1 / 0.5%; at Luck +5, 50 / 25 / 14 / 7 / 3 / 1%. Each point of Luck moves a fifth of the way between the two, and negative Luck pushes Common toward 85%. Acorn caps also get their own backdrop.
 
 Modifiers: luck (from Morale and traits) shifts the odds toward rarer cards; Dogs see 1 extra card; Forager sees 4 cards; Gambler and Glasses reroll; the Metal Detector raises item finds; a choice-finding tool (name to come) raises Choice cards; low Abundance means fewer cards from that node.
 
@@ -256,7 +256,7 @@ The 16 resources stay: Forest (wood, moss, mushroom, grass), River (fish, clay, 
 
 **Abundance** is a meter for each node type, shown at the top of the screen.
 
-- Every scavenge lowers that node's meter by 1 (×2, ×3, Pair and Trio cards lower it by 2), and so do bonus resources a hiker chooses to take (Copier, Copydog, Generous); random or refunded ones (Pockets, German Efficiency, Fluffy) don't. A low meter means fewer cards to choose from, rarer good results, harsher related events, and higher shop prices for that node.
+- Every scavenge lowers that node's meter by 1 (×2, ×3, Pair and Trio cards lower it by 2), and so do bonus resources a hiker chooses to take (Copier, Copydog, Generous); random or refunded ones (Pockets, German Efficiency, Fluffy) don't. A low meter means fewer cards to choose from, rarer good results, harsher related events, and higher shop prices for that node. A node at 0 gives no cards, so a tile whose nodes are all at 0 can't be scavenged until it's tended or recovers.
 - It resets to about 75% at each new biome and recovers +1 per node per night it wasn't scavenged.
 - Restored by Tend (day only; the Maintenance trait doubles it), returning a resource to nature (+1 to its node), items (Seed Pouch, Fish Ladder, Salt Lick) and station services.
 

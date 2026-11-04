@@ -4,6 +4,7 @@
  */
 import { useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
+import { BALANCE } from '../../config/balance';
 import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
@@ -130,9 +131,6 @@ export function ObjectiveCard() {
   );
 }
 
-/** Placeholder Abundance until Phase 4 adds the meters to the game. */
-const PLACEHOLDER_ABUNDANCE = 0.75;
-
 export function AbundanceCard({ state }: { state: GameState }) {
   return (
     <Panel
@@ -148,19 +146,26 @@ export function AbundanceCard({ state }: { state: GameState }) {
         </span>
       }
     >
-      <div className={styles.meters} title="Abundance arrives in Phase 4 (placeholder meters)">
-        {NODE_TYPES.map((n) => (
-          <div
-            key={n}
-            className={styles.meter}
-            aria-label={`${NODE_NAME[n]} Abundance (placeholder)`}
-          >
-            <img src={ASSETS.nodes[n]} alt="" width={20} height={23} />
-            <div className={styles.track}>
-              <div style={{ width: `${PLACEHOLDER_ABUNDANCE * 100}%` }} />
+      <div className={styles.meters}>
+        {NODE_TYPES.map((n) => {
+          const value = state.abundance[n];
+          const low = value <= BALANCE.abundance.lowAt;
+          const label = `${NODE_NAME[n]} Abundance ${value}/${BALANCE.abundance.max}${low ? ': low' : ''}`;
+          return (
+            <div key={n} className={styles.meter} title={label} aria-label={label}>
+              <img src={ASSETS.nodes[n]} alt="" width={20} height={23} />
+              <div className={styles.track}>
+                <div
+                  data-low={low}
+                  style={{ width: `${(value / BALANCE.abundance.max) * 100}%` }}
+                />
+              </div>
+              <span className={styles.meterValue} data-low={low}>
+                {value}
+              </span>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </Panel>
   );

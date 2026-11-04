@@ -10,8 +10,18 @@ const FREE = { percent: -100 };
 export const FAMILIES: Readonly<Record<Family, FamilyDef>> = {
   human: { name: 'Human', hooks: {} },
 
-  // +1 card to choose from when scavenging (Phase 4); crafts lower-quality items (Phase 9).
-  dog: { name: 'Dog', hooks: {} },
+  // "+1 card to choose from when scavenging" (Wyatt, Nov 4). Crafts lower-quality items (Phase 9).
+  dog: {
+    name: 'Dog',
+    hooks: {
+      modifyScavenge: () => ({
+        source: 'Dog',
+        label: 'Dog: 1 extra card to choose from',
+        tone: 'bonus',
+        cards: 1,
+      }),
+    },
+  },
 
   // "Moving costs no Appetite, alone or with the group. −1 item slot."
   // With the group (Wyatt, Nov 3): a Cat's own crossing is free and bringing a Cat

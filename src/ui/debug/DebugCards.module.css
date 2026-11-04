@@ -1,0 +1,133 @@
+/* #debug-cards: the scavenge card gallery (docs/mockups/ScavTypes.png). */
+
+.main {
+  padding: 24px 28px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.legend {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  font-size: 13px;
+}
+
+.legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 6px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.heading span {
+  margin-left: 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px 32px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.luck {
+  min-width: 26px;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  color: var(--text);
+}
+
+.tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.table {
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--panel);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 6px 14px;
+  text-align: left;
+}
+
+.table th {
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.table td + td {
+  font-family: var(--font-pixel);
+  text-align: right;
+}
+
+.types {
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--panel);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(170px, auto));
+  gap: 4px 28px;
+  font-size: 14px;
+}
+
+.types div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.types dd {
+  margin: 0;
+  font-family: var(--font-pixel);
+}
+
+.note {
+  margin: 0;
+  max-width: 640px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}

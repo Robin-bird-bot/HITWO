@@ -63,5 +63,41 @@ export const ASSETS = {
   itemCards: {
     clothesGradient: asset('item-cards/gradients/clothes.png'),
     clothesIcon: asset('item-cards/type-icons/clothes.png'),
+    /** White type icons, already placed on a full 5:7 card canvas. */
+    typeIcons: byItemType((t) => asset(`item-cards/type-icons/${t}.png`)),
+    rays: byItemType((t) => asset(`item-cards/rays/${t}.png`)),
+  },
+  /** Scavenge card layers (docs/ASSETS.md, "Scavenge card layers"). */
+  scavenge: {
+    /** Blank card backgrounds, no rays. */
+    backdrops: {
+      forest: asset('scavenge/backdrops/forest.jpg'),
+      river: asset('scavenge/backdrops/river.jpg'),
+      wildlife: asset('scavenge/backdrops/wildlife.jpg'),
+      mountain: asset('scavenge/backdrops/mountain.jpg'),
+      any: asset('scavenge/backdrops/any-node.jpg'),
+      caps: asset('scavenge/backdrops/caps.jpg'),
+      items: asset('scavenge/backdrops/items.jpg'),
+    },
+    rays: {
+      forest: asset('scavenge/rays/forest.png'),
+      river: asset('scavenge/rays/river.png'),
+      wildlife: asset('scavenge/rays/wildlife.png'),
+      mountain: asset('scavenge/rays/mountain.png'),
+      any: asset('scavenge/rays/any-node-cream.png'),
+      caps: asset('scavenge/rays/caps.png'),
+      items: asset('scavenge/rays/items-white.png'),
+    },
+    /** Hex icons on a full card canvas, for the caps and item card backs. */
+    backs: {
+      caps: asset('scavenge/backs/caps-back-icon.png'),
+      items: asset('scavenge/backs/item-back-icon.png'),
+    },
   },
 } as const;
+
+function byItemType(path: (type: string) => string) {
+  return Object.fromEntries(
+    ['tool', 'food', 'clothes', 'shelter', 'trinket'].map((t) => [t, path(t)]),
+  ) as Record<'tool' | 'food' | 'clothes' | 'shelter' | 'trinket', string>;
+}

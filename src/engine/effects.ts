@@ -19,7 +19,10 @@ import type {
   Hiker,
   HikerId,
   Line,
+  NodeType,
   Phase,
+  ScavengeBonus,
+  ScavengeCardType,
   StatName,
   TileId,
   TraitType,
@@ -38,10 +41,15 @@ export type CostKey =
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */
   | 'moveAll.perHiker'
   | 'night.noSleepEnergy'
-  | 'endOfDay.appetite';
+  | 'endOfDay.appetite'
+  /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
+  | 'scavenge.appetite';
 
 /** Amounts a hiker gains. Modified totals round up. */
-export type GainKey = 'sleep.energy';
+export type GainKey =
+  | 'sleep.energy'
+  /** Abundance restored by Tend (the Thumbs and Maintenance add to it). */
+  | 'tend.abundance';
 
 /** Whether a hiker is acting themselves or being brought along by someone's Move All. */
 export type Role = 'actor' | 'brought';
@@ -73,6 +81,30 @@ export interface Modifier {
   flat?: number;
   /** Applied after flat amounts: −50 halves, +50 adds half. */
   percent?: number;
+}
+
+/** A hiker about to scavenge their tile. */
+export interface ScavengeQuery {
+  tileId: TileId;
+  phase: Phase;
+}
+
+/** How a source changes a scavenge. Each one with a label shows in the bonuses pop-over. */
+export interface ScavengeModifier {
+  source: string;
+  label: string;
+  tone: ScavengeBonus['tone'];
+  /** More (or fewer) cards to choose from. */
+  cards?: number;
+  luck?: number;
+  /** Multipliers on how likely each node is (Finder, Hound). */
+  nodeWeight?: Partial<Record<NodeType, number>>;
+  /** Multipliers on how likely each card type is. */
+  typeWeight?: Partial<Record<ScavengeCardType, number>>;
+  /** Multipliers on card types, only for cards from one node (Hound's ×2 results). */
+  nodeTypeWeight?: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>>;
+  /** Extra copies of the first resource taken (Copier, Copydog). */
+  bonus?: { count: number; appetiteEach: number };
 }
 
 export interface ActQuery {
@@ -121,8 +153,11 @@ export interface Hooks {
   onEndOfDay?(ctx: EffectContext): void;
   onSleep?(ctx: EffectContext): void;
   onMoraleChange?(e: { delta: number; cause: string }, ctx: EffectContext): void;
-  /** Phase 4. */
-  onScavengeDraw?(e: unknown, ctx: EffectContext): void;
+  /** Changes to a scavenge before the cards are dealt: extra cards, Luck, odds. */
+  modifyScavenge?(
+    q: ScavengeQuery,
+    ctx: QueryContext,
+  ): ScavengeModifier | ScavengeModifier[] | undefined;
   /** Phase 9. */
   onCraft?(e: unknown, ctx: EffectContext): void;
   /** Phase 9. */
@@ -142,6 +177,8 @@ export interface AbilityDef {
   label: string;
   limit: { per: 'day' | 'phase' | 'biome'; uses: number };
   choices?: readonly AbilityChoice[];
+  /** Used in the scavenge window to reroll a card (Gambler), not from the Abilities panel. */
+  scavengeReroll?: true;
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
   apply(ctx: EffectContext, choice: string | undefined): void;
 }
@@ -307,6 +344,21 @@ export function computeGain(
     }
   }
   return applyModifiers(base, mods, 'gain');
+}
+
+/** Every change the hiker's sources make to a scavenge on this tile. */
+export function scavengeModifiers(
+  state: GameState,
+  hiker: Hiker,
+  q: ScavengeQuery,
+): ScavengeModifier[] {
+  const ctx = queryContext(state, hiker);
+  const out: ScavengeModifier[] = [];
+  for (const source of effectSourcesFor(state, hiker)) {
+    const result = source.hooks.modifyScavenge?.(q, ctx);
+    if (result) out.push(...(Array.isArray(result) ? result : [result]));
+  }
+  return out;
 }
 
 /** The first reason any of the hiker's sources gives for stopping this action. */
