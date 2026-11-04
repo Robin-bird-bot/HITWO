@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — ranger station</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+button{font-family:'EditUndo',monospace;cursor:pointer}
+@keyframes hikeGoldShift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+@keyframes hikeFlameA{0%{transform:scale(1,1) skewX(0deg)}50%{transform:scale(0.94,1.08) skewX(-3deg)}100%{transform:scale(1.04,0.93) skewX(3deg)}}
+@keyframes hikeFlameB{0%{transform:scale(1,1)}100%{transform:scale(0.9,1.12) skewX(4deg)}}
+@keyframes hikeGlow{0%{opacity:0.75}30%{opacity:1}55%{opacity:0.82}80%{opacity:0.97}100%{opacity:0.78}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.3) 0 2px, transparent 2px 44px), repeating-linear-gradient(90deg, rgba(255,220,170,0.025) 0 1px, transparent 1px 9px), linear-gradient(#3E2618, #2A1810)">
+
+<!-- forest beyond the window wall -->
+<div style="position: absolute; left: 0; top: 0; width: 1600px; height: 400px; overflow: hidden; background: linear-gradient(to bottom, #263536, #55634F)">
+<div style="position: absolute; left: 0; top: -400px; width: 1600px; height: 1000px">
+<img src="/_blob/0079fe313d58cd5f5e827cee5b101a3a" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: brightness(0.42) saturate(0.75)">
+<img src="/_blob/de97a059d7e91a47efc671f6ef5e8c9c" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: brightness(0.5) saturate(0.8)">
+<img src="/_blob/f7a55cf54f246fdb39088209b6d5ca11" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: brightness(0.55) saturate(0.8)">
+<img src="/_blob/41d1158562f1855af29ed7435344456b" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: brightness(0.6) saturate(0.85)">
+</div>
+<div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(16,22,20,0.45), rgba(16,22,20,0.12) 45%, rgba(40,24,12,0.35)), linear-gradient(115deg, rgba(255,255,255,0.07) 0 18%, transparent 18% 30%, rgba(255,255,255,0.05) 30% 34%, transparent 34%)"></div>
+<!-- window frames -->
+<div style="position: absolute; left: 0; top: 0; right: 0; height: 22px; background: linear-gradient(#2E1A0E, #4A2C18); box-shadow: 0 4px 10px rgba(0,0,0,0.5)"></div>
+<div style="position: absolute; left: 0; right: 0; top: 132px; height: 12px; background: linear-gradient(#5A3720, #3E2414); box-shadow: 0 3px 6px rgba(0,0,0,0.45)"></div>
+<div style="position: absolute; inset: 0; background: repeating-linear-gradient(90deg, #3E2414 0 16px, transparent 16px 320px); background-position: -8px 0"></div>
+</div>
+
+<!-- fireplace -->
+<div style="position: absolute; left: 40px; top: 0; width: 300px; height: 400px; overflow: hidden; box-shadow: 10px 0 24px rgba(0,0,0,0.5), -6px 0 18px rgba(0,0,0,0.4)"><svg width="300" height="400" viewBox="0 0 300 400" aria-hidden="true" style="position: absolute; left: 0; top: 0"><rect width="300" height="400" fill="#3A3430"/><rect x="-7" y="2" width="48" height="29" rx="9" fill="#857C72"/><rect x="-3" y="4" width="34" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="45" y="2" width="72" height="29" rx="9" fill="#7C756D"/><rect x="49" y="4" width="58" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="121" y="2" width="47" height="29" rx="9" fill="#6E6862"/><rect x="125" y="4" width="33" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="172" y="2" width="43" height="29" rx="9" fill="#857C72"/><rect x="176" y="4" width="29" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="219" y="2" width="77" height="29" rx="9" fill="#5F5953"/><rect x="223" y="4" width="63" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="300" y="2" width="45" height="29" rx="9" fill="#7C756D"/><rect x="304" y="4" width="31" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-15" y="35" width="65" height="34" rx="9" fill="#5F5953"/><rect x="-11" y="37" width="51" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="54" y="35" width="53" height="34" rx="9" fill="#6E6862"/><rect x="58" y="37" width="39" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="111" y="35" width="58" height="34" rx="9" fill="#7C756D"/><rect x="115" y="37" width="44" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="173" y="35" width="43" height="34" rx="9" fill="#5F5953"/><rect x="177" y="37" width="29" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="220" y="35" width="59" height="34" rx="9" fill="#7C756D"/><rect x="224" y="37" width="45" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="283" y="35" width="52" height="34" rx="9" fill="#5F5953"/><rect x="287" y="37" width="38" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-18" y="73" width="65" height="30" rx="9" fill="#6E6862"/><rect x="-14" y="75" width="51" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="51" y="73" width="80" height="30" rx="9" fill="#5F5953"/><rect x="55" y="75" width="66" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="135" y="73" width="66" height="30" rx="9" fill="#68625C"/><rect x="139" y="75" width="52" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="205" y="73" width="57" height="30" rx="9" fill="#7C756D"/><rect x="209" y="75" width="43" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="266" y="73" width="57" height="30" rx="9" fill="#857C72"/><rect x="270" y="75" width="43" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="0" y="107" width="77" height="30" rx="9" fill="#5F5953"/><rect x="4" y="109" width="63" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="81" y="107" width="42" height="30" rx="9" fill="#5F5953"/><rect x="85" y="109" width="28" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="127" y="107" width="78" height="30" rx="9" fill="#5F5953"/><rect x="131" y="109" width="64" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="209" y="107" width="74" height="30" rx="9" fill="#7C756D"/><rect x="213" y="109" width="60" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="287" y="107" width="68" height="30" rx="9" fill="#857C72"/><rect x="291" y="109" width="54" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-7" y="141" width="69" height="35" rx="9" fill="#857C72"/><rect x="-3" y="143" width="55" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="66" y="141" width="52" height="35" rx="9" fill="#7C756D"/><rect x="70" y="143" width="38" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="122" y="141" width="61" height="35" rx="9" fill="#5F5953"/><rect x="126" y="143" width="47" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="187" y="141" width="44" height="35" rx="9" fill="#6E6862"/><rect x="191" y="143" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="235" y="141" width="44" height="35" rx="9" fill="#857C72"/><rect x="239" y="143" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="283" y="141" width="59" height="35" rx="9" fill="#68625C"/><rect x="287" y="143" width="45" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-18" y="180" width="72" height="34" rx="9" fill="#5F5953"/><rect x="-14" y="182" width="58" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="58" y="180" width="51" height="34" rx="9" fill="#7C756D"/><rect x="62" y="182" width="37" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="113" y="180" width="46" height="34" rx="9" fill="#857C72"/><rect x="117" y="182" width="32" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="163" y="180" width="54" height="34" rx="9" fill="#857C72"/><rect x="167" y="182" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="221" y="180" width="59" height="34" rx="9" fill="#7C756D"/><rect x="225" y="182" width="45" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="284" y="180" width="64" height="34" rx="9" fill="#857C72"/><rect x="288" y="182" width="50" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-16" y="218" width="62" height="37" rx="9" fill="#68625C"/><rect x="-12" y="220" width="48" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="50" y="218" width="54" height="37" rx="9" fill="#5F5953"/><rect x="54" y="220" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="108" y="218" width="48" height="37" rx="9" fill="#6E6862"/><rect x="112" y="220" width="34" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="160" y="218" width="56" height="37" rx="9" fill="#5F5953"/><rect x="164" y="220" width="42" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="220" y="218" width="79" height="37" rx="9" fill="#68625C"/><rect x="224" y="220" width="65" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-5" y="259" width="49" height="39" rx="9" fill="#5F5953"/><rect x="-1" y="261" width="35" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="48" y="259" width="53" height="39" rx="9" fill="#5F5953"/><rect x="52" y="261" width="39" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="105" y="259" width="71" height="39" rx="9" fill="#6E6862"/><rect x="109" y="261" width="57" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="180" y="259" width="44" height="39" rx="9" fill="#5F5953"/><rect x="184" y="261" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="228" y="259" width="47" height="39" rx="9" fill="#5F5953"/><rect x="232" y="261" width="33" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="279" y="259" width="62" height="39" rx="9" fill="#6E6862"/><rect x="283" y="261" width="48" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-7" y="302" width="62" height="31" rx="9" fill="#7C756D"/><rect x="-3" y="304" width="48" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="59" y="302" width="68" height="31" rx="9" fill="#68625C"/><rect x="63" y="304" width="54" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="131" y="302" width="46" height="31" rx="9" fill="#5F5953"/><rect x="135" y="304" width="32" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="181" y="302" width="54" height="31" rx="9" fill="#857C72"/><rect x="185" y="304" width="40" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="239" y="302" width="60" height="31" rx="9" fill="#7C756D"/><rect x="243" y="304" width="46" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-10" y="337" width="80" height="30" rx="9" fill="#7C756D"/><rect x="-6" y="339" width="66" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="74" y="337" width="63" height="30" rx="9" fill="#68625C"/><rect x="78" y="339" width="49" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="141" y="337" width="42" height="30" rx="9" fill="#5F5953"/><rect x="145" y="339" width="28" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="187" y="337" width="44" height="30" rx="9" fill="#857C72"/><rect x="191" y="339" width="30" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="235" y="337" width="52" height="30" rx="9" fill="#5F5953"/><rect x="239" y="339" width="38" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="291" y="337" width="65" height="30" rx="9" fill="#5F5953"/><rect x="295" y="339" width="51" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="-1" y="371" width="70" height="35" rx="9" fill="#7C756D"/><rect x="3" y="373" width="56" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="73" y="371" width="69" height="35" rx="9" fill="#7C756D"/><rect x="77" y="373" width="55" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="146" y="371" width="49" height="35" rx="9" fill="#6E6862"/><rect x="150" y="373" width="35" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="199" y="371" width="45" height="35" rx="9" fill="#6E6862"/><rect x="203" y="373" width="31" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/><rect x="248" y="371" width="52" height="35" rx="9" fill="#68625C"/><rect x="252" y="373" width="38" height="5" rx="2.5" fill="rgba(255,255,255,0.10)"/></svg>
+<div style="position: absolute; left: 50px; top: 232px; width: 200px; height: 168px; border-radius: 100px 100px 0 0; background: radial-gradient(ellipse at 50% 85%, #6A2A10 0%, #2A120A 55%, #140A06 100%); box-shadow: inset 0 0 0 6px #4A423C, inset 0 0 30px rgba(0,0,0,0.8); overflow: hidden">
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: radial-gradient(ellipse at 50% 100%, rgba(255,150,60,0.75), transparent 70%); animation: hikeGlow 2.4s ease-in-out infinite"></div>
+<svg width="170" height="130" viewBox="0 0 170 130" aria-hidden="true" style="position: absolute; left: 20px; bottom: 34px; overflow: visible">
+<g style="transform-origin: 85px 128px; animation: hikeFlameA 1.3s ease-in-out infinite alternate"><path d="M85 128C40 128 34 92 56 66c6 18 16 22 18 10 3-22-8-40 10-72 6 30 30 44 32 74 1 14 8 8 14-4 16 26 8 54-45 54z" fill="#FF7A2F"/></g>
+<g style="transform-origin: 85px 128px; animation: hikeFlameB 0.9s ease-in-out infinite alternate"><path d="M86 128c-30 0-36-24-22-44 4 12 12 12 12 2 0-14 2-28 12-44 6 22 22 32 22 54 0 6 6 4 10-2 8 20-6 34-34 34z" fill="#FFB347"/></g>
+<g style="transform-origin: 86px 128px; animation: hikeFlameA 0.7s ease-in-out infinite alternate-reverse"><path d="M86 128c-16 0-20-12-12-24 3 6 7 5 7-1 0-8 2-14 7-22 4 12 12 18 12 30 0 10-6 17-14 17z" fill="#FFE08A"/></g>
+</svg>
+<div style="position: absolute; left: 34px; bottom: 18px; width: 132px; height: 22px; border-radius: 11px; background: linear-gradient(#6B4426, #3E2414); transform: rotate(-6deg)"></div>
+<div style="position: absolute; left: 40px; bottom: 14px; width: 124px; height: 22px; border-radius: 11px; background: linear-gradient(#7A4C2A, #4A2C18); transform: rotate(7deg)"></div>
+<div style="position: absolute; left: 60px; bottom: 26px; width: 80px; height: 10px; border-radius: 5px; background: #FF9A4A; filter: blur(4px); animation: hikeGlow 1.7s ease-in-out infinite"></div>
+</div>
+</div>
+<div style="position: absolute; left: 20px; top: 196px; width: 340px; height: 26px; border-radius: 4px; background: repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 140px), repeating-linear-gradient(0deg, rgba(255,235,200,0.035) 0 1px, transparent 1px 6px), linear-gradient(#7A4C2A, #5E3820); box-shadow: 0 8px 14px rgba(0,0,0,0.5)"></div>
+<img src="/_blob/118cf77867466fcc41ae5c1056625a32" alt="" style="position: absolute; left: 52px; top: 152px; width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5))">
+<img src="/_blob/93ad456448e5e39cc2c33e31e4b45a22" alt="" style="position: absolute; left: 246px; top: 154px; width: 44px; height: 44px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5))">
+<img src="/_blob/2b61bfbb18adb008802675a46f301cd7" alt="" style="position: absolute; left: 296px; top: 160px; width: 40px; height: 40px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5))">
+<!-- warm firelight on the room -->
+<div style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 760px 560px at 190px 360px, rgba(255,140,60,0.26), transparent 70%); animation: hikeGlow 2.4s ease-in-out infinite"></div>
+
+<!-- hanging sign -->
+<div style="position: absolute; left: 600px; top: 0; width: 2px; height: 34px; background: #2A1A10; box-shadow: 280px 0 0 #2A1A10"></div>
+<div style="position: absolute; left: 530px; top: 26px; width: 420px; height: 92px; box-sizing: border-box; border-radius: 10px; background: radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px calc(100% - 6px) / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) calc(100% - 6px) / 12px 12px no-repeat, repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 140px), repeating-linear-gradient(0deg, rgba(255,235,200,0.035) 0 1px, transparent 1px 6px), linear-gradient(#7A4C2A, #5E3820); border: 4px solid #3E2414; box-shadow: inset 0 0 0 2px #A8743F, 0 12px 24px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px">
+<span style="font-family: 'EditUndo', monospace; font-size: 32px; letter-spacing: 0.06em; color: #FCE9C4; text-shadow: 0 3px 0 #3A2212">BAIT &amp; TACKLE</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.1em; color: #E4BE84">RANGER STATION · CHECKPOINT 1</span>
+</div>
+
+<!-- dialogue -->
+<div style="position: absolute; left: 420px; top: 134px; width: 650px; box-sizing: border-box; padding: 14px 18px 14px; border-radius: 14px; background: rgba(24,30,27,0.86); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 28px rgba(0,0,0,0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; gap: 10px">
+<div style="position: absolute; right: -9px; top: 40px; width: 18px; height: 18px; background: rgba(24,30,27,0.86); border-right: 1px solid rgba(255,255,255,0.12); border-top: 1px solid rgba(255,255,255,0.12); transform: rotate(45deg)"></div>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.08em; color: #E9B44C">SHOPKEEPER</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 15px; line-height: 1.5; letter-spacing: 0.02em; color: #F1EADB">{{line}}</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 10px 0 6px; border-radius: 10px; background: {{c.bg}}; border: 1px solid {{c.border}}">
+<sc-if value="{{c.hasImg}}" hint-placeholder-val="{{true}}"><img src="{{c.img}}" alt="{{c.label}}" style="width: 30px; height: 30px; object-fit: contain; display: block"></sc-if>
+<sc-if value="{{c.hasIcon}}" hint-placeholder-val="{{false}}"><dc-import name="Ic" icon="{{c.icon}}" color="{{c.fg}}" size="18" hint-size="18px,18px"></dc-import></sc-if>
+<span style="font-family: 'EditUndo', monospace; font-size: 14px; color: {{c.fg}}">{{c.text}}</span>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px; margin-top: 2px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="3"><button style="display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid {{o.border}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 12px; letter-spacing: 0.04em"><dc-import name="Ic" icon="{{o.icon}}" color="{{o.fg}}" size="14" hint-size="14px,14px"></dc-import>{{o.label}}</button></sc-for>
+</div>
+</div>
+
+<!-- shopkeeper -->
+<img src="/_blob/e968e7feeaade92c8ae1aae779a97e39" alt="Shopkeeper (placeholder)" style="position: absolute; left: 1100px; top: 28px; height: 420px; width: auto; display: block; filter: drop-shadow(0 12px 20px rgba(0,0,0,0.55))">
+
+<!-- top-right buttons -->
+<button style="position: absolute; left: 1388px; top: 24px; width: 192px; height: 70px; border-radius: 12px; border: 3px solid #7A5420; background: radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px calc(100% - 6px) / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) calc(100% - 6px) / 12px 12px no-repeat, linear-gradient(#F4CF72, #D9A441); box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), 0 6px 0 #6E4A1C, 0 12px 20px rgba(0,0,0,0.4); color: #3A2414; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px"><span style="font-size: 16px; letter-spacing: 0.04em">REST &amp; GO</span><span style="font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600">Free night, then Rainforest</span></button>
+<button style="position: absolute; left: 1388px; top: 112px; width: 192px; height: 54px; border-radius: 12px; border: 3px solid #3E2414; background: radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px calc(100% - 6px) / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) calc(100% - 6px) / 12px 12px no-repeat, repeating-linear-gradient(90deg, rgba(0,0,0,0.16) 0 2px, transparent 2px 140px), repeating-linear-gradient(0deg, rgba(255,235,200,0.035) 0 1px, transparent 1px 6px), linear-gradient(#7A4C2A, #5E3820); box-shadow: inset 0 0 0 1.5px #A8743F, 0 5px 0 #2E1A0E, 0 10px 18px rgba(0,0,0,0.4); color: #FCE9C4; font-size: 12px; letter-spacing: 0.04em; display: flex; align-items: center; justify-content: center; gap: 8px"><dc-import name="Ic" icon="binoculars" color="#F0C76A" size="18" hint-size="18px,18px"></dc-import>PREVIEW NEXT TRAIL</button>
+
+<!-- tabs -->
+<div style="position: absolute; left: 380px; top: 352px; display: flex; gap: 8px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button style="height: 46px; padding: 0 22px; border-radius: 12px 12px 0 0; border: 3px solid #3E2414; border-bottom: none; background: {{t.bg}}; color: {{t.fg}}; font-size: 15px; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 2px 0 rgba(255,255,255,0.25)"><dc-import name="Ic" icon="{{t.icon}}" color="{{t.fg}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</button></sc-for>
+</div>
+
+<!-- counter -->
+<div style="position: absolute; left: 40px; top: 396px; width: 1520px; height: 428px; box-sizing: border-box; border-radius: 10px; background: repeating-linear-gradient(0deg, rgba(0,0,0,0.18) 0 2px, transparent 2px 46px), repeating-linear-gradient(90deg, rgba(255,235,200,0.03) 0 1px, transparent 1px 7px), linear-gradient(#6B4024, #4E2E1A); border: 4px solid #2E1A0E; box-shadow: inset 0 14px 0 #A8743F, inset 0 18px 0 #6E4426, 0 18px 30px rgba(0,0,0,0.5)">
+<div style="position: absolute; left: 24px; right: 24px; top: 26px; height: 252px; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 90%, transparent); mask-image: linear-gradient(to right, #000 90%, transparent)">
+<div style="display: flex; gap: 20px; align-items: flex-start; padding-left: 6px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none">
+<div style="width: 150px; height: 210px; box-sizing: border-box; border-radius: 12px; border: 2px dashed rgba(241,234,219,0.6); background: rgba(24,30,27,0.82); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px; text-align: center">
+<dc-import name="Ic" icon="acorn" color="#E9B44C" size="34" hint-size="34px,34px"></dc-import>
+<span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.04em; color: #F1EADB; line-height: 1.25">DRAG HERE TO SELL</span>
+<span style="font-size: 11px; color: #C9C2B2; line-height: 1.35">You'll see the price before it sells</span>
+</div>
+<div style="height: 30px"></div>
+</div>
+<sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none">
+<dc-import name="ItemCard" type="{{it.type}}" face="front" name="{{it.name}}" tier="{{it.tier}}" slot="{{it.slot}}" effect="{{it.effect}}" quality="{{it.q}}" meta="{{it.meta}}" w="150" hint-size="150px,210px"></dc-import>
+<div style="display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 8px; background: {{it.tagBg}}; color: {{it.tagFg}}; font-family: 'EditUndo', monospace; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.35)"><dc-import name="Ic" icon="acorn" color="{{it.tagFg}}" size="13" hint-size="13px,13px"></dc-import>{{it.price}}</div>
+</div>
+</sc-for>
+<sc-for list="{{specials}}" as="sp" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none">
+<div style="position: relative; width: 150px; height: 210px; border-radius: 11px; overflow: hidden; box-shadow: 0 12px 26px rgba(0,0,0,0.38)">
+<div style="position: absolute; inset: 0; background: linear-gradient(155deg, #FFE9A3, #E9B44C, #B07A2A, #F7D774, #E9B44C); background-size: 260% 260%; animation: hikeGoldShift 7s ease-in-out infinite alternate"></div>
+<img src="/_blob/78ebdd949748aa86df10ad7ce138586c" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
+<div style="position: absolute; left: 0; right: 0; top: 30px; display: flex; justify-content: center"><dc-import name="Ic" icon="{{sp.icon}}" color="#FFF3DA" size="54" sw="1.75" hint-size="54px,54px"></dc-import></div>
+<div style="position: absolute; left: 13px; right: 13px; top: 122px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.03em; color: #FFF3E3">{{sp.name}}</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 9px; letter-spacing: 0.06em; color: #F2C978">STATION SPECIAL</span>
+<span style="font-size: 10px; line-height: 1.3; color: #E9DFCC">{{sp.desc}}</span>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 8px; background: {{sp.tagBg}}; color: {{sp.tagFg}}; font-family: 'EditUndo', monospace; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.35)"><dc-import name="Ic" icon="acorn" color="{{sp.tagFg}}" size="13" hint-size="13px,13px"></dc-import>{{sp.price}}</div>
+</div>
+</sc-for>
+<sc-for list="{{more}}" as="it" hint-placeholder-count="1">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; flex: none">
+<dc-import name="ItemCard" type="{{it.type}}" face="front" name="{{it.name}}" tier="{{it.tier}}" slot="{{it.slot}}" effect="{{it.effect}}" quality="{{it.q}}" meta="{{it.meta}}" w="150" hint-size="150px,210px"></dc-import>
+<div style="display: flex; align-items: center; gap: 5px; height: 30px; padding: 0 12px; border-radius: 8px; background: {{it.tagBg}}; color: {{it.tagFg}}; font-family: 'EditUndo', monospace; font-size: 14px; box-shadow: 0 3px 0 rgba(0,0,0,0.35)"><dc-import name="Ic" icon="acorn" color="{{it.tagFg}}" size="13" hint-size="13px,13px"></dc-import>{{it.price}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+<!-- lower shelf: blueprints + resources (scrolls with the row above) -->
+<div style="position: absolute; left: 24px; right: 260px; top: 280px; height: 106px; box-sizing: border-box; padding: 8px 20px; border-radius: 10px; background: rgba(30,16,8,0.45); box-shadow: inset 0 3px 8px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 14px; overflow: hidden; -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); mask-image: linear-gradient(to right, #000 92%, transparent)">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.08em; color: #E4BE84; writing-mode: vertical-rl; transform: rotate(180deg)">BLUEPRINTS</span>
+<sc-for list="{{blueprints}}" as="b" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+<div style="width: 66px; height: 66px; box-sizing: border-box; border-radius: 10px; background-color: #DCE8F2; border: 3px solid {{b.color}}; box-shadow: 0 4px 0 rgba(0,0,0,0.35); background-image: linear-gradient(rgba(84,120,160,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(84,120,160,0.18) 1px, transparent 1px); background-size: 9px 9px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px">
+<dc-import name="Ic" icon="{{b.icon}}" color="#2F4F73" size="24" hint-size="24px,24px"></dc-import>
+<span style="font-family: 'EditUndo', monospace; font-size: 8px; color: #2F4F73; text-align: center; line-height: 1.1">{{b.name}}</span>
+</div>
+<div style="display: flex; align-items: center; gap: 4px; font-family: 'EditUndo', monospace; font-size: 12px; color: #F2C978"><dc-import name="Ic" icon="acorn" color="#D9A86A" size="11" hint-size="11px,11px"></dc-import>{{b.price}}</div>
+</div>
+</sc-for>
+<div style="width: 2px; height: 84px; background: rgba(168,116,63,0.5); margin: 0 6px"></div>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.08em; color: #E4BE84; writing-mode: vertical-rl; transform: rotate(180deg)">RESOURCES</span>
+<sc-for list="{{res}}" as="r" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+<div style="position: relative; width: 58px; height: 58px; box-sizing: border-box; border-radius: 10px; background: rgba(24,30,27,0.8); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center"><img src="{{r.img}}" alt="{{r.label}}" style="width: 46px; height: 46px; object-fit: contain; display: block"><span style="position: absolute; right: -6px; bottom: -6px; min-width: 22px; height: 20px; box-sizing: border-box; padding: 0 5px; border-radius: 10px; background: #F1EADB; color: #1D2220; font-family: 'EditUndo', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center">×{{r.n}}</span></div>
+<div style="display: flex; align-items: center; gap: 4px; font-family: 'EditUndo', monospace; font-size: 12px; color: #F2C978"><dc-import name="Ic" icon="acorn" color="#D9A86A" size="11" hint-size="11px,11px"></dc-import>{{r.price}}</div>
+</div>
+</sc-for>
+</div>
+<!-- party caps, fixed at the right of the shelf row -->
+<div style="position: absolute; right: 24px; top: 280px; width: 220px; height: 106px; box-sizing: border-box; border-radius: 10px; border: 3px solid #7A5420; background: radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) 6px / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) 6px calc(100% - 6px) / 12px 12px no-repeat, radial-gradient(circle, #F0C76A 0 2.5px, #6E4A1C 3px, transparent 4px) calc(100% - 6px) calc(100% - 6px) / 12px 12px no-repeat, linear-gradient(#F4CF72, #C9933A); box-shadow: inset 0 2px 0 rgba(255,255,255,0.45), 0 5px 0 #5A3A16; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #3A2414">
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.08em">PARTY CAPS</span>
+<div style="display: flex; align-items: center; gap: 8px"><dc-import name="Ic" icon="acorn" color="#3A2414" size="26" hint-size="26px,26px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 34px">{{caps}}</span></div>
+</div>
+<!-- one scroll bar for both rows -->
+<div style="position: absolute; left: 40px; right: 276px; bottom: 12px; height: 9px; border-radius: 5px; background: rgba(8,4,2,0.55); box-shadow: inset 0 2px 3px rgba(0,0,0,0.7)"><div style="width: 62%; height: 100%; border-radius: 5px; background: linear-gradient(#7A5A3E, #4E3320); box-shadow: inset 0 1px 0 rgba(255,235,200,0.25)"></div></div>
+</div>
+
+<!-- hiker packs -->
+<div style="position: absolute; left: 40px; top: 838px; width: 1520px; height: 148px; display: flex; gap: 12px">
+<sc-for list="{{hikers}}" as="h" hint-placeholder-count="4">
+<div style="flex: 1; min-width: 0; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; background: rgba(24,30,27,0.86); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 28px rgba(0,0,0,0.45); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px">
+<img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="{{h.name}}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px {{h.color}}">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; flex: 1">{{h.name}}</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #9C9585">BAG {{h.bagCount}}</span>
+</div>
+<div style="display: flex; gap: 6px; align-items: center">
+<sc-for list="{{h.bag}}" as="b" hint-placeholder-count="4">
+<sc-if value="{{b.has}}" hint-placeholder-val="{{true}}"><img src="{{b.img}}" alt="{{b.label}}" style="width: 52px; height: 73px; border-radius: 5px; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{b.empty}}" hint-placeholder-val="{{false}}"><div style="width: 52px; height: 73px; box-sizing: border-box; border-radius: 5px; border: 1.5px dashed rgba(255,255,255,0.22)"></div></sc-if>
+</sc-for>
+<div style="width: 1px; height: 40px; background: rgba(255,255,255,0.12); margin: 0 3px"></div>
+<sc-for list="{{h.res}}" as="r" hint-placeholder-count="3">
+<div style="position: relative; width: 40px; height: 40px; border-radius: 9px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center"><img src="{{r.img}}" alt="{{r.label}}" style="width: 30px; height: 30px; object-fit: contain; display: block"><span style="position: absolute; right: -4px; bottom: -4px; min-width: 15px; height: 15px; box-sizing: border-box; padding: 0 3px; border-radius: 8px; background: #F1EADB; color: #1D2220; font-family: 'EditUndo', monospace; font-size: 9px; display: flex; align-items: center; justify-content: center">{{r.n}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<!-- hover preview: bigger card + sell price (shown over Hiker 2's Hatchet) -->
+<div style="position: absolute; left: 368px; top: 594px; width: 190px; box-sizing: border-box; padding: 10px; border-radius: 14px; background: rgba(24,30,27,0.86); border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 12px 28px rgba(0,0,0,0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; gap: 8px">
+<img src="/_blob/e726c75784d2b9824a0df743c3c04d62" alt="Hatchet, enlarged" style="width: 170px; height: 238px; border-radius: 8px; object-fit: cover; display: block">
+<div style="display: flex; align-items: center; justify-content: space-between; width: 100%">
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; color: #C9C2B2">SELLS FOR</span>
+<div style="display: flex; align-items: center; gap: 5px; font-family: 'EditUndo', monospace; font-size: 16px; color: #F2C978"><dc-import name="Ic" icon="acorn" color="#E9B44C" size="15" hint-size="15px,15px"></dc-import>6</div>
+</div>
+<div style="position: absolute; left: 50%; bottom: -8px; width: 16px; height: 16px; margin-left: -8px; background: rgba(24,30,27,0.86); transform: rotate(45deg); border-right: 1px solid rgba(255,255,255,0.12); border-bottom: 1px solid rgba(255,255,255,0.12)"></div>
+</div>
+<div style="position: absolute; left: 435px; top: 890px; width: 56px; height: 77px; box-sizing: border-box; border-radius: 6px; border: 2px solid #E9B44C; box-shadow: 0 0 12px rgba(233,180,76,0.5)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"talk":{"editor":"enum","options":["market","biome"],"default":"market"},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const R = { fish: '/_blob/118cf77867466fcc41ae5c1056625a32', seaweed: '/_blob/53de6d549b50525b6622aee017b4abb0', clay: '/_blob/42be830d761f29f39b2cf46d4367bae3', wood: '/_blob/3fb96444536d801f16767fa7b12afa79', stone: '/_blob/73a6616b6e19886016edbc4d022f4bb7', mushroom: '/_blob/93ad456448e5e39cc2c33e31e4b45a22', moss: '/_blob/1d1caa54e18096a8fa7bb7c83ec361a7', meat: '/_blob/2b61bfbb18adb008802675a46f301cd7', fur: '/_blob/7028b10bd44d2d4adc77607d5f1ed96e', bones: '/_blob/32d3ce6d6e802e282f5bae0928a6763c' };
+    const NODE = { forest: '/_blob/62add56add8cdc44bdd2947049f865be', river: '/_blob/bd13e8d019c14338c7427650a25506ec' };
+    const C = { bandages: '/_blob/711bf65ac90115e48a1578e222110587', trailmix: '/_blob/4beab4e252adb90fcf4f29003004d6cd', hatchet: '/_blob/e726c75784d2b9824a0df743c3c04d62', jacket: '/_blob/f8297c71ab51de9771d6a3ec176a3dbe', shoes: '/_blob/ff08e76b068c968577dc4847159249b0', net: '/_blob/6f38e12a131e1ac32deef39a01b17060', shovel: '/_blob/67c46012569d420a9e91fe5ab4277ddc', jerky: '/_blob/5a952c32c58333153c14b6a6e76fe388' };
+    const caps = 23;
+    const talk = this.props.talk === 'biome' ? 'biome' : 'market';
+    const up = { bg: 'rgba(127,194,155,0.14)', border: 'rgba(127,194,155,0.45)', fg: '#A6DDBC' };
+    const down = { bg: 'rgba(229,98,74,0.12)', border: 'rgba(229,98,74,0.45)', fg: '#F39A86' };
+    const info = { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.14)', fg: '#F1EADB' };
+    const rchip = (img, label, text, tone) => Object.assign({ hasImg: true, hasIcon: false, img, icon: '', label, text }, tone);
+    const ichip = (icon, text, tone) => Object.assign({ hasImg: false, hasIcon: true, img: '', icon, label: text, text }, tone);
+    const MARKET = {
+      line: "Here's what folks are paying this week. River goods are in demand; I've got more fur than I know what to do with.",
+      chips: [rchip(R.fish, 'Fish', '+3', up), rchip(R.seaweed, 'Seaweed', '+2', up), rchip(R.clay, 'Clay', '+1', up), rchip(R.meat, 'Meat', '−2', down), rchip(R.fur, 'Fur', '−2', down), rchip(R.bones, 'Bones', '−1', down)]
+    };
+    const BIOME = {
+      line: "Next stop is the Temperate Rainforest. Bring something for the rain, and watch your step on the mud! (placeholder)",
+      chips: [ichip('star', 'TIER II', info), ichip('rain', 'RAIN 3 OF 5 DAYS', info), ichip('droplet', 'WET MORE LIKELY', down), ichip('sprout', 'FOREST + RIVER COMMON', up), ichip('utensils', 'MORE MUDDY LINES', down)]
+    };
+    const T = talk === 'biome' ? BIOME : MARKET;
+    const opt = (label, icon, on) => ({ label, icon, bg: on ? 'rgba(233,180,76,0.2)' : 'rgba(255,255,255,0.05)', border: on ? 'rgba(233,180,76,0.6)' : 'rgba(255,255,255,0.14)', fg: on ? '#F2C978' : '#C9C2B2' });
+    const options = [opt("WHAT'S SELLING?", 'trendUp', talk === 'market'), opt("WHAT'S AHEAD?", 'sign', talk === 'biome'), opt('JUST LOOKING', 'chat', false)];
+    const afford = (p) => p <= caps ? { tagBg: '#F1E2BF', tagFg: '#3A2414' } : { tagBg: 'rgba(241,226,191,0.35)', tagFg: '#6E5A44' };
+    const tabs = [
+      { label: 'SHOP', icon: 'bag', bg: '#F1E2BF', fg: '#3A2414' },
+      { label: 'WORKBENCH', icon: 'hammer', bg: 'linear-gradient(#6B4426, #4E2E1A)', fg: '#E4BE84' }
+    ];
+    const item = (type, name, tier, slot, effect, q, meta, price) => Object.assign({ type, name, tier, slot, effect, q, meta, price }, afford(price));
+    const items = [
+      item('tool', 'NET', 1, '', 'Fish come as ×2 when scavenging River.', 3, '(X) 3 USES', 10),
+      item('clothes', 'RAIN JACKET', 1, 'Body', 'Rain doesn\u2019t make this hiker Wet.', 4, '(X) 3 USES', 14),
+      item('clothes', 'CROCS', 1, 'Feet', 'Muddy lines cost no extra Appetite.', 2, '(X) 5 DAYS', 9),
+      item('food', 'SMOKED FISH', 2, '', '+(X)5 Appetite.', 3, '1 USE', 26)
+    ];
+    const specials = [
+      Object.assign({ name: 'CEMENT MIXER', icon: 'road', desc: 'Pave one line in the next biome. Pick it with Preview Next Trail.', price: 12 }, afford(12)),
+      Object.assign({ name: 'TAXI SERVICE', icon: 'users', desc: 'Bring back a hiker who abandoned the hike.', price: 30 }, afford(30))
+    ];
+    const more = [item('food', 'BERRY JAM', 1, '', '+(X)3 Appetite, +1 Morale.', 3, '1 USE', 8)];
+    const blueprints = [
+      { name: 'FISHING ROD', icon: 'hammer', color: '#F08C35', price: 18 },
+      { name: 'WADERS', icon: 'shirt', color: '#C18553', price: 22 }
+    ];
+    const res = [
+      { label: 'Fish', img: R.fish, n: 3, price: 4 }, { label: 'Seaweed', img: R.seaweed, n: 3, price: 4 },
+      { label: 'Clay', img: R.clay, n: 2, price: 5 }, { label: 'Wood', img: R.wood, n: 3, price: 6 }, { label: 'Stone', img: R.stone, n: 2, price: 7 }
+    ];
+    const bag = (list, size) => Array.from({ length: size }, (_, i) => list[i] ? { has: true, empty: false, img: list[i][1], label: list[i][0] } : { has: false, empty: true, img: '', label: '' });
+    const hikers = [
+      { name: 'HIKER 1', color: '#E2683C', bag: bag([['Bandages', C.bandages], ['Trail Mix', C.trailmix]], 4), bagCount: '2/4', res: [{ label: 'Wood', img: R.wood, n: 3 }, { label: 'Moss', img: R.moss, n: 1 }] },
+      { name: 'HIKER 2', color: '#EBC04A', bag: bag([['Hatchet', C.hatchet], ['Jerky', C.jerky], ['Shovel', C.shovel]], 4), bagCount: '3/4', res: [{ label: 'Fish', img: R.fish, n: 4 }] },
+      { name: 'HIKER 3', color: '#4A8FD4', bag: bag([['Trail Shoes', C.shoes]], 4), bagCount: '1/4', res: [{ label: 'Mushroom', img: R.mushroom, n: 2 }, { label: 'Stone', img: R.stone, n: 1 }, { label: 'Clay', img: R.clay, n: 2 }] },
+      { name: 'HIKER 4', color: '#A06CC9', bag: bag([['Rain Jacket', C.jacket], ['Net', C.net]], 3), bagCount: '2/3', res: [{ label: 'Seaweed', img: R.seaweed, n: 2 }] }
+    ];
+    return { caps, line: T.line, chips: T.chips, options, tabs, items, more, specials, blueprints, res, hikers };
+  }
+}
+</script>
+</body>
+</html>

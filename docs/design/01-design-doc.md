@@ -146,9 +146,9 @@ The tree runs bottom to top on a landscape screen. Its size (rows and branching)
 | --- | --- |
 | Normal | 1 Appetite |
 | Paved | No Appetite |
-| Steep | +1 Energy on top of the normal cost |
-| Muddy | +1 Appetite on top of the normal cost |
-| Rough | 1 Morale on top of the normal cost |
+| Steep | −1 Energy on top of the normal cost |
+| Muddy | −1 Appetite on top of the normal cost |
+| Rough | −1 Morale on top of the normal cost |
 
 Each special line shows a small cost badge at its middle. The Trespasser trait ignores the extra costs.
 
@@ -368,6 +368,7 @@ None of this is in the base game, but the values these would change are adjustab
 - **Endless mode:** after the final checkpoint the trail keeps going until the player gives up or every hiker abandons.
 - **Unique rangers** with personalities at stations.
 - Specific item finds: the card shows the exact item, so the hiker can decide whether to take it.
+- A multiplayer version could split caps between hikers.
 
 **Adjustable settings from day one:** party size; number of sections; tree size and branching; stat maximums, thresholds and drain rates; move, Move All, carry and night-move costs; scavenge draw count and result odds; luck formula; Abundance drain, reset and recovery; rerolls for each objective tier; XP values; teaching cost; clothing durability; passed-out countdown; rejoin limits; night event chance; score values and the caps limit.
 
