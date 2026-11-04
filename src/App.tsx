@@ -1,3 +1,10 @@
+import { Stage } from './ui/stage/Stage';
+import { TitleScreen } from './ui/title/TitleScreen';
+
 export function App() {
-  return <h1>Hike in the Woods</h1>;
+  return (
+    <Stage>
+      <TitleScreen />
+    </Stage>
+  );
 }
