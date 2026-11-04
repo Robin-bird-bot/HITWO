@@ -1,0 +1,85 @@
+/*
+ * Design tokens: colors and fonts from CLAUDE.md "Look and feel", the phase
+ * skies from BUILD_PLAN "UI patterns", and item type colors from ASSETS.md.
+ */
+
+@font-face {
+  font-family: 'EditUndo';
+  src: url('/assets/fonts/edit-undo.ttf') format('truetype');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'EditUndoDot';
+  src: url('/assets/fonts/edit-undo-dot.ttf') format('truetype');
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'GameQuotes';
+  src: url('/assets/fonts/game-quotes.otf') format('opentype');
+  font-display: block;
+}
+
+:root {
+  /* Fonts */
+  --font-pixel: 'EditUndo', monospace; /* headings, labels, numbers */
+  --font-pixel-dot: 'EditUndoDot', monospace; /* big stat readouts */
+  --font-callout: 'GameQuotes', 'EditUndo', monospace; /* ? and ! glyphs, x2/x3/+N badges */
+  --font-body: 'DM Sans Variable', 'DM Sans', system-ui, sans-serif;
+
+  /* Surfaces */
+  --page: #1d2220;
+  --panel: rgba(29, 34, 32, 0.9);
+
+  /* Text */
+  --text: #f1eadb;
+  --text-muted: #c9c2b2;
+  --text-faint: #9c9585;
+
+  /* Accents */
+  --gold: #e9b44c;
+  --trail: #f2b950; /* yellow */
+  --utility: #9cc3a8; /* green */
+  --morale: #cda6ee; /* purple */
+
+  /* Condition rings */
+  --ring-positive: #7fc29b;
+  --ring-negative: #e5624a;
+  --ring-threshold: #e9b44c;
+  --ring-injury: #e5624a; /* drawn solid */
+
+  /* Rarity, Common to Mythic */
+  --rarity-common: #c9c2b2;
+  --rarity-uncommon: #7fc29b;
+  --rarity-rare: #e9b44c;
+  --rarity-very-rare: #cda6ee;
+  --rarity-legendary: #f0875a;
+  --rarity-mythic: #7fd3e6;
+
+  /* Item types, dark to light */
+  --type-tool-1: #ed642b;
+  --type-tool-2: #f08c35;
+  --type-tool-3: #f0ab35;
+  --type-tool-4: #ecf035;
+  --type-clothes-1: #5e3023;
+  --type-clothes-2: #895637;
+  --type-clothes-3: #c18553;
+  --type-clothes-4: #e6b389;
+  --type-food-1: #3a7752;
+  --type-food-2: #45a86c;
+  --type-food-3: #c7da7b;
+  --type-food-4: #dced9a;
+  --type-shelter-1: #83c4ed;
+  --type-shelter-2: #545c8e;
+  --type-trinket-1: #e2a9f1;
+  --type-trinket-2: #d675ef;
+  --type-trinket-3: #9a3f64;
+  --type-trinket-4: #cd1f66;
+
+  /* Phase skies (crossfade about 2 s between them) */
+  --sky-morning: linear-gradient(180deg, #3f8fd6 0%, #8ec3ea 55%, #cfe9f5 100%);
+  --sky-afternoon: linear-gradient(180deg, #4c8fcf 0%, #8fbbe0 45%, #e7c6a4 78%, #f2b07a 100%);
+  --sky-night: linear-gradient(180deg, #0b1229 0%, #1a2547 55%, #2e3a63 100%);
+  --land-night-filter: brightness(0.44) saturate(0.6);
+}

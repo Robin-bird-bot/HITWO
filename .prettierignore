@@ -1,0 +1,10 @@
+# Wyatt's handoff: never reformat
+CLAUDE.md
+docs/
+assets/
+public/
+
+# Generated
+dist/
+coverage/
+package-lock.json

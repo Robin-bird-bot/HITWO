@@ -1,2 +1,20 @@
+# macOS
 .DS_Store
+
+# The handoff zip (its contents are in assets/ and docs/)
 *.zip
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# Local env
+*.local
+.env
+.env.*
+
+# Claude Code local permissions
+.claude/settings.local.json

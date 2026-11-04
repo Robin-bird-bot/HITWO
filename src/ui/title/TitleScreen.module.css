@@ -1,0 +1,135 @@
+/* Sizes are in stage pixels (1600×1000); the Stage scales them to the window. */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--sky-morning);
+}
+
+.sun,
+.land,
+.texture {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sun {
+  width: 760px;
+  height: 760px;
+  left: 940px;
+  top: -230px;
+}
+
+.land {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center bottom;
+}
+
+/* Wyatt's pixel halftone at about 10% on large backgrounds. */
+.texture {
+  inset: 0;
+  background-repeat: repeat;
+  opacity: 0.1;
+}
+
+.panel {
+  position: absolute;
+  left: 50%;
+  top: 190px;
+  transform: translateX(-50%);
+  width: 720px;
+  padding: 56px 64px 32px;
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: 0 24px 60px rgba(13, 18, 16, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 96px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* The section-progress dashes from the game screen's biome card. */
+.trail {
+  display: flex;
+  gap: 10px;
+}
+
+.trail span {
+  width: 56px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.trail span:first-child {
+  background: var(--gold);
+}
+
+.newHike {
+  width: 360px;
+  height: 120px;
+  border: none;
+  border-radius: 18px;
+  background: var(--gold);
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 44px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 28px rgba(13, 18, 16, 0.35);
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.newHike:hover {
+  filter: brightness(1.07);
+  transform: translateY(-2px);
+}
+
+.newHike:active {
+  transform: translateY(2px);
+}
+
+.newHike:focus-visible {
+  outline: 4px solid var(--text);
+  outline-offset: 5px;
+}
+
+.notice {
+  min-height: 32px;
+  font-size: 24px;
+  color: var(--text-muted);
+}
+
+.build {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-family: var(--font-pixel-dot);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
