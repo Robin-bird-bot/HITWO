@@ -70,3 +70,14 @@ export function usePanelCollapsed(id: PanelId): [boolean, () => void] {
   }, [id]);
   return [isCollapsed, toggle];
 }
+
+/** Shrinks or opens a panel from code (Simple mode starts the trail log shrunk). */
+export function setPanelCollapsed(id: PanelId, value: boolean): void {
+  if (current().has(id) === value) return;
+  const next = new Set(current());
+  if (value) next.add(id);
+  else next.delete(id);
+  collapsed = next;
+  writeCollapsed(browserStorage(), next);
+  for (const l of listeners) l();
+}

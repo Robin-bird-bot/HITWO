@@ -1,0 +1,63 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.track {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.row[data-size='regular'] .track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.fill {
+  height: 100%;
+  border-radius: inherit;
+  transition:
+    width 0.4s ease,
+    background-color 0.4s ease;
+}
+
+/* Critical: a slow, gentle pulse (off under prefers-reduced-motion, via global.css). */
+.fill[data-level='critical'] {
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Informative mode: tick marks where the thresholds are. */
+.tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: rgba(241, 234, 219, 0.55);
+}
+
+.number {
+  min-width: 18px;
+  text-align: right;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+}
+
+.number[data-level='low'] {
+  color: #f0a83a;
+}
+
+.number[data-level='critical'] {
+  color: #e5624a;
+}

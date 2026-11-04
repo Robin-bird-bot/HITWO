@@ -21,21 +21,44 @@ import { SPECIAL_LOOK } from '../map/looks';
 
 const T = BALANCE.thresholds;
 
-export const STAT_META: Record<
-  StatName,
-  { label: string; icon: IconName; warn: number; crit: number }
-> = {
-  energy: { label: 'Energy', icon: 'zap', warn: T.fatigued, crit: T.exhausted },
-  appetite: { label: 'Appetite', icon: 'utensils', warn: T.hungry, crit: T.famished },
-  // Morale has no threshold states; these only color the bar (as in the mockup).
-  morale: { label: 'Morale', icon: 'heart', warn: 3, crit: 1 },
+export const STAT_META: Record<StatName, { label: string; icon: IconName }> = {
+  energy: { label: 'Energy', icon: 'zap' },
+  appetite: { label: 'Appetite', icon: 'utensils' },
+  morale: { label: 'Morale', icon: 'heart' },
 };
 
+/**
+ * Where each bar turns amber (a threshold) and red (critical). Energy and
+ * Appetite follow the threshold states; Morale has none in the rules, so its
+ * bar uses 5 and 2 (Wyatt, Nov 3).
+ */
+export const BAR_LEVELS: Record<StatName, { low: number; critical: number }> = {
+  energy: { low: T.fatigued, critical: T.exhausted },
+  appetite: { low: T.hungry, critical: T.famished },
+  morale: { low: 5, critical: 2 },
+};
+
+/** Bar colors (Wyatt, Nov 3): each stat's own color, amber at a threshold, red when critical. */
+export const BAR_COLOR: Record<StatName, string> & { low: string; critical: string } = {
+  energy: '#7FC29B',
+  appetite: '#C08A5A',
+  morale: '#B98AE0',
+  low: '#F0A83A',
+  critical: '#E5624A',
+};
+
+export type BarLevel = 'normal' | 'low' | 'critical';
+
+export function barLevel(stat: StatName, value: number): BarLevel {
+  const l = BAR_LEVELS[stat];
+  if (value <= l.critical) return 'critical';
+  if (value <= l.low) return 'low';
+  return 'normal';
+}
+
 export function barColor(stat: StatName, value: number): string {
-  const m = STAT_META[stat];
-  if (value <= m.crit) return '#E5624A';
-  if (value <= m.warn) return '#E9B44C';
-  return '#F1EADB';
+  const level = barLevel(stat, value);
+  return level === 'normal' ? BAR_COLOR[stat] : BAR_COLOR[level];
 }
 
 /** The next threshold for a stat, or the state it's in. */

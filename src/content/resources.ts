@@ -1,6 +1,5 @@
 /**
  * The 16 resources, four per node (docs/design/01-design-doc.md, "Scavenging").
- * Bones, flint and salt have no art yet (docs/ASSETS.md, "Still missing").
  */
 import type { NodeType, ResourceId } from '../engine/types';
 
@@ -8,8 +7,6 @@ export interface ResourceDef {
   id: ResourceId;
   name: string;
   node: NodeType;
-  /** No icon yet; the UI shows the name's first letter. */
-  missingArt?: true;
 }
 
 export const RESOURCES: readonly ResourceDef[] = [
@@ -24,11 +21,11 @@ export const RESOURCES: readonly ResourceDef[] = [
   { id: 'meat', name: 'Meat', node: 'wildlife' },
   { id: 'fur', name: 'Fur', node: 'wildlife' },
   { id: 'oil', name: 'Oil', node: 'wildlife' },
-  { id: 'bones', name: 'Bones', node: 'wildlife', missingArt: true },
+  { id: 'bones', name: 'Bones', node: 'wildlife' },
   { id: 'stone', name: 'Stone', node: 'mountain' },
   { id: 'metal', name: 'Metal', node: 'mountain' },
-  { id: 'flint', name: 'Flint', node: 'mountain', missingArt: true },
-  { id: 'salt', name: 'Salt', node: 'mountain', missingArt: true },
+  { id: 'flint', name: 'Flint', node: 'mountain' },
+  { id: 'salt', name: 'Salt', node: 'mountain' },
 ];
 
 export const RESOURCE_BY_ID: ReadonlyMap<ResourceId, ResourceDef> = new Map(

@@ -1,0 +1,385 @@
+/* Simple mode (the default screen). Stage pixels. */
+
+.heading {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.muted {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ── Party ── */
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+  transition:
+    opacity 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.card:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.card[data-faded='true'] {
+  opacity: 0.5;
+}
+
+.portrait {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.cardBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.name {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.family {
+  display: flex;
+  color: var(--text-faint);
+}
+
+.pips {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+}
+
+.pips span {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  border: 1.5px solid rgba(229, 98, 74, 0.7);
+}
+
+.pips span[data-filled='true'] {
+  background: #e5624a;
+  border-color: #e5624a;
+}
+
+.popout {
+  position: absolute;
+  z-index: 15;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(29, 34, 32, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 36px rgba(10, 14, 12, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: pop 150ms ease-out;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.popoutHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.popoutName {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+/* ── Top pills ── */
+
+.pill {
+  position: absolute;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 26px rgba(15, 22, 19, 0.26);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.pillButton {
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.centered {
+  transform: translateX(-50%);
+}
+
+.day {
+  color: var(--gold);
+}
+
+.phaseIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.45;
+}
+
+.phaseIcon[data-current='true'] {
+  opacity: 1;
+  background: var(--gold);
+  color: var(--page);
+}
+
+.divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.weatherButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal {
+  height: 34px;
+  font-size: 12px;
+  padding: 0 12px;
+}
+
+.info {
+  font-family: var(--font-body);
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: #d8d1c2;
+}
+
+.infoTitle {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+}
+
+.forecast {
+  display: flex;
+  gap: 14px;
+}
+
+.forecastDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.capsCount {
+  font-size: 18px;
+}
+
+.lowNode {
+  position: relative;
+  display: flex;
+}
+
+.lowNode span {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #e5624a;
+  color: #1d2220;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Turn panel ── */
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.action {
+  min-height: 72px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.action:hover,
+.action[aria-pressed='true'] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--page);
+}
+
+.nothing {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 14px;
+  line-height: 1.4;
+  color: #d8d1c2;
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #d8d1c2;
+}
+
+.inventory {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.inventory:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.inventoryHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+}
+
+.icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.icon[data-item='true'] {
+  background: linear-gradient(155deg, #895637, #c18553);
+}
+
+.count {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--text);
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.end {
+  position: absolute;
+  left: 1240px;
+  top: 916px;
+  width: 344px;
+  display: flex;
+}

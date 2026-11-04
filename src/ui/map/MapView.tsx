@@ -27,6 +27,8 @@ interface MapViewProps {
   /** Connected tiles for the selected hiker: reason null = can move there. */
   targets: { tileId: string; reason: string | null }[];
   onTileClick(tileId: string): void;
+  /** Simple mode shows the checkpoint's label only on hover. */
+  checkpointLabelOnHover?: boolean;
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -41,6 +43,7 @@ export function MapView({
   hikers,
   targets,
   onTileClick,
+  checkpointLabelOnHover,
   selectedId,
   onSelectHiker,
   camera,
@@ -140,6 +143,7 @@ export function MapView({
             currentColor={selected ? characterFor(selected.id).color : undefined}
             hikerCount={hikers.filter((h) => h.tileId === t.id && h.status === 'active').length}
             reach={reachOf(t.id)}
+            checkpointLabelOnHover={checkpointLabelOnHover}
             onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
           />
         ))}

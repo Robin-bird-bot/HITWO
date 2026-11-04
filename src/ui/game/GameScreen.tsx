@@ -5,7 +5,7 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersWhoHaventActed,
@@ -16,6 +16,7 @@ import {
   type TileId,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
+import { useUiMode } from '../app/uiMode';
 import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
 import { MapControls } from '../map/MapControls';
@@ -37,7 +38,11 @@ import { SideRail } from '../map/SideRail';
 import type { ActionId } from '../panels/hikerInfo';
 import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
+import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel } from '../panels/TurnPanel';
+import { SimpleParty } from '../simple/SimpleParty';
+import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
+import { SimpleTurn } from '../simple/SimpleTurn';
 import { Stage } from '../stage/Stage';
 import { ConfirmDialog } from './ConfirmDialog';
 import { MovePopover } from './MovePopover';
@@ -56,6 +61,12 @@ function listNames(names: string[]): string {
 
 export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void }) {
   const { section, hikers } = state;
+  const uiMode = useUiMode();
+  const simple = uiMode === 'simple';
+  // Simple mode starts with the trail log shrunk.
+  useEffect(() => {
+    if (simple) setPanelCollapsed('log', true);
+  }, [simple]);
   const bounds = useMemo(() => mapBounds(section), [section]);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
@@ -141,6 +152,15 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     }
   };
 
+  const onAbility = (abilityId: string, choice?: string) =>
+    selected &&
+    dispatch({
+      type: 'useAbility',
+      hikerId: selected.id,
+      abilityId,
+      ...(choice ? { choice } : {}),
+    });
+
   const waiting = hikersWhoHaventActed(state);
   const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
   const phaseWord = PHASE_WORD[state.phase];
@@ -193,6 +213,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         hikers={hikers}
         targets={targets}
         onTileClick={(tileId) => setPendingTile(tileId)}
+        checkpointLabelOnHover={simple}
         selectedId={selected?.id ?? null}
         onSelectHiker={select}
         camera={camera}
@@ -213,29 +234,49 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         onCenter={() => setCamera(focusOn(centerOf(selected?.tileId), camera.zoom, bounds))}
       />
 
-      <BiomeCard state={state} />
-      <DayBar state={state} />
-      <ObjectiveCard />
-      <AbundanceCard state={state} />
-      <MenuButton onTitle={onQuit} />
-      <PartyPanel state={state} selectedId={selected?.id ?? null} onSelect={select} />
-      {selected && (
-        <TurnPanel
-          state={state}
-          hiker={selected}
-          note={note}
-          slot={slot}
-          onAction={onAction}
-          onAbility={(abilityId, choice) =>
-            dispatch({
-              type: 'useAbility',
-              hikerId: selected.id,
-              abilityId,
-              ...(choice ? { choice } : {}),
-            })
-          }
-          onEndPhase={endPhase}
-        />
+      {simple ? (
+        <>
+          <BiomePill state={state} />
+          <DayPill state={state} />
+          <GoalPill />
+          <CapsPill state={state} />
+          <MenuButton onTitle={onQuit} />
+          <SimpleParty state={state} selectedId={selected?.id ?? null} onSelect={select} />
+          {selected && (
+            <SimpleTurn
+              state={state}
+              hiker={selected}
+              note={note}
+              slot={slot}
+              activeAction={
+                mode.kind === 'moveAll' ? 'moveAll' : mode.kind === 'sleep' ? 'sleep' : null
+              }
+              onAction={onAction}
+              onAbility={onAbility}
+              onEndPhase={endPhase}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <BiomeCard state={state} />
+          <DayBar state={state} />
+          <ObjectiveCard />
+          <AbundanceCard state={state} />
+          <MenuButton onTitle={onQuit} />
+          <PartyPanel state={state} selectedId={selected?.id ?? null} onSelect={select} />
+          {selected && (
+            <TurnPanel
+              state={state}
+              hiker={selected}
+              note={note}
+              slot={slot}
+              onAction={onAction}
+              onAbility={onAbility}
+              onEndPhase={endPhase}
+            />
+          )}
+        </>
       )}
       <TrailLog state={state} />
 

@@ -256,3 +256,21 @@
   font-family: var(--font-pixel);
   font-size: 12px;
 }
+
+.conditionList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.conditionLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #d8d1c2;
+}
+
+.conditionLine .chips {
+  margin-top: 0;
+}
