@@ -3,9 +3,10 @@
  * of GameState changes, and add a migration from the old version. Loading
  * never throws: a save that can't be read comes back as { ok: false }.
  */
-import { PHASES, type GameState } from './types';
+import { freshAbundance } from './abundance';
+import { NODE_TYPES, PHASES, type GameState } from './types';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -13,7 +14,10 @@ export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: L
 type SaveData = Record<string, unknown>;
 
 /** Upgrades a save from version N (the key) to N + 1. */
-const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {};
+const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
+  // Phase 4: Abundance meters (at the start value) and today's scavenges.
+  1: (save) => ({ ...save, abundance: freshAbundance(), scavengedToday: [] }),
+};
 
 export function serialize(state: GameState): string {
   return JSON.stringify(state);
@@ -88,6 +92,10 @@ function looksLikeGameState(v: SaveData): v is SaveData & GameState {
     Array.isArray(v.hikers) &&
     v.hikers.every(looksLikeHiker) &&
     isNumber(v.caps) &&
+    isRecord(v.abundance) &&
+    NODE_TYPES.every((n) => isNumber((v.abundance as SaveData)[n])) &&
+    Array.isArray(v.scavengedToday) &&
+    (v.scavenge === undefined || isRecord(v.scavenge)) &&
     isNumber(v.nextEventId) &&
     Array.isArray(v.log)
   );

@@ -9,6 +9,7 @@ import {
   hikersOnTile,
   isSheltered,
   moveCost,
+  scavengeCost,
   thresholdStates,
   validateAction,
   type GameState,
@@ -177,11 +178,7 @@ export interface ActionState {
   reason?: string;
 }
 
-const SOON: Record<
-  'scavenge' | 'craft' | 'fire' | 'tend' | 'watch',
-  { phase: number; what: string }
-> = {
-  scavenge: { phase: 4, what: 'Scavenging' },
+const SOON: Record<'craft' | 'fire' | 'tend' | 'watch', { phase: number; what: string }> = {
   tend: { phase: 4, what: 'Tending' },
   fire: { phase: 6, what: 'Sitting by the fire' },
   watch: { phase: 6, what: 'Keeping watch' },
@@ -252,6 +249,16 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
       moveAll = { ...moveAll, status: 'blocked', reason: firstReason ?? 'Nobody can come along.' };
   }
 
+  const scavengeReason = validateAction(state, { type: 'scavenge', hikerId: h.id });
+  const scavenge: ActionState = {
+    id: 'scavenge',
+    label: 'Scavenge',
+    icon: 'search',
+    sub: costText(scavengeCost(state, h)),
+    status: scavengeReason ? 'blocked' : 'ready',
+    ...(scavengeReason ? { reason: scavengeReason } : {}),
+  };
+
   const sleepReason = validateAction(state, { type: 'sleep', hikerId: h.id });
   const gain = isSheltered(state, h) ? BALANCE.sleep.shelteredEnergy : BALANCE.sleep.energy;
   const sleep: ActionState = {
@@ -266,7 +273,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
   return [
     move,
     moveAll,
-    soon('scavenge', 'Scavenge', 'search'),
+    scavenge,
     soon('craft', 'Craft', 'hammer'),
     soon('fire', 'Fire', 'flame'),
     soon('tend', 'Tend', 'sprout'),

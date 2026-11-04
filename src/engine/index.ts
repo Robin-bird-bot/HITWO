@@ -34,3 +34,6 @@ export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './invent
 export type { ItemDef, ItemType, FamilyDef, AbilityDef } from './effects';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
+export { scavengeCost, scavengeSetup } from './scavenge/setup';
+export { cardGains, pickOptions } from './actions/scavenge';
+export { isLow } from './abundance';

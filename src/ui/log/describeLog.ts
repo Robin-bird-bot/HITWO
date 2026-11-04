@@ -3,14 +3,16 @@
  * A move and the stat costs that follow it become one line:
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
+import { ITEMS } from '../../content';
 import type { GameEvent, GameState, HikerId, NodeKind, StatName } from '../../engine';
 import { NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
+import { resourcesTitle } from '../scavenge/cardLook';
 
 export interface LogLine {
   id: number;
   text: string;
-  tone: 'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'debug';
+  tone: 'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'scavenge' | 'debug';
 }
 
 const STAT_LABEL: Record<StatName, string> = {
@@ -32,6 +34,11 @@ export function describeNodes(kinds: NodeKind[]): string {
   return [...counts]
     .map(([k, n]) => `${NODE_NAME[k]}${k === 'caps' ? ' node' : ''}${n > 1 ? ` ×${n}` : ''}`)
     .join(', ');
+}
+
+/** "WOOD ×2 + MOSS" → "Wood ×2 + Moss". */
+function titleCase(text: string): string {
+  return text.toLowerCase().replace(/\b[a-z]/g, (c) => c.toUpperCase());
 }
 
 function listNames(names: string[]): string {
@@ -89,6 +96,23 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           id: e.id,
           text: `${name(e.hikerId)} slept${gain ? ` (${gain})` : ''}.`,
           tone: 'rest',
+        });
+        break;
+      }
+      case 'scavenge': {
+        const { taken, next } = takeStats(i, ['Scavenge']);
+        i = next;
+        const cost = costsOf(taken, e.hikerId);
+        const found: string[] = [];
+        if (e.resources.length) found.push(titleCase(resourcesTitle(e.resources)));
+        if (e.caps) found.push(`${e.caps} acorn cap${e.caps === 1 ? '' : 's'}`);
+        for (const id of e.items ?? []) found.push(`a ${ITEMS[id]?.name ?? id}`);
+        const what = found.length ? listNames(found) : 'nothing';
+        const left = e.left ? ` ${e.left} more didn’t fit.` : '';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
+          tone: 'scavenge',
         });
         break;
       }

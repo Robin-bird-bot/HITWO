@@ -19,7 +19,10 @@ import type {
   Hiker,
   HikerId,
   Line,
+  NodeType,
   Phase,
+  ScavengeBonus,
+  ScavengeCardType,
   StatName,
   TileId,
   TraitType,
@@ -38,7 +41,9 @@ export type CostKey =
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */
   | 'moveAll.perHiker'
   | 'night.noSleepEnergy'
-  | 'endOfDay.appetite';
+  | 'endOfDay.appetite'
+  /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
+  | 'scavenge.appetite';
 
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey = 'sleep.energy';
@@ -73,6 +78,26 @@ export interface Modifier {
   flat?: number;
   /** Applied after flat amounts: −50 halves, +50 adds half. */
   percent?: number;
+}
+
+/** A hiker about to scavenge their tile. */
+export interface ScavengeQuery {
+  tileId: TileId;
+  phase: Phase;
+}
+
+/** How a source changes a scavenge. Each one with a label shows in the bonuses pop-over. */
+export interface ScavengeModifier {
+  source: string;
+  label: string;
+  tone: ScavengeBonus['tone'];
+  /** More (or fewer) cards to choose from. */
+  cards?: number;
+  luck?: number;
+  /** Multipliers on how likely each node is (Finder, Hound). */
+  nodeWeight?: Partial<Record<NodeType, number>>;
+  /** Multipliers on how likely each card type is. */
+  typeWeight?: Partial<Record<ScavengeCardType, number>>;
 }
 
 export interface ActQuery {
@@ -121,8 +146,11 @@ export interface Hooks {
   onEndOfDay?(ctx: EffectContext): void;
   onSleep?(ctx: EffectContext): void;
   onMoraleChange?(e: { delta: number; cause: string }, ctx: EffectContext): void;
-  /** Phase 4. */
-  onScavengeDraw?(e: unknown, ctx: EffectContext): void;
+  /** Changes to a scavenge before the cards are dealt: extra cards, Luck, odds. */
+  modifyScavenge?(
+    q: ScavengeQuery,
+    ctx: QueryContext,
+  ): ScavengeModifier | ScavengeModifier[] | undefined;
   /** Phase 9. */
   onCraft?(e: unknown, ctx: EffectContext): void;
   /** Phase 9. */
@@ -307,6 +335,21 @@ export function computeGain(
     }
   }
   return applyModifiers(base, mods, 'gain');
+}
+
+/** Every change the hiker's sources make to a scavenge on this tile. */
+export function scavengeModifiers(
+  state: GameState,
+  hiker: Hiker,
+  q: ScavengeQuery,
+): ScavengeModifier[] {
+  const ctx = queryContext(state, hiker);
+  const out: ScavengeModifier[] = [];
+  for (const source of effectSourcesFor(state, hiker)) {
+    const result = source.hooks.modifyScavenge?.(q, ctx);
+    if (result) out.push(...(Array.isArray(result) ? result : [result]));
+  }
+  return out;
 }
 
 /** The first reason any of the hiker's sources gives for stopping this action. */

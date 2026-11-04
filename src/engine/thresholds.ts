@@ -5,6 +5,7 @@
  */
 import { BALANCE } from '../config/balance';
 import type { ActQuery, EffectSource } from './effects';
+import { moraleLuck } from './scavenge/rarity';
 import type { Action, Hiker } from './types';
 
 const T = BALANCE.thresholds;
@@ -68,7 +69,11 @@ export function thresholdSources(h: Hiker): EffectSource[] {
       name: 'Famished',
       hooks: {
         canAct(q) {
-          if (q.role !== 'actor' || !isMove(q.action)) return undefined;
+          if (q.role !== 'actor') return undefined;
+          if (q.action.type === 'scavenge') {
+            return `Famished: too hungry to scavenge (Appetite ${T.famished} or less).`;
+          }
+          if (!isMove(q.action)) return undefined;
           return `Famished: too hungry to move (Appetite ${T.famished} or less).`;
         },
       },
@@ -82,9 +87,32 @@ export function thresholdSources(h: Hiker): EffectSource[] {
       name: 'Hungry',
       hooks: {
         canAct(q) {
-          if (q.role !== 'actor' || q.action.type !== 'moveAll') return undefined;
+          if (q.role !== 'actor') return undefined;
+          if (q.action.type === 'scavenge') {
+            return `Hungry: too hungry to scavenge (Appetite ${T.hungry} or less).`;
+          }
+          if (q.action.type !== 'moveAll') return undefined;
           return `Hungry: can't move the group (Appetite ${T.hungry} or less).`;
         },
+      },
+    });
+  }
+
+  // Morale sets Luck (Wyatt, Nov 4: +1 at 7 or more, −1 at 3 or less).
+  const luck = moraleLuck(h.stats.morale);
+  if (luck !== 0) {
+    const high = luck > 0;
+    sources.push({
+      id: 'morale:luck',
+      kind: 'threshold',
+      name: high ? 'High Morale' : 'Low Morale',
+      hooks: {
+        modifyScavenge: () => ({
+          source: high ? 'High Morale' : 'Low Morale',
+          label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from ${high ? 'high' : 'low'} Morale (${h.stats.morale})`,
+          tone: high ? 'luck' : 'warning',
+          luck,
+        }),
       },
     });
   }

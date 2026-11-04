@@ -103,6 +103,12 @@ export const BALANCE = {
     moveExtraAppetite: 1,
     /** A night without sleep costs this much Energy. */
     noSleepEnergy: 2,
+    /**
+     * Each hiker who scavenges at night pays this much extra Appetite.
+     * TODO(wyatt): "Move or Scavenge at the night penalty" (Phase 6), so the
+     * same as a night move for now.
+     */
+    scavengeExtraAppetite: 1,
   },
 
   moveAll: {
@@ -169,6 +175,12 @@ export const BALANCE = {
   abundance: {
     /** Each node type's meter runs 0 to max (Main.dc.html shows 0–10). */
     max: 10,
+    /** Every meter starts each biome here ("about 75%"). TODO(wyatt): first guess. */
+    start: 8,
+    /** At or below this a node is low (Main.dc.html colours 4 and under red). */
+    lowAt: 4,
+    /** Cards from a Bounty node drain this much extra. TODO(wyatt): first guess. */
+    bountyExtraDrain: 1,
   },
 
   inventory: {

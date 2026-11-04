@@ -366,7 +366,7 @@ export function Resources({ hiker, compact }: { hiker: Hiker } & InventoryProps)
       </div>
       {held.length === 0 ? (
         <span className={styles.muted}>
-          {compact ? 'None' : 'None yet. Scavenging arrives in Phase 4.'}
+          {compact ? 'None' : 'None yet. Scavenge to find some.'}
         </span>
       ) : (
         <div className={styles.resources}>

@@ -12,6 +12,22 @@ describe('trail log sentences', () => {
     expect(signed(2, 'energy')).toBe('+2 Energy');
   });
 
+  it('say what a scavenge found, with its cost', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'L');
+    const open = run(s, { type: 'scavenge', hikerId: 'ash' });
+    if (!open.scavenge) throw new Error('no deal');
+    open.scavenge.cards[0] = {
+      type: 'x2',
+      rarity: 'uncommon',
+      node: 'forest',
+      resources: ['wood', 'wood'],
+      flipped: true,
+    };
+    const after = run(open, { type: 'scavengeTake', card: 0 });
+    expect(texts(after)).toEqual(['Ash scavenged Wood ×2 (−1 Appetite).']);
+  });
+
   it('fold a move and its costs into one line', () => {
     const s = run(fixtureGame(), { type: 'move', hikerId: 'ash', toTileId: 'M' });
     expect(texts(s)).toEqual(['Ash moved to Trail tile (−1 Appetite, −1 Energy).']);

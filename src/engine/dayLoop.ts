@@ -77,6 +77,7 @@ function startNewDay(state: GameState): void {
   state.day += 1;
   state.phase = 'morning';
   for (const h of state.hikers) h.slept = false;
+  state.scavengedToday = [];
   pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
 }

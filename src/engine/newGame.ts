@@ -1,4 +1,5 @@
 import { BALANCE } from '../config/balance';
+import { freshAbundance } from './abundance';
 import { seedRng } from './rng';
 import { SAVE_VERSION } from './save';
 import { generateSection } from './trail/generate';
@@ -78,6 +79,8 @@ export function createGame({
       level: 1,
     })),
     caps: 0,
+    abundance: freshAbundance(),
+    scavengedToday: [],
     nextEventId: 1,
     log: [],
   };

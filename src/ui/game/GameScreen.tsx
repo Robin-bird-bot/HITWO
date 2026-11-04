@@ -5,7 +5,7 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersWhoHaventActed,
@@ -40,6 +40,7 @@ import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel } from '../panels/TurnPanel';
+import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
 import { SimpleTurn } from '../simple/SimpleTurn';
@@ -81,6 +82,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const [mode, setMode] = useState<Mode>({ kind: 'idle' });
   const [pendingTile, setPendingTile] = useState<TileId | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  // The card just taken, shown for a moment before the scavenge window closes.
+  const [took, setTook] = useState<TookCard | null>(null);
+  const closeScavenge = useCallback(() => setTook(null), []);
 
   const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
@@ -105,18 +109,23 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   };
 
   /** Applies an action; after a hiker uses their phase, the next ready hiker is selected. */
-  const dispatch = (action: Action) => {
+  const dispatch = (action: Action): boolean => {
+    // The scavenger, for a take (the selection can differ after a reload mid-draw).
+    const actorId = action.type === 'scavengeTake' ? state.scavenge?.hikerId : selected?.id;
     const result = gameStore.dispatch(action);
     if (!result.ok) {
       setNote(result.reason);
-      return;
+      return false;
     }
     setNote(undefined);
     reset();
     const usedPhase =
-      action.type === 'move' || action.type === 'moveAll' || action.type === 'sleep';
-    if (usedPhase && selected) {
-      const next = nextReadyHiker(gameStore.getState() ?? state, selected.id);
+      action.type === 'move' ||
+      action.type === 'moveAll' ||
+      action.type === 'sleep' ||
+      action.type === 'scavengeTake';
+    if (usedPhase && actorId) {
+      const next = nextReadyHiker(gameStore.getState() ?? state, actorId);
       if (next) setSelectedId(next.id);
       else setNote('Everyone has acted. End the phase when you’re ready.');
     }
@@ -125,6 +134,25 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       const first = after?.hikers.find((h) => h.status === 'active');
       if (first) setSelectedId(first.id);
     }
+    return true;
+  };
+
+  /** Takes a scavenge card, then shows what it gave for a moment. */
+  const takeCard = (action: Extract<Action, { type: 'scavengeTake' }>) => {
+    const open = state.scavenge;
+    const card = open?.cards[action.card];
+    const hikerName = hikers.find((h) => h.id === open?.hikerId)?.name ?? '';
+    if (!dispatch(action) || !card) return;
+    const event = gameStore.getState()?.log.findLast((e) => e.kind === 'scavenge');
+    if (event?.kind !== 'scavenge') return;
+    setTook({
+      // A Wild or Choice card shows what it turned out to be.
+      card: { ...card, resources: event.resources },
+      hikerName,
+      resources: event.resources,
+      caps: event.caps ?? 0,
+      items: event.items ?? [],
+    });
   };
 
   const moveMode: MoveMode =
@@ -149,6 +177,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     } else if (id === 'sleep') {
       setMode({ kind: 'sleep' });
       setNote(undefined);
+    } else if (id === 'scavenge') {
+      setMode({ kind: 'idle' });
+      dispatch({ type: 'scavenge', hikerId: selected.id });
     }
   };
 
@@ -287,6 +318,18 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           below={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y + halfH })}
           onCancel={() => setPendingTile(null)}
           onConfirm={() => dispatch(preview.action)}
+        />
+      )}
+
+      {(state.scavenge || took) && (
+        <ScavengeWindow
+          state={state}
+          simple={simple}
+          took={took}
+          onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
+          onCancel={() => dispatch({ type: 'scavengeCancel' })}
+          onTake={takeCard}
+          onClose={closeScavenge}
         />
       )}
 
