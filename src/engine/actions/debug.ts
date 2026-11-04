@@ -30,5 +30,23 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} resources` });
       break;
     }
+    case 'setStats': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const { min, max } = BALANCE.stats;
+      for (const [stat, value] of Object.entries(op.stats)) {
+        if (typeof value === 'number') {
+          hiker.stats[stat as keyof typeof hiker.stats] = Math.min(max, Math.max(min, value));
+        }
+      }
+      if (op.injuries !== undefined) {
+        hiker.injuries = Math.max(0, op.injuries);
+        const out = hiker.injuries >= BALANCE.injuries.passOutAt;
+        if (out && hiker.status === 'active') hiker.status = 'passedOut';
+        if (!out && hiker.status === 'passedOut') hiker.status = 'active';
+      }
+      pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s stats` });
+      break;
+    }
   }
 }

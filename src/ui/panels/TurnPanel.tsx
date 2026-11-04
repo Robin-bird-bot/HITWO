@@ -2,7 +2,7 @@
  * The right panel: the selected hiker's turn (docs/mockups/Main.dc.html).
  * Actions, abilities, the current tile, equipped items, bag and resources.
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { ITEMS, TRAITS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { ASSETS } from '../../config/assets';
@@ -37,9 +37,19 @@ interface TurnPanelProps {
   onEndPhase(): void;
   /** A short message to show under the action grid (a reason or a hint). */
   note?: string;
+  /** A box shown under the action grid instead of the message (Move All picker, Sleep confirm). */
+  slot?: ReactNode;
 }
 
-export function TurnPanel({ state, hiker, onAction, onAbility, onEndPhase, note }: TurnPanelProps) {
+export function TurnPanel({
+  state,
+  hiker,
+  onAction,
+  onAbility,
+  onEndPhase,
+  note,
+  slot,
+}: TurnPanelProps) {
   return (
     <Panel
       id="turn"
@@ -50,7 +60,7 @@ export function TurnPanel({ state, hiker, onAction, onAbility, onEndPhase, note 
       aside={<span>{PHASE_NAME[state.phase]}</span>}
     >
       <div className={styles.scroll}>
-        <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} />
+        <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
         <Abilities state={state} hiker={hiker} onAbility={onAbility} />
         <TileCard state={state} hiker={hiker} />
         <Equipped hiker={hiker} />
@@ -67,11 +77,13 @@ function ActionGrid({
   hiker,
   onAction,
   note,
+  slot,
 }: {
   state: GameState;
   hiker: Hiker;
   onAction(id: ActionId): void;
   note?: string;
+  slot?: ReactNode;
 }) {
   const actions = actionStates(state, hiker);
   const [explain, setExplain] = useState<ActionState | null>(null);
@@ -88,6 +100,7 @@ function ActionGrid({
             className={styles.action}
             data-status={a.status}
             aria-disabled={a.status !== 'ready'}
+            aria-label={`${a.label}: ${a.status === 'ready' ? a.sub : a.reason}`}
             aria-describedby="action-reason"
             onMouseEnter={() => setExplain(a)}
             onFocus={() => setExplain(a)}
@@ -99,9 +112,11 @@ function ActionGrid({
           </button>
         ))}
       </div>
-      <p id="action-reason" className={styles.reason} role="status">
-        {message}
-      </p>
+      {slot ?? (
+        <p id="action-reason" className={styles.reason} role="status">
+          {message}
+        </p>
+      )}
     </div>
   );
 }
@@ -375,7 +390,12 @@ function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void })
         <Icon name="book" size={18} />
         Blueprints
       </button>
-      <button type="button" className={styles.end} onClick={onEndPhase}>
+      <button
+        type="button"
+        className={styles.end}
+        onClick={onEndPhase}
+        aria-label={`End the ${state.phase}. ${sub}.`}
+      >
         <span className={styles.endLabel}>END {PHASE_NAME[state.phase].toUpperCase()}</span>
         <span className={styles.endSub}>{sub}</span>
       </button>

@@ -30,6 +30,36 @@
 
 /* ── Tiles ── */
 
+/* A tile the selected hiker can move to: gold ring, and a pointer. */
+.reachRing {
+  left: -8px;
+  top: -9px;
+  width: 128px;
+  height: 146px;
+  background: #e9b44c;
+}
+
+.tile[data-reach] {
+  cursor: pointer;
+}
+
+.tile[data-reach='ok']:hover,
+.tile[data-reach='ok']:focus-visible {
+  filter: drop-shadow(0 0 10px rgba(233, 180, 76, 0.8))
+    drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));
+  outline: none;
+}
+
+.reachLine {
+  animation: march 1.2s linear infinite;
+}
+
+@keyframes march {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
 .tile {
   position: absolute;
   filter: drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));

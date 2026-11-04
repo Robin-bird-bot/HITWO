@@ -1,20 +1,34 @@
 /**
  * The game screen (docs/mockups/Main.dc.html): the backdrop, the map and the
  * floating panels, laid out on the 1600×1000 stage.
+ *
+ * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
+ * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
 import { useMemo, useState } from 'react';
-import { hikersWhoHaventActed, type Action, type GameState, type HikerId } from '../../engine';
+import { BALANCE } from '../../config/balance';
+import {
+  hikersWhoHaventActed,
+  isSheltered,
+  type Action,
+  type GameState,
+  type HikerId,
+  type TileId,
+} from '../../engine';
 import { gameStore } from '../app/gameStore';
 import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
 import { MapControls } from '../map/MapControls';
 import {
   clampCamera,
+  CHECKPOINT_HEX,
   focusOn,
+  HEX,
   lastRowOf,
   mapBounds,
   scrollAbove,
   tileCenter,
+  worldToStage,
   ZOOM,
   type Camera,
 } from '../map/mapLayout';
@@ -26,8 +40,14 @@ import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../
 import { TurnPanel } from '../panels/TurnPanel';
 import { Stage } from '../stage/Stage';
 import { ConfirmDialog } from './ConfirmDialog';
+import { MovePopover } from './MovePopover';
+import { bringOptions, movePreview, moveTargets, nextReadyHiker, type MoveMode } from './movePlan';
+import { MoveAllPicker, SleepConfirm } from './TurnExtras';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
+
+/** What the player is in the middle of doing. */
+type Mode = { kind: 'idle' } | { kind: 'moveAll'; bring: HikerId[] } | { kind: 'sleep' };
 
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
@@ -42,11 +62,14 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   );
   const selected = hikers.find((h) => h.id === selectedId) ?? hikers[0];
   const [note, setNote] = useState<string | undefined>();
+  const [mode, setMode] = useState<Mode>({ kind: 'idle' });
+  const [pendingTile, setPendingTile] = useState<TileId | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
 
+  const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
     const tile = tileId ? section.tiles[tileId] : undefined;
-    return tile ? tileCenter(tile, lastRowOf(section)) : { x: 0, y: 0 };
+    return tile ? tileCenter(tile, lastRow) : { x: 0, y: 0 };
   };
   const [rawCamera, setCamera] = useState<Camera>(() =>
     focusOn(centerOf(selected?.tileId), ZOOM.default, bounds),
@@ -54,22 +77,108 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
 
-  const dispatch = (action: Action) => {
-    const result = gameStore.dispatch(action);
-    setNote(result.ok ? undefined : result.reason);
+  const reset = () => {
+    setMode({ kind: 'idle' });
+    setPendingTile(null);
   };
+
   const select = (id: HikerId) => {
     setSelectedId(id);
     setNote(undefined);
+    reset();
   };
+
+  /** Applies an action; after a hiker uses their phase, the next ready hiker is selected. */
+  const dispatch = (action: Action) => {
+    const result = gameStore.dispatch(action);
+    if (!result.ok) {
+      setNote(result.reason);
+      return;
+    }
+    setNote(undefined);
+    reset();
+    const usedPhase =
+      action.type === 'move' || action.type === 'moveAll' || action.type === 'sleep';
+    if (usedPhase && selected) {
+      const next = nextReadyHiker(gameStore.getState() ?? state, selected.id);
+      if (next) setSelectedId(next.id);
+      else setNote('Everyone has acted. End the phase when you’re ready.');
+    }
+    if (action.type === 'endPhase') {
+      const after = gameStore.getState();
+      const first = after?.hikers.find((h) => h.status === 'active');
+      if (first) setSelectedId(first.id);
+    }
+  };
+
+  const moveMode: MoveMode =
+    mode.kind === 'moveAll' ? { kind: 'moveAll', bring: mode.bring } : { kind: 'move' };
+  const targets =
+    selected && selected.status === 'active' && mode.kind !== 'sleep'
+      ? moveTargets(state, selected, moveMode)
+      : [];
+  const preview =
+    selected && pendingTile ? movePreview(state, selected, moveMode, pendingTile) : null;
+
   const onAction = (id: ActionId) => {
-    // Moving and sleeping are wired up in Phase 3, step 3.
-    setNote(id === 'sleep' ? 'Sleeping works in step 3.' : 'Moving works in step 3.');
+    setPendingTile(null);
+    if (!selected) return;
+    if (id === 'move') {
+      setMode({ kind: 'idle' });
+      setNote('Click a tile with a gold ring to move there.');
+    } else if (id === 'moveAll') {
+      const ready = bringOptions(state, selected).filter((o) => o.reason === null);
+      setMode({ kind: 'moveAll', bring: ready.map((o) => o.hiker.id) });
+      setNote(undefined);
+    } else if (id === 'sleep') {
+      setMode({ kind: 'sleep' });
+      setNote(undefined);
+    }
   };
 
   const waiting = hikersWhoHaventActed(state);
   const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
   const phaseWord = PHASE_WORD[state.phase];
+
+  // The box under the action grid, when Move All or Sleep is in progress.
+  let slot = null;
+  if (selected && mode.kind === 'moveAll') {
+    slot = (
+      <MoveAllPicker
+        options={bringOptions(state, selected)}
+        bring={mode.bring}
+        onToggle={(id) =>
+          setMode({
+            kind: 'moveAll',
+            bring: mode.bring.includes(id)
+              ? mode.bring.filter((b) => b !== id)
+              : [...mode.bring, id],
+          })
+        }
+        onCancel={reset}
+      />
+    );
+  } else if (selected && mode.kind === 'sleep') {
+    const gain = isSheltered(state, selected)
+      ? BALANCE.sleep.shelteredEnergy
+      : BALANCE.sleep.energy;
+    const from = selected.stats.energy;
+    slot = (
+      <SleepConfirm
+        name={selected.name}
+        gain={gain}
+        from={from}
+        to={Math.min(BALANCE.stats.max, from + gain)}
+        onCancel={reset}
+        onConfirm={() => dispatch({ type: 'sleep', hikerId: selected.id })}
+      />
+    );
+  }
+
+  // Where the move preview points: the top and bottom of the chosen tile.
+  const pending = pendingTile ? section.tiles[pendingTile] : undefined;
+  const pendingCenter = pending ? tileCenter(pending, lastRow) : null;
+  const halfH = (pending?.kind === 'checkpoint' ? CHECKPOINT_HEX.h : HEX.h) / 2;
 
   return (
     <Stage>
@@ -77,6 +186,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       <MapView
         section={section}
         hikers={hikers}
+        targets={targets}
+        onTileClick={(tileId) => setPendingTile(tileId)}
         selectedId={selected?.id ?? null}
         onSelectHiker={select}
         camera={camera}
@@ -108,6 +219,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           state={state}
           hiker={selected}
           note={note}
+          slot={slot}
           onAction={onAction}
           onAbility={(abilityId, choice) =>
             dispatch({
@@ -121,6 +233,16 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         />
       )}
       <TrailLog state={state} />
+
+      {preview && pendingCenter && (
+        <MovePopover
+          preview={preview}
+          above={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y - halfH })}
+          below={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y + halfH })}
+          onCancel={() => setPendingTile(null)}
+          onConfirm={() => dispatch(preview.action)}
+        />
+      )}
 
       {confirmEnd && (
         <ConfirmDialog

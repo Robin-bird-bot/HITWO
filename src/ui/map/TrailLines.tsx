@@ -5,7 +5,18 @@ import styles from './MapView.module.css';
 import { LINE_LOOK, VISITED_LINE, type LineLook } from './looks';
 
 /** Dashed trail lines, styled by kind. Lines between two visited tiles turn solid. */
-export function TrailLines({ section, bounds }: { section: Section; bounds: Bounds }) {
+export function TrailLines({
+  section,
+  bounds,
+  from,
+  reachable = [],
+}: {
+  section: Section;
+  bounds: Bounds;
+  /** The selected hiker's tile, and the tiles they can move to: those lines glow gold. */
+  from?: string | null;
+  reachable?: string[];
+}) {
   const lastRow = lastRowOf(section);
   const w = bounds.maxX - bounds.minX;
   const h = bounds.maxY - bounds.minY;
@@ -41,6 +52,17 @@ export function TrailLines({ section, bounds }: { section: Section; bounds: Boun
                   strokeOpacity={s.opacity}
                 />
               ))}
+              {from &&
+                ((line.a === from && reachable.includes(line.b)) ||
+                  (line.b === from && reachable.includes(line.a))) && (
+                  <path
+                    d={d}
+                    stroke="#E9B44C"
+                    strokeWidth={4}
+                    strokeDasharray="9 7"
+                    className={styles.reachLine}
+                  />
+                )}
             </g>
           );
         })}

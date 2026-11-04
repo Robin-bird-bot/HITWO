@@ -20,10 +20,23 @@ interface MapTileProps {
   /** Edge color for the current tile (the selected hiker's color). */
   currentColor?: string;
   hikerCount: number;
+  /** A connected tile the selected hiker can move to ('ok', gold ring) or can't ('blocked'). */
+  reach?: 'ok' | 'blocked';
+  onClick?(): void;
 }
 
-export function MapTile({ tile, at, look, currentColor, hikerCount }: MapTileProps) {
-  if (tile.kind === 'checkpoint') return <CheckpointTile at={at} hikerCount={hikerCount} />;
+export function MapTile({
+  tile,
+  at,
+  look,
+  currentColor,
+  hikerCount,
+  reach,
+  onClick,
+}: MapTileProps) {
+  if (tile.kind === 'checkpoint') {
+    return <CheckpointTile at={at} hikerCount={hikerCount} reach={reach} onClick={onClick} />;
+  }
 
   const colors = TILE_LOOK[look];
   const edge = look === 'current' && currentColor ? currentColor : colors.edge;
@@ -33,12 +46,16 @@ export function MapTile({ tile, at, look, currentColor, hikerCount }: MapTilePro
   const allKnown = tile.nodes.length > 0 && tile.nodes.every((n) => n.revealed);
   const label = tile.kind === 'trailhead' ? 'START' : allKnown ? tileLabel(tile.nodes) : null;
 
+  const describe = describeTile(tile, label);
   return (
     <div
       className={styles.tile}
       style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
-      title={describeTile(tile, label)}
+      title={describe}
+      data-reach={reach}
+      {...clickable(onClick, reach === 'ok' ? `Move here: ${describe}` : describe)}
     >
+      {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
       <div className={styles.hex} style={{ inset: 0, background: edge }} />
       <div className={styles.hex} style={{ inset: 5, background: colors.fill }} />
 
@@ -116,7 +133,37 @@ function NodeBadge({ node, hiddenBg }: { node: TileNode; hiddenBg: string }) {
   );
 }
 
-function CheckpointTile({ at, hikerCount }: { at: Point; hikerCount: number }) {
+/** Makes a tile a keyboard-friendly button when it can be clicked. */
+function clickable(onClick: (() => void) | undefined, label: string) {
+  if (!onClick) return {};
+  return {
+    role: 'button',
+    tabIndex: 0,
+    'aria-label': label,
+    onClick: (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onClick();
+    },
+    onKeyDown: (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick();
+      }
+    },
+  } as const;
+}
+
+function CheckpointTile({
+  at,
+  hikerCount,
+  reach,
+  onClick,
+}: {
+  at: Point;
+  hikerCount: number;
+  reach?: 'ok' | 'blocked';
+  onClick?(): void;
+}) {
   const { w, h } = CHECKPOINT_HEX;
   return (
     <>
@@ -124,6 +171,8 @@ function CheckpointTile({ at, hikerCount }: { at: Point; hikerCount: number }) {
         className={styles.tile}
         style={{ left: at.x - w / 2, top: at.y - h / 2, width: w, height: h }}
         title="Checkpoint: the ranger station"
+        data-reach={reach}
+        {...clickable(onClick, 'Checkpoint: the ranger station')}
       >
         <div className={styles.hex} style={{ inset: 0, background: '#F7F1E4' }} />
         <div className={`${styles.hex} ${styles.checkpointFill}`} style={{ inset: 6 }}>

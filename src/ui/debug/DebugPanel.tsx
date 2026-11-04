@@ -3,11 +3,11 @@
  * backtick key. Always available with the dev server; on the live site only
  * when the address has ?debug.
  *
- * Step 1 tools: phases and revealing the map. Step 4 adds the seed, stats and resources.
+ * Tools: phases, revealing the map, resources and stats. Step 4 adds the seed.
  */
 import { useEffect, useState } from 'react';
 import { RESOURCES } from '../../content/resources';
-import { PHASES, type Action, type GameState } from '../../engine';
+import { PHASES, STAT_NAMES, type Action, type GameState, type Hiker } from '../../engine';
 import { gameStore } from '../app/gameStore';
 import styles from './DebugPanel.module.css';
 
@@ -88,6 +88,11 @@ export function DebugPanel({ state, onQuit }: { state: GameState; onQuit(): void
       </section>
 
       <section className={styles.group}>
+        <h3 className={styles.heading}>Stats</h3>
+        <StatsEditor hikers={state.hikers} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
         <h3 className={styles.heading}>Inventory</h3>
         <div className={styles.row}>
           <button
@@ -113,4 +118,86 @@ export function DebugPanel({ state, onQuit }: { state: GameState; onQuit(): void
       <p className={styles.hint}>Press ` (backtick) to hide.</p>
     </aside>
   );
+}
+
+const STAT_LABEL = { energy: 'Energy', appetite: 'Appetite', morale: 'Morale' } as const;
+
+/** Set any hiker's stats and injuries directly (no injury rule), e.g. to test thresholds. */
+function StatsEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const hiker = hikers.find((h) => h.id === hikerId);
+  return hiker ? (
+    <StatsForm key={`${hiker.id}-${JSON.stringify(hiker.stats)}-${hiker.injuries}`} hiker={hiker}>
+      {(values, setValue) => (
+        <>
+          <div className={styles.row}>
+            <select
+              className={styles.button}
+              value={hikerId}
+              onChange={(e) => setHikerId(e.target.value)}
+              aria-label="Hiker"
+            >
+              {hikers.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+            {[...STAT_NAMES, 'injuries' as const].map((key) => (
+              <label key={key} className={styles.note}>
+                {key === 'injuries' ? 'Injuries' : STAT_LABEL[key]}{' '}
+                <input
+                  className={styles.number}
+                  type="number"
+                  min={0}
+                  max={key === 'injuries' ? 3 : 10}
+                  value={values[key]}
+                  onChange={(e) => setValue(key, Number(e.target.value))}
+                />
+              </label>
+            ))}
+          </div>
+          <div className={styles.row}>
+            <button
+              type="button"
+              className={styles.button}
+              onClick={() =>
+                onApply({
+                  type: 'debug',
+                  op: {
+                    kind: 'setStats',
+                    hikerId: hiker.id,
+                    stats: {
+                      energy: values.energy,
+                      appetite: values.appetite,
+                      morale: values.morale,
+                    },
+                    injuries: values.injuries,
+                  },
+                })
+              }
+            >
+              Apply to {hiker.name}
+            </button>
+          </div>
+        </>
+      )}
+    </StatsForm>
+  ) : null;
+}
+
+type StatValues = Record<'energy' | 'appetite' | 'morale' | 'injuries', number>;
+
+function StatsForm({
+  hiker,
+  children,
+}: {
+  hiker: Hiker;
+  children(
+    values: StatValues,
+    set: (key: keyof StatValues, value: number) => void,
+  ): React.ReactNode;
+}) {
+  const [values, setValues] = useState<StatValues>({ ...hiker.stats, injuries: hiker.injuries });
+  return <>{children(values, (key, value) => setValues((v) => ({ ...v, [key]: value })))}</>;
 }

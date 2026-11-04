@@ -24,6 +24,9 @@ import { LineBadges, TrailLines } from './TrailLines';
 interface MapViewProps {
   section: Section;
   hikers: Hiker[];
+  /** Connected tiles for the selected hiker: reason null = can move there. */
+  targets: { tileId: string; reason: string | null }[];
+  onTileClick(tileId: string): void;
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -36,6 +39,8 @@ const DRAG_THRESHOLD = 5;
 export function MapView({
   section,
   hikers,
+  targets,
+  onTileClick,
   selectedId,
   onSelectHiker,
   camera,
@@ -100,6 +105,10 @@ export function MapView({
   const selected = hikers.find((h) => h.id === selectedId);
   const currentTileId = selected?.tileId ?? null;
   const tiles = Object.values(section.tiles);
+  const reachOf = (tileId: string) => {
+    const target = targets.find((t) => t.tileId === tileId);
+    return target ? (target.reason === null ? 'ok' : 'blocked') : undefined;
+  };
 
   return (
     <div
@@ -116,7 +125,12 @@ export function MapView({
       aria-label="Trail map"
     >
       <div className={styles.world} style={{ transform: worldTransform(camera) }}>
-        <TrailLines section={section} bounds={bounds} />
+        <TrailLines
+          section={section}
+          bounds={bounds}
+          from={currentTileId}
+          reachable={targets.filter((t) => t.reason === null).map((t) => t.tileId)}
+        />
         {tiles.map((t) => (
           <MapTile
             key={t.id}
@@ -125,6 +139,8 @@ export function MapView({
             look={tileLook(section, t, currentTileId)}
             currentColor={selected ? characterFor(selected.id).color : undefined}
             hikerCount={hikers.filter((h) => h.tileId === t.id && h.status === 'active').length}
+            reach={reachOf(t.id)}
+            onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
           />
         ))}
         <LineBadges section={section} />

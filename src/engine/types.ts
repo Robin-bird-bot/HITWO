@@ -194,14 +194,24 @@ export type DebugOp =
   /** Reveals every node on the map. */
   | { kind: 'revealMap' }
   /** Adds resources to a hiker, up to the resource limit. */
-  | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> };
+  | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> }
+  /** Sets a hiker's stats and injuries directly, without the usual injury rules. */
+  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number };
 
 export type ActionType = Action['type'];
 
 // ── Trail log ──────────────────────────────────────────────────────────────
 
 export type GameEventBody =
-  | { kind: 'move'; hikerId: HikerId; from: TileId; to: TileId; brought: HikerId[] }
+  | {
+      kind: 'move';
+      hikerId: HikerId;
+      from: TileId;
+      to: TileId;
+      brought: HikerId[];
+      /** Nodes shown for the first time by entering the tile. */
+      revealed?: NodeKind[];
+    }
   | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   | { kind: 'passedOut'; hikerId: HikerId }

@@ -3,7 +3,8 @@
  * A move and the stat costs that follow it become one line:
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
-import type { GameEvent, GameState, HikerId, StatName } from '../../engine';
+import type { GameEvent, GameState, HikerId, NodeKind, StatName } from '../../engine';
+import { NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
 
 export interface LogLine {
@@ -22,6 +23,15 @@ const PHASE_LABEL = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night'
 /** "−1 Appetite", "+2 Energy". */
 export function signed(delta: number, stat: StatName): string {
   return `${delta < 0 ? '−' : '+'}${Math.abs(delta)} ${STAT_LABEL[stat]}`;
+}
+
+/** "Forest ×2, River". */
+export function describeNodes(kinds: NodeKind[]): string {
+  const counts = new Map<NodeKind, number>();
+  for (const k of kinds) counts.set(k, (counts.get(k) ?? 0) + 1);
+  return [...counts]
+    .map(([k, n]) => `${NODE_NAME[k]}${k === 'caps' ? ' node' : ''}${n > 1 ? ` ×${n}` : ''}`)
+    .join(', ');
 }
 
 function listNames(names: string[]): string {
@@ -64,9 +74,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const where = tile ? tileName(tile) : 'a new tile';
         const own = costsOf(taken, e.hikerId);
         const cost = own ? ` (${own})` : '';
+        const found = e.revealed?.length ? ` Revealed ${describeNodes(e.revealed)}.` : '';
         const text = e.brought.length
-          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${cost}.`
-          : `${name(e.hikerId)} moved to ${where}${cost}.`;
+          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${cost}.${found}`
+          : `${name(e.hikerId)} moved to ${where}${cost}.${found}`;
         lines.push({ id: e.id, text, tone: 'move' });
         break;
       }
