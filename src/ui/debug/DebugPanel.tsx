@@ -145,6 +145,22 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
           >
             Give everyone 5 random resources
           </button>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => {
+              // One of every resource, split across the party, to check the art.
+              const per = Math.ceil(RESOURCES.length / state.hikers.length);
+              state.hikers.forEach((h, i) => {
+                const resources = Object.fromEntries(
+                  RESOURCES.slice(i * per, (i + 1) * per).map((r) => [r.id, 1]),
+                );
+                run({ type: 'debug', op: { kind: 'giveResources', hikerId: h.id, resources } });
+              });
+            }}
+          >
+            Give one of every resource
+          </button>
         </div>
       </section>
 
