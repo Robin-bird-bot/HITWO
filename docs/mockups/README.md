@@ -22,8 +22,9 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `ScavTypes.dc.html` | Gallery of every scavenge card type and rarity |
 | `ScavCard.dc.html` | The reusable square scavenge card |
 | `Challenge.dc.html` / `ChallengeParty.dc.html` | Challenge pop-up, each-hiker and whole-party versions |
+| `Station.dc.html` / `StationAhead.dc.html` | The ranger station (Phase 8): the room, the shopkeeper, the counter and the hikers' packs; and the same screen with "What's ahead?" open |
 | `Kit.dc.html` | Visual kit: tile states, tokens, special icons, bars, condition icons, palette |
-| `Ic.dc.html` | Stroke icon set (SVG paths) |
+| `Ic.dc.html` | Stroke icon set (SVG paths), including binoculars, chat, trendUp and trendDown for the station |
 | `Px.dc.html` | Old pixel icon component (unused) |
 
 **Geometry from `Main.dc.html`**

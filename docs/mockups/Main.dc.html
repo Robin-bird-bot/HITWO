@@ -325,9 +325,9 @@ class Component extends DCLogic {
     const badge = (a, b, icon, text, bg, fg, title) => { const m = mid(a, b); return { left: m[0] - 24, top: m[1] - 11, icon, text, bg, fg, title }; };
     const badges = [
       badge('D', 'E', 'road', 'FREE', '#ECE5D6', '#1D2220', 'Paved path: moving costs no Appetite'),
-      badge('D', 'G', 'zap', '+1', '#E9B44C', '#1D2220', 'Steep path: +1 Energy to cross'),
-      badge('G', 'H', 'utensils', '+1', '#9A7650', '#F7F1E4', 'Muddy path: +1 Appetite to cross'),
-      badge('J', 'K', 'heart', '+1', '#CDA6EE', '#1D2220', 'Rough path: costs 1 Morale to cross')
+      badge('D', 'G', 'zap', '−1', '#E9B44C', '#1D2220', 'Steep path: −1 extra Energy to cross'),
+      badge('G', 'H', 'utensils', '−1', '#9A7650', '#F7F1E4', 'Muddy path: −1 extra Appetite to cross'),
+      badge('J', 'K', 'heart', '−1', '#CDA6EE', '#1D2220', 'Rough path: −1 Morale to cross')
     ];
 
     const SP = {

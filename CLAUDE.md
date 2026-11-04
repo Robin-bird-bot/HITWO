@@ -82,6 +82,10 @@ Fonts (in `assets/fonts/`):
 - **Game Quotes:** the `?` and `!` glyphs on Wild and Choice cards, ×2/×3/+N badges, and other punchy callouts. Wyatt's license covers web use.
 - **DM Sans** (Google Fonts): body text.
 
+Which font for what:
+- **Edit Undo** for short text people read at a glance: names (including item card names), labels, buttons, numbers, and all shopkeeper or ranger dialogue.
+- **DM Sans** only for longer descriptions and rules text.
+
 ## How to work
 
 - Do one phase at a time. Start each phase in plan mode, confirm the plan, then build.

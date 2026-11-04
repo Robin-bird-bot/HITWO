@@ -14,7 +14,7 @@ body{margin:0}
 </helmet>
 <svg width="{{size}}" height="{{size}}" viewBox="0 0 24 24" fill="{{fill}}" stroke="{{stroke}}" stroke-width="{{sw}}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: block; flex: none"><path d="{{d}}"></path></svg>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"icon":{"editor":"enum","options":["sun","sunrise","moon","cloud","rain","zap","heart","utensils","footprints","users","search","hammer","flame","sprout","eye","bag","book","chevronDown","chevronUp","star","alert","split","sign","package","tent","help","tower","plus","minus","crosshair","menu","check","medical","sparkles","droplet","battery","acorn","backpack","shirt","boot","x","paw","user","road","dice","shield"],"default":"sun"},"color":{"editor":"color","default":"#F1EADB"},"size":{"editor":"int","default":24,"min":8,"max":96},"sw":{"editor":"float","default":2,"min":1,"max":3,"step":0.25},"solid":{"editor":"boolean","default":false},"$preview":{"width":24,"height":24}}'>
+<script type="text/x-dc" data-dc-script data-props='{"icon":{"editor":"enum","options":["sun","sunrise","moon","cloud","rain","zap","heart","utensils","footprints","users","search","hammer","flame","sprout","eye","bag","book","chevronDown","chevronUp","star","alert","split","sign","package","tent","help","tower","plus","minus","crosshair","menu","check","medical","sparkles","droplet","battery","acorn","backpack","shirt","boot","x","paw","user","road","dice","shield","binoculars","chat","trendUp","trendDown"],"default":"sun"},"color":{"editor":"color","default":"#F1EADB"},"size":{"editor":"int","default":24,"min":8,"max":96},"sw":{"editor":"float","default":2,"min":1,"max":3,"step":0.25},"solid":{"editor":"boolean","default":false},"$preview":{"width":24,"height":24}}'>
 class Component extends DCLogic {
   renderVals() {
     const P = {
@@ -47,6 +47,10 @@ class Component extends DCLogic {
       tower: 'M8 22l1.5-10h5L16 22 M6 12h12 M5 8h14l-2 4H7z M12 8V2 M12 2h4l-1 1.5 1 1.5h-4',
       plus: 'M12 5v14 M5 12h14',
       minus: 'M5 12h14',
+      binoculars: 'M6.5 13.5a3.5 3.5 0 1 0 0.01 0 M17.5 13.5a3.5 3.5 0 1 0 0.01 0 M10 13.5h4 M3.2 12.2 5.5 5h3l1 5.5 M20.8 12.2 18.5 5h-3l-1 5.5',
+      chat: 'M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.2A8 8 0 1 1 21 12z',
+      trendUp: 'M3 17l6-6 4 4 8-8 M15 7h6v6',
+      trendDown: 'M3 7l6 6 4-4 8 8 M15 17h6v-6',
       crosshair: 'M12 19a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M12 2v3 M12 19v3 M2 12h3 M19 12h3',
       menu: 'M4 6h16 M4 12h16 M4 18h16',
       check: 'M20 6 9 17l-5-5',

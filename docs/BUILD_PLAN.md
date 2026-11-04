@@ -16,7 +16,8 @@ The order follows the design doc's build order. It gets a walkable map on screen
 
 **Screen modes (Simple and Informative)**
 - One setting for the whole game, in Settings in the ☰ menu, remembered per device. **Simple is the default.**
-- Simple shows only what's needed to play: compact hiker cards, small pills along the top, only the actions available right now, and one inventory row. Details open in pop-outs that close on click-away.
+- Simple shows only what's needed to play: compact hiker cards, small pills along the top, and only the actions available right now. Details open in pop-outs that close on click-away.
+- **Simple means fewer words, not fewer visuals.** Slots, icons, bars and the inventory grids all stay; Equipped, Bag and Resources keep their slot grids with short labels and counts ("BAG 3/4").
 - Informative shows every number, label and threshold, plus tick marks on the status bars.
 - Status bars in both modes: Energy green `#7FC29B`, Appetite brown `#C08A5A`, Morale purple `#B98AE0`; amber `#F0A83A` at a threshold (Fatigued, Hungry, Morale 5 and below); red `#E5624A` with a slow pulse when critical (Exhausted, Famished, Morale 2 and below).
 - New UI from Phase 4 on needs both a Simple and an Informative version.
@@ -299,6 +300,37 @@ This keeps the download small and lets numbers and text change.
   - a free sheltered night.
 - **Next biome:** start from a free Trailhead.
 
+**The station screen:** a full screen in a cozy wood-and-parchment style. It follows `Station.png`, `StationAhead.png` and `Station.dc.html`.
+- **The room:**
+  - The back wall is a full-width window wall looking into a darkened forest: layers 241, 271, 266 and 265 at roughly brightness 0.42–0.6, with wooden frames and a faint glass glare.
+  - On the left is a stone fireplace with a mantel. The flames flicker in layers, and warm firelight pulses gently across the room (off under reduced motion).
+  - A hanging wooden sign shows the station theme.
+  - The shopkeeper stands behind the counter (placeholder art until Wyatt's arrives).
+- **Style:**
+  - Wooden pieces: the sign, counter, tabs, price tags and buttons.
+  - Dark translucent panels from the main game UI: the shopkeeper dialogue, the sell slot and the hiker packs.
+- **Top-right buttons:**
+  - **Rest & Go:** the free night, then the next biome.
+  - **Preview Next Trail** (binoculars icon): opens the next section's map, showing only what's visible from here. Specials that make choices about the next trail are used from this preview, for example Cement Mixer (choose a line to pave) or scouting services (choose tiles to reveal).
+- **Shopkeeper dialogue:** a dark speech bubble in Edit Undo, with three options.
+  - **"What's selling?"** shows this visit's market as chips with resource icons and flat cap changes (green +X, red −X). The station theme sets which resources pay more or less. The amounts are rolled each visit, with the ranges in `balance.ts`. Selling uses these prices.
+  - **"What's ahead?"** describes the next biome (tier, weather odds, common nodes, likely conditions and line types) with icon chips. Placeholder text until the biomes are finalized.
+  - **"Just looking"** closes the conversation.
+- **Tabs:** Shop and Workbench. Blueprints are sold in the Shop tab.
+- **The counter (Shop tab):**
+  - **Row 1:**
+    - a "Drag here to sell" slot (a dark panel that shows the price before confirming);
+    - item cards, built from the item card layers;
+    - station specials mixed in with the items, as cards with a unique animated gold border.
+    - Every card has a parchment price tag that dims when the party can't afford it.
+  - **Row 2:** blueprints as larger blueprint-paper squares with a border in their item type's color, then resource bundles.
+  - **Scrolling:** rows 1 and 2 scroll sideways together, with one scroll bar along the bottom of the counter in dark wood rather than gold. Drag, mouse wheel or swipe. The last visible card fades at the edge.
+  - **Party caps:** a brass plaque fixed at the right end of row 2. It doesn't scroll. Caps stay one shared purse.
+- **Below the counter:**
+  - Every hiker's pack (bag and resources), shared while at the station, with room for bigger slots.
+  - Drag from a pack to the sell slot to sell, or to the Workbench to craft.
+  - **Hovering** a card in a hiker's pack (long-press on a phone) shows a larger version of the card with its sell price at this station.
+
 **Ask Wyatt first:** which station themes to build first, and their stock.
 
 ---
@@ -376,6 +408,7 @@ This keeps the download small and lets numbers and text change.
 **Build**
 - Title → party pick (4 hikers, filter by class label) → starting kit draft → objective draw → hike.
 - With several people playing, label who controls each hiker.
+- The title screen gets real title art from Wyatt later. Keep a placeholder until then.
 
 ---
 
@@ -383,14 +416,28 @@ This keeps the download small and lets numbers and text change.
 
 - Bring in Wyatt's full content.
 - A balancing pass using the debug panel and seeded replays.
-- Sound (optional).
+- Sound is its own phase now (Phase 15).
 - Animation polish.
 - Animated gradients on item cards (see "Cards are built in-game" above), once Wyatt's frame and icon layers arrive.
 - Accessibility: text size option, colorblind-safe icons alongside colors.
 
 ---
 
-## Phase 15: Phone
+## Phase 15: Audio
+
+Start this once the game is fully playable.
+
+- **Music:** Wyatt makes a day track and a matching night track for each biome. They loop, with a slow crossfade at nightfall and in the morning.
+- **Ambience:** weather and setting loops (rain, wind, birds, crickets at night) that fade in and out with the weather and the phase.
+- **Sound effects:**
+  - First, list every moment that could have a sound: hikers moving, flipping or drawing a card, picking a card, using or eating an item, buying, selling, crafting, a challenge pop-up, passing or failing, a level-up, button clicks, a phase change, checking in, and so on.
+  - Save the list as `docs/audio-list.md` so Wyatt can make or choose a sound for each.
+- **Settings:** separate volume sliders for music, ambience and effects, plus mute. Start quiet.
+- **Formats:** compressed loops (OGG with an MP3 fallback), loaded per biome so the download stays small.
+
+---
+
+## Phase 16: Phone
 
 - Make it a PWA: installable, works offline, and asks to rotate to landscape.
 - Touch: tap to select, long-press for details, pinch to zoom the map.
@@ -408,7 +455,8 @@ These are in the design doc's "Later additions" section. Don't build them yet, b
 - modifiers;
 - endless mode;
 - unique rangers;
-- specific item finds.
+- specific item finds;
+- splitting caps between hikers in a multiplayer version.
 
 ## Known open questions (from the design doc)
 
