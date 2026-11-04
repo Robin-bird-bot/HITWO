@@ -191,7 +191,10 @@ This keeps the download small and lets numbers and text change.
 - **Card types:** Resource, ×2, ×3, Pair, Trio, Mixed, Wild ?, Wild ×2, Variety Wild / Pair / Bundle, Choice !, Choice ×2, Pick / Pair / Bundle of the Wild, Acorn caps, Item find, and Choice item (pick 1 of 5).
   - Each type has a rarity: Common, Uncommon, Rare, Very rare, Legendary or Mythic.
   - The weights live in `balance.ts`.
-- **Draw weighting:** by the tile's nodes, Abundance and Luck. Luck shifts odds one rarity step per point.
+- **Draw weighting:**
+  - Each card comes from one of the tile's nodes, picked by how many of that node the tile has and its Abundance. A node at 0 gives nothing.
+  - Its rarity comes from Luck: the Luck 0 and Luck +5 rows in `balance.ts`, with each point in between moving a fifth of the way. Negative Luck pushes Common toward 85%.
+  - Morale sets Luck: +1 at 7 or more, −1 at 3 or less. Traits and items add to it.
 - **Window:** keep it light, because scavenging happens constantly. It should feel like a quick overlay, not a page change.
   - A translucent panel (about 50% opacity) with `backdrop-filter: blur(18px)` over a barely dimmed map.
   - A short fade and scale in and out (about 150 ms).
@@ -214,10 +217,12 @@ This keeps the download small and lets numbers and text change.
 
 **Done when:** tests check that draw odds match the configured weights over many seeded draws, and the flow animates nicely.
 
-**Ask Wyatt first**
-- Exact rarity weights, or approval of a first guess.
-- What a Mixed card does on a 3-node tile.
-- Hi-res art for bones, flint and salt, which is missing (see `docs/ASSETS.md`). Placeholders are OK until then.
+**Answered (Nov 4)**
+- Rarity odds: at Luck 0, 75 / 15 / 6 / 2.5 / 1 / 0.5%; at Luck +5, 50 / 25 / 14 / 7 / 3 / 1%.
+- A Mixed card on a 3-node tile: 1 resource from each of 2 random nodes on that tile.
+- Dogs get 1 extra card to choose from (this replaces "more Choice cards").
+- Until Phase 9, Item finds give the items named in `03-items.md`, which do nothing yet.
+- The art for bones, flint and salt has arrived.
 
 ---
 

@@ -12,14 +12,24 @@ import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
-import { dealCards } from '../scavenge/deal';
+import { abilitiesFor, abilityPeriod } from '../effects';
+import { dealCard, dealCards } from '../scavenge/deal';
 import { scavengeCost, scavengeSetup, scavengeTileReason } from '../scavenge/setup';
-import type { Action, GameState, ItemId, NodeType, ResourceId, RngState } from '../types';
+import type {
+  Action,
+  GameState,
+  ItemId,
+  NodeType,
+  ResourceId,
+  RngState,
+  ScavengeBonusOffer,
+} from '../types';
 import { findHiker, mustFindHiker, notActiveReason, payCost, phaseActionReason } from './common';
 
 type ScavengeAction = Extract<Action, { type: 'scavenge' }>;
 type FlipAction = Extract<Action, { type: 'scavengeFlip' }>;
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
+type RerollAction = Extract<Action, { type: 'scavengeReroll' }>;
 
 const NOTHING_OPEN = 'Nobody is scavenging right now.';
 
@@ -34,7 +44,11 @@ export function applyScavenge(state: GameState, action: ScavengeAction): void {
   const hiker = mustFindHiker(state, action.hikerId);
   const setup = scavengeSetup(state, hiker);
   const rngBefore = [...state.rng] as RngState;
-  const cards = dealCards(state.rng, setup);
+  const cards = dealCards(state.rng, {
+    ...setup,
+    ...(state.debugDeal?.length ? { forceTypes: state.debugDeal } : {}),
+  });
+  delete state.debugDeal;
   state.scavenge = {
     hikerId: hiker.id,
     tileId: hiker.tileId,
@@ -42,7 +56,46 @@ export function applyScavenge(state: GameState, action: ScavengeAction): void {
     luck: setup.luck,
     bonuses: setup.bonuses,
     rngBefore,
+    ...(setup.bonusOffers.length ? { bonusOffers: setup.bonusOffers } : {}),
   };
+}
+
+/** The scavenger's reroll ability (Gambler) and its uses left, if they have one. */
+export function rerollAbility(state: GameState) {
+  const open = state.scavenge;
+  const hiker = open && findHiker(state, open.hikerId);
+  if (!hiker) return undefined;
+  return abilitiesFor(state, hiker).find((a) => a.ability.scavengeReroll);
+}
+
+export function validateReroll(state: GameState, action: RerollAction): string | undefined {
+  const open = state.scavenge;
+  if (!open) return NOTHING_OPEN;
+  const card = open.cards[action.card];
+  if (!card) return 'That card isn’t on the table.';
+  if (!card.flipped) return 'Flip that card first.';
+  const found = rerollAbility(state);
+  if (!found) return 'Nobody here can reroll a card.';
+  if (found.usesLeft <= 0) return `${found.ability.label} is used up today.`;
+  return undefined;
+}
+
+export function applyReroll(state: GameState, action: RerollAction): void {
+  const open = state.scavenge;
+  const found = rerollAbility(state);
+  if (!open || !found) throw new Error('applyReroll: nothing to reroll');
+  const hiker = mustFindHiker(state, open.hikerId);
+  const { ability } = found;
+  const period = abilityPeriod(state, ability.limit.per);
+  const use = hiker.abilityUses[ability.id];
+  hiker.abilityUses[ability.id] = {
+    period,
+    count: use && use.period === period ? use.count + 1 : 1,
+  };
+  // A fresh card, face up, from the same tile and odds.
+  const card = dealCard(state.rng, scavengeSetup(state, hiker));
+  open.cards[action.card] = { ...card, flipped: true };
+  pushEvent(state, { kind: 'ability', hikerId: hiker.id, abilityId: ability.id });
 }
 
 export function validateFlip(state: GameState, action: FlipAction): string | undefined {
@@ -131,13 +184,20 @@ export function applyTake(state: GameState, action: TakeAction): void {
   if (!open || !card) throw new Error('applyTake: no card');
   const hiker = mustFindHiker(state, open.hikerId);
   const def = SCAVENGE_CARDS[card.type];
-  const cost = scavengeCost(state, hiker);
   const gains = cardGains(card, action.picks, action.item);
+  const bonus = bonusTaken(open.bonusOffers ?? [], action.bonus ?? 0, gains.resources.length > 0);
+  const cost = scavengeCost(state, hiker) + bonus.appetite;
 
   hiker.acted = true;
 
+  // Bonus resources are more of the first resource taken (Copier, Copydog).
+  const first = gains.resources[0];
+  const all = first
+    ? [...gains.resources, ...Array.from({ length: bonus.count }, () => first)]
+    : gains.resources;
   const room = Math.max(0, BALANCE.inventory.resourceLimit - resourceCount(hiker));
-  const kept = gains.resources.slice(0, room);
+  const kept = all.slice(0, room);
+  const bonusKept = Math.max(0, kept.length - gains.resources.length);
   for (const r of kept) hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) + 1;
   state.caps += gains.caps;
   for (const itemId of gains.items) {
@@ -146,11 +206,9 @@ export function applyTake(state: GameState, action: TakeAction): void {
 
   const nodes: NodeType[] = [];
   if (card.node) {
-    changeAbundance(
-      state,
-      card.node,
-      -(def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0)),
-    );
+    // Bonus resources a hiker chooses to take drain Abundance too.
+    const drain = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0) + bonusKept;
+    changeAbundance(state, card.node, -drain);
     nodes.push(card.node);
   }
   if (card.node2) {
@@ -167,8 +225,32 @@ export function applyTake(state: GameState, action: TakeAction): void {
     resources: kept,
     ...(gains.caps ? { caps: gains.caps } : {}),
     ...(gains.items.length ? { items: gains.items } : {}),
-    ...(kept.length < gains.resources.length ? { left: gains.resources.length - kept.length } : {}),
+    ...(kept.length < all.length ? { left: all.length - kept.length } : {}),
+    ...(bonusKept ? { bonus: bonusKept } : {}),
   });
   delete state.scavenge;
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
+}
+
+/** How many bonus resources a take gets, and the Appetite they cost. */
+export function bonusTaken(
+  offers: readonly ScavengeBonusOffer[],
+  paidWanted: number,
+  hasResource: boolean,
+): { count: number; appetite: number } {
+  if (!hasResource) return { count: 0, appetite: 0 };
+  let count = 0;
+  let appetite = 0;
+  let wanted = Math.max(0, paidWanted);
+  for (const o of offers) {
+    if (o.appetiteEach === 0) {
+      count += o.count;
+      continue;
+    }
+    const n = Math.min(o.count, wanted);
+    wanted -= n;
+    count += n;
+    appetite += n * o.appetiteEach;
+  }
+  return { count, appetite };
 }

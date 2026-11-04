@@ -101,6 +101,10 @@ export interface ScavengeModifier {
   nodeWeight?: Partial<Record<NodeType, number>>;
   /** Multipliers on how likely each card type is. */
   typeWeight?: Partial<Record<ScavengeCardType, number>>;
+  /** Multipliers on card types, only for cards from one node (Hound's ×2 results). */
+  nodeTypeWeight?: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>>;
+  /** Extra copies of the first resource taken (Copier, Copydog). */
+  bonus?: { count: number; appetiteEach: number };
 }
 
 export interface ActQuery {
@@ -173,6 +177,8 @@ export interface AbilityDef {
   label: string;
   limit: { per: 'day' | 'phase' | 'biome'; uses: number };
   choices?: readonly AbilityChoice[];
+  /** Used in the scavenge window to reroll a card (Gambler), not from the Abilities panel. */
+  scavengeReroll?: true;
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
   apply(ctx: EffectContext, choice: string | undefined): void;
 }

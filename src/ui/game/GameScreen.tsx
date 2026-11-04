@@ -369,6 +369,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           took={took}
           onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
           onCancel={() => dispatch({ type: 'scavengeCancel' })}
+          onReroll={(card) => dispatch({ type: 'scavengeReroll', card })}
           onTake={takeCard}
           onClose={closeScavenge}
         />

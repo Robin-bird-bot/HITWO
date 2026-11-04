@@ -48,6 +48,20 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s stats` });
       break;
     }
+    case 'setTrait': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const slot = hiker?.slots[op.slot];
+      if (!hiker || !slot) return;
+      slot.traitId = op.traitId;
+      pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s slot ${op.slot + 1}` });
+      break;
+    }
+    case 'nextDeal': {
+      if (op.types.length) state.debugDeal = [...op.types];
+      else delete state.debugDeal;
+      pushEvent(state, { kind: 'debug', note: `Next deal: ${op.types.join(', ') || 'random'}` });
+      break;
+    }
     case 'setAbundance': {
       for (const [node, value] of Object.entries(op.abundance) as [NodeType, number][]) {
         state.abundance[node] = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(value)));

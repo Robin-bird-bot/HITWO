@@ -223,6 +223,23 @@
   color: var(--gold);
 }
 
+.chipCost {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.secondary:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .clear {
   min-height: 44px;
   padding: 0 12px;

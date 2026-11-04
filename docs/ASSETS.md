@@ -20,6 +20,8 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `portraits/` | placeholder, placeholder-character-card | **Use the placeholder for every hiker for now.** Real character art comes later |
 | `art/` | challenge-bear, challenge-fallen-tree | Challenge pop-up art |
 
+**Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
+
 ## Scavenge card layers
 
 From back to front:

@@ -30,8 +30,10 @@ export interface DealInput {
   count: number;
   /** Multipliers on how likely each node is (Finder, Hound). */
   nodeWeight?: Partial<Record<NodeType, number>>;
-  /** Multipliers on how likely each card type is (Archaeologist, Hound…). */
+  /** Multipliers on how likely each card type is (Archaeologist…). */
   typeWeight?: Partial<Record<ScavengeCardType, number>>;
+  /** Multipliers on card types for cards from one node (Hound's ×2 results). */
+  nodeTypeWeight?: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>>;
   /** Debug only: deal these types first, in order, where they can happen. */
   forceTypes?: readonly ScavengeCardType[];
 }
@@ -101,7 +103,12 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
     if (candidates.length) {
       const def = weightedPick(
         rng,
-        candidates.map((d) => ({ item: d, weight: typeWeight(d, input, spot.bounty, hasCapNode) })),
+        candidates.map((d) => ({
+          item: d,
+          weight:
+            typeWeight(d, input, spot.bounty, hasCapNode) *
+            (input.nodeTypeWeight?.[spot.node]?.[d.id] ?? 1),
+        })),
       );
       return contents(rng, def, spot.node, spot.bounty, otherNodes);
     }

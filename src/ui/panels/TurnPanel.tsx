@@ -20,6 +20,7 @@ import {
   type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
+import { ITEM_TYPE_COLORS } from '../scavenge/cardLook';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
@@ -163,7 +164,9 @@ export function Abilities({
                 </span>
                 <span className={styles.small}>{trait?.text}</span>
               </div>
-              {used ? (
+              {ability.scavengeReroll ? (
+                <span className={styles.muted}>{used ? 'Used' : 'When scavenging'}</span>
+              ) : used ? (
                 <span className={styles.muted}>Used</span>
               ) : (
                 <button
@@ -317,9 +320,11 @@ function ItemCard({
       className={styles.itemCard}
       data-size={size}
       title={def ? `${def.name}: ${def.text}` : item.itemId}
-      style={{ backgroundImage: `url(${ASSETS.itemCards.clothesGradient})` }}
+      style={{
+        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[def?.type ?? 'clothes'].join(', ')})`,
+      }}
     >
-      <img src={ASSETS.itemCards.clothesIcon} alt="" />
+      <img src={ASSETS.itemCards.typeIcons[def?.type ?? 'clothes']} alt="" />
       <span>{name.toUpperCase()}</span>
     </Tag>
   );

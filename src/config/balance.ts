@@ -230,6 +230,20 @@ export const BALANCE = {
     leader: { moveAllDiscount: 1 },
     stoic: { moraleCost: 2, gain: 1 },
     extrinsic: { together: 1, alone: -1 },
+    forager: { cards: 1 },
+    gambler: { usesPerDay: 1 },
+    /** "Higher chance of drawing that node's resources." TODO(wyatt): first guess. */
+    finder: { nodeWeight: 1.5 },
+    /** "Much higher chance … and of ×2 results." TODO(wyatt): first guess; ×2 means ×2 and Wild ×2 cards. */
+    hound: { nodeWeight: 3, doubleWeight: 2 },
+    /** "Higher chance of Item find cards." TODO(wyatt): first guess; Choice items aren't included. */
+    archaeologist: { itemFindWeight: 2 },
+    /**
+     * Copier and Copydog: 1 extra resource per hiker who scavenged this tile
+     * earlier the same day. TODO(wyatt): the extra is one more of the first
+     * resource taken, and cards with no resources (caps, items) get none.
+     */
+    copier: { appetiteEach: 1 },
   },
 
   rules: {

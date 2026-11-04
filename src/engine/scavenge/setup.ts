@@ -6,7 +6,14 @@
 import { BALANCE } from '../../config/balance';
 import { computeCost, scavengeModifiers } from '../effects';
 import { resourceCount } from '../inventory';
-import type { GameState, Hiker, NodeType, ScavengeBonus, ScavengeCardType } from '../types';
+import type {
+  GameState,
+  Hiker,
+  NodeType,
+  ScavengeBonus,
+  ScavengeBonusOffer,
+  ScavengeCardType,
+} from '../types';
 import { canDeal, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 
@@ -19,6 +26,7 @@ const NODE_LABEL: Record<NodeType, string> = {
 
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   bonuses: ScavengeBonus[];
+  bonusOffers: ScavengeBonusOffer[];
 }
 
 export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
@@ -29,7 +37,19 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   let luck = 0;
   const nodeWeight: Partial<Record<NodeType, number>> = {};
   const typeWeight: Partial<Record<ScavengeCardType, number>> = {};
+  const nodeTypeWeight: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>> = {};
+  const bonusOffers: ScavengeBonusOffer[] = [];
   for (const m of mods) {
+    for (const [node, weights] of Object.entries(m.nodeTypeWeight ?? {}) as [
+      NodeType,
+      Partial<Record<ScavengeCardType, number>>,
+    ][]) {
+      const into = (nodeTypeWeight[node] ??= {});
+      for (const [k, v] of Object.entries(weights) as [ScavengeCardType, number][]) {
+        into[k] = (into[k] ?? 1) * v;
+      }
+    }
+    if (m.bonus && m.bonus.count > 0) bonusOffers.push({ source: m.source, ...m.bonus });
     cards += m.cards ?? 0;
     luck += m.luck ?? 0;
     for (const [k, v] of Object.entries(m.nodeWeight ?? {}) as [NodeType, number][]) {
@@ -72,7 +92,9 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     count: Math.max(1, cards),
     nodeWeight,
     typeWeight,
+    nodeTypeWeight,
     bonuses,
+    bonusOffers,
   };
 }
 

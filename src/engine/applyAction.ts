@@ -10,9 +10,11 @@ import {
   applyCancel,
   applyFlip,
   applyScavenge,
+  applyReroll,
   applyTake,
   validateCancel,
   validateFlip,
+  validateReroll,
   validateScavenge,
   validateTake,
 } from './actions/scavenge';
@@ -27,6 +29,7 @@ const SCAVENGE_STEPS = new Set<Action['type']>([
   'scavengeFlip',
   'scavengeCancel',
   'scavengeTake',
+  'scavengeReroll',
   'debug',
 ]);
 
@@ -61,6 +64,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateCancel(state) ?? null;
     case 'scavengeTake':
       return validateTake(state, action) ?? null;
+    case 'scavengeReroll':
+      return validateReroll(state, action) ?? null;
     case 'tend':
       return validateTend(state, action) ?? null;
     case 'give':
@@ -103,6 +108,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'scavengeTake':
       applyTake(draft, action);
+      break;
+    case 'scavengeReroll':
+      applyReroll(draft, action);
       break;
     case 'tend':
       applyTend(draft, action);

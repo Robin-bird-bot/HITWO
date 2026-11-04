@@ -13,8 +13,10 @@ import { characterFor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import { ASSETS } from '../../config/assets';
 import {
+  bonusTaken,
   cardGains,
   pickOptions,
+  rerollAbility,
   scavengeCost,
   validateAction,
   type Action,
@@ -51,6 +53,8 @@ interface ScavengeWindowProps {
   took: TookCard | null;
   onFlip(cards: number[]): void;
   onCancel(): void;
+  /** Gambler: reroll one flipped card. */
+  onReroll(card: number): void;
   onTake(action: TakeAction): void;
   onClose(): void;
 }
@@ -63,6 +67,7 @@ export function ScavengeWindow({
   took,
   onFlip,
   onCancel,
+  onReroll,
   onTake,
   onClose,
 }: ScavengeWindowProps) {
@@ -71,9 +76,16 @@ export function ScavengeWindow({
   const [picks, setPicks] = useState<ResourceId[]>([]);
   const [item, setItem] = useState<ItemId | null>(null);
   const [bonusesOpen, setBonusesOpen] = useState(false);
+  // Copier: take the paid bonus resources too.
+  const [paidBonus, setPaidBonus] = useState(false);
   const windowRef = useRef<HTMLDivElement>(null);
 
   const card = open && selected !== null ? open.cards[selected] : undefined;
+  const offers = open?.bonusOffers ?? [];
+  const paidCount = offers.filter((o) => o.appetiteEach > 0).reduce((n, o) => n + o.count, 0);
+  const hasResources = !!card && cardGains(card, picks, item ?? undefined).resources.length > 0;
+  const bonus = bonusTaken(offers, paidBonus ? paidCount : 0, hasResources);
+  const reroll = rerollAbility(state);
   const take: TakeAction | null =
     open && selected !== null
       ? {
@@ -81,6 +93,7 @@ export function ScavengeWindow({
           card: selected,
           ...(card?.pick ? { picks } : {}),
           ...(item ? { item } : {}),
+          ...(paidBonus && paidCount ? { bonus: paidCount } : {}),
         }
       : null;
   const takeReason = take ? validateAction(state, take) : null;
@@ -174,7 +187,9 @@ export function ScavengeWindow({
               <Icon name="utensils" size={14} />
               <span className={styles.change}>
                 {hiker.stats.appetite} →{' '}
-                <b>{Math.max(0, hiker.stats.appetite - scavengeCost(state, hiker))}</b>
+                <b>
+                  {Math.max(0, hiker.stats.appetite - scavengeCost(state, hiker) - bonus.appetite)}
+                </b>
               </span>
             </span>
           )}
@@ -204,12 +219,43 @@ export function ScavengeWindow({
             {card?.items && SCAVENGE_CARDS[card.type].choiceItem && (
               <ItemChips card={card} item={item} onItem={setItem} />
             )}
+            {paidCount > 0 && hasResources && (
+              <div className={styles.chooser}>
+                <button
+                  type="button"
+                  className={styles.chip}
+                  aria-pressed={paidBonus}
+                  onClick={() => setPaidBonus((b) => !b)}
+                >
+                  <Icon name="plus" size={16} />
+                  {paidCount} BONUS
+                  <span className={styles.chipCost}>
+                    −
+                    {offers
+                      .filter((o) => o.appetiteEach > 0)
+                      .reduce((n, o) => n + o.count * o.appetiteEach, 0)}{' '}
+                    Appetite
+                  </span>
+                </button>
+              </div>
+            )}
 
             <footer className={styles.footer}>
               <span className={styles.drain}>
                 {!simple && card && <Drain state={state} card={card} />}
               </span>
               {take && takeReason && <span className={styles.reason}>{takeReason}</span>}
+              {reroll && (
+                <button
+                  type="button"
+                  className={styles.secondary}
+                  disabled={!card?.flipped || reroll.usesLeft <= 0}
+                  onClick={() => selected !== null && onReroll(selected)}
+                  title={`${reroll.ability.label}: reroll the picked card`}
+                >
+                  <Icon name="dice" size={16} /> Reroll · {reroll.usesLeft}
+                </button>
+              )}
               {canCancel && (
                 <button type="button" className={styles.secondary} onClick={onCancel}>
                   Not now
@@ -234,7 +280,9 @@ export function ScavengeWindow({
                 disabled={!take || !!takeReason}
                 onClick={() => take && !takeReason && onTake(take)}
               >
-                {card ? takeLabel(card, picks, item) : 'PICK A CARD'}
+                {card
+                  ? `${takeLabel(card, picks, item)}${bonus.count ? ` + ${bonus.count} BONUS` : ''}`
+                  : 'PICK A CARD'}
               </button>
             </footer>
           </>

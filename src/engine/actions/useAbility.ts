@@ -16,6 +16,7 @@ export function validateUseAbility(state: GameState, action: UseAbilityAction): 
   const found = abilitiesFor(state, hiker).find((a) => a.ability.id === action.abilityId);
   if (!found) return `${hiker.name} doesn’t have that ability.`;
   const { ability, usesLeft } = found;
+  if (ability.scavengeReroll) return `${ability.label} is used from the scavenge window.`;
   if (usesLeft <= 0) return `${ability.label} is used up ${PERIOD_WORDS[ability.limit.per]}.`;
   if (ability.choices && !ability.choices.some((c) => c.id === action.choice)) {
     return `Choose ${ability.choices.map((c) => c.label).join(' or ')}.`;
