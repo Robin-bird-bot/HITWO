@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — backdrops</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1720px; box-sizing: border-box; padding: 40px 48px; background: #1D2220; color: #F1EADB; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+<span style="font-family: 'EditUndo', monospace; font-size: 36px; letter-spacing: 0.04em">BACKDROPS</span>
+<span style="font-size: 15px; color: #9C9585">Land layers stay the same all day; the sky is a gradient that changes with the phase. Layers scroll at different speeds (parallax).</span>
+</div>
+<div style="display: grid; grid-template-columns: 736px 736px; gap: 32px 32px">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="meadow" phase="morning" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">MEADOW · MORNING</span><span style="font-size: 13px; color: #9C9585">Bright blue sky, sun high</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="meadow" phase="afternoon" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">MEADOW · AFTERNOON</span><span style="font-size: 13px; color: #9C9585">A little orange low in the sky, land slightly warmed</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="meadow" phase="night" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">MEADOW · NIGHT</span><span style="font-size: 13px; color: #9C9585">Dark sky, moon, twinkling Edit Undo asterisks for stars, land dimmed</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="rainforest" phase="afternoon" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">TEMPERATE RAINFOREST · AFTERNOON</span><span style="font-size: 13px; color: #9C9585">Teal hills 242 · misty forest 239 · grass hills 247</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="alpine" phase="morning" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">ALPINE · MORNING</span><span style="font-size: 13px; color: #9C9585">Blue mountains 241 · snowy pines 250</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="border-radius: 14px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.35)"><dc-import name="Backdrop" scene="alpine" phase="night" w="736" h="460" hint-size="736px,460px"></dc-import></div>
+<div style="display: flex; align-items: baseline; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">ALPINE · NIGHT</span><span style="font-size: 13px; color: #9C9585">Same night treatment on a different biome</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

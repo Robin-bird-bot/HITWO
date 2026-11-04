@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — item cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1600px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #1D2220; color: #F1EADB; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+<span style="font-family: 'EditUndo', monospace; font-size: 36px; letter-spacing: 0.04em">ITEM CARDS</span>
+<span style="font-size: 15px; color: #9C9585">Built in-game from layers: animated gradient · rays · your front background or type icon · item icon · text. Front icons are stand-ins until the item icons arrive.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">BACKS</span><div style="display: flex; gap: 40px"><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="tool" face="back" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">TOOL</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="clothes" face="back" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">CLOTHES</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="food" face="back" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">FOOD</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="shelter" face="back" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">SHELTER</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="trinket" face="back" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">TRINKET</span></div></div></div>
+<div style="display: flex; flex-direction: column; gap: 12px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; color: #E9B44C">FRONTS</span><div style="display: flex; gap: 40px"><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="tool" face="front" name="MEDKIT" tier="2" slot="" effect="Cures 1 condition and 1 injury." quality="4" meta="(X) 2 USES" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">QUALITY 4</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="clothes" face="front" name="TROOPER MASK" tier="2" slot="Gear" effect="Ignores the extra costs of steep, muddy and rough lines. Each time, −1 durability." quality="3" meta="(X) 6 DAYS" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">QUALITY 3</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="food" face="front" name="TRAIL MIX" tier="1" slot="" effect="+(X)4 Appetite." quality="5" meta="1 USE" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">QUALITY 5</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="shelter" face="front" name="MEDIC TENT" tier="2" slot="" effect="The first time a hiker sleeps here, they cure 1 injury." quality="0" meta="PLACED" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">NO QUALITY</span></div><div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="ItemCard" type="trinket" face="front" name="RING" tier="3" slot="" effect="Changes a hiker's family for 3 days." quality="0" meta="1 USE" w="220" hint-size="220px,308px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">NO QUALITY</span></div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

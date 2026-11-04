@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backdrop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+@keyframes hikeTwinkle{0%,100%{opacity:var(--o)}50%{opacity:calc(var(--o) * 0.35)}}
+</style>
+</helmet>
+<div style="position: relative; width: {{w}}px; height: {{h}}px; overflow: hidden; background: {{sky}}">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="0"><span aria-hidden="true" style="position: absolute; left: {{s.x}}px; top: {{s.y}}px; font-family: 'EditUndo', monospace; font-size: {{s.size}}px; line-height: 1; color: #FFF6E1; --o: {{s.o}}; opacity: {{s.o}}; animation: hikeTwinkle {{s.dur}}s ease-in-out {{s.delay}}s infinite">*</span></sc-for>
+<sc-if value="{{hasBody}}" hint-placeholder-val="{{true}}"><img src="{{body}}" alt="" style="position: absolute; left: {{bodyX}}px; top: {{bodyY}}px; width: {{bodyS}}px; height: {{bodyS}}px; display: block"></sc-if>
+<sc-for list="{{layers}}" as="l" hint-placeholder-count="3"><img src="{{l}}" alt="" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; display: block; filter: {{landFilter}}"></sc-for>
+<div style="position: absolute; inset: 0; background: {{tint}}"></div>
+<sc-if value="{{wash}}" hint-placeholder-val="{{false}}"><div style="position: absolute; inset: 0; background: {{washBg}}"></div>
+<img src="/_blob/95646052a595ad72825aecb9f4f964ed" alt="" style="position: absolute; left: 0; top: 0; width: 100%; height: 200%; object-fit: cover; opacity: 0.10; display: block"></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scene":{"editor":"enum","options":["meadow","rainforest","alpine"],"default":"meadow"},"phase":{"editor":"enum","options":["morning","afternoon","night"],"default":"morning"},"w":{"editor":"int","default":1600},"h":{"editor":"int","default":1000},"wash":{"editor":"boolean","default":false},"$preview":{"width":800,"height":500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = { blueMountains: '/_blob/0079fe313d58cd5f5e827cee5b101a3a', tealHills: '/_blob/157ed668f88e55549a13728350a43024', greenRidge: '/_blob/f686034d1fe6f6758de9ed2df14bed81', mistyForest: '/_blob/1dabee26f99aa7169811eff5f5534d7a', grassHills: '/_blob/7cf48ac0e9a5aa9aba44303c7910ef94', snowyPines: '/_blob/c97e9cc32f327f4cf56e5e6c928623ac' };
+    const SUN = '/_blob/28c17fab75c23252210ddaf2b3b0118a', MOON = '/_blob/388ebb8b52450924564c367d1d06d6bf';
+    const LAND = {
+      meadow: [L.blueMountains, L.greenRidge, L.grassHills],
+      rainforest: [L.tealHills, L.mistyForest, L.grassHills],
+      alpine: [L.blueMountains, L.snowyPines]
+    };
+    // sky gradient, sun/moon, land treatment for each phase of the day
+    const PHASE = {
+      morning: { sky: 'linear-gradient(to bottom, #3F8FD6 0%, #8EC3EA 45%, #CFE9F5 75%)', body: SUN, bx: 0.60, by: 0.05, bs: 0.19, land: 'none', tint: 'transparent', stars: false },
+      afternoon: { sky: 'linear-gradient(to bottom, #4C8FCF 0%, #8FBBE0 24%, #E7C6A4 46%, #F2B07A 70%)', body: SUN, bx: 0.70, by: 0.17, bs: 0.19, land: 'sepia(0.14) saturate(1.06)', tint: 'rgba(242,166,94,0.06)', stars: false },
+      night: { sky: 'linear-gradient(to bottom, #0B1229 0%, #1A2547 50%, #2E3A63 80%)', body: MOON, bx: 0.68, by: 0.09, bs: 0.09, land: 'brightness(0.44) saturate(0.6)', tint: 'rgba(27,42,85,0.22)', stars: true }
+    };
+    const ph = PHASE[this.props.phase] || PHASE.morning;
+    const W = Number(this.props.w ?? 1600), H = Number(this.props.h ?? 1000);
+    const k = W / 1600;
+    let seed = 20261103;
+    const rnd = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+    const stars = [];
+    if (ph.stars) {
+      for (let i = 0; i < 90; i++) {
+        const size = [10, 12, 14, 18, 22][Math.floor(rnd() * 5)];
+        stars.push({ x: Math.round(rnd() * W), y: Math.round(rnd() * H * 0.52), size: Math.round(size * k), o: (0.2 + rnd() * 0.75).toFixed(2), dur: (3 + rnd() * 4).toFixed(1), delay: (rnd() * 5).toFixed(1) });
+      }
+    }
+    const wash = this.props.wash === true || this.props.wash === 'true';
+    return {
+      w: W, h: H, sky: ph.sky, stars, layers: LAND[this.props.scene] || LAND.meadow, landFilter: ph.land, tint: ph.tint,
+      hasBody: !!ph.body, body: ph.body, bodyX: Math.round(W * ph.bx), bodyY: Math.round(H * ph.by), bodyS: Math.round(W * ph.bs),
+      wash, washBg: this.props.phase === 'night'
+        ? 'linear-gradient(to bottom, rgba(236,230,215,0) 0%, rgba(236,230,215,0.10) 50%, rgba(20,30,26,0.10) 100%)'
+        : 'linear-gradient(to bottom, rgba(236,230,215,0.08) 0%, rgba(236,230,215,0.34) 45%, rgba(236,230,215,0.20) 75%, rgba(20,30,26,0.10) 100%)'
+    };
+  }
+}
+</script>
+</body>
+</html>

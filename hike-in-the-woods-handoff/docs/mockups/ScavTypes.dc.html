@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — scavenge card types</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1960px; box-sizing: border-box; padding: 40px 48px; background: #1D2220; color: #F1EADB; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 26px; background-image: radial-gradient(rgba(241,234,219,0.06) 1.1px, transparent 1.7px); background-size: 7px 7px">
+<div style="display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap">
+<span style="font-family: 'EditUndo', monospace; font-size: 36px; letter-spacing: 0.04em">SCAVENGE CARDS</span>
+<span style="font-size: 15px; color: #9C9585">Square cards on the node's backdrop · rarity underneath · luck, traits and Abundance shift the odds</span>
+</div>
+<div style="display: flex; gap: 14px; align-items: center">
+<sc-for list="{{scale}}" as="r" hint-placeholder-count="6"><div style="display: flex; align-items: center; gap: 6px"><div style="width: 9px; height: 9px; background: {{r.c}}"></div><span style="font-size: 12px; color: {{r.c}}">{{r.n}}</span></div></sc-for>
+</div>
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: baseline; gap: 14px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.06em; color: #E9B44C">{{s.title}}</span><span style="font-size: 13px; color: #9C9585">{{s.note}}</span></div>
+<div style="display: flex; gap: 14px; align-items: flex-start">
+<sc-for list="{{s.cards}}" as="c" hint-placeholder-count="6">
+<dc-import name="ScavCard" size="150" caption-w="200" art="{{c.art}}" bg="{{c.bg}}" bg2="{{c.bg2}}" rays="{{c.rays}}" ray-op="{{c.rayOp}}" icons="{{c.icons}}" glyph="{{c.glyph}}" mult="{{c.mult}}" back="{{c.back}}" node-icon="{{c.nodeIcon}}" caps="{{c.caps}}" item="{{c.item}}" item-small="{{c.itemSmall}}" fan="{{c.fan}}" corner="{{c.corner}}" title="{{c.title}}" desc="{{c.desc}}" rarity="{{c.rarity}}" hint-size="200px,240px"></dc-import>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const BG = {
+      forest: '/_blob/b12d15a149ecb0533f722ff71f5496bd', river: '/_blob/48a34678eab6914a2c6f7b6328df5df8',
+      wildlife: '/_blob/3f801d8599b39a4f6cc2b1e1cb396e28', mountain: '/_blob/718c344a48420b9f45741b40ec1c074e',
+      any: '/_blob/13daf969e99b9374db4b35552fa38c0a', caps: '/_blob/1d4dde8a394d512b7605a9164196d02b', items: '/_blob/ce3834972e8ec7cf36a884fab246a857'
+    };
+    const RAYS = {
+      [BG.forest]: ['/_blob/0678945f8e01b360b3016f375cbc1d98', 0.35], [BG.river]: ['/_blob/64b23dceeaedbd6de74be3cf30a2b4d3', 0.35],
+      [BG.wildlife]: ['/_blob/dd277c59e952b2f79a9422aaa9c6f261', 0.35], [BG.mountain]: ['/_blob/155715dbca76dc68eaeee6029f94d576', 0.35],
+      [BG.any]: ['/_blob/f17163949b3ed87a4fdccad2c567f0ee', 0.22], [BG.caps]: ['/_blob/87321c433832b539cd9e24204e235e8a', 0.32], [BG.items]: ['/_blob/04e02201707bd498847f6974448771cb', 0.22]
+    };
+    const NODE = { forest: '/_blob/62add56add8cdc44bdd2947049f865be', river: '/_blob/bd13e8d019c14338c7427650a25506ec', wildlife: '/_blob/61a42a071acb764f0eefe05f3d20b707', mountain: '/_blob/4b0866cf116a003081b38798aa257cef' };
+    const ART = { c204: '/_blob/875e4a1d67036cef5084780d735d9914', c209: '/_blob/e635607a0c5a5209762650a508685e8c', c210: '/_blob/0b6b1d2b68471b981257a768d9a07210', c211: '/_blob/2efe9ea4becc5015163346de82729c25' };
+    const R = { wood: '/_blob/3fb96444536d801f16767fa7b12afa79', moss: '/_blob/1d1caa54e18096a8fa7bb7c83ec361a7', mushroom: '/_blob/93ad456448e5e39cc2c33e31e4b45a22', fish: '/_blob/118cf77867466fcc41ae5c1056625a32', stone: '/_blob/73a6616b6e19886016edbc4d022f4bb7' };
+    const BACK = { tool: '/_blob/472417f9cc1c31a86cb79336713cb51e', clothes: '/_blob/ac85430d7f485f6cf516fb75ff32856a', food: '/_blob/48f45c4bf60e180cdc80e198942ab8bb', shelter: '/_blob/6cb7a554f06298d4c0516ebbfdd5ac44', trinket: '/_blob/ff8df5ec7be01350f2523eb742334c0c' };
+    const BACKICON = { caps: '/_blob/096be20e852c360fab947bbcf7b48575', item: '/_blob/00342bbe0c854bf140510ececce47e54' };
+    const card = (o) => { const c = Object.assign({ art: '', bg: BG.forest, bg2: '', icons: [], glyph: '', mult: '', back: false, nodeIcon: '', caps: 0, item: '', itemSmall: false, fan: [], corner: '', title: '', desc: '', rarity: -1 }, o); const r = RAYS[c.bg] || ['', 0.3]; return Object.assign(c, { rays: r[0], rayOp: r[1] }); };
+    const find = (type, label, rarity) => card({ bg: BG.items, item: BACK[type], title: label + ' FIND', desc: 'A random ' + label.toLowerCase() + ' card', rarity });
+    const pick = (type, label, rarity) => card({ bg: BG.items, fan: [BACK[type], BACK[type], BACK[type]], corner: '!', title: 'CHOICE ' + label, desc: 'Pick 1 of 5 random ' + label.toLowerCase() + ' cards', rarity });
+    const scale = [
+      { n: 'Common', c: '#C9C2B2' }, { n: 'Uncommon', c: '#7FC29B' }, { n: 'Rare', c: '#E9B44C' },
+      { n: 'Very rare', c: '#CDA6EE' }, { n: 'Legendary', c: '#F0875A' }, { n: 'Mythic', c: '#7FD3E6' }
+    ];
+    const sections = [
+      {
+        title: 'FACE DOWN', note: 'Every card is dealt face down showing where it came from; click each to flip it',
+        cards: [
+          card({ back: true, bg: BG.forest, nodeIcon: NODE.forest, title: 'FOREST BACK' }),
+          card({ back: true, bg: BG.river, nodeIcon: NODE.river, title: 'RIVER BACK' }),
+          card({ back: true, bg: BG.wildlife, nodeIcon: NODE.wildlife, title: 'WILDLIFE BACK' }),
+          card({ back: true, bg: BG.mountain, nodeIcon: NODE.mountain, title: 'MOUNTAIN BACK' }),
+          card({ back: true, bg: BG.caps, nodeIcon: BACKICON.caps, title: 'CAPS BACK' }),
+          card({ back: true, bg: BG.items, nodeIcon: BACKICON.item, title: 'ITEM BACK' })
+        ]
+      },
+      {
+        title: 'RESOURCES AND CAPS', note: 'What you see is what you get · ×2, ×3, pairs and trios drain 2 Abundance',
+        cards: [
+          card({ icons: [R.wood], title: 'WOOD', desc: 'One resource', rarity: 0 }),
+          card({ bg: BG.river, icons: [R.fish], mult: '×2', title: 'FISH ×2', desc: 'Two of the same', rarity: 1 }),
+          card({ bg: BG.mountain, icons: [R.stone], mult: '×3', title: 'STONE ×3', desc: 'Three of the same', rarity: 2 }),
+          card({ icons: [R.wood, R.moss], title: 'WOOD + MOSS', desc: 'Two different, same node', rarity: 1 }),
+          card({ bg: BG.forest, icons: [R.wood, R.moss, R.mushroom], title: 'TRIO', desc: 'Three different, same node', rarity: 2 }),
+          card({ bg: BG.forest, bg2: BG.river, icons: [R.wood, R.fish], title: 'WOOD + FISH', desc: 'One from each node on a two-node tile', rarity: 2 }),
+          card({ bg: BG.caps, caps: 3, title: 'ACORN CAPS', desc: '1 to 3 caps, from any node', rarity: 1 })
+        ]
+      },
+      {
+        title: 'WILD ?', note: 'Random, revealed when taken',
+        cards: [
+          card({ glyph: '?', title: 'WILD', desc: 'A random Forest resource', rarity: 1 }),
+          card({ bg: BG.river, glyph: '?', mult: '×2', title: 'WILD ×2', desc: 'Two random River resources', rarity: 2 }),
+          card({ bg: BG.any, glyph: '?', title: 'VARIETY WILD', desc: 'A random resource from all 16', rarity: 1 }),
+          card({ bg: BG.any, glyph: '??', title: 'VARIETY PAIR', desc: '2 random resources from all 16', rarity: 2 }),
+          card({ bg: BG.any, glyph: '???', title: 'VARIETY BUNDLE', desc: '3 random resources from all 16', rarity: 3 })
+        ]
+      },
+      {
+        title: 'CHOICE !', note: 'You pick the exact resource · the Wild picks can be the same resource or all different',
+        cards: [
+          card({ glyph: '!', title: 'CHOICE', desc: 'Pick any Forest resource', rarity: 2 }),
+          card({ bg: BG.mountain, glyph: '!', mult: '×2', title: 'CHOICE ×2', desc: 'Pick a Mountain resource, get two', rarity: 3 }),
+          card({ bg: BG.any, glyph: '!', title: 'PICK OF THE WILD', desc: 'Pick 1 resource from all 16', rarity: 2 }),
+          card({ bg: BG.any, glyph: '!!', title: 'PAIR OF THE WILD', desc: 'Pick 2 resources from all 16', rarity: 3 }),
+          card({ bg: BG.any, glyph: '!!!', title: 'BUNDLE OF THE WILD', desc: 'Pick 3 resources from all 16', rarity: 4 })
+        ]
+      },
+      {
+        title: 'ITEM FINDS', note: 'All rare · tools and food most often, then clothes, then shelters and trinkets',
+        cards: [find('tool', 'TOOL', 2), find('food', 'FOOD', 2), find('clothes', 'CLOTHES', 3), find('shelter', 'SHELTER', 4), find('trinket', 'TRINKET', 4)]
+      },
+      {
+        title: 'CHOICE ITEMS', note: 'One step rarer than the find of the same type',
+        cards: [pick('tool', 'TOOL', 3), pick('food', 'FOOD', 3), pick('clothes', 'CLOTHES', 4), pick('shelter', 'SHELTER', 5), pick('trinket', 'TRINKET', 5)]
+      }
+    ];
+    return { scale, sections };
+  }
+}
+</script>
+</body>
+</html>

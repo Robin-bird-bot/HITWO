@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Item card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+@keyframes hikeGradShift{0%{background-position:0% 0%}100%{background-position:100% 100%}}
+@keyframes hikeRaySpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="position: relative; width: {{w}}px; height: {{h}}px; border-radius: {{radius}}px; overflow: hidden; box-shadow: 0 12px 26px rgba(0,0,0,0.38); font-family: 'DM Sans', sans-serif; color: #F1EADB">
+<div style="position: absolute; inset: 0; background: {{grad}}; background-size: 260% 260%; animation: hikeGradShift 9s ease-in-out infinite alternate"></div>
+<sc-if value="{{isBack}}" hint-placeholder-val="{{true}}">
+<img src="{{rays}}" alt="" style="position: absolute; left: {{rayL}}px; top: {{rayT}}px; width: {{rayS}}px; height: {{rayS}}px; opacity: 0.28; display: block; animation: hikeRaySpin 90s linear infinite">
+<img src="/_blob/95646052a595ad72825aecb9f4f964ed" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.18; display: block">
+<img src="{{icon}}" alt="{{typeLabel}} card back" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25))">
+</sc-if>
+<sc-if value="{{isFront}}" hint-placeholder-val="{{false}}">
+<img src="/_blob/78ebdd949748aa86df10ad7ce138586c" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block">
+<div style="position: absolute; left: {{artL}}px; top: {{artT}}px; width: {{artW}}px; height: {{artH}}px; overflow: hidden; -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%); mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%)">
+<img src="{{rays}}" alt="" style="position: absolute; left: {{artRayL}}px; top: {{artRayT}}px; width: {{artRayS}}px; height: {{artRayS}}px; opacity: 0.4; display: block; animation: hikeRaySpin 90s linear infinite">
+</div>
+<img src="{{icon}}" alt="" style="position: absolute; left: {{iconL}}px; top: {{iconT}}px; width: {{iconW}}px; height: {{iconH}}px; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35))">
+<div style="position: absolute; left: {{padX}}px; right: {{padX}}px; top: {{textT}}px; bottom: {{padB}}px; display: flex; flex-direction: column; gap: {{gap}}px">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 6px"><span style="font-family: 'EditUndo', monospace; font-size: {{nameSize}}px; letter-spacing: 0.03em; color: #FFF3E3">{{name}}</span><span style="font-family: 'EditUndo', monospace; font-size: {{smallSize}}px; color: {{accent}}">{{tierLabel}}</span></div>
+<span style="font-size: {{smallSize}}px; letter-spacing: 0.04em; text-transform: uppercase; color: {{accent}}">{{typeLabel}}{{slotLabel}}</span>
+<span style="font-size: {{bodySize}}px; line-height: 1.35; color: #E9DFCC">{{effect}}</span>
+<div style="flex: 1"></div>
+<div style="display: flex; align-items: center; justify-content: space-between">
+<sc-if value="{{hasQuality}}" hint-placeholder-val="{{true}}"><div style="display: flex; align-items: center; gap: {{pipGap}}px"><sc-for list="{{pips}}" as="p" hint-placeholder-count="5"><div style="width: {{pipS}}px; height: {{pipS}}px; transform: rotate(45deg); background: {{p.bg}}"></div></sc-for><span style="margin-left: 4px; font-size: {{smallSize}}px; color: #C9B9A0">Quality</span></div></sc-if>
+<sc-if value="{{noQuality}}" hint-placeholder-val="{{false}}"><span style="font-size: {{smallSize}}px; color: #A8977D">No quality</span></sc-if>
+<span style="font-family: 'EditUndo', monospace; font-size: {{smallSize}}px; color: #F1EADB">{{meta}}</span>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"type":{"editor":"enum","options":["tool","clothes","food","shelter","trinket"],"default":"tool"},"face":{"editor":"enum","options":["back","front"],"default":"back"},"name":{"editor":"text","default":"MEDKIT"},"tier":{"editor":"int","default":1,"min":1,"max":4},"slot":{"editor":"text","default":""},"effect":{"editor":"text","default":""},"quality":{"editor":"int","default":3,"min":0,"max":5},"meta":{"editor":"text","default":""},"w":{"editor":"int","default":210},"$preview":{"width":210,"height":294}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const T = {
+      tool: { label: 'Tool', colors: ['#ed642b', '#f08c35', '#f0ab35', '#ecf035'], accent: '#F2A65A', icon: '/_blob/eff06093e8d02ed474f0af02555f9612', rays: '/_blob/4f7a1b7138f9728d05ce146f1d07a295' },
+      clothes: { label: 'Clothes', colors: ['#5e3023', '#895637', '#c18553', '#e6b389'], accent: '#E6B389', icon: '/_blob/8e162ae1cf84b38a06f6a2f6f769e6d2', rays: '/_blob/fe42788abc963f221d2a5ed60d977bb0' },
+      food: { label: 'Food', colors: ['#3a7752', '#45a86c', '#c7da7b', '#dced9a'], accent: '#C7DA7B', icon: '/_blob/a7f59e3cb098a8622d22c554aece10b7', rays: '/_blob/4e0e8e23223b680e250a1cc64b3b43a2' },
+      shelter: { label: 'Shelter', colors: ['#83c4ed', '#545c8e'], accent: '#83C4ED', icon: '/_blob/f2308665ee55d6b923a285d3f4644c5e', rays: '/_blob/dd8275fc91e8a49b7e086183a931caec' },
+      trinket: { label: 'Trinket', colors: ['#e2a9f1', '#d675ef', '#9a3f64', '#cd1f66'], accent: '#E2A9F1', icon: '/_blob/43bced8bda39764135239b64a63d8c7d', rays: '/_blob/f120802238791203b88cad57291a5f03' }
+    };
+    const t = T[p.type] || T.tool;
+    const W = Number(p.w ?? 210), H = Math.round(W * 1.4), k = W / 300;
+    const c = t.colors;
+    const grad = 'linear-gradient(155deg, ' + c.concat(c.slice(0, -1).reverse()).join(', ') + ')';
+    const isBack = p.face !== 'front';
+    const q = Number(p.quality ?? 0);
+    const rayS = Math.round(H * 1.5);
+    // art window = the cloud area of the front background (upper ~55%)
+    const artL = Math.round(W * 0.08), artT = Math.round(H * 0.09), artW = Math.round(W * 0.84), artH = Math.round(H * 0.46);
+    const artRayS = Math.round(artW * 1.6);
+    const iconW = Math.round(W * 0.62), iconH = Math.round(H * 0.62);
+    return {
+      w: W, h: H, radius: Math.round(W * 0.075), grad, isBack, isFront: !isBack, icon: t.icon, rays: t.rays,
+      rayS, rayL: Math.round((W - rayS) / 2), rayT: Math.round((H - rayS) / 2),
+      artL, artT, artW, artH, artRayS, artRayL: Math.round((artW - artRayS) / 2), artRayT: Math.round((artH - artRayS) / 2),
+      iconW, iconH, iconL: Math.round((W - iconW) / 2), iconT: Math.round(H * 0.32 - iconH / 2),
+      padX: Math.round(W * 0.09), padB: Math.round(H * 0.06), textT: Math.round(H * 0.58), gap: Math.max(2, Math.round(4 * k)),
+      nameSize: Math.max(10, Math.round(21 * k)), smallSize: Math.max(8, Math.round(13 * k)), bodySize: Math.max(9, Math.round(15 * k)),
+      name: p.name || '', tierLabel: 'T' + (p.tier ?? 1), typeLabel: t.label, slotLabel: p.slot ? ' · ' + p.slot : '', accent: t.accent,
+      effect: p.effect || '', meta: p.meta || '',
+      hasQuality: q > 0, noQuality: q === 0, pipS: Math.max(4, Math.round(9 * k)), pipGap: Math.max(3, Math.round(7 * k)),
+      pips: [1, 2, 3, 4, 5].map((i) => ({ bg: i <= q ? '#E9B44C' : 'rgba(255,255,255,0.18)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

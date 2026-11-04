@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — scavenging</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+@font-face{font-family:'EditUndoDot';src:url(/_blob/5fbcc4ecf01f25966fd1e7970381ee03) format('truetype');font-display:block}
+@font-face{font-family:'GameQuotes';src:url(/_blob/5bd47ec7565f50231974810679bc52cd) format('opentype');font-display:block}
+body{margin:0}
+button{font-family:'DM Sans',sans-serif;cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: #DCE3D8">
+<div style="position: absolute; left: 0; top: 0"><dc-import name="Main" show-hints="{{false}}" hint-size="1600px,1000px"></dc-import></div>
+<div style="position: absolute; inset: 0; background: rgba(14,19,17,0.22)"></div>
+
+<div style="position: absolute; left: 310px; top: 190px; width: 980px; box-sizing: border-box; padding: 22px 28px 24px; background: rgba(24,30,27,0.52); backdrop-filter: blur(18px) saturate(1.15); -webkit-backdrop-filter: blur(18px) saturate(1.15); border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; box-shadow: 0 24px 70px rgba(0,0,0,0.38); display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; align-items: center; gap: 14px">
+<span style="font-family: 'EditUndo', monospace; font-size: 26px; letter-spacing: 0.04em">SCAVENGE</span>
+<div style="display: flex; align-items: center; gap: 4px"><img src="/_blob/62add56add8cdc44bdd2947049f865be" alt="Forest node" style="width: 20px; height: 23px; display: block"><img src="/_blob/bd13e8d019c14338c7427650a25506ec" alt="River node" style="width: 20px; height: 23px; display: block"></div>
+<div style="flex: 1"></div>
+<div style="position: relative">
+<button aria-label="Show what's affecting this scavenge" style="display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 12px; border-radius: 17px; border: 1px solid {{modsBorder}}; background: {{modsBg}}; color: #F1EADB; font-size: 12px; font-weight: 600"><dc-import name="Ic" icon="sparkles" color="#E9B44C" size="14" hint-size="14px,14px"></dc-import>4 bonuses<span style="font-family: 'EditUndo', monospace; font-size: 12px; color: #9C9585">{{modsArrow}}</span></button>
+<sc-if value="{{modsOpen}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; right: 0; top: 42px; width: 300px; padding: 12px; box-sizing: border-box; border-radius: 14px; background: rgba(24,30,27,0.82); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.14); box-shadow: 0 16px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 7px; z-index: 5">
+<sc-for list="{{mods}}" as="m" hint-placeholder-count="4">
+<div style="display: flex; align-items: flex-start; gap: 8px; padding: 7px 9px; border-radius: 9px; background: {{m.bg}}"><dc-import name="Ic" icon="{{m.icon}}" color="{{m.fg}}" size="14" sw="2.25" hint-size="14px,14px"></dc-import><span style="font-size: 12px; line-height: 1.35; color: {{m.fg}}">{{m.text}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<div style="display: flex; align-items: center; gap: 9px; padding: 4px 12px 4px 4px; border-radius: 22px; background: rgba(255,255,255,0.08)">
+<img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="Finnegan" style="width: 34px; height: 34px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px #E2683C">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px">FINNEGAN</span>
+<dc-import name="Ic" icon="utensils" color="#C9C2B2" size="13" hint-size="13px,13px"></dc-import>
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; color: #C9C2B2">6</span><span style="font-size: 12px; color: #9C9585">→</span><span style="font-family: 'EditUndoDot', monospace; font-size: 15px; color: #E9B44C">5</span>
+</div>
+</div>
+
+<div style="display: flex; justify-content: center; gap: 26px">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+<dc-import name="ScavCard" size="196" caption-w="206" bg="{{c.bg}}" rays="{{c.rays}}" ray-op="0.34" spin="{{c.spin}}" icons="{{c.icons}}" glyph="{{c.glyph}}" mult="{{c.mult}}" back="{{c.back}}" node-icon="{{c.nodeIcon}}" title="{{c.title}}" desc="{{c.desc}}" rarity="{{c.rarity}}" selected="{{c.selected}}" hint-size="206px,280px"></dc-import>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: center; gap: 10px">
+<span style="font-size: 12px; color: #C9C2B2; margin-right: 6px">Choice: pick a Forest resource</span>
+<sc-for list="{{choices}}" as="o" hint-placeholder-count="4">
+<button aria-label="Choose {{o.label}}" style="display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px 0 6px; border-radius: 20px; border: {{o.border}}; background: {{o.bg}}; color: #F1EADB; font-size: 12px"><img src="{{o.img}}" alt="" style="width: 30px; height: 30px; object-fit: contain; display: block">{{o.label}}</button>
+</sc-for>
+</div>
+
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="flex: 1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #C9C2B2"><img src="/_blob/62add56add8cdc44bdd2947049f865be" alt="" style="width: 14px; height: 16px"><span>Forest Abundance</span><span style="font-family: 'EditUndo', monospace; color: #F1EADB">7</span><span>→</span><span style="font-family: 'EditUndoDot', monospace; font-size: 14px; color: #E9B44C">5</span></div>
+<button aria-label="Gambler: reroll one card, 1 left today" style="display: flex; align-items: center; gap: 7px; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.18); background: rgba(255,255,255,0.04); color: #F1EADB; font-size: 13px; font-weight: 600"><dc-import name="Ic" icon="dice" color="#9CC3A8" size="16" hint-size="16px,16px"></dc-import>Reroll · 1</button>
+<button style="height: 44px; padding: 0 22px; border-radius: 12px; border: none; background: #E9B44C; color: #1D2220; font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.04em">TAKE MOSS + 1 BONUS</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"modsOpen":{"editor":"boolean","default":false},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const open = this.props.modsOpen === true || this.props.modsOpen === 'true';
+    const BG = { forest: '/_blob/b12d15a149ecb0533f722ff71f5496bd', river: '/_blob/48a34678eab6914a2c6f7b6328df5df8' };
+    const RAYS = { forest: '/_blob/0678945f8e01b360b3016f375cbc1d98', river: '/_blob/64b23dceeaedbd6de74be3cf30a2b4d3' };
+    const NODE = { forest: '/_blob/62add56add8cdc44bdd2947049f865be', river: '/_blob/bd13e8d019c14338c7427650a25506ec' };
+    const R = { wood: '/_blob/3fb96444536d801f16767fa7b12afa79', moss: '/_blob/1d1caa54e18096a8fa7bb7c83ec361a7', mushroom: '/_blob/93ad456448e5e39cc2c33e31e4b45a22', grass: '/_blob/cd8a06b3873c4982430c5bac0b3e20ff', fish: '/_blob/118cf77867466fcc41ae5c1056625a32' };
+    const base = { bg: BG.forest, rays: RAYS.forest, spin: true, icons: [], glyph: '', mult: '', back: false, nodeIcon: '', title: '', desc: '', rarity: -1, selected: false };
+    const cards = [
+      Object.assign({}, base, { icons: [R.wood], mult: '×2', title: 'WOOD ×2', desc: 'Two of the same', rarity: 1 }),
+      Object.assign({}, base, { glyph: '!', title: 'CHOICE', desc: 'Pick any Forest resource', rarity: 2, selected: true }),
+      Object.assign({}, base, { bg: BG.river, rays: RAYS.river, spin: false, back: true, nodeIcon: NODE.river, title: 'TAP TO FLIP' }),
+      Object.assign({}, base, { bg: BG.river, rays: RAYS.river, icons: [R.fish], title: 'FISH', desc: 'One resource', rarity: 0 })
+    ];
+    const mods = [
+      { icon: 'sparkles', text: 'Luck +1 from high Morale (7)', fg: '#A6DDBC', bg: 'rgba(127,194,155,0.14)' },
+      { icon: 'paw', text: 'Dog: 1 extra card to choose from', fg: '#F2C978', bg: 'rgba(233,180,76,0.12)' },
+      { icon: 'users', text: 'Copydog: +1 bonus resource (Cody scavenged here today)', fg: '#F2C978', bg: 'rgba(233,180,76,0.12)' },
+      { icon: 'droplet', text: 'River Abundance is low: fewer River cards', fg: '#F39A86', bg: 'rgba(229,98,74,0.12)' }
+    ];
+    const choices = [
+      { label: 'Wood', img: R.wood, sel: false }, { label: 'Moss', img: R.moss, sel: true },
+      { label: 'Mushroom', img: R.mushroom, sel: false }, { label: 'Grass', img: R.grass, sel: false }
+    ].map((o) => Object.assign(o, { border: o.sel ? '2px solid #E9B44C' : '1px solid rgba(255,255,255,0.16)', bg: o.sel ? 'rgba(233,180,76,0.2)' : 'rgba(255,255,255,0.05)' }));
+    return {
+      cards, mods, choices, modsOpen: open,
+      modsArrow: open ? '▴' : '▾',
+      modsBg: open ? 'rgba(233,180,76,0.18)' : 'rgba(255,255,255,0.06)',
+      modsBorder: open ? 'rgba(233,180,76,0.6)' : 'rgba(255,255,255,0.16)'
+    };
+  }
+}
+</script>
+</body>
+</html>

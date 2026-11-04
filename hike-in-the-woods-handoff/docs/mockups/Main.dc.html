@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — game screen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+@font-face{font-family:'EditUndoDot';src:url(/_blob/5fbcc4ecf01f25966fd1e7970381ee03) format('truetype');font-display:block}
+body{margin:0}
+a{color:#E9B44C}a:hover{color:#F2C978}
+button{font-family:'DM Sans',sans-serif;cursor:pointer}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; background: #DCE3D8; color: #F1EADB; font-family: 'DM Sans', sans-serif">
+
+<!-- LANDSCAPE: layered backdrop (parallax in the game) -->
+<div style="position: absolute; left: 0; top: 0"><dc-import name="Backdrop" scene="meadow" phase="afternoon" wash="{{true}}" hint-size="1600px,1000px"></dc-import></div>
+
+<!-- TRAIL LINES -->
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" aria-hidden="true" style="position: absolute; left: 0; top: 0">
+<g fill="none" stroke-linecap="round">
+<path d="{{dBase}}" stroke="#22322D" stroke-opacity="0.16" stroke-width="12"></path>
+<path d="{{dDotted}}" stroke="#F7F1E4" stroke-opacity="0.85" stroke-width="3" stroke-dasharray="1 10"></path>
+<path d="{{dVisited}}" stroke="#F7F1E4" stroke-width="4"></path>
+<path d="{{dPaved}}" stroke="#ECE5D6" stroke-width="10"></path>
+<path d="{{dPaved}}" stroke="#8D877A" stroke-width="1.5" stroke-dasharray="6 6"></path>
+<path d="{{dMuddy}}" stroke="#9A7650" stroke-width="5" stroke-dasharray="3 7"></path>
+<path d="{{dMorale}}" stroke="#CDA6EE" stroke-opacity="0.8" stroke-width="3" stroke-dasharray="2 8"></path>
+<path d="{{dReach}}" stroke="#E9B44C" stroke-width="4" stroke-dasharray="9 7"></path>
+</g>
+</svg>
+
+<!-- LINE COST BADGES -->
+<sc-for list="{{badges}}" as="g" hint-placeholder-count="4">
+<div title="{{g.title}}" style="position: absolute; left: {{g.left}}px; top: {{g.top}}px; height: 22px; padding: 0 7px 0 5px; border-radius: 11px; background: {{g.bg}}; color: {{g.fg}}; display: flex; align-items: center; gap: 3px; box-shadow: 0 3px 8px rgba(20,32,28,0.25)"><dc-import name="Ic" icon="{{g.icon}}" color="{{g.fg}}" size="12" sw="2.5" hint-size="12px,12px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">{{g.text}}</span></div>
+</sc-for>
+
+<!-- TILES -->
+<sc-for list="{{tiles}}" as="t" hint-placeholder-count="14">
+<div style="position: absolute; left: {{t.left}}px; top: {{t.top}}px; width: 112px; height: 128px; filter: drop-shadow(0 8px 10px rgba(20,32,28,0.28))">
+<sc-if value="{{t.reach}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: -8px; top: -9px; width: 128px; height: 146px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #E9B44C"></div></sc-if>
+<div style="position: absolute; left: 0; top: 0; width: 112px; height: 128px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.edge}}"></div>
+<div style="position: absolute; left: 5px; top: 5px; width: 102px; height: 118px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.fill}}"></div>
+<sc-if value="{{t.spCenter}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 0; right: 0; top: 24px; display: flex; flex-direction: column; align-items: center; gap: 5px; opacity: {{t.spOp}}"><div style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; border: 2px solid #F7F1E4; background: {{t.sp.bg}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{t.sp.icon}}" color="{{t.sp.fg}}" size="22" sw="2" hint-size="22px,22px"></dc-import></div><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.03em; color: {{t.labelColor}}">{{t.sp.name}}</span></div></sc-if>
+<sc-if value="{{t.isNarrow}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 0; right: 0; top: 24px; display: flex; flex-direction: column; align-items: center; gap: 5px"><div style="width: 44px; height: 44px; box-sizing: border-box; border-radius: 50%; border: 2px solid #F7F1E4; background: #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 20px; color: #F1EADB">2</div><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.03em; color: {{t.labelColor}}">NARROW PATH</span></div></sc-if>
+<sc-if value="{{t.hasLabel}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 0; right: 0; top: 50px; text-align: center; font-family: 'EditUndo', monospace; font-size: 13px; color: #2C3A35">{{t.label}}</div></sc-if>
+<sc-if value="{{t.spCorner}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: -4px; top: 16px; width: 28px; height: 28px; box-sizing: border-box; border-radius: 50%; border: 2px solid #F7F1E4; background: {{t.sp.bg}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{t.sp.icon}}" color="{{t.sp.fg}}" size="14" sw="2.25" hint-size="14px,14px"></dc-import></div></sc-if>
+<sc-if value="{{t.merchant}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: -4px; top: 16px; width: 28px; height: 28px; box-sizing: border-box; border-radius: 50%; border: 2px solid #F7F1E4; background: #E9B44C; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="bag" color="#1D2220" size="14" sw="2.25" hint-size="14px,14px"></dc-import></div></sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 15px; display: flex; justify-content: center; gap: 3px">
+<sc-for list="{{t.nodes}}" as="n" hint-placeholder-count="2">
+<sc-if value="{{n.known}}" hint-placeholder-val="{{true}}"><img src="{{n.img}}" alt="{{n.name}} node" style="width: 20px; height: 23px; display: block"></sc-if>
+<sc-if value="{{n.hidden}}" hint-placeholder-val="{{false}}"><div style="width: 20px; height: 23px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{t.hiddenBg}}; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 11px; color: #F1EADB">?</div></sc-if>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+<!-- CHECKPOINT -->
+<div style="position: absolute; left: 692px; top: 50px; width: 136px; height: 156px; filter: drop-shadow(0 8px 12px rgba(20,32,28,0.3))">
+<div style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F7F1E4"></div>
+<div style="position: absolute; left: 6px; top: 6px; width: 124px; height: 144px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #D9434B; display: flex; align-items: center; justify-content: center; padding-top: 14px; box-sizing: border-box"><dc-import name="Ic" icon="tower" color="#F7F1E4" size="52" sw="1.75" hint-size="52px,52px"></dc-import></div>
+</div>
+<div style="position: absolute; left: 512px; top: 112px; padding: 8px 12px; background: rgba(29,34,32,0.9); border-radius: 10px; display: flex; flex-direction: column; gap: 3px; box-shadow: 0 8px 20px rgba(15,22,19,0.22)">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.04em">CHECKPOINT 1</span>
+<span style="font-size: 12px; color: #C9C2B2">Ranger Station · all 4 check in</span>
+</div>
+
+<!-- HIKER TOKENS -->
+<sc-for list="{{tokens}}" as="k" hint-placeholder-count="4">
+<div style="position: absolute; left: {{k.left}}px; top: {{k.top}}px; width: {{k.size}}px; height: {{k.size}}px; border-radius: 50%; overflow: hidden; opacity: {{k.op}}; box-shadow: {{k.shadow}}"><img src="{{k.img}}" alt="{{k.name}}" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: {{k.filter}}"></div>
+</sc-for>
+
+<!-- MOVE PREVIEW -->
+<sc-if value="{{showHints}}" hint-placeholder-val="{{true}}">
+<div style="position: absolute; left: 410px; top: 618px; width: 160px; padding: 8px 10px; box-sizing: border-box; background: rgba(29,34,32,0.94); border-radius: 10px; display: flex; flex-direction: column; gap: 3px; box-shadow: 0 8px 20px rgba(15,22,19,0.25)">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #E9B44C; letter-spacing: 0.04em">SIDEWAYS MOVE</span>
+<div style="display: flex; align-items: center; gap: 6px; font-size: 12px"><span>Appetite</span><span style="font-family: 'EditUndo', monospace; font-size: 13px">6</span><span style="color: #9C9585">→</span><span style="font-family: 'EditUndoDot', monospace; font-size: 15px; color: #E9B44C">5</span></div>
+<span style="font-size: 12px; color: #C9C2B2">Forest ×2 revealed</span>
+<div style="position: absolute; left: 86px; bottom: -7px; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 7px solid rgba(29,34,32,0.94)"></div>
+</div>
+</sc-if>
+
+<!-- SCROLL RAIL -->
+<div aria-label="Trail overview" style="position: absolute; left: 1200px; top: 204px; width: 36px; height: 640px">
+<div style="position: absolute; left: 0; top: 0; width: 36px; display: flex; justify-content: center"><div style="width: 26px; height: 26px; border-radius: 50%; background: #D9434B; border: 2px solid #F7F1E4; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="tower" color="#F7F1E4" size="13" sw="2" hint-size="13px,13px"></dc-import></div></div>
+<div style="position: absolute; left: 16px; top: 30px; width: 4px; height: 580px; border-radius: 2px; background: rgba(29,34,32,0.35)"></div>
+<div style="position: absolute; left: 10px; top: 24px; width: 16px; height: 548px; box-sizing: border-box; border-radius: 8px; border: 2px solid rgba(247,241,228,0.85); background: rgba(247,241,228,0.18)"></div>
+<sc-for list="{{railFaces}}" as="r" hint-placeholder-count="4">
+<button aria-label="Jump to {{r.name}}" style="position: absolute; left: {{r.left}}px; top: {{r.top}}px; width: 22px; height: 22px; padding: 0; border: none; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 2px {{r.color}}, 0 3px 6px rgba(0,0,0,0.3); background: #1D2220"><img src="{{r.img}}" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block"></button>
+</sc-for>
+<div style="position: absolute; left: 0; top: 618px; width: 36px; text-align: center; font-family: 'EditUndo', monospace; font-size: 11px; color: #1D2220">START</div>
+</div>
+
+<!-- TOP LEFT: BIOME -->
+<div style="position: absolute; left: 16px; top: 16px; width: 288px; height: 92px; box-sizing: border-box; padding: 12px 16px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.08em; color: #9DB5AA">HIKE IN THE WOODS</span><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button></div>
+<div style="display: flex; align-items: baseline; justify-content: space-between">
+<span style="font-family: 'EditUndo', monospace; font-size: 30px; letter-spacing: 0.04em">MEADOW</span>
+<div style="display: flex; gap: 5px; align-items: center"><div style="width: 22px; height: 5px; border-radius: 3px; background: #E9B44C"></div><div style="width: 22px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.18)"></div><div style="width: 22px; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.18)"></div></div>
+</div>
+<span style="font-size: 12px; color: #C9C2B2">Section 1 of 3 · Tier I</span>
+</div>
+
+<!-- PARTY -->
+<aside style="position: absolute; left: 16px; top: 120px; width: 288px; height: 864px; box-sizing: border-box; padding: 14px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 0 2px">
+<span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.06em">PARTY</span>
+<div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 12px; color: #C9C2B2">2 of 4 acted</span><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button></div>
+</div>
+<sc-for list="{{hikers}}" as="h" hint-placeholder-count="4">
+<div style="border-radius: 12px; padding: 10px; background: {{h.bg}}; border: 1px solid {{h.border}}; opacity: {{h.opacity}}; transform: {{h.transform}}; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<img src="{{h.img}}" alt="{{h.name}}" style="width: 56px; height: 56px; border-radius: 12px; object-fit: cover; display: block; flex: none; box-shadow: 0 0 0 3px {{h.color}}; filter: {{h.filter}}">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px">
+<div style="display: flex; align-items: center; gap: 6px">
+<span style="font-family: 'EditUndo', monospace; font-size: 16px; letter-spacing: 0.03em; flex: 1; white-space: nowrap; overflow: hidden">{{h.caps}}</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; padding: 2px 6px; border-radius: 6px; background: {{h.tagBg}}; color: {{h.tagFg}}">{{h.status}}</span>
+<button aria-label="{{h.toggleLabel}}" style="width: 24px; height: 24px; border-radius: 6px; border: none; background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Ic" icon="{{h.chev}}" color="#F1EADB" size="16" hint-size="16px,16px"></dc-import></button>
+</div>
+<div style="display: flex; align-items: center; gap: 5px; color: #9C9585"><dc-import name="Ic" icon="{{h.famIcon}}" color="#9C9585" size="11" sw="2.25" hint-size="11px,11px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.04em">{{h.family}}</span></div>
+<sc-for list="{{h.bars}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 7px" title="{{b.label}}">
+<dc-import name="Ic" icon="{{b.icon}}" color="#B9B2A3" size="12" sw="2.5" hint-size="12px,12px"></dc-import>
+<div style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.13); overflow: hidden"><div style="height: 100%; width: {{b.pct}}%; border-radius: 3px; background: {{b.fill}}"></div></div>
+</div>
+</sc-for>
+<div style="display: flex; gap: 5px; align-items: center; margin-top: 2px">
+<sc-for list="{{h.conds}}" as="c" hint-placeholder-count="2">
+<div title="{{c.label}}" style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid {{c.ring}}; background: {{c.bg}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{c.icon}}" color="{{c.fg}}" size="12" sw="2.5" solid="{{c.solid}}" hint-size="12px,12px"></dc-import></div>
+</sc-for>
+</div>
+</div>
+</div>
+<sc-if value="{{h.expanded}}" hint-placeholder-val="{{false}}">
+<div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; display: flex; flex-direction: column; gap: 9px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><dc-import name="Ic" icon="zap" color="#F1EADB" size="14" hint-size="14px,14px"></dc-import><span style="flex: 1">Energy</span><span style="font-family: 'EditUndo', monospace; font-size: 14px">8/10</span><span style="width: 92px; text-align: right; font-size: 11px; color: #9C9585">Fatigued at 6</span></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><dc-import name="Ic" icon="utensils" color="#F1EADB" size="14" hint-size="14px,14px"></dc-import><span style="flex: 1">Appetite</span><span style="font-family: 'EditUndo', monospace; font-size: 14px">6/10</span><span style="width: 92px; text-align: right; font-size: 11px; color: #9C9585">Hungry at 5</span></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><dc-import name="Ic" icon="heart" color="#F1EADB" size="14" hint-size="14px,14px"></dc-import><span style="flex: 1">Morale</span><span style="font-family: 'EditUndo', monospace; font-size: 14px">7/10</span><span style="width: 92px; text-align: right; font-size: 11px; color: #9C9585">Luck +1</span></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><dc-import name="Ic" icon="medical" color="#F1EADB" size="14" solid="true" hint-size="14px,14px"></dc-import><span style="flex: 1">Injuries</span><span style="font-family: 'EditUndo', monospace; font-size: 14px">0/3</span><span style="width: 92px; text-align: right; font-size: 11px; color: #9C9585">Passes out at 3</span></div>
+</div>
+<div style="display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-radius: 10px; background: rgba(127,194,155,0.12)">
+<dc-import name="Ic" icon="star" color="#A6DDBC" size="14" hint-size="14px,14px"></dc-import>
+<span style="font-size: 12px; font-weight: 600; color: #A6DDBC">Inspired · 2 days</span><span style="font-size: 12px; color: #D8D1C2">Morale gains +1</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">TRAIT SLOTS</span><span style="font-size: 11px; color: #9C9585">5 filled · 6 of 6 max</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px">
+<sc-for list="{{finSlots}}" as="sl" hint-placeholder-count="6"><div title="{{sl.desc}}" style="height: 24px; box-sizing: border-box; border: 2px solid transparent; border-radius: 7px; background: {{sl.fill}} padding-box, {{sl.ring}} border-box; display: flex; align-items: center; justify-content: center; padding: 0 4px; overflow: hidden"><span style="font-family: 'EditUndo', monospace; font-size: 9px; color: {{sl.nameC}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{sl.name}}</span></div></sc-for>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'EditUndo', monospace; font-size: 12px">LV 3</span><div style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.13)"><div style="width: 35%; height: 100%; border-radius: 3px; background: #CDA6EE"></div></div><span style="font-size: 11px; color: #9C9585">35/150 XP</span></div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</aside>
+
+<!-- TOP CENTER: DAY / WEATHER -->
+<div style="position: absolute; left: 470px; top: 16px; width: 580px; height: 52px; box-sizing: border-box; padding: 0 16px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; align-items: center; gap: 14px">
+<span style="font-family: 'EditUndo', monospace; font-size: 16px; color: #E9B44C; letter-spacing: 0.04em">DAY 3</span>
+<div style="display: flex; gap: 4px">
+<div style="display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; opacity: 0.45"><dc-import name="Ic" icon="sunrise" color="#F1EADB" size="15" hint-size="15px,15px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">MORNING</span></div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; background: #E9B44C; color: #1D2220"><dc-import name="Ic" icon="sun" color="#1D2220" size="15" hint-size="15px,15px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">AFTERNOON</span></div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; opacity: 0.6"><dc-import name="Ic" icon="moon" color="#F1EADB" size="15" hint-size="15px,15px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">NIGHT</span></div>
+</div>
+<div style="width: 1px; height: 26px; background: rgba(255,255,255,0.14)"></div>
+<div style="display: flex; align-items: center; gap: 8px"><dc-import name="Ic" icon="rain" color="#9CC8E6" size="20" hint-size="20px,20px"></dc-import><div style="display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600">Light rain</span><span style="font-size: 11px; color: #9C9585">1 day left</span></div></div>
+<div style="width: 1px; height: 26px; background: rgba(255,255,255,0.14)"></div>
+<sc-for list="{{forecast}}" as="f" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 2px"><dc-import name="Ic" icon="{{f.icon}}" color="#C9C2B2" size="15" hint-size="15px,15px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #9C9585">{{f.d}}</span></div>
+</sc-for>
+<div style="flex: 1"></div><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button>
+</div>
+
+<!-- OBJECTIVE -->
+<div style="position: absolute; left: 1004px; top: 84px; width: 220px; box-sizing: border-box; padding: 12px 14px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #9C9585; letter-spacing: 0.04em">OBJECTIVE</span><div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'EditUndo', monospace; font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #CDA6EE; color: #1D2220">TIER III</span><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button></div></div>
+<span style="font-family: 'EditUndo', monospace; font-size: 18px; letter-spacing: 0.03em">SIGHTSEER</span>
+<span style="font-size: 12px; line-height: 1.4; color: #D8D1C2">Reveal every tile but 2 before the checkpoint.</span>
+<div style="display: flex; align-items: center; gap: 8px"><div style="flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.13)"><div style="width: 64%; height: 100%; border-radius: 3px; background: #CDA6EE"></div></div><span style="font-family: 'EditUndo', monospace; font-size: 12px">9/14</span></div>
+</div>
+
+<!-- TOP RIGHT: ABUNDANCE + CAPS -->
+<div style="position: absolute; left: 1240px; top: 16px; width: 280px; height: 92px; box-sizing: border-box; padding: 12px 16px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; justify-content: center; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">ABUNDANCE</span>
+<div style="display: flex; align-items: center; gap: 6px"><dc-import name="Ic" icon="acorn" color="#D9A86A" size="16" hint-size="16px,16px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 18px">23</span><span style="font-size: 11px; color: #9C9585">caps</span><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button></div>
+</div>
+<div style="display: flex; gap: 10px">
+<sc-for list="{{abundance}}" as="a" hint-placeholder-count="4">
+<div title="{{a.label}}" style="flex: 1; display: flex; align-items: center; gap: 5px">
+<img src="{{a.img}}" alt="{{a.name}}" style="width: 20px; height: 23px; display: block; flex: none">
+<div style="flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13); overflow: hidden"><div style="height: 100%; width: {{a.pct}}%; background: {{a.fill}}"></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+<button aria-label="Menu" style="position: absolute; left: 1532px; top: 16px; width: 52px; height: 52px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); background: rgba(29,34,32,0.9); display: flex; align-items: center; justify-content: center; padding: 0; box-shadow: 0 12px 32px rgba(15,22,19,0.28)"><dc-import name="Ic" icon="menu" color="#F1EADB" size="20" hint-size="20px,20px"></dc-import></button>
+
+<!-- SELECTED HIKER PANEL -->
+<aside style="position: absolute; left: 1240px; top: 120px; width: 344px; height: 864px; box-sizing: border-box; padding: 16px; background: rgba(29,34,32,0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.04em">FINNEGAN'S TURN</span>
+<div style="display: flex; align-items: center; gap: 10px"><span style="font-size: 12px; color: #C9C2B2">Afternoon</span><button aria-label="Minimize" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">−</button></div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+<button style="height: 62px; border-radius: 10px; border: none; background: #E9B44C; color: #1D2220; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="footprints" color="#1D2220" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">MOVE</span><span style="font-size: 11px">−1 Appetite</span></button>
+<button style="height: 62px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #F1EADB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="users" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">MOVE ALL</span><span style="font-size: 11px; color: #9C9585">+1 per hiker</span></button>
+<button style="height: 62px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #F1EADB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="search" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">SCAVENGE</span><span style="font-size: 11px; color: #9C9585">−1 Appetite</span></button>
+<button style="height: 62px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #F1EADB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="hammer" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">CRAFT</span><span style="font-size: 11px; color: #9C9585">Recipes</span></button>
+<button style="height: 62px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #F1EADB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="flame" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">FIRE</span><span style="font-size: 11px; color: #9C9585">+Morale</span></button>
+<button style="height: 62px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); color: #F1EADB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0"><dc-import name="Ic" icon="sprout" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">TEND</span><span style="font-size: 11px; color: #9C9585">+Abundance</span></button>
+<button disabled style="height: 62px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.18); background: transparent; color: #8D877A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; cursor: default"><dc-import name="Ic" icon="moon" color="#8D877A" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">SLEEP</span><span style="font-size: 11px">Night</span></button>
+<button disabled style="height: 62px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.18); background: transparent; color: #8D877A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 0; cursor: default"><dc-import name="Ic" icon="eye" color="#8D877A" size="18" hint-size="18px,18px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 11px">WATCH</span><span style="font-size: 11px">Night</span></button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">ABILITIES</span>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(242,185,80,0.10); border: 1px solid rgba(242,185,80,0.35)">
+<div style="width: 18px; height: 21px; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #F2B950"></div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-family: 'EditUndo', monospace; font-size: 12px; color: #F2B950">STOIC · 1/DAY</span><span style="font-size: 12px; color: #D8D1C2">2 Morale → +1 Energy or Appetite</span></div>
+<button style="height: 30px; padding: 0 12px; border-radius: 8px; border: none; background: #F2B950; color: #1D2220; font-family: 'EditUndo', monospace; font-size: 12px">USE</button>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04); opacity: 0.55">
+<div style="width: 18px; height: 21px; flex: none; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #9CC3A8"></div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-family: 'EditUndo', monospace; font-size: 12px; color: #9CC3A8">GAMBLER · 1/DAY</span><span style="font-size: 12px; color: #D8D1C2">Reroll 1 card while scavenging</span></div>
+<span style="font-size: 11px; color: #9C9585">Used today</span>
+</div>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.05)">
+<img src="/_blob/62add56add8cdc44bdd2947049f865be" alt="Forest node" style="width: 24px; height: 28px; display: block">
+<img src="/_blob/bd13e8d019c14338c7427650a25506ec" alt="River node" style="width: 24px; height: 28px; display: block">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.04em">CREEK</span><span style="font-size: 11px; color: #C9C2B2">With Cody · resources pooled</span></div>
+<button style="display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: none; background: #E9B44C; color: #1D2220; font-size: 12px; font-weight: 600"><dc-import name="Ic" icon="bag" color="#1D2220" size="14" sw="2.25" hint-size="14px,14px"></dc-import>Merchant</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">EQUIPPED</span>
+<div style="display: flex; gap: 8px">
+<div style="width: 64px; display: flex; flex-direction: column; gap: 5px"><img src="/_blob/f8297c71ab51de9771d6a3ec176a3dbe" alt="Rain Jacket card" style="width: 64px; height: 90px; border-radius: 6px; display: block; object-fit: cover"><div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13)"><div style="width: 60%; height: 100%; border-radius: 2px; background: #F1EADB"></div></div><span style="font-size: 11px; color: #9C9585">3 days</span></div>
+<div style="width: 64px; display: flex; flex-direction: column; gap: 5px"><img src="/_blob/ff08e76b068c968577dc4847159249b0" alt="Trail Shoes card" style="width: 64px; height: 90px; border-radius: 6px; display: block; object-fit: cover"><div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13)"><div style="width: 100%; height: 100%; border-radius: 2px; background: #F1EADB"></div></div><span style="font-size: 11px; color: #9C9585">5 days</span></div>
+<div style="width: 64px; display: flex; flex-direction: column; gap: 5px"><div style="width: 64px; height: 90px; box-sizing: border-box; border-radius: 6px; background: linear-gradient(160deg, #6E5A3C, #3E3424); border: 1px solid rgba(233,180,76,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px"><dc-import name="Ic" icon="backpack" color="#E9B44C" size="24" hint-size="24px,24px"></dc-import><span style="font-family: 'EditUndo', monospace; font-size: 9px; color: #F2C978">BACKPACK</span></div><div style="height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13)"><div style="width: 80%; height: 100%; border-radius: 2px; background: #F1EADB"></div></div><span style="font-size: 11px; color: #9C9585">+2 bag</span></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">BAG</span><span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #9C9585">3/6 · 2 FROM BACKPACK</span></div>
+<div style="display: flex; gap: 6px">
+<img src="/_blob/711bf65ac90115e48a1578e222110587" alt="Bandages card" style="width: 46px; height: 64px; border-radius: 5px; display: block; object-fit: cover">
+<img src="/_blob/4beab4e252adb90fcf4f29003004d6cd" alt="Trail Mix card" style="width: 46px; height: 64px; border-radius: 5px; display: block; object-fit: cover">
+<img src="/_blob/e726c75784d2b9824a0df743c3c04d62" alt="Hatchet card" style="width: 46px; height: 64px; border-radius: 5px; display: block; object-fit: cover">
+<div style="width: 46px; height: 64px; box-sizing: border-box; border-radius: 5px; border: 1.5px dashed rgba(255,255,255,0.22)"></div>
+<div style="position: relative; width: 46px; height: 64px; box-sizing: border-box; border-radius: 5px; border: 1.5px dashed rgba(233,180,76,0.55); display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px"><dc-import name="Ic" icon="backpack" color="#B98E42" size="12" hint-size="12px,12px"></dc-import></div>
+<div style="position: relative; width: 46px; height: 64px; box-sizing: border-box; border-radius: 5px; border: 1.5px dashed rgba(233,180,76,0.55); display: flex; align-items: flex-end; justify-content: flex-end; padding: 3px"><dc-import name="Ic" icon="backpack" color="#B98E42" size="12" hint-size="12px,12px"></dc-import></div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">RESOURCES</span><span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #9C9585">7/10 · 12 ON TILE</span></div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{resources}}" as="r" hint-placeholder-count="5">
+<div title="{{r.label}}" style="position: relative; width: 50px; height: 50px; border-radius: 10px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center">
+<img src="{{r.img}}" alt="{{r.label}}" style="width: 38px; height: 38px; object-fit: contain; display: block">
+<span style="position: absolute; right: -4px; bottom: -4px; min-width: 18px; height: 18px; box-sizing: border-box; padding: 0 4px; border-radius: 9px; background: #F1EADB; color: #1D2220; font-family: 'EditUndo', monospace; font-size: 11px; display: flex; align-items: center; justify-content: center">{{r.n}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="flex: 1"></div>
+<div style="display: flex; gap: 8px">
+<button style="display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #F1EADB; font-size: 13px; font-weight: 600"><dc-import name="Ic" icon="book" color="#F1EADB" size="16" hint-size="16px,16px"></dc-import>Blueprints</button>
+<button style="flex: 1; height: 50px; border-radius: 12px; border: none; background: #E9B44C; color: #1D2220; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px"><span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.04em">END AFTERNOON</span><span style="font-size: 11px">Grandpa W. hasn't acted</span></button>
+</div>
+</aside>
+
+<!-- TRAIL LOG (shown minimized) -->
+<div style="position: absolute; left: 320px; top: 942px; width: 200px; height: 42px; box-sizing: border-box; padding: 0 10px 0 14px; background: rgba(29,34,32,0.85); border-radius: 12px; display: flex; align-items: center; justify-content: space-between">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; color: #9C9585">TRAIL LOG · 2 NEW</span>
+<button aria-label="Expand" style="width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.05); color: #C9C2B2; font-family: 'EditUndo', monospace; font-size: 13px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center">+</button>
+</div>
+
+<!-- MAP CONTROLS -->
+<div style="position: absolute; left: 1184px; top: 852px; display: flex; flex-direction: column; gap: 6px">
+<button aria-label="Zoom in" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: rgba(29,34,32,0.88); display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Ic" icon="plus" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import></button>
+<button aria-label="Zoom out" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: rgba(29,34,32,0.88); display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Ic" icon="minus" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import></button>
+<button aria-label="Center on selected hiker" style="width: 40px; height: 40px; border-radius: 10px; border: none; background: rgba(29,34,32,0.88); display: flex; align-items: center; justify-content: center; padding: 0"><dc-import name="Ic" icon="crosshair" color="#F1EADB" size="18" hint-size="18px,18px"></dc-import></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showHints":{"editor":"boolean","default":true},"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const NODE = {
+      forest: '/_blob/62add56add8cdc44bdd2947049f865be',
+      river: '/_blob/bd13e8d019c14338c7427650a25506ec',
+      wildlife: '/_blob/61a42a071acb764f0eefe05f3d20b707',
+      mountain: '/_blob/4b0866cf116a003081b38798aa257cef'
+    };
+    const POR = {
+      fin: '/_blob/7b8ad9f6a4298c288e6a15731ec54e88', ellie: '/_blob/7b8ad9f6a4298c288e6a15731ec54e88',
+      cody: '/_blob/7b8ad9f6a4298c288e6a15731ec54e88', gpa: '/_blob/7b8ad9f6a4298c288e6a15731ec54e88'
+    };
+    // map geometry: tree coordinates scaled up for bigger tiles
+    const PX = (x) => 760 + (x - 460) * 1.6;
+    const PY = (y) => 760 + (y - 545) * 1.6;
+    const C = { T: [460, 740], A: [380, 640], B: [540, 640], Cc: [300, 545], D: [460, 545], E: [620, 545], F: [380, 450], G: [540, 450], H: [700, 450], I: [300, 355], J: [460, 355], K: [620, 355], L: [380, 260], M: [540, 260], P: [460, 150] };
+    const pt = (k) => [PX(C[k][0]), PY(C[k][1])];
+    const seg = (e) => { const p = pt(e[0]), q = pt(e[1]); return 'M' + p[0] + ' ' + p[1] + ' L' + q[0] + ' ' + q[1]; };
+    const edges = [['T','A'],['T','B'],['A','Cc'],['A','D'],['B','D'],['B','E'],['Cc','D'],['D','E'],['Cc','F'],['D','F'],['D','G'],['E','H'],['G','H'],['F','I'],['F','J'],['G','J'],['H','K'],['J','K'],['I','L'],['J','L'],['J','M'],['K','M'],['L','M'],['L','P'],['M','P']];
+    const key = (e) => e[0] + '-' + e[1];
+    const group = { visited: ['T-A','T-B','A-D','B-D','B-E'], reach: ['Cc-D','D-F','D-G'], paved: ['D-E'], muddy: ['G-H'], morale: ['J-K'] };
+    const special = new Set([].concat(group.visited, group.reach, group.paved, group.muddy, group.morale));
+    const pick = (list) => edges.filter((e) => list.indexOf(key(e)) >= 0).map(seg).join(' ');
+    const mid = (a, b) => { const p = pt(a), q = pt(b); return [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; };
+    const badge = (a, b, icon, text, bg, fg, title) => { const m = mid(a, b); return { left: m[0] - 24, top: m[1] - 11, icon, text, bg, fg, title }; };
+    const badges = [
+      badge('D', 'E', 'road', 'FREE', '#ECE5D6', '#1D2220', 'Paved path: moving costs no Appetite'),
+      badge('D', 'G', 'zap', '+1', '#E9B44C', '#1D2220', 'Steep path: +1 Energy to cross'),
+      badge('G', 'H', 'utensils', '+1', '#9A7650', '#F7F1E4', 'Muddy path: +1 Appetite to cross'),
+      badge('J', 'K', 'heart', '+1', '#CDA6EE', '#1D2220', 'Rough path: costs 1 Morale to cross')
+    ];
+
+    const SP = {
+      opp: { icon: 'star', bg: '#4F8A63', fg: '#F7F1E4', name: 'OPPORTUNITY' },
+      chal: { icon: 'alert', bg: '#C8553D', fg: '#F7F1E4', name: 'CHALLENGE' },
+      choice: { icon: 'split', bg: '#4E6A80', fg: '#F7F1E4', name: 'CHOICE' },
+      sign: { icon: 'sign', bg: '#8A6A3E', fg: '#F7F1E4', name: 'TRAIL SIGN' },
+      geo: { icon: 'package', bg: '#E9B44C', fg: '#1D2220', name: 'GEO-CACHE' },
+      camp: { icon: 'tent', bg: '#2F4A42', fg: '#F7F1E4', name: 'CAMPSITE' },
+      eye: { icon: 'eye', bg: '#3E7FA8', fg: '#F7F1E4', name: 'OVERLOOK' },
+      mystery: { icon: 'help', bg: '#7A5AA6', fg: '#F7F1E4', name: 'MYSTERY' }
+    };
+    const LOOK = {
+      visited: { fill: '#E4D8BF', edge: '#F7F1E4', hiddenBg: '#5F7A70', labelColor: '#2C3A35' },
+      current: { fill: '#FFF8EA', edge: '#E2683C', hiddenBg: '#5F7A70', labelColor: '#2C3A35' },
+      revealed: { fill: '#C3D5C5', edge: '#F7F1E4', hiddenBg: '#5F7A70', labelColor: '#2C3A35' },
+      fog: { fill: 'rgba(40,60,53,0.82)', edge: 'rgba(247,241,228,0.35)', hiddenBg: 'rgba(241,234,219,0.2)', labelColor: '#D8D1C2' }
+    };
+    const tile = (k, kind, nodes, o) => {
+      o = o || {};
+      const p = pt(k);
+      const visited = kind === 'visited' || kind === 'current';
+      return Object.assign({
+        left: p[0] - 56, top: p[1] - 64,
+        nodes: nodes.map((n) => ({ known: n !== 'hidden', hidden: n === 'hidden', img: NODE[n] || '', name: n })),
+        sp: o.sp ? SP[o.sp] : SP.opp,
+        spCenter: !!o.sp && !visited, spCorner: !!o.sp && visited, spOp: kind === 'fog' ? 0.8 : 1,
+        isNarrow: !!o.narrow, merchant: !!o.merchant, reach: !!o.reach,
+        hasLabel: !!o.label, label: o.label || ''
+      }, LOOK[kind]);
+    };
+    const tiles = [
+      tile('T', 'visited', [], { label: 'START' }),
+      tile('A', 'visited', ['forest', 'river']),
+      tile('B', 'visited', ['wildlife'], { sp: 'geo' }),
+      tile('Cc', 'revealed', ['forest', 'forest'], { reach: true }),
+      tile('D', 'current', ['forest', 'river'], { merchant: true }),
+      tile('E', 'visited', ['mountain', 'wildlife'], { sp: 'camp', reach: true }),
+      tile('F', 'revealed', ['hidden', 'hidden'], { sp: 'opp', reach: true }),
+      tile('G', 'revealed', ['mountain', 'hidden'], { sp: 'chal', reach: true }),
+      tile('H', 'revealed', ['hidden'], { narrow: true }),
+      tile('I', 'fog', ['hidden', 'hidden'], { sp: 'sign' }),
+      tile('J', 'fog', ['hidden'], { sp: 'mystery' }),
+      tile('K', 'fog', ['hidden'], { sp: 'eye' }),
+      tile('L', 'fog', ['hidden', 'hidden'], { sp: 'choice' }),
+      tile('M', 'fog', ['hidden', 'hidden', 'hidden'])
+    ];
+    const token = (img, name, k, dx, dy, size, color, state) => {
+      const p = pt(k);
+      const sel = state === 'selected', done = state === 'done';
+      return {
+        img, name, size, left: p[0] + dx - size / 2, top: p[1] + dy - size / 2,
+        op: done ? 0.6 : 1, filter: done ? 'grayscale(1)' : 'none',
+        shadow: sel ? '0 0 0 3px ' + color + ', 0 0 0 6px #F7F1E4, 0 10px 16px rgba(0,0,0,0.3)' : '0 0 0 3px ' + color + ', 0 6px 10px rgba(0,0,0,0.25)'
+      };
+    };
+    const tokens = [
+      token(POR.fin, 'Finnegan', 'D', -22, -12, 48, '#E2683C', 'selected'),
+      token(POR.cody, 'Cody', 'D', 26, -10, 40, '#4A8FD4', 'done'),
+      token(POR.ellie, 'Ellie-Bear', 'E', 0, -10, 40, '#EBC04A', 'done'),
+      token(POR.gpa, 'Grandpa W.', 'A', 0, -10, 40, '#A06CC9', 'ready')
+    ];
+    const RY = (y) => 30 + (y - 150) / 590 * 580 - 11;
+    const railFaces = [
+      { name: 'Finnegan', img: POR.fin, color: '#E2683C', left: 2, top: RY(545) },
+      { name: 'Cody', img: POR.cody, color: '#4A8FD4', left: 8, top: RY(545) },
+      { name: 'Ellie-Bear', img: POR.ellie, color: '#EBC04A', left: 14, top: RY(545) },
+      { name: 'Grandpa W.', img: POR.gpa, color: '#A06CC9', left: 8, top: RY(640) }
+    ];
+
+    const fillFor = (v, warn, crit) => v <= crit ? '#E5624A' : v <= warn ? '#E9B44C' : '#F1EADB';
+    const bars = (e, a, m) => [
+      { icon: 'zap', label: 'Energy ' + e + '/10', pct: e * 10, fill: fillFor(e, 6, 3) },
+      { icon: 'utensils', label: 'Appetite ' + a + '/10', pct: a * 10, fill: fillFor(a, 5, 2) },
+      { icon: 'heart', label: 'Morale ' + m + '/10', pct: m * 10, fill: fillFor(m, 3, 1) }
+    ];
+    const KIND = {
+      pos: { ring: '#7FC29B', bg: 'rgba(127,194,155,0.16)', fg: '#A6DDBC', solid: false },
+      neg: { ring: '#E5624A', bg: 'rgba(229,98,74,0.16)', fg: '#F39A86', solid: false },
+      state: { ring: '#E9B44C', bg: 'rgba(233,180,76,0.16)', fg: '#F2C978', solid: false },
+      inj: { ring: '#E5624A', bg: '#E5624A', fg: '#1D2220', solid: true }
+    };
+    const cond = (icon, kind, label) => Object.assign({ icon, label }, KIND[kind]);
+    const STATE = {
+      selected: (c) => ({ bg: 'rgba(255,255,255,0.07)', border: c, opacity: 1, transform: 'none', filter: 'none', status: 'ACTING', tagBg: c, tagFg: '#1D2220', chev: 'chevronUp', expanded: true }),
+      done: () => ({ bg: 'transparent', border: 'rgba(255,255,255,0.06)', opacity: 0.5, transform: 'translateY(3px)', filter: 'grayscale(1)', status: 'ACTED', tagBg: 'rgba(255,255,255,0.1)', tagFg: '#C9C2B2', chev: 'chevronDown', expanded: false }),
+      ready: () => ({ bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.1)', opacity: 1, transform: 'none', filter: 'none', status: 'READY', tagBg: '#7FC29B', tagFg: '#1D2220', chev: 'chevronDown', expanded: false })
+    };
+    const hiker = (name, family, famIcon, color, img, state, b, conds) => Object.assign({ name, caps: name.toUpperCase(), family, famIcon, color, img, bars: b, conds, toggleLabel: 'Show ' + name + ' details' }, STATE[state](color));
+    const hikers = [
+      hiker('Finnegan', 'DOG', 'paw', '#E2683C', POR.fin, 'selected', bars(8, 6, 7), [cond('star', 'pos', 'Inspired')]),
+      hiker('Ellie-Bear', 'DOG', 'paw', '#EBC04A', POR.ellie, 'done', bars(5, 9, 6), [cond('moon', 'neg', 'Sleepy'), cond('battery', 'state', 'Fatigued'), cond('medical', 'inj', '1 injury')]),
+      hiker('Cody', 'DOG', 'paw', '#4A8FD4', POR.cody, 'done', bars(7, 7, 9), [cond('sparkles', 'pos', 'Lucky')]),
+      hiker('Grandpa W.', 'HUMAN', 'user', '#A06CC9', POR.gpa, 'ready', bars(7, 4, 4), [cond('droplet', 'neg', 'Wet'), cond('utensils', 'state', 'Hungry'), cond('medical', 'inj', '1 injury')])
+    ];
+    const finTraits = [
+      { name: 'LEADER', c: '#F2B950', desc: 'Group moves cost 1 less Appetite' },
+      { name: 'STOIC', c: '#F2B950', desc: '2 Morale for +1 Energy or Appetite, once a day' },
+      { name: 'COPYDOG', c: '#9CC3A8', desc: '+1 find per earlier scavenger' },
+      { name: 'GAMBLER', c: '#9CC3A8', desc: 'Reroll 1 scavenge card a day' },
+      { name: 'EXTRINSIC', c: '#CDA6EE', desc: '+1 Morale when not alone' }
+    ];
+    const T = '#F2B950', U = '#9CC3A8', M = '#CDA6EE';
+    const RING = { T, U, M, TU: 'linear-gradient(90deg, ' + T + ' 0 50%, ' + U + ' 50% 100%)', TM: 'linear-gradient(90deg, ' + T + ' 0 50%, ' + M + ' 50% 100%)', UM: 'linear-gradient(90deg, ' + U + ' 0 50%, ' + M + ' 50% 100%)', W: 'linear-gradient(90deg, ' + T + ' 0 33%, ' + U + ' 33% 66%, ' + M + ' 66% 100%)' };
+    const LABEL = { T: 'Trail', U: 'Utility', M: 'Morale', TU: 'Trail or Utility', TM: 'Trail or Morale', UM: 'Utility or Morale', W: 'Wild: any trait' };
+    const NAMEC = { T, U, M };
+    const slot = (type, trait, kind) => trait
+      ? { name: trait.name, nameC: NAMEC[kind], fill: '#262C29', ring: RING[type], desc: LABEL[type] + ' slot · ' + trait.name + ': ' + trait.desc }
+      : { name: 'EMPTY', nameC: '#6F6A60', fill: '#1F2422', ring: RING[type], desc: LABEL[type] + ' slot · empty' };
+    const tr = Object.fromEntries(finTraits.map((t) => [t.name, t]));
+    const finSlots = [
+      slot('T', tr.LEADER, 'T'), slot('TU', tr.STOIC, 'T'), slot('U', tr.COPYDOG, 'U'),
+      slot('U', tr.GAMBLER, 'U'), slot('M', tr.EXTRINSIC, 'M'), slot('W', null)
+    ];
+    const abundance = [
+      { name: 'Forest', img: NODE.forest, val: 7 },
+      { name: 'River', img: NODE.river, val: 4 },
+      { name: 'Wildlife', img: NODE.wildlife, val: 8 },
+      { name: 'Mountain', img: NODE.mountain, val: 9 }
+    ].map((a) => Object.assign(a, { pct: a.val * 10, fill: a.val <= 4 ? '#E5624A' : '#F1EADB', label: a.name + ' Abundance ' + a.val + '/10' }));
+    const forecast = [{ d: 'D4', icon: 'cloud' }, { d: 'D5', icon: 'sun' }, { d: 'D6', icon: 'rain' }];
+    const resources = [
+      { label: 'Wood', n: 2, img: '/_blob/9860e28074fba65968a6ab1741cb8126' },
+      { label: 'Fish', n: 1, img: '/_blob/144aa87d46e9e10dd3d4696ae61d295e' },
+      { label: 'Mushroom', n: 1, img: '/_blob/ad5e1e35dcb474d44df8e6aa86ce5d71' },
+      { label: 'Stone', n: 2, img: '/_blob/bea2acfc5c3b1835667daa791a8a6519' },
+      { label: 'Seaweed', n: 1, img: '/_blob/53de6d549b50525b6622aee017b4abb0' }
+    ];
+    return {
+      hikers, tiles, tokens, badges, railFaces, finTraits, finSlots, abundance, forecast, resources,
+      dBase: edges.map(seg).join(' '),
+      dDotted: edges.filter((e) => !special.has(key(e))).map(seg).join(' '),
+      dVisited: pick(group.visited), dReach: pick(group.reach), dPaved: pick(group.paved), dMuddy: pick(group.muddy), dMorale: pick(group.morale),
+      showHints: this.props.showHints ?? true
+    };
+  }
+}
+</script>
+</body>
+</html>

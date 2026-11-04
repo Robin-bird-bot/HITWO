@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — visual kit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1600px; height: 900px; box-sizing: border-box; padding: 40px 48px; background: #ECE6D7; color: #1D2220; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; gap: 24px; background-image: radial-gradient(rgba(34,50,45,0.12) 1.1px, transparent 1.7px); background-size: 7px 7px">
+<div style="display: flex; align-items: baseline; gap: 20px">
+<span style="font-family: 'EditUndo', monospace; font-size: 36px; letter-spacing: 0.04em">VISUAL KIT</span>
+<span style="font-size: 15px; color: #4E5A55">Misty poster landscapes, halftone texture, pixel type, the card art you already made</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">TILE STATES</span>
+<div style="display: flex; gap: 24px; align-items: flex-start; padding: 12px; border-radius: 12px; background: linear-gradient(#B4C4BE, #8FA79E)">
+<sc-for list="{{states}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 92px">
+<div style="position: relative; width: 80px; height: 92px; filter: drop-shadow(0 6px 8px rgba(20,32,28,0.28))">
+<sc-if value="{{s.reach}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: -6px; top: -7px; width: 92px; height: 106px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: #E9B44C"></div></sc-if>
+<div style="position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.edge}}"></div>
+<div style="position: absolute; left: 4px; top: 4px; width: 72px; height: 84px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.fill}}; display: flex; align-items: center; justify-content: center; gap: 2px">
+<sc-for list="{{s.nodes}}" as="n" hint-placeholder-count="2">
+<sc-if value="{{n.known}}" hint-placeholder-val="{{true}}"><img src="{{n.img}}" alt="{{n.name}} node" style="width: 26px; height: 30px; display: block"></sc-if>
+<sc-if value="{{n.hidden}}" hint-placeholder-val="{{false}}"><div style="width: 26px; height: 30px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: {{s.hiddenBg}}; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 13px; color: #F1EADB">?</div></sc-if>
+</sc-for>
+</div>
+</div>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; color: #1D2220">{{s.name}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">HIKER TOKENS AND PARTY COLORS</span>
+<div style="display: flex; gap: 30px; align-items: center">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 44px; height: 44px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px #E2683C, 0 0 0 6px #F7F1E4"><img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="Finnegan" style="width: 100%; height: 100%; object-fit: cover; display: block"></div><span style="font-size: 12px">Selected</span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 3px #A06CC9"><img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="Grandpa W." style="width: 100%; height: 100%; object-fit: cover; display: block"></div><span style="font-size: 12px">Ready</span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; opacity: 0.6; box-shadow: 0 0 0 3px #4A8FD4"><img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="Cody" style="width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1)"></div><span style="font-size: 12px">Acted</span></div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px"><div style="position: relative; width: 36px; height: 36px; border-radius: 50%; box-shadow: 0 0 0 3px #EBC04A"><img src="/_blob/7b8ad9f6a4298c288e6a15731ec54e88" alt="Ellie-Bear" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; display: block; transform: rotate(80deg); filter: saturate(0.4)"><div style="position: absolute; right: -6px; bottom: -6px; width: 20px; height: 20px; border-radius: 50%; background: #E5624A; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="medical" color="#1D2220" size="11" solid="true" hint-size="11px,11px"></dc-import></div></div><span style="font-size: 12px">Passed out</span></div>
+<div style="width: 1px; align-self: stretch; background: rgba(255,255,255,0.12)"></div>
+<sc-for list="{{party}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 36px; height: 36px; border-radius: 10px; background: {{p.c}}"></div><span style="font-size: 12px">{{p.name}}</span><span style="font-size: 11px; color: #9C9585">{{p.c}}</span></div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">NODES, SPECIAL SPACES, SIDE FEATURES</span>
+<div style="display: flex; gap: 14px; align-items: center">
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="4"><div style="display: flex; align-items: center; gap: 6px"><img src="{{n.img}}" alt="{{n.name}}" style="width: 30px; height: 35px; display: block"><span style="font-size: 12px">{{n.name}}</span></div></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{specials}}" as="p" hint-placeholder-count="10">
+<div style="display: flex; align-items: center; gap: 8px"><div style="width: 30px; height: 30px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid #F7F1E4; background: {{p.bg}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{p.icon}}" color="{{p.fg}}" size="15" sw="2.25" hint-size="15px,15px"></dc-import></div><span style="font-size: 12px">{{p.name}}</span></div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">STATUS BARS AND CONDITION ICONS</span>
+<div style="display: flex; gap: 32px">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 260px">
+<sc-for list="{{barStates}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px"><div style="height: 5px; border-radius: 3px; background: rgba(255,255,255,0.13); overflow: hidden"><div style="height: 100%; width: {{b.pct}}%; border-radius: 3px; background: {{b.fill}}"></div></div><span style="font-size: 12px; color: #C9C2B2">{{b.name}}</span></div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 20px">
+<sc-for list="{{conds}}" as="c" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 8px"><div style="width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 1.5px solid {{c.ring}}; background: {{c.bg}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{c.icon}}" color="{{c.fg}}" size="12" sw="2.5" solid="{{c.solid}}" hint-size="12px,12px"></dc-import></div><span style="font-size: 12px">{{c.label}}</span></div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">YOUR ART IN THE UI</span>
+<div style="display: flex; gap: 12px; align-items: flex-end">
+<img src="/_blob/f8297c71ab51de9771d6a3ec176a3dbe" alt="Rain Jacket card" style="width: 72px; height: 101px; border-radius: 6px; display: block">
+<img src="/_blob/711bf65ac90115e48a1578e222110587" alt="Bandages card" style="width: 72px; height: 101px; border-radius: 6px; display: block">
+<div style="width: 1px; align-self: stretch; background: rgba(255,255,255,0.12); margin: 0 6px"></div>
+<sc-for list="{{resources}}" as="r" hint-placeholder-count="5"><div style="display: flex; flex-direction: column; align-items: center; gap: 6px"><div style="width: 54px; height: 54px; border-radius: 10px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center"><img src="{{r.img}}" alt="{{r.label}}" style="width: 40px; height: 40px; object-fit: contain; display: block"></div><span style="font-size: 11px; color: #C9C2B2">{{r.label}}</span></div></sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #1D2220; color: #F1EADB; border-radius: 16px">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.06em; color: #9C9585">PALETTE AND TYPE</span>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{palette}}" as="c" hint-placeholder-count="10"><div style="display: flex; flex-direction: column; gap: 4px; width: 56px"><div style="height: 32px; border-radius: 8px; background: {{c.hex}}; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12)"></div><span style="font-size: 11px; color: #C9C2B2">{{c.name}}</span></div></sc-for>
+</div>
+<div style="display: flex; align-items: baseline; gap: 16px"><span style="font-family: 'EditUndo', monospace; font-size: 24px; letter-spacing: 0.04em">FINNEGAN 8/10</span><span style="font-size: 12px; color: #9C9585">Edit Undo · names, labels, numbers</span></div>
+<div style="display: flex; align-items: baseline; gap: 16px"><span style="font-size: 15px">Every Morale gain is 1 larger.</span><span style="font-size: 12px; color: #9C9585">DM Sans · rules and descriptions</span></div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const NODE = {
+      forest: '/_blob/62add56add8cdc44bdd2947049f865be',
+      river: '/_blob/bd13e8d019c14338c7427650a25506ec',
+      wildlife: '/_blob/61a42a071acb764f0eefe05f3d20b707',
+      mountain: '/_blob/4b0866cf116a003081b38798aa257cef'
+    };
+    const nd = (list) => list.map((n) => ({ known: n !== 'hidden', hidden: n === 'hidden', img: NODE[n] || '', name: n }));
+    const states = [
+      { name: 'VISITED', fill: '#E4D8BF', edge: '#F7F1E4', hiddenBg: '#5F7A70', nodes: nd(['forest', 'river']) },
+      { name: 'CURRENT', fill: '#FFF8EA', edge: '#E2683C', hiddenBg: '#5F7A70', nodes: nd(['wildlife']) },
+      { name: 'REVEALED', fill: '#C3D5C5', edge: '#F7F1E4', hiddenBg: '#5F7A70', nodes: nd(['mountain', 'hidden']) },
+      { name: 'REACHABLE', fill: '#C3D5C5', edge: '#F7F1E4', hiddenBg: '#5F7A70', nodes: nd(['forest']), reach: true },
+      { name: 'UNEXPLORED', fill: 'rgba(40,60,53,0.82)', edge: 'rgba(247,241,228,0.35)', hiddenBg: 'rgba(241,234,219,0.2)', nodes: nd(['hidden', 'hidden']) },
+      { name: 'DOUBLE', fill: '#C3D5C5', edge: '#F7F1E4', hiddenBg: '#5F7A70', nodes: nd(['river', 'river']) }
+    ].map((s) => Object.assign({ reach: false }, s));
+    const party = [
+      { name: 'Finnegan', c: '#E2683C' }, { name: 'Ellie-Bear', c: '#EBC04A' }, { name: 'Cody', c: '#4A8FD4' }, { name: 'Grandpa W.', c: '#A06CC9' }
+    ];
+    const nodes = [
+      { name: 'Forest', img: NODE.forest }, { name: 'River', img: NODE.river }, { name: 'Wildlife', img: NODE.wildlife }, { name: 'Mountain', img: NODE.mountain }
+    ];
+    const specials = [
+      { name: 'Opportunity', icon: 'star', bg: '#4F8A63', fg: '#F7F1E4' },
+      { name: 'Challenge', icon: 'alert', bg: '#C8553D', fg: '#F7F1E4' },
+      { name: 'Choice', icon: 'split', bg: '#4E6A80', fg: '#F7F1E4' },
+      { name: 'Trail Sign', icon: 'sign', bg: '#8A6A3E', fg: '#F7F1E4' },
+      { name: 'Geo-cache', icon: 'package', bg: '#E9B44C', fg: '#1D2220' },
+      { name: 'Campsite', icon: 'tent', bg: '#2F4A42', fg: '#F7F1E4' },
+      { name: 'Overlook', icon: 'eye', bg: '#3E7FA8', fg: '#F7F1E4' },
+      { name: 'Mystery', icon: 'help', bg: '#7A5AA6', fg: '#F7F1E4' },
+      { name: 'Merchant', icon: 'bag', bg: '#E9B44C', fg: '#1D2220' },
+      { name: 'Trader', icon: 'backpack', bg: '#E9B44C', fg: '#1D2220' }
+    ];
+    const barStates = [
+      { name: 'Healthy', pct: 80, fill: '#F1EADB' },
+      { name: 'At a threshold (Hungry, Fatigued)', pct: 50, fill: '#E9B44C' },
+      { name: 'Critical (Famished, Exhausted)', pct: 20, fill: '#E5624A' }
+    ];
+    const KIND = {
+      pos: { ring: '#7FC29B', bg: 'rgba(127,194,155,0.16)', fg: '#A6DDBC', solid: false },
+      neg: { ring: '#E5624A', bg: 'rgba(229,98,74,0.16)', fg: '#F39A86', solid: false },
+      state: { ring: '#E9B44C', bg: 'rgba(233,180,76,0.16)', fg: '#F2C978', solid: false },
+      inj: { ring: '#E5624A', bg: '#E5624A', fg: '#1D2220', solid: true }
+    };
+    const conds = [
+      Object.assign({ icon: 'star', label: 'Positive (Inspired)' }, KIND.pos),
+      Object.assign({ icon: 'sparkles', label: 'Positive (Lucky)' }, KIND.pos),
+      Object.assign({ icon: 'droplet', label: 'Negative (Wet)' }, KIND.neg),
+      Object.assign({ icon: 'moon', label: 'Negative (Sleepy)' }, KIND.neg),
+      Object.assign({ icon: 'utensils', label: 'State (Hungry)' }, KIND.state),
+      Object.assign({ icon: 'medical', label: 'Injury' }, KIND.inj)
+    ];
+    const resources = [
+      { label: 'Wood', img: '/_blob/9860e28074fba65968a6ab1741cb8126' },
+      { label: 'Moss', img: '/_blob/ef7c352963a2583984ae4b1bcb4a5824' },
+      { label: 'Fur', img: '/_blob/8bc32d0d59fb0f779a2946dd22bae260' },
+      { label: 'Stone', img: '/_blob/bea2acfc5c3b1835667daa791a8a6519' },
+      { label: 'Clay', img: '/_blob/42be830d761f29f39b2cf46d4367bae3' }
+    ];
+    const palette = [
+      { name: 'Panel', hex: '#1D2220' }, { name: 'Cream', hex: '#F1EADB' }, { name: 'Gold', hex: '#E9B44C' },
+      { name: 'Alert', hex: '#E5624A' }, { name: 'Mist', hex: '#B4C4BE' }, { name: 'Sage', hex: '#8FA79E' },
+      { name: 'Pine', hex: '#5F8075' }, { name: 'Deep pine', hex: '#2F4A42' }, { name: 'Meadow', hex: '#A9BC98' }, { name: 'Checkpoint', hex: '#D9434B' }
+    ];
+    return { states, party, nodes, specials, barStates, conds, resources, palette };
+  }
+}
+</script>
+</body>
+</html>

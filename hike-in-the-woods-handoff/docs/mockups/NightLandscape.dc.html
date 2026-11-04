@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — night landscape</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB">
+<dc-import name="Backdrop" scene="meadow" phase="night" hint-size="1600px,1000px"></dc-import>
+<div style="position: absolute; left: 40px; top: 36px; display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 14px; background: rgba(29,34,32,0.7)">
+<span style="font-family: 'EditUndo', monospace; font-size: 16px; color: #E9B44C">DAY 3</span><span style="font-family: 'EditUndo', monospace; font-size: 13px">NIGHT</span><span style="font-size: 12px; color: #C9C2B2">Meadow</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

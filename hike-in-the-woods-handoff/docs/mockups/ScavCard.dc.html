@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scavenge card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+@font-face{font-family:'GameQuotes';src:url(/_blob/5bd47ec7565f50231974810679bc52cd) format('opentype');font-display:block}
+body{margin:0}
+@keyframes hikeRaySpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width: {{outerW}}px; display: flex; flex-direction: column; align-items: center; gap: 10px; font-family: 'DM Sans', sans-serif; color: #F1EADB">
+<div style="position: relative; width: {{size}}px; height: {{size}}px; flex: none; transform: {{transform}}; opacity: {{op}}">
+<div style="position: absolute; inset: 0; border-radius: 14px; overflow: hidden; box-shadow: {{shadow}}">
+<sc-if value="{{hasArt}}" hint-placeholder-val="{{false}}"><img src="{{art}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{noArt}}" hint-placeholder-val="{{true}}"><img src="{{bg}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block"></sc-if>
+<sc-if value="{{hasBg2}}" hint-placeholder-val="{{false}}"><img src="{{bg2}}" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; clip-path: polygon(100% 0, 100% 100%, 0 100%)"></sc-if>
+<sc-if value="{{hasRays}}" hint-placeholder-val="{{false}}"><img src="{{rays}}" alt="" style="position: absolute; left: {{rayOff}}px; top: {{rayOff}}px; width: {{raySize}}px; height: {{raySize}}px; opacity: {{rayOp}}; display: block; animation: {{rayAnim}}"></sc-if>
+<sc-if value="{{back}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; background: rgba(20,28,25,0.18)"></div>
+<img src="/_blob/95646052a595ad72825aecb9f4f964ed" alt="" style="position: absolute; inset: 0; width: 100%; height: 200%; object-fit: cover; opacity: 0.55; display: block">
+<img src="{{nodeIcon}}" alt="" style="position: absolute; left: {{hexLeft}}px; top: {{hexTop}}px; width: {{hexW}}px; height: {{hexH}}px; display: block; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35))">
+</sc-if>
+<sc-for list="{{iconPos}}" as="p" hint-placeholder-count="1"><img src="{{p.src}}" alt="" style="position: absolute; left: {{p.l}}px; top: {{p.t}}px; width: {{p.w}}px; height: {{p.w}}px; object-fit: contain; display: block; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.3))"></sc-for>
+<sc-if value="{{hasGlyph}}" hint-placeholder-val="{{false}}"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'GameQuotes', monospace; font-size: {{glyphSize}}px; line-height: 1; letter-spacing: {{glyphTrack}}px; color: #FFF3E3; text-shadow: 0 6px 0 rgba(20,28,25,0.25)">{{glyph}}</div></sc-if>
+<sc-if value="{{hasCaps}}" hint-placeholder-val="{{false}}"><img src="/_blob/fba357aed2f4b23ca1dfca7fca183cd3" alt="" style="position: absolute; left: {{capsLeft}}px; top: {{capsTop}}px; width: {{capsIcon}}px; height: {{capsIcon}}px; display: block; filter: drop-shadow(0 6px 8px rgba(0,0,0,0.35))"></sc-if>
+<sc-if value="{{hasItem}}" hint-placeholder-val="{{false}}"><img src="{{item}}" alt="" style="position: absolute; left: {{itemLeft}}px; top: {{itemTop}}px; width: {{itemW}}px; height: {{itemH}}px; border-radius: {{itemRadius}}px; transform: rotate({{itemRot}}deg); box-shadow: 0 8px 16px rgba(0,0,0,0.4); display: block"></sc-if>
+<sc-for list="{{fanPos}}" as="f" hint-placeholder-count="3"><img src="{{f.src}}" alt="" style="position: absolute; left: {{f.l}}px; top: {{f.t}}px; width: {{f.w}}px; height: {{f.h}}px; border-radius: 5px; transform: rotate({{f.r}}deg); transform-origin: 50% 90%; box-shadow: 0 6px 12px rgba(0,0,0,0.4); display: block"></sc-for>
+</div>
+<sc-if value="{{hasCaps}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: 8px; bottom: 8px; padding: 4px 8px; border-radius: 8px; background: #1D2220; font-family: 'GameQuotes', monospace; font-size: {{multSize}}px; color: #E9B44C">+{{caps}}</div></sc-if>
+<sc-if value="{{hasCorner}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 8px; top: 8px; width: {{cornerSize}}px; height: {{cornerSize}}px; border-radius: 50%; background: #E9B44C; color: #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'GameQuotes', monospace; font-size: {{cornerFont}}px; box-shadow: 0 4px 10px rgba(0,0,0,0.35)">{{corner}}</div></sc-if>
+<div style="position: absolute; inset: 0; border-radius: 14px; box-shadow: inset 0 0 0 3px rgba(255,243,227,0.85)"></div>
+<sc-if value="{{hasMult}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: 8px; top: 8px; padding: 4px 8px; border-radius: 8px; background: #1D2220; font-family: 'GameQuotes', monospace; font-size: {{multSize}}px; color: #E9B44C">{{mult}}</div></sc-if>
+</div>
+<sc-if value="{{showCaption}}" hint-placeholder-val="{{true}}">
+<div style="width: {{outerW}}px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center">
+<span style="font-family: 'EditUndo', monospace; font-size: 13px; letter-spacing: 0.04em; color: {{nameColor}}">{{name}}</span>
+<sc-if value="{{hasDesc}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; line-height: 1.35; color: #C9C2B2">{{desc}}</span></sc-if>
+<sc-if value="{{hasRarity}}" hint-placeholder-val="{{false}}"><div style="display: flex; align-items: center; gap: 5px"><sc-for list="{{pips}}" as="q" hint-placeholder-count="4"><div style="width: 7px; height: 7px; background: {{q.bg}}"></div></sc-for><span style="font-size: 11px; color: {{rarityColor}}">{{rarityName}}</span></div></sc-if>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"size":{"editor":"int","default":200,"min":60,"max":400},"art":{"editor":"text","default":""},"bg":{"editor":"text","default":"/_blob/b12d15a149ecb0533f722ff71f5496bd"},"bg2":{"editor":"text","default":""},"rays":{"editor":"text","default":""},"rayOp":{"editor":"text","default":"0.32"},"spin":{"editor":"boolean","default":false},"icons":{"editor":null,"default":[]},"glyph":{"editor":"text","default":""},"mult":{"editor":"text","default":""},"back":{"editor":"boolean","default":false},"nodeIcon":{"editor":"text","default":"/_blob/62add56add8cdc44bdd2947049f865be"},"caps":{"editor":"int","default":0},"item":{"editor":"text","default":""},"itemSmall":{"editor":"boolean","default":false},"title":{"editor":"text","default":"WOOD"},"desc":{"editor":"text","default":""},"rarity":{"editor":"int","default":-1,"min":-1,"max":5},"fan":{"editor":null,"default":[]},"corner":{"editor":"text","default":""},"flip":{"editor":"int","default":0,"min":0,"max":90},"selected":{"editor":"boolean","default":false},"dim":{"editor":"boolean","default":false},"showCaption":{"editor":"boolean","default":true},"captionW":{"editor":"int","default":0},"$preview":{"width":220,"height":270}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const tru = (v) => v === true || v === 'true';
+    const S = Number(p.size ?? 200);
+    const icons = Array.isArray(p.icons) ? p.icons : [];
+    const LAYOUT = {
+      1: [[0.18, 0.16, 0.64]],
+      2: [[0.06, 0.06, 0.54], [0.40, 0.40, 0.54]],
+      3: [[0.04, 0.05, 0.48], [0.50, 0.10, 0.46], [0.26, 0.47, 0.48]]
+    };
+    const lay = LAYOUT[Math.min(icons.length, 3)] || [];
+    const iconPos = icons.slice(0, 3).map((src, i) => ({ src, l: Math.round(lay[i][0] * S), t: Math.round(lay[i][1] * S), w: Math.round(lay[i][2] * S) }));
+    const rarity = Number(p.rarity ?? -1);
+    const R = [
+      { n: 'Common', c: '#C9C2B2' }, { n: 'Uncommon', c: '#7FC29B' }, { n: 'Rare', c: '#E9B44C' },
+      { n: 'Very rare', c: '#CDA6EE' }, { n: 'Legendary', c: '#F0875A' }, { n: 'Mythic', c: '#7FD3E6' }
+    ];
+    const fan = Array.isArray(p.fan) ? p.fan.slice(0, 3) : [];
+    const fw = Math.round(S * 0.34), fh = Math.round(S * 0.48);
+    const fanRot = fan.length === 3 ? [-14, 0, 14] : fan.length === 2 ? [-8, 8] : [0];
+    const fanPos = fan.map((src, i) => ({ src, w: fw, h: fh, r: fanRot[i], l: Math.round(S / 2 - fw / 2 + (i - (fan.length - 1) / 2) * fw * 0.62), t: Math.round(S * 0.24) }));
+    const rc = R[Math.max(0, rarity)] || R[0];
+    const selected = tru(p.selected);
+    const flip = Number(p.flip ?? 0);
+    const hexW = Math.round(S * 0.46);
+    const back = tru(p.back);
+    return {
+      size: S, outerW: Number(p.captionW) > 0 ? Number(p.captionW) : S + 20,
+      art: p.art || '', hasArt: !!p.art, noArt: !p.art,
+      bg: p.bg || '/_blob/b12d15a149ecb0533f722ff71f5496bd', bg2: p.bg2 || '', hasBg2: !!p.bg2,
+      rays: p.rays || '', hasRays: !!p.rays, raySize: Math.round(S * 1.45), rayOff: Math.round((S - S * 1.45) / 2), rayOp: Number(p.rayOp ?? 0.32), rayAnim: tru(p.spin) ? 'hikeRaySpin 90s linear infinite' : 'none',
+      back, nodeIcon: p.nodeIcon || '', hexW, hexH: Math.round(hexW * 1.15), hexLeft: Math.round((S - hexW) / 2), hexTop: Math.round((S - hexW * 1.15) / 2),
+      iconPos,
+      glyph: p.glyph || '', hasGlyph: !!p.glyph, glyphSize: Math.round(S * ((p.glyph || '').length > 1 ? 0.46 : 0.56)), glyphTrack: Math.round(S * ((p.glyph || '').length > 1 ? -0.02 : 0)),
+      mult: p.mult || '', hasMult: !!p.mult, multSize: Math.max(12, Math.round(S * 0.085)),
+      caps: Number(p.caps ?? 0), hasCaps: Number(p.caps ?? 0) > 0, capsIcon: Math.round(S * 0.66), capsLeft: Math.round(S * 0.17), capsTop: Math.round(S * 0.14),
+      fanPos, corner: p.corner || '', hasCorner: !!p.corner, cornerSize: Math.round(S * 0.2), cornerFont: Math.round(S * 0.13),
+      item: p.item || '', hasItem: !!p.item, ...(tru(p.itemSmall)
+        ? { itemW: Math.round(S * 0.24), itemH: Math.round(S * 0.34), itemLeft: Math.round(S * 0.7), itemTop: Math.round(S * 0.6), itemRot: 8, itemRadius: 4 }
+        : { itemW: Math.round(S * 0.5), itemH: Math.round(S * 0.7), itemLeft: Math.round(S * 0.25), itemTop: Math.round(S * 0.15), itemRot: -6, itemRadius: 6 }),
+      transform: (flip ? 'perspective(900px) rotateY(' + flip + 'deg) ' : '') + (selected ? 'translateY(-10px)' : ''),
+      shadow: selected ? '0 0 0 4px #E9B44C, 0 18px 30px rgba(0,0,0,0.45)' : '0 10px 22px rgba(0,0,0,0.35)',
+      op: tru(p.dim) ? 0.45 : 1,
+      showCaption: p.showCaption === undefined ? true : tru(p.showCaption),
+      name: p.title || '', nameColor: selected ? '#E9B44C' : '#F1EADB',
+      desc: p.desc || '', hasDesc: !!p.desc,
+      hasRarity: rarity >= 0, rarityName: rc.n, rarityColor: rc.c,
+      pips: [0, 1, 2, 3, 4, 5].map((i) => ({ bg: i <= rarity ? rc.c : 'rgba(255,255,255,0.15)' }))
+    };
+  }
+}
+</script>
+</body>
+</html>
