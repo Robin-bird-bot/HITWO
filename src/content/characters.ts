@@ -36,6 +36,8 @@ export const STARTING_PARTY: readonly CharacterDef[] = [
     placeholder: true,
     color: '#EBC04A',
     portrait: 'placeholder',
+    // TODO(wyatt): a placeholder Backpack, so the bag shows item-added slots.
+    inventory: { equipped: { gear: { uid: 'hiker-2-backpack', itemId: 'backpack' } } },
     slots: [
       { type: 'T', traitId: 'stoic' },
       { type: 'U', traitId: null },

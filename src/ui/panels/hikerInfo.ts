@@ -1,0 +1,253 @@
+/**
+ * Plain-language facts about hikers and what they can do, for the panels.
+ * Pure functions of the game state, so they're easy to test.
+ */
+import { tileLabel } from '../../content/tileLabels';
+import { BALANCE } from '../../config/balance';
+import {
+  adjacentTileIds,
+  hikersOnTile,
+  isSheltered,
+  moveCost,
+  thresholdStates,
+  validateAction,
+  type GameState,
+  type Hiker,
+  type StatName,
+  type Tile,
+} from '../../engine';
+import type { IconName } from '../icons/paths';
+import { SPECIAL_LOOK } from '../map/looks';
+
+const T = BALANCE.thresholds;
+
+export const STAT_META: Record<
+  StatName,
+  { label: string; icon: IconName; warn: number; crit: number }
+> = {
+  energy: { label: 'Energy', icon: 'zap', warn: T.fatigued, crit: T.exhausted },
+  appetite: { label: 'Appetite', icon: 'utensils', warn: T.hungry, crit: T.famished },
+  // Morale has no threshold states; these only color the bar (as in the mockup).
+  morale: { label: 'Morale', icon: 'heart', warn: 3, crit: 1 },
+};
+
+export function barColor(stat: StatName, value: number): string {
+  const m = STAT_META[stat];
+  if (value <= m.crit) return '#E5624A';
+  if (value <= m.warn) return '#E9B44C';
+  return '#F1EADB';
+}
+
+/** The next threshold for a stat, or the state it's in. */
+export function statNote(stat: StatName, value: number): string {
+  if (stat === 'energy') {
+    if (value <= T.exhausted) return 'Exhausted';
+    if (value <= T.fatigued) return `Exhausted at ${T.exhausted}`;
+    return `Fatigued at ${T.fatigued}`;
+  }
+  if (stat === 'appetite') {
+    if (value <= T.famished) return 'Famished';
+    if (value <= T.hungry) return `Famished at ${T.famished}`;
+    return `Hungry at ${T.hungry}`;
+  }
+  return 'Injury at 0';
+}
+
+export interface ConditionChip {
+  key: string;
+  icon: IconName;
+  label: string;
+  kind: 'state' | 'injury' | 'positive' | 'negative';
+}
+
+/** Threshold states and injuries, as icons on the hiker card. Timed conditions arrive in Phase 6. */
+export function conditionChips(h: Hiker): ConditionChip[] {
+  const states = thresholdStates(h);
+  const chips: ConditionChip[] = [];
+  if (states.includes('famished')) {
+    chips.push({
+      key: 'famished',
+      icon: 'utensils',
+      kind: 'state',
+      label: 'Famished: can’t move or scavenge',
+    });
+  } else if (states.includes('hungry')) {
+    chips.push({
+      key: 'hungry',
+      icon: 'utensils',
+      kind: 'state',
+      label: 'Hungry: can’t scavenge or move the group',
+    });
+  }
+  if (states.includes('exhausted')) {
+    chips.push({
+      key: 'exhausted',
+      icon: 'battery',
+      kind: 'state',
+      label: 'Exhausted: can only sleep',
+    });
+  } else if (states.includes('fatigued')) {
+    chips.push({
+      key: 'fatigued',
+      icon: 'battery',
+      kind: 'state',
+      label: 'Fatigued: at night, can only sleep',
+    });
+  }
+  if (h.injuries > 0) {
+    chips.push({
+      key: 'injury',
+      icon: 'medical',
+      kind: 'injury',
+      label: `${h.injuries} ${h.injuries === 1 ? 'injury' : 'injuries'} (passes out at ${BALANCE.injuries.passOutAt})`,
+    });
+  }
+  return chips;
+}
+
+export type StatusTag = 'PASSED OUT' | 'ACTED' | 'ACTING' | 'READY' | 'CHECKED IN' | 'LEFT';
+
+export function statusTag(h: Hiker, selected: boolean): StatusTag {
+  if (h.status === 'passedOut') return 'PASSED OUT';
+  if (h.status === 'checkedIn') return 'CHECKED IN';
+  if (h.status === 'abandoned') return 'LEFT';
+  if (h.acted) return 'ACTED';
+  return selected ? 'ACTING' : 'READY';
+}
+
+export const FAMILY_LOOK = {
+  human: { label: 'HUMAN', icon: 'user' },
+  dog: { label: 'DOG', icon: 'paw' },
+  cat: { label: 'CAT', icon: 'paw' },
+} as const satisfies Record<Hiker['family'], { label: string; icon: IconName }>;
+
+export function xpProgress(h: Hiker): { level: number; xp: number; next: number | null } {
+  const levels = BALANCE.xp.levelAt;
+  const next = levels[h.level] ?? null;
+  return { level: h.level, xp: h.xp, next };
+}
+
+/** What to call a tile: its label, special space, or kind. */
+export function tileName(tile: Tile): string {
+  if (tile.kind === 'trailhead') return 'Trailhead';
+  if (tile.kind === 'checkpoint') return 'Checkpoint';
+  const allKnown = tile.nodes.length > 0 && tile.nodes.every((n) => n.revealed);
+  const label = allKnown ? tileLabel(tile.nodes) : null;
+  if (label) return label;
+  if (tile.special) return SPECIAL_LOOK[tile.special].name;
+  return 'Trail tile';
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+
+export type ActionId =
+  'move' | 'moveAll' | 'scavenge' | 'craft' | 'fire' | 'tend' | 'sleep' | 'watch';
+
+export interface ActionState {
+  id: ActionId;
+  label: string;
+  icon: IconName;
+  /** Short line under the label, e.g. "−1 Appetite". */
+  sub: string;
+  status: 'ready' | 'blocked' | 'soon';
+  /** Why it's greyed out, in plain words. */
+  reason?: string;
+}
+
+const SOON: Record<
+  'scavenge' | 'craft' | 'fire' | 'tend' | 'watch',
+  { phase: number; what: string }
+> = {
+  scavenge: { phase: 4, what: 'Scavenging' },
+  tend: { phase: 4, what: 'Tending' },
+  fire: { phase: 6, what: 'Sitting by the fire' },
+  watch: { phase: 6, what: 'Keeping watch' },
+  craft: { phase: 9, what: 'Crafting' },
+};
+
+function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState {
+  const { phase, what } = SOON[id];
+  return {
+    id,
+    label,
+    icon,
+    sub: `Phase ${phase}`,
+    status: 'soon',
+    reason: `${what} arrives in Phase ${phase}.`,
+  };
+}
+
+const costText = (appetite: number) => (appetite === 0 ? 'No Appetite' : `−${appetite} Appetite`);
+
+/** The action grid for the selected hiker: what's ready, what's not and why. */
+export function actionStates(state: GameState, h: Hiker): ActionState[] {
+  const targets = adjacentTileIds(state.section, h.tileId);
+
+  // Move: ready if any connected tile can be reached.
+  const moveReasons = targets.map((t) =>
+    validateAction(state, { type: 'move', hikerId: h.id, toTileId: t }),
+  );
+  const moveOk = targets.filter((_, i) => moveReasons[i] === null);
+  const cheapest = Math.min(...moveOk.map((t) => moveCost(state, h.id, t)?.appetite ?? 0));
+  const move: ActionState = moveOk.length
+    ? { id: 'move', label: 'Move', icon: 'footprints', sub: costText(cheapest), status: 'ready' }
+    : {
+        id: 'move',
+        label: 'Move',
+        icon: 'footprints',
+        sub: '−1 Appetite',
+        status: 'blocked',
+        reason: moveReasons.find((r) => r !== null) ?? 'No connected tiles.',
+      };
+
+  // Move All: ready if someone here can come along to some connected tile.
+  const company = hikersOnTile(state, h.tileId).filter((o) => o.id !== h.id && !o.acted);
+  let moveAll: ActionState = {
+    id: 'moveAll',
+    label: 'Move All',
+    icon: 'users',
+    sub: '−1 per hiker',
+    status: 'ready',
+  };
+  if (!company.length) {
+    moveAll = { ...moveAll, status: 'blocked', reason: 'Nobody else on this tile can come along.' };
+  } else {
+    let firstReason: string | null = null;
+    const ok = targets.some((t) =>
+      company.some((o) => {
+        const r = validateAction(state, {
+          type: 'moveAll',
+          hikerId: h.id,
+          toTileId: t,
+          bring: [o.id],
+        });
+        firstReason ??= r;
+        return r === null;
+      }),
+    );
+    if (!ok)
+      moveAll = { ...moveAll, status: 'blocked', reason: firstReason ?? 'Nobody can come along.' };
+  }
+
+  const sleepReason = validateAction(state, { type: 'sleep', hikerId: h.id });
+  const gain = isSheltered(state, h) ? BALANCE.sleep.shelteredEnergy : BALANCE.sleep.energy;
+  const sleep: ActionState = {
+    id: 'sleep',
+    label: 'Sleep',
+    icon: 'moon',
+    sub: state.phase === 'night' ? `+${gain} Energy` : 'Night',
+    status: sleepReason ? 'blocked' : 'ready',
+    ...(sleepReason ? { reason: sleepReason } : {}),
+  };
+
+  return [
+    move,
+    moveAll,
+    soon('scavenge', 'Scavenge', 'search'),
+    soon('craft', 'Craft', 'hammer'),
+    soon('fire', 'Fire', 'flame'),
+    soon('tend', 'Tend', 'sprout'),
+    sleep,
+    soon('watch', 'Watch', 'eye'),
+  ];
+}

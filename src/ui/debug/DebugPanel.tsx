@@ -6,6 +6,7 @@
  * Step 1 tools: phases and revealing the map. Step 4 adds the seed, stats and resources.
  */
 import { useEffect, useState } from 'react';
+import { RESOURCES } from '../../content/resources';
 import { PHASES, type Action, type GameState } from '../../engine';
 import { gameStore } from '../app/gameStore';
 import styles from './DebugPanel.module.css';
@@ -82,6 +83,28 @@ export function DebugPanel({ state, onQuit }: { state: GameState; onQuit(): void
           </button>
           <button type="button" className={styles.button} onClick={onQuit}>
             Back to title
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Inventory</h3>
+        <div className={styles.row}>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => {
+              for (const h of state.hikers) {
+                const resources: Record<string, number> = {};
+                for (let i = 0; i < 5; i++) {
+                  const r = RESOURCES[Math.floor(Math.random() * RESOURCES.length)];
+                  if (r) resources[r.id] = (resources[r.id] ?? 0) + 1;
+                }
+                run({ type: 'debug', op: { kind: 'giveResources', hikerId: h.id, resources } });
+              }
+            }}
+          >
+            Give everyone 5 random resources
           </button>
         </div>
       </section>

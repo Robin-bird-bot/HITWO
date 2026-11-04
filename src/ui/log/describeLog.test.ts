@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest';
+import { STARTING_PARTY } from '../../content/characters';
+import { applyAction, createGame, type Action, type GameState } from '../../engine';
+import { fixtureGame, place, run } from '../../engine/test/fixtures';
+import { describeLog, signed } from './describeLog';
+
+const texts = (s: GameState) => describeLog(s, 50).map((l) => l.text);
+
+describe('trail log sentences', () => {
+  it('count stats down with a real minus sign', () => {
+    expect(signed(-1, 'appetite')).toBe('−1 Appetite');
+    expect(signed(2, 'energy')).toBe('+2 Energy');
+  });
+
+  it('fold a move and its costs into one line', () => {
+    const s = run(fixtureGame(), { type: 'move', hikerId: 'ash', toTileId: 'M' });
+    expect(texts(s)).toEqual(['Ash moved to Trail tile (−1 Appetite, −1 Energy).']);
+  });
+
+  it('describe leading the group', () => {
+    const s = run(fixtureGame(), {
+      type: 'moveAll',
+      hikerId: 'ash',
+      toTileId: 'L',
+      bring: ['birch', 'cedar'],
+    });
+    expect(texts(s)).toEqual(['Ash led Birch and Cedar to Trail tile (−3 Appetite).']);
+  });
+
+  it('give each hiker one line for the night’s drains, then the new day', () => {
+    let s = fixtureGame();
+    for (const a of [
+      { type: 'endPhase' },
+      { type: 'endPhase' },
+      { type: 'sleep', hikerId: 'ash' },
+      { type: 'endPhase' },
+    ] as Action[]) {
+      s = applyAction(s, a);
+    }
+    const lines = texts(s);
+    expect(lines).toContain('Ash slept.');
+    expect(lines).toContain('Birch: −2 Energy (no sleep), −1 Appetite (end of day).');
+    expect(lines).toContain('Ash: −1 Appetite (end of day).');
+    expect(lines.at(-1)).toBe('Day 2 · Morning');
+  });
+
+  it('explain injuries', () => {
+    const s0 = fixtureGame();
+    place(s0, 'ash', 'M', { morale: 1 });
+    const s = run(s0, { type: 'move', hikerId: 'ash', toTileId: 'R' });
+    expect(texts(s).at(-1)).toBe(
+      'Ash took an injury (morale hit 0): 1 of 3. Stats below 5 rise to 5.',
+    );
+  });
+
+  it('describe abilities with their effect', () => {
+    const game = createGame({ seed: 1, hikers: STARTING_PARTY });
+    const s = applyAction(game, {
+      type: 'useAbility',
+      hikerId: 'hiker-2',
+      abilityId: 'stoic',
+      choice: 'energy',
+    });
+    expect(texts(s)).toEqual(['Hiker 2 used Stoic (−2 Morale).']);
+  });
+
+  it('keep only the most recent lines', () => {
+    let s = fixtureGame();
+    for (let i = 0; i < 9; i++) s = applyAction(s, { type: 'endPhase' });
+    expect(describeLog(s, 3)).toHaveLength(3);
+  });
+});

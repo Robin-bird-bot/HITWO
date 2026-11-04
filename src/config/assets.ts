@@ -39,4 +39,26 @@ export const ASSETS = {
   icons: {
     acornCaps: asset('icons/acorn-caps.png'),
   },
+  /** Resource icons by resource id. Bones, flint and salt have no art yet. */
+  resources: Object.fromEntries(
+    [
+      'wood',
+      'moss',
+      'mushroom',
+      'grass',
+      'fish',
+      'clay',
+      'shell',
+      'seaweed',
+      'meat',
+      'fur',
+      'oil',
+      'stone',
+      'metal',
+    ].map((id) => [id, asset(`resources/${id}.png`)]),
+  ) as Record<string, string>,
+  itemCards: {
+    clothesGradient: asset('item-cards/gradients/clothes.png'),
+    clothesIcon: asset('item-cards/type-icons/clothes.png'),
+  },
 } as const;

@@ -192,7 +192,9 @@ export type DebugOp =
   /** Jumps straight to a phase on the same day, skipping any drains. */
   | { kind: 'skipToPhase'; phase: Phase }
   /** Reveals every node on the map. */
-  | { kind: 'revealMap' };
+  | { kind: 'revealMap' }
+  /** Adds resources to a hiker, up to the resource limit. */
+  | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> };
 
 export type ActionType = Action['type'];
 

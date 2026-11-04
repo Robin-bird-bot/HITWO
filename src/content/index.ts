@@ -10,3 +10,5 @@
  * See CLAUDE.md, "Architecture rules" 4 and 6.
  */
 export { TRAITS } from './traits';
+export { FAMILIES } from './families';
+export { ITEMS } from './items';

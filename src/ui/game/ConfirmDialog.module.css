@@ -1,0 +1,63 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(15, 20, 18, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  width: 520px;
+  padding: 28px 32px;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 60px rgba(10, 14, 12, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.message {
+  font-size: 18px;
+  line-height: 1.45;
+  color: #d8d1c2;
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.cancel,
+.confirm {
+  flex: 1;
+  min-height: 60px;
+  border-radius: 12px;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.cancel {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.confirm {
+  border: none;
+  background: var(--gold);
+  color: var(--page);
+}

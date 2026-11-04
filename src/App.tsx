@@ -22,7 +22,7 @@ export function App() {
   if (screen === 'game' && game) {
     return (
       <>
-        <GameScreen key={game.seed} state={game} />
+        <GameScreen key={game.seed} state={game} onQuit={() => setScreen('title')} />
         {debugEnabled() && <DebugPanel state={game} onQuit={() => setScreen('title')} />}
       </>
     );

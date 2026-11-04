@@ -1,0 +1,230 @@
+.kicker {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #9db5aa;
+}
+
+/* Kept to the mockup's 92 px so it clears the party panel below. */
+.biomeCard {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  gap: 2px;
+}
+
+.biomeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.biome {
+  font-family: var(--font-pixel);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.dashes {
+  display: flex;
+  gap: 5px;
+}
+
+.dashes span {
+  width: 22px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.dashes span[data-done='true'] {
+  background: var(--gold);
+}
+
+.small {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Day bar: everything sits in the header row, so it stays visible when shrunk. */
+.dayBar {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+.day {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.phases {
+  display: flex;
+  gap: 4px;
+}
+
+.phase {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  opacity: 0.5;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+.phase[data-current='true'] {
+  opacity: 1;
+  background: var(--gold);
+  color: var(--page);
+}
+
+.divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.weather {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weatherText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.weatherName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.forecast {
+  display: flex;
+  gap: 10px;
+}
+
+.forecastDay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.tierTag {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--morale);
+  color: var(--page);
+}
+
+.objectiveName {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  letter-spacing: 0.03em;
+  margin-top: -4px;
+}
+
+.objectiveText {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d8d1c2;
+}
+
+.caps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.capsCount {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  color: var(--text);
+}
+
+.meters {
+  display: flex;
+  gap: 10px;
+}
+
+.meter {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.track {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+}
+
+.track div {
+  height: 100%;
+  background: var(--text);
+  opacity: 0.6;
+}
+
+.menuWrap {
+  position: absolute;
+  left: 1532px;
+  top: 16px;
+}
+
+.menu {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel);
+  box-shadow: 0 12px 32px rgba(15, 22, 19, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.menuList {
+  position: absolute;
+  right: 0;
+  top: 60px;
+  width: 220px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 32px rgba(15, 22, 19, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+}
+
+.menuItem {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--gold);
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  text-align: left;
+}
