@@ -19,4 +19,14 @@ export const ASSETS = {
   textures: {
     halftone: asset('textures/pixel-halftone.png'),
   },
+  /** Hex node badges for tiles and card backs. */
+  nodes: {
+    forest: asset('nodes/forest.png'),
+    river: asset('nodes/river.png'),
+    wildlife: asset('nodes/wildlife.png'),
+    mountain: asset('nodes/mountain.png'),
+  },
+  icons: {
+    acornCaps: asset('icons/acorn-caps.png'),
+  },
 } as const;
