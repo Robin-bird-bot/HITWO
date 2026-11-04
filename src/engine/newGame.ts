@@ -1,7 +1,17 @@
 import { BALANCE } from '../config/balance';
 import { seedRng } from './rng';
 import { SAVE_VERSION } from './save';
-import type { Family, GameState, Hiker, HikerId, Section, Stats, TraitSlot } from './types';
+import { generateSection } from './trail/generate';
+import type {
+  BiomeId,
+  Family,
+  GameState,
+  Hiker,
+  HikerId,
+  Section,
+  Stats,
+  TraitSlot,
+} from './types';
 
 export interface HikerSetup {
   id: HikerId;
@@ -15,16 +25,27 @@ export interface HikerSetup {
 
 export interface NewGameOptions {
   seed: number;
-  section: Section;
   hikers: readonly HikerSetup[];
+  /** A ready-made section (tests). Without one, the seed generates the trail. */
+  section?: Section;
+  biome?: BiomeId;
+  tier?: number;
 }
 
-/** A new hike: Day 1 Morning, every hiker on the trailhead. */
-export function createGame({ seed, section, hikers }: NewGameOptions): GameState {
+/** A new hike: Day 1 Morning, every hiker on the trailhead. The seed decides the trail. */
+export function createGame({
+  seed,
+  hikers,
+  section: given,
+  biome = 'meadow',
+  tier = 1,
+}: NewGameOptions): GameState {
+  const rng = seedRng(seed);
+  const section = given ?? generateSection(rng, { biome, tier });
   return {
     saveVersion: SAVE_VERSION,
     seed,
-    rng: seedRng(seed),
+    rng,
     day: 1,
     phase: 'morning',
     sectionIndex: 0,
