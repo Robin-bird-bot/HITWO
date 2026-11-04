@@ -11,4 +11,5 @@
  */
 export { TRAITS } from './traits';
 export { FAMILIES } from './families';
-export { ITEMS } from './items';
+export { ITEMS, findableItems } from './items';
+export { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, type ScavengeCardDef } from './scavengeCards';

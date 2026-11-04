@@ -172,6 +172,72 @@ export interface Hiker {
   level: number;
 }
 
+// ── Scavenging ─────────────────────────────────────────────────────────────
+
+/** Card rarity, from most to least common. */
+export type Rarity = 'common' | 'uncommon' | 'rare' | 'veryRare' | 'legendary' | 'mythic';
+export const RARITIES: readonly Rarity[] = [
+  'common',
+  'uncommon',
+  'rare',
+  'veryRare',
+  'legendary',
+  'mythic',
+];
+
+/** Every kind of scavenge card (docs/design/01-design-doc.md, "Scavenge cards"). */
+export type ScavengeCardType =
+  | 'resource'
+  | 'x2'
+  | 'x3'
+  | 'pair'
+  | 'trio'
+  | 'mixed'
+  | 'wild'
+  | 'wildX2'
+  | 'varietyWild'
+  | 'varietyPair'
+  | 'varietyBundle'
+  | 'choice'
+  | 'choiceX2'
+  | 'pickOfTheWild'
+  | 'pairOfTheWild'
+  | 'bundleOfTheWild'
+  | 'caps'
+  | 'toolFind'
+  | 'foodFind'
+  | 'clothesFind'
+  | 'shelterFind'
+  | 'trinketFind'
+  | 'choiceTool'
+  | 'choiceFood'
+  | 'choiceClothes'
+  | 'choiceShelter'
+  | 'choiceTrinket';
+
+/** One dealt card. Its contents are rolled when it's dealt; a Wild's stay hidden until taken. */
+export interface ScavengeCard {
+  type: ScavengeCardType;
+  rarity: Rarity;
+  /**
+   * The node the card came from; taking it drains this node's Abundance.
+   * Null only on a tile with nothing but Cap nodes.
+   */
+  node: NodeType | null;
+  /** Mixed cards: the second node. */
+  node2?: NodeType;
+  /** Came from a Bounty node (extra Abundance cost). */
+  bounty?: true;
+  /** What the card gives, when it's fixed (Resource, ×2, Pair, Wild, Variety…). */
+  resources?: ResourceId[];
+  /** Choice cards: the player picks `count` resources from a node or from all 16, `each` of every pick. */
+  pick?: { count: number; from: NodeType | 'all'; each: number };
+  caps?: number;
+  /** Item finds: the item. Choice items: the items to pick 1 from. */
+  items?: ItemId[];
+  flipped: boolean;
+}
+
 // ── Randomness ─────────────────────────────────────────────────────────────
 
 /** sfc32 state: four unsigned 32-bit integers. */

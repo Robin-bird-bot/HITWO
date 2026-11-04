@@ -6,7 +6,15 @@
  * Engine code reads numbers from BALANCE and never hard-codes them. A guess
  * made while the docs are silent gets a `// TODO(wyatt):` comment.
  */
-import type { BiomeId, LineKind, NodeType, SpecialSpace, StatName } from '../engine/types';
+import type {
+  BiomeId,
+  LineKind,
+  NodeType,
+  Rarity,
+  ScavengeCardType,
+  SpecialSpace,
+  StatName,
+} from '../engine/types';
 
 type PartialStats = Partial<Record<StatName, number>>;
 
@@ -109,6 +117,58 @@ export const BALANCE = {
 
   scavenge: {
     appetite: 1,
+    /** Cards dealt, before family, trait and Abundance changes ("draw 3, pick 1"). */
+    cards: 3,
+    /**
+     * Rarity odds in percent at set Luck values. Luck in between is
+     * interpolated per point; Luck beyond the ends is clamped to them.
+     */
+    rarityByLuck: [
+      // TODO(wyatt): first guess. Common 85%, the rest at 60% of their Luck 0 odds.
+      {
+        luck: -5,
+        odds: { common: 85, uncommon: 9, rare: 3.6, veryRare: 1.5, legendary: 0.6, mythic: 0.3 },
+      },
+      // Wyatt, Nov 4.
+      {
+        luck: 0,
+        odds: { common: 75, uncommon: 15, rare: 6, veryRare: 2.5, legendary: 1, mythic: 0.5 },
+      },
+      {
+        luck: 5,
+        odds: { common: 50, uncommon: 25, rare: 14, veryRare: 7, legendary: 3, mythic: 1 },
+      },
+    ] as { luck: number; odds: Record<Rarity, number> }[],
+    /**
+     * How likely each card type is within its rarity (1 when not listed).
+     * TODO(wyatt): all equally likely to start.
+     */
+    typeWeights: {} as Partial<Record<ScavengeCardType, number>>,
+    /** A Cap node on the tile makes Acorn caps cards this many times likelier. TODO(wyatt): first guess. */
+    capNodeCapsWeight: 4,
+    /** From a Bounty node, cards that give 2 or more resources are this many times likelier. TODO(wyatt): first guess. */
+    bountyMultipleWeight: 2,
+    /** Acorn caps cards give this many caps, each amount equally likely. TODO(wyatt): first guess. */
+    caps: { min: 1, max: 3 },
+    /** Choice item cards offer this many items to pick from (fewer if fewer exist). */
+    choiceItemOptions: 5,
+  },
+
+  luck: {
+    /** Luck is clamped to this range. */
+    min: -5,
+    max: 5,
+    /** Luck from Morale (Wyatt, Nov 4: gentle). The first row whose Morale is reached applies. */
+    fromMorale: [
+      { morale: 7, luck: 1 },
+      { morale: 4, luck: 0 },
+      { morale: 0, luck: -1 },
+    ],
+  },
+
+  abundance: {
+    /** Each node type's meter runs 0 to max (Main.dc.html shows 0–10). */
+    max: 10,
   },
 
   inventory: {

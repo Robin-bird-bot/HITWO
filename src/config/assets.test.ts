@@ -9,8 +9,15 @@ describe('asset()', () => {
   });
 
   it('never produces a double slash', () => {
-    for (const url of [asset('sky/sun.png'), ...Object.values(ASSETS).flatMap(Object.values)]) {
-      expect(url).not.toMatch(/\/\//);
-    }
+    const urls = [asset('sky/sun.png'), ...allUrls(ASSETS)];
+    expect(urls.length).toBeGreaterThan(50);
+    for (const url of urls) expect(url).not.toMatch(/\/\//);
   });
 });
+
+/** Every URL in ASSETS, however deeply it's nested. */
+function allUrls(value: unknown): string[] {
+  if (typeof value === 'string') return [value];
+  if (value && typeof value === 'object') return Object.values(value).flatMap(allUrls);
+  return [];
+}

@@ -32,3 +32,5 @@ export { checkSection } from './trail/check';
 export { seedRng } from './rng';
 export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, FamilyDef, AbilityDef } from './effects';
+export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
+export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
