@@ -1,8 +1,16 @@
 import { ASSETS } from '../../config/assets';
 import styles from './TitleScreen.module.css';
 
-/** Continue (and a confirm before replacing a saved hike) arrive in Phase 3, step 4. */
-export function TitleScreen({ onNewHike }: { onNewHike(): void }) {
+interface TitleScreenProps {
+  /** A line describing the saved hike ("Day 3 · Afternoon · Meadow"), or null when there's none. */
+  saved: string | null;
+  /** A gentle note when a saved hike couldn't be read. */
+  notice?: string | null;
+  onContinue(): void;
+  onNewHike(): void;
+}
+
+export function TitleScreen({ saved, notice, onContinue, onNewHike }: TitleScreenProps) {
   return (
     <main className={styles.scene}>
       <img className={styles.sun} src={ASSETS.sky.sun} alt="" draggable={false} />
@@ -28,9 +36,26 @@ export function TitleScreen({ onNewHike }: { onNewHike(): void }) {
           <span />
           <span />
         </div>
-        <button type="button" className={styles.newHike} onClick={onNewHike}>
-          New Hike
-        </button>
+        {saved ? (
+          <>
+            <button type="button" className={styles.newHike} onClick={onContinue} autoFocus>
+              <span>Continue</span>
+              <span className={styles.saved}>{saved}</span>
+            </button>
+            <button type="button" className={styles.secondary} onClick={onNewHike}>
+              New Hike
+            </button>
+          </>
+        ) : (
+          <button type="button" className={styles.newHike} onClick={onNewHike} autoFocus>
+            New Hike
+          </button>
+        )}
+        {notice && (
+          <p className={styles.notice} role="status">
+            {notice}
+          </p>
+        )}
       </section>
 
       <p className={styles.build}>

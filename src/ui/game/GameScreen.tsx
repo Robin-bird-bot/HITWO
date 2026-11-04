@@ -57,8 +57,13 @@ function listNames(names: string[]): string {
 export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void }) {
   const { section, hikers } = state;
   const bounds = useMemo(() => mapBounds(section), [section]);
+  // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
-    () => hikers.find((h) => h.status === 'active')?.id ?? null,
+    () =>
+      (
+        hikers.find((h) => h.status === 'active' && !h.acted) ??
+        hikers.find((h) => h.status === 'active')
+      )?.id ?? null,
   );
   const selected = hikers.find((h) => h.id === selectedId) ?? hikers[0];
   const [note, setNote] = useState<string | undefined>();

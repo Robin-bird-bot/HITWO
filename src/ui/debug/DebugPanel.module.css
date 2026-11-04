@@ -102,3 +102,14 @@
   color: var(--text);
   font: inherit;
 }
+
+.seed {
+  width: 120px;
+  min-height: 30px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #262c29;
+  color: var(--text);
+  font: inherit;
+}

@@ -3,7 +3,7 @@
  * backtick key. Always available with the dev server; on the live site only
  * when the address has ?debug.
  *
- * Tools: phases, revealing the map, resources and stats. Step 4 adds the seed.
+ * Tools: a new game from a seed, phases, revealing the map, stats and resources.
  */
 import { useEffect, useState } from 'react';
 import { RESOURCES } from '../../content/resources';
@@ -13,9 +13,17 @@ import styles from './DebugPanel.module.css';
 
 const PHASE_NAMES = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
 
-export function DebugPanel({ state, onQuit }: { state: GameState; onQuit(): void }) {
+interface DebugPanelProps {
+  state: GameState;
+  onQuit(): void;
+  /** Starts a new game with this seed (the same seed always gives the same trail). */
+  onNewGame(seed: number): void;
+}
+
+export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
+  const [seed, setSeed] = useState(String(state.seed));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -47,6 +55,32 @@ export function DebugPanel({ state, onQuit }: { state: GameState; onQuit(): void
           Close
         </button>
       </header>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Game</h3>
+        <div className={styles.row}>
+          <label className={styles.note}>
+            Seed{' '}
+            <input
+              className={styles.seed}
+              type="number"
+              value={seed}
+              onChange={(e) => setSeed(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => {
+              const n = Number.parseInt(seed, 10);
+              if (Number.isFinite(n)) onNewGame(n);
+              else setMessage('Type a whole number for the seed.');
+            }}
+          >
+            New game with this seed
+          </button>
+        </div>
+      </section>
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Phase</h3>
