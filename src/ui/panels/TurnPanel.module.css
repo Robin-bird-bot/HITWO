@@ -240,6 +240,11 @@
   flex-wrap: wrap;
 }
 
+/* Main.dc.html spaces bag slots 6 px apart, so 6 small slots fit the panel. */
+.bagRow {
+  gap: 6px;
+}
+
 .itemCard,
 .empty {
   position: relative;

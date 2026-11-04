@@ -255,10 +255,23 @@ const EQUIP: { slot: EquipSlot; label: string; icon: 'shirt' | 'boot' | 'backpac
   { slot: 'gear', label: 'Gear', icon: 'backpack' },
 ];
 
-export function Equipped({ hiker }: { hiker: Hiker }) {
+/** `compact` (Simple mode): short labels with counts, and no helper text. */
+interface InventoryProps {
+  compact?: boolean;
+}
+
+export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
+  const worn = EQUIP.filter(({ slot }) => hiker.inventory.equipped[slot]).length;
   return (
     <div className={styles.block}>
-      <span className={panel.label}>EQUIPPED</span>
+      <div className={styles.blockHead}>
+        <span className={panel.label}>EQUIPPED</span>
+        {compact && (
+          <span className={styles.count}>
+            {worn}/{EQUIP.length}
+          </span>
+        )}
+      </div>
       <div className={styles.row}>
         {EQUIP.map(({ slot, label, icon }) => {
           const item = hiker.inventory.equipped[slot];
@@ -292,7 +305,11 @@ function ItemCard({ item, size }: { item: ItemInstance; size: 'large' | 'small' 
   );
 }
 
-export function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
+export function Bag({
+  state,
+  hiker,
+  compact,
+}: { state: GameState; hiker: Hiker } & InventoryProps) {
   const slots = bagSlots(state, hiker);
   const size = slots.total <= 4 ? 'large' : 'small';
   const items = hiker.inventory.bag;
@@ -309,10 +326,10 @@ export function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
         <span className={panel.label}>BAG</span>
         <span className={styles.count}>
           {items.length}/{slots.total}
-          {extra ? ` · ${extra.toUpperCase()}` : ''}
+          {extra && !compact ? ` · ${extra.toUpperCase()}` : ''}
         </span>
       </div>
-      <div className={styles.row} data-wrap={slots.total > 6}>
+      <div className={`${styles.row} ${styles.bagRow}`} data-wrap={slots.total > 6}>
         {cells.map((cell, i) => {
           const item = items[i];
           if (item) return <ItemCard key={i} item={item} size={size} />;
@@ -337,7 +354,7 @@ export function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
   );
 }
 
-export function Resources({ hiker }: { hiker: Hiker }) {
+export function Resources({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
   return (
     <div className={styles.block}>
@@ -348,7 +365,9 @@ export function Resources({ hiker }: { hiker: Hiker }) {
         </span>
       </div>
       {held.length === 0 ? (
-        <span className={styles.muted}>None yet. Scavenging arrives in Phase 4.</span>
+        <span className={styles.muted}>
+          {compact ? 'None' : 'None yet. Scavenging arrives in Phase 4.'}
+        </span>
       ) : (
         <div className={styles.resources}>
           {held.map((r) => {
