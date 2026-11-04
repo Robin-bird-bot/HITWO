@@ -1,0 +1,93 @@
+/**
+ * Threshold states: Hungry, Famished, Fatigued and Exhausted. They are worked
+ * out from the stats every time, never stored, and they plug into the same
+ * hooks as traits.
+ */
+import { BALANCE } from '../config/balance';
+import type { ActQuery, EffectSource } from './effects';
+import type { Action, Hiker } from './types';
+
+const T = BALANCE.thresholds;
+
+export const isHungry = (h: Hiker) => h.stats.appetite <= T.hungry;
+export const isFamished = (h: Hiker) => h.stats.appetite <= T.famished;
+export const isFatigued = (h: Hiker) => h.stats.energy <= T.fatigued;
+export const isExhausted = (h: Hiker) => h.stats.energy <= T.exhausted;
+
+export type ThresholdState = 'hungry' | 'famished' | 'fatigued' | 'exhausted';
+
+export function thresholdStates(h: Hiker): ThresholdState[] {
+  const out: ThresholdState[] = [];
+  if (isHungry(h)) out.push('hungry');
+  if (isFamished(h)) out.push('famished');
+  if (isFatigued(h)) out.push('fatigued');
+  if (isExhausted(h)) out.push('exhausted');
+  return out;
+}
+
+const isMove = (a: Action) => a.type === 'move' || a.type === 'moveAll';
+const usesAction = (q: ActQuery) => q.role === 'brought' || q.action.type !== 'useAbility';
+const isSleep = (q: ActQuery) => q.role === 'actor' && q.action.type === 'sleep';
+const canBeBrought = BALANCE.rules.exhaustedOrFatiguedCanBeBrought;
+
+export function thresholdSources(h: Hiker): EffectSource[] {
+  const sources: EffectSource[] = [];
+
+  if (isExhausted(h)) {
+    sources.push({
+      id: 'threshold:exhausted',
+      kind: 'threshold',
+      name: 'Exhausted',
+      hooks: {
+        canAct(q) {
+          if (!usesAction(q) || isSleep(q)) return undefined;
+          if (q.role === 'brought' && canBeBrought) return undefined;
+          return `Exhausted: can only sleep (Energy ${T.exhausted} or less).`;
+        },
+      },
+    });
+  } else if (isFatigued(h)) {
+    sources.push({
+      id: 'threshold:fatigued',
+      kind: 'threshold',
+      name: 'Fatigued',
+      hooks: {
+        canAct(q) {
+          if (q.phase !== 'night' || !usesAction(q) || isSleep(q)) return undefined;
+          if (q.role === 'brought' && canBeBrought) return undefined;
+          return `Fatigued: can only sleep at night (Energy ${T.fatigued} or less).`;
+        },
+      },
+    });
+  }
+
+  if (isFamished(h)) {
+    sources.push({
+      id: 'threshold:famished',
+      kind: 'threshold',
+      name: 'Famished',
+      hooks: {
+        canAct(q) {
+          if (q.role !== 'actor' || !isMove(q.action)) return undefined;
+          return `Famished: too hungry to move (Appetite ${T.famished} or less).`;
+        },
+      },
+    });
+  }
+
+  if (isHungry(h)) {
+    sources.push({
+      id: 'threshold:hungry',
+      kind: 'threshold',
+      name: 'Hungry',
+      hooks: {
+        canAct(q) {
+          if (q.role !== 'actor' || q.action.type !== 'moveAll') return undefined;
+          return `Hungry: can't move the group (Appetite ${T.hungry} or less).`;
+        },
+      },
+    });
+  }
+
+  return sources;
+}

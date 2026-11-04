@@ -1,0 +1,94 @@
+import { describe, expect, it } from 'vitest';
+import { applyAction } from './applyAction';
+import { SAVE_VERSION, deserialize, serialize } from './save';
+import { END, fixtureGame, run } from './test/fixtures';
+import type { Action, GameState } from './types';
+
+const SCRIPT: Action[] = [
+  { type: 'moveAll', hikerId: 'ash', toTileId: 'M', bring: ['birch'] },
+  { type: 'move', hikerId: 'cedar', toTileId: 'L' },
+  END,
+  { type: 'move', hikerId: 'cedar', toTileId: 'M' },
+  END,
+  { type: 'sleep', hikerId: 'ash' },
+  END,
+];
+
+function deepFreeze<T>(value: T): T {
+  if (typeof value === 'object' && value !== null && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    for (const child of Object.values(value)) deepFreeze(child);
+  }
+  return value;
+}
+
+describe('save and load', () => {
+  it('round-trips a game exactly', () => {
+    const state = run(fixtureGame({ seed: 77 }), ...SCRIPT);
+    const loaded = deserialize(serialize(state));
+    expect(loaded).toEqual({ ok: true, state });
+  });
+
+  it('stamps every game with the save version', () => {
+    expect(fixtureGame().saveVersion).toBe(SAVE_VERSION);
+  });
+
+  it('reports a missing save as empty', () => {
+    expect(deserialize(null)).toEqual({ ok: false, reason: 'empty' });
+    expect(deserialize('')).toEqual({ ok: false, reason: 'empty' });
+  });
+
+  it('refuses broken JSON without throwing', () => {
+    expect(deserialize('{"saveVersion": 1, "day":')).toEqual({ ok: false, reason: 'corrupt' });
+    expect(deserialize('[1, 2, 3]')).toEqual({ ok: false, reason: 'corrupt' });
+  });
+
+  it('refuses a save with missing parts', () => {
+    const data = JSON.parse(serialize(fixtureGame())) as Record<string, unknown>;
+    delete data.hikers;
+    expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'corrupt' });
+  });
+
+  it('refuses a save from a newer version of the game', () => {
+    const data = { ...fixtureGame(), saveVersion: SAVE_VERSION + 1 };
+    expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'tooNew' });
+  });
+
+  it('refuses an old version with no migration', () => {
+    const data = { ...fixtureGame(), saveVersion: 0 };
+    expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'unsupported' });
+  });
+});
+
+describe('determinism', () => {
+  it('gives an identical game for the same seed and the same actions', () => {
+    const a = run(fixtureGame({ seed: 123 }), ...SCRIPT);
+    const b = run(fixtureGame({ seed: 123 }), ...SCRIPT);
+    expect(serialize(a)).toBe(serialize(b));
+  });
+
+  it('carries the RNG state, so different seeds give different games', () => {
+    const a = fixtureGame({ seed: 1 });
+    const b = fixtureGame({ seed: 2 });
+    expect(a.rng).not.toEqual(b.rng);
+  });
+
+  it('continues identically after a save and load mid-game', () => {
+    const straight = run(fixtureGame({ seed: 9 }), ...SCRIPT);
+    const half = run(fixtureGame({ seed: 9 }), ...SCRIPT.slice(0, 3));
+    const reloaded = deserialize(serialize(half));
+    if (!reloaded.ok) throw new Error('reload failed');
+    const resumed = run(reloaded.state, ...SCRIPT.slice(3));
+    expect(serialize(resumed)).toBe(serialize(straight));
+  });
+
+  it('never changes the state passed in', () => {
+    let state: GameState = deepFreeze(fixtureGame());
+    for (const action of SCRIPT) {
+      const before = serialize(state);
+      const next = applyAction(state, action);
+      expect(serialize(state)).toBe(before);
+      state = deepFreeze(next);
+    }
+  });
+});
