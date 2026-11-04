@@ -14,6 +14,13 @@ The order follows the design doc's build order. It gets a walkable map on screen
 
 ## UI patterns (apply everywhere)
 
+**Screen modes (Simple and Informative)**
+- One setting for the whole game, in Settings in the ☰ menu, remembered per device. **Simple is the default.**
+- Simple shows only what's needed to play: compact hiker cards, small pills along the top, only the actions available right now, and one inventory row. Details open in pop-outs that close on click-away.
+- Informative shows every number, label and threshold, plus tick marks on the status bars.
+- Status bars in both modes: Energy green `#7FC29B`, Appetite brown `#C08A5A`, Morale purple `#B98AE0`; amber `#F0A83A` at a threshold (Fatigued, Hungry, Morale 5 and below); red `#E5624A` with a slow pulse when critical (Exhausted, Famished, Morale 2 and below).
+- New UI from Phase 4 on needs both a Simple and an Informative version.
+
 **Collapsible panels**
 - Every floating panel has a small − button in its header: party, biome card, day and weather bar, objective, Abundance and caps, the selected hiker's panel, and the trail log.
 - Clicking it shrinks the panel to its header row, and the button becomes +.

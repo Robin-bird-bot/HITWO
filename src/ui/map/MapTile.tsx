@@ -23,6 +23,8 @@ interface MapTileProps {
   /** A connected tile the selected hiker can move to ('ok', gold ring) or can't ('blocked'). */
   reach?: 'ok' | 'blocked';
   onClick?(): void;
+  /** Simple mode: the checkpoint's label shows only on hover. */
+  checkpointLabelOnHover?: boolean;
 }
 
 export function MapTile({
@@ -33,9 +35,18 @@ export function MapTile({
   hikerCount,
   reach,
   onClick,
+  checkpointLabelOnHover,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
-    return <CheckpointTile at={at} hikerCount={hikerCount} reach={reach} onClick={onClick} />;
+    return (
+      <CheckpointTile
+        at={at}
+        hikerCount={hikerCount}
+        reach={reach}
+        onClick={onClick}
+        labelOnHover={checkpointLabelOnHover}
+      />
+    );
   }
 
   const colors = TILE_LOOK[look];
@@ -158,15 +169,17 @@ function CheckpointTile({
   hikerCount,
   reach,
   onClick,
+  labelOnHover,
 }: {
   at: Point;
   hikerCount: number;
   reach?: 'ok' | 'blocked';
   onClick?(): void;
+  labelOnHover?: boolean;
 }) {
   const { w, h } = CHECKPOINT_HEX;
   return (
-    <>
+    <div className={styles.checkpointGroup} data-label={labelOnHover ? 'hover' : 'always'}>
       <div
         className={styles.tile}
         style={{ left: at.x - w / 2, top: at.y - h / 2, width: w, height: h }}
@@ -185,7 +198,7 @@ function CheckpointTile({
           Ranger Station · {hikerCount > 0 ? `${hikerCount} here` : 'all 4 check in'}
         </span>
       </div>
-    </>
+    </div>
   );
 }
 

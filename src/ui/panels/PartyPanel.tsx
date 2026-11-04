@@ -9,7 +9,6 @@ import { BALANCE } from '../../config/balance';
 import { STAT_NAMES, type GameState, type Hiker, type HikerId, type SlotType } from '../../engine';
 import { Icon } from '../icons/Icon';
 import {
-  barColor,
   conditionChips,
   FAMILY_LOOK,
   STAT_META,
@@ -19,6 +18,7 @@ import {
   type ConditionChip,
 } from './hikerInfo';
 import { Panel } from './Panel';
+import { StatBar } from './StatBar';
 import styles from './PartyPanel.module.css';
 
 interface PartyPanelProps {
@@ -115,22 +115,9 @@ function HikerCard({
             <Icon name={family.icon} size={11} strokeWidth={2.25} />
             <span>{family.label}</span>
           </div>
-          {STAT_NAMES.map((stat) => {
-            const value = h.stats[stat];
-            return (
-              <div key={stat} className={styles.bar} title={`${STAT_META[stat].label} ${value}/10`}>
-                <Icon name={STAT_META[stat].icon} size={12} color="#B9B2A3" strokeWidth={2.5} />
-                <div className={styles.track}>
-                  <div
-                    style={{
-                      width: `${Math.min(100, value * 10)}%`,
-                      background: barColor(stat, value),
-                    }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+          {STAT_NAMES.map((stat) => (
+            <StatBar key={stat} stat={stat} value={h.stats[stat]} ticks />
+          ))}
           <Conditions chips={conditionChips(h)} />
         </div>
       </div>
@@ -147,7 +134,7 @@ const CHIP_LOOK: Record<ConditionChip['kind'], { ring: string; bg: string; fg: s
   injury: { ring: '#E5624A', bg: '#E5624A', fg: '#1D2220' },
 };
 
-function Conditions({ chips }: { chips: ConditionChip[] }) {
+export function Conditions({ chips }: { chips: ConditionChip[] }) {
   if (!chips.length) return null;
   return (
     <div className={styles.chips}>
@@ -196,11 +183,23 @@ const SLOT_NAME: Record<SlotType, string> = {
 };
 const MAX_SLOTS = 6;
 
-function Details({ hiker: h }: { hiker: Hiker }) {
+/** Exact stats with thresholds, injury pips, conditions, trait slots and XP. */
+export function Details({ hiker: h, showConditions }: { hiker: Hiker; showConditions?: boolean }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
+  const chips = conditionChips(h);
   return (
     <div className={styles.details}>
+      {showConditions && chips.length > 0 && (
+        <div className={styles.conditionList}>
+          {chips.map((c) => (
+            <span key={c.key} className={styles.conditionLine}>
+              <Conditions chips={[c]} />
+              {c.label}
+            </span>
+          ))}
+        </div>
+      )}
       <div className={styles.stats}>
         {STAT_NAMES.map((stat) => (
           <div key={stat} className={styles.statRow}>

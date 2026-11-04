@@ -5,7 +5,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | Folder | Contents | Notes |
 | --- | --- | --- |
 | `fonts/` | Edit Undo, Edit Undo Dot, Edit Undo Line (Brian Kent), Game Quotes (Typia Nesia) | See "Licensing" below |
-| `resources/` | clay, fish, fur, grass, meat, metal, moss, mushroom, oil, seaweed, shell, stone, wood | Transparent PNGs. fish, mushroom, oil and seaweed are only 128px |
+| `resources/` | all 16: clay, fish, fur, grass, meat, metal, moss, mushroom, oil, seaweed, shell, stone, wood, bones, flint, salt | Transparent PNGs. mushroom is only 128px |
 | `nodes/` | forest, river, wildlife, mountain | Hex node badges for tiles and card backs |
 | `scavenge/backdrops/` | forest, river, wildlife, mountain, any-node, caps (brown redwoods), items (rainbow mountain lake) | **Blank** 750×750 card backgrounds with no rays. The game layers rays and icons on top |
 | `scavenge/rays/` | forest, river, wildlife, mountain, caps, any-node-cream, items-white | Full-opacity sunburst rays, one color per backdrop. See "Scavenge card layers" below |
@@ -103,8 +103,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 ## Still missing
 
-- **Resource icons:** bones, flint and salt.
-- **Bigger icons:** hi-res fish, mushroom, oil and seaweed.
+- **Bigger icon:** a hi-res mushroom.
 - **Character art:** real portraits, once characters are final.
 - **Item card art:** most items.
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).

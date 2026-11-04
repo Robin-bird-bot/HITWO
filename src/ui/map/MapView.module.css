@@ -204,6 +204,16 @@
   background: #e9b44c;
 }
 
+/* Simple mode: the checkpoint's label appears only while you point at it. */
+.checkpointGroup[data-label='hover'] .checkpointCard {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.checkpointGroup[data-label='hover']:hover .checkpointCard {
+  opacity: 1;
+}
+
 .checkpointCard {
   position: absolute;
   width: 170px;

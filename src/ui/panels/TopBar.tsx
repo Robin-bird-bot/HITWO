@@ -2,13 +2,15 @@
  * The cards along the top of the game screen (docs/mockups/Main.dc.html):
  * biome, day and phase with weather, the objective, and Abundance with caps.
  */
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
 import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME } from '../map/looks';
+import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { Panel } from './Panel';
+import { Popout } from './Popout';
 import { usePanelCollapsed } from './panelState';
 import panel from './Panel.module.css';
 import styles from './TopBar.module.css';
@@ -164,11 +166,24 @@ export function AbundanceCard({ state }: { state: GameState }) {
   );
 }
 
+const MODES: { id: UiMode; label: string; text: string }[] = [
+  {
+    id: 'simple',
+    label: 'Simple',
+    text: 'Just what you need to play. Click a hiker or your bag for details.',
+  },
+  { id: 'informative', label: 'Informative', text: 'Every number, label and threshold on screen.' },
+];
+
+/** The ☰ menu: settings and the way back to the title screen. Closes on click-away or Esc. */
 export function MenuButton({ onTitle }: { onTitle(): void }) {
   const [open, setOpen] = useState(false);
+  const mode = useUiMode();
+  const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
       <button
+        ref={buttonRef}
         type="button"
         className={styles.menu}
         aria-label="Menu"
@@ -178,12 +193,36 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
         <Icon name="menu" size={22} />
       </button>
       {open && (
-        <div className={styles.menuList} role="menu">
-          <button type="button" role="menuitem" className={styles.menuItem} onClick={onTitle}>
+        <Popout
+          className={styles.menuList}
+          onClose={() => setOpen(false)}
+          label="Menu"
+          ignore={[buttonRef]}
+        >
+          <span className={panel.label}>SETTINGS</span>
+          <div className={styles.setting}>
+            <span className={styles.settingName}>Screen</span>
+            <div className={styles.segmented} role="radiogroup" aria-label="Screen">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m.id}
+                  className={styles.segment}
+                  onClick={() => setUiMode(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <span className={styles.small}>{MODES.find((m) => m.id === mode)?.text}</span>
+          </div>
+          <button type="button" className={styles.menuItem} onClick={onTitle}>
             Title screen
           </button>
           <span className={styles.small}>Your hike is saved after every action.</span>
-        </div>
+        </Popout>
       )}
     </div>
   );

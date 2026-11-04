@@ -124,7 +124,7 @@ function ActionGrid({
 const TRAIT_COLOR = { T: '#F2B950', U: '#9CC3A8', M: '#CDA6EE' };
 const PER = { day: 'DAY', phase: 'PHASE', biome: 'SECTION' };
 
-function Abilities({
+export function Abilities({
   state,
   hiker,
   onAbility,
@@ -200,7 +200,7 @@ function Abilities({
   );
 }
 
-function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
+export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
   const others = hikersOnTile(state, tile.id).filter((h) => h.id !== hiker.id);
@@ -255,7 +255,7 @@ const EQUIP: { slot: EquipSlot; label: string; icon: 'shirt' | 'boot' | 'backpac
   { slot: 'gear', label: 'Gear', icon: 'backpack' },
 ];
 
-function Equipped({ hiker }: { hiker: Hiker }) {
+export function Equipped({ hiker }: { hiker: Hiker }) {
   return (
     <div className={styles.block}>
       <span className={panel.label}>EQUIPPED</span>
@@ -292,7 +292,7 @@ function ItemCard({ item, size }: { item: ItemInstance; size: 'large' | 'small' 
   );
 }
 
-function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
+export function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
   const slots = bagSlots(state, hiker);
   const size = slots.total <= 4 ? 'large' : 'small';
   const items = hiker.inventory.bag;
@@ -337,7 +337,7 @@ function Bag({ state, hiker }: { state: GameState; hiker: Hiker }) {
   );
 }
 
-function Resources({ hiker }: { hiker: Hiker }) {
+export function Resources({ hiker }: { hiker: Hiker }) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
   return (
     <div className={styles.block}>
@@ -371,14 +371,32 @@ function Resources({ hiker }: { hiker: Hiker }) {
   );
 }
 
-function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void }) {
+function endSub(state: GameState): string {
   const waiting = hikersWhoHaventActed(state);
-  const sub =
-    waiting.length === 0
-      ? 'Everyone has acted'
-      : waiting.length === 1
-        ? `${waiting[0]?.name} hasn’t acted`
-        : `${waiting.length} hikers haven’t acted`;
+  return waiting.length === 0
+    ? 'Everyone has acted'
+    : waiting.length === 1
+      ? `${waiting[0]?.name} hasn’t acted`
+      : `${waiting.length} hikers haven’t acted`;
+}
+
+/** The End phase button: the phase's name, and who still has their action. */
+export function EndButton({ state, onEndPhase }: { state: GameState; onEndPhase(): void }) {
+  const sub = endSub(state);
+  return (
+    <button
+      type="button"
+      className={styles.end}
+      onClick={onEndPhase}
+      aria-label={`End the ${state.phase}. ${sub}.`}
+    >
+      <span className={styles.endLabel}>END {PHASE_NAME[state.phase].toUpperCase()}</span>
+      <span className={styles.endSub}>{sub}</span>
+    </button>
+  );
+}
+
+function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void }) {
   return (
     <div className={styles.footer}>
       <button
@@ -390,15 +408,7 @@ function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void })
         <Icon name="book" size={18} />
         Blueprints
       </button>
-      <button
-        type="button"
-        className={styles.end}
-        onClick={onEndPhase}
-        aria-label={`End the ${state.phase}. ${sub}.`}
-      >
-        <span className={styles.endLabel}>END {PHASE_NAME[state.phase].toUpperCase()}</span>
-        <span className={styles.endSub}>{sub}</span>
-      </button>
+      <EndButton state={state} onEndPhase={onEndPhase} />
     </div>
   );
 }
