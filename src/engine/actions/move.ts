@@ -3,7 +3,14 @@ import { fireMove } from '../effects';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
-import { findHiker, mustFindHiker, payCost, phaseActionReason } from './common';
+import {
+  enterTile,
+  findHiker,
+  mustFindHiker,
+  payCost,
+  phaseActionReason,
+  tileEntryReason,
+} from './common';
 
 type MoveAction = Extract<Action, { type: 'move' }>;
 
@@ -15,7 +22,7 @@ export function validateMove(state: GameState, action: MoveAction): string | und
   if (!lineBetween(state.section, hiker.tileId, action.toTileId)) {
     return 'That tile isn’t connected to this one.';
   }
-  return undefined;
+  return tileEntryReason(state, action.toTileId);
 }
 
 export function applyMove(state: GameState, action: MoveAction): void {
@@ -27,7 +34,15 @@ export function applyMove(state: GameState, action: MoveAction): void {
   const from = hiker.tileId;
   hiker.tileId = action.toTileId;
   hiker.acted = true;
-  pushEvent(state, { kind: 'move', hikerId: hiker.id, from, to: hiker.tileId, brought: [] });
+  const revealed = enterTile(state, hiker.tileId);
+  pushEvent(state, {
+    kind: 'move',
+    hikerId: hiker.id,
+    from,
+    to: hiker.tileId,
+    brought: [],
+    ...(revealed.length ? { revealed } : {}),
+  });
   payCost(state, hiker, cost, 'Move');
   fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line });
 }

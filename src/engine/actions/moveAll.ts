@@ -3,7 +3,14 @@ import { canActReason, fireMove } from '../effects';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
-import { findHiker, mustFindHiker, payCost, phaseActionReason } from './common';
+import {
+  enterTile,
+  findHiker,
+  mustFindHiker,
+  payCost,
+  phaseActionReason,
+  tileEntryReason,
+} from './common';
 
 type MoveAllAction = Extract<Action, { type: 'moveAll' }>;
 
@@ -15,6 +22,8 @@ export function validateMoveAll(state: GameState, action: MoveAllAction): string
   if (!lineBetween(state.section, mover.tileId, action.toTileId)) {
     return 'That tile isn’t connected to this one.';
   }
+  const entry = tileEntryReason(state, action.toTileId);
+  if (entry) return entry;
   if (action.bring.length === 0) return 'Pick at least one hiker to bring along.';
   if (new Set(action.bring).size !== action.bring.length) return 'Each hiker can come along once.';
 
@@ -43,12 +52,14 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
     h.tileId = action.toTileId;
     h.acted = true;
   }
+  const revealed = enterTile(state, action.toTileId);
   pushEvent(state, {
     kind: 'move',
     hikerId: mover.id,
     from,
     to: action.toTileId,
     brought: [...action.bring],
+    ...(revealed.length ? { revealed } : {}),
   });
   for (const { hikerId, cost } of costs) {
     payCost(

@@ -84,6 +84,8 @@ export interface Tile {
   /** Narrow Path only: how many hikers it holds at once. */
   narrowCapacity?: number;
   feature?: SideFeature;
+  /** A hiker has landed here. The special icon moves to the corner once true. */
+  visited?: true;
   nodes: TileNode[];
 }
 
@@ -182,20 +184,41 @@ export type Action =
   | { type: 'moveAll'; hikerId: HikerId; toTileId: TileId; bring: HikerId[] }
   | { type: 'sleep'; hikerId: HikerId }
   | { type: 'useAbility'; hikerId: HikerId; abilityId: string; choice?: string }
-  | { type: 'endPhase' };
+  | { type: 'endPhase' }
+  /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
+  | { type: 'debug'; op: DebugOp };
+
+export type DebugOp =
+  /** Jumps straight to a phase on the same day, skipping any drains. */
+  | { kind: 'skipToPhase'; phase: Phase }
+  /** Reveals every node on the map. */
+  | { kind: 'revealMap' }
+  /** Adds resources to a hiker, up to the resource limit. */
+  | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> }
+  /** Sets a hiker's stats and injuries directly, without the usual injury rules. */
+  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number };
 
 export type ActionType = Action['type'];
 
 // ── Trail log ──────────────────────────────────────────────────────────────
 
 export type GameEventBody =
-  | { kind: 'move'; hikerId: HikerId; from: TileId; to: TileId; brought: HikerId[] }
+  | {
+      kind: 'move';
+      hikerId: HikerId;
+      from: TileId;
+      to: TileId;
+      brought: HikerId[];
+      /** Nodes shown for the first time by entering the tile. */
+      revealed?: NodeKind[];
+    }
   | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   | { kind: 'passedOut'; hikerId: HikerId }
   | { kind: 'sleep'; hikerId: HikerId }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
-  | { kind: 'phase'; day: number; phase: Phase };
+  | { kind: 'phase'; day: number; phase: Phase }
+  | { kind: 'debug'; note: string };
 
 export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase };
 

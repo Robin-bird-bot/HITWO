@@ -42,22 +42,24 @@ const DAY_1: Action[] = [
   move('ash', 'R'),
   move('birch', 'L'),
   END,
-  // Night. Ash and Dot sleep at the campsite; Birch walks on in the dark (1 + 1 night Appetite).
+  // Night. Ash and Dot sleep at the campsite; Birch walks back down in the dark
+  // (1 + 1 night Appetite). The checkpoint itself is off limits until Phase 8.
   sleep('ash'),
   sleep('dot'),
-  move('birch', 'C'),
+  move('birch', 'T'),
   END,
 ];
 
 const DAY_2: Action[] = [
-  // Morning. Birch uses Stoic (free): −2 Morale, +1 Appetite. Ash leads Dot over the rough line.
+  // Morning. Birch uses Stoic (free): −2 Morale, +1 Appetite. Cedar goes down the steep
+  // line (1 Appetite, 1 Energy). Ash leads Dot over the rough line.
   stoic('birch', 'appetite'),
-  move('birch', 'M'),
-  move('cedar', 'C'),
+  move('birch', 'L'),
+  move('cedar', 'T'),
   { type: 'moveAll', hikerId: 'ash', toTileId: 'M', bring: ['dot'] },
   END,
-  // Afternoon. Ash is Hungry now (Appetite 5), so walks alone.
-  move('ash', 'C'),
+  // Afternoon. Ash is Hungry now (Appetite 5), so walks alone, down the steep line.
+  move('ash', 'T'),
   END,
   // Night. Nobody sleeps.
   END,
@@ -78,7 +80,7 @@ describe('a three-day hike', () => {
     expect(stats(s)).toEqual({
       // Extrinsic: Ash shares the campsite with Dot at dawn, so Morale 9 → 10.
       ash: { energy: 10, appetite: 6, morale: 10, at: 'R', injuries: 0 },
-      birch: { energy: 7, appetite: 5, morale: 10, at: 'C', injuries: 0 },
+      birch: { energy: 7, appetite: 5, morale: 10, at: 'T', injuries: 0 },
       cedar: { energy: 7, appetite: 9, morale: 10, at: 'M', injuries: 0 },
       dot: { energy: 10, appetite: 9, morale: 10, at: 'R', injuries: 0 },
     });
@@ -88,7 +90,7 @@ describe('a three-day hike', () => {
     const s = run(start(), ...DAY_1, ...DAY_2.slice(0, 5));
     expect(hiker(s, 'ash').stats.appetite).toBe(5);
     expect(
-      validateAction(s, { type: 'moveAll', hikerId: 'ash', toTileId: 'C', bring: ['dot'] }),
+      validateAction(s, { type: 'moveAll', hikerId: 'ash', toTileId: 'T', bring: ['dot'] }),
     ).toMatch(/^Hungry/);
   });
 
@@ -96,11 +98,12 @@ describe('a three-day hike', () => {
     const s = run(start(), ...DAY_1, ...DAY_2, ...DAY_3);
     expect([s.day, s.phase]).toEqual([4, 'morning']);
     expect(stats(s)).toEqual({
-      // Extrinsic: Ash wakes alone on L, so Morale 10 → 9.
-      ash: { energy: 10, appetite: 1, morale: 9, at: 'L', injuries: 0 },
-      birch: { energy: 4, appetite: 3, morale: 6, at: 'M', injuries: 0 },
-      cedar: { energy: 3, appetite: 6, morale: 10, at: 'C', injuries: 0 },
-      dot: { energy: 6, appetite: 7, morale: 10, at: 'M', injuries: 0 },
+      // Extrinsic: Ash wakes beside Birch on L (Morale stays 10); Dot has woken
+      // alone on M two days running (9 → 8 → 7).
+      ash: { energy: 9, appetite: 1, morale: 10, at: 'L', injuries: 0 },
+      birch: { energy: 4, appetite: 3, morale: 6, at: 'L', injuries: 0 },
+      cedar: { energy: 2, appetite: 6, morale: 10, at: 'T', injuries: 0 },
+      dot: { energy: 6, appetite: 7, morale: 7, at: 'M', injuries: 0 },
     });
   });
 

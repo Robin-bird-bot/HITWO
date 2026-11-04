@@ -1,6 +1,6 @@
 import { canActReason } from '../effects';
 import { changeStat } from '../stats';
-import type { Action, GameState, Hiker, HikerId, StatAmounts } from '../types';
+import type { Action, GameState, Hiker, HikerId, NodeKind, StatAmounts, TileId } from '../types';
 
 export function findHiker(state: GameState, id: HikerId): Hiker | undefined {
   return state.hikers.find((h) => h.id === id);
@@ -39,4 +39,27 @@ export function payCost(state: GameState, hiker: Hiker, cost: StatAmounts, cause
   changeStat(state, hiker, 'appetite', -cost.appetite, cause);
   changeStat(state, hiker, 'energy', -cost.energy, cause);
   changeStat(state, hiker, 'morale', -cost.morale, cause);
+}
+
+/** Why a hiker can't step onto a tile, whatever the line (the checkpoint, for now). */
+export function tileEntryReason(state: GameState, tileId: TileId): string | undefined {
+  const tile = state.section.tiles[tileId];
+  if (!tile) return 'That tile isn’t on the map.';
+  if (tile.kind === 'checkpoint') return 'Checking in at the checkpoint arrives in Phase 8.';
+  return undefined;
+}
+
+/** Entering a tile marks it visited and reveals its nodes. Returns the nodes shown for the first time. */
+export function enterTile(state: GameState, tileId: TileId): NodeKind[] {
+  const tile = state.section.tiles[tileId];
+  if (!tile) return [];
+  tile.visited = true;
+  const revealed: NodeKind[] = [];
+  for (const node of tile.nodes) {
+    if (!node.revealed) {
+      node.revealed = true;
+      revealed.push(node.type);
+    }
+  }
+  return revealed;
 }

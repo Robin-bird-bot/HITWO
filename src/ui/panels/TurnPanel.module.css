@@ -1,0 +1,415 @@
+.heading {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0 -6px;
+  padding: 0 6px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blockHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.count {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.muted {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.small {
+  font-size: 12px;
+  color: #d8d1c2;
+  line-height: 1.35;
+}
+
+/* ── Action grid ── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.action {
+  height: 64px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.action[data-status='ready']:hover {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--page);
+}
+
+.action[data-status='blocked'],
+.action[data-status='soon'] {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #8d877a;
+  cursor: help;
+}
+
+.actionLabel {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+.actionSub {
+  font-size: 10.5px;
+  opacity: 0.8;
+}
+
+.reason {
+  min-height: 34px;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  line-height: 1.4;
+  color: #d8d1c2;
+}
+
+/* ── Abilities ── */
+
+.ability {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ability[data-used='true'] {
+  opacity: 0.55;
+}
+
+.abilityHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hex {
+  width: 18px;
+  height: 21px;
+  flex: none;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.abilityText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.abilityName {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.use {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.choices {
+  display: flex;
+  gap: 8px;
+}
+
+.choice {
+  flex: 1;
+  min-height: 40px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.choice:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* ── Current tile ── */
+
+.tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tileNodes {
+  display: flex;
+  gap: 4px;
+}
+
+.nodeQ {
+  width: 24px;
+  height: 28px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: #5f7a70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.tileText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tileName {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px dashed rgba(233, 180, 76, 0.6);
+  background: transparent;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: help;
+}
+
+/* ── Items and slots (BUILD_PLAN "Inventory and other slots that grow") ── */
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row[data-wrap='true'] {
+  flex-wrap: wrap;
+}
+
+.itemCard,
+.empty {
+  position: relative;
+  flex: none;
+  border-radius: 6px;
+}
+
+.itemCard[data-size='large'],
+.empty[data-size='large'] {
+  width: 64px;
+  height: 90px;
+}
+
+.itemCard[data-size='small'],
+.empty[data-size='small'] {
+  width: 46px;
+  height: 64px;
+}
+
+.itemCard {
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+}
+
+.itemCard img {
+  width: 70%;
+  height: auto;
+}
+
+.itemCard span {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.empty {
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.empty span {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: #6f6a60;
+}
+
+/* Slots an item adds: a gold dashed outline and the item's badge. */
+.empty[data-from-item='true'] {
+  border-color: rgba(233, 180, 76, 0.7);
+}
+
+.slotBadge {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Resources: one tile per type, 5 per row ── */
+
+.resources {
+  display: grid;
+  grid-template-columns: repeat(5, 50px);
+  gap: 10px 8px;
+}
+
+.resource {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resource img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.noArt {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--text);
+  color: var(--page);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Footer ── */
+
+.footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.blueprints {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #8d877a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: help;
+}
+
+.end {
+  flex: 1;
+  height: 52px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gold);
+  color: var(--page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.end:hover {
+  filter: brightness(1.06);
+}
+
+.endLabel {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.endSub {
+  font-size: 11px;
+}

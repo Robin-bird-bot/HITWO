@@ -30,3 +30,5 @@ export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure
 export { generateSection, type SectionOptions } from './trail/generate';
 export { checkSection } from './trail/check';
 export { seedRng } from './rng';
+export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
+export type { ItemDef, ItemType, FamilyDef, AbilityDef } from './effects';

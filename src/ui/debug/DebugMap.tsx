@@ -16,11 +16,12 @@ import {
   type LineKind,
   type NodeKind,
   type Section,
-  type SpecialSpace,
   type Tile,
   type TileNode,
 } from '../../engine';
 import { hashParams } from '../app/useHash';
+import { Icon } from '../icons/Icon';
+import { LINE_LOOK as MAP_LINE_LOOK, SPECIAL_LOOK } from '../map/looks';
 import styles from './DebugMap.module.css';
 
 const BIOMES: { id: BiomeId; name: string }[] = [
@@ -29,25 +30,8 @@ const BIOMES: { id: BiomeId; name: string }[] = [
   { id: 'alpine', name: 'Alpine' },
 ];
 
-const LINE_LOOK: Record<LineKind, { color: string; badge?: string; title: string }> = {
-  normal: { color: '#F7F1E4', title: 'Normal: 1 Appetite' },
-  paved: { color: '#ECE5D6', badge: 'FREE', title: 'Paved: no Appetite' },
-  steep: { color: '#E9B44C', badge: '+1 EN', title: 'Steep: +1 Energy' },
-  muddy: { color: '#9A7650', badge: '+1 AP', title: 'Muddy: +1 Appetite' },
-  rough: { color: '#CDA6EE', badge: '+1 MO', title: 'Rough: +1 Morale' },
-};
-
-const SPECIAL_LOOK: Record<SpecialSpace, { name: string; color: string; letter: string }> = {
-  opportunity: { name: 'OPPORTUNITY', color: '#4F8A63', letter: '★' },
-  challenge: { name: 'CHALLENGE', color: '#C8553D', letter: '!' },
-  choice: { name: 'CHOICE', color: '#4E6A80', letter: 'Y' },
-  trailSign: { name: 'TRAIL SIGN', color: '#8A6A3E', letter: 'S' },
-  geoCache: { name: 'GEO-CACHE', color: '#E9B44C', letter: 'G' },
-  campsite: { name: 'CAMPSITE', color: '#2F4A42', letter: 'C' },
-  overlook: { name: 'OVERLOOK', color: '#3E7FA8', letter: 'O' },
-  narrowPath: { name: 'NARROW PATH', color: '#1D2220', letter: '' },
-  mystery: { name: 'MYSTERY', color: '#7A5AA6', letter: '?' },
-};
+/** The debug map draws each line in one solid color: the kind's main stroke color. */
+const lineColor = (kind: LineKind) => MAP_LINE_LOOK[kind].strokes[0]?.color ?? '#F7F1E4';
 
 const NODE_IMAGE: Record<NodeKind, string> = { ...ASSETS.nodes, caps: ASSETS.icons.acornCaps };
 
@@ -214,26 +198,27 @@ function TrailLine({
 }) {
   const a = pos(section.tiles[line.a] as Tile);
   const b = pos(section.tiles[line.b] as Tile);
-  const look = LINE_LOOK[line.kind];
+  const look = MAP_LINE_LOOK[line.kind];
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   return (
     <g>
-      <title>{look.title}</title>
+      <title>{look.tooltip}</title>
       <line
         x1={a.x}
         y1={a.y}
         x2={b.x}
         y2={b.y}
-        stroke={look.color}
+        stroke={lineColor(line.kind)}
         strokeWidth={line.kind === 'normal' ? 5 : 7}
         strokeDasharray={line.kind === 'normal' ? '10 8' : undefined}
         strokeLinecap="round"
       />
       {look.badge && (
-        <g>
-          <rect x={mid.x - 25} y={mid.y - 11} width={50} height={22} rx={11} fill={look.color} />
-          <text x={mid.x} y={mid.y + 4} className={styles.badgeText}>
-            {look.badge}
+        <g color={look.badge.fg}>
+          <rect x={mid.x - 25} y={mid.y - 11} width={50} height={22} rx={11} fill={look.badge.bg} />
+          <Icon name={look.badge.icon} size={12} strokeWidth={2.5} x={mid.x - 19} y={mid.y - 6} />
+          <text x={mid.x + 7} y={mid.y + 4} className={styles.badgeText} fill={look.badge.fg}>
+            {look.badge.text}
           </text>
         </g>
       )}
@@ -274,15 +259,19 @@ function TrailTile({
             cx={at.x}
             cy={at.y - 22}
             r={17}
-            fill={special.color}
+            fill={special.bg}
             stroke="#F7F1E4"
             strokeWidth={2}
           />
-          <text x={at.x} y={at.y - 16} className={styles.specialLetter}>
-            {tile.special === 'narrowPath' ? tile.narrowCapacity : special.letter}
-          </text>
+          {tile.special === 'narrowPath' ? (
+            <text x={at.x} y={at.y - 16} className={styles.specialLetter}>
+              {tile.narrowCapacity}
+            </text>
+          ) : (
+            <Icon name={special.icon} size={18} color={special.fg} x={at.x - 9} y={at.y - 31} />
+          )}
           <text x={at.x} y={at.y + 9} className={styles.tileText}>
-            {special.name}
+            {special.name.toUpperCase()}
           </text>
         </g>
       )}
@@ -393,8 +382,8 @@ function Summary({ section, problems }: { section: Section; problems: string[] }
       <ul className={styles.legend}>
         {LINE_KINDS.map((kind) => (
           <li key={kind}>
-            <span className={styles.swatch} style={{ background: LINE_LOOK[kind].color }} />
-            {LINE_LOOK[kind].title} — {count(section.lines, (l) => l.kind === kind)}
+            <span className={styles.swatch} style={{ background: lineColor(kind) }} />
+            {MAP_LINE_LOOK[kind].tooltip} — {count(section.lines, (l) => l.kind === kind)}
           </li>
         ))}
       </ul>
@@ -405,8 +394,8 @@ function Summary({ section, problems }: { section: Section; problems: string[] }
           const n = count(middle, (t) => t.special === sp);
           return n ? (
             <li key={sp}>
-              <span className={styles.swatch} style={{ background: SPECIAL_LOOK[sp].color }} />
-              {SPECIAL_LOOK[sp].name.toLowerCase()} — {n}
+              <span className={styles.swatch} style={{ background: SPECIAL_LOOK[sp].bg }} />
+              {SPECIAL_LOOK[sp].name} — {n}
             </li>
           ) : null;
         })}

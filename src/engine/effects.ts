@@ -7,13 +7,14 @@
  * engine never checks for a particular trait by name.
  */
 import { BALANCE } from '../config/balance';
-import { TRAITS } from '../content';
+import { FAMILIES, ITEMS, TRAITS } from '../content';
 import { hikersOnTile, isAlone } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
 import { thresholdSources } from './thresholds';
 import type {
   Action,
+  EquipSlot,
   GameState,
   Hiker,
   HikerId,
@@ -58,6 +59,13 @@ export interface AmountQuery<K extends string> {
 
 export type CostQuery = AmountQuery<CostKey>;
 export type GainQuery = AmountQuery<GainKey>;
+
+/** How much a hiker can hold. Flat modifiers only. */
+export type CapacityKey = 'bag.slots';
+
+export interface CapacityQuery {
+  key: CapacityKey;
+}
 
 export interface Modifier {
   source: string;
@@ -105,6 +113,7 @@ export interface MoveHookEvent {
 export interface Hooks {
   modifyCost?(q: CostQuery, ctx: QueryContext): ModifierResult;
   modifyGain?(q: GainQuery, ctx: QueryContext): ModifierResult;
+  modifyCapacity?(q: CapacityQuery, ctx: QueryContext): ModifierResult;
   /** Returns a reason when this source stops the action. */
   canAct?(q: ActQuery, ctx: QueryContext): string | undefined;
   onMove?(e: MoveHookEvent, ctx: EffectContext): void;
@@ -150,6 +159,27 @@ export interface TraitDef {
   placeholder?: boolean;
 }
 
+export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
+
+export interface ItemDef {
+  id: string;
+  name: string;
+  type: ItemType;
+  /** Clothes are equipped in one of these slots. */
+  slot?: EquipSlot;
+  tier: 1 | 2 | 3 | 4;
+  text: string;
+  /** Equipped items plug into hooks, like traits. */
+  hooks?: Hooks;
+  placeholder?: boolean;
+}
+
+/** A family's built-in strengths and drawbacks (always on, no slot). */
+export interface FamilyDef {
+  name: string;
+  hooks: Hooks;
+}
+
 export interface EffectSource {
   id: string;
   kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item';
@@ -164,6 +194,20 @@ export interface EffectSource {
  */
 export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
+  const family = FAMILIES[hiker.family];
+  if (family) {
+    sources.push({
+      id: `family:${hiker.family}`,
+      kind: 'family',
+      name: family.name,
+      hooks: family.hooks,
+    });
+  }
+  for (const item of Object.values(hiker.inventory.equipped)) {
+    const def = item && ITEMS[item.itemId];
+    if (!item || !def) continue;
+    sources.push({ id: `item:${item.uid}`, kind: 'item', name: def.name, hooks: def.hooks ?? {} });
+  }
   for (const slot of hiker.slots) {
     if (!slot.traitId) continue;
     const def = TRAITS[slot.traitId];

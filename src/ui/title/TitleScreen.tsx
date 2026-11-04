@@ -1,11 +1,16 @@
-import { useState } from 'react';
 import { ASSETS } from '../../config/assets';
 import styles from './TitleScreen.module.css';
 
-export function TitleScreen() {
-  // placeholder: Phase 3 replaces this note with New / Continue.
-  const [showNotice, setShowNotice] = useState(false);
+interface TitleScreenProps {
+  /** A line describing the saved hike ("Day 3 · Afternoon · Meadow"), or null when there's none. */
+  saved: string | null;
+  /** A gentle note when a saved hike couldn't be read. */
+  notice?: string | null;
+  onContinue(): void;
+  onNewHike(): void;
+}
 
+export function TitleScreen({ saved, notice, onContinue, onNewHike }: TitleScreenProps) {
   return (
     <main className={styles.scene}>
       <img className={styles.sun} src={ASSETS.sky.sun} alt="" draggable={false} />
@@ -31,12 +36,26 @@ export function TitleScreen() {
           <span />
           <span />
         </div>
-        <button type="button" className={styles.newHike} onClick={() => setShowNotice(true)}>
-          New Hike
-        </button>
-        <p className={styles.notice} role="status">
-          {showNotice ? "The trail isn't built yet. Check back soon!" : ''}
-        </p>
+        {saved ? (
+          <>
+            <button type="button" className={styles.newHike} onClick={onContinue} autoFocus>
+              <span>Continue</span>
+              <span className={styles.saved}>{saved}</span>
+            </button>
+            <button type="button" className={styles.secondary} onClick={onNewHike}>
+              New Hike
+            </button>
+          </>
+        ) : (
+          <button type="button" className={styles.newHike} onClick={onNewHike} autoFocus>
+            New Hike
+          </button>
+        )}
+        {notice && (
+          <p className={styles.notice} role="status">
+            {notice}
+          </p>
+        )}
       </section>
 
       <p className={styles.build}>

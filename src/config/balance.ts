@@ -111,6 +111,22 @@ export const BALANCE = {
     appetite: 1,
   },
 
+  inventory: {
+    /** Items: 4 bag slots + 3 equipped (Body, Feet, Gear). A Backpack adds 2. */
+    bagSlots: 4,
+    equipSlots: 3,
+    /** Resources per hiker. */
+    resourceLimit: 10,
+  },
+
+  xp: {
+    /**
+     * XP needed to reach each level (index 0 = level 1).
+     * TODO(wyatt): placeholder until Phase 10 sets XP and leveling.
+     */
+    levelAt: [0, 50, 150, 300, 500, 750],
+  },
+
   endOfDay: {
     appetite: 1,
   },

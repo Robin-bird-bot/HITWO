@@ -8,6 +8,7 @@ import type {
   GameState,
   Hiker,
   HikerId,
+  Inventory,
   Section,
   Stats,
   TraitSlot,
@@ -21,6 +22,8 @@ export interface HikerSetup {
   placeholder?: boolean;
   /** Starting stats when a character doesn't start full. */
   stats?: Partial<Stats>;
+  /** Items and resources the character starts with. */
+  inventory?: Partial<Inventory>;
 }
 
 export interface NewGameOptions {
@@ -41,7 +44,9 @@ export function createGame({
   tier = 1,
 }: NewGameOptions): GameState {
   const rng = seedRng(seed);
-  const section = given ?? generateSection(rng, { biome, tier });
+  const section = structuredClone(given ?? generateSection(rng, { biome, tier }));
+  const trailhead = section.tiles[section.trailheadId];
+  if (trailhead) trailhead.visited = true;
   return {
     saveVersion: SAVE_VERSION,
     seed,
@@ -61,7 +66,11 @@ export function createGame({
       injuries: 0,
       slots: setup.slots.map((s) => ({ ...s })),
       conditions: [],
-      inventory: { bag: [], equipped: {}, resources: {} },
+      inventory: {
+        bag: structuredClone(setup.inventory?.bag ?? []),
+        equipped: structuredClone(setup.inventory?.equipped ?? {}),
+        resources: structuredClone(setup.inventory?.resources ?? {}),
+      },
       acted: false,
       slept: false,
       abilityUses: {},

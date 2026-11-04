@@ -1,0 +1,41 @@
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.line {
+  color: #d8d1c2;
+}
+
+.line[data-tone='phase'] {
+  margin-top: 4px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.line[data-tone='injury'] {
+  color: #f39a86;
+}
+
+.line[data-tone='drain'] {
+  color: var(--text-muted);
+}
+
+.line[data-tone='debug'] {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.empty {
+  color: var(--text-faint);
+}
