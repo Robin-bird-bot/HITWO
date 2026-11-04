@@ -7,7 +7,7 @@ import { ITEMS } from '../../content';
 import type { GameEvent, GameState, HikerId, NodeKind, StatName } from '../../engine';
 import { NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
-import { resourcesTitle } from '../scavenge/cardLook';
+import { resourceName, resourcesTitle } from '../scavenge/cardLook';
 
 export interface LogLine {
   id: number;
@@ -116,6 +116,38 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'tend':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} tended the ${NODE_NAME[e.node]} (${NODE_NAME[e.node]} Abundance ${e.from} → ${e.to}).`,
+          tone: 'scavenge',
+        });
+        break;
+      case 'give': {
+        const what = e.resource
+          ? resourceName(e.resource)
+          : `the ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'returned':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} returned ${resourceName(e.resource)} to nature (+1 ${NODE_NAME[e.node]}).`,
+          tone: 'scavenge',
+        });
+        break;
+      case 'recovered':
+        lines.push({
+          id: e.id,
+          text: `Overnight, ${listNames(e.nodes.map((n) => NODE_NAME[n]))} Abundance recovered (+1).`,
+          tone: 'rest',
+        });
+        break;
       case 'ability': {
         const label = e.abilityId.charAt(0).toUpperCase() + e.abilityId.slice(1);
         const { taken, next } = takeStats(i, [label]);

@@ -10,6 +10,8 @@ import {
   isSheltered,
   moveCost,
   scavengeCost,
+  tendAmount,
+  tendableNodes,
   thresholdStates,
   validateAction,
   type GameState,
@@ -249,6 +251,23 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
       moveAll = { ...moveAll, status: 'blocked', reason: firstReason ?? 'Nobody can come along.' };
   }
 
+  // Tend: ready if some node on this tile can be restored.
+  const tendReasons = tendableNodes(state, h).map((node) =>
+    validateAction(state, { type: 'tend', hikerId: h.id, node }),
+  );
+  const tendReason = tendReasons.includes(null)
+    ? null
+    : (tendReasons.find((r) => r !== null) ??
+      validateAction(state, { type: 'tend', hikerId: h.id, node: 'forest' }));
+  const tend: ActionState = {
+    id: 'tend',
+    label: 'Tend',
+    icon: 'sprout',
+    sub: `+${tendAmount(state, h)} Abundance`,
+    status: tendReason ? 'blocked' : 'ready',
+    ...(tendReason ? { reason: tendReason } : {}),
+  };
+
   const scavengeReason = validateAction(state, { type: 'scavenge', hikerId: h.id });
   const scavenge: ActionState = {
     id: 'scavenge',
@@ -276,7 +295,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     scavenge,
     soon('craft', 'Craft', 'hammer'),
     soon('fire', 'Fire', 'flame'),
-    soon('tend', 'Tend', 'sprout'),
+    tend,
     sleep,
     soon('watch', 'Watch', 'eye'),
   ];

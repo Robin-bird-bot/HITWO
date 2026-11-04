@@ -10,6 +10,8 @@ import { BALANCE } from '../../config/balance';
 import {
   hikersWhoHaventActed,
   isSheltered,
+  tendAmount,
+  tendableNodes,
   type Action,
   type GameState,
   type HikerId,
@@ -39,7 +41,7 @@ import type { ActionId } from '../panels/hikerInfo';
 import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
-import { TurnPanel } from '../panels/TurnPanel';
+import { TurnPanel, type StashPick } from '../panels/TurnPanel';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -47,13 +49,15 @@ import { SimpleTurn } from '../simple/SimpleTurn';
 import { Stage } from '../stage/Stage';
 import { ConfirmDialog } from './ConfirmDialog';
 import { MovePopover } from './MovePopover';
+import { StashMenu } from './StashMenu';
 import { bringOptions, movePreview, moveTargets, nextReadyHiker, type MoveMode } from './movePlan';
-import { MoveAllPicker, SleepConfirm } from './TurnExtras';
+import { MoveAllPicker, SleepConfirm, TendPicker } from './TurnExtras';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
 /** What the player is in the middle of doing. */
-type Mode = { kind: 'idle' } | { kind: 'moveAll'; bring: HikerId[] } | { kind: 'sleep' };
+type Mode =
+  { kind: 'idle' } | { kind: 'moveAll'; bring: HikerId[] } | { kind: 'sleep' } | { kind: 'tend' };
 
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
@@ -84,6 +88,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const [confirmEnd, setConfirmEnd] = useState(false);
   // The card just taken, shown for a moment before the scavenge window closes.
   const [took, setTook] = useState<TookCard | null>(null);
+  // The resource or item whose give / return menu is open.
+  const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
 
   const lastRow = lastRowOf(section);
@@ -100,6 +106,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const reset = () => {
     setMode({ kind: 'idle' });
     setPendingTile(null);
+    setStash(null);
   };
 
   const select = (id: HikerId) => {
@@ -123,6 +130,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       action.type === 'move' ||
       action.type === 'moveAll' ||
       action.type === 'sleep' ||
+      action.type === 'tend' ||
       action.type === 'scavengeTake';
     if (usedPhase && actorId) {
       const next = nextReadyHiker(gameStore.getState() ?? state, actorId);
@@ -176,6 +184,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       setNote(undefined);
     } else if (id === 'sleep') {
       setMode({ kind: 'sleep' });
+      setNote(undefined);
+    } else if (id === 'tend') {
+      setMode({ kind: 'tend' });
       setNote(undefined);
     } else if (id === 'scavenge') {
       setMode({ kind: 'idle' });
@@ -231,6 +242,22 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     );
   }
 
+  if (selected && mode.kind === 'tend') {
+    const gain = tendAmount(state, selected);
+    const max = BALANCE.abundance.max;
+    slot = (
+      <TendPicker
+        gain={gain}
+        nodes={tendableNodes(state, selected).map((node) => {
+          const from = state.abundance[node];
+          return { node, from, to: Math.min(max, from + gain), full: from >= max };
+        })}
+        onCancel={reset}
+        onTend={(node) => dispatch({ type: 'tend', hikerId: selected.id, node })}
+      />
+    );
+  }
+
   // Where the move preview points: the top and bottom of the chosen tile.
   const pending = pendingTile ? section.tiles[pendingTile] : undefined;
   const pendingCenter = pending ? tileCenter(pending, lastRow) : null;
@@ -280,11 +307,14 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               note={note}
               slot={slot}
               activeAction={
-                mode.kind === 'moveAll' ? 'moveAll' : mode.kind === 'sleep' ? 'sleep' : null
+                mode.kind === 'moveAll' || mode.kind === 'sleep' || mode.kind === 'tend'
+                  ? mode.kind
+                  : null
               }
               onAction={onAction}
               onAbility={onAbility}
               onEndPhase={endPhase}
+              onPick={setStash}
             />
           )}
         </>
@@ -305,6 +335,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               onAction={onAction}
               onAbility={onAbility}
               onEndPhase={endPhase}
+              onPick={setStash}
             />
           )}
         </>
@@ -318,6 +349,16 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           below={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y + halfH })}
           onCancel={() => setPendingTile(null)}
           onConfirm={() => dispatch(preview.action)}
+        />
+      )}
+
+      {stash && selected && (
+        <StashMenu
+          state={state}
+          hiker={selected}
+          pick={stash}
+          onDispatch={dispatch}
+          onClose={() => setStash(null)}
         />
       )}
 

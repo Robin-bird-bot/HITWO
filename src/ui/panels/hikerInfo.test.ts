@@ -10,7 +10,7 @@ const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
 describe('action grid', () => {
   it('marks unbuilt actions with the phase they arrive in', () => {
     const a = byId(fixtureGame(), 'ash');
-    expect(a.tend?.status).toBe('soon');
+    expect(a.watch?.status).toBe('soon');
     expect(a.fire?.reason).toBe('Sitting by the fire arrives in Phase 6.');
     expect(a.craft?.sub).toBe('Phase 9');
   });

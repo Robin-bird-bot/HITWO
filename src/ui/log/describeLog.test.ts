@@ -28,6 +28,25 @@ describe('trail log sentences', () => {
     expect(texts(after)).toEqual(['Ash scavenged Wood ×2 (−1 Appetite).']);
   });
 
+  it('describe tending, giving and returning', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'L');
+    place(s, 'birch', 'L');
+    s.abundance.forest = 3;
+    s.hikers[0]!.inventory.resources = { wood: 2 };
+    const after = run(
+      s,
+      { type: 'tend', hikerId: 'ash', node: 'forest' },
+      { type: 'give', fromId: 'ash', toId: 'birch', resource: 'wood' },
+      { type: 'returnToNature', hikerId: 'ash', resource: 'wood' },
+    );
+    expect(texts(after)).toEqual([
+      'Ash tended the Forest (Forest Abundance 3 → 5).',
+      'Ash gave Wood to Birch.',
+      'Ash returned Wood to nature (+1 Forest).',
+    ]);
+  });
+
   it('fold a move and its costs into one line', () => {
     const s = run(fixtureGame(), { type: 'move', hikerId: 'ash', toTileId: 'M' });
     expect(texts(s)).toEqual(['Ash moved to Trail tile (−1 Appetite, −1 Energy).']);

@@ -283,6 +283,12 @@ export type Action =
   | { type: 'scavengeCancel' }
   /** Takes a card, with the exact resources (Choice cards) or item (Choice items) picked. */
   | { type: 'scavengeTake'; card: number; picks?: ResourceId[]; item?: ItemId }
+  /** Restores Abundance for a node on the hiker's tile (day only). */
+  | { type: 'tend'; hikerId: HikerId; node: NodeType }
+  /** A free action: hands one resource or bag item to a hiker on the same tile. */
+  | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
+  /** A free action: puts a resource back, +1 Abundance to its node. */
+  | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   | { type: 'endPhase' }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
@@ -295,7 +301,9 @@ export type DebugOp =
   /** Adds resources to a hiker, up to the resource limit. */
   | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> }
   /** Sets a hiker's stats and injuries directly, without the usual injury rules. */
-  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number };
+  | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number }
+  /** Sets Abundance meters directly. */
+  | { kind: 'setAbundance'; abundance: Partial<Record<NodeType, number>> };
 
 export type ActionType = Action['type'];
 
@@ -327,6 +335,11 @@ export type GameEventBody =
       left?: number;
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
+  | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
+  | { kind: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemId?: ItemId }
+  | { kind: 'returned'; hikerId: HikerId; resource: ResourceId; node: NodeType }
+  /** Overnight, nodes nobody scavenged recover. */
+  | { kind: 'recovered'; nodes: NodeType[] }
   | { kind: 'phase'; day: number; phase: Phase }
   | { kind: 'debug'; note: string };
 

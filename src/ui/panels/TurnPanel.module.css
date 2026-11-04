@@ -418,3 +418,20 @@
 .endSub {
   font-size: 11px;
 }
+
+/* Resources and bag items you can click (to give or return). */
+button.resource,
+button.itemCard {
+  padding: 0;
+  border: none;
+}
+
+button.resource {
+  border: 1px solid transparent;
+}
+
+button.resource:hover,
+button.itemCard:hover {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}

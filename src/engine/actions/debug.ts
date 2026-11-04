@@ -1,7 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
-import type { DebugOp, GameState } from '../types';
+import type { DebugOp, GameState, NodeType } from '../types';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
 export function applyDebug(state: GameState, op: DebugOp): void {
@@ -46,6 +46,13 @@ export function applyDebug(state: GameState, op: DebugOp): void {
         if (!out && hiker.status === 'passedOut') hiker.status = 'active';
       }
       pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s stats` });
+      break;
+    }
+    case 'setAbundance': {
+      for (const [node, value] of Object.entries(op.abundance) as [NodeType, number][]) {
+        state.abundance[node] = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(value)));
+      }
+      pushEvent(state, { kind: 'debug', note: 'Set Abundance' });
       break;
     }
   }

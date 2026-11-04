@@ -4,6 +4,7 @@
  */
 import { applyDebug } from './actions/debug';
 import { applyMove, validateMove } from './actions/move';
+import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
 import {
   applyCancel,
@@ -16,6 +17,7 @@ import {
   validateTake,
 } from './actions/scavenge';
 import { applySleep, validateSleep } from './actions/sleep';
+import { applyTend, validateTend } from './actions/tend';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import type { Action, GameState } from './types';
@@ -59,6 +61,12 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateCancel(state) ?? null;
     case 'scavengeTake':
       return validateTake(state, action) ?? null;
+    case 'tend':
+      return validateTend(state, action) ?? null;
+    case 'give':
+      return validateGive(state, action) ?? null;
+    case 'returnToNature':
+      return validateReturn(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -95,6 +103,15 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'scavengeTake':
       applyTake(draft, action);
+      break;
+    case 'tend':
+      applyTend(draft, action);
+      break;
+    case 'give':
+      applyGive(draft, action);
+      break;
+    case 'returnToNature':
+      applyReturn(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

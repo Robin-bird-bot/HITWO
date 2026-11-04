@@ -179,7 +179,25 @@
 .track div {
   height: 100%;
   background: var(--text);
-  opacity: 0.6;
+  opacity: 0.75;
+  transition: width 0.4s ease;
+}
+
+/* Low Abundance (4 or less, as in Main.dc.html). */
+.track div[data-low='true'] {
+  background: #e5624a;
+  opacity: 1;
+}
+
+.meterValue {
+  min-width: 14px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.meterValue[data-low='true'] {
+  color: #e5624a;
 }
 
 .menuWrap {

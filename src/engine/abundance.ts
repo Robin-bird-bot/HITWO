@@ -3,6 +3,7 @@
  * (docs/design/01-design-doc.md, "Abundance").
  */
 import { BALANCE } from '../config/balance';
+import { pushEvent } from './log';
 import { NODE_TYPES, type GameState, type NodeType } from './types';
 
 /** Every meter at the start value, as at the start of each biome. */
@@ -21,4 +22,16 @@ export function changeAbundance(state: GameState, node: NodeType, delta: number)
 
 export function isLow(state: GameState, node: NodeType): boolean {
   return state.abundance[node] <= BALANCE.abundance.lowAt;
+}
+
+/** At camp: every node nobody scavenged today recovers a little. */
+export function recoverOvernight(state: GameState): void {
+  const scavenged = new Set(state.scavengedToday.flatMap((r) => r.nodes));
+  const nodes: NodeType[] = [];
+  for (const node of NODE_TYPES) {
+    if (scavenged.has(node) || state.abundance[node] >= BALANCE.abundance.max) continue;
+    changeAbundance(state, node, BALANCE.abundance.nightRecovery);
+    nodes.push(node);
+  }
+  if (nodes.length) pushEvent(state, { kind: 'recovered', nodes });
 }

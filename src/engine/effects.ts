@@ -46,7 +46,10 @@ export type CostKey =
   | 'scavenge.appetite';
 
 /** Amounts a hiker gains. Modified totals round up. */
-export type GainKey = 'sleep.energy';
+export type GainKey =
+  | 'sleep.energy'
+  /** Abundance restored by Tend (the Thumbs and Maintenance add to it). */
+  | 'tend.abundance';
 
 /** Whether a hiker is acting themselves or being brought along by someone's Move All. */
 export type Role = 'actor' | 'brought';

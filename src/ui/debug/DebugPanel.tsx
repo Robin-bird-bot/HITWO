@@ -7,7 +7,16 @@
  */
 import { useEffect, useState } from 'react';
 import { RESOURCES } from '../../content/resources';
-import { PHASES, STAT_NAMES, type Action, type GameState, type Hiker } from '../../engine';
+import { BALANCE } from '../../config/balance';
+import {
+  NODE_TYPES,
+  PHASES,
+  STAT_NAMES,
+  type Action,
+  type GameState,
+  type Hiker,
+  type NodeType,
+} from '../../engine';
 import { gameStore } from '../app/gameStore';
 import styles from './DebugPanel.module.css';
 
@@ -164,6 +173,20 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
         </div>
       </section>
 
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Abundance</h3>
+        <AbundanceEditor
+          key={JSON.stringify(state.abundance)}
+          abundance={state.abundance}
+          onApply={run}
+        />
+        <div className={styles.row}>
+          <a className={styles.button} href="#debug-cards">
+            Card gallery and odds
+          </a>
+        </div>
+      </section>
+
       {message && <p className={styles.message}>{message}</p>}
       <p className={styles.hint}>Press ` (backtick) to hide.</p>
     </aside>
@@ -171,6 +194,53 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 }
 
 const STAT_LABEL = { energy: 'Energy', appetite: 'Appetite', morale: 'Morale' } as const;
+const NODE_LABEL = {
+  forest: 'Forest',
+  river: 'River',
+  wildlife: 'Wildlife',
+  mountain: 'Mountain',
+} as const;
+
+/** Set the four Abundance meters directly, e.g. to see low warnings. */
+function AbundanceEditor({
+  abundance,
+  onApply,
+}: {
+  abundance: Record<NodeType, number>;
+  onApply(action: Action): void;
+}) {
+  const [values, setValues] = useState(abundance);
+  return (
+    <>
+      <div className={styles.row}>
+        {NODE_TYPES.map((n) => (
+          <label key={n} className={styles.note}>
+            {NODE_LABEL[n]}{' '}
+            <input
+              className={styles.number}
+              type="number"
+              min={0}
+              max={BALANCE.abundance.max}
+              value={values[n]}
+              onChange={(e) => setValues({ ...values, [n]: Number(e.target.value) })}
+            />
+          </label>
+        ))}
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'setAbundance', abundance: values } })
+          }
+        >
+          Set Abundance
+        </button>
+      </div>
+    </>
+  );
+}
 
 /** Set any hiker's stats and injuries directly (no injury rule), e.g. to test thresholds. */
 function StatsEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {

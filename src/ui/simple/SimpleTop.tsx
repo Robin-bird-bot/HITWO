@@ -4,14 +4,8 @@
  */
 import { useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
-import {
-  NODE_TYPES,
-  PHASES,
-  type BiomeId,
-  type GameState,
-  type NodeType,
-  type Phase,
-} from '../../engine';
+import { BALANCE } from '../../config/balance';
+import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME } from '../map/looks';
@@ -149,23 +143,17 @@ export function GoalPill() {
   );
 }
 
-/** Below this share of full, a node's Abundance shows as a warning. TODO(wyatt): Phase 4 sets it. */
-const LOW_ABUNDANCE = 0.4;
-// Placeholder Abundance until Phase 4 adds the meters to the game.
-const PLACEHOLDER_ABUNDANCE: Record<NodeType, number> = {
-  forest: 0.75,
-  river: 0.75,
-  wildlife: 0.75,
-  mountain: 0.75,
-};
-
 /** Caps, plus a warning on any node whose Abundance is running low. */
 export function CapsPill({ state }: { state: GameState }) {
-  const low = NODE_TYPES.filter((n) => PLACEHOLDER_ABUNDANCE[n] <= LOW_ABUNDANCE);
+  const low = NODE_TYPES.filter((n) => state.abundance[n] <= BALANCE.abundance.lowAt);
   return (
     <div className={styles.pill} style={{ right: 80, top: 16 }} title="Acorn caps: the party purse">
       {low.map((n) => (
-        <span key={n} className={styles.lowNode} title={`${NODE_NAME[n]} Abundance is low`}>
+        <span
+          key={n}
+          className={styles.lowNode}
+          title={`${NODE_NAME[n]} Abundance is low (${state.abundance[n]}/${BALANCE.abundance.max})`}
+        >
           <img
             src={ASSETS.nodes[n]}
             alt={`${NODE_NAME[n]} Abundance is low`}

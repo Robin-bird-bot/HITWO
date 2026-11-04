@@ -7,6 +7,7 @@
  * passed-out countdowns join in Phases 6 and 7.
  */
 import { BALANCE } from '../config/balance';
+import { recoverOvernight } from './abundance';
 import { computeCost, fireHook } from './effects';
 import { pushEvent } from './log';
 import { changeStat } from './stats';
@@ -71,6 +72,7 @@ function campStep(state: GameState): void {
     }
   }
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onEndOfDay');
+  recoverOvernight(state);
 }
 
 function startNewDay(state: GameState): void {

@@ -86,3 +86,37 @@
   background: var(--gold);
   color: var(--page);
 }
+
+.node {
+  min-height: 48px;
+  padding: 4px 12px 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.node:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--page);
+}
+
+.node:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.meter {
+  margin-left: auto;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+}
+
+.meter b {
+  font-weight: normal;
+}

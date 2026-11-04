@@ -10,6 +10,13 @@ import type { GameState, Hiker, NodeType, ScavengeBonus, ScavengeCardType } from
 import { canDeal, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 
+const NODE_LABEL: Record<NodeType, string> = {
+  forest: 'Forest',
+  river: 'River',
+  wildlife: 'Wildlife',
+  mountain: 'Mountain',
+};
+
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   bonuses: ScavengeBonus[];
 }
@@ -33,6 +40,31 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     }
   }
 
+  // Low Abundance: a warning for each low node here, and when every node is low, fewer
+  // cards and less Luck.
+  const bonuses: ScavengeBonus[] = mods.map(({ source, label, tone }) => ({ source, label, tone }));
+  const kinds = [
+    ...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type]))),
+  ];
+  const low = kinds.filter((n) => state.abundance[n] <= BALANCE.abundance.lowAt);
+  for (const n of low) {
+    bonuses.push({
+      source: 'Abundance',
+      label: `${NODE_LABEL[n]} Abundance is low: fewer ${NODE_LABEL[n]} cards`,
+      tone: 'warning',
+    });
+  }
+  if (kinds.length > 0 && low.length === kinds.length) {
+    const { cards: fewer, luck: less } = BALANCE.abundance.lowTile;
+    cards += fewer;
+    luck += less;
+    bonuses.push({
+      source: 'Abundance',
+      label: `Everything here is running low: ${Math.abs(fewer)} fewer card, −${Math.abs(less)} Luck`,
+      tone: 'warning',
+    });
+  }
+
   return {
     nodes: tile?.nodes ?? [],
     abundance: state.abundance,
@@ -40,7 +72,7 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     count: Math.max(1, cards),
     nodeWeight,
     typeWeight,
-    bonuses: mods.map(({ source, label, tone }) => ({ source, label, tone })),
+    bonuses,
   };
 }
 

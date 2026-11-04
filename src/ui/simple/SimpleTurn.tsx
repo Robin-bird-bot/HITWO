@@ -9,7 +9,15 @@ import { abilitiesFor, type GameState, type Hiker } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { nothingToDoReason, readyActions, type ActionId } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
-import { Abilities, Bag, EndButton, Equipped, Resources, TileCard } from '../panels/TurnPanel';
+import {
+  Abilities,
+  Bag,
+  EndButton,
+  Equipped,
+  Resources,
+  TileCard,
+  type StashPick,
+} from '../panels/TurnPanel';
 import styles from './Simple.module.css';
 
 const PHASE_NAME = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -24,6 +32,8 @@ interface SimpleTurnProps {
   slot?: ReactNode;
   /** The action in progress, highlighted. */
   activeAction?: ActionId | null;
+  /** A resource or bag item was clicked: open its give / return menu. */
+  onPick?(pick: StashPick): void;
 }
 
 export function SimpleTurn({
@@ -35,6 +45,7 @@ export function SimpleTurn({
   note,
   slot,
   activeAction,
+  onPick,
 }: SimpleTurnProps) {
   const ready = readyActions(state, hiker);
   const hasAbilities = abilitiesFor(state, hiker).length > 0;
@@ -73,8 +84,8 @@ export function SimpleTurn({
           {hasAbilities && <Abilities state={state} hiker={hiker} onAbility={onAbility} />}
           <TileCard state={state} hiker={hiker} />
           <Equipped hiker={hiker} compact />
-          <Bag state={state} hiker={hiker} compact />
-          <Resources hiker={hiker} compact />
+          <Bag state={state} hiker={hiker} compact onPick={onPick} />
+          <Resources hiker={hiker} compact onPick={onPick} />
         </div>
       </Panel>
       <div className={styles.end}>

@@ -181,6 +181,18 @@ export const BALANCE = {
     lowAt: 4,
     /** Cards from a Bounty node drain this much extra. TODO(wyatt): first guess. */
     bountyExtraDrain: 1,
+    /** Tend restores this much to one node on the tile (day only). TODO(wyatt): first guess. */
+    tend: 2,
+    /** Each night, every node nobody scavenged that day recovers this much. */
+    nightRecovery: 1,
+    /** Returning a resource to nature restores this much to its node. */
+    returnToNature: 1,
+    /**
+     * When every resource node on the tile is low: fewer cards and less Luck
+     * ("a low meter means fewer cards to choose from, rarer good results").
+     * TODO(wyatt): first guess.
+     */
+    lowTile: { cards: -1, luck: -1 },
   },
 
   inventory: {
