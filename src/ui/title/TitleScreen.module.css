@@ -115,12 +115,6 @@
   outline-offset: 5px;
 }
 
-.notice {
-  min-height: 32px;
-  font-size: 24px;
-  color: var(--text-muted);
-}
-
 .build {
   position: absolute;
   right: 24px;

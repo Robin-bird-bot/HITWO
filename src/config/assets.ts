@@ -13,8 +13,18 @@ export const ASSETS = {
   backgrounds: {
     forestMisty: asset('backgrounds/239-forest-misty.webp'),
   },
+  /** Land layers for each biome's backdrop, back to front (docs/ASSETS.md). */
+  land: {
+    blueMountains: asset('backgrounds/241-mountains-blue.webp'),
+    greenRidge: asset('backgrounds/240-ridge-green-with-trees.webp'),
+    grassHills: asset('backgrounds/247-grass-hills-foreground.webp'),
+  },
   sky: {
     sun: asset('sky/sun.png'),
+    moon: asset('sky/moon.png'),
+  },
+  portraits: {
+    placeholder: asset('portraits/placeholder.png'),
   },
   textures: {
     halftone: asset('textures/pixel-halftone.png'),

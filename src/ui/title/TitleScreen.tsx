@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { ASSETS } from '../../config/assets';
 import styles from './TitleScreen.module.css';
 
-export function TitleScreen() {
-  // placeholder: Phase 3 replaces this note with New / Continue.
-  const [showNotice, setShowNotice] = useState(false);
-
+/** Continue (and a confirm before replacing a saved hike) arrive in Phase 3, step 4. */
+export function TitleScreen({ onNewHike }: { onNewHike(): void }) {
   return (
     <main className={styles.scene}>
       <img className={styles.sun} src={ASSETS.sky.sun} alt="" draggable={false} />
@@ -31,12 +28,9 @@ export function TitleScreen() {
           <span />
           <span />
         </div>
-        <button type="button" className={styles.newHike} onClick={() => setShowNotice(true)}>
+        <button type="button" className={styles.newHike} onClick={onNewHike}>
           New Hike
         </button>
-        <p className={styles.notice} role="status">
-          {showNotice ? "The trail isn't built yet. Check back soon!" : ''}
-        </p>
       </section>
 
       <p className={styles.build}>

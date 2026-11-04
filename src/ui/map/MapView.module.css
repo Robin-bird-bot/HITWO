@@ -1,0 +1,349 @@
+/* Sizes in stage pixels; geometry from docs/mockups/Main.dc.html. */
+
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.viewport:active {
+  cursor: grabbing;
+}
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.lines {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ── Tiles ── */
+
+.tile {
+  position: absolute;
+  filter: drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));
+}
+
+.hex {
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.checkpointFill {
+  background: #d9434b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 14px;
+}
+
+.special {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.specialIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #f7f1e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.capacity {
+  font-family: var(--font-pixel);
+  font-size: 20px;
+}
+
+.specialName,
+.label {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.corner {
+  position: absolute;
+  top: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #f7f1e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cornerNumber {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+}
+
+.nodes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.node {
+  position: relative;
+  width: 20px;
+  height: 23px;
+}
+
+.nodeImg {
+  position: relative;
+  width: 20px;
+  height: 23px;
+  display: block;
+}
+
+.nodeHidden,
+.nodeCaps,
+.bounty {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.nodeHidden {
+  width: 20px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: #f1eadb;
+}
+
+.nodeCaps {
+  position: relative;
+  width: 20px;
+  height: 23px;
+  background: #5c4630;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nodeCaps img {
+  width: 15px;
+  height: 15px;
+}
+
+/* Bounty nodes: a gold outline around the node badge. */
+.bounty {
+  position: absolute;
+  left: -3px;
+  top: -3.5px;
+  width: 26px;
+  height: 30px;
+  background: #e9b44c;
+}
+
+.checkpointCard {
+  position: absolute;
+  width: 170px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px rgba(15, 22, 19, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.cardTitle {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.cardText {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Line cost badges ── */
+
+.badge {
+  position: absolute;
+  height: 22px;
+  padding: 0 7px 0 5px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 3px 8px rgba(20, 32, 28, 0.25);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* ── Hiker tokens ── */
+
+.token {
+  position: absolute;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1d2220;
+  cursor: pointer;
+  transition:
+    left 0.35s ease,
+    top 0.35s ease,
+    width 0.15s ease,
+    height 0.15s ease;
+}
+
+.token img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Side rail ── */
+
+.rail {
+  position: absolute;
+  width: 36px;
+}
+
+.railCheckpoint {
+  position: absolute;
+  left: 5px;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #d9434b;
+  border: 2px solid #f7f1e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.railTrack {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(
+    to right,
+    transparent 6px,
+    rgba(29, 34, 32, 0.35) 6px 10px,
+    transparent 10px
+  );
+  cursor: pointer;
+}
+
+.railView {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  border-radius: 8px;
+  border: 2px solid rgba(247, 241, 228, 0.85);
+  background: rgba(247, 241, 228, 0.18);
+  pointer-events: none;
+  transition:
+    top 0.15s ease,
+    height 0.15s ease;
+}
+
+.railFace {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1d2220;
+  cursor: pointer;
+}
+
+.railFace img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.railStart {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 36px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: #1d2220;
+}
+
+/* ── Zoom buttons ── */
+
+.controls {
+  position: absolute;
+  left: 1184px;
+  top: 852px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(29, 34, 32, 0.88);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.control:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

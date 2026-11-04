@@ -2,6 +2,7 @@
  * The one way the game changes (CLAUDE.md rule 1): applyAction(state, action)
  * returns a new state and never touches the one passed in.
  */
+import { applyDebug } from './actions/debug';
 import { applyMove, validateMove } from './actions/move';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
 import { applySleep, validateSleep } from './actions/sleep';
@@ -31,6 +32,7 @@ export function validateAction(state: GameState, action: Action): string | null 
     case 'useAbility':
       return validateUseAbility(state, action) ?? null;
     case 'endPhase':
+    case 'debug':
       return null;
   }
 }
@@ -56,6 +58,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'endPhase':
       endPhase(draft);
+      break;
+    case 'debug':
+      applyDebug(draft, action.op);
       break;
   }
   return draft;

@@ -41,7 +41,9 @@ export function createGame({
   tier = 1,
 }: NewGameOptions): GameState {
   const rng = seedRng(seed);
-  const section = given ?? generateSection(rng, { biome, tier });
+  const section = structuredClone(given ?? generateSection(rng, { biome, tier }));
+  const trailhead = section.tiles[section.trailheadId];
+  if (trailhead) trailhead.visited = true;
   return {
     saveVersion: SAVE_VERSION,
     seed,
