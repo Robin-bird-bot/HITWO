@@ -1,0 +1,82 @@
+/**
+ * The day loop: Morning → Afternoon → Night → camp step → the next Morning.
+ * Each hiker gets one action per phase; ending a phase clears that.
+ *
+ * Camp step (Phase 1 part): a night without sleep costs Energy, and the end of
+ * the day costs Appetite. Night events, conditions, clothing durability and
+ * passed-out countdowns join in Phases 6 and 7.
+ */
+import { BALANCE } from '../config/balance';
+import { computeCost, fireHook } from './effects';
+import { pushEvent } from './log';
+import { changeStat } from './stats';
+import type { GameState, Hiker } from './types';
+
+/** Active hikers who still have their action this phase. The UI warns before ending the phase. */
+export function hikersWhoHaventActed(state: GameState): Hiker[] {
+  return state.hikers.filter((h) => h.status === 'active' && !h.acted);
+}
+
+export function endPhase(state: GameState): void {
+  for (const h of state.hikers) h.acted = false;
+
+  if (state.phase === 'morning') {
+    state.phase = 'afternoon';
+    pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+  } else if (state.phase === 'afternoon') {
+    state.phase = 'night';
+    pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+  } else {
+    campStep(state);
+    startNewDay(state);
+  }
+}
+
+function takesCampDrains(h: Hiker): boolean {
+  return (
+    h.status === 'active' || (h.status === 'passedOut' && BALANCE.rules.passedOutHikersDrainAtCamp)
+  );
+}
+
+function noSleepDrain(state: GameState, h: Hiker): void {
+  if (h.slept || !takesCampDrains(h)) return;
+  const cost = computeCost(
+    state,
+    [h],
+    { key: 'night.noSleepEnergy', actorId: h.id, subjectId: h.id, role: 'actor', phase: 'night' },
+    BALANCE.night.noSleepEnergy,
+  );
+  changeStat(state, h, 'energy', -cost, 'No sleep');
+}
+
+function endOfDayDrain(state: GameState, h: Hiker): void {
+  if (!takesCampDrains(h)) return;
+  const cost = computeCost(
+    state,
+    [h],
+    { key: 'endOfDay.appetite', actorId: h.id, subjectId: h.id, role: 'actor', phase: 'night' },
+    BALANCE.endOfDay.appetite,
+  );
+  changeStat(state, h, 'appetite', -cost, 'End of day');
+}
+
+function campStep(state: GameState): void {
+  for (const h of state.hikers) {
+    if (BALANCE.rules.noSleepDrainFirst) {
+      noSleepDrain(state, h);
+      endOfDayDrain(state, h);
+    } else {
+      endOfDayDrain(state, h);
+      noSleepDrain(state, h);
+    }
+  }
+  for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onEndOfDay');
+}
+
+function startNewDay(state: GameState): void {
+  state.day += 1;
+  state.phase = 'morning';
+  for (const h of state.hikers) h.slept = false;
+  pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+  for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
+}
