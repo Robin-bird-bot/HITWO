@@ -50,7 +50,7 @@ export default defineConfig([
           ],
           patterns: [
             { regex: '^react(-dom)?/', message: PURE_MESSAGE },
-            { regex: '(^|/)ui(/|$)', message: PURE_MESSAGE },
+            { regex: '(^|/)(ui|store)(/|$)', message: PURE_MESSAGE },
             { regex: '\\.css$', message: PURE_MESSAGE },
           ],
         },
