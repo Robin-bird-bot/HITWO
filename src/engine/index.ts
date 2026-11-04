@@ -27,3 +27,6 @@ export {
 export { adjacentTileIds, hikersOnTile, isAlone, lineBetween } from './map';
 export { isSheltered } from './actions/sleep';
 export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure } from './save';
+export { generateSection, type SectionOptions } from './trail/generate';
+export { checkSection } from './trail/check';
+export { seedRng } from './rng';

@@ -29,8 +29,13 @@ export const PHASES: readonly Phase[] = ['morning', 'afternoon', 'night'];
 
 // ── Map ────────────────────────────────────────────────────────────────────
 
+/** The four resource nodes, each with its own Abundance meter. */
 export type NodeType = 'forest' | 'river' | 'wildlife' | 'mountain';
+export const NODE_TYPES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];
+/** What can sit in a tile's node spot: a resource node, or a Cap node (acorn caps more likely). */
+export type NodeKind = NodeType | 'caps';
 export type LineKind = 'normal' | 'paved' | 'steep' | 'muddy' | 'rough';
+export const LINE_KINDS: readonly LineKind[] = ['normal', 'paved', 'steep', 'muddy', 'rough'];
 export type BiomeId = 'meadow' | 'temperateRainforest' | 'alpine';
 export type TileKind = 'trailhead' | 'normal' | 'checkpoint';
 export type SpecialSpace =
@@ -43,19 +48,42 @@ export type SpecialSpace =
   | 'overlook'
   | 'narrowPath'
   | 'mystery';
+export const SPECIAL_SPACES: readonly SpecialSpace[] = [
+  'opportunity',
+  'challenge',
+  'choice',
+  'trailSign',
+  'geoCache',
+  'campsite',
+  'overlook',
+  'narrowPath',
+  'mystery',
+];
+/** Side features attach to a normal tile and add an extra option there. */
+export type SideFeature = 'merchant' | 'trader';
 
 export interface TileNode {
-  type: NodeType;
+  type: NodeKind;
+  /** Shown on the map. Hidden nodes show as ? until a hiker enters or scouts the tile. */
   revealed: boolean;
+  /** A Bounty node: extra resources are more likely, at an extra Abundance cost. */
+  bounty?: true;
 }
 
 export interface Tile {
   id: TileId;
   /** 0 is the trailhead row; rows count up toward the checkpoint. */
   row: number;
+  /**
+   * Position on a staggered hex grid, in half-tile steps: tiles in one row are
+   * 2 apart, and a tile's neighbours in the next row are at col ± 1.
+   */
   col: number;
   kind: TileKind;
   special: SpecialSpace | null;
+  /** Narrow Path only: how many hikers it holds at once. */
+  narrowCapacity?: number;
+  feature?: SideFeature;
   nodes: TileNode[];
 }
 
