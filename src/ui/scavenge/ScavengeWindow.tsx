@@ -7,7 +7,7 @@
  * "Not now" closes it for free until a card has been flipped. After that a
  * card has to be taken. Enter takes the picked card; Esc is "Not now".
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SCAVENGE_CARDS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
@@ -30,6 +30,7 @@ import {
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
+import { useDraggable } from '../windows/useDraggable';
 import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from './cardLook';
 import { ItemBack } from './ItemBack';
 import { ScavCard } from './ScavCard';
@@ -78,7 +79,7 @@ export function ScavengeWindow({
   const [bonusesOpen, setBonusesOpen] = useState(false);
   // Copier: take the paid bonus resources too.
   const [paidBonus, setPaidBonus] = useState(false);
-  const windowRef = useRef<HTMLDivElement>(null);
+  const { ref: windowRef, windowProps, translate } = useDraggable<HTMLDivElement>('scavenge');
 
   const card = open && selected !== null ? open.cards[selected] : undefined;
   const offers = open?.bonusOffers ?? [];
@@ -125,7 +126,7 @@ export function ScavengeWindow({
 
   useEffect(() => {
     windowRef.current?.focus();
-  }, []);
+  }, [windowRef]);
 
   const hiker = state.hikers.find((h) => h.id === open?.hikerId);
   const tile = open ? state.section.tiles[open.tileId] : undefined;
@@ -149,8 +150,10 @@ export function ScavengeWindow({
         aria-modal="true"
         aria-label="Scavenge"
         tabIndex={-1}
+        style={{ translate }}
+        {...windowProps}
       >
-        <header className={styles.header}>
+        <header className={styles.header} data-drag-handle>
           <h2 className={styles.title}>SCAVENGE</h2>
           <span className={styles.nodes}>
             {tile?.nodes.map((n, i) =>

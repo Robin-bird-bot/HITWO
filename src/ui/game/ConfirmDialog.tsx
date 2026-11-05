@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useDraggable } from '../windows/useDraggable';
 import styles from './ConfirmDialog.module.css';
 
 interface ConfirmDialogProps {
@@ -20,6 +21,7 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('confirm');
   useEffect(() => {
     confirmRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -32,14 +34,17 @@ export function ConfirmDialog({
   return (
     <div className={styles.backdrop} onClick={onCancel}>
       <div
+        ref={ref}
         className={styles.dialog}
+        style={{ translate }}
+        {...windowProps}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-message"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="confirm-title" className={styles.title}>
+        <h2 id="confirm-title" className={styles.title} data-drag-handle>
           {title}
         </h2>
         <p id="confirm-message" className={styles.message}>

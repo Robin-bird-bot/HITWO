@@ -1,4 +1,6 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import { useDraggable } from '../windows/useDraggable';
+import type { WindowId } from '../windows/windowLayout';
 
 interface PopoutProps {
   label: string;
@@ -7,12 +9,22 @@ interface PopoutProps {
   style?: CSSProperties;
   /** Clicks inside these elements don't count as clicking away (e.g. the button that opened it). */
   ignore?: readonly RefObject<HTMLElement | null>[];
+  /** Makes it movable: drag it by any child marked `data-drag-handle`. */
+  dragId?: WindowId;
   children: ReactNode;
 }
 
 /** A floating box that closes when you click anywhere else, or press Esc. */
-export function Popout({ label, onClose, className, style, ignore = [], children }: PopoutProps) {
-  const ref = useRef<HTMLDivElement>(null);
+export function Popout({
+  label,
+  onClose,
+  className,
+  style,
+  ignore = [],
+  dragId,
+  children,
+}: PopoutProps) {
+  const { ref, windowProps, translate } = useDraggable<HTMLDivElement>(dragId);
   const live = useRef({ onClose, ignore });
   useEffect(() => {
     live.current = { onClose, ignore };
@@ -38,10 +50,17 @@ export function Popout({ label, onClose, className, style, ignore = [], children
       window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('keydown', onKey);
     };
-  }, []);
+  }, [ref]);
 
   return (
-    <div ref={ref} className={className} style={style} role="dialog" aria-label={label}>
+    <div
+      ref={ref}
+      className={className}
+      style={{ ...style, translate }}
+      role="dialog"
+      aria-label={label}
+      {...windowProps}
+    >
       {children}
     </div>
   );

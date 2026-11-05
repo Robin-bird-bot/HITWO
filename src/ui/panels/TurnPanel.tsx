@@ -59,6 +59,7 @@ export function TurnPanel({
   return (
     <Panel
       id="turn"
+      movable
       as="aside"
       label="selected hiker's turn"
       style={{ left: 1240, top: 120, width: 344, height: 864 }}

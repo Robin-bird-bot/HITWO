@@ -48,6 +48,7 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
     <>
       <Panel
         id="party"
+        movable
         as="aside"
         label="party"
         style={{ left: 16, top: 72, width: 288 }}
@@ -73,12 +74,13 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
       {open && openHiker && (
         <Popout
           label={`${openHiker.name} details`}
+          dragId="details"
           className={styles.popout}
           style={{ left: 316, top: open.top, width: 300 }}
           ignore={[listRef]}
           onClose={() => setOpen(null)}
         >
-          <div className={styles.popoutHead}>
+          <div className={styles.popoutHead} data-drag-handle>
             <span className={styles.popoutName}>{openHiker.name.toUpperCase()}</span>
             <span className={styles.muted}>
               {FAMILY_LOOK[openHiker.family].label.charAt(0) +

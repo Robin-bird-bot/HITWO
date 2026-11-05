@@ -10,6 +10,7 @@ import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME } from '../map/looks';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
+import { resetWindowLayout } from '../windows/windowLayout';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
 import { usePanelCollapsed } from './panelState';
@@ -203,8 +204,11 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
           onClose={() => setOpen(false)}
           label="Menu"
           ignore={[buttonRef]}
+          dragId="settings"
         >
-          <span className={panel.label}>SETTINGS</span>
+          <span className={panel.label} data-drag-handle>
+            SETTINGS
+          </span>
           <div className={styles.setting}>
             <span className={styles.settingName}>Screen</span>
             <div className={styles.segmented} role="radiogroup" aria-label="Screen">
@@ -223,6 +227,9 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
             </div>
             <span className={styles.small}>{MODES.find((m) => m.id === mode)?.text}</span>
           </div>
+          <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
+            Reset window layout
+          </button>
           <button type="button" className={styles.menuItem} onClick={onTitle}>
             Title screen
           </button>

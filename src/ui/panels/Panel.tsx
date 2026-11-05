@@ -1,4 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { useDraggable } from '../windows/useDraggable';
+import type { WindowId } from '../windows/windowLayout';
 import { usePanelCollapsed, type PanelId } from './panelState';
 import styles from './Panel.module.css';
 
@@ -14,6 +16,8 @@ interface PanelProps {
   style: CSSProperties;
   className?: string;
   as?: 'section' | 'aside';
+  /** Can be dragged by its header (party, turn panel, trail log). */
+  movable?: boolean;
   children?: ReactNode;
 }
 
@@ -26,18 +30,28 @@ export function Panel({
   style,
   className,
   as: Tag = 'section',
+  movable,
   children,
 }: PanelProps) {
   const [collapsed, toggle] = usePanelCollapsed(id);
+  const { ref, windowProps, translate } = useDraggable<HTMLElement>(
+    movable ? (id as WindowId) : undefined,
+  );
   const { height, ...rest } = style;
   return (
     <Tag
+      ref={ref}
       className={`${styles.panel} ${className ?? ''}`}
-      style={{ ...rest, height: collapsed ? 'auto' : height }}
+      style={{ ...rest, height: collapsed ? 'auto' : height, translate }}
       data-collapsed={collapsed}
       aria-label={label}
+      {...windowProps}
     >
-      <header className={styles.header}>
+      <header
+        className={styles.header}
+        data-drag-handle={movable ? '' : undefined}
+        title={movable ? 'Drag to move. Double-click to put it back.' : undefined}
+      >
         <div className={styles.title}>{title}</div>
         {aside && <div className={styles.aside}>{aside}</div>}
         <button

@@ -33,6 +33,7 @@ export function PartyPanel({ state, selectedId, onSelect }: PartyPanelProps) {
   return (
     <Panel
       id="party"
+      movable
       as="aside"
       label="party"
       style={{ left: 16, top: 120, width: 288, height: 864 }}

@@ -54,6 +54,7 @@ export function SimpleTurn({
     <>
       <Panel
         id="turn"
+        movable
         as="aside"
         label="selected hiker's turn"
         style={{ left: 1240, top: 72, width: 344, maxHeight: 832 }}
