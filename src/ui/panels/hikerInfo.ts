@@ -6,6 +6,7 @@ import { tileLabel } from '../../content/tileLabels';
 import { BALANCE } from '../../config/balance';
 import {
   adjacentTileIds,
+  blockedByStatus,
   hikersOnTile,
   isSheltered,
   moraleLuck,
@@ -15,6 +16,7 @@ import {
   tendableNodes,
   thresholdStates,
   validateAction,
+  type Action,
   type GameState,
   type Hiker,
   type StatName,
@@ -178,8 +180,13 @@ export interface ActionState {
   icon: IconName;
   /** Short line under the label, e.g. "−1 Appetite". */
   sub: string;
-  status: 'ready' | 'blocked' | 'soon';
-  /** Why it's greyed out, in plain words. */
+  /**
+   * ready; blocked for a normal reason (grey, hidden in Simple mode); stopped
+   * by an abnormal status like Exhausted or Morale 0 (red, shown in both
+   * modes); or not built yet.
+   */
+  status: 'ready' | 'blocked' | 'status' | 'soon';
+  /** Why it can't be taken, in plain words. */
   reason?: string;
 }
 
@@ -204,92 +211,91 @@ function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState
 
 const costText = (appetite: number) => (appetite === 0 ? 'No Appetite' : `−${appetite} Appetite`);
 
+type Judgement = Pick<ActionState, 'status' | 'reason'>;
+
+/**
+ * Ready if any of the candidate actions is allowed. Otherwise red when only
+ * a status (Exhausted, Morale 0, a condition…) stops one of them, or grey
+ * with the first normal reason.
+ */
+function judge(state: GameState, candidates: Action[], fallback: string): Judgement {
+  let first: string | null = null;
+  let red: string | undefined;
+  for (const a of candidates) {
+    const reason = validateAction(state, a);
+    if (reason === null) return { status: 'ready' };
+    first ??= reason;
+    red ??= blockedByStatus(state, a);
+  }
+  if (red) return { status: 'status', reason: red };
+  return { status: 'blocked', reason: first ?? fallback };
+}
+
 /** The action grid for the selected hiker: what's ready, what's not and why. */
 export function actionStates(state: GameState, h: Hiker): ActionState[] {
   const targets = adjacentTileIds(state.section, h.tileId);
 
   // Move: ready if any connected tile can be reached.
-  const moveReasons = targets.map((t) =>
-    validateAction(state, { type: 'move', hikerId: h.id, toTileId: t }),
+  const moves = targets.map((t): Action => ({ type: 'move', hikerId: h.id, toTileId: t }));
+  const moveOk = targets.filter(
+    (t) => validateAction(state, { type: 'move', hikerId: h.id, toTileId: t }) === null,
   );
-  const moveOk = targets.filter((_, i) => moveReasons[i] === null);
   const cheapest = Math.min(...moveOk.map((t) => moveCost(state, h.id, t)?.appetite ?? 0));
-  const move: ActionState = moveOk.length
-    ? { id: 'move', label: 'Move', icon: 'footprints', sub: costText(cheapest), status: 'ready' }
-    : {
-        id: 'move',
-        label: 'Move',
-        icon: 'footprints',
-        sub: '−1 Appetite',
-        status: 'blocked',
-        reason: moveReasons.find((r) => r !== null) ?? 'No connected tiles.',
-      };
+  const move: ActionState = {
+    id: 'move',
+    label: 'Move',
+    icon: 'footprints',
+    sub: moveOk.length ? costText(cheapest) : '−1 Appetite',
+    ...judge(state, moves, 'No connected tiles.'),
+  };
 
   // Move All: ready if someone here can come along to some connected tile.
   const company = hikersOnTile(state, h.tileId).filter((o) => o.id !== h.id && !o.acted);
-  let moveAll: ActionState = {
+  const groupMoves = targets.flatMap((t) =>
+    company.map((o): Action => ({ type: 'moveAll', hikerId: h.id, toTileId: t, bring: [o.id] })),
+  );
+  const moveAll: ActionState = {
     id: 'moveAll',
     label: 'Move All',
     icon: 'users',
     sub: '−1 per hiker',
-    status: 'ready',
+    ...judge(
+      state,
+      groupMoves,
+      company.length ? 'Nobody can come along.' : 'Nobody else on this tile can come along.',
+    ),
   };
-  if (!company.length) {
-    moveAll = { ...moveAll, status: 'blocked', reason: 'Nobody else on this tile can come along.' };
-  } else {
-    let firstReason: string | null = null;
-    const ok = targets.some((t) =>
-      company.some((o) => {
-        const r = validateAction(state, {
-          type: 'moveAll',
-          hikerId: h.id,
-          toTileId: t,
-          bring: [o.id],
-        });
-        firstReason ??= r;
-        return r === null;
-      }),
-    );
-    if (!ok)
-      moveAll = { ...moveAll, status: 'blocked', reason: firstReason ?? 'Nobody can come along.' };
-  }
 
   // Tend: ready if some node on this tile can be restored.
-  const tendReasons = tendableNodes(state, h).map((node) =>
-    validateAction(state, { type: 'tend', hikerId: h.id, node }),
-  );
-  const tendReason = tendReasons.includes(null)
-    ? null
-    : (tendReasons.find((r) => r !== null) ??
-      validateAction(state, { type: 'tend', hikerId: h.id, node: 'forest' }));
+  const nodes = tendableNodes(state, h);
+  const tends = (nodes.length ? nodes : (['forest'] as const)).map((node): Action => ({
+    type: 'tend',
+    hikerId: h.id,
+    node,
+  }));
   const tend: ActionState = {
     id: 'tend',
     label: 'Tend',
     icon: 'sprout',
     sub: `−${tendCost(state, h)} Energy`,
-    status: tendReason ? 'blocked' : 'ready',
-    ...(tendReason ? { reason: tendReason } : {}),
+    ...judge(state, tends, 'There’s nothing to tend on this tile.'),
   };
 
-  const scavengeReason = validateAction(state, { type: 'scavenge', hikerId: h.id });
   const scavenge: ActionState = {
     id: 'scavenge',
     label: 'Scavenge',
     icon: 'search',
     sub: costText(scavengeCost(state, h)),
-    status: scavengeReason ? 'blocked' : 'ready',
-    ...(scavengeReason ? { reason: scavengeReason } : {}),
+    ...judge(state, [{ type: 'scavenge', hikerId: h.id }], ''),
   };
 
-  const sleepReason = validateAction(state, { type: 'sleep', hikerId: h.id });
   const gain = isSheltered(state, h) ? BALANCE.sleep.shelteredEnergy : BALANCE.sleep.energy;
   const sleep: ActionState = {
     id: 'sleep',
     label: 'Sleep',
     icon: 'moon',
     sub: state.phase === 'night' ? `+${gain} Energy` : 'Night',
-    status: sleepReason ? 'blocked' : 'ready',
-    ...(sleepReason ? { reason: sleepReason } : {}),
+    ...judge(state, [{ type: 'sleep', hikerId: h.id }], ''),
   };
 
   return [
@@ -307,6 +313,14 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
 /** Simple mode: only the actions the hiker can take right now. */
 export function readyActions(state: GameState, h: Hiker): ActionState[] {
   return actionStates(state, h).filter((a) => a.status === 'ready');
+}
+
+/**
+ * Simple mode's buttons: the actions the hiker can take, plus the ones a
+ * status is stopping (red), so it's clear something is wrong (Nov 5, 2b).
+ */
+export function simpleActions(state: GameState, h: Hiker): ActionState[] {
+  return actionStates(state, h).filter((a) => a.status === 'ready' || a.status === 'status');
 }
 
 /** Simple mode, when nothing is ready: why (Move's reason is the most useful). */

@@ -281,11 +281,29 @@
   letter-spacing: 0.04em;
 }
 
-.action:hover,
+.action[data-status='ready']:hover,
 .action[aria-pressed='true'] {
   background: var(--gold);
   border-color: var(--gold);
   color: var(--page);
+}
+
+/* Stopped by a status (Exhausted, Morale 0, a condition…): red, stays visible. */
+.action[data-status='status'] {
+  border-color: #e5624a;
+  background: rgba(229, 98, 74, 0.14);
+  color: #f39a86;
+  cursor: help;
+}
+
+.why {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(229, 98, 74, 0.12);
+  font-size: 14px;
+  line-height: 1.4;
+  color: #f39a86;
 }
 
 .nothing {

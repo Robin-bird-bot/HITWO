@@ -120,7 +120,12 @@ function ActionGrid({
         ))}
       </div>
       {slot ?? (
-        <p id="action-reason" className={styles.reason} role="status">
+        <p
+          id="action-reason"
+          className={styles.reason}
+          role="status"
+          data-status={!note && explain?.status === 'status' ? 'status' : undefined}
+        >
           {message}
         </p>
       )}

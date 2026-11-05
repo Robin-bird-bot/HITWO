@@ -38,3 +38,4 @@ export { scavengeCost, scavengeSetup } from './scavenge/setup';
 export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/scavenge';
 export { isLow } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
+export { blockedByStatus, withoutStatus } from './status';
