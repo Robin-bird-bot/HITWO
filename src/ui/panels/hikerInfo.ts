@@ -44,6 +44,12 @@ export const BAR_LEVELS: Record<StatName, { low: number; critical: number }> = {
   morale: { low: 5, critical: 2 },
 };
 
+/**
+ * Stats with threshold states (Fatigued and Exhausted; Hungry and Famished).
+ * Simple mode ticks these bars too (Nov 5, 2c).
+ */
+export const THRESHOLD_STATS: readonly StatName[] = ['energy', 'appetite'];
+
 /** Bar colors (Wyatt, Nov 3): each stat's own color, amber at a threshold, red when critical. */
 export const BAR_COLOR: Record<StatName, string> & { low: string; critical: string } = {
   energy: '#7FC29B',

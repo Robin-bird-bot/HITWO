@@ -9,7 +9,7 @@ interface StatBarProps {
   value: number;
   /** Simple mode: the number at the end of the bar. */
   showNumber?: boolean;
-  /** Informative mode: tick marks at each threshold. */
+  /** Tick marks at each threshold (both modes; Simple ticks Energy and Appetite). */
   ticks?: boolean;
   /** Thicker bar, for Simple mode's cards. */
   size?: 'slim' | 'regular';

@@ -9,7 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { STAT_NAMES, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK } from '../panels/hikerInfo';
+import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { Popout } from '../panels/Popout';
@@ -142,7 +142,14 @@ function HikerCard({
           </span>
         </span>
         {STAT_NAMES.map((stat) => (
-          <StatBar key={stat} stat={stat} value={h.stats[stat]} showNumber size="regular" />
+          <StatBar
+            key={stat}
+            stat={stat}
+            value={h.stats[stat]}
+            showNumber
+            ticks={THRESHOLD_STATS.includes(stat)}
+            size="regular"
+          />
         ))}
       </span>
     </button>
