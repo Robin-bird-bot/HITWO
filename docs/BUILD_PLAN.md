@@ -226,24 +226,57 @@ This keeps the download small and lets numbers and text change.
 
 ---
 
-## Phase 5: Challenges and opportunities
+## Phase 5: Challenges, opportunities and Trials
 
-**Goal:** entering a new tile can trigger a challenge or opportunity pop-up.
+**Goal:** entering an unrevealed tile can trigger a challenge, an opportunity or a Trial pop-up.
 
-**Build:** this follows `Challenge.dc.html` and `ChallengeParty.dc.html`.
-- **Template system** with placeholders `{amount}`, `{resource}`, `{node}`, `{itemType}`, `{stat}` and `{days}`, filled in by tier, tile and biome. Each template lists the tiers, nodes and biomes it can appear in.
-- **The window:**
-  - title, art and text;
-  - requirement slots you drag or click resources and items into;
-  - each-hiker mode with ✓/✗ per hiker, and party mode where the party pays together;
-  - the inventories of the hikers on the tile across the bottom.
-- **Triggering:** the first entry triggers the card once. Lingering tile conditions are the exception.
-- Special spaces: Challenge (one tier higher, plus a reward), Choice (pick 1 of 2), Opportunity.
-- About 10 placeholder templates.
+**Build:** `docs/design/04-challenges.md` is the source of truth for the content; read "How to read a challenge" first. The pop-up follows `Challenge.dc.html` (each hiker), `ChallengeParty.dc.html` (whole party) and `ChallengeOpportunity.dc.html`.
 
-**Done when:** a dozen generated challenges all read correctly, and paying, failing and rewards work for both modes.
+- **Three kinds of pop-up:**
 
-**Ask Wyatt first:** his first real challenge and opportunity templates, if they're ready.
+  | Kind | Color | What it is |
+  | --- | --- | --- |
+  | Challenge | Red `#C8403A` | Pay a cost or take a penalty. Party challenges ("If not:") are paid together; each-hiker challenges ("If failed:") are judged per hiker. |
+  | Opportunity | Blue `#2F6FAE` | A reward. None are written yet; a few placeholders (`placeholder: true`) keep the flow working. |
+  | Trial | Orange, about `#E0812F` | Do something before a deadline instead of paying. |
+
+  **Risk challenges** are a red variant marked "Risk:" in the Cost column. They have no pass or fail: each hiker may spend resources or items to lower a chance or a loss, then the game rolls.
+- **Content as data** in `src/content/challenges.ts`: id, name, kind, tier, nodes, gates, scope, art, description, cost options, penalty effects and X/Y ranges.
+  - Descriptions are placeholders (`placeholder: true`) until Wyatt writes them.
+  - **Gates:** `[snow only]` (until Phase 11, a debug toggle counts the section as snowy), `[stormy weather only]` and `[sunny weather only]` (weather is Phase 6), `[afternoon only]`, `[only if a Dog is on the tile]`. A gate that isn't built yet makes the challenge unavailable, never broken.
+  - **Effects** are small typed operations run by one effect engine: lose or spend resources, items, caps, stats, durability, XP or tool uses; gain a condition or an injury; change Abundance; move hikers (back, swept, blown); change lines (Muddy, Rough); hide nodes; raise an unrevealed tile's tier. No checks for a particular challenge by name.
+  - Effects that need a later phase still apply in data form (a condition is added with its duration and icon) and are marked `TODO(phase N)`. **Frozen** blocks moving now.
+- **Rolling X and Y:**
+  - X is rolled once per challenge when it's revealed. The [bracket] range is the Tier I range; one tier higher (a Challenge special space), the range scales by `TIER_SCALE` in `balance.ts`. Some ranges run backwards (Dangerous Current: lower is harder).
+  - Luck shifts X in the party's favor, using the average Luck of the hikers entering the tile.
+  - Y is rolled separately for each hiker, with that hiker's Luck.
+  - "(25%)" before a penalty: included only with that chance, rolled when revealed, and shown only if included.
+  - [Brackets] are game logic and never shown; (parentheses) are shown. Short effects count phases; longer conditions count days or nights.
+- **Picking:** on entering an unrevealed tile, pick from the challenges whose nodes match a node on the tile, whose tier matches the section's tier, and whose gates pass. Weights in `balance.ts`; avoid repeats within a section. Trials and opportunities mix in with odds in `balance.ts`. A tile triggers once, however a hiker arrives (moving back, swept, blown). Only the hikers on that tile are affected unless the text says otherwise.
+- **Special spaces:** Challenge (one tier higher, plus a reward), Choice (pick 1 of 2), Opportunity.
+- **The pop-up** (movable, like every window):
+  - a red or blue blurred background with the drifting Game Quotes `!` pattern;
+  - the tall banner: title centered, type and tier on the left, scope on the right;
+  - art at 16:9 (`object-fit: cover`) from `public/assets/challenges/<id>.jpg`, or a placeholder;
+  - the quote and description, then the "If not" / "If failed" box ("Reward" for opportunities);
+  - per-hiker sections with requirement squares, "OR" between alternatives, a status line and ✓/✗;
+  - the inventories of the hikers on the tile along the bottom, items and resources on separate rows.
+  - **Risk challenges:** a +/− for each resource or item a hiker can spend, a live readout of their chance or loss ("Chance to fall in: 24%"), and a Roll button instead of ✓/✗.
+  - **Trials:** the same window in orange. The banner shows the deadline ("2 phases left") where the scope would go; the goal and penalty replace the cost; a "Got it" button.
+- **Trials:**
+  - After the pop-up closes, an orange countdown chip stays near the day bar with the Trial's name and time left; clicking it reopens the details.
+  - Target tiles, rows or lines are highlighted on the map (Rocco's tile in red).
+  - The goal is checked at the end of every phase. Meeting it early ends the Trial; missing the deadline applies the penalty.
+  - Rocco Raccoon's Trials give stacking rewards (within 1 day all three; within 2 days the resources and caps; within 3 days the caps). Finishing on day 4, or reaching a checkpoint first, gives nothing either way. Not done after 4 days: a random negative condition.
+  - At most 2 active at once (`balance.ts`).
+  - Build every Trial whose goal is about position or time. Trials that check sleeping, eating, crafting or Sitting by the Fire use the same framework but stay off until their system exists (`TODO(phase N)`).
+- **Debug panel:** force a specific challenge or Trial on a tile, set the tier, show the X and Y rolls, and toggle "snowy section" and the weather.
+
+**Done when:** every challenge and Trial in `04-challenges.md` exists as data, and the ones whose systems exist can be triggered and resolved. Tests cover X and Y rolls with a fixed seed, Luck shifting X, (%) penalties, picking by node, tier and gates, party vs. each-hiker paying and failing, Risk challenge odds, and Trial deadlines and rewards.
+
+**Ask Wyatt first**
+- `TIER_SCALE`, and the odds of a Trial or opportunity instead of a challenge (or approval of a first guess).
+- Any opportunities that are ready.
 
 ---
 
@@ -266,6 +299,9 @@ This keeps the download small and lets numbers and text change.
   - Implement every condition in `02-traits-and-conditions.md`.
 - **Weather** affects every tile, with the 3-day forecast shown.
 
+- **Conditions must be easy to see and understand in both modes.** Design how they show on the hiker cards and the map so a glance tells you who has what, how long it lasts and what it does (for example, bigger condition icons with a time-left count, positive and negative clearly colored, and a one-line description on hover or tap). Make a mockup for Wyatt to approve before building it.
+- Turn on the challenge and Trial effects that were waiting on Phase 6 (the `TODO(phase 6)` list from Phase 5).
+
 **Done when:** every listed condition has a test.
 
 **Ask Wyatt first:** the night event list, if it's ready.
@@ -276,10 +312,11 @@ This keeps the download small and lets numbers and text change.
 
 **Build**
 - **Injuries are strikes with no effect of their own.**
-  - A hiker gets one when Energy, Appetite or Morale hits 0, or from challenges and events.
+  - A hiker gets one when Energy or Appetite hits 0 (not Morale, which stops at 0), or from challenges and events.
   - Gaining an injury raises each of that hiker's stats that is below 5 back up to 5.
   - Show injuries as 3 strike pips on the hiker card.
 - **Cures:** Bandages, Splint, Medkit, Medic Tent and station services.
+- **Bleeding:** when it runs out the hiker gains 1 injury; add its cures (specific tools, traits and clothes, named by Wyatt).
 - Passing out at 3 injuries:
   - a 2-night countdown;
   - waking with a medical item;
@@ -394,6 +431,7 @@ This keeps the download small and lets numbers and text change.
 - Meadow → Temperate Rainforest → Alpine, at Tier 1 → 3.
 - Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker).
 - Challenge spaces draw one tier higher.
+- The snowy, high part of the trail turns on the `[snow only]` challenges, mostly Tier III.
 
 ---
 
