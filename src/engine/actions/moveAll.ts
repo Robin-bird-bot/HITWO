@@ -1,3 +1,4 @@
+import { revealTile } from '../challenges/reveal';
 import { moveAllCost } from '../costs';
 import { canActReason, fireMove } from '../effects';
 import { pushEvent } from '../log';
@@ -55,6 +56,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   if (!line || !costs) throw new Error('applyMoveAll: not adjacent');
 
   const from = mover.tileId;
+  const firstHere = !state.section.tiles[action.toTileId]?.visited;
   const group = [mover, ...action.bring.map((id) => mustFindHiker(state, id))];
   for (const h of group) {
     h.cameFrom = from;
@@ -86,4 +88,11 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
       line,
     });
   }
+  // The first hikers to land on a tile trigger its card.
+  if (firstHere)
+    revealTile(
+      state,
+      action.toTileId,
+      group.map((h) => h.id),
+    );
 }

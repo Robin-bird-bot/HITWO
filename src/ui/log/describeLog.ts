@@ -3,8 +3,16 @@
  * A move and the stat costs that follow it become one line:
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
-import { ITEMS } from '../../content';
-import type { GameEvent, GameState, HikerId, NodeKind, StatName } from '../../engine';
+import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import {
+  paidCause,
+  type ChallengePaid,
+  type GameEvent,
+  type GameState,
+  type HikerId,
+  type NodeKind,
+  type StatName,
+} from '../../engine';
 import { NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
 import { resourceName, resourcesTitle } from '../scavenge/cardLook';
@@ -12,7 +20,8 @@ import { resourceName, resourcesTitle } from '../scavenge/cardLook';
 export interface LogLine {
   id: number;
   text: string;
-  tone: 'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'scavenge' | 'debug';
+  tone:
+    'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'scavenge' | 'challenge' | 'debug';
 }
 
 const STAT_LABEL: Record<StatName, string> = {
@@ -47,6 +56,20 @@ function listNames(names: string[]): string {
 }
 
 type StatEvent = Extract<GameEvent, { kind: 'stat' }>;
+
+const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
+
+/** "1 food card", "Trail Mix and 2 Wood", "2 Energy". */
+export function describePaid(paid: ChallengePaid): string {
+  const parts: string[] = [];
+  for (const id of paid.items) parts.push(`a ${ITEMS[id]?.name ?? id}`);
+  if (paid.resources.length) parts.push(titleCase(resourcesTitle(paid.resources)));
+  if (paid.caps) parts.push(`${paid.caps} cap${paid.caps === 1 ? '' : 's'}`);
+  for (const [stat, n] of Object.entries(paid.stats) as [StatName, number][]) {
+    parts.push(`${n} ${STAT_LABEL[stat]}`);
+  }
+  return parts.length ? listNames(parts) : 'nothing';
+}
 
 export function describeLog(state: GameState, limit = 10): LogLine[] {
   const name = (id: HikerId) => state.hikers.find((h) => h.id === id)?.name ?? 'A hiker';
@@ -203,6 +226,55 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
       case 'phase':
         lines.push({ id: e.id, text: `Day ${e.day} · ${PHASE_LABEL[e.phase]}`, tone: 'phase' });
         break;
+      case 'challenge': {
+        const card = CARDS[e.cardId]?.name ?? 'A challenge';
+        // The stat costs it paid are already in this line.
+        while (i < events.length) {
+          const next = events[i];
+          if (next?.kind !== 'stat' || next.cause !== paidCause(card)) break;
+          i += 1;
+        }
+        const parts = e.results.map((r) => {
+          const who = r.hikerId ? name(r.hikerId) : 'the party';
+          if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
+          const paid = r.paid ? describePaid(r.paid) : 'nothing';
+          return paid === 'nothing' ? `${who} passed` : `${who} paid ${paid}`;
+        });
+        lines.push({
+          id: e.id,
+          text: `${card}: ${parts.length ? parts.join(' · ') : 'nobody here was affected'}.`,
+          tone: 'challenge',
+        });
+        break;
+      }
+      case 'condition': {
+        const def = CONDITIONS[e.condition];
+        const unit = `${UNIT_WORD[e.unit]}${e.remaining === 1 ? '' : 's'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} is ${def?.name ?? e.condition} for ${e.remaining} ${unit} (${e.cause}).`,
+          tone: def?.kind === 'positive' ? 'rest' : 'injury',
+        });
+        break;
+      }
+      case 'conditionEnded':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} is no longer ${CONDITIONS[e.condition]?.name ?? e.condition}.`,
+          tone: 'drain',
+        });
+        break;
+      case 'lost': {
+        const what: string[] = [];
+        if (e.resources.length) what.push(titleCase(resourcesTitle(e.resources)));
+        for (const id of e.items) what.push(`a ${ITEMS[id]?.name ?? id}`);
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} lost ${listNames(what)} (${e.cause}).`,
+          tone: 'injury',
+        });
+        break;
+      }
       case 'debug':
         lines.push({ id: e.id, text: `Debug: ${e.note}.`, tone: 'debug' });
         break;

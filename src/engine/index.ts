@@ -43,3 +43,15 @@ export { amount, rollCard, scaledRange, notBuiltYet, type CardRolls } from './ch
 export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
 export { hasCondition } from './conditions';
 export type * from './challenges/types';
+export {
+  challengeHikers,
+  challengeSections,
+  giftCount,
+  giftFits,
+  openCardDef,
+  optionShortfall,
+  paidCause,
+  requirementNeed,
+  resourceFits,
+} from './challenges/resolve';
+export { foodCarried } from './challenges/applyEffects';

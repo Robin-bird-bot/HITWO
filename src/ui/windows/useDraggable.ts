@@ -37,10 +37,24 @@ function baseBox(el: HTMLElement, fit: StageFit, offset: Offset): Box {
   };
 }
 
-export function useDraggable<T extends HTMLElement>(id: WindowId | undefined) {
+export interface DragOptions {
+  /** Let the window go partly off the stage, keeping this many pixels on it. */
+  keepOnStage?: number;
+  /** Remember where it was left (the default). A pop-up that should always open centered doesn't. */
+  remember?: boolean;
+}
+
+export function useDraggable<T extends HTMLElement>(
+  id: WindowId | undefined,
+  { keepOnStage, remember = true }: DragOptions = {},
+) {
   const ref = useRef<T>(null);
   const fit = useStage();
-  const [saved, setSaved, reset] = useWindowOffset(id);
+  const stored = useWindowOffset(remember ? id : undefined);
+  const local = useState<Offset>({ x: 0, y: 0 });
+  const [saved, setSaved, reset] = remember
+    ? stored
+    : ([local[0], local[1], () => local[1]({ x: 0, y: 0 })] as const);
   const [live, setLive] = useState<Offset | null>(null);
   const drag = useRef<DragState | null>(null);
   const offset = live ?? saved;
@@ -52,14 +66,14 @@ export function useDraggable<T extends HTMLElement>(id: WindowId | undefined) {
     const check = () => {
       // A window that was never moved sits where the layout put it.
       if (drag.current || (!saved.x && !saved.y)) return;
-      const fixed = placeWindow(baseBox(el, fit, saved), saved, false);
+      const fixed = placeWindow(baseBox(el, fit, saved), saved, false, keepOnStage);
       if (fixed.x !== saved.x || fixed.y !== saved.y) setSaved(fixed);
     };
     check();
     const observer = new ResizeObserver(check);
     observer.observe(el);
     return () => observer.disconnect();
-  }, [id, saved, setSaved, fit]);
+  }, [id, saved, setSaved, fit, keepOnStage]);
 
   const onPointerDown = (e: ReactPointerEvent<T>) => {
     const el = ref.current;
@@ -83,7 +97,7 @@ export function useDraggable<T extends HTMLElement>(id: WindowId | undefined) {
     if (!d || e.pointerId !== d.pointerId) return;
     const dx = (e.clientX - d.startX) / fit.scale;
     const dy = (e.clientY - d.startY) / fit.scale;
-    setLive(placeWindow(d.base, { x: d.from.x + dx, y: d.from.y + dy }));
+    setLive(placeWindow(d.base, { x: d.from.x + dx, y: d.from.y + dy }, true, keepOnStage));
   };
 
   const end = (e: ReactPointerEvent<T>) => {
@@ -96,8 +110,10 @@ export function useDraggable<T extends HTMLElement>(id: WindowId | undefined) {
   };
 
   const onDoubleClick = (e: React.MouseEvent<T>) => {
-    const target = e.target as Element;
-    if (!target.closest('[data-drag-handle]') || target.closest(NOT_A_HANDLE)) return;
+    // The pointer capture from the drag sends the double-click to the window
+    // itself, so look at what's actually under the pointer.
+    const under = document.elementFromPoint(e.clientX, e.clientY) ?? (e.target as Element);
+    if (!under.closest('[data-drag-handle]') || under.closest(NOT_A_HANDLE)) return;
     reset();
   };
 

@@ -30,6 +30,23 @@ describe('placing a dragged window', () => {
   });
 });
 
+describe('dragging a stage-sized pop-up aside (the challenge pop-up)', () => {
+  const big = { x: 120, y: 10, w: 1360, h: 980 };
+
+  it('can go partly off the stage, keeping 120 px on it', () => {
+    expect(placeWindow(big, { x: 900, y: 0 }, false, 120)).toEqual({ x: 900, y: 0 });
+    // Its left edge can go as far right as 1600 − 120, so 120 px stay on.
+    expect(placeWindow(big, { x: 5000, y: 0 }, false, 120).x).toBe(1600 - 120 - big.x);
+    // And its right edge as far left as 120.
+    expect(placeWindow(big, { x: -5000, y: 0 }, false, 120).x).toBe(120 - big.w - big.x);
+  });
+
+  it('never lets its title bar go above the stage', () => {
+    expect(placeWindow(big, { x: 0, y: -300 }, false, 120)).toEqual({ x: 0, y: -10 });
+    expect(placeWindow(big, { x: 0, y: 5000 }, false, 120)).toEqual({ x: 0, y: 1000 - 120 - 10 });
+  });
+});
+
 describe('remembering window positions', () => {
   const memory = () => {
     const data = new Map<string, string>();

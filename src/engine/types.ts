@@ -304,6 +304,57 @@ export interface CardRolls {
   luck: number;
 }
 
+/**
+ * A challenge waiting on the party (Phase 5). It opens when the first hiker
+ * lands on a tile and blocks everything else until it's resolved.
+ */
+export interface OpenChallenge {
+  cardId: string;
+  tileId: TileId;
+  /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
+  tier: 1 | 2 | 3;
+  scale: number;
+  /** The hikers on the tile when it was revealed: only they're affected. */
+  hikerIds: HikerId[];
+  rolls: CardRolls;
+  /** Opened on a Challenge space: passing hikers get a reward (step 3). */
+  special?: 'challenge';
+  /** A Choice space's other challenge (step 3). */
+  alternative?: string;
+}
+
+/** A tile a hiker landed on while a challenge was open: it opens next. */
+export interface QueuedReveal {
+  tileId: TileId;
+  hikerIds: HikerId[];
+}
+
+/** One thing handed in toward a challenge cost, into requirement `req` of the option. */
+export type Gift =
+  | { kind: 'resource'; req: number; from: HikerId; resource: ResourceId; count: number }
+  | { kind: 'item'; req: number; from: HikerId; uid: string }
+  | { kind: 'caps'; req: number; count: number }
+  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number };
+
+/** What the party decided for one section of the pop-up. */
+export interface ChallengeSection {
+  /** The hiker this section judges; left out on a party challenge. */
+  hikerId?: HikerId;
+  /** Pay the cost, or take the penalty. */
+  pay: boolean;
+  /** Which cost option ("or" alternative) was paid. */
+  option?: number;
+  gifts: Gift[];
+}
+
+/** What a section paid, for the trail log. */
+export interface ChallengePaid {
+  resources: ResourceId[];
+  items: ItemId[];
+  caps: number;
+  stats: Partial<Record<StatName, number>>;
+}
+
 /** A Trial in progress (step 4 of Phase 5 fills in the rest). */
 export interface ActiveTrial {
   uid: string;
@@ -358,6 +409,8 @@ export type Action =
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   | { type: 'endPhase' }
+  /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
+  | { type: 'resolveChallenge'; sections: ChallengeSection[] }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -385,7 +438,13 @@ export type DebugOp =
       unit: ConditionInstance['unit'];
     }
   /** Takes every condition off a hiker. */
-  | { kind: 'clearConditions'; hikerId: HikerId };
+  | { kind: 'clearConditions'; hikerId: HikerId }
+  /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
+  | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  /** Shows the rolled X and Y numbers in the challenge pop-up. */
+  | { kind: 'showRolls'; on: boolean }
+  /** Turns challenges off (landing on a new tile opens nothing) or back on. */
+  | { kind: 'setChallenges'; on: boolean };
 
 export type ActionType = Action['type'];
 
@@ -434,6 +493,16 @@ export type GameEventBody =
       cause: string;
     }
   | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** A hiker landed on a new tile and its challenge opened. */
+  | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
+  /** A challenge was resolved: who passed, and what they paid. */
+  | {
+      kind: 'challenge';
+      cardId: string;
+      tileId: TileId;
+      party: boolean;
+      results: { hikerId?: HikerId; passed: boolean; paid?: ChallengePaid; xp?: number }[];
+    }
   /** Resources or items a challenge took (or gave). */
   | {
       kind: 'lost';
@@ -470,6 +539,14 @@ export interface GameState {
   debugDeal?: ScavengeCardType[];
   /** Challenges, Trials and opportunities already seen in this section (no repeats). */
   usedCards: string[];
+  /** The challenge waiting on the party, if any. Nothing else can happen until it's done. */
+  challenge?: OpenChallenge;
+  /** Tiles landed on while a challenge was open (a hiker swept onto one): they open next. */
+  challengeQueue?: QueuedReveal[];
+  /** Debug only: show the rolled numbers in the challenge pop-up. */
+  debugRolls?: true;
+  /** Debug and tests only: landing on a new tile opens no challenge. */
+  noChallenges?: true;
   /** Trials in progress (at most BALANCE.challenges.maxTrials). */
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */

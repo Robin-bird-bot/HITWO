@@ -100,6 +100,43 @@ describe('trail log sentences', () => {
     expect(texts(s)).toEqual(['Hiker 2 used Stoic (−2 Morale).']);
   });
 
+  it('describe a challenge, folding in what was paid, then its penalties (Phase 5)', () => {
+    const s = fixtureGame({ challenges: true });
+    place(s, 'ash', 'L');
+    place(s, 'birch', 'L');
+    let g = run(s, {
+      type: 'debug',
+      op: { kind: 'openChallenge', cardId: 'steep-trail', tileId: 'L' },
+    });
+    // Birch fails; find a seed where the 60% chance makes Birch Strained.
+    for (let seed = 1; seed < 50; seed++) {
+      const tryIt = run(
+        { ...g, rng: fixtureGame({ seed }).rng },
+        {
+          type: 'resolveChallenge',
+          sections: [
+            {
+              hikerId: 'ash',
+              pay: true,
+              option: 0,
+              gifts: [{ kind: 'stat', req: 0, from: 'ash', stat: 'energy', count: 2 }],
+            },
+            { hikerId: 'birch', pay: false, gifts: [] },
+          ],
+        },
+      );
+      if (tryIt.hikers.some((h) => h.conditions.length)) {
+        g = tryIt;
+        break;
+      }
+    }
+    const days = g.log.find((e) => e.kind === 'condition');
+    expect(texts(g).slice(-2)).toEqual([
+      'Steep Trail: Ash paid 2 Energy · Birch failed.',
+      `Birch is Strained for ${days?.kind === 'condition' ? days.remaining : '?'} day${days?.kind === 'condition' && days.remaining === 1 ? '' : 's'} (Steep Trail).`,
+    ]);
+  });
+
   it('keep only the most recent lines', () => {
     let s = fixtureGame();
     for (let i = 0; i < 9; i++) s = applyAction(s, { type: 'endPhase' });

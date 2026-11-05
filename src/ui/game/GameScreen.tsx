@@ -43,6 +43,7 @@ import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel, type StashPick } from '../panels/TurnPanel';
+import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -376,6 +377,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           onClose={closeScavenge}
         />
       )}
+
+      {state.challenge && <ChallengeWindow state={state} simple={simple} onResolve={dispatch} />}
 
       {confirmEnd && (
         <ConfirmDialog

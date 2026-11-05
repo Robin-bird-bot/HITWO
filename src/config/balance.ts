@@ -183,6 +183,13 @@ export const BALANCE = {
     weights: {} as Record<string, number>,
     /** XP for passing a challenge: this × the trail tier (the XP table). */
     passXpPerTier: 2,
+    /**
+     * Special spaces that never get a card when a hiker lands on them.
+     * TODO(wyatt): do Trail Sign, Geo-cache, Campsite, Overlook, Narrow Path and
+     * Mystery tiles also have a challenge? For now every tile does, except the
+     * trailhead and the checkpoint.
+     */
+    noCardOn: [] as readonly SpecialSpace[],
   },
 
   luck: {

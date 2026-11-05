@@ -7,7 +7,7 @@
  * traits, the next scavenge, Abundance and conditions.
  */
 import { useEffect, useState } from 'react';
-import { CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
+import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { BALANCE } from '../../config/balance';
 import {
@@ -15,6 +15,7 @@ import {
   PHASES,
   STAT_NAMES,
   type Action,
+  type ChallengeDef,
   type GameState,
   type Hiker,
   type NodeType,
@@ -207,6 +208,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Challenges</h3>
+        <ChallengeTools state={state} onApply={run} />
         <div className={styles.row}>
           <a className={styles.button} href="#debug-challenges">
             Every challenge and Trial
@@ -291,6 +293,88 @@ function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Act
         Set trait
       </button>
     </div>
+  );
+}
+
+/**
+ * Open any challenge on a hiker's tile (for the hikers there), show the rolled
+ * numbers in the pop-up, or switch challenges off to test other things.
+ */
+function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(state.hikers[0]?.id ?? '');
+  const [cardId, setCardId] = useState('flies');
+  const hiker = state.hikers.find((h) => h.id === hikerId);
+  const cards = Object.values(CARDS)
+    .filter((c): c is ChallengeDef => c.kind === 'challenge' && !c.risk)
+    .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
+  const tier = { 1: 'I', 2: 'II', 3: 'III' } as const;
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={cardId}
+          onChange={(e) => setCardId(e.target.value)}
+          aria-label="Challenge"
+        >
+          {cards.map((c) => (
+            <option key={c.id} value={c.id}>
+              {tier[c.tier]} · {c.name} ({c.scope === 'party' ? 'party' : 'each'})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={hikerId}
+          onChange={(e) => setHikerId(e.target.value)}
+          aria-label="On this hiker’s tile"
+        >
+          {state.hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              On {h.name}’s tile
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!hiker}
+          onClick={() =>
+            hiker &&
+            onApply({
+              type: 'debug',
+              op: { kind: 'openChallenge', cardId, tileId: hiker.tileId },
+            })
+          }
+        >
+          Trigger a challenge here
+        </button>
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          aria-pressed={!!state.debugRolls}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'showRolls', on: !state.debugRolls } })
+          }
+        >
+          Show rolls
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          aria-pressed={!state.noChallenges}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'setChallenges', on: !!state.noChallenges } })
+          }
+        >
+          Challenges {state.noChallenges ? 'off' : 'on'}
+        </button>
+      </div>
+    </>
   );
 }
 

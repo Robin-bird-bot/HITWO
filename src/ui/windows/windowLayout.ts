@@ -12,6 +12,7 @@ export const WINDOW_KEY = 'hike-in-the-woods/windows';
 
 /** Every window that can be dragged. Pop-outs keep their offset from wherever they open. */
 export type WindowId =
+  | 'challenge'
   | 'party'
   | 'turn'
   | 'log'
@@ -45,16 +46,21 @@ const ZERO: Offset = { x: 0, y: 0 };
 /**
  * Where a window ends up: kept fully on the stage, and snapped to the gutter
  * when it's dragged close to an edge.
+ *
+ * `keep`: a window nearly as big as the stage (the challenge pop-up) can be
+ * dragged aside, partly off the stage, as long as this many pixels of it stay
+ * on. Its top never goes above the stage, so the title bar can't be lost.
  */
-export function placeWindow(base: Box, wanted: Offset, snap = true): Offset {
+export function placeWindow(base: Box, wanted: Offset, snap = true, keep?: number): Offset {
   let x = base.x + wanted.x;
   let y = base.y + wanted.y;
-  const maxX = Math.max(0, STAGE_WIDTH - base.w);
-  const maxY = Math.max(0, STAGE_HEIGHT - base.h);
+  const minX = keep === undefined ? 0 : keep - base.w;
+  const maxX = keep === undefined ? Math.max(0, STAGE_WIDTH - base.w) : STAGE_WIDTH - keep;
+  const maxY = keep === undefined ? Math.max(0, STAGE_HEIGHT - base.h) : STAGE_HEIGHT - keep;
 
   if (snap) [x, y] = snapToGutter(x, y, base);
 
-  x = Math.min(maxX, Math.max(0, x));
+  x = Math.min(maxX, Math.max(minX, x));
   y = Math.min(maxY, Math.max(0, y));
   return { x: Math.round(x - base.x), y: Math.round(y - base.y) };
 }

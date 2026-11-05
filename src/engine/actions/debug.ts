@@ -1,5 +1,7 @@
 import { BALANCE } from '../../config/balance';
+import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
+import { openCard } from '../challenges/reveal';
 import { addCondition } from '../conditions';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
@@ -84,6 +86,31 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Cleared ${hiker.name}'s conditions` });
       break;
     }
+    case 'openChallenge': {
+      const card = CARDS[op.cardId];
+      const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');
+      if (!card || !here.length) return;
+      delete state.challenge;
+      const tier = card.tier;
+      openCard(
+        state,
+        card,
+        op.tileId,
+        here.map((h) => h.id),
+        { tier, scale: 1 },
+      );
+      pushEvent(state, { kind: 'debug', note: `Opened ${card.name}` });
+      break;
+    }
+    case 'showRolls':
+      if (op.on) state.debugRolls = true;
+      else delete state.debugRolls;
+      break;
+    case 'setChallenges':
+      if (op.on) delete state.noChallenges;
+      else state.noChallenges = true;
+      pushEvent(state, { kind: 'debug', note: `Challenges ${op.on ? 'on' : 'off'}` });
+      break;
     case 'setAbundance': {
       for (const [node, value] of Object.entries(op.abundance) as [NodeType, number][]) {
         state.abundance[node] = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(value)));
