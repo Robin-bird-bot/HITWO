@@ -3,8 +3,8 @@
  *
  * - Stats run 0–10. A gain stops at 10 (positive conditions can push past it
  *   in Phase 6; a stat already above 10 isn't pulled back down by a gain).
- * - Reaching 0 gives an injury. Gaining an injury raises every stat below 5
- *   back up to 5.
+ * - Energy or Appetite reaching 0 gives an injury. Morale just stops at 0
+ *   (Wyatt, Nov 5). Gaining an injury raises every stat below 5 back up to 5.
  * - The 3rd injury makes the hiker pass out.
  * - Changes resolve one at a time: each finishes, injury included, before the
  *   next starts (Wyatt, Nov 3).
@@ -31,7 +31,8 @@ export function changeStat(
   pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
 
   if (stat === 'morale') fireMoraleChange(state, hiker, to - from, cause);
-  if (to === BALANCE.stats.min && delta < 0) addInjury(state, hiker, `${stat} hit 0`);
+  const injures = BALANCE.injuries.fromStats.includes(stat);
+  if (injures && to === BALANCE.stats.min && delta < 0) addInjury(state, hiker, `${stat} hit 0`);
 }
 
 export function addInjury(state: GameState, hiker: Hiker, cause: string): void {

@@ -8,9 +8,10 @@ import {
   adjacentTileIds,
   hikersOnTile,
   isSheltered,
+  moraleLuck,
   moveCost,
   scavengeCost,
-  tendAmount,
+  tendCost,
   tendableNodes,
   thresholdStates,
   validateAction,
@@ -76,7 +77,9 @@ export function statNote(stat: StatName, value: number): string {
     if (value <= T.hungry) return `Famished at ${T.famished}`;
     return `Hungry at ${T.hungry}`;
   }
-  return 'Injury at 0';
+  // Morale: no injury at 0 (Wyatt, Nov 5); it sets the hiker's base Luck instead.
+  const luck = moraleLuck(value);
+  return luck === 0 ? 'Luck 0' : `Luck ${luck > 0 ? '+' : '−'}${Math.abs(luck)}`;
 }
 
 export interface ConditionChip {
@@ -263,7 +266,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     id: 'tend',
     label: 'Tend',
     icon: 'sprout',
-    sub: `+${tendAmount(state, h)} Abundance`,
+    sub: `−${tendCost(state, h)} Energy`,
     status: tendReason ? 'blocked' : 'ready',
     ...(tendReason ? { reason: tendReason } : {}),
   };

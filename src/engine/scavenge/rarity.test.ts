@@ -19,6 +19,10 @@ describe('rarity odds', () => {
     expect(asPercent(rarityOdds(5))).toEqual(row(5));
   });
 
+  it('handle fractional Luck from Morale', () => {
+    expect(rarityOdds(1.2).common).toBeCloseTo(0.69, 5); // 75 − 25 × 1.2 / 5
+  });
+
   it('move a fifth of the way per point of Luck', () => {
     const at2 = rarityOdds(2);
     expect(at2.common).toBeCloseTo(0.65, 5); // 75 → 50, two fifths of the way
@@ -65,15 +69,17 @@ describe('rarity odds', () => {
   });
 });
 
-describe('Luck from Morale (Wyatt, Nov 4: gentle)', () => {
+describe('Luck from Morale (Wyatt, Nov 5: −2 at 0, 0 at 5, +2 at 10)', () => {
   it.each([
-    [10, 1],
-    [7, 1],
-    [6, 0],
-    [4, 0],
-    [3, -1],
-    [0, -1],
-  ])('Morale %i gives Luck %i', (morale, luck) => {
+    [10, 2],
+    [12, 2],
+    [8, 1.2],
+    [6, 0.4],
+    [5, 0],
+    [3, -0.8],
+    [1, -1.6],
+    [0, -2],
+  ])('Morale %i gives Luck %d', (morale, luck) => {
     expect(moraleLuck(morale)).toBe(luck);
   });
 });

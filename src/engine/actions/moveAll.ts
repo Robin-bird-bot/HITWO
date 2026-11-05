@@ -6,6 +6,7 @@ import type { Action, GameState } from '../types';
 import {
   enterTile,
   findHiker,
+  moraleCostReason,
   mustFindHiker,
   payCost,
   phaseActionReason,
@@ -36,6 +37,13 @@ export function validateMoveAll(state: GameState, action: MoveAllAction): string
     if (b.acted) return `${b.name} has already acted this ${state.phase}.`;
     const blocked = canActReason(state, b, { action, role: 'brought', phase: state.phase });
     if (blocked) return `${b.name} can’t come along. ${blocked}`;
+  }
+  // Rough lines cost each crosser Morale; nobody at 0 Morale can pay it.
+  for (const { hikerId, cost } of moveAllCost(state, mover.id, action.toTileId, action.bring) ??
+    []) {
+    const h = findHiker(state, hikerId);
+    const why = h && moraleCostReason(h, cost.morale);
+    if (why) return why;
   }
   return undefined;
 }

@@ -84,6 +84,8 @@ export const BALANCE = {
 
   injuries: {
     passOutAt: 3,
+    /** Stats that give an injury when they hit 0 (Wyatt, Nov 5: not Morale, which stops at 0). */
+    fromStats: ['energy', 'appetite'] as StatName[],
     /** Gaining an injury raises each stat below this back up to it. */
     raiseStatsBelowTo: 5,
   },
@@ -164,12 +166,11 @@ export const BALANCE = {
     /** Luck is clamped to this range. */
     min: -5,
     max: 5,
-    /** Luck from Morale (Wyatt, Nov 4: gentle). The first row whose Morale is reached applies. */
-    fromMorale: [
-      { morale: 7, luck: 1 },
-      { morale: 4, luck: 0 },
-      { morale: 0, luck: -1 },
-    ],
+    /**
+     * Morale sets a base Luck (Wyatt, Nov 5): this at Morale 0 and at Morale
+     * 10, in even steps between (−2 → 0 at Morale 5 → +2, 0.4 per point).
+     */
+    fromMorale: { atZero: -2, atTen: 2 },
   },
 
   abundance: {
@@ -183,6 +184,8 @@ export const BALANCE = {
     bountyExtraDrain: 1,
     /** Tend restores this much to one node on the tile (day only). TODO(wyatt): first guess. */
     tend: 2,
+    /** Tend costs this much Energy (Wyatt, Nov 5). */
+    tendEnergy: 1,
     /** Each night, every node nobody scavenged that day recovers this much. */
     nightRecovery: 1,
     /** Returning a resource to nature restores this much to its node. */
@@ -215,9 +218,10 @@ export const BALANCE = {
     appetite: 1,
   },
 
+  /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
   sleep: {
-    energy: 2,
-    shelteredEnergy: 3,
+    energy: 1,
+    shelteredEnergy: 2,
   },
 
   chance: {

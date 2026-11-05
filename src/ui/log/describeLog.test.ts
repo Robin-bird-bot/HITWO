@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { applyAction, createGame, type Action, type GameState } from '../../engine';
-import { fixtureGame, place, run } from '../../engine/test/fixtures';
+import { fixtureGame, place, run, toNight } from '../../engine/test/fixtures';
 import { describeLog, signed } from './describeLog';
 
 const texts = (s: GameState) => describeLog(s, 50).map((l) => l.text);
@@ -41,7 +41,7 @@ describe('trail log sentences', () => {
       { type: 'returnToNature', hikerId: 'ash', resource: 'wood' },
     );
     expect(texts(after)).toEqual([
-      'Ash tended the Forest (Forest Abundance 3 → 5).',
+      'Ash tended the Forest (Forest Abundance 3 → 5, −1 Energy).',
       'Ash gave Wood to Birch.',
       'Ash returned Wood to nature (+1 Forest).',
     ]);
@@ -80,11 +80,12 @@ describe('trail log sentences', () => {
   });
 
   it('explain injuries', () => {
+    // Ash goes without sleep at Energy 1: −2 takes Energy to 0.
     const s0 = fixtureGame();
-    place(s0, 'ash', 'M', { morale: 1 });
-    const s = run(s0, { type: 'move', hikerId: 'ash', toTileId: 'R' });
-    expect(texts(s).at(-1)).toBe(
-      'Ash took an injury (morale hit 0): 1 of 3. Stats below 5 rise to 5.',
+    place(s0, 'ash', 'L', { energy: 1 });
+    const s = run(toNight(s0), { type: 'endPhase' });
+    expect(texts(s)).toContain(
+      'Ash took an injury (energy hit 0): 1 of 3. Stats below 5 rise to 5.',
     );
   });
 

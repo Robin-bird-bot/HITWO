@@ -6,6 +6,7 @@ import type { Action, GameState } from '../types';
 import {
   enterTile,
   findHiker,
+  moraleCostReason,
   mustFindHiker,
   payCost,
   phaseActionReason,
@@ -22,7 +23,9 @@ export function validateMove(state: GameState, action: MoveAction): string | und
   if (!lineBetween(state.section, hiker.tileId, action.toTileId)) {
     return 'That tile isn’t connected to this one.';
   }
-  return tileEntryReason(state, action.toTileId);
+  const entry = tileEntryReason(state, action.toTileId);
+  if (entry) return entry;
+  return moraleCostReason(hiker, moveCost(state, hiker.id, action.toTileId)?.morale ?? 0);
 }
 
 export function applyMove(state: GameState, action: MoveAction): void {

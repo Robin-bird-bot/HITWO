@@ -1,20 +1,27 @@
 /**
- * Luck and rarity odds (Wyatt, Nov 4). Luck is measured in whole steps; each
- * step moves the odds a fifth of the way from the Luck 0 row toward the
- * Luck +5 row (or toward the Luck −5 row when negative).
+ * Luck and rarity odds (Wyatt, Nov 4). Each point of Luck moves the odds a
+ * fifth of the way from the Luck 0 row toward the Luck +5 row (or toward the
+ * Luck −5 row when negative). Luck can be fractional: Morale gives 0.4 per
+ * point (Nov 5).
  */
 import { BALANCE } from '../../config/balance';
 import { weightedPick } from '../rng';
 import { RARITIES, type Rarity, type RngState } from '../types';
 
 export function clampLuck(luck: number): number {
-  return Math.max(BALANCE.luck.min, Math.min(BALANCE.luck.max, Math.round(luck)));
+  return Math.max(BALANCE.luck.min, Math.min(BALANCE.luck.max, luck));
 }
 
-/** Luck from Morale alone: +1 at 7 or more, 0 at 4–6, −1 at 3 or less. */
+/**
+ * Base Luck from Morale: −2 at 0, 0 at 5, +2 at 10, in even steps (Wyatt,
+ * Nov 5). Morale above 10 (from a positive condition) counts as 10.
+ */
 export function moraleLuck(morale: number): number {
-  for (const row of BALANCE.luck.fromMorale) if (morale >= row.morale) return row.luck;
-  return BALANCE.luck.fromMorale.at(-1)?.luck ?? 0;
+  const { atZero, atTen } = BALANCE.luck.fromMorale;
+  const m = Math.max(BALANCE.stats.min, Math.min(BALANCE.stats.max, morale));
+  const luck = atZero + ((atTen - atZero) * m) / BALANCE.stats.max;
+  // Keep one decimal so 0.4 steps don't pick up floating-point dust.
+  return Math.round(luck * 10) / 10;
 }
 
 /** Each rarity's chance (0–1, adding up to 1) at this Luck. */

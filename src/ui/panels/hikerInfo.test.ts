@@ -41,7 +41,7 @@ describe('action grid', () => {
   it('readies Sleep at night, showing the Energy it gives', () => {
     expect(byId(toNight(fixtureGame()), 'ash').sleep).toMatchObject({
       status: 'ready',
-      sub: '+2 Energy',
+      sub: '+1 Energy',
     });
   });
 
@@ -64,6 +64,8 @@ describe('hiker card details', () => {
     expect(statNote('energy', 8)).toBe('Fatigued at 6');
     expect(statNote('energy', 5)).toBe('Exhausted at 3');
     expect(statNote('appetite', 2)).toBe('Famished');
+    expect(statNote('morale', 8)).toBe('Luck +1.2');
+    expect(statNote('morale', 0)).toBe('Luck −2');
   });
 
   it('shows threshold states and injuries as condition icons', () => {

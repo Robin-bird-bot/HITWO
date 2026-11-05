@@ -72,11 +72,19 @@ describe('changeStat', () => {
     expect(h.stats.appetite).toBe(4);
   });
 
+  it('stops Morale at 0 with no injury (Wyatt, Nov 5)', () => {
+    const s = fixtureGame();
+    const h = hiker(s, 'ash');
+    changeStat(s, h, 'morale', -15, 'test');
+    expect(h.stats.morale).toBe(0);
+    expect(h.injuries).toBe(0);
+  });
+
   it('makes the hiker pass out on the 3rd injury', () => {
     const s = fixtureGame();
     const h = hiker(s, 'ash');
     h.injuries = 2;
-    changeStat(s, h, 'morale', -10, 'test');
+    changeStat(s, h, 'energy', -10, 'test');
     expect(h.injuries).toBe(3);
     expect(h.status).toBe('passedOut');
     expect(s.log.map((e) => e.kind)).toContain('passedOut');

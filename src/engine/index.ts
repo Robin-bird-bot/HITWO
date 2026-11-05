@@ -37,4 +37,4 @@ export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
 export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/scavenge';
 export { isLow } from './abundance';
-export { tendAmount, tendableNodes } from './actions/tend';
+export { tendAmount, tendCost, tendableNodes } from './actions/tend';

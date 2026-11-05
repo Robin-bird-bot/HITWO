@@ -11,6 +11,7 @@ import {
   hikersWhoHaventActed,
   isSheltered,
   tendAmount,
+  tendCost,
   tendableNodes,
   type Action,
   type GameState,
@@ -248,6 +249,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     slot = (
       <TendPicker
         gain={gain}
+        energy={tendCost(state, selected)}
         nodes={tendableNodes(state, selected).map((node) => {
           const from = state.abundance[node];
           return { node, from, to: Math.min(max, from + gain), full: from >= max };

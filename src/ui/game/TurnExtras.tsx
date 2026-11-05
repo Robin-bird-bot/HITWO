@@ -89,12 +89,14 @@ interface TendPickerProps {
   /** The tile's nodes with their meters. */
   nodes: { node: NodeType; from: number; to: number; full: boolean }[];
   gain: number;
+  /** Tend's Energy cost. */
+  energy: number;
   onTend(node: NodeType): void;
   onCancel(): void;
 }
 
 /** Tend: pick which node on this tile to restore. */
-export function TendPicker({ nodes, gain, onTend, onCancel }: TendPickerProps) {
+export function TendPicker({ nodes, gain, energy, onTend, onCancel }: TendPickerProps) {
   const firstRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     firstRef.current?.focus();
@@ -108,7 +110,9 @@ export function TendPicker({ nodes, gain, onTend, onCancel }: TendPickerProps) {
   const firstOpen = nodes.findIndex((n) => !n.full);
   return (
     <div className={styles.box}>
-      <span className={styles.kicker}>TEND · +{gain} ABUNDANCE</span>
+      <span className={styles.kicker}>
+        TEND · +{gain} ABUNDANCE · −{energy} ENERGY
+      </span>
       <div className={styles.list}>
         {nodes.map(({ node, from, to, full }, i) => {
           return (

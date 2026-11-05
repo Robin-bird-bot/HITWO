@@ -41,6 +41,12 @@ export function payCost(state: GameState, hiker: Hiker, cost: StatAmounts, cause
   changeStat(state, hiker, 'morale', -cost.morale, cause);
 }
 
+/** A hiker at 0 Morale can't do anything that costs Morale (Wyatt, Nov 5). */
+export function moraleCostReason(hiker: Hiker, moraleCost: number): string | undefined {
+  if (moraleCost <= 0 || hiker.stats.morale > 0) return undefined;
+  return `Morale 0: ${hiker.name} can’t do anything that costs Morale.`;
+}
+
 /** Why a hiker can't step onto a tile, whatever the line (the checkpoint, for now). */
 export function tileEntryReason(state: GameState, tileId: TileId): string | undefined {
   const tile = state.section.tiles[tileId];

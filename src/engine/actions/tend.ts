@@ -1,13 +1,14 @@
 /**
  * Tend: restore Abundance for a node on this tile (daytime only; uses the
- * hiker's phase). docs/design/01-design-doc.md, "Days, phases and actions".
+ * hiker's phase; costs 1 Energy, Wyatt Nov 5).
+ * docs/design/01-design-doc.md, "Days, phases and actions".
  */
 import { BALANCE } from '../../config/balance';
 import { changeAbundance } from '../abundance';
-import { computeGain } from '../effects';
+import { computeCost, computeGain } from '../effects';
 import { pushEvent } from '../log';
 import type { Action, GameState, Hiker, NodeType } from '../types';
-import { findHiker, mustFindHiker, phaseActionReason } from './common';
+import { findHiker, mustFindHiker, payCost, phaseActionReason } from './common';
 
 type TendAction = Extract<Action, { type: 'tend' }>;
 
@@ -31,6 +32,22 @@ export function tendAmount(state: GameState, hiker: Hiker): number {
       phase: state.phase,
     },
     BALANCE.abundance.tend,
+  );
+}
+
+/** The Energy Tend costs this hiker. */
+export function tendCost(state: GameState, hiker: Hiker): number {
+  return computeCost(
+    state,
+    [hiker],
+    {
+      key: 'tend.energy',
+      actorId: hiker.id,
+      subjectId: hiker.id,
+      role: 'actor',
+      phase: state.phase,
+    },
+    BALANCE.abundance.tendEnergy,
   );
 }
 
@@ -67,4 +84,5 @@ export function applyTend(state: GameState, action: TendAction): void {
     from,
     to: state.abundance[action.node],
   });
+  payCost(state, hiker, { appetite: 0, energy: tendCost(state, hiker), morale: 0 }, 'Tend');
 }

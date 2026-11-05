@@ -85,13 +85,27 @@ describe('move rules', () => {
     expect(validateAction(s, move('ash', 'L'))).toBe('Ash has passed out.');
   });
 
-  it('allows a cost that takes a stat to 0, and the hiker takes the injury', () => {
+  it('lets a rough line take Morale to 0, with no injury (Wyatt, Nov 5)', () => {
     const s = fixtureGame();
     place(s, 'ash', 'M', { morale: 1 });
     const after = run(s, move('ash', 'R')); // rough: +1 Morale
     const h = hiker(after, 'ash');
-    expect(h.injuries).toBe(1);
-    expect(h.stats.morale).toBe(5);
+    expect(h.injuries).toBe(0);
+    expect(h.stats.morale).toBe(0);
+  });
+
+  it('won’t let a hiker at 0 Morale do anything that costs Morale', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'M', { morale: 0 });
+    expect(validateAction(s, move('ash', 'R'))).toBe(
+      'Morale 0: Ash can’t do anything that costs Morale.',
+    );
+    expect(validateAction(s, move('ash', 'L'))).toBeNull(); // muddy costs no Morale
+    place(s, 'birch', 'M', { morale: 0 });
+    place(s, 'ash', 'M', { morale: 5 });
+    expect(
+      validateAction(s, { type: 'moveAll', hikerId: 'ash', toTileId: 'R', bring: ['birch'] }),
+    ).toBe('Morale 0: Birch can’t do anything that costs Morale.');
   });
 });
 

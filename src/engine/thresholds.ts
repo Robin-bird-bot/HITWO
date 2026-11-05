@@ -98,7 +98,7 @@ export function thresholdSources(h: Hiker): EffectSource[] {
     });
   }
 
-  // Morale sets Luck (Wyatt, Nov 4: +1 at 7 or more, −1 at 3 or less).
+  // Morale sets a base Luck (Wyatt, Nov 5: −2 at 0, 0 at 5, +2 at 10).
   const luck = moraleLuck(h.stats.morale);
   if (luck !== 0) {
     const high = luck > 0;
@@ -109,7 +109,7 @@ export function thresholdSources(h: Hiker): EffectSource[] {
       hooks: {
         modifyScavenge: () => ({
           source: high ? 'High Morale' : 'Low Morale',
-          label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from ${high ? 'high' : 'low'} Morale (${h.stats.morale})`,
+          label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from Morale (${h.stats.morale})`,
           tone: high ? 'luck' : 'warning',
           luck,
         }),

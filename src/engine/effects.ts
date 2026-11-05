@@ -43,7 +43,9 @@ export type CostKey =
   | 'night.noSleepEnergy'
   | 'endOfDay.appetite'
   /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
-  | 'scavenge.appetite';
+  | 'scavenge.appetite'
+  /** Tend's Energy cost. */
+  | 'tend.energy';
 
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey =

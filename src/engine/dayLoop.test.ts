@@ -30,7 +30,7 @@ describe('the day loop', () => {
     expect(hiker(s, 'birch').stats).toEqual({ energy: 8, appetite: 9, morale: 10 });
   });
 
-  it('sleep gives +2 Energy, or +3 in a shelter', () => {
+  it('sleep gives +1 Energy, or +2 in a shelter (Wyatt, Nov 5)', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L', { energy: 5 });
     place(s, 'birch', 'R', { energy: 5 }); // R is a campsite
@@ -39,8 +39,8 @@ describe('the day loop', () => {
       { type: 'sleep', hikerId: 'ash' },
       { type: 'sleep', hikerId: 'birch' },
     );
-    expect(hiker(night, 'ash').stats.energy).toBe(7);
-    expect(hiker(night, 'birch').stats.energy).toBe(8);
+    expect(hiker(night, 'ash').stats.energy).toBe(6);
+    expect(hiker(night, 'birch').stats.energy).toBe(7);
   });
 
   it('only lets hikers sleep at night', () => {

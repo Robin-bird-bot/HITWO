@@ -49,8 +49,8 @@ Each day has three phases — Morning, Afternoon and Night — and every hiker t
 | Scavenge | ✓ | ✓ | Costs 1 Appetite. Draw 3, pick 1 (see Scavenging) |
 | Craft | ✓ | ✓ | Generic or from a known blueprint |
 | Sit by the Fire | ✓ | ✓ | +1 Morale per other hiker at the fire (max +3), +1 XP |
-| Tend | ✓ |  | Restore Abundance for a node on this tile |
-| Sleep |  | ✓ | +2 Energy, or +3 in a shelter. A night without sleep costs 2 Energy |
+| Tend | ✓ |  | Costs 1 Energy. Restore Abundance for a node on this tile |
+| Sleep |  | ✓ | +1 Energy, or +2 in a shelter. A night without sleep costs 2 Energy |
 | Keep Watch |  | ✓ | Protects hikers on this tile from night events |
 
 **Free actions** (no phase used): using an item, trading items or resources with hikers on the same tile, and teaching a known blueprint to a hiker on the same tile (costs Morale).
@@ -63,12 +63,12 @@ Every hiker has three stats on a 0–10 scale that start full and drop, plus up 
 
 | Stat | Drains from | Restored by | Threshold states | At 0 |
 | --- | --- | --- | --- | --- |
-| Energy | A night without sleep (−2), challenges, some trait costs | Sleeping (+2, or +3 in a shelter), some food | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
+| Energy | A night without sleep (−2), Tend (−1), challenges, some trait costs | Sleeping (+1, or +2 in a shelter), some food | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
 | Appetite | Each move (−1), each scavenge (−1), each night (−1); extra for night moves and moving the group | Food | Hungry at 5 or less; Famished at 2 or less | Take an injury |
 
 Energy works as a sleep meter and Appetite as the fuel for actions. What each threshold state does, and every condition, is in Traits and Conditions.
 
-**Morale** (0–10) drains and refills through morale traits, events, the fire and food. It sets the hiker's luck (see Characters), and at 0 the hiker takes an injury.
+**Morale** (0–10) drains and refills through morale traits, events, the fire and food. It sets the hiker's base Luck (see Characters). Morale stops at 0 with no injury, and a hiker at 0 Morale can't do anything that costs Morale.
 
 **Effect types**
 
@@ -103,7 +103,7 @@ One trait library covers everything: a character's starting traits, level-up cho
 
 **Class labels** (Tank, Support, Resourceful, Traveller, Survivalist) only summarize a character's traits and playstyle. They're used to filter characters when picking a party.
 
-**Luck.** Each hiker has a luck value that multiplies the odds of rare draws when scavenging and crafting. High Morale gives more Luck and low Morale gives less, for both scavenging and crafting (to start: +1 Luck at Morale 7 or more, −1 at 3 or less). When crafting, Luck shifts the item's Quality roll and the small chance of a higher tier. Traits and items can change it, including luck for one node type only.
+**Luck.** Each hiker has a luck value that multiplies the odds of rare draws when scavenging and crafting. Morale sets a base Luck for both scavenging and crafting: −2 at Morale 0, 0 at Morale 5 and +2 at Morale 10, in even steps between (0.4 per point). When crafting, Luck shifts the item's Quality roll and the small chance of a higher tier. Traits and items can change it, including luck for one node type only.
 
 **XP**
 

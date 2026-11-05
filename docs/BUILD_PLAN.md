@@ -194,7 +194,7 @@ This keeps the download small and lets numbers and text change.
 - **Draw weighting:**
   - Each card comes from one of the tile's nodes, picked by how many of that node the tile has and its Abundance. A node at 0 gives nothing.
   - Its rarity comes from Luck: the Luck 0 and Luck +5 rows in `balance.ts`, with each point in between moving a fifth of the way. Negative Luck pushes Common toward 85%.
-  - Morale sets Luck: +1 at 7 or more, −1 at 3 or less. Traits and items add to it.
+  - Morale sets a base Luck: −2 at Morale 0, 0 at 5, +2 at 10, in even steps (Wyatt, Nov 5). Traits and items add to it.
 - **Window:** keep it light, because scavenging happens constantly. It should feel like a quick overlay, not a page change.
   - A translucent panel (about 50% opacity) with `backdrop-filter: blur(18px)` over a barely dimmed map.
   - A short fade and scale in and out (about 150 ms).

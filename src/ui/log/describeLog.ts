@@ -116,13 +116,17 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
-      case 'tend':
+      case 'tend': {
+        const { taken, next } = takeStats(i, ['Tend']);
+        i = next;
+        const cost = costsOf(taken, e.hikerId);
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} tended the ${NODE_NAME[e.node]} (${NODE_NAME[e.node]} Abundance ${e.from} → ${e.to}).`,
+          text: `${name(e.hikerId)} tended the ${NODE_NAME[e.node]} (${NODE_NAME[e.node]} Abundance ${e.from} → ${e.to}${cost ? `, ${cost}` : ''}).`,
           tone: 'scavenge',
         });
         break;
+      }
       case 'give': {
         const what = e.resource
           ? resourceName(e.resource)
