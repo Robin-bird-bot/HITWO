@@ -81,6 +81,7 @@ export function createGame({
     caps: 0,
     abundance: freshAbundance(),
     scavengedToday: [],
+    usedCards: [],
     nextEventId: 1,
     log: [],
   };

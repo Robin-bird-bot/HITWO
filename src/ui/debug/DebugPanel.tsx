@@ -3,10 +3,11 @@
  * backtick key. Always available with the dev server; on the live site only
  * when the address has ?debug.
  *
- * Tools: a new game from a seed, phases, revealing the map, stats and resources.
+ * Tools: a new game from a seed, phases, revealing the map, stats, resources,
+ * traits, the next scavenge, Abundance and conditions.
  */
 import { useEffect, useState } from 'react';
-import { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
+import { CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { BALANCE } from '../../config/balance';
 import {
@@ -199,6 +200,20 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
         </div>
       </section>
 
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Conditions</h3>
+        <ConditionEditor hikers={state.hikers} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Challenges</h3>
+        <div className={styles.row}>
+          <a className={styles.button} href="#debug-challenges">
+            Every challenge and Trial
+          </a>
+        </div>
+      </section>
+
       {message && <p className={styles.message}>{message}</p>}
       <p className={styles.hint}>Press ` (backtick) to hide.</p>
     </aside>
@@ -276,6 +291,85 @@ function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Act
         Set trait
       </button>
     </div>
+  );
+}
+
+/** Give a hiker any condition for a while, or clear them all. */
+function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [conditionId, setConditionId] = useState('frozen');
+  const [remaining, setRemaining] = useState(2);
+  const [unit, setUnit] = useState<'phases' | 'days' | 'nights'>('phases');
+  const conditions = Object.values(CONDITIONS).sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={hikerId}
+          onChange={(e) => setHikerId(e.target.value)}
+          aria-label="Hiker"
+        >
+          {hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={conditionId}
+          onChange={(e) => setConditionId(e.target.value)}
+          aria-label="Condition"
+        >
+          {conditions.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.kind === 'positive' ? '+' : '−'})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.row}>
+        <input
+          className={styles.number}
+          type="number"
+          min={1}
+          max={9}
+          value={remaining}
+          onChange={(e) => setRemaining(Math.max(1, Number(e.target.value) || 1))}
+          aria-label="How long"
+        />
+        <select
+          className={styles.button}
+          value={unit}
+          onChange={(e) => setUnit(e.target.value as typeof unit)}
+          aria-label="Counted in"
+        >
+          <option value="phases">phases</option>
+          <option value="days">days</option>
+          <option value="nights">nights</option>
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({
+              type: 'debug',
+              op: { kind: 'addCondition', hikerId, conditionId, remaining, unit },
+            })
+          }
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'clearConditions', hikerId } })}
+        >
+          Clear all
+        </button>
+      </div>
+    </>
   );
 }
 

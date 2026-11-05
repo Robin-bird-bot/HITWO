@@ -8,6 +8,7 @@
  */
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
+import { tickConditions } from './conditions';
 import { computeCost, fireHook } from './effects';
 import { pushEvent } from './log';
 import { changeStat } from './stats';
@@ -20,6 +21,7 @@ export function hikersWhoHaventActed(state: GameState): Hiker[] {
 
 export function endPhase(state: GameState): void {
   for (const h of state.hikers) h.acted = false;
+  tickConditions(state, 'phases');
 
   if (state.phase === 'morning') {
     state.phase = 'afternoon';
@@ -73,6 +75,7 @@ function campStep(state: GameState): void {
   }
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onEndOfDay');
   recoverOvernight(state);
+  tickConditions(state, 'days');
 }
 
 function startNewDay(state: GameState): void {

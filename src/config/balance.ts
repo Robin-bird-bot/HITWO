@@ -162,6 +162,29 @@ export const BALANCE = {
     choiceItemOptions: 5,
   },
 
+  /** Challenges, opportunities and Trials (docs/design/04-challenges.md). */
+  challenges: {
+    /** What a new tile gets (Wyatt, Nov 5: 70 / 20 / 10). */
+    mix: { challenge: 70, trial: 20, opportunity: 10 },
+    /**
+     * A challenge one tier above its own has its ranges scaled by this
+     * (Wyatt, Nov 5: ×1.5). Backwards ranges (Dangerous Current) shrink.
+     */
+    tierScale: 1.5,
+    /**
+     * How strongly Luck skews X and Y toward the party's good end: the roll
+     * is u^(2^(Luck × this)), so Luck +2 makes the good end about twice as
+     * likely as the bad end. TODO(wyatt): first guess.
+     */
+    luckSkew: 0.5,
+    /** At most this many Trials at once. */
+    maxTrials: 2,
+    /** How likely each card is to be picked (1 when not listed). TODO(wyatt): all equal to start. */
+    weights: {} as Record<string, number>,
+    /** XP for passing a challenge: this × the trail tier (the XP table). */
+    passXpPerTier: 2,
+  },
+
   luck: {
     /** Luck is clamped to this range. */
     min: -5,

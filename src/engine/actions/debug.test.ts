@@ -21,6 +21,22 @@ describe('debug actions', () => {
     expect(nodes.every((n) => n.revealed)).toBe(true);
   });
 
+  it('give and clear conditions', () => {
+    const add = (conditionId: string) =>
+      ({
+        type: 'debug',
+        op: { kind: 'addCondition', hikerId: 'hiker-1', conditionId, remaining: 2, unit: 'days' },
+      }) as const;
+    const s = run(game(), add('wet'), add('allergies'));
+    const h1 = s.hikers.find((h) => h.id === 'hiker-1');
+    expect(h1?.conditions).toMatchObject([
+      { id: 'wet', remaining: 2, unit: 'days' },
+      { id: 'allergies', node: expect.any(String) },
+    ]);
+    const cleared = run(s, { type: 'debug', op: { kind: 'clearConditions', hikerId: 'hiker-1' } });
+    expect(cleared.hikers.find((h) => h.id === 'hiker-1')?.conditions).toEqual([]);
+  });
+
   it('are always allowed', () => {
     expect(validateAction(game(), { type: 'debug', op: { kind: 'revealMap' } })).toBeNull();
   });

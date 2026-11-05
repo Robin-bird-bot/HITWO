@@ -188,10 +188,14 @@ const MAX_SLOTS = 6;
 export function Details({ hiker: h, showConditions }: { hiker: Hiker; showConditions?: boolean }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
-  const chips = conditionChips(h);
+  // Simple lists every chip here; Informative's card already shows the states,
+  // so its details list only the timed conditions, with their time left.
+  const chips = conditionChips(h).filter(
+    (c) => showConditions || c.kind === 'positive' || c.kind === 'negative',
+  );
   return (
     <div className={styles.details}>
-      {showConditions && chips.length > 0 && (
+      {chips.length > 0 && (
         <div className={styles.conditionList}>
           {chips.map((c) => (
             <span key={c.key} className={styles.conditionLine}>

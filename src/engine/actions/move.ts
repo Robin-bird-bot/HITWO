@@ -35,6 +35,7 @@ export function applyMove(state: GameState, action: MoveAction): void {
   if (!line || !cost) throw new Error('applyMove: not adjacent');
 
   const from = hiker.tileId;
+  hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
   hiker.acted = true;
   const revealed = enterTile(state, hiker.tileId);

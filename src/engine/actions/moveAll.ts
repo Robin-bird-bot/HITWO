@@ -57,6 +57,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   const from = mover.tileId;
   const group = [mover, ...action.bring.map((id) => mustFindHiker(state, id))];
   for (const h of group) {
+    h.cameFrom = from;
     h.tileId = action.toTileId;
     h.acted = true;
   }

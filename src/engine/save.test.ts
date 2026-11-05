@@ -54,6 +54,34 @@ describe('save and load', () => {
     expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'tooNew' });
   });
 
+  it('upgrades a version 2 save: no challenges used yet (Phase 5)', () => {
+    const v2 = structuredClone(fixtureGame()) as Partial<GameState>;
+    delete v2.usedCards;
+    const loaded = deserialize(JSON.stringify({ ...v2, saveVersion: 2 }));
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.saveVersion).toBe(3);
+      expect(loaded.state.usedCards).toEqual([]);
+      expect(loaded.state.trials).toBeUndefined();
+    }
+  });
+
+  it('round-trips conditions with their timing', () => {
+    const state = fixtureGame();
+    const ash = state.hikers[0];
+    if (!ash) throw new Error('no hiker');
+    ash.conditions = [
+      { id: 'frozen', remaining: 1, unit: 'phases', fresh: true },
+      {
+        id: 'hangry',
+        remaining: 2,
+        unit: 'days',
+        then: { id: 'nauseous', remaining: 1, unit: 'days' },
+      },
+    ];
+    expect(deserialize(serialize(state))).toEqual({ ok: true, state });
+  });
+
   it('refuses an old version with no migration', () => {
     const data = { ...fixtureGame(), saveVersion: 0 };
     expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'unsupported' });

@@ -96,6 +96,11 @@ export const ASSETS = {
   },
 } as const;
 
+/** A challenge, Trial or opportunity picture, named by its id (16:9, 960×540). */
+export function challengeArt(id: string): string {
+  return asset(`challenges/${id}.jpg`);
+}
+
 function byItemType(path: (type: string) => string) {
   return Object.fromEntries(
     ['tool', 'food', 'clothes', 'shelter', 'trinket'].map((t) => [t, path(t)]),

@@ -8,6 +8,7 @@
  */
 import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
+import { CONDITIONS } from '../content/conditions';
 import { hikersOnTile, isAlone } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
@@ -246,6 +247,11 @@ export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[
     const def = item && ITEMS[item.itemId];
     if (!item || !def) continue;
     sources.push({ id: `item:${item.uid}`, kind: 'item', name: def.name, hooks: def.hooks ?? {} });
+  }
+  for (const c of hiker.conditions) {
+    const def = CONDITIONS[c.id];
+    if (!def?.hooks) continue;
+    sources.push({ id: `condition:${c.id}`, kind: 'condition', name: def.name, hooks: def.hooks });
   }
   for (const slot of hiker.slots) {
     if (!slot.traitId) continue;

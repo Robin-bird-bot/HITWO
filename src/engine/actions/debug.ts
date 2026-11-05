@@ -1,4 +1,6 @@
 import { BALANCE } from '../../config/balance';
+import { CONDITIONS } from '../../content/conditions';
+import { addCondition } from '../conditions';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import type { DebugOp, GameState, NodeType } from '../types';
@@ -60,6 +62,26 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       if (op.types.length) state.debugDeal = [...op.types];
       else delete state.debugDeal;
       pushEvent(state, { kind: 'debug', note: `Next deal: ${op.types.join(', ') || 'random'}` });
+      break;
+    }
+    case 'addCondition': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      // Allergies takes a node: this tile's first one, or Forest.
+      const here = state.section.tiles[hiker.tileId]?.nodes
+        .map((n) => n.type)
+        .find((t): t is NodeType => t !== 'caps');
+      const node = CONDITIONS[op.conditionId]?.takesNode ? (here ?? 'forest') : undefined;
+      addCondition(state, hiker, op.conditionId, op.remaining, op.unit, 'the debug panel', {
+        ...(node ? { node } : {}),
+      });
+      break;
+    }
+    case 'clearConditions': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.conditions = [];
+      pushEvent(state, { kind: 'debug', note: `Cleared ${hiker.name}'s conditions` });
       break;
     }
     case 'setAbundance': {

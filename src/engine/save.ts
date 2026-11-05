@@ -6,7 +6,7 @@
 import { freshAbundance } from './abundance';
 import { NODE_TYPES, PHASES, type GameState } from './types';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -17,6 +17,8 @@ type SaveData = Record<string, unknown>;
 const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 4: Abundance meters (at the start value) and today's scavenges.
   1: (save) => ({ ...save, abundance: freshAbundance(), scavengedToday: [] }),
+  // Phase 5: which challenges this section has used.
+  2: (save) => ({ ...save, usedCards: [] }),
 };
 
 export function serialize(state: GameState): string {
@@ -95,6 +97,7 @@ function looksLikeGameState(v: SaveData): v is SaveData & GameState {
     isRecord(v.abundance) &&
     NODE_TYPES.every((n) => isNumber((v.abundance as SaveData)[n])) &&
     Array.isArray(v.scavengedToday) &&
+    Array.isArray(v.usedCards) &&
     (v.scavenge === undefined || isRecord(v.scavenge)) &&
     isNumber(v.nextEventId) &&
     Array.isArray(v.log)

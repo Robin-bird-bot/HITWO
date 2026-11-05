@@ -2,6 +2,7 @@
  * Plain-language facts about hikers and what they can do, for the panels.
  * Pure functions of the game state, so they're easy to test.
  */
+import { CONDITIONS } from '../../content/conditions';
 import { tileLabel } from '../../content/tileLabels';
 import { BALANCE } from '../../config/balance';
 import {
@@ -17,13 +18,14 @@ import {
   thresholdStates,
   validateAction,
   type Action,
+  type ConditionInstance,
   type GameState,
   type Hiker,
   type StatName,
   type Tile,
 } from '../../engine';
 import type { IconName } from '../icons/paths';
-import { SPECIAL_LOOK } from '../map/looks';
+import { NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 
 const T = BALANCE.thresholds;
 
@@ -97,7 +99,18 @@ export interface ConditionChip {
   kind: 'state' | 'injury' | 'positive' | 'negative';
 }
 
-/** Threshold states and injuries, as icons on the hiker card. Timed conditions arrive in Phase 6. */
+const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
+
+/** "2 more phases", "1 more day". */
+export function timeLeft(c: ConditionInstance): string {
+  const word = UNIT_WORD[c.unit];
+  return `${c.remaining} more ${c.remaining === 1 ? word : `${word}s`}`;
+}
+
+/**
+ * Threshold states, injuries and timed conditions, as icons on the hiker card.
+ * A plain list for now: Phase 6 designs the real condition display.
+ */
 export function conditionChips(h: Hiker): ConditionChip[] {
   const states = thresholdStates(h);
   const chips: ConditionChip[] = [];
@@ -137,6 +150,17 @@ export function conditionChips(h: Hiker): ConditionChip[] {
       icon: 'medical',
       kind: 'injury',
       label: `${h.injuries} ${h.injuries === 1 ? 'injury' : 'injuries'} (passes out at ${BALANCE.injuries.passOutAt})`,
+    });
+  }
+  for (const c of h.conditions) {
+    const def = CONDITIONS[c.id];
+    const positive = def?.kind === 'positive';
+    const node = c.node ? ` (${NODE_NAME[c.node]})` : '';
+    chips.push({
+      key: `condition-${c.id}`,
+      icon: positive ? 'sparkles' : 'alert',
+      kind: positive ? 'positive' : 'negative',
+      label: `${def?.name ?? c.id}${node}: ${timeLeft(c)}`,
     });
   }
   return chips;

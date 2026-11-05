@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { createGame } from '../../engine';
+import { addCondition } from '../../engine/conditions';
 import { fixtureGame, hiker, place, toNight } from '../../engine/test/fixtures';
 import { actionStates, conditionChips, simpleActions, statNote, statusTag } from './hikerInfo';
 
@@ -89,6 +90,19 @@ describe('hiker card details', () => {
       'hungry',
       'exhausted',
       'injury',
+    ]);
+  });
+
+  it('lists timed conditions with their time left (Phase 5)', () => {
+    const s = fixtureGame();
+    const ash = hiker(s, 'ash');
+    addCondition(s, ash, 'frozen', 1, 'phases', 'test');
+    addCondition(s, ash, 'lucky', 2, 'days', 'test');
+    addCondition(s, ash, 'allergies', 3, 'days', 'test', { node: 'river' });
+    expect(conditionChips(ash).map((c) => [c.kind, c.label])).toEqual([
+      ['negative', 'Frozen: 1 more phase'],
+      ['positive', 'Lucky: 2 more days'],
+      ['negative', 'Allergies (River): 3 more days'],
     ]);
   });
 

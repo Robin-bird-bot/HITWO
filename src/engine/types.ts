@@ -86,6 +86,8 @@ export interface Tile {
   feature?: SideFeature;
   /** A hiker has landed here. The special icon moves to the corner once true. */
   visited?: true;
+  /** Its challenge will be this many tiers higher (Warning Bird). */
+  tierBonus?: number;
   nodes: TileNode[];
 }
 
@@ -120,11 +122,18 @@ export interface TraitSlot {
   traitId: TraitId | null;
 }
 
-/** A timed condition on a hiker (Phase 6). */
+/** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
 export interface ConditionInstance {
   id: ConditionId;
   remaining: number;
-  unit: 'days' | 'phases';
+  /** Phases tick down at the end of every phase; days and nights at camp. */
+  unit: 'days' | 'phases' | 'nights';
+  /** Allergies: which node. */
+  node?: NodeType;
+  /** A condition that starts when this one ends ("Hangry, then Nauseous"). */
+  then?: { id: ConditionId; remaining: number; unit: 'days' | 'phases' | 'nights' };
+  /** Added during this phase: its first end of phase doesn't count. */
+  fresh?: true;
 }
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
@@ -136,6 +145,10 @@ export interface ItemInstance {
   quality?: number;
   usesLeft?: number;
   daysLeft?: number;
+  /** Food: gives this much more (or less) Appetite. TODO(phase 9): used when eating arrives. */
+  appetiteMod?: number;
+  /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
+  usesLost?: number;
 }
 
 export interface Inventory {
@@ -167,6 +180,8 @@ export interface Hiker {
   acted: boolean;
   /** Has slept this night. */
   slept: boolean;
+  /** The tile this hiker last moved from (Tourist Trap sends them back). */
+  cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
   xp: number;
   level: number;
@@ -274,6 +289,40 @@ export interface ScavengeRecord {
   nodes: NodeType[];
 }
 
+// ── Challenges, opportunities and Trials ───────────────────────────────────
+
+/** A card's rolled numbers (see src/engine/challenges/rolls.ts). */
+export interface CardRolls {
+  x: Record<string, number>;
+  /** Each hiker's own Y values. */
+  y: Record<HikerId, Record<string, number>>;
+  /** Which "(25%)" parts made it onto the card. */
+  includes: Record<string, boolean>;
+  /** Fox with a Specific Taste: the resources it'll take. */
+  options?: ResourceId[];
+  /** The Luck used for X (the average of the hikers entering). */
+  luck: number;
+}
+
+/** A Trial in progress (step 4 of Phase 5 fills in the rest). */
+export interface ActiveTrial {
+  uid: string;
+  cardId: string;
+  tileId: TileId;
+  /** The hikers it covers: those on the tile when it was revealed. */
+  hikers: HikerId[];
+  rolls: CardRolls;
+  /** Phases since the start of the hike, when it started and when it runs out. */
+  startedAt: number;
+  endsAt: number;
+  /** A marked tile (Rocco's red tile, the Lost Pup). */
+  targetTile?: TileId;
+  /** A chosen resource (Rocco's Resource Trial, Ranger's Request). */
+  resource?: ResourceId;
+  /** Hikers who've already met the goal (Rocco's rewards are per hiker). */
+  done?: HikerId[];
+}
+
 // ── Randomness ─────────────────────────────────────────────────────────────
 
 /** sfc32 state: four unsigned 32-bit integers. */
@@ -326,7 +375,17 @@ export type DebugOp =
   /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
   | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
   /** The next scavenge deals these card types first, where they can happen. */
-  | { kind: 'nextDeal'; types: ScavengeCardType[] };
+  | { kind: 'nextDeal'; types: ScavengeCardType[] }
+  /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */
+  | {
+      kind: 'addCondition';
+      hikerId: HikerId;
+      conditionId: ConditionId;
+      remaining: number;
+      unit: ConditionInstance['unit'];
+    }
+  /** Takes every condition off a hiker. */
+  | { kind: 'clearConditions'; hikerId: HikerId };
 
 export type ActionType = Action['type'];
 
@@ -366,6 +425,23 @@ export type GameEventBody =
   /** Overnight, nodes nobody scavenged recover. */
   | { kind: 'recovered'; nodes: NodeType[] }
   | { kind: 'phase'; day: number; phase: Phase }
+  | {
+      kind: 'condition';
+      hikerId: HikerId;
+      condition: ConditionId;
+      remaining: number;
+      unit: 'days' | 'phases' | 'nights';
+      cause: string;
+    }
+  | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** Resources or items a challenge took (or gave). */
+  | {
+      kind: 'lost';
+      hikerId: HikerId;
+      resources: ResourceId[];
+      items: ItemId[];
+      cause: string;
+    }
   | { kind: 'debug'; note: string };
 
 export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase };
@@ -392,6 +468,14 @@ export interface GameState {
   scavenge?: PendingScavenge;
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
+  /** Challenges, Trials and opportunities already seen in this section (no repeats). */
+  usedCards: string[];
+  /** Trials in progress (at most BALANCE.challenges.maxTrials). */
+  trials?: ActiveTrial[];
+  /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
+  snowy?: true;
+  /** The weather for challenge gates (Phase 6). Until then, a debug setting. */
+  weather?: 'clear' | 'sunny' | 'stormy';
   nextEventId: number;
   /** The most recent events, oldest first. */
   log: GameEvent[];

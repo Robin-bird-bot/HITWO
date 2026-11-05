@@ -39,3 +39,7 @@ export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/sca
 export { isLow } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
+export { amount, rollCard, scaledRange, notBuiltYet, type CardRolls } from './challenges/rolls';
+export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
+export { hasCondition } from './conditions';
+export type * from './challenges/types';

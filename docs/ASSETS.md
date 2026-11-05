@@ -19,7 +19,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `item-cards/samples/` | bandages, hatchet, jerky, net, rain jacket, shovel, trail mix, trail shoes | Old flat card art from the card game, for reference only |
 | `portraits/` | placeholder, placeholder-character-card | **Use the placeholder for every hiker for now.** Real character art comes later |
 | `art/` | challenge-bear, challenge-fallen-tree | Early challenge pop-up art (superseded by `challenges/`) |
-| `challenges/` | One 1920×1080 JPEG per challenge, named after it (`flies.jpg`, `bear-with-a-gun.jpg`…) | Challenge pop-up art at 16:9. Challenges whose Art column in `04-challenges.md` shows "—" have none yet |
+| `challenges/` | One 1920×1080 JPEG per challenge, named after it (`flies.jpg`, `bear-with-a-gun.jpg`…) | Challenge pop-up art at 16:9. The game loads shrunk copies (960×540 JPEG) from `public/assets/challenges/<id>.jpg`, via `challengeArt(id)`. Challenges whose Art column in `04-challenges.md` shows "—" have none yet |
 
 **Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
 
