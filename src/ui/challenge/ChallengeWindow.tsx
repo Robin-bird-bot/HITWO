@@ -8,11 +8,12 @@
  *   a column per section with its spaces, a status line, and ✓ / ✗.
  * - Under it, Continue with a one-line summary, and the packs of the hikers
  *   on the tile. Tap a glowing card or resource to put it in the selected
- *   space; tap a filled space to see what's in it and take things back.
+ *   space, or drag it onto any space (dragGive.tsx); tap a filled space to
+ *   see what's in it and take things back.
  * - The window can be dragged by its banner (2a). Nothing is spent until
  *   Continue.
  */
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { ASSETS, cardArt } from '../../config/assets';
@@ -48,6 +49,8 @@ import { describeLog } from '../log/describeLog';
 import { tileName } from '../panels/hikerInfo';
 import { cardText } from './cardText';
 import { NewTrial } from './TrialWindow';
+import { DragGiveProvider } from './dragGive';
+import { useDragGive } from './dragGiveContext';
 import {
   canGive,
   filledCount,
@@ -191,194 +194,200 @@ function ChallengeBody({
         : 'CONTINUE';
 
   return (
-    <div className={styles.overlay} data-moved={!!translate} data-kind={kind}>
-      <Drift />
-      <div
-        ref={ref}
-        className={styles.dialog}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${typeLabel.charAt(0)}${typeLabel.slice(1).toLowerCase()}: ${card.name}`}
-        tabIndex={-1}
-        style={{ translate }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && action && e.target === e.currentTarget) finish();
-          if (e.key === 'Escape') setPeek(null);
-        }}
-        {...windowProps}
-        onPointerDown={(e) => {
-          setPeek(null);
-          windowProps.onPointerDown?.(e);
-        }}
-      >
-        <div className={styles.window}>
-          <header className={styles.banner} data-drag-handle>
-            <span className={styles.bannerSide}>
-              <Icon
-                name={kind === 'opportunity' ? 'star' : 'alert'}
-                size={20}
-                color="#FFF6EC"
-                strokeWidth={2.5}
-              />
-              {typeLabel} · TIER {TIER_WORD[open.tier]}
-            </span>
-            <span className={styles.titleRow}>
-              {nodes.map((n) => (
-                <img key={`l-${n}`} className={styles.node} src={NODE_IMAGE[n]} alt="" />
-              ))}
-              <h2 className={styles.title}>{card.name.toUpperCase()}</h2>
-              {nodes.map((n) => (
-                <img key={`r-${n}`} className={styles.node} src={NODE_IMAGE[n]} alt="" />
-              ))}
-            </span>
-            <span className={`${styles.bannerSide} ${styles.bannerRight}`}>
-              <Icon name="users" size={17} color="#FFF6EC" strokeWidth={2} />
-              {SCOPE_WORD[card.scope]}
-            </span>
-          </header>
+    <DragGiveProvider state={state} open={open} draft={draft} onDraft={setDraft}>
+      <div className={styles.overlay} data-moved={!!translate} data-kind={kind}>
+        <Drift />
+        <div
+          ref={ref}
+          className={styles.dialog}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${typeLabel.charAt(0)}${typeLabel.slice(1).toLowerCase()}: ${card.name}`}
+          tabIndex={-1}
+          style={{ translate }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && action && e.target === e.currentTarget) finish();
+            if (e.key === 'Escape') setPeek(null);
+          }}
+          {...windowProps}
+          onPointerDown={(e) => {
+            setPeek(null);
+            windowProps.onPointerDown?.(e);
+          }}
+        >
+          <div className={styles.window}>
+            <header className={styles.banner} data-drag-handle>
+              <span className={styles.bannerSide}>
+                <Icon
+                  name={kind === 'opportunity' ? 'star' : 'alert'}
+                  size={20}
+                  color="#FFF6EC"
+                  strokeWidth={2.5}
+                />
+                {typeLabel} · TIER {TIER_WORD[open.tier]}
+              </span>
+              <span className={styles.titleRow}>
+                {nodes.map((n) => (
+                  <img key={`l-${n}`} className={styles.node} src={NODE_IMAGE[n]} alt="" />
+                ))}
+                <h2 className={styles.title}>{card.name.toUpperCase()}</h2>
+                {nodes.map((n) => (
+                  <img key={`r-${n}`} className={styles.node} src={NODE_IMAGE[n]} alt="" />
+                ))}
+              </span>
+              <span className={`${styles.bannerSide} ${styles.bannerRight}`}>
+                <Icon name="users" size={17} color="#FFF6EC" strokeWidth={2} />
+                {SCOPE_WORD[card.scope]}
+              </span>
+            </header>
 
-          <div className={styles.body}>
-            <div className={styles.top}>
-              <div className={styles.art}>
-                {card.art ? (
-                  <img src={cardArt(card)} alt={card.name} draggable={false} />
-                ) : (
-                  <div className={styles.noArt}>
-                    <Icon
-                      name={kind === 'opportunity' ? 'star' : 'alert'}
-                      size={56}
-                      color="rgba(255,246,236,0.5)"
-                      strokeWidth={2}
-                    />
-                    <span>{card.name}</span>
-                  </div>
-                )}
-              </div>
-              <div className={styles.words}>
-                {card.quote && <p className={styles.quote}>“{card.quote}”</p>}
-                <p className={styles.cost}>
-                  {cardText(card, card.costText, { rolls: open.rolls, scale: open.scale })}
-                </p>
-                {!simple && !card.descriptionPlaceholder && (
-                  <p className={styles.description}>{card.description}</p>
-                )}
-                {state.debugRolls && <RollsLine state={state} open={open} />}
-                {open.special === 'challenge' && (
-                  <p className={styles.spaceReward}>
-                    <Icon name="star" size={16} color="#E9B44C" strokeWidth={2.5} />
-                    Challenge space: each hiker who passes also gets an item, Lucky for 1 day, or
-                    double XP.
-                  </p>
-                )}
-                {card.buttons ? (
-                  <Happened state={state} cardId={card.id} />
-                ) : (
-                  <p className={styles.hint}>{hintFor(state, open, card, draft)}</p>
-                )}
-                <div className={styles.spacer} />
-                <OutcomeBox card={card} open={open} />
-              </div>
-            </div>
-
-            {draft.sections.length === 0 ? (
-              <p className={styles.nobody}>Nobody here is affected. Nothing happens.</p>
-            ) : (
-              <div className={styles.sections}>
-                {draft.sections.map((s, i) =>
-                  card.buttons ? (
-                    <ButtonSection
-                      key={s.hikerId ?? 'party'}
-                      state={state}
-                      card={card}
-                      hikerId={s.hikerId}
-                      onPress={onPress}
-                    />
-                  ) : card.spendAny ? (
-                    <SpendSection
-                      key={s.hikerId ?? 'party'}
-                      index={i}
-                      state={state}
-                      open={open}
-                      card={card}
-                      draft={draft}
-                      here={here}
-                      peek={peek}
-                      onDraft={setDraft}
-                      onPeek={setPeek}
-                    />
-                  ) : card.risk ? (
-                    <RiskSection
-                      key={s.hikerId ?? 'party'}
-                      index={i}
-                      state={state}
-                      open={open}
-                      card={card}
-                      draft={draft}
-                      here={here}
-                      peek={peek}
-                      onDraft={setDraft}
-                      onPeek={setPeek}
-                    />
+            <div className={styles.body}>
+              <div className={styles.top}>
+                <div className={styles.art}>
+                  {card.art ? (
+                    <img src={cardArt(card)} alt={card.name} draggable={false} />
                   ) : (
-                    <Section
-                      key={s.hikerId ?? 'party'}
-                      index={i}
-                      state={state}
-                      open={open}
-                      card={card}
-                      draft={draft}
-                      status={statuses[i] ?? { decision: undefined, impossible: false, missing: 0 }}
-                      here={here}
-                      peek={peek}
-                      columns={draft.sections.length}
-                      onDraft={setDraft}
-                      onPeek={setPeek}
-                    />
-                  ),
-                )}
+                    <div className={styles.noArt}>
+                      <Icon
+                        name={kind === 'opportunity' ? 'star' : 'alert'}
+                        size={56}
+                        color="rgba(255,246,236,0.5)"
+                        strokeWidth={2}
+                      />
+                      <span>{card.name}</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.words}>
+                  {card.quote && <p className={styles.quote}>“{card.quote}”</p>}
+                  <p className={styles.cost}>
+                    {cardText(card, card.costText, { rolls: open.rolls, scale: open.scale })}
+                  </p>
+                  {!simple && !card.descriptionPlaceholder && (
+                    <p className={styles.description}>{card.description}</p>
+                  )}
+                  {state.debugRolls && <RollsLine state={state} open={open} />}
+                  {open.special === 'challenge' && (
+                    <p className={styles.spaceReward}>
+                      <Icon name="star" size={16} color="#E9B44C" strokeWidth={2.5} />
+                      Challenge space: each hiker who passes also gets an item, Lucky for 1 day, or
+                      double XP.
+                    </p>
+                  )}
+                  {card.buttons ? (
+                    <Happened state={state} cardId={card.id} />
+                  ) : (
+                    <p className={styles.hint}>{hintFor(state, open, card, draft)}</p>
+                  )}
+                  <div className={styles.spacer} />
+                  <OutcomeBox card={card} open={open} />
+                </div>
               </div>
+
+              {draft.sections.length === 0 ? (
+                <p className={styles.nobody}>Nobody here is affected. Nothing happens.</p>
+              ) : (
+                <div className={styles.sections}>
+                  {draft.sections.map((s, i) =>
+                    card.buttons ? (
+                      <ButtonSection
+                        key={s.hikerId ?? 'party'}
+                        state={state}
+                        card={card}
+                        hikerId={s.hikerId}
+                        onPress={onPress}
+                      />
+                    ) : card.spendAny ? (
+                      <SpendSection
+                        key={s.hikerId ?? 'party'}
+                        index={i}
+                        state={state}
+                        open={open}
+                        card={card}
+                        draft={draft}
+                        here={here}
+                        peek={peek}
+                        onDraft={setDraft}
+                        onPeek={setPeek}
+                      />
+                    ) : card.risk ? (
+                      <RiskSection
+                        key={s.hikerId ?? 'party'}
+                        index={i}
+                        state={state}
+                        open={open}
+                        card={card}
+                        draft={draft}
+                        here={here}
+                        peek={peek}
+                        onDraft={setDraft}
+                        onPeek={setPeek}
+                      />
+                    ) : (
+                      <Section
+                        key={s.hikerId ?? 'party'}
+                        index={i}
+                        state={state}
+                        open={open}
+                        card={card}
+                        draft={draft}
+                        status={
+                          statuses[i] ?? { decision: undefined, impossible: false, missing: 0 }
+                        }
+                        here={here}
+                        peek={peek}
+                        columns={draft.sections.length}
+                        onDraft={setDraft}
+                        onPeek={setPeek}
+                      />
+                    ),
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button
+            ref={focusRef}
+            type="button"
+            className={styles.continue}
+            disabled={!action}
+            onClick={finish}
+          >
+            <span className={styles.continueLabel}>{buttonLabel}</span>
+            <span className={styles.continueSub}>
+              {summary(state, open, card, draft, statuses)}
+            </span>
+          </button>
+
+          <div className={styles.packs}>
+            {(card.risk || card.spendAny || card.cost.length > 0 ? here : []).map((h) =>
+              card.risk || card.spendAny ? (
+                <RiskPack
+                  key={h.id}
+                  state={state}
+                  open={open}
+                  card={card}
+                  hiker={h}
+                  draft={draft}
+                  onDraft={setDraft}
+                />
+              ) : (
+                <Pack
+                  key={h.id}
+                  state={state}
+                  open={open}
+                  card={card}
+                  hiker={h}
+                  draft={draft}
+                  onDraft={setDraft}
+                />
+              ),
             )}
           </div>
         </div>
-
-        <button
-          ref={focusRef}
-          type="button"
-          className={styles.continue}
-          disabled={!action}
-          onClick={finish}
-        >
-          <span className={styles.continueLabel}>{buttonLabel}</span>
-          <span className={styles.continueSub}>{summary(state, open, card, draft, statuses)}</span>
-        </button>
-
-        <div className={styles.packs}>
-          {(card.risk || card.spendAny || card.cost.length > 0 ? here : []).map((h) =>
-            card.risk || card.spendAny ? (
-              <RiskPack
-                key={h.id}
-                state={state}
-                open={open}
-                card={card}
-                hiker={h}
-                draft={draft}
-                onDraft={setDraft}
-              />
-            ) : (
-              <Pack
-                key={h.id}
-                state={state}
-                open={open}
-                card={card}
-                hiker={h}
-                draft={draft}
-                onDraft={setDraft}
-              />
-            ),
-          )}
-        </div>
       </div>
-    </div>
+    </DragGiveProvider>
   );
 }
 
@@ -415,7 +424,7 @@ function hintFor(state: GameState, open: OpenChallenge, card: ChallengeDef, draf
   const space = `${what} space${name ? ` for ${name}` : ''}`;
   if (req.kind === 'caps') return `Tap the ${space} to pay from the party purse.`;
   if (req.kind === 'stat') return `Use + and − in the packs below to fill the ${space}.`;
-  return `Tap a glowing card or resource below to put it in the ${space}.`;
+  return `Tap a glowing card or resource below to put it in the ${space}, or drag one onto any space.`;
 }
 
 function summary(
@@ -666,6 +675,7 @@ interface SpaceProps {
 }
 
 function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek }: SpaceProps) {
+  const dnd = useDragGive();
   const section = draft.sections[target.section];
   const need = spaceNeed(state, open, draft, target);
   const got = filledCount(draft, target.section, target.option, target.req);
@@ -715,6 +725,7 @@ function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek
         type="button"
         className={styles.space}
         data-look={look}
+        {...(dnd && !off ? dnd.targetProps(target) : {})}
         style={{ width: size, height: size }}
         onClick={onClick}
         disabled={off}
@@ -1050,6 +1061,18 @@ function Pack({
   const statReq = req?.kind === 'stat' ? req : undefined;
   const tryGive = (source: Source) => onDraft(give(state, open, draft, source));
   const resources = Object.entries(hiker.inventory.resources).filter(([, n]) => (n ?? 0) > 0);
+  const dnd = useDragGive();
+  // Could it go in any space? Then it can be dragged there, even if not the selected one.
+  const somewhere = (source: Source) =>
+    draft.sections.some((_, section) =>
+      card.cost.some((reqs, option) =>
+        reqs.some((_r, req) =>
+          canGive(state, open, { ...draft, target: { section, option, req } }, source),
+        ),
+      ),
+    );
+  const drag = (source: Source, preview: ReactNode) =>
+    dnd && somewhere(source) ? dnd.sourceProps(source, preview) : {};
 
   return (
     <div className={styles.pack}>
@@ -1098,9 +1121,10 @@ function Pack({
                   className={styles.bagItem}
                   data-fits={fits}
                   data-used={used}
-                  disabled={!fits}
+                  aria-disabled={!fits}
                   aria-label={`${itemName(item.itemId)}${used ? ' (handed in)' : fits ? ': put it in the selected space' : ''}`}
-                  onClick={() => tryGive(source)}
+                  onClick={() => fits && tryGive(source)}
+                  {...drag(source, <ItemFace itemId={item.itemId} width={50} />)}
                 >
                   <ItemFace itemId={item.itemId} width={50} />
                   {used && (
@@ -1129,10 +1153,16 @@ function Pack({
                   className={styles.res}
                   data-fits={fits}
                   data-empty={n < 1}
-                  disabled={!fits}
+                  aria-disabled={!fits}
                   title={`${resourceName(id)} ×${n}`}
                   aria-label={`${resourceName(id)} ×${n}${fits ? ': put one in the selected space' : ''}`}
-                  onClick={() => tryGive(source)}
+                  onClick={() => fits && tryGive(source)}
+                  {...drag(
+                    source,
+                    <span className={styles.res} data-fits="true">
+                      <img src={ASSETS.resources[id]} alt="" />
+                    </span>,
+                  )}
                 >
                   <img src={ASSETS.resources[id]} alt="" />
                   <span className={styles.resBadge}>{n}</span>

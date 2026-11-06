@@ -1328,3 +1328,43 @@
   line-height: 1.45;
   color: #f2c978;
 }
+
+/* ── Dragging from a pack onto a space ── */
+
+[data-draggable] {
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+[data-draggable] img {
+  -webkit-user-drag: none;
+}
+
+/* Fits another space, not the selected one: drag it there. */
+.bagItem[data-draggable][data-fits='false'],
+.res[data-draggable][data-fits='false'] {
+  opacity: 0.7;
+}
+
+.space[data-drop-ok='true'] {
+  border-style: solid;
+  border-color: #e9b44c;
+  background: rgba(233, 180, 76, 0.16);
+  box-shadow: 0 0 22px rgba(233, 180, 76, 0.4);
+}
+
+.space[data-drop-ok='false'] {
+  opacity: 0.35;
+}
+
+/* The copy that follows the pointer (in screen pixels, scaled like the stage). */
+.dragGhost {
+  position: fixed;
+  z-index: 1000;
+  translate: -50% -50%;
+  transform-origin: center;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+}

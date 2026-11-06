@@ -296,6 +296,24 @@ This keeps the download small and lets numbers and text change.
 - `TIER_SCALE` ×1.5; the mix 70% challenge, 20% Trial, 10% opportunity.
 - Wonder numbers: see "Wyatt's answers (Nov 6)" above.
 
+**Phase 5 notes (built Nov 6)**
+- **Where things are:** content in `src/content/challenges.ts` and `src/content/wonders.ts`; rules in `src/engine/challenges/` and `src/engine/wonders/`; pop-ups in `src/ui/challenge/` and `src/ui/wonder/`. The backtick debug panel can open any card, reveal a card or the Wonder, and gather everyone on a tile. `#debug-challenges` lists every challenge, Trial, opportunity and Wonder with sample rolls.
+- **Handing things in:** tap a space, then a glowing card or resource; or drag a card or resource from a pack straight onto any space. Nothing is spent until Continue.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - Luck skews X and Y as u^(2^(Luck × 0.5)); every card is equally likely; every tile except the trailhead and the checkpoint gets a card.
+  - A Challenge space's reward is a random item, Lucky for 1 day, or the XP again.
+  - Trials due "by night" or "before the next morning" are checked at the end of the night.
+  - Opportunities scale ×1.5 per tier above I. Snake Slots pays 15 caps ("a lot"), 2 caps ("a few") or 3 resources ("several"). Conditions from opportunities last 1 day.
+  - Citro Tub only rewards a hiker who spends at least 1 Energy.
+  - Predator Bait is off until some unknown tile is above Tier I, so a press can't only make things harder (every biome 1 tile starts at Tier I).
+  - Wonder goals: the doc's X[6+] is read as "at least 6", ×1.5 per later biome (an "at most" shrinks). "3 hikers on this tile" doesn't scale. Sleeping Giant's Energized lasts 1 day.
+- **Waiting on later phases** (`TODO(phase N)`):
+  - Phase 6: condition effects (only Frozen works now), weather for gates and Crater Lake's goal.
+  - Phase 7: Bleeding's injury when it runs out; giving the next biome a Wonder not used yet.
+  - Phase 9: durability, tool uses, food Appetite and spoiling, losing clothes (Fashion Critic), shelter cards placed by hikers, blueprints, the real Tier III items and traits, crafting (Multnomah Falls' goal), equipping clothes (Pittock Mansion's goal) and Old Trail Sign.
+- **Conditions now:** every condition in `02-traits-and-conditions.md` can be given, counts down by days or phases, and shows on the hiker cards. Only Frozen has its effect (can't move or be moved). Two placeholders exist for opportunities: Napping (Nap Time: can't move, be moved, scavenge or tend next phase) and Raccoon Friend (a random resource most nights). Everything else arrives in Phase 6.
+- **Saves:** version 5. Version 4 added the run counters and version 5 a Wonder per section; older saves are upgraded.
+
 ---
 
 ## Phase 6: Night, camp and conditions

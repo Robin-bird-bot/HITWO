@@ -477,6 +477,10 @@
 
 .revealed:hover,
 .revealed:focus-visible {
-  outline: none;
   scale: 1.12;
+}
+
+.revealed:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
 }
