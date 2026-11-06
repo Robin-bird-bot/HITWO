@@ -6,6 +6,7 @@
  * the day costs Appetite. Night events, conditions, clothing durability and
  * passed-out countdowns join in Phases 6 and 7.
  */
+import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
@@ -20,6 +21,8 @@ export function hikersWhoHaventActed(state: GameState): Hiker[] {
 }
 
 export function endPhase(state: GameState): void {
+  // Trials are judged first: Jogger needs to know who acted this phase.
+  checkTrials(state);
   for (const h of state.hikers) h.acted = false;
   tickConditions(state, 'phases');
 

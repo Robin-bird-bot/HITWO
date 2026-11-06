@@ -56,3 +56,4 @@ export {
 } from './challenges/resolve';
 export { foodCarried } from './challenges/applyEffects';
 export { riskReading, riskSpendFits, type RiskReading } from './challenges/risk';
+export { deadlineOf, phaseIndex, timeLeft } from './challenges/trials';

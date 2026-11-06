@@ -13,7 +13,7 @@
  *   Continue.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ITEMS } from '../../content';
+import { CARDS, ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { ASSETS, cardArt } from '../../config/assets';
 import {
@@ -40,6 +40,7 @@ import { STAT_META } from '../panels/hikerInfo';
 import { ITEM_TYPE_COLORS, itemName, resourceName } from '../scavenge/cardLook';
 import { useDraggable } from '../windows/useDraggable';
 import { cardText } from './cardText';
+import { NewTrial } from './TrialWindow';
 import {
   canGive,
   filledCount,
@@ -73,13 +74,24 @@ interface ChallengeWindowProps {
   onResolve(action: ResolveAction): boolean;
   /** A Choice space: the party picks one of the two. */
   onChoose(cardId: string): void;
+  /** A Trial: "Got it". */
+  onAccept(): void;
 }
 
 const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
 const INNER_WIDTH = 1296;
 
-export function ChallengeWindow({ state, simple, onResolve, onChoose }: ChallengeWindowProps) {
+export function ChallengeWindow({
+  state,
+  simple,
+  onResolve,
+  onChoose,
+  onAccept,
+}: ChallengeWindowProps) {
   const open = state.challenge;
+  if (open && CARDS[open.cardId]?.kind === 'trial') {
+    return <NewTrial state={state} open={open} onAccept={onAccept} />;
+  }
   const card = open && openCardDef(open);
   if (!open || !card) return null;
   if (open.alternative) return <ChoicePicker open={open} onChoose={onChoose} />;
@@ -896,7 +908,7 @@ function ItemFace({
   );
 }
 
-function Face({ hikerId, size }: { hikerId: HikerId; size: number }) {
+export function Face({ hikerId, size }: { hikerId: HikerId; size: number }) {
   const { color } = characterFor(hikerId);
   return (
     <img
@@ -1104,7 +1116,7 @@ function RollsLine({ state, open }: { state: GameState; open: OpenChallenge }) {
 }
 
 /** The drifting Game Quotes "!" pattern behind the window. */
-function Drift() {
+export function Drift() {
   const glyphs = useMemo(() => {
     const out: { x: number; y: number }[] = [];
     for (let row = 0; row < 15; row++) {

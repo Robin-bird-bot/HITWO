@@ -34,6 +34,7 @@ import type {
   TileId,
 } from '../types';
 import { amount, chanceOf, type AmountContext } from './rolls';
+import { noteArrival } from './trials';
 import type { CardDef, Effect, EffectOp, ResourceFilter, Tier } from './types';
 
 export interface EffectRun {
@@ -180,6 +181,7 @@ export function applyEffects(
     h.tileId = to;
     enterTile(state, to);
     pushEvent(state, { kind: 'moved', hikerId: h.id, from, to, how, cause });
+    noteArrival(state, [h.id], to);
     if (wasNew) moved.set(to, [...(moved.get(to) ?? []), h.id]);
   };
 

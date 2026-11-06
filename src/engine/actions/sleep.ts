@@ -1,3 +1,4 @@
+import { noteSleep } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
 import { computeGain, fireHook } from '../effects';
 import { pushEvent } from '../log';
@@ -40,4 +41,5 @@ export function applySleep(state: GameState, action: SleepAction): void {
   pushEvent(state, { kind: 'sleep', hikerId: hiker.id });
   changeStat(state, hiker, 'energy', gain, 'Sleep');
   fireHook(state, hiker, 'onSleep');
+  noteSleep(state, hiker);
 }

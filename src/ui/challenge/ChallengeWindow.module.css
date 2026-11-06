@@ -72,6 +72,12 @@
   background: rgba(28, 74, 150, 0.46);
 }
 
+.overlay[data-kind='trial'] {
+  --kind-banner: #e0812f;
+  --kind-button: #f2b950;
+  background: rgba(150, 72, 16, 0.42);
+}
+
 /* Moved aside: the blur lifts so the map shows through. */
 .overlay[data-moved='true'] {
   background: rgba(20, 24, 22, 0.12);

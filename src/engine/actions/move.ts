@@ -1,4 +1,5 @@
 import { revealTile } from '../challenges/reveal';
+import { noteArrival } from '../challenges/trials';
 import { moveCost } from '../costs';
 import { fireMove } from '../effects';
 import { pushEvent } from '../log';
@@ -51,6 +52,7 @@ export function applyMove(state: GameState, action: MoveAction): void {
   });
   payCost(state, hiker, cost, 'Move');
   fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line });
+  noteArrival(state, [hiker.id], hiker.tileId);
   // The first hiker to land on a tile triggers its card.
   if (firstHere) revealTile(state, hiker.tileId, [hiker.id]);
 }

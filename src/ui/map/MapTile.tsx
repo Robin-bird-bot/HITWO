@@ -25,6 +25,8 @@ interface MapTileProps {
   onClick?(): void;
   /** Simple mode: the checkpoint's label shows only on hover. */
   checkpointLabelOnHover?: boolean;
+  /** A Trial's tile (orange ring) or Rocco's red tile. */
+  mark?: 'trial' | 'target' | undefined;
 }
 
 export function MapTile({
@@ -36,6 +38,7 @@ export function MapTile({
   reach,
   onClick,
   checkpointLabelOnHover,
+  mark,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
@@ -66,6 +69,7 @@ export function MapTile({
       data-reach={reach}
       {...clickable(onClick, reach === 'ok' ? `Move here: ${describe}` : describe)}
     >
+      {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
       {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
       <div className={styles.hex} style={{ inset: 0, background: edge }} />
       <div className={styles.hex} style={{ inset: 5, background: colors.fill }} />

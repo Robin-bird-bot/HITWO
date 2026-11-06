@@ -39,6 +39,32 @@
   background: #e9b44c;
 }
 
+/* A Trial's tile (orange) or Rocco's red tile: a wider ring outside the reach ring. */
+.markRing {
+  left: -14px;
+  top: -16px;
+  width: 140px;
+  height: 160px;
+  background: #e0812f;
+}
+
+.markRing[data-mark='target'] {
+  background: #e5624a;
+  animation: markPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes markPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markRing[data-mark='target'] {
+    animation: none;
+  }
+}
+
 .tile[data-reach] {
   cursor: pointer;
 }

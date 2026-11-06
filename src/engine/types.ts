@@ -321,6 +321,8 @@ export interface OpenChallenge {
   special?: 'challenge';
   /** A Choice space: the other challenge, with its own rolls, until the party picks one. */
   alternative?: { cardId: string; rolls: CardRolls };
+  /** A Trial's targets, picked when it's revealed so the pop-up can show them. */
+  trial?: { targetTile?: TileId; resource?: ResourceId };
 }
 
 /** A tile a hiker landed on while a challenge was open: it opens next. */
@@ -360,7 +362,11 @@ export interface ChallengePaid {
   stats: Partial<Record<StatName, number>>;
 }
 
-/** A Trial in progress (step 4 of Phase 5 fills in the rest). */
+/**
+ * A Trial in progress (04-challenges.md, "Trials"). Its goal is checked at the
+ * end of every phase; meeting it early ends it, and missing the deadline
+ * brings the penalty. At most BALANCE.challenges.maxTrials at once.
+ */
 export interface ActiveTrial {
   uid: string;
   cardId: string;
@@ -368,15 +374,22 @@ export interface ActiveTrial {
   /** The hikers it covers: those on the tile when it was revealed. */
   hikers: HikerId[];
   rolls: CardRolls;
-  /** Phases since the start of the hike, when it started and when it runs out. */
+  /** Phase numbers since the start of the hike: when it started, and the phase it's judged at the end of. */
   startedAt: number;
   endsAt: number;
-  /** A marked tile (Rocco's red tile, the Lost Pup). */
+  /** The row it was revealed on (Avalanche Warning), and each hiker's row then (Smoke on the Wind). */
+  row: number;
+  startRows: Record<HikerId, number>;
+  /** A marked tile (Rocco's red tile). */
   targetTile?: TileId;
-  /** A chosen resource (Rocco's Resource Trial, Ranger's Request). */
+  /** A picked resource (Rocco's Resource Trial, Ranger's Request). */
   resource?: ResourceId;
-  /** Hikers who've already met the goal (Rocco's rewards are per hiker). */
-  done?: HikerId[];
+  /** Hikers who've met their part of the goal (or reached Rocco's tile). */
+  done: HikerId[];
+  /** Hikers already penalized along the way (Jogger, The Grim Sleeper!). */
+  penalized: HikerId[];
+  /** Ranger's Request: how much of the resource each hiker has scavenged since it started. */
+  gathered?: Record<HikerId, number>;
 }
 
 // ── Randomness ─────────────────────────────────────────────────────────────
@@ -418,6 +431,8 @@ export type Action =
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
   /** On a Choice space: which of the two challenges the party takes on. */
   | { type: 'chooseChallenge'; cardId: string }
+  /** "Got it": the open Trial starts its countdown. */
+  | { type: 'acceptTrial' }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -535,6 +550,17 @@ export type GameEventBody =
       to: TileId;
       how: 'swept' | 'back' | 'blown' | 'falseTrail';
       cause: string;
+    }
+  /** A Trial started, was met, ran out, ended, or a hiker earned part of it. */
+  | {
+      kind: 'trial';
+      cardId: string;
+      outcome: 'started' | 'passed' | 'failed' | 'ended' | 'reached' | 'paid';
+      hikerIds?: HikerId[];
+      /** Rocco: how many days it took. Ranger's Request: how many were taken, and the caps paid. */
+      days?: number;
+      taken?: number;
+      caps?: number;
     }
   /** On a Choice space, the party picked one challenge over the other. */
   | { kind: 'challengeChosen'; cardId: string; over: string }

@@ -22,16 +22,20 @@ export function cardText(
   parts: readonly TextPart[],
   opts: TextOptions = {},
 ): string {
-  return parts
-    .map((part) => {
-      if (typeof part === 'string') return part;
-      if (opts.rolls) return opts.rolls.includes[part.include] ? part.text : '';
-      const chance = Math.round((card.includes?.[part.include] ?? 0) * 100);
-      return ` (${chance}%:${part.text})`;
-    })
-    .join('')
-    .replace(/\{(\w+)\}/g, (whole, name: string) => fill(card, name, opts) ?? whole)
-    .trim();
+  return (
+    parts
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (opts.rolls) return opts.rolls.includes[part.include] ? part.text : '';
+        const chance = Math.round((card.includes?.[part.include] ?? 0) * 100);
+        return ` (${chance}%:${part.text})`;
+      })
+      .join('')
+      .replace(/\{(\w+)\}/g, (whole, name: string) => fill(card, name, opts) ?? whole)
+      // "for 1 days" reads "for 1 day" once the number is rolled.
+      .replace(/\b1 (day|phase|night|resource|food card|tool|cap)s\b/g, '1 $1')
+      .trim()
+  );
 }
 
 /** A range as it reads on a card: "2–4", or "3" when it can only be one number. */

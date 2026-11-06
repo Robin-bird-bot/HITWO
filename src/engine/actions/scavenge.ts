@@ -6,6 +6,7 @@
  *   card shows, and drains the card's node.
  * While a scavenge is open, every other action waits (see applyAction).
  */
+import { noteScavenged } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS } from '../../content';
 import { RESOURCES } from '../../content/resources';
@@ -230,6 +231,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
   });
   delete state.scavenge;
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
+  noteScavenged(state, hiker, kept);
 }
 
 /** How many bonus resources a take gets, and the Appetite they cost. */

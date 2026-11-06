@@ -44,6 +44,8 @@ import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel, type StashPick } from '../panels/TurnPanel';
 import { ChallengeResult } from '../challenge/ChallengeResult';
+import { TrialChips } from '../challenge/TrialChips';
+import { TrialDetails } from '../challenge/TrialWindow';
 import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
@@ -97,6 +99,15 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const closeScavenge = useCallback(() => setTook(null), []);
   // After a Risk roll, a Challenge space or an opportunity: what happened.
   const [result, setResult] = useState<ResultToShow | null>(null);
+  // A Trial in progress whose details are open (from its chip).
+  const [trialOpen, setTrialOpen] = useState<string | null>(null);
+  // Trial tiles on the map: orange where it was revealed, red for Rocco's tile.
+  const marks = Object.fromEntries(
+    (state.trials ?? []).flatMap((t) => [
+      [t.tileId, 'trial' as const],
+      ...(t.targetTile ? [[t.targetTile, 'target' as const] as const] : []),
+    ]),
+  );
 
   const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
@@ -290,6 +301,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         targets={targets}
         onTileClick={(tileId) => setPendingTile(tileId)}
         checkpointLabelOnHover={simple}
+        marks={marks}
         selectedId={selected?.id ?? null}
         onSelectHiker={select}
         camera={camera}
@@ -399,7 +411,16 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           simple={simple}
           onResolve={resolveChallenge}
           onChoose={(cardId) => dispatch({ type: 'chooseChallenge', cardId })}
+          onAccept={() => dispatch({ type: 'acceptTrial' })}
         />
+      )}
+      <TrialChips
+        state={state}
+        style={simple ? { left: 768, top: 112, translate: '-50% 0' } : { left: 470, top: 84 }}
+        onOpen={setTrialOpen}
+      />
+      {trialOpen && !state.challenge && (
+        <TrialDetails state={state} uid={trialOpen} onClose={() => setTrialOpen(null)} />
       )}
       {result && <ChallengeResult state={state} result={result} onClose={() => setResult(null)} />}
 

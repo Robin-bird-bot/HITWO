@@ -15,6 +15,7 @@ import { pick } from '../rng';
 import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
 import { notPlayableYet, pickForTile, type Picked } from './pick';
 import { rollCard } from './rolls';
+import { pickTrialTargets } from './trials';
 import type { CardDef } from './types';
 
 /** Hikers on a tile who can be affected (not abandoned). */
@@ -25,11 +26,6 @@ function hikersHere(state: GameState, tileId: TileId, only?: readonly HikerId[])
       h.status !== 'abandoned' &&
       (only === undefined || only.includes(h.id)),
   );
-}
-
-/** Cards the pop-up can show so far. TODO(phase 5 step 4): Trials. */
-function canOpenYet(card: CardDef): boolean {
-  return card.kind !== 'trial';
 }
 
 /** A challenge of a given tier and node, for a card that starts another (Bear Country). */
@@ -88,7 +84,7 @@ export function revealTile(
   }
   const picked = pickForTile(state, state.rng, tile, here);
   const card = picked && CARDS[picked.cardId];
-  if (!picked || !card || !canOpenYet(card)) return;
+  if (!picked || !card) return;
   openCard(
     state,
     card,
@@ -125,6 +121,8 @@ export function openCard(
       ? { alternative: { cardId: other.id, rolls: rollCard(state.rng, other, here, picked.scale) } }
       : {}),
   };
+  const targets = card.kind === 'trial' ? pickTrialTargets(state, card, tileId) : undefined;
+  if (targets) open.trial = targets;
   state.challenge = open;
   for (const id of [card.id, ...(other ? [other.id] : [])]) {
     if (!state.usedCards.includes(id)) state.usedCards.push(id);

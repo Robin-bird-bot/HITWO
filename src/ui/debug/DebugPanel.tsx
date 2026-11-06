@@ -15,7 +15,7 @@ import {
   PHASES,
   STAT_NAMES,
   type Action,
-  type ChallengeDef,
+  type CardDef,
   type GameState,
   type Hiker,
   type NodeType,
@@ -296,6 +296,8 @@ function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Act
   );
 }
 
+const ORDER = { challenge: 0, trial: 1, opportunity: 2 } as const;
+
 /**
  * Open any challenge on a hiker's tile (for the hikers there), show the rolled
  * numbers in the pop-up, or switch challenges off to test other things.
@@ -305,17 +307,16 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
   const [cardId, setCardId] = useState('flies');
   const hiker = state.hikers.find((h) => h.id === hikerId);
   const cards = Object.values(CARDS)
-    .filter((c): c is ChallengeDef => c.kind !== 'trial')
+    .filter((c) => c.kind !== 'trial' || c.goal.kind !== 'off')
     .sort(
-      (a, b) =>
-        Number(a.kind === 'opportunity') - Number(b.kind === 'opportunity') ||
-        a.tier - b.tier ||
-        a.name.localeCompare(b.name),
+      (a, b) => ORDER[a.kind] - ORDER[b.kind] || a.tier - b.tier || a.name.localeCompare(b.name),
     );
-  const label = (c: ChallengeDef) =>
+  const label = (c: CardDef) =>
     c.kind === 'opportunity'
       ? `Opportunity · ${c.name}`
-      : `${tier[c.tier]} · ${c.name} (${c.risk ? 'risk' : c.scope === 'party' ? 'party' : 'each'})`;
+      : c.kind === 'trial'
+        ? `Trial · ${c.name}`
+        : `${tier[c.tier]} · ${c.name} (${c.risk ? 'risk' : c.scope === 'party' ? 'party' : 'each'})`;
   const openSpace = (space: 'choice' | 'challenge' | 'opportunity') =>
     hiker && onApply({ type: 'debug', op: { kind: 'openSpace', tileId: hiker.tileId, space } });
   const tier = { 1: 'I', 2: 'II', 3: 'III' } as const;

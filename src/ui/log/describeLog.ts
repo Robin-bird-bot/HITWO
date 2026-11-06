@@ -14,6 +14,7 @@ import {
   type StatName,
 } from '../../engine';
 import { NODE_NAME } from '../map/looks';
+import { cardText } from '../challenge/cardText';
 import { tileName } from '../panels/hikerInfo';
 import { resourceName, resourcesTitle } from '../scavenge/cardLook';
 
@@ -286,6 +287,25 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           text: `${name(e.hikerId)} ${verb} ${where} (${e.cause}).`,
           tone: 'injury',
         });
+        break;
+      }
+      case 'trial': {
+        const card = CARDS[e.cardId];
+        const trialName = card?.name ?? 'A Trial';
+        const who = listNames((e.hikerIds ?? []).map(name));
+        const text =
+          e.outcome === 'started'
+            ? `Trial: ${trialName}${/[.!?]$/.test(trialName) ? '' : '.'} ${card?.kind === 'trial' ? cardText(card, card.goalText) : ''}`
+            : e.outcome === 'passed'
+              ? `${trialName}: done in time.`
+              : e.outcome === 'failed'
+                ? `${trialName}: time’s up for ${who}.`
+                : e.outcome === 'reached'
+                  ? `${who} made it for ${trialName} on day ${e.days ?? 1}.`
+                  : e.outcome === 'paid'
+                    ? `${trialName}: the ranger took ${e.taken ?? 0} and paid ${e.caps ?? 0} caps.`
+                    : `${trialName} is over.`;
+        lines.push({ id: e.id, text: text.trim(), tone: 'challenge' });
         break;
       }
       case 'challengeChosen':

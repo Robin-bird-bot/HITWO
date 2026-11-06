@@ -168,6 +168,23 @@ describe('trail log sentences', () => {
     ]);
   });
 
+  it('describe a Trial starting and running out (Phase 5)', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'L');
+    const g = run(
+      s,
+      { type: 'debug', op: { kind: 'openChallenge', cardId: 'train', tileId: 'L' } },
+      { type: 'acceptTrial' },
+      { type: 'endPhase' },
+      { type: 'endPhase' },
+    );
+    const lines = texts(g);
+    expect(lines).toContain(
+      'Trial: Train!! Every hiker leaves this tile by the end of the next phase.',
+    );
+    expect(lines).toContain('Train!!: time’s up for Ash.');
+  });
+
   it('keep only the most recent lines', () => {
     let s = fixtureGame();
     for (let i = 0; i < 9; i++) s = applyAction(s, { type: 'endPhase' });
