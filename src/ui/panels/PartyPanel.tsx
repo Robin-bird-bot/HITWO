@@ -6,7 +6,14 @@ import { characterFor } from '../../content/characters';
 import { TRAITS } from '../../content';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, type GameState, type Hiker, type HikerId, type SlotType } from '../../engine';
+import {
+  STAT_NAMES,
+  statMax,
+  type GameState,
+  type Hiker,
+  type HikerId,
+  type SlotType,
+} from '../../engine';
 import { Icon } from '../icons/Icon';
 import {
   conditionChips,
@@ -33,6 +40,7 @@ export function PartyPanel({ state, selectedId, onSelect }: PartyPanelProps) {
   return (
     <Panel
       id="party"
+      movable
       as="aside"
       label="party"
       style={{ left: 16, top: 120, width: 288, height: 864 }}
@@ -116,7 +124,7 @@ function HikerCard({
             <span>{family.label}</span>
           </div>
           {STAT_NAMES.map((stat) => (
-            <StatBar key={stat} stat={stat} value={h.stats[stat]} ticks />
+            <StatBar key={stat} stat={stat} value={h.stats[stat]} max={statMax(h, stat)} ticks />
           ))}
           <Conditions chips={conditionChips(h)} />
         </div>
@@ -187,10 +195,14 @@ const MAX_SLOTS = 6;
 export function Details({ hiker: h, showConditions }: { hiker: Hiker; showConditions?: boolean }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
-  const chips = conditionChips(h);
+  // Simple lists every chip here; Informative's card already shows the states,
+  // so its details list only the timed conditions, with their time left.
+  const chips = conditionChips(h).filter(
+    (c) => showConditions || c.kind === 'positive' || c.kind === 'negative',
+  );
   return (
     <div className={styles.details}>
-      {showConditions && chips.length > 0 && (
+      {chips.length > 0 && (
         <div className={styles.conditionList}>
           {chips.map((c) => (
             <span key={c.key} className={styles.conditionLine}>

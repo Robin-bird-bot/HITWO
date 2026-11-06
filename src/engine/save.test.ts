@@ -54,6 +54,66 @@ describe('save and load', () => {
     expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'tooNew' });
   });
 
+  it('upgrades a version 2 save: no challenges used yet (Phase 5)', () => {
+    const v2 = structuredClone(fixtureGame()) as Partial<GameState>;
+    delete v2.usedCards;
+    const loaded = deserialize(JSON.stringify({ ...v2, saveVersion: 2 }));
+    expect(loaded.ok).toBe(true);
+    if (loaded.ok) {
+      expect(loaded.state.saveVersion).toBe(SAVE_VERSION);
+      expect(loaded.state.usedCards).toEqual([]);
+      expect(loaded.state.trials).toBeUndefined();
+    }
+  });
+
+  it('upgrades a version 3 save: run counters start at zero (Nov 6 update)', () => {
+    const v3 = structuredClone(fixtureGame()) as Partial<GameState>;
+    delete v3.counters;
+    const loaded = deserialize(JSON.stringify({ ...v3, saveVersion: 3 }));
+    expect(loaded.ok && loaded.state.counters).toEqual({
+      passed: {},
+      failed: {},
+      crafted: {},
+      daysSinceSleep: {},
+      sheltersPlaced: {},
+    });
+  });
+
+  it('upgrades a version 4 save: the trail gets a Wonder on a tile nobody has reached', () => {
+    const v4 = structuredClone(fixtureGame());
+    v4.section.tiles.L!.visited = true;
+    const loaded = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const withWonder = Object.values(loaded.state.section.tiles).filter((t) => t.wonder);
+    expect(withWonder).toHaveLength(1);
+    const tile = withWonder[0]!;
+    expect(['M', 'R']).toContain(tile.id);
+    expect(tile.nodes).toEqual([]);
+    expect(tile.wonder?.decoys).toBeGreaterThan(0);
+    // The same save always gets the same Wonder.
+    const again = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
+    expect(again.ok && Object.values(again.state.section.tiles).find((t) => t.wonder)).toEqual(
+      tile,
+    );
+  });
+
+  it('round-trips conditions with their timing', () => {
+    const state = fixtureGame();
+    const ash = state.hikers[0];
+    if (!ash) throw new Error('no hiker');
+    ash.conditions = [
+      { id: 'frozen', remaining: 1, unit: 'phases', fresh: true },
+      {
+        id: 'hangry',
+        remaining: 2,
+        unit: 'days',
+        then: { id: 'nauseous', remaining: 1, unit: 'days' },
+      },
+    ];
+    expect(deserialize(serialize(state))).toEqual({ ok: true, state });
+  });
+
   it('refuses an old version with no migration', () => {
     const data = { ...fixtureGame(), saveVersion: 0 };
     expect(deserialize(JSON.stringify(data))).toEqual({ ok: false, reason: 'unsupported' });

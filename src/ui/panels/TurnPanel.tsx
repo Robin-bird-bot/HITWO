@@ -59,6 +59,7 @@ export function TurnPanel({
   return (
     <Panel
       id="turn"
+      movable
       as="aside"
       label="selected hiker's turn"
       style={{ left: 1240, top: 120, width: 344, height: 864 }}
@@ -119,7 +120,12 @@ function ActionGrid({
         ))}
       </div>
       {slot ?? (
-        <p id="action-reason" className={styles.reason} role="status">
+        <p
+          id="action-reason"
+          className={styles.reason}
+          role="status"
+          data-status={!note && explain?.status === 'status' ? 'status' : undefined}
+        >
           {message}
         </p>
       )}

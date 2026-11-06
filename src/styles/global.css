@@ -52,3 +52,16 @@ button {
     scroll-behavior: auto !important;
   }
 }
+
+/* Movable windows (src/ui/windows): grab them by the title bar. */
+[data-drag-handle] {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+[data-dragging='true'],
+[data-dragging='true'] [data-drag-handle] {
+  cursor: grabbing;
+}

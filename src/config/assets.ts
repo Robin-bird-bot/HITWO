@@ -96,6 +96,20 @@ export const ASSETS = {
   },
 } as const;
 
+/**
+ * A card's picture, named by its id (16:9, 960×540): challenges and Trials in
+ * challenges/, opportunities in opportunities/.
+ */
+export function cardArt(card: { id: string; kind: string }): string {
+  const folder = card.kind === 'opportunity' ? 'opportunities' : 'challenges';
+  return asset(`${folder}/${card.id}.jpg`);
+}
+
+/** A Wonder's banner picture (16:9, 1600×900). */
+export function wonderArt(id: string): string {
+  return asset(`wonders/${id}.jpg`);
+}
+
 function byItemType(path: (type: string) => string) {
   return Object.fromEntries(
     ['tool', 'food', 'clothes', 'shelter', 'trinket'].map((t) => [t, path(t)]),

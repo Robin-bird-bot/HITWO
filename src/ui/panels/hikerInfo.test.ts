@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { createGame } from '../../engine';
+import { addCondition } from '../../engine/conditions';
 import { fixtureGame, hiker, place, toNight } from '../../engine/test/fixtures';
-import { actionStates, conditionChips, statNote, statusTag } from './hikerInfo';
+import { actionStates, conditionChips, simpleActions, statNote, statusTag } from './hikerInfo';
 
 const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
   Object.fromEntries(actionStates(s, hiker(s, id)).map((a) => [a.id, a]));
@@ -13,6 +14,19 @@ describe('action grid', () => {
     expect(a.watch?.status).toBe('soon');
     expect(a.fire?.reason).toBe('Sitting by the fire arrives in Phase 6.');
     expect(a.craft?.sub).toBe('Phase 9');
+  });
+
+  it('marks actions stopped by a status red, and keeps them in Simple mode (Nov 5)', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'L', { appetite: 2 });
+    const a = byId(s, 'ash');
+    expect(a.move).toMatchObject({ status: 'status', reason: expect.stringMatching(/^Famished/) });
+    expect(a.scavenge?.status).toBe('status');
+    expect(a.sleep?.status).toBe('blocked'); // daytime: a normal reason
+    const simple = simpleActions(s, hiker(s, 'ash')).map((x) => x.id);
+    expect(simple).toContain('move');
+    expect(simple).toContain('tend');
+    expect(simple).not.toContain('sleep');
   });
 
   it('makes Scavenge ready on a tile with nodes, with its cost', () => {
@@ -41,7 +55,7 @@ describe('action grid', () => {
   it('readies Sleep at night, showing the Energy it gives', () => {
     expect(byId(toNight(fixtureGame()), 'ash').sleep).toMatchObject({
       status: 'ready',
-      sub: '+2 Energy',
+      sub: '+1 Energy',
     });
   });
 
@@ -64,6 +78,8 @@ describe('hiker card details', () => {
     expect(statNote('energy', 8)).toBe('Fatigued at 6');
     expect(statNote('energy', 5)).toBe('Exhausted at 3');
     expect(statNote('appetite', 2)).toBe('Famished');
+    expect(statNote('morale', 8)).toBe('Luck +1.2');
+    expect(statNote('morale', 0)).toBe('Luck −2');
   });
 
   it('shows threshold states and injuries as condition icons', () => {
@@ -74,6 +90,19 @@ describe('hiker card details', () => {
       'hungry',
       'exhausted',
       'injury',
+    ]);
+  });
+
+  it('lists timed conditions with their time left (Phase 5)', () => {
+    const s = fixtureGame();
+    const ash = hiker(s, 'ash');
+    addCondition(s, ash, 'frozen', 1, 'phases', 'test');
+    addCondition(s, ash, 'lucky', 2, 'days', 'test');
+    addCondition(s, ash, 'allergies', 3, 'days', 'test', { node: 'river' });
+    expect(conditionChips(ash).map((c) => [c.kind, c.label])).toEqual([
+      ['negative', 'Frozen: 1 more phase'],
+      ['positive', 'Lucky: 2 more days'],
+      ['negative', 'Allergies (River): 3 more days'],
     ]);
   });
 

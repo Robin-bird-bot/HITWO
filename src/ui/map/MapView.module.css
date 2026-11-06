@@ -39,6 +39,39 @@
   background: #e9b44c;
 }
 
+/* A Trial's tile (orange) or Rocco's red tile: a wider ring outside the reach ring. */
+.markRing {
+  left: -14px;
+  top: -16px;
+  width: 140px;
+  height: 160px;
+  background: #e0812f;
+}
+
+/* Predator Bait: the tile that just got easier, in blue for a moment. */
+.markRing[data-mark='easier'] {
+  background: #7fd3e6;
+  animation: markPulse 0.9s ease-in-out infinite;
+}
+
+.markRing[data-mark='target'] {
+  background: #e5624a;
+  animation: markPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes markPulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .markRing[data-mark='target'],
+  .markRing[data-mark='easier'] {
+    animation: none;
+  }
+}
+
 .tile[data-reach] {
   cursor: pointer;
 }
@@ -386,4 +419,68 @@
 .control:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* A card revealed early: a button at the top of the tile. */
+.revealed {
+  position: absolute;
+  left: 50%;
+  top: -12px;
+  translate: -50% 0;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid #f7f1e4;
+  background: #c8403a;
+  color: #fff6ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(20, 32, 28, 0.35);
+}
+
+.revealed[data-kind='opportunity'] {
+  background: #2f6fae;
+}
+
+.revealed[data-kind='trial'] {
+  background: #e0812f;
+}
+
+.revealed[data-kind='wonder'] {
+  background: linear-gradient(155deg, #e2a9f1, #d675ef, #9a3f64, #cd1f66);
+}
+
+.revealed[data-kind='wonderDone'] {
+  background: #8d8794;
+}
+
+/* A found Wonder's emblem in the middle of its tile. */
+.wonderEmblem {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid #f7f1e4;
+  background: linear-gradient(155deg, #e2a9f1, #d675ef, #9a3f64, #cd1f66);
+  color: #fff6ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wonderEmblem[data-done='true'] {
+  background: #8d8794;
+}
+
+.revealed:hover,
+.revealed:focus-visible {
+  scale: 1.12;
+}
+
+.revealed:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
 }

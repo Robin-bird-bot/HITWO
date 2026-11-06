@@ -56,7 +56,8 @@ describe('generateSection over 1,000 seeds', () => {
   });
 
   it('weights node counts as configured', () => {
-    const tiles = sections.flatMap(middleTiles);
+    // The Wonder's tile has no nodes on purpose.
+    const tiles = sections.flatMap(middleTiles).filter((t) => !t.wonder);
     const weights = BALANCE.trail.nodeCountWeights;
     const total = weights[1] + weights[2] + weights[3];
     for (const n of [1, 2, 3] as const) {

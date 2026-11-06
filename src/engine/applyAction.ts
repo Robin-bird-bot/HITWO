@@ -3,6 +3,9 @@
  * returns a new state and never touches the one passed in.
  */
 import { applyDebug } from './actions/debug';
+import { applyChoose, applyResolve, validateChoose, validateResolve } from './challenges/resolve';
+import { applyAccept, validateAccept } from './challenges/trials';
+import { applyPress, validatePress } from './challenges/buttons';
 import { applyMove, validateMove } from './actions/move';
 import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
@@ -22,6 +25,7 @@ import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
+import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
 
 /** What can happen while a scavenge is open (plus the debug tools). */
@@ -47,6 +51,17 @@ export class InvalidActionError extends Error {
 export function validateAction(state: GameState, action: Action): string | null {
   // An open scavenge waits for a card before anything else happens.
   if (state.scavenge && !SCAVENGE_STEPS.has(action.type)) return 'Finish scavenging first.';
+  // So does an open challenge.
+  const challengeSteps: Action['type'][] = [
+    'resolveChallenge',
+    'chooseChallenge',
+    'acceptTrial',
+    'pressButton',
+    'debug',
+  ];
+  if (state.challenge && !challengeSteps.includes(action.type)) {
+    return 'Finish the challenge first.';
+  }
   switch (action.type) {
     case 'move':
       return validateMove(state, action) ?? null;
@@ -72,6 +87,16 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateGive(state, action) ?? null;
     case 'returnToNature':
       return validateReturn(state, action) ?? null;
+    case 'resolveChallenge':
+      return validateResolve(state, action) ?? null;
+    case 'chooseChallenge':
+      return validateChoose(state, action) ?? null;
+    case 'acceptTrial':
+      return validateAccept(state) ?? null;
+    case 'pressButton':
+      return validatePress(state, action) ?? null;
+    case 'accomplishWonder':
+      return validateAccomplish(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -120,6 +145,21 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'returnToNature':
       applyReturn(draft, action);
+      break;
+    case 'resolveChallenge':
+      applyResolve(draft, action);
+      break;
+    case 'chooseChallenge':
+      applyChoose(draft, action);
+      break;
+    case 'acceptTrial':
+      applyAccept(draft);
+      break;
+    case 'pressButton':
+      applyPress(draft, action);
+      break;
+    case 'accomplishWonder':
+      applyAccomplish(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

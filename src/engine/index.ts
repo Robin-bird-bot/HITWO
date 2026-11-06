@@ -37,4 +37,40 @@ export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
 export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/scavenge';
 export { isLow } from './abundance';
-export { tendAmount, tendableNodes } from './actions/tend';
+export { tendAmount, tendCost, tendableNodes } from './actions/tend';
+export { blockedByStatus, withoutStatus } from './status';
+export { amount, rollCard, scaledRange, notBuiltYet, type CardRolls } from './challenges/rolls';
+export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
+export { hasCondition } from './conditions';
+export type * from './challenges/types';
+export {
+  challengeHikers,
+  challengeSections,
+  giftCount,
+  giftFits,
+  openCardDef,
+  optionShortfall,
+  paidCause,
+  requirementNeed,
+  resourceFits,
+} from './challenges/resolve';
+export { foodCarried } from './challenges/applyEffects';
+export { riskReading, riskSpendFits, type RiskReading } from './challenges/risk';
+export { deadlineOf, phaseIndex, timeLeft } from './challenges/trials';
+export { pressKey, pressesLeft, revealableFrom, unrevealedTiles } from './challenges/buttons';
+export { immovable } from './challenges/applyEffects';
+export { revealCardOn } from './challenges/reveal';
+export { statMax } from './stats';
+export type * from './wonders/types';
+export {
+  GOALS_SHOWN,
+  isAccomplished,
+  isRevealed,
+  levelOf,
+  pickProblem,
+  scaledNumber,
+  wonderProgress,
+  wonderTile,
+  type GoalProgress,
+  type WonderProgress,
+} from './wonders/wonders';

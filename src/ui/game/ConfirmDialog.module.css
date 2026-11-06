@@ -2,8 +2,8 @@
   position: absolute;
   inset: 0;
   z-index: 20;
-  background: rgba(15, 20, 18, 0.35);
-  backdrop-filter: blur(4px);
+  /* A light dim, no blur: drag the dialog aside to see the map behind it (Nov 5, 2a). */
+  background: rgba(15, 20, 18, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;

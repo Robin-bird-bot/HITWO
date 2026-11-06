@@ -18,7 +18,11 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `item-cards/` | `gradients/`, `type-icons/`, `rays/` (one per type), `front-background.png`, `palette-reference.png` | Layers the game builds item cards from. See "Item card layers" below |
 | `item-cards/samples/` | bandages, hatchet, jerky, net, rain jacket, shovel, trail mix, trail shoes | Old flat card art from the card game, for reference only |
 | `portraits/` | placeholder, placeholder-character-card | **Use the placeholder for every hiker for now.** Real character art comes later |
-| `art/` | challenge-bear, challenge-fallen-tree | Challenge pop-up art |
+| `art/` | challenge-bear, challenge-fallen-tree | Early challenge pop-up art (superseded by `challenges/`) |
+| `challenges/` | One 1920×1080 JPEG per challenge and Trial (96), named after it (`flies.jpg`, `the-grim-sleeper.jpg`…) | Challenge and Trial pop-up art at 16:9. The game loads shrunk copies (960×540 JPEG) from `public/assets/challenges/<id>.jpg`, via `cardArt(card)` |
+| `opportunities/` | One 1920×1080 JPEG per opportunity (17): `snake-slots.jpg`, `citro-tub.jpg`… | Opportunity pop-up art. Shrunk copies (960×540) in `public/assets/opportunities/`, via `cardArt(card)` |
+| `wonders/` | One 1920×1080 JPEG per Wonder (7): `crater-lake.jpg`, `multnomah-falls.jpg`… | The Wonder pop-up's full-width banner. Shrunk copies (1600×900) in `public/assets/wonders/`, via `wonderArt(id)` |
+| `night-events/` | One 1920×1080 JPEG per night event (15): `raccoons.jpg`, `cultists.jpg`… | Phase 6 night events. Not copied into `public/` until then |
 
 **Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
 

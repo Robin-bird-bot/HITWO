@@ -1,4 +1,11 @@
 import { BALANCE } from '../../config/balance';
+import { CARDS } from '../../content/challenges';
+import { CONDITIONS } from '../../content/conditions';
+import { pickForTile } from '../challenges/pick';
+import { openCard, revealCardOn } from '../challenges/reveal';
+import { addCondition } from '../conditions';
+import { revealWonder, wonderTile } from '../wonders/wonders';
+import { enterTile } from './common';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import type { DebugOp, GameState, NodeType } from '../types';
@@ -62,6 +69,103 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Next deal: ${op.types.join(', ') || 'random'}` });
       break;
     }
+    case 'addCondition': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      // Allergies takes a node: this tile's first one, or Forest.
+      const here = state.section.tiles[hiker.tileId]?.nodes
+        .map((n) => n.type)
+        .find((t): t is NodeType => t !== 'caps');
+      const node = CONDITIONS[op.conditionId]?.takesNode ? (here ?? 'forest') : undefined;
+      addCondition(state, hiker, op.conditionId, op.remaining, op.unit, 'the debug panel', {
+        ...(node ? { node } : {}),
+      });
+      break;
+    }
+    case 'clearConditions': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.conditions = [];
+      pushEvent(state, { kind: 'debug', note: `Cleared ${hiker.name}'s conditions` });
+      break;
+    }
+    case 'openChallenge': {
+      const card = CARDS[op.cardId];
+      const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');
+      if (!card || !here.length) return;
+      delete state.challenge;
+      const tier = card.tier;
+      openCard(
+        state,
+        card,
+        op.tileId,
+        here.map((h) => h.id),
+        { tier, scale: 1 },
+      );
+      pushEvent(state, { kind: 'debug', note: `Opened ${card.name}` });
+      break;
+    }
+    case 'revealCard':
+      revealCardOn(state, op.tileId, 'the debug panel');
+      break;
+    case 'revealWonder': {
+      const tile = wonderTile(state);
+      if (tile) revealWonder(state, tile.id, 'the debug panel');
+      break;
+    }
+    case 'gatherAt': {
+      const tile = state.section.tiles[op.tileId];
+      if (!tile) return;
+      for (const h of state.hikers) if (h.status !== 'abandoned') h.tileId = op.tileId;
+      enterTile(state, op.tileId);
+      if (tile.wonder) revealWonder(state, op.tileId, 'the debug panel');
+      pushEvent(state, { kind: 'debug', note: `Put everyone on ${op.tileId}` });
+      break;
+    }
+    case 'openSpace': {
+      const tile = state.section.tiles[op.tileId];
+      const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');
+      if (!tile || !here.length) return;
+      const picked = pickForTile(state, state.rng, { ...tile, special: op.space }, here);
+      const card = picked && CARDS[picked.cardId];
+      if (!picked || !card) return;
+      delete state.challenge;
+      openCard(
+        state,
+        card,
+        op.tileId,
+        here.map((h) => h.id),
+        {
+          ...picked,
+          challengeSpace: op.space === 'challenge',
+        },
+      );
+      pushEvent(state, { kind: 'debug', note: `Opened a ${op.space} space` });
+      break;
+    }
+    case 'showRolls':
+      if (op.on) state.debugRolls = true;
+      else delete state.debugRolls;
+      break;
+    case 'setTier':
+      state.section.tier = op.tier;
+      pushEvent(state, { kind: 'debug', note: `Section tier ${op.tier}` });
+      break;
+    case 'setSnowy':
+      if (op.on) state.snowy = true;
+      else delete state.snowy;
+      pushEvent(state, { kind: 'debug', note: `Snowy section ${op.on ? 'on' : 'off'}` });
+      break;
+    case 'setWeather':
+      if (op.weather === 'clear') delete state.weather;
+      else state.weather = op.weather;
+      pushEvent(state, { kind: 'debug', note: `Weather: ${op.weather}` });
+      break;
+    case 'setChallenges':
+      if (op.on) delete state.noChallenges;
+      else state.noChallenges = true;
+      pushEvent(state, { kind: 'debug', note: `Challenges ${op.on ? 'on' : 'off'}` });
+      break;
     case 'setAbundance': {
       for (const [node, value] of Object.entries(op.abundance) as [NodeType, number][]) {
         state.abundance[node] = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(value)));

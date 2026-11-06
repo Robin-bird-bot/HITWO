@@ -54,6 +54,7 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
   return (
     <Popout
       label={`${name}: give or return`}
+      dragId="inventory"
       className={styles.menu}
       style={{
         left: 1240 - WIDTH - 12,
@@ -62,7 +63,7 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
       }}
       onClose={onClose}
     >
-      <span className={styles.head}>
+      <span className={styles.head} data-drag-handle>
         {resource && <img src={ASSETS.resources[resource.id]} alt="" width={28} height={28} />}
         {name.toUpperCase()}
         {resource && count > 1 && <span className={styles.count}>×{count}</span>}

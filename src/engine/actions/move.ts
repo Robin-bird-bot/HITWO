@@ -1,3 +1,5 @@
+import { revealTile } from '../challenges/reveal';
+import { noteArrival } from '../challenges/trials';
 import { moveCost } from '../costs';
 import { fireMove } from '../effects';
 import { pushEvent } from '../log';
@@ -6,6 +8,7 @@ import type { Action, GameState } from '../types';
 import {
   enterTile,
   findHiker,
+  moraleCostReason,
   mustFindHiker,
   payCost,
   phaseActionReason,
@@ -22,7 +25,9 @@ export function validateMove(state: GameState, action: MoveAction): string | und
   if (!lineBetween(state.section, hiker.tileId, action.toTileId)) {
     return 'That tile isn’t connected to this one.';
   }
-  return tileEntryReason(state, action.toTileId);
+  const entry = tileEntryReason(state, action.toTileId);
+  if (entry) return entry;
+  return moraleCostReason(hiker, moveCost(state, hiker.id, action.toTileId)?.morale ?? 0);
 }
 
 export function applyMove(state: GameState, action: MoveAction): void {
@@ -32,6 +37,8 @@ export function applyMove(state: GameState, action: MoveAction): void {
   if (!line || !cost) throw new Error('applyMove: not adjacent');
 
   const from = hiker.tileId;
+  const firstHere = !state.section.tiles[action.toTileId]?.visited;
+  hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
   hiker.acted = true;
   const revealed = enterTile(state, hiker.tileId);
@@ -45,4 +52,7 @@ export function applyMove(state: GameState, action: MoveAction): void {
   });
   payCost(state, hiker, cost, 'Move');
   fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line });
+  noteArrival(state, [hiker.id], hiker.tileId);
+  // The first hiker to land on a tile triggers its card.
+  if (firstHere) revealTile(state, hiker.tileId, [hiker.id]);
 }

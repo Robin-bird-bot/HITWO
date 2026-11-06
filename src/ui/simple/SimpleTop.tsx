@@ -80,12 +80,15 @@ export function DayPill({ state }: { state: GameState }) {
       {weatherOpen && (
         <Popout
           label="Weather"
+          dragId="weather"
           className={styles.popout}
           style={{ left: 768 - 130, top: 112, width: 260 }}
           ignore={[buttonRef]}
           onClose={() => setWeatherOpen(false)}
         >
-          <span className={styles.infoTitle}>CLEAR SKIES</span>
+          <span className={styles.infoTitle} data-drag-handle>
+            CLEAR SKIES
+          </span>
           <span className={styles.info}>
             No weather effects today. (Placeholder: weather arrives in Phase 6.)
           </span>
@@ -127,12 +130,15 @@ export function GoalPill() {
       {open && (
         <Popout
           label="Party goal"
+          dragId="goal"
           className={styles.popout}
           style={{ left: 768 - 140, top: 110, width: 280 }}
           ignore={[buttonRef]}
           onClose={() => setOpen(false)}
         >
-          <span className={styles.infoTitle}>PARTY GOAL</span>
+          <span className={styles.infoTitle} data-drag-handle>
+            PARTY GOAL
+          </span>
           <span className={styles.info}>
             Each section you’ll pick one party goal, shown here with its progress. Objectives arrive
             in Phase 12.

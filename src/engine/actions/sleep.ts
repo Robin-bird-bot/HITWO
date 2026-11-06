@@ -1,3 +1,4 @@
+import { noteSleep } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
 import { computeGain, fireHook } from '../effects';
 import { pushEvent } from '../log';
@@ -9,7 +10,8 @@ type SleepAction = Extract<Action, { type: 'sleep' }>;
 
 /** A campsite is a built-in shelter. Placed shelters arrive with items (Phase 9). */
 export function isSheltered(state: GameState, hiker: Hiker): boolean {
-  return state.section.tiles[hiker.tileId]?.special === 'campsite';
+  const tile = state.section.tiles[hiker.tileId];
+  return tile?.special === 'campsite' || (tile?.shelters?.length ?? 0) > 0;
 }
 
 export function validateSleep(state: GameState, action: SleepAction): string | undefined {
@@ -40,4 +42,5 @@ export function applySleep(state: GameState, action: SleepAction): void {
   pushEvent(state, { kind: 'sleep', hikerId: hiker.id });
   changeStat(state, hiker, 'energy', gain, 'Sleep');
   fireHook(state, hiker, 'onSleep');
+  noteSleep(state, hiker);
 }

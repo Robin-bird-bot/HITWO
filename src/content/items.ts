@@ -122,8 +122,36 @@ const NAMED: ItemDef[] = [
   inert('ring', 'Ring', 'trinket', "Changes a hiker's family for a set number of days"),
 ];
 
+/** Opportunity rewards (Nov 6 update) until the real items exist. Not found by scavenging. */
+const REWARDS: ItemDef[] = [
+  inert('citroDrink', 'Citro Drink', 'food', 'A fizzy drink from the Citro Tub (placeholder)'),
+];
+
+/**
+ * Tier III stand-ins for a Wonder's "pick 1 of 3" and Snake Slots' jackpot.
+ * TODO(phase 9): the real Tier III items and traits.
+ */
+const TIER_3: ItemDef[] = [
+  { ...inert('tier3Tool', 'Tier III Tool', 'tool', 'A top-tier tool (placeholder)'), tier: 3 },
+  {
+    ...inert(
+      'tier3Clothes',
+      'Tier III Clothes',
+      'clothes',
+      'Top-tier clothes (placeholder)',
+      'body',
+    ),
+    tier: 3,
+  },
+  {
+    ...inert('tier3Trinket', 'Lucky Charm', 'trinket', 'A top-tier trinket (placeholder)'),
+    tier: 3,
+  },
+];
+export const TIER_3_ITEMS: readonly string[] = TIER_3.map((i) => i.id);
+
 export const ITEMS: Readonly<Record<string, ItemDef>> = Object.fromEntries(
-  [backpack, ...NAMED].map((i) => [i.id, i]),
+  [backpack, ...NAMED, ...REWARDS, ...TIER_3].map((i) => [i.id, i]),
 );
 
 /** Items scavenging can find, by type (the Backpack is a test stand-in, so it's left out). */

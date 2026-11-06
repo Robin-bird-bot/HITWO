@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { createGame } from '../../engine';
 import { fixtureGame, hiker, place, toNight } from '../../engine/test/fixtures';
-import { BAR_COLOR, barColor, barLevel, nothingToDoReason, readyActions } from './hikerInfo';
+import {
+  BAR_COLOR,
+  BAR_LEVELS,
+  barColor,
+  barLevel,
+  nothingToDoReason,
+  readyActions,
+  THRESHOLD_STATS,
+} from './hikerInfo';
 
 describe('status bar colours', () => {
   it('use each stat’s own colour normally', () => {
@@ -59,5 +67,13 @@ describe('Simple mode actions', () => {
     expect(nothingToDoReason(s, hiker(s, 'ash'))).toBe('Ash has already acted this morning.');
     place(s, 'birch', 'T', { energy: 3 });
     expect(nothingToDoReason(s, hiker(s, 'birch'))).toMatch(/^Exhausted/);
+  });
+});
+
+describe('threshold ticks (Nov 5, 2c)', () => {
+  it('sit at 6 and 3 on Energy, and 5 and 2 on Appetite', () => {
+    expect(THRESHOLD_STATS).toEqual(['energy', 'appetite']);
+    expect(BAR_LEVELS.energy).toEqual({ low: 6, critical: 3 });
+    expect(BAR_LEVELS.appetite).toEqual({ low: 5, critical: 2 });
   });
 });

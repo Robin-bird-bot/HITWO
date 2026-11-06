@@ -69,15 +69,23 @@ export function fixtureHiker(id: HikerId, traits: string[] = []): HikerSetup {
 export interface FixtureOptions {
   seed?: number;
   hikers?: HikerSetup[];
+  /** Landing on a new tile opens a challenge. Off unless a test is about challenges. */
+  challenges?: boolean;
 }
 
 /** Four placeholder hikers on the trailhead, Day 1 Morning. */
-export function fixtureGame({ seed = 1, hikers }: FixtureOptions = {}): GameState {
-  return createGame({
+export function fixtureGame({
+  seed = 1,
+  hikers,
+  challenges = false,
+}: FixtureOptions = {}): GameState {
+  const state = createGame({
     seed,
     section: fixtureSection(),
     hikers: hikers ?? ['ash', 'birch', 'cedar', 'dot'].map((id) => fixtureHiker(id)),
   });
+  if (!challenges) state.noChallenges = true;
+  return state;
 }
 
 export function hiker(state: GameState, id: HikerId): Hiker {

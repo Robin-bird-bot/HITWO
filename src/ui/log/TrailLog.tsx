@@ -21,6 +21,7 @@ export function TrailLog({ state }: { state: GameState }) {
   return (
     <Panel
       id="log"
+      movable
       label="trail log"
       style={{ left: 320, bottom: 16, width: collapsed ? 220 : 440, maxHeight: 320 }}
       title={

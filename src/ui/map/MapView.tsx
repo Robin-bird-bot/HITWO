@@ -29,6 +29,12 @@ interface MapViewProps {
   onTileClick(tileId: string): void;
   /** Simple mode shows the checkpoint's label only on hover. */
   checkpointLabelOnHover?: boolean;
+  /** Trial tiles: orange where one was revealed, red for Rocco's tile, blue for one just made easier. */
+  marks?: Partial<Record<string, 'trial' | 'target' | 'easier'>>;
+  /** A card revealed early: its tile's icon was tapped. */
+  onRevealedClick?(tileId: string): void;
+  /** A found Wonder: its tile's icon was tapped. */
+  onWonderClick?(tileId: string): void;
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -44,6 +50,9 @@ export function MapView({
   targets,
   onTileClick,
   checkpointLabelOnHover,
+  marks,
+  onRevealedClick,
+  onWonderClick,
   selectedId,
   onSelectHiker,
   camera,
@@ -143,6 +152,9 @@ export function MapView({
             currentColor={selected ? characterFor(selected.id).color : undefined}
             hikerCount={hikers.filter((h) => h.tileId === t.id && h.status === 'active').length}
             reach={reachOf(t.id)}
+            mark={marks?.[t.id]}
+            onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
+            onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
             checkpointLabelOnHover={checkpointLabelOnHover}
             onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
           />

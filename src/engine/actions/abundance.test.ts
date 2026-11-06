@@ -53,13 +53,18 @@ describe('low Abundance when scavenging', () => {
 });
 
 describe('Tend', () => {
-  it('restores a node on the tile and uses the phase', () => {
+  it('restores a node on the tile, costs 1 Energy and uses the phase', () => {
     const s = onForest();
     s.abundance.forest = 3;
     const after = run(s, { type: 'tend', hikerId: 'ash', node: 'forest' });
     expect(after.abundance.forest).toBe(3 + BALANCE.abundance.tend);
     expect(hiker(after, 'ash').acted).toBe(true);
-    expect(after.log.at(-1)).toMatchObject({ kind: 'tend', node: 'forest', from: 3, to: 5 });
+    expect(hiker(after, 'ash').stats.energy).toBe(10 - BALANCE.abundance.tendEnergy);
+    expect(after.log.find((e) => e.kind === 'tend')).toMatchObject({
+      node: 'forest',
+      from: 3,
+      to: 5,
+    });
   });
 
   it('never goes above full', () => {

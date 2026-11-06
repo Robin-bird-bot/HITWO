@@ -7,9 +7,9 @@ import { useRef, useState } from 'react';
 import { characterFor } from '../../content/characters';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, type GameState, type Hiker, type HikerId } from '../../engine';
+import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK } from '../panels/hikerInfo';
+import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { Popout } from '../panels/Popout';
@@ -48,6 +48,7 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
     <>
       <Panel
         id="party"
+        movable
         as="aside"
         label="party"
         style={{ left: 16, top: 72, width: 288 }}
@@ -73,12 +74,13 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
       {open && openHiker && (
         <Popout
           label={`${openHiker.name} details`}
+          dragId="details"
           className={styles.popout}
           style={{ left: 316, top: open.top, width: 300 }}
           ignore={[listRef]}
           onClose={() => setOpen(null)}
         >
-          <div className={styles.popoutHead}>
+          <div className={styles.popoutHead} data-drag-handle>
             <span className={styles.popoutName}>{openHiker.name.toUpperCase()}</span>
             <span className={styles.muted}>
               {FAMILY_LOOK[openHiker.family].label.charAt(0) +
@@ -140,7 +142,15 @@ function HikerCard({
           </span>
         </span>
         {STAT_NAMES.map((stat) => (
-          <StatBar key={stat} stat={stat} value={h.stats[stat]} showNumber size="regular" />
+          <StatBar
+            key={stat}
+            stat={stat}
+            value={h.stats[stat]}
+            max={statMax(h, stat)}
+            showNumber
+            ticks={THRESHOLD_STATS.includes(stat)}
+            size="regular"
+          />
         ))}
       </span>
     </button>

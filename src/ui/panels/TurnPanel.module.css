@@ -72,6 +72,19 @@
   color: var(--page);
 }
 
+/* Stopped by a status (Exhausted, Morale 0, a condition…): red, so it's clear something is wrong. */
+.action[data-status='status'] {
+  border-color: #e5624a;
+  background: rgba(229, 98, 74, 0.14);
+  color: #f39a86;
+  cursor: help;
+}
+
+.reason[data-status='status'] {
+  color: #f39a86;
+  background: rgba(229, 98, 74, 0.12);
+}
+
 .action[data-status='blocked'],
 .action[data-status='soon'] {
   border-style: dashed;

@@ -84,6 +84,8 @@ export const BALANCE = {
 
   injuries: {
     passOutAt: 3,
+    /** Stats that give an injury when they hit 0 (Wyatt, Nov 5: not Morale, which stops at 0). */
+    fromStats: ['energy', 'appetite'] as StatName[],
     /** Gaining an injury raises each stat below this back up to it. */
     raiseStatsBelowTo: 5,
   },
@@ -160,16 +162,70 @@ export const BALANCE = {
     choiceItemOptions: 5,
   },
 
+  /** Challenges, opportunities and Trials (docs/design/04-challenges.md). */
+  challenges: {
+    /** What a new tile gets (Wyatt, Nov 5: 70 / 20 / 10). */
+    mix: { challenge: 70, trial: 20, opportunity: 10 },
+    /**
+     * A challenge one tier above its own has its ranges scaled by this
+     * (Wyatt, Nov 5: ×1.5). Backwards ranges (Dangerous Current) shrink.
+     */
+    tierScale: 1.5,
+    /**
+     * How strongly Luck skews X and Y toward the party's good end: the roll
+     * is u^(2^(Luck × this)), so Luck +2 makes the good end about twice as
+     * likely as the bad end. TODO(wyatt): first guess.
+     */
+    luckSkew: 0.5,
+    /** At most this many Trials at once. */
+    maxTrials: 2,
+    /** How likely each card is to be picked (1 when not listed). TODO(wyatt): all equal to start. */
+    weights: {} as Record<string, number>,
+    /** XP for passing a challenge: this × the trail tier (the XP table). */
+    passXpPerTier: 2,
+    /**
+     * Special spaces that never get a card when a hiker lands on them.
+     * TODO(wyatt): do Trail Sign, Geo-cache, Campsite, Overlook, Narrow Path and
+     * Mystery tiles also have a challenge? For now every tile does, except the
+     * trailhead and the checkpoint.
+     */
+    noCardOn: [] as readonly SpecialSpace[],
+    /**
+     * On a Challenge space, each passing hiker gets one of these at random: an
+     * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.
+     */
+    spaceRewards: ['item', 'lucky', 'doubleXp'] as const,
+  },
+
+  /** Opportunities (Nov 6 update). TODO(wyatt): first guesses where the doc gives no number. */
+  opportunities: {
+    /** Snake Slots: "a lot of caps", "a few caps" and "several resources". */
+    slots: { lotOfCaps: 15, fewCaps: 2, severalResources: 3 },
+    /** How long Mysterious Berries' random negative condition and Citro Tub's Energized last. */
+    conditionDays: 1,
+  },
+
+  /** Wonders (Nov 6 update, 3). TODO(wyatt): first guesses (approved Nov 6). */
+  wonders: {
+    /** Each biome after the first multiplies a goal's X by this (an "at most" X divides). */
+    biomeScale: 1.5,
+    /** "Gain a lot of XP": about one level's worth. */
+    lotOfXp: 100,
+    /** "Gain a lot of caps": about one good shop item. */
+    lotOfCaps: 15,
+    /** Pittock Mansion: "The party has X caps" (X[?+] in the doc). */
+    pittockCaps: 10,
+  },
+
   luck: {
     /** Luck is clamped to this range. */
     min: -5,
     max: 5,
-    /** Luck from Morale (Wyatt, Nov 4: gentle). The first row whose Morale is reached applies. */
-    fromMorale: [
-      { morale: 7, luck: 1 },
-      { morale: 4, luck: 0 },
-      { morale: 0, luck: -1 },
-    ],
+    /**
+     * Morale sets a base Luck (Wyatt, Nov 5): this at Morale 0 and at Morale
+     * 10, in even steps between (−2 → 0 at Morale 5 → +2, 0.4 per point).
+     */
+    fromMorale: { atZero: -2, atTen: 2 },
   },
 
   abundance: {
@@ -183,6 +239,8 @@ export const BALANCE = {
     bountyExtraDrain: 1,
     /** Tend restores this much to one node on the tile (day only). TODO(wyatt): first guess. */
     tend: 2,
+    /** Tend costs this much Energy (Wyatt, Nov 5). */
+    tendEnergy: 1,
     /** Each night, every node nobody scavenged that day recovers this much. */
     nightRecovery: 1,
     /** Returning a resource to nature restores this much to its node. */
@@ -215,9 +273,10 @@ export const BALANCE = {
     appetite: 1,
   },
 
+  /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
   sleep: {
-    energy: 2,
-    shelteredEnergy: 3,
+    energy: 1,
+    shelteredEnergy: 2,
   },
 
   chance: {

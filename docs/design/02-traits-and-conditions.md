@@ -260,13 +260,15 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Brain Fog | Utility traits don't work. |
 | Allergies (phase) | −1 Morale each phase on a tile with an \[X\] node. |
 | Unlucky | −1 Luck when scavenging and crafting. |
-| Wet | −1 Morale each day without clothes equipped or a shelter. |
+| Wet | −1 Morale each day without clothes equipped or a shelter. If a Wet hiker would get Wet again, they become Soaked instead, for whichever is longer: the Wet time they had left or the new time. |
 | Soaked (phase) | −1 Morale each phase without clothes equipped or a shelter. |
 | Inept | Can't craft. |
 | Clumsy | Can't use tools. |
 | Weak | −1 item slot; an item that no longer fits must be given away or dropped. |
 | Butterfingers | When scavenging, a chance to get nothing. |
 | Tunnel Vision | 1 fewer card to choose from when scavenging or crafting. |
+| Frozen | Can't move or be moved. |
+| Bleeding | When it runs out, the hiker gains 1 injury. If it's cured before then, there's no injury. Cured by specific tools, traits and clothes (to be named). |
 | Ringing Ears | Each phase, a chance to lose 1 Morale (75%), or 1 Energy at night (25%). |
 
 **Positive conditions**
@@ -282,3 +284,5 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Motivated | The hiker's next action is free. |
 
 New this round: Nauseous (replaces Gorged), Soaked, Inspired, Motivated.
+
+Added Nov 5: Frozen and Bleeding, and Wet turning into Soaked.

@@ -27,6 +27,10 @@
   color: #f39a86;
 }
 
+.line[data-tone='challenge'] {
+  color: #f2c978;
+}
+
 .line[data-tone='drain'] {
   color: var(--text-muted);
 }

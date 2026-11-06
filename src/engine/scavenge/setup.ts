@@ -14,6 +14,7 @@ import type {
   ScavengeBonusOffer,
   ScavengeCardType,
 } from '../types';
+import { phaseIndex } from '../challenges/trials';
 import { canDeal, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 
@@ -63,6 +64,16 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   // Low Abundance: a warning for each low node here, and when every node is low, fewer
   // cards and less Luck.
   const bonuses: ScavengeBonus[] = mods.map(({ source, label, tone }) => ({ source, label, tone }));
+  // A Luck bonus left on this tile (Hungry Animals), until it runs out.
+  const tileLuck = tile?.luckBonus;
+  if (tileLuck && tileLuck.until >= phaseIndex(state)) {
+    luck += tileLuck.amount;
+    bonuses.push({
+      source: tileLuck.cause,
+      label: `+${tileLuck.amount} Luck scavenging here until morning`,
+      tone: 'luck',
+    });
+  }
   const kinds = [
     ...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type]))),
   ];
@@ -119,6 +130,7 @@ export function scavengeCost(state: GameState, hiker: Hiker): number {
 /** Why this tile or this hiker's pack stops a scavenge, if anything. */
 export function scavengeTileReason(state: GameState, hiker: Hiker): string | undefined {
   const tile = state.section.tiles[hiker.tileId];
+  if (tile?.wonder) return 'Nobody can scavenge at a Wonder: it has no nodes.';
   if (!tile || tile.nodes.length === 0) return 'There’s nothing to scavenge on this tile.';
   if (!canDeal({ nodes: tile.nodes, abundance: state.abundance })) {
     return 'Nothing left to find here. Tend it or move on.';

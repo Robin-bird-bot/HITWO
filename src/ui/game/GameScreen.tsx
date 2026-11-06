@@ -9,8 +9,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersWhoHaventActed,
+  isAccomplished,
+  isRevealed,
   isSheltered,
+  statMax,
+  wonderTile,
   tendAmount,
+  tendCost,
   tendableNodes,
   type Action,
   type GameState,
@@ -28,6 +33,7 @@ import {
   focusOn,
   HEX,
   lastRowOf,
+  MAP_VIEW,
   mapBounds,
   scrollAbove,
   tileCenter,
@@ -42,6 +48,13 @@ import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel, type StashPick } from '../panels/TurnPanel';
+import { ChallengeResult } from '../challenge/ChallengeResult';
+import { RevealedCard } from '../challenge/RevealedCard';
+import { TrialChips } from '../challenge/TrialChips';
+import { TrialDetails } from '../challenge/TrialWindow';
+import { showsResult, type ResultToShow } from '../challenge/showsResult';
+import { ChallengeWindow } from '../challenge/ChallengeWindow';
+import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -91,6 +104,26 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
+  // After a Risk roll, a Challenge space or an opportunity: what happened.
+  const [result, setResult] = useState<ResultToShow | null>(null);
+  // A Trial in progress whose details are open (from its chip).
+  const [trialOpen, setTrialOpen] = useState<string | null>(null);
+  // Trial tiles on the map: orange where it was revealed, red for Rocco's tile.
+  // A card revealed early whose small pop-up is open (from its tile's icon).
+  const [revealedOpen, setRevealedOpen] = useState<TileId | null>(null);
+  // The Wonder pop-up: opened when a Wonder is found or a hiker arrives at it,
+  // and from its map icon.
+  const [wonderOpen, setWonderOpen] = useWonderOpener(state);
+  // Predator Bait: tiles that just got easier, shown in blue until a few seconds
+  // after the pop-up closes (Wyatt, Nov 6).
+  const easier = useEasierTiles(state, !!state.challenge || !!result);
+  const marks: Partial<Record<string, 'trial' | 'target' | 'easier'>> = Object.fromEntries(
+    (state.trials ?? []).flatMap((t) => [
+      [t.tileId, 'trial' as const],
+      ...(t.targetTile ? [[t.targetTile, 'target' as const] as const] : []),
+    ]),
+  );
+  for (const id of easier) marks[id] = 'easier';
 
   const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
@@ -102,6 +135,23 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   );
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
+  // When the pop-up closes, bring a tile that just got easier into view if none is.
+  const easierKey = easier.join(',');
+  const [pannedFor, setPannedFor] = useState('');
+  if (!state.challenge && !result && easierKey && easierKey !== pannedFor) {
+    setPannedFor(easierKey);
+    const inView = (id: TileId) => {
+      const p = worldToStage(camera, centerOf(id));
+      return (
+        p.x > MAP_VIEW.x + HEX.w / 2 &&
+        p.x < MAP_VIEW.x + MAP_VIEW.w - HEX.w / 2 &&
+        p.y > 120 &&
+        p.y < MAP_VIEW.h - 120
+      );
+    };
+    const first = easier[0];
+    if (first && !easier.some(inView)) setCamera(focusOn(centerOf(first), camera.zoom, bounds));
+  }
 
   const reset = () => {
     setMode({ kind: 'idle' });
@@ -141,6 +191,17 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       const after = gameStore.getState();
       const first = after?.hikers.find((h) => h.status === 'active');
       if (first) setSelectedId(first.id);
+    }
+    return true;
+  };
+
+  /** Finishes a challenge; a random outcome then shows what happened. */
+  const resolveChallenge = (action: Extract<Action, { type: 'resolveChallenge' }>) => {
+    const open = state.challenge;
+    if (!dispatch(action) || !open) return false;
+    const event = gameStore.getState()?.log.findLast((e) => e.kind === 'challenge');
+    if (event?.kind === 'challenge' && showsResult(state, event, open.special === 'challenge')) {
+      setResult({ cardId: open.cardId, fromId: event.id });
     }
     return true;
   };
@@ -235,7 +296,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         name={selected.name}
         gain={gain}
         from={from}
-        to={Math.min(BALANCE.stats.max, from + gain)}
+        to={Math.min(statMax(selected, 'energy'), from + gain)}
         onCancel={reset}
         onConfirm={() => dispatch({ type: 'sleep', hikerId: selected.id })}
       />
@@ -248,6 +309,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     slot = (
       <TendPicker
         gain={gain}
+        energy={tendCost(state, selected)}
         nodes={tendableNodes(state, selected).map((node) => {
           const from = state.abundance[node];
           return { node, from, to: Math.min(max, from + gain), full: from >= max };
@@ -272,6 +334,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         targets={targets}
         onTileClick={(tileId) => setPendingTile(tileId)}
         checkpointLabelOnHover={simple}
+        marks={marks}
+        onRevealedClick={setRevealedOpen}
+        onWonderClick={setWonderOpen}
         selectedId={selected?.id ?? null}
         onSelectHiker={select}
         camera={camera}
@@ -375,6 +440,37 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         />
       )}
 
+      {state.challenge && (
+        <ChallengeWindow
+          state={state}
+          simple={simple}
+          onResolve={resolveChallenge}
+          onChoose={(cardId) => dispatch({ type: 'chooseChallenge', cardId })}
+          onAccept={() => dispatch({ type: 'acceptTrial' })}
+          onPress={(action) => dispatch(action)}
+        />
+      )}
+      <TrialChips
+        state={state}
+        style={simple ? { left: 768, top: 112, translate: '-50% 0' } : { left: 470, top: 84 }}
+        onOpen={setTrialOpen}
+      />
+      {trialOpen && !state.challenge && (
+        <TrialDetails state={state} uid={trialOpen} onClose={() => setTrialOpen(null)} />
+      )}
+      {result && <ChallengeResult state={state} result={result} onClose={() => setResult(null)} />}
+      {revealedOpen && !state.challenge && (
+        <RevealedCard state={state} tileId={revealedOpen} onClose={() => setRevealedOpen(null)} />
+      )}
+      {wonderOpen && !state.challenge && !state.scavenge && !result && (
+        <WonderWindow
+          state={state}
+          tileId={wonderOpen}
+          onClose={() => setWonderOpen(null)}
+          onAccomplish={(action) => dispatch(action)}
+        />
+      )}
+
       {confirmEnd && (
         <ConfirmDialog
           title={`End the ${phaseWord}?`}
@@ -393,4 +489,74 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       )}
     </Stage>
   );
+}
+
+/**
+ * Which Wonder's pop-up is open. It opens by itself when a Wonder is found
+ * (landing there or an early reveal) and when a hiker arrives at one that
+ * isn't accomplished yet; the debug panel can open it too. If a challenge is
+ * open, it waits behind it.
+ */
+function useWonderOpener(state: GameState) {
+  const [open, setOpen] = useState<TileId | null>(null);
+  const [seen, setSeen] = useState(() => state.nextEventId);
+  if (state.nextEventId !== seen) {
+    setSeen(state.nextEventId);
+    for (const e of state.log) {
+      if (e.id < seen) continue;
+      const to = e.kind === 'move' || e.kind === 'moved' ? e.to : undefined;
+      const w = to ? state.section.tiles[to]?.wonder : undefined;
+      if (e.kind === 'wonderRevealed') setOpen(e.tileId);
+      else if (to && isRevealed(w) && !isAccomplished(w)) setOpen(to);
+    }
+  }
+  useEffect(() => {
+    const onOpen = () => {
+      const tile = gameStore.getState() && wonderTile(gameStore.getState()!);
+      if (tile && isRevealed(tile.wonder)) setOpen(tile.id);
+    };
+    window.addEventListener(OPEN_WONDER_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_WONDER_EVENT, onOpen);
+  }, []);
+  return [open, setOpen] as const;
+}
+
+/** How long a tile Predator Bait made easier stays blue after its pop-up closes. */
+const EASIER_SHOWS_MS = 5000;
+
+/**
+ * Tiles Predator Bait just made easier: collected from the log as they happen,
+ * and cleared a few seconds after the pop-up (and its results) close.
+ */
+function useEasierTiles(state: GameState, busy: boolean): TileId[] {
+  // Each tile's net change from the presses so far: −1 easier, +1 harder.
+  const [shift, setShift] = useState<Record<TileId, number>>({});
+  const [seen, setSeen] = useState(() => state.nextEventId);
+  const newest = state.nextEventId;
+  if (newest !== seen) {
+    const fresh = state.log.filter((e) => e.id >= seen && e.kind === 'pressed' && e.easier);
+    setSeen(newest);
+    if (fresh.length) {
+      setShift((was) => {
+        const next = { ...was };
+        for (const e of fresh) {
+          if (e.kind !== 'pressed') continue;
+          if (e.easier) next[e.easier] = (next[e.easier] ?? 0) - 1;
+          if (e.harder) next[e.harder] = (next[e.harder] ?? 0) + 1;
+        }
+        return next;
+      });
+    }
+  }
+  // Only tiles that ended up easier get the blue ring.
+  const tiles = Object.entries(shift)
+    .filter(([, n]) => n < 0)
+    .map(([id]) => id);
+  const any = Object.keys(shift).length > 0;
+  useEffect(() => {
+    if (busy || !any) return;
+    const timer = setTimeout(() => setShift({}), EASIER_SHOWS_MS);
+    return () => clearTimeout(timer);
+  }, [busy, any]);
+  return tiles;
 }

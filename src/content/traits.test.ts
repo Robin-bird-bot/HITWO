@@ -71,13 +71,12 @@ describe('Stoic', () => {
     expect(validateAction(s, stoic('energy'))).toBe('Needs 2 Morale.');
   });
 
-  it('can spend Morale down to 0, which gives an injury', () => {
+  it('can spend Morale down to 0, which stops there with no injury (Wyatt, Nov 5)', () => {
     const s = party({ ash: ['stoic'] });
     place(s, 'ash', 'T', { energy: 4, morale: 2 });
     const h = hiker(run(s, stoic('energy')), 'ash');
-    // Morale 2 → 0: injury raises Morale and Energy to 5, then +1 Energy.
-    expect(h.injuries).toBe(1);
-    expect(h.stats).toEqual({ energy: 6, appetite: 10, morale: 5 });
+    expect(h.injuries).toBe(0);
+    expect(h.stats).toEqual({ energy: 5, appetite: 10, morale: 0 });
   });
 
   it('isn’t available to hikers without the trait', () => {

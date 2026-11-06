@@ -1,0 +1,699 @@
+/* The Wonder pop-up (docs/mockups/Wonder.dc.html, WonderRewards.dc.html). Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 32;
+  overflow: hidden;
+  background: rgba(96, 40, 140, 0.42);
+  backdrop-filter: blur(7px) saturate(0.85);
+  -webkit-backdrop-filter: blur(7px) saturate(0.85);
+  animation: fade 200ms ease-out;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Dragged aside: the blur lifts and the map behind can be used. */
+.overlay[data-moved='true'] {
+  background: rgba(20, 24, 22, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  pointer-events: none;
+}
+
+.overlay[data-moved='true'] > div:first-child {
+  opacity: 0.3;
+}
+
+.window {
+  position: absolute;
+  left: 100px;
+  top: 22px;
+  width: 1400px;
+  height: 956px;
+  box-sizing: border-box;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(22, 27, 25, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  outline: none;
+  pointer-events: auto;
+  animation: appear 200ms ease-out;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+/* ── The ribbon: the trinket card back's gradient, slowly shifting ── */
+
+.ribbon {
+  position: relative;
+  height: 84px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    155deg,
+    #e2a9f1,
+    #d675ef,
+    #9a3f64,
+    #cd1f66,
+    #9a3f64,
+    #d675ef,
+    #e2a9f1
+  );
+  background-size: 260% 260%;
+  animation: shift 9s ease-in-out infinite alternate;
+  color: #fff6ec;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  touch-action: none;
+}
+
+@keyframes shift {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 100%;
+  }
+}
+
+.window[data-done='true'] .ribbon {
+  background: linear-gradient(155deg, #8d8794, #6f6a75, #8d8794);
+  animation: none;
+}
+
+.ribbonSide {
+  position: absolute;
+  left: 26px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.ribbonRight {
+  left: auto;
+  right: 18px;
+  gap: 8px;
+}
+
+.doneTag {
+  margin-left: 8px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(29, 34, 32, 0.4);
+  font-size: 12px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 56px;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-shadow: 0 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+.close {
+  width: 40px;
+  height: 40px;
+  margin-left: 10px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(29, 34, 32, 0.32);
+  color: #fff6ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  background: rgba(29, 34, 32, 0.5);
+}
+
+/* ── The art banner ── */
+
+.art {
+  position: relative;
+  height: 340px;
+  flex: none;
+  overflow: hidden;
+}
+
+.art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  display: block;
+}
+
+.window[data-done='true'] .art img {
+  filter: grayscale(0.85) brightness(0.8);
+}
+
+.fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(22, 27, 25, 0) 45%, rgba(22, 27, 25, 0.92) 100%);
+}
+
+.artText {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quote {
+  font-family: var(--font-pixel);
+  font-size: 19px;
+  line-height: 1.4;
+  color: #f4e9ff;
+}
+
+.how {
+  font-size: 15px;
+  color: #d8cfe0;
+}
+
+/* ── Goals and rewards ── */
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 28px;
+  padding: 22px 28px 0;
+}
+
+.goals {
+  width: 640px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rewards {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 30px;
+}
+
+.headTitle {
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  color: #cda6ee;
+}
+
+.count {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(205, 166, 238, 0.18);
+  color: #cda6ee;
+}
+
+.headNote {
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.goals .headNote {
+  margin-left: auto;
+}
+
+.goal {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.goal[data-met='true'] {
+  background: rgba(127, 194, 155, 0.1);
+  border-color: rgba(127, 194, 155, 0.45);
+}
+
+.tick {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  box-sizing: border-box;
+  border-radius: 11px;
+  border: 2px dashed rgba(241, 234, 219, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tick[data-met='true'] {
+  border: none;
+  background: #7fc29b;
+}
+
+.goalText {
+  flex: 1;
+  font-size: 16px;
+  line-height: 1.4;
+  color: #e2d9c6;
+}
+
+.goal[data-met='true'] .goalText {
+  color: #f1eadb;
+}
+
+.goalSide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.goalHiker {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.goalHiker[data-ok='false'] img {
+  opacity: 0.55;
+}
+
+.readout {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  color: #f2c978;
+}
+
+.readout[data-met='true'] {
+  color: #a6ddbc;
+}
+
+.pickers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px 0 4px;
+  border-radius: 16px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.picker[data-current='true'] {
+  border-color: #cda6ee;
+  background: rgba(205, 166, 238, 0.22);
+}
+
+.picker[data-picked='true'] {
+  color: #a6ddbc;
+}
+
+.cards {
+  flex: 1;
+  display: flex;
+  gap: 14px;
+  padding-bottom: 6px;
+}
+
+.reward {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px 14px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+}
+
+button.reward:hover {
+  background: rgba(205, 166, 238, 0.1);
+  border-color: rgba(205, 166, 238, 0.5);
+}
+
+.reward[data-mine='true'],
+.reward[data-taken='true'] {
+  border: 2px solid #cda6ee;
+}
+
+.reward[data-waiting='true'],
+.reward[data-blocked='true'] {
+  opacity: 0.5;
+}
+
+.picture {
+  height: 118px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.items {
+  display: flex;
+  gap: 8px;
+}
+
+.item {
+  position: relative;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  outline-offset: 3px;
+}
+
+.item:disabled {
+  cursor: default;
+}
+
+.item[data-taken='true'] > span:first-child {
+  opacity: 0.45;
+}
+
+.item[data-mine='true'] {
+  outline: 3px solid #cda6ee;
+}
+
+.itemOwner {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+}
+
+.nodes {
+  display: grid;
+  grid-template-columns: 48px 48px;
+  gap: 6px 10px;
+}
+
+.nodeButton {
+  position: relative;
+  width: 48px;
+  height: 54px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  outline-offset: 2px;
+}
+
+.nodeButton img {
+  width: 42px;
+  height: 49px;
+  display: block;
+  margin: 0 auto;
+}
+
+.nodeButton[data-mine='true'] {
+  outline: 3px solid #cda6ee;
+}
+
+.nodeButton:disabled {
+  cursor: default;
+}
+
+.nodeValue {
+  position: absolute;
+  right: -4px;
+  bottom: -2px;
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 8px;
+  background: rgba(29, 34, 32, 0.85);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.nodeMark {
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #cda6ee;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.bigText {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 180, 76, 0.35), rgba(233, 180, 76, 0) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 40px;
+  color: #e9b44c;
+  text-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.caps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 34px;
+  color: #e9b44c;
+}
+
+.caps img {
+  width: 56px;
+  height: 56px;
+}
+
+.rewardIcon {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(205, 166, 238, 0.32), rgba(205, 166, 238, 0) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e7cff7;
+}
+
+.rewardTitle {
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  letter-spacing: 0.05em;
+}
+
+.rewardText {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.later,
+.blockedWhy {
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.blockedWhy {
+  font-family: inherit;
+  font-size: 12px;
+  color: #f2c978;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.takers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  align-items: center;
+}
+
+.taker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 3px;
+  border-radius: 16px;
+  background: rgba(205, 166, 238, 0.2);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+/* ── The button ── */
+
+.footer {
+  position: relative;
+  height: 104px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.button {
+  width: 380px;
+  height: 62px;
+  border-radius: 16px;
+  border: none;
+  background: rgba(205, 166, 238, 0.22);
+  color: rgba(241, 234, 219, 0.6);
+  box-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.3),
+    0 12px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.button[data-ready='true'] {
+  background: linear-gradient(
+    155deg,
+    #e2a9f1,
+    #d675ef,
+    #9a3f64,
+    #cd1f66,
+    #9a3f64,
+    #d675ef,
+    #e2a9f1
+  );
+  background-size: 260% 260%;
+  animation: shift 9s ease-in-out infinite alternate;
+  color: #fff6ec;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+.button[data-ready='true']:active {
+  translate: 0 3px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.button:disabled {
+  cursor: default;
+}
+
+.buttonLabel {
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+
+.buttonSub {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.back {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+}
+
+.footNote {
+  position: absolute;
+  right: 28px;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+/* The gradient holds still, and nothing pops in, under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .window,
+  .ribbon,
+  .button[data-ready='true'] {
+    animation: none;
+  }
+}

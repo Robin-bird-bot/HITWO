@@ -46,10 +46,10 @@ describe('scavenging: dealing', () => {
   });
 
   it.each([
-    [8, 1, 'Luck +1 from high Morale (8)'],
+    [8, 1.2, 'Luck +1.2 from Morale (8)'],
     [5, 0, null],
-    [3, -1, 'Luck −1 from low Morale (3)'],
-  ])('at Morale %i deals at Luck %i', (morale, luck, label) => {
+    [3, -0.8, 'Luck −0.8 from Morale (3)'],
+  ])('at Morale %i deals at Luck %d', (morale, luck, label) => {
     const s = onForest();
     place(s, 'ash', 'L', { morale });
     const open = deal(s);

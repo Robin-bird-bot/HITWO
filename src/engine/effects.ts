@@ -8,6 +8,8 @@
  */
 import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
+import { CONDITIONS } from '../content/conditions';
+import { pushEvent } from './log';
 import { hikersOnTile, isAlone } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
@@ -21,6 +23,7 @@ import type {
   Line,
   NodeType,
   Phase,
+  ResourceId,
   ScavengeBonus,
   ScavengeCardType,
   StatName,
@@ -43,7 +46,9 @@ export type CostKey =
   | 'night.noSleepEnergy'
   | 'endOfDay.appetite'
   /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
-  | 'scavenge.appetite';
+  | 'scavenge.appetite'
+  /** Tend's Energy cost. */
+  | 'tend.energy';
 
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey =
@@ -126,6 +131,8 @@ export interface QueryContext {
 /** What an event handler or ability can do. */
 export interface EffectContext extends QueryContext {
   changeStat(hiker: Hiker, stat: StatName, delta: number, cause: string): void;
+  /** Gives a hiker resources, as many as fit (Raccoon Friend), and logs it. */
+  gain(hiker: Hiker, resources: readonly ResourceId[], cause: string): void;
   roll(chance: number): boolean;
   int(min: number, max: number): number;
   pick<T>(items: readonly T[]): T;
@@ -245,6 +252,11 @@ export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[
     if (!item || !def) continue;
     sources.push({ id: `item:${item.uid}`, kind: 'item', name: def.name, hooks: def.hooks ?? {} });
   }
+  for (const c of hiker.conditions) {
+    const def = CONDITIONS[c.id];
+    if (!def?.hooks) continue;
+    sources.push({ id: `condition:${c.id}`, kind: 'condition', name: def.name, hooks: def.hooks });
+  }
   for (const slot of hiker.slots) {
     if (!slot.traitId) continue;
     const def = TRAITS[slot.traitId];
@@ -276,6 +288,7 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
   return {
     ...queryContext(state, self),
     changeStat: (hiker, stat, delta, cause) => changeStat(state, hiker, stat, delta, cause),
+    gain: (hiker, resources, cause) => gainResources(state, hiker, resources, cause),
     roll: (chance) => roll(state.rng, chance),
     int: (min, max) => int(state.rng, min, max),
     pick: (items) => pick(state.rng, items),
@@ -421,4 +434,36 @@ export function abilitiesFor(state: GameState, hiker: Hiker): AvailableAbility[]
     });
   }
   return out;
+}
+
+/** Adds resources to a hiker's pack, as many as fit, and logs what they got. */
+export function gainResources(
+  state: GameState,
+  hiker: Hiker,
+  resources: readonly ResourceId[],
+  cause: string,
+): void {
+  const carried = Object.values(hiker.inventory.resources).reduce<number>(
+    (n, c) => n + (c ?? 0),
+    0,
+  );
+  let room = BALANCE.inventory.resourceLimit - carried;
+  const got: ResourceId[] = [];
+  for (const id of resources) {
+    if (room <= 0) break;
+    hiker.inventory.resources[id] = (hiker.inventory.resources[id] ?? 0) + 1;
+    got.push(id);
+    room -= 1;
+  }
+  const noRoom = resources.length - got.length;
+  if (got.length || noRoom > 0) {
+    pushEvent(state, {
+      kind: 'gained',
+      hikerId: hiker.id,
+      resources: got,
+      items: [],
+      ...(noRoom > 0 ? { noRoom } : {}),
+      cause,
+    });
+  }
 }

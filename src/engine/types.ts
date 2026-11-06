@@ -2,6 +2,7 @@
  * The shape of the whole game. Everything here is plain JSON data so a game
  * can be saved, loaded, replayed and compared in tests.
  */
+import type { WonderPick, WonderState } from './wonders/types';
 
 export type HikerId = string;
 export type TileId = string;
@@ -86,6 +87,21 @@ export interface Tile {
   feature?: SideFeature;
   /** A hiker has landed here. The special icon moves to the corner once true. */
   visited?: true;
+  /** Its challenge will be this many tiers higher, or lower (Warning Bird, Predator Bait). */
+  tierBonus?: number;
+  /** Raised once already by Predator's Den (each tile only once). */
+  denRaised?: true;
+  /**
+   * Its card, picked early and shown on the map (Old Firewatch Tower). It opens
+   * as usual when someone lands here, with its numbers rolled then.
+   */
+  revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
+  /** Shelters built on this tile (Ruins). TODO(phase 9): hikers placing shelter cards. */
+  shelters?: ItemId[];
+  /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
+  luckBonus?: { amount: number; until: number; cause: string };
+  /** This biome's Wonder (one per section). Its tile has no nodes and never draws a card. */
+  wonder?: WonderState;
   nodes: TileNode[];
 }
 
@@ -120,11 +136,18 @@ export interface TraitSlot {
   traitId: TraitId | null;
 }
 
-/** A timed condition on a hiker (Phase 6). */
+/** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
 export interface ConditionInstance {
   id: ConditionId;
   remaining: number;
-  unit: 'days' | 'phases';
+  /** Phases tick down at the end of every phase; days and nights at camp. */
+  unit: 'days' | 'phases' | 'nights';
+  /** Allergies: which node. */
+  node?: NodeType;
+  /** A condition that starts when this one ends ("Hangry, then Nauseous"). */
+  then?: { id: ConditionId; remaining: number; unit: 'days' | 'phases' | 'nights' };
+  /** Added during this phase: its first end of phase doesn't count. */
+  fresh?: true;
 }
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
@@ -136,6 +159,10 @@ export interface ItemInstance {
   quality?: number;
   usesLeft?: number;
   daysLeft?: number;
+  /** Food: gives this much more (or less) Appetite. TODO(phase 9): used when eating arrives. */
+  appetiteMod?: number;
+  /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
+  usesLost?: number;
 }
 
 export interface Inventory {
@@ -167,9 +194,13 @@ export interface Hiker {
   acted: boolean;
   /** Has slept this night. */
   slept: boolean;
+  /** The tile this hiker last moved from (Tourist Trap sends them back). */
+  cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
   xp: number;
   level: number;
+  /** Permanent raises to a stat's maximum (Sleeping Giant's +2 maximum Energy). */
+  maxBonus?: Partial<Record<StatName, number>>;
 }
 
 // ── Scavenging ─────────────────────────────────────────────────────────────
@@ -274,6 +305,127 @@ export interface ScavengeRecord {
   nodes: NodeType[];
 }
 
+// ── Challenges, opportunities and Trials ───────────────────────────────────
+
+/** A card's rolled numbers (see src/engine/challenges/rolls.ts). */
+export interface CardRolls {
+  x: Record<string, number>;
+  /** Each hiker's own Y values. */
+  y: Record<HikerId, Record<string, number>>;
+  /** Which "(25%)" parts made it onto the card. */
+  includes: Record<string, boolean>;
+  /** Fox with a Specific Taste: the resources it'll take. */
+  options?: ResourceId[];
+  /** The Luck used for X (the average of the hikers entering). */
+  luck: number;
+}
+
+/**
+ * A challenge waiting on the party (Phase 5). It opens when the first hiker
+ * lands on a tile and blocks everything else until it's resolved.
+ */
+export interface OpenChallenge {
+  cardId: string;
+  tileId: TileId;
+  /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
+  tier: 1 | 2 | 3;
+  scale: number;
+  /** The hikers on the tile when it was revealed: only they're affected. */
+  hikerIds: HikerId[];
+  rolls: CardRolls;
+  /** Opened on a Challenge space: passing hikers each get a random reward. */
+  special?: 'challenge';
+  /** A Choice space: the other challenge, with its own rolls, until the party picks one. */
+  alternative?: { cardId: string; rolls: CardRolls };
+  /** A Trial's targets, picked when it's revealed so the pop-up can show them. */
+  trial?: { targetTile?: TileId; resource?: ResourceId };
+  /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
+  presses?: Record<string, number>;
+}
+
+/**
+ * Counts kept over the whole run, for Wonder goals (Nov 6 update, 3c). Saved
+ * and migrated like everything else.
+ */
+export interface RunCounters {
+  /** Challenges each hiker passed and failed (not Risk challenges). */
+  passed: Record<HikerId, number>;
+  failed: Record<HikerId, number>;
+  /** Items each hiker crafted, by type. Stays empty until Phase 9. */
+  crafted: Record<HikerId, Partial<Record<string, number>>>;
+  /** Nights in a row each hiker hasn't slept, counted at camp. */
+  daysSinceSleep: Record<HikerId, number>;
+  /** Shelters built in each section (by section index). */
+  sheltersPlaced: Record<number, number>;
+}
+
+/** A tile a hiker landed on while a challenge was open: it opens next. */
+export interface QueuedReveal {
+  tileId: TileId;
+  hikerIds: HikerId[];
+  /** A card's effect starts a challenge of this tier and node (Bear Country). */
+  forced?: { tier: 1 | 2 | 3; node: NodeType };
+}
+
+/** What a Challenge space gives a passing hiker (Phase 5 first guess). */
+export type SpaceReward = 'item' | 'lucky' | 'doubleXp';
+
+/** One thing handed in toward a challenge cost, into requirement `req` of the option. */
+export type Gift =
+  | { kind: 'resource'; req: number; from: HikerId; resource: ResourceId; count: number }
+  | { kind: 'item'; req: number; from: HikerId; uid: string }
+  | { kind: 'caps'; req: number; count: number }
+  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number };
+
+/** What the party decided for one section of the pop-up. */
+export interface ChallengeSection {
+  /** The hiker this section judges; left out on a party challenge. */
+  hikerId?: HikerId;
+  /** Pay the cost, or take the penalty. */
+  pay: boolean;
+  /** Which cost option ("or" alternative) was paid. */
+  option?: number;
+  gifts: Gift[];
+}
+
+/** What a section paid, for the trail log. */
+export interface ChallengePaid {
+  resources: ResourceId[];
+  items: ItemId[];
+  caps: number;
+  stats: Partial<Record<StatName, number>>;
+}
+
+/**
+ * A Trial in progress (04-challenges.md, "Trials"). Its goal is checked at the
+ * end of every phase; meeting it early ends it, and missing the deadline
+ * brings the penalty. At most BALANCE.challenges.maxTrials at once.
+ */
+export interface ActiveTrial {
+  uid: string;
+  cardId: string;
+  tileId: TileId;
+  /** The hikers it covers: those on the tile when it was revealed. */
+  hikers: HikerId[];
+  rolls: CardRolls;
+  /** Phase numbers since the start of the hike: when it started, and the phase it's judged at the end of. */
+  startedAt: number;
+  endsAt: number;
+  /** The row it was revealed on (Avalanche Warning), and each hiker's row then (Smoke on the Wind). */
+  row: number;
+  startRows: Record<HikerId, number>;
+  /** A marked tile (Rocco's red tile). */
+  targetTile?: TileId;
+  /** A picked resource (Rocco's Resource Trial, Ranger's Request). */
+  resource?: ResourceId;
+  /** Hikers who've met their part of the goal (or reached Rocco's tile). */
+  done: HikerId[];
+  /** Hikers already penalized along the way (Jogger, The Grim Sleeper!). */
+  penalized: HikerId[];
+  /** Ranger's Request: how much of the resource each hiker has scavenged since it started. */
+  gathered?: Record<HikerId, number>;
+}
+
 // ── Randomness ─────────────────────────────────────────────────────────────
 
 /** sfc32 state: four unsigned 32-bit integers. */
@@ -309,6 +461,16 @@ export type Action =
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   | { type: 'endPhase' }
+  /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
+  | { type: 'resolveChallenge'; sections: ChallengeSection[] }
+  /** On a Choice space: which of the two challenges the party takes on. */
+  | { type: 'chooseChallenge'; cardId: string }
+  /** "Got it": the open Trial starts its countdown. */
+  | { type: 'acceptTrial' }
+  /** A button on an opportunity (Snake Slots' Pull, Predator Bait…), which happens at once. */
+  | { type: 'pressButton'; button: string; hikerId?: HikerId; choice?: string }
+  /** Accomplish a Wonder: every hiker on its tile picks one reward. */
+  | { type: 'accomplishWonder'; tileId: TileId; picks: Record<HikerId, WonderPick> }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -326,7 +488,37 @@ export type DebugOp =
   /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
   | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
   /** The next scavenge deals these card types first, where they can happen. */
-  | { kind: 'nextDeal'; types: ScavengeCardType[] };
+  | { kind: 'nextDeal'; types: ScavengeCardType[] }
+  /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */
+  | {
+      kind: 'addCondition';
+      hikerId: HikerId;
+      conditionId: ConditionId;
+      remaining: number;
+      unit: ConditionInstance['unit'];
+    }
+  /** Takes every condition off a hiker. */
+  | { kind: 'clearConditions'; hikerId: HikerId }
+  /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
+  | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  /** Reveals a tile's card early, as Old Firewatch Tower does. */
+  | { kind: 'revealCard'; tileId: TileId }
+  /** Reveals this section's Wonder where it stands. */
+  | { kind: 'revealWonder' }
+  /** Puts every hiker who's still hiking on one tile (to test Wonder goals). */
+  | { kind: 'gatherAt'; tileId: TileId }
+  /** Picks and opens a card as if the tile were this special space. */
+  | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
+  /** Shows the rolled X and Y numbers in the challenge pop-up. */
+  | { kind: 'showRolls'; on: boolean }
+  /** Turns challenges off (landing on a new tile opens nothing) or back on. */
+  | { kind: 'setChallenges'; on: boolean }
+  /** The section's tier, for which challenges come up. */
+  | { kind: 'setTier'; tier: 1 | 2 | 3 }
+  /** Counts the section as snowy (Phase 11 makes this real). */
+  | { kind: 'setSnowy'; on: boolean }
+  /** The weather challenge gates check (Phase 6 makes this real). */
+  | { kind: 'setWeather'; weather: 'clear' | 'sunny' | 'stormy' };
 
 export type ActionType = Action['type'];
 
@@ -344,6 +536,8 @@ export type GameEventBody =
     }
   | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
+  /** Injuries a card cured (Airlift): how many, and how many are left. */
+  | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
   | { kind: 'passedOut'; hikerId: HikerId }
   | { kind: 'sleep'; hikerId: HikerId }
   | {
@@ -366,6 +560,97 @@ export type GameEventBody =
   /** Overnight, nodes nobody scavenged recover. */
   | { kind: 'recovered'; nodes: NodeType[] }
   | { kind: 'phase'; day: number; phase: Phase }
+  | {
+      kind: 'condition';
+      hikerId: HikerId;
+      condition: ConditionId;
+      remaining: number;
+      unit: 'days' | 'phases' | 'nights';
+      cause: string;
+    }
+  | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** A hiker landed on a new tile and its challenge opened. */
+  | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
+  /** A challenge was resolved: who passed, and what they paid. */
+  | {
+      kind: 'challenge';
+      cardId: string;
+      tileId: TileId;
+      party: boolean;
+      results: {
+        hikerId?: HikerId;
+        passed: boolean;
+        paid?: ChallengePaid;
+        xp?: number;
+        /** A Risk challenge: the odds or amount, and whether it hit. */
+        risk?: { kind: 'chance' | 'threshold' | 'loss' | 'chain'; value: number; hit: boolean };
+        /** A Challenge space's reward. */
+        reward?: SpaceReward;
+      }[];
+    }
+  /** A card moved a hiker (swept, blown back, sent back, false trail markers). */
+  | {
+      kind: 'moved';
+      hikerId: HikerId;
+      from: TileId;
+      to: TileId;
+      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel';
+      cause: string;
+    }
+  /** A Trial started, was met, ran out, ended, or a hiker earned part of it. */
+  | {
+      kind: 'trial';
+      cardId: string;
+      outcome: 'started' | 'passed' | 'failed' | 'ended' | 'reached' | 'paid';
+      hikerIds?: HikerId[];
+      /** Rocco: how many days it took. Ranger's Request: how many were taken, and the caps paid. */
+      days?: number;
+      taken?: number;
+      caps?: number;
+    }
+  /** A tile's card was revealed early, and shows on the map. */
+  | { kind: 'revealedCard'; tileId: TileId; cardId: string; cause: string }
+  /** A Wonder was found: its 3 goals are picked. `cause` is how, if nobody landed there. */
+  | { kind: 'wonderRevealed'; tileId: TileId; wonderId: string; cause?: string }
+  /** A Wonder was accomplished, and who took which reward. */
+  | {
+      kind: 'wonderAccomplished';
+      tileId: TileId;
+      wonderId: string;
+      picks: Record<HikerId, WonderPick>;
+    }
+  /** A button on an opportunity was pressed, and what came of it. */
+  | {
+      kind: 'pressed';
+      cardId: string;
+      button: string;
+      hikerId?: HikerId;
+      note: string;
+      /** Predator Bait: the tile that got easier (shown in blue for a moment) and the harder one. */
+      easier?: TileId;
+      harder?: TileId;
+    }
+  /** On a Choice space, the party picked one challenge over the other. */
+  | { kind: 'challengeChosen'; cardId: string; over: string }
+  /** What a card gave: resources or items to a hiker, or caps to the purse. */
+  | {
+      kind: 'gained';
+      hikerId?: HikerId;
+      resources: ResourceId[];
+      items: ItemId[];
+      caps?: number;
+      /** Resources that didn't fit in the hiker's pack and were left behind. */
+      noRoom?: number;
+      cause: string;
+    }
+  /** Resources or items a challenge took (or gave). */
+  | {
+      kind: 'lost';
+      hikerId: HikerId;
+      resources: ResourceId[];
+      items: ItemId[];
+      cause: string;
+    }
   | { kind: 'debug'; note: string };
 
 export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase };
@@ -392,6 +677,24 @@ export interface GameState {
   scavenge?: PendingScavenge;
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
+  /** Challenges, Trials and opportunities already seen in this section (no repeats). */
+  usedCards: string[];
+  /** The challenge waiting on the party, if any. Nothing else can happen until it's done. */
+  challenge?: OpenChallenge;
+  /** Tiles landed on while a challenge was open (a hiker swept onto one): they open next. */
+  challengeQueue?: QueuedReveal[];
+  /** Debug only: show the rolled numbers in the challenge pop-up. */
+  debugRolls?: true;
+  /** Debug and tests only: landing on a new tile opens no challenge. */
+  noChallenges?: true;
+  /** Run counters for Wonder goals. */
+  counters: RunCounters;
+  /** Trials in progress (at most BALANCE.challenges.maxTrials). */
+  trials?: ActiveTrial[];
+  /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
+  snowy?: true;
+  /** The weather for challenge gates (Phase 6). Until then, a debug setting. */
+  weather?: 'clear' | 'sunny' | 'stormy';
   nextEventId: number;
   /** The most recent events, oldest first. */
   log: GameEvent[];
