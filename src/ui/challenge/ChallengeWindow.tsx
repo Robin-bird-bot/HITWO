@@ -13,17 +13,22 @@
  *   Continue.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { CARDS, ITEMS } from '../../content';
+import { CARDS, CONDITIONS, ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { ASSETS, cardArt } from '../../config/assets';
 import {
   bagSlots,
   challengeHikers,
   openCardDef,
+  pressesLeft,
+  revealableFrom,
+  validateAction,
+  immovable,
   resourceCount,
   STAT_NAMES,
   type Action,
   type ChallengeDef,
+  type Effect,
   type GameState,
   type Gift,
   type Hiker,
@@ -39,6 +44,8 @@ import { NODE_IMAGE } from '../map/looks';
 import { STAT_META } from '../panels/hikerInfo';
 import { ITEM_TYPE_COLORS, itemName, resourceName } from '../scavenge/cardLook';
 import { useDraggable } from '../windows/useDraggable';
+import { describeLog } from '../log/describeLog';
+import { tileName } from '../panels/hikerInfo';
 import { cardText } from './cardText';
 import { NewTrial } from './TrialWindow';
 import {
@@ -49,8 +56,10 @@ import {
   paidLabel,
   penaltyTag,
   reqIcons,
+  isPick,
   reqLabel,
   riskNow,
+  spendReadout,
   sectionStatus,
   select,
   skip,
@@ -76,9 +85,21 @@ interface ChallengeWindowProps {
   onChoose(cardId: string): void;
   /** A Trial: "Got it". */
   onAccept(): void;
+  /** A button opportunity: one press. */
+  onPress(action: PressAction): void;
 }
 
+type PressAction = Extract<Action, { type: 'pressButton' }>;
+
 const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
+
+/** Who a card asks for, in the banner. */
+const SCOPE_WORD = {
+  party: 'WHOLE PARTY',
+  each: 'EACH HIKER',
+  select: 'PICK HIKERS',
+  one: 'PICK ONE HIKER',
+} as const;
 const INNER_WIDTH = 1296;
 
 export function ChallengeWindow({
@@ -87,6 +108,7 @@ export function ChallengeWindow({
   onResolve,
   onChoose,
   onAccept,
+  onPress,
 }: ChallengeWindowProps) {
   const open = state.challenge;
   if (open && CARDS[open.cardId]?.kind === 'trial') {
@@ -103,6 +125,7 @@ export function ChallengeWindow({
       card={card}
       simple={simple}
       onResolve={onResolve}
+      onPress={onPress}
     />
   );
 }
@@ -113,12 +136,14 @@ function ChallengeBody({
   card,
   simple,
   onResolve,
+  onPress,
 }: {
   state: GameState;
   open: OpenChallenge;
   card: ChallengeDef;
   simple: boolean;
   onResolve(action: ResolveAction): boolean;
+  onPress(action: PressAction): void;
 }) {
   const [draft, setDraft] = useState<Draft>(() => startDraft(state, open));
   const [peek, setPeek] = useState<Target | null>(null);
@@ -131,7 +156,6 @@ function ChallengeBody({
   const here = challengeHikers(state, open);
   const statuses = draft.sections.map((_, i) => sectionStatus(state, open, draft, i));
   const action = toAction(state, open, draft);
-  const party = card.scope === 'party';
 
   const focusRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -155,13 +179,16 @@ function ChallengeBody({
         : card.risk
           ? 'RISK'
           : 'CHALLENGE';
+  const everyoneOut = statuses.every((st) => st.decision === 'fail');
   const buttonLabel = card.risk
     ? 'ROLL'
-    : card.kind === 'opportunity'
-      ? statuses[0]?.decision === 'fail'
-        ? 'SKIP'
-        : 'TAKE THE DEAL'
-      : 'CONTINUE';
+    : card.buttons
+      ? 'DONE'
+      : card.kind === 'opportunity'
+        ? everyoneOut
+          ? 'SKIP'
+          : 'TAKE THE DEAL'
+        : 'CONTINUE';
 
   return (
     <div className={styles.overlay} data-moved={!!translate} data-kind={kind}>
@@ -206,7 +233,7 @@ function ChallengeBody({
             </span>
             <span className={`${styles.bannerSide} ${styles.bannerRight}`}>
               <Icon name="users" size={17} color="#FFF6EC" strokeWidth={2} />
-              {party ? 'WHOLE PARTY' : 'EACH HIKER'}
+              {SCOPE_WORD[card.scope]}
             </span>
           </header>
 
@@ -243,7 +270,11 @@ function ChallengeBody({
                     double XP.
                   </p>
                 )}
-                <p className={styles.hint}>{hintFor(state, open, card, draft)}</p>
+                {card.buttons ? (
+                  <Happened state={state} cardId={card.id} />
+                ) : (
+                  <p className={styles.hint}>{hintFor(state, open, card, draft)}</p>
+                )}
                 <div className={styles.spacer} />
                 <OutcomeBox card={card} open={open} />
               </div>
@@ -254,7 +285,28 @@ function ChallengeBody({
             ) : (
               <div className={styles.sections}>
                 {draft.sections.map((s, i) =>
-                  card.risk ? (
+                  card.buttons ? (
+                    <ButtonSection
+                      key={s.hikerId ?? 'party'}
+                      state={state}
+                      card={card}
+                      hikerId={s.hikerId}
+                      onPress={onPress}
+                    />
+                  ) : card.spendAny ? (
+                    <SpendSection
+                      key={s.hikerId ?? 'party'}
+                      index={i}
+                      state={state}
+                      open={open}
+                      card={card}
+                      draft={draft}
+                      here={here}
+                      peek={peek}
+                      onDraft={setDraft}
+                      onPeek={setPeek}
+                    />
+                  ) : card.risk ? (
                     <RiskSection
                       key={s.hikerId ?? 'party'}
                       index={i}
@@ -301,12 +353,13 @@ function ChallengeBody({
         </button>
 
         <div className={styles.packs}>
-          {here.map((h) =>
-            card.risk ? (
+          {(card.risk || card.spendAny || card.cost.length > 0 ? here : []).map((h) =>
+            card.risk || card.spendAny ? (
               <RiskPack
                 key={h.id}
                 state={state}
                 open={open}
+                card={card}
                 hiker={h}
                 draft={draft}
                 onDraft={setDraft}
@@ -341,6 +394,12 @@ function hintFor(state: GameState, open: OpenChallenge, card: ChallengeDef, draf
   if (card.risk) {
     return 'Use + in the packs below to spend things that lower a hiker’s danger, then Roll.';
   }
+  if (card.spendAny) return 'Use + in the packs below to spend, then Take the deal.';
+  if (isPick(card)) {
+    return card.scope === 'one'
+      ? 'Tick the one hiker who takes this, then Take the deal.'
+      : 'Tick ✓ for each hiker who takes part. Untick to leave them out.';
+  }
   if (card.kind === 'opportunity' && card.cost.length === 0) {
     return 'Take the deal, or ✗ to skip it.';
   }
@@ -374,6 +433,20 @@ function summary(
     return atRisk.length
       ? `${atRisk.length} ${atRisk.length === 1 ? 'HIKER' : 'HIKERS'} AT RISK`
       : 'EVERYONE IS SAFE';
+  }
+  if (card.buttons) return 'CLOSE IT';
+  if (card.spendAny) {
+    const units = draft.sections.reduce(
+      (n, s) => n + s.gifts.reduce((m, g) => m + giftCountOf(g), 0),
+      0,
+    );
+    return units ? `SPEND ${units}` : 'NOTHING SPENT';
+  }
+  if (isPick(card)) {
+    const n = statuses.filter((st) => st.decision === 'pay').length;
+    const missing = statuses.reduce((m, st) => m + (st.decision ? 0 : st.missing), 0);
+    if (statuses.some((st) => !st.decision)) return `NEEDS ${missing} MORE`;
+    return n ? `${n} ${n === 1 ? 'TAKES' : 'TAKE'} PART` : 'NOTHING HAPPENS';
   }
   if (card.kind === 'opportunity') {
     const s = statuses[0];
@@ -451,25 +524,38 @@ function Section({
 
   const tag = penaltyTag(card, open.rolls, hiker);
   const deal = card.kind === 'opportunity';
-  const pill = deal
+  const pickCard = isPick(card);
+  // A card that moves who it picks can't pick someone who can't be moved.
+  const stuck = pickCard && card.moves && hiker ? immovable(hiker) : false;
+  const where = card.anyTile && hiker ? state.section.tiles[hiker.tileId] : undefined;
+  const pill = pickCard
     ? status.decision === 'pay'
       ? {
           tone: 'pass',
-          text: s.gifts.length
-            ? `TAKES THE DEAL · ${paidLabel(s.gifts, state, open)}`
-            : 'FREE · TAKE IT',
+          text: s.gifts.length ? `TAKES PART · ${paidLabel(s.gifts, state, open)}` : 'TAKES PART',
         }
       : status.decision === 'fail'
-        ? { tone: 'fail', text: 'SKIPS IT' }
+        ? { tone: 'fail', text: stuck ? 'CAN’T BE MOVED' : 'SITS OUT' }
         : { tone: 'needs', text: `NEEDS ${status.missing} MORE` }
-    : status.decision === 'pay'
-      ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
-      : status.decision === 'fail'
+    : deal
+      ? status.decision === 'pay'
         ? {
-            tone: 'fail',
-            text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
+            tone: 'pass',
+            text: s.gifts.length
+              ? `TAKES THE DEAL · ${paidLabel(s.gifts, state, open)}`
+              : 'FREE · TAKE IT',
           }
-        : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
+        : status.decision === 'fail'
+          ? { tone: 'fail', text: 'SKIPS IT' }
+          : { tone: 'needs', text: `NEEDS ${status.missing} MORE` }
+      : status.decision === 'pay'
+        ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
+        : status.decision === 'fail'
+          ? {
+              tone: 'fail',
+              text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
+            }
+          : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
 
   return (
     <div className={styles.section} data-decision={status.decision ?? 'open'}>
@@ -480,10 +566,11 @@ function Section({
           ))}
         </span>
         <span className={styles.whoName}>{hiker ? hiker.name.toUpperCase() : 'WHOLE PARTY'}</span>
+        {where && <span className={styles.where}>ON {tileName(where).toUpperCase()}</span>}
       </div>
 
       <div className={styles.spaces}>
-        {card.cost.map((option, o) => (
+        {(pickCard && s.skipped ? [] : card.cost).map((option, o) => (
           <div key={o} className={styles.option}>
             {o > 0 && <span className={styles.or}>OR</span>}
             {option.map((req, r) => {
@@ -517,10 +604,24 @@ function Section({
           type="button"
           className={styles.check}
           data-on={status.decision === 'pay'}
-          disabled={status.decision !== 'pay' && !s.skipped}
-          aria-label={hiker ? `${hiker.name} pays` : 'The party pays'}
-          title={s.skipped ? 'Pay instead' : 'Pays when the spaces are full'}
-          onClick={() => s.skipped && onDraft(unskip(draft, index))}
+          disabled={stuck || (status.decision !== 'pay' && !s.skipped)}
+          aria-label={
+            pickCard && hiker
+              ? `${hiker.name} takes part`
+              : hiker
+                ? `${hiker.name} pays`
+                : 'The party pays'
+          }
+          title={
+            stuck
+              ? `${hiker?.name} can’t be moved right now`
+              : pickCard
+                ? 'Take part'
+                : s.skipped
+                  ? 'Pay instead'
+                  : 'Pays when the spaces are full'
+          }
+          onClick={() => s.skipped && onDraft(unskip(draft, index, card.scope === 'one'))}
         >
           <Icon name="check" size={22} strokeWidth={2.75} />
         </button>
@@ -529,11 +630,13 @@ function Section({
           className={styles.cross}
           data-on={status.decision === 'fail'}
           aria-label={
-            deal
-              ? 'Skip the deal'
-              : hiker
-                ? `${hiker.name} takes the penalty`
-                : 'Skip and take the penalty'
+            pickCard && hiker
+              ? `${hiker.name} sits out`
+              : deal
+                ? 'Skip the deal'
+                : hiker
+                  ? `${hiker.name} takes the penalty`
+                  : 'Skip and take the penalty'
           }
           title={deal ? 'Skip the deal' : hiker ? 'Take the penalty' : 'Skip and take the penalty'}
           onClick={() => onDraft(skip(draft, index))}
@@ -693,7 +796,9 @@ function EmptySpace({
       {req.kind === 'caps' ? (
         <>
           <img src={ASSETS.icons.acornCaps} alt="" style={{ width: 44 * k, height: 44 * k }} />
-          <span className={styles.emptyLabel}>PAY {need} CAPS</span>
+          <span className={styles.emptyLabel}>
+            PAY {need} CAP{need === 1 ? '' : 'S'}
+          </span>
           <span className={styles.emptySub}>PURSE {state.caps}</span>
         </>
       ) : req.kind === 'stat' ? (
@@ -813,7 +918,9 @@ function FilledSpace({
       {caps > 0 && (
         <span className={styles.filledStat}>
           <img src={ASSETS.icons.acornCaps} alt="" style={{ width: 48 * k, height: 48 * k }} />
-          <span className={styles.emptyLabel}>{caps} CAPS</span>
+          <span className={styles.emptyLabel}>
+            {caps} CAP{caps === 1 ? '' : 'S'}
+          </span>
         </span>
       )}
       {givers.length > 0 && (
@@ -836,7 +943,7 @@ function giftName(g: Gift, state: GameState, open: OpenChallenge): string {
       return itemName(item?.itemId ?? '').toUpperCase();
     }
     case 'caps':
-      return `${g.count} CAPS`;
+      return `${g.count} CAP${g.count === 1 ? '' : 'S'}`;
     case 'stat':
       return `${STAT_META[g.stat].label.toUpperCase()} ×${g.count}`;
   }
@@ -1224,17 +1331,104 @@ function readingWords(card: ChallengeDef, r: RiskReading | undefined) {
   }
 }
 
-function RiskSection({
-  index,
-  state,
-  open,
-  card,
-  draft,
-  here,
-  peek,
-  onDraft,
-  onPeek,
-}: {
+interface Readout {
+  label: string;
+  big: string;
+  sub: string;
+  pill: string;
+  safe: boolean;
+}
+
+function RiskSection(props: SpendColumnProps) {
+  const r = riskNow(props.state, props.open, props.draft, props.index);
+  const words = readingWords(props.card, r);
+  return (
+    <SpendColumn
+      {...props}
+      readout={{ ...words, label: props.card.risk?.measure.readout.toUpperCase() ?? '' }}
+    />
+  );
+}
+
+/** What a spend-any section would get (Citro Tub, Abandoned Ranger Station…). */
+function spendWords(
+  state: GameState,
+  open: OpenChallenge,
+  card: ChallengeDef,
+  draft: Draft,
+  index: number,
+): Readout {
+  const spend = card.spendAny;
+  const r = spendReadout(state, open, draft, index);
+  if (!spend) return { label: '', big: '', sub: '', pill: '', safe: true };
+  const pct = spend.every ? chanceText(spend.every.chance, open) : '';
+  switch (spend.readout) {
+    case 'statAfter': {
+      const after = r.statAfter ?? 0;
+      const got = (spend.thresholds ?? []).filter((t) => r.units > 0 && after <= t.atMost);
+      const names = got.flatMap((t) => t.effects.map(effectName)).join(' + ');
+      return {
+        label: `${'stat' in spend.what ? STAT_META[spend.what.stat].label.toUpperCase() : ''} AFTER`,
+        big: String(after),
+        sub:
+          after <= 0
+            ? '0: AN INJURY!'
+            : names || (r.units ? 'NOT LOW ENOUGH YET' : 'SPEND TO EARN'),
+        pill: names ? `GETS ${names}` : 'NOTHING YET',
+        safe: !!names,
+      };
+    }
+    case 'tries':
+      return {
+        label: 'SEARCHES',
+        big: String(r.tries ?? 0),
+        sub: `${pct} EACH · 2 ENERGY A SEARCH`,
+        pill: r.tries ? `${r.tries} ${r.tries === 1 ? 'TRY' : 'TRIES'} AT ${pct}` : 'NO SEARCH YET',
+        safe: !!r.tries,
+      };
+    case 'swaps':
+      return {
+        label: 'TO SWAP',
+        big: String(r.units),
+        sub: 'EACH FOR A RANDOM ONE',
+        pill: r.units ? `SWAPS ${r.units}` : 'NOTHING YET',
+        safe: r.units > 0,
+      };
+    case 'luck': {
+      const each = spend.each?.find((e) => e.op === 'tileLuck');
+      const per =
+        each && each.op === 'tileLuck' && typeof each.amount === 'number' ? each.amount : 0;
+      return {
+        label: 'LUCK HERE',
+        big: `+${r.units * per}`,
+        sub: 'SCAVENGING ON THIS TILE UNTIL MORNING',
+        pill: r.units ? `+${r.units * per} LUCK` : 'NOTHING YET',
+        safe: r.units > 0,
+      };
+    }
+  }
+}
+
+const chanceText = (c: number | string, open: OpenChallenge) =>
+  typeof c === 'number' ? `${Math.round(c * 100)}%` : `${open.rolls.x[c] ?? '?'}%`;
+
+/** A short name for an effect, for readouts: "CITRO DRINK", "ENERGIZED". */
+function effectName(e: Effect): string {
+  if (e.op === 'gainItem') return e.itemId ? itemName(e.itemId).toUpperCase() : 'AN ITEM';
+  if (e.op === 'condition') return (CONDITIONS[e.id]?.name ?? e.id).toUpperCase();
+  return 'A REWARD';
+}
+
+function SpendSection(props: SpendColumnProps) {
+  return (
+    <SpendColumn
+      {...props}
+      readout={spendWords(props.state, props.open, props.card, props.draft, props.index)}
+    />
+  );
+}
+
+interface SpendColumnProps {
   index: number;
   state: GameState;
   open: OpenChallenge;
@@ -1244,23 +1438,39 @@ function RiskSection({
   peek: Target | null;
   onDraft(d: Draft): void;
   onPeek(t: Target | null): void;
-}) {
+}
+
+/** A column where a hiker (or the party) spends from the packs, with a live readout. */
+function SpendColumn({
+  index,
+  state,
+  open,
+  draft,
+  here,
+  peek,
+  onDraft,
+  onPeek,
+  readout: words,
+}: SpendColumnProps & { readout: Readout }) {
   const s = draft.sections[index];
-  const hiker = here.find((h) => h.id === s?.hikerId);
-  if (!s || !hiker) return null;
-  const r = riskNow(state, open, draft, index);
-  const words = readingWords(card, r);
+  if (!s) return null;
+  const hiker = here.find((h) => h.id === s.hikerId);
+  const who = hiker ? hiker.name : 'The party';
   const t = { section: index, option: 0, req: 0 };
   const peeking = !!peek && sameTarget(peek, t);
   const units = s.gifts.reduce((n, g) => n + giftCountOf(g), 0);
   return (
     <div className={styles.section}>
       <div className={styles.who}>
-        <Face hikerId={hiker.id} size={34} />
-        <span className={styles.whoName}>{hiker.name.toUpperCase()}</span>
+        <span className={styles.faces}>
+          {(hiker ? [hiker] : here).map((h) => (
+            <Face key={h.id} hikerId={h.id} size={34} />
+          ))}
+        </span>
+        <span className={styles.whoName}>{hiker ? hiker.name.toUpperCase() : 'WHOLE PARTY'}</span>
       </div>
       <div className={styles.riskBox} data-safe={words.safe}>
-        <span className={styles.riskLabel}>{card.risk?.measure.readout.toUpperCase()}</span>
+        <span className={styles.riskLabel}>{words.label}</span>
         <span className={styles.riskValue} data-long={words.big.length > 8}>
           {words.big}
         </span>
@@ -1272,9 +1482,7 @@ function RiskSection({
           className={styles.spent}
           data-empty={units === 0}
           aria-label={
-            units
-              ? `${hiker.name} spends ${units}: see or take back`
-              : `${hiker.name} spends nothing yet`
+            units ? `${who} spends ${units}: see or take back` : `${who} spends nothing yet`
           }
           onClick={() => onPeek(units && !peeking ? t : null)}
         >
@@ -1318,25 +1526,45 @@ function RiskSection({
   );
 }
 
-/** A Risk card's pack: the things this hiker could spend that would lower their danger. */
+/**
+ * The pack for a Risk or spend-any card: the things this hiker could spend,
+ * with − and +. On a Risk card only what would lower their danger shows.
+ */
 function RiskPack({
   state,
   open,
+  card,
   hiker,
   draft,
   onDraft,
 }: {
   state: GameState;
   open: OpenChallenge;
+  card: ChallengeDef;
   hiker: Hiker;
   draft: Draft;
   onDraft(d: Draft): void;
 }) {
-  const section = draft.sections.findIndex((s) => s.hikerId === hiker.id);
-  const gifts = draft.sections[section]?.gifts ?? [];
+  const own = draft.sections.findIndex((s) => s.hikerId === hiker.id);
+  const section = own >= 0 ? own : draft.sections.findIndex((s) => !s.hikerId);
+  const gifts = (draft.sections[section]?.gifts ?? []).filter(
+    (g) => g.kind !== 'caps' && g.from === hiker.id,
+  );
   const chips: { source: Source; spent: number; left: number; can: boolean }[] = [];
+  const statSpend =
+    card.spendAny && 'stat' in card.spendAny.what ? card.spendAny.what.stat : undefined;
+  if (statSpend) {
+    const source: Source = { kind: 'stat', from: hiker.id, stat: statSpend };
+    const spent = gifts.reduce((k, g) => k + (g.kind === 'stat' ? g.count : 0), 0);
+    chips.push({
+      source,
+      spent,
+      left: left(state, open, draft, source),
+      can: canGive(state, open, draft, source),
+    });
+  }
   for (const [id, n] of Object.entries(hiker.inventory.resources)) {
-    if (!n) continue;
+    if (!n || statSpend) continue;
     const source: Source = { kind: 'resource', from: hiker.id, resource: id };
     const spent = gifts.reduce(
       (k, g) => k + (g.kind === 'resource' && g.resource === id ? g.count : 0),
@@ -1345,7 +1573,7 @@ function RiskPack({
     const can = canGive(state, open, draft, source);
     if (can || spent) chips.push({ source, spent, left: left(state, open, draft, source), can });
   }
-  for (const item of hiker.inventory.bag) {
+  for (const item of statSpend ? [] : hiker.inventory.bag) {
     const source: Source = { kind: 'item', from: hiker.id, uid: item.uid };
     const spent = gifts.some((g) => g.kind === 'item' && g.uid === item.uid) ? 1 : 0;
     const can = canGive(state, open, draft, source);
@@ -1355,10 +1583,12 @@ function RiskPack({
     const g = gifts.find(
       (x) =>
         (source.kind === 'resource' && x.kind === 'resource' && x.resource === source.resource) ||
-        (source.kind === 'item' && x.kind === 'item' && x.uid === source.uid),
+        (source.kind === 'item' && x.kind === 'item' && x.uid === source.uid) ||
+        (source.kind === 'stat' && x.kind === 'stat' && x.stat === source.stat),
     );
     if (g && section >= 0) onDraft(takeBack(draft, section, g));
   };
+  const itemOfUid = (uid: string) => hiker.inventory.bag.find((i) => i.uid === uid)?.itemId ?? '';
   return (
     <div className={styles.pack}>
       <div className={styles.packHead}>
@@ -1370,44 +1600,37 @@ function RiskPack({
         </span>
       </div>
       {chips.length === 0 ? (
-        <span className={styles.resNone}>Nothing to spend that would help.</span>
+        <span className={styles.resNone}>
+          {card.risk ? 'Nothing to spend that would help.' : 'Nothing that fits.'}
+        </span>
       ) : (
         <div className={styles.chips}>
           {chips.map(({ source, spent, left: n, can }) => {
             const label =
               source.kind === 'resource'
                 ? resourceName(source.resource)
-                : itemName(
-                    hiker.inventory.bag.find(
-                      (i) => i.uid === (source.kind === 'item' ? source.uid : ''),
-                    )?.itemId ?? '',
-                  );
+                : source.kind === 'item'
+                  ? itemName(itemOfUid(source.uid))
+                  : source.kind === 'stat'
+                    ? STAT_META[source.stat].label
+                    : 'caps';
+            const key =
+              source.kind === 'resource'
+                ? source.resource
+                : source.kind === 'item'
+                  ? source.uid
+                  : 'stat';
             return (
-              <div
-                key={
-                  source.kind === 'resource'
-                    ? source.resource
-                    : source.kind === 'item'
-                      ? source.uid
-                      : 'x'
-                }
-                className={styles.chip}
-                data-spent={spent > 0}
-              >
+              <div key={key} className={styles.chip} data-spent={spent > 0}>
                 {source.kind === 'resource' ? (
                   <img className={styles.chipIcon} src={ASSETS.resources[source.resource]} alt="" />
-                ) : (
-                  <ItemFace
-                    itemId={
-                      hiker.inventory.bag.find(
-                        (i) => i.uid === (source.kind === 'item' ? source.uid : ''),
-                      )?.itemId ?? ''
-                    }
-                    width={24}
-                  />
-                )}
+                ) : source.kind === 'item' ? (
+                  <ItemFace itemId={itemOfUid(source.uid)} width={24} />
+                ) : source.kind === 'stat' ? (
+                  <Icon name={STAT_META[source.stat].icon} size={22} strokeWidth={2.25} />
+                ) : null}
                 <span className={styles.chipCount}>
-                  {source.kind === 'resource' ? `×${n}` : ''}
+                  {source.kind === 'item' ? '' : source.kind === 'stat' ? `${n} LEFT` : `×${n}`}
                 </span>
                 <button
                   type="button"
@@ -1487,7 +1710,7 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
                   <h3 className={styles.choiceName}>{card.name.toUpperCase()}</h3>
                   <span className={styles.choiceScope}>
                     {card.risk ? 'RISK · ' : ''}
-                    {card.scope === 'party' ? 'WHOLE PARTY' : 'EACH HIKER'}
+                    {SCOPE_WORD[card.scope]}
                   </span>
                 </div>
                 <p className={styles.cost}>
@@ -1503,5 +1726,137 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Button opportunities ────────────────────────────────────────────────────
+
+/** A section's buttons: one row for the party, or one per hiker. Each press happens at once. */
+function ButtonSection({
+  state,
+  card,
+  hikerId,
+  onPress,
+}: {
+  state: GameState;
+  card: ChallengeDef;
+  hikerId: HikerId | undefined;
+  onPress(action: PressAction): void;
+}) {
+  const hiker = hikerId ? state.hikers.find((h) => h.id === hikerId) : undefined;
+  const presses: { key: string; label: string; action: PressAction }[] = [];
+  // A limit shared by several buttons (Snake Slots' 3 ways to pay) shows once, by the name.
+  const shared: string[] = [];
+  // The odds of a slots button, shown while hovering or focusing its buttons.
+  let odds: { label: string; pct: number }[] | undefined;
+  for (const b of card.buttons ?? []) {
+    if (b.per === 'hiker' && !hiker) continue;
+    const base = {
+      type: 'pressButton' as const,
+      button: b.id,
+      ...(hiker ? { hikerId: hiker.id } : {}),
+    };
+    const leftNow = pressesLeft(state, b, hiker?.id);
+    const count = leftNow === undefined ? '' : ` (${leftNow} LEFT)`;
+    if (b.kind === 'slots') {
+      const total = b.table.reduce((n, o) => n + o.weight, 0);
+      odds = b.table.map((o) => ({ label: o.label, pct: Math.round((o.weight / total) * 100) }));
+      if (leftNow !== undefined) {
+        shared.push(`${leftNow} ${b.label}${leftNow === 1 ? '' : 'S'} LEFT`);
+      }
+      b.pay.forEach((p, i) =>
+        presses.push({
+          key: `${b.id}-${i}`,
+          label: `${b.label} · ${p.amount} ${STAT_META[p.stat].label.toUpperCase()}`,
+          action: { ...base, choice: String(i) },
+        }),
+      );
+    } else if (b.kind === 'revealConnected') {
+      for (const t of hiker ? revealableFrom(state, hiker) : []) {
+        presses.push({
+          key: `${b.id}-${t.id}`,
+          label: `${b.label} ${tileName(t).toUpperCase()}`,
+          action: { ...base, choice: t.id },
+        });
+      }
+    } else {
+      presses.push({ key: b.id, label: `${b.label}${count}`, action: base });
+    }
+  }
+  const reasons = presses.map((p) => validateAction(state, p.action) ?? undefined);
+  // When nothing here can be pressed, say why in words (a limit says it on its own).
+  const offWhy =
+    presses.length > 0 && reasons.every(Boolean) && reasons[0] !== 'No presses left.'
+      ? reasons[0]
+      : undefined;
+  return (
+    <div className={styles.section}>
+      <div className={styles.who}>
+        {hiker && <Face hikerId={hiker.id} size={34} />}
+        <span className={styles.whoName}>{hiker ? hiker.name.toUpperCase() : 'WHOLE PARTY'}</span>
+        {shared.map((t) => (
+          <span key={t} className={styles.pressLeft}>
+            {t}
+          </span>
+        ))}
+      </div>
+      <div className={styles.pressWrap}>
+        <div className={styles.buttons}>
+          {presses.length === 0 && (
+            <span className={styles.resNone}>
+              {card.buttons?.some((b) => b.kind === 'revealConnected')
+                ? 'Every connected tile is already known.'
+                : 'Nothing to press here.'}
+            </span>
+          )}
+          {presses.map((p, i) => {
+            const why = reasons[i];
+            return (
+              <button
+                key={p.key}
+                type="button"
+                className={styles.pressButton}
+                disabled={!!why}
+                title={why}
+                onClick={() => onPress(p.action)}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+        {offWhy && <p className={styles.pressOff}>{offWhy}</p>}
+        {odds && (
+          <div className={styles.odds} role="tooltip">
+            <span className={styles.oddsHead}>THE ODDS, EACH PULL</span>
+            {odds.map((o) => (
+              <span key={o.label} className={styles.oddsRow}>
+                <span className={styles.oddsPct}>{o.pct}%</span>
+                {o.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** What the presses so far did, from the trail log (the card's last opening on). */
+function Happened({ state, cardId }: { state: GameState; cardId: string }) {
+  const opened = state.log.findLast((e) => e.kind === 'challengeOpened' && e.cardId === cardId);
+  const lines = describeLog(state, 60).filter(
+    (l) => opened && l.id > opened.id && l.tone !== 'debug',
+  );
+  if (!lines.length)
+    return (
+      <p className={styles.hint}>Each press happens at once. Press Done when you’re finished.</p>
+    );
+  return (
+    <ul className={styles.happened}>
+      {lines.slice(-4).map((l) => (
+        <li key={l.id}>{l.text}</li>
+      ))}
+    </ul>
   );
 }

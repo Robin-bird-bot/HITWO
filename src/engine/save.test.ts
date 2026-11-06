@@ -60,10 +60,23 @@ describe('save and load', () => {
     const loaded = deserialize(JSON.stringify({ ...v2, saveVersion: 2 }));
     expect(loaded.ok).toBe(true);
     if (loaded.ok) {
-      expect(loaded.state.saveVersion).toBe(3);
+      expect(loaded.state.saveVersion).toBe(SAVE_VERSION);
       expect(loaded.state.usedCards).toEqual([]);
       expect(loaded.state.trials).toBeUndefined();
     }
+  });
+
+  it('upgrades a version 3 save: run counters start at zero (Nov 6 update)', () => {
+    const v3 = structuredClone(fixtureGame()) as Partial<GameState>;
+    delete v3.counters;
+    const loaded = deserialize(JSON.stringify({ ...v3, saveVersion: 3 }));
+    expect(loaded.ok && loaded.state.counters).toEqual({
+      passed: {},
+      failed: {},
+      crafted: {},
+      daysSinceSleep: {},
+      sheltersPlaced: {},
+    });
   });
 
   it('round-trips conditions with their timing', () => {

@@ -61,6 +61,52 @@ export type Requirement =
 /** One way to pay: every requirement in it. A card's options are the "or" alternatives. */
 export type CostOption = readonly Requirement[];
 
+/**
+ * Opportunities where each hiker spends any amount (Nov 6 update, 2): the Risk
+ * +/− chips, with a live readout.
+ */
+export interface SpendAnyDef {
+  what: { stat: StatName } | { resources: 'any' } | { items: ItemType };
+  /** At most this many per section. */
+  max?: number;
+  readout: 'statAfter' | 'tries' | 'swaps' | 'luck';
+  /** After spending: effects for a hiker whose stat ended at or below a value (Citro Tub). */
+  thresholds?: readonly { atMost: number; effects: readonly Effect[] }[];
+  /** For every N spent, a chance at these effects (Abandoned Ranger Station). */
+  every?: { n: number; chance: Chance; effects: readonly Effect[] };
+  /** For each one spent, for whoever spent it (Hikers Exchange, Hungry Animals). */
+  each?: readonly Effect[];
+}
+
+/** A slot machine outcome (Snake Slots). */
+export interface SlotsOutcome {
+  weight: number;
+  label: string;
+  effects: readonly Effect[];
+}
+
+/** A button on an opportunity: each press happens at once (Nov 6 update, 2). */
+export type ButtonDef = {
+  id: string;
+  label: string;
+  /** One counter for the party, or one per hiker. */
+  per: 'party' | 'hiker';
+  max?: number;
+} & (
+  | { kind: 'buy'; price: readonly [number, number]; gives: readonly Effect[] }
+  | {
+      kind: 'slots';
+      pay: readonly { stat: StatName; amount: number }[];
+      table: readonly SlotsOutcome[];
+    }
+  /** One random unrevealed tile gets easier, another harder (Predator Bait). */
+  | { kind: 'shiftTiers' }
+  /** The presser gets these, and a random unrevealed tile gets harder, once each (Predator's Den). */
+  | { kind: 'raiseRandom'; gives: readonly Effect[] }
+  /** Reveal a connected tile's card, with a chance of injury (Old Firewatch Tower). */
+  | { kind: 'revealConnected'; injury: Chance }
+);
+
 /** Which hikers an each-hiker card judges. */
 export type Who = 'all' | 'noClothing' | 'wearingClothes' | 'carryingFood';
 
@@ -104,7 +150,11 @@ export type EffectOp =
   | { op: 'lines'; kind: LineKind; where: 'into' | 'connected' }
   | {
       op: 'move';
-      how: 'back' | 'cameFrom' | 'swept' | 'blown' | 'falseTrail';
+      /**
+       * tunnel: together to a random tile in the next row up (Secret Tunnel).
+       * trailhead: back to the start of this biome (Airlift).
+       */
+      how: 'back' | 'cameFrom' | 'swept' | 'blown' | 'falseTrail' | 'tunnel' | 'trailhead';
       /** Blown: the chance of each further step (1, 0.75, 0.5, 0.25). */
       chances?: readonly number[];
     }
@@ -119,9 +169,25 @@ export type EffectOp =
   | { op: 'toolUses'; delta: Amount }
   /** Clothing can be lost, by durability left. TODO(phase 9). */
   | { op: 'loseClothes'; chancePerDurability: number }
-  /** A random negative condition (Rocco Raccoon). */
-  | { op: 'randomCondition'; duration: Amount; unit: 'days' }
-  | { op: 'gainItem'; itemType?: ItemType }
+  /** A random negative condition (Rocco Raccoon), or a random one from a list (Mysterious Pill). */
+  | { op: 'randomCondition'; duration: Amount; unit: 'days'; from?: readonly string[] }
+  /** A random item (of these types), a particular item, or a Tier III placeholder. */
+  | {
+      op: 'gainItem';
+      itemType?: ItemType;
+      itemTypes?: readonly ItemType[];
+      itemId?: string;
+      tier3?: true;
+    }
+  | { op: 'cureInjury'; count: number }
+  /** Cures conditions: all of them, or only negative ones. */
+  | { op: 'cureConditions'; only?: 'negative' }
+  /** Fills a stat back up to its maximum. */
+  | { op: 'refill'; stat: StatName }
+  /** Builds a random shelter on this tile (Ruins). */
+  | { op: 'placeShelter' }
+  /** Scavenging on this tile gets extra Luck until the next morning (Hungry Animals). */
+  | { op: 'tileLuck'; amount: Amount }
   | { op: 'gainResources'; count: Amount; filter?: ResourceFilter }
   | { op: 'gainCaps'; count: Amount };
 
@@ -222,7 +288,17 @@ interface BaseDef {
 
 export interface ChallengeDef extends BaseDef {
   kind: 'challenge' | 'opportunity';
-  scope: 'party' | 'each';
+  /**
+   * party: one section; each: one per hiker; select: a ✓/✗ per hiker and only
+   * ticked hikers take part; one: exactly one hiker takes part.
+   */
+  scope: 'party' | 'each' | 'select' | 'one';
+  /** A Select card that can pick hikers on any tile (Airlift). */
+  anyTile?: true;
+  /** The card moves the hikers it picks, so a Frozen hiker can't be picked. */
+  moves?: true;
+  spendAny?: SpendAnyDef;
+  buttons?: readonly ButtonDef[];
   who?: Who;
   /** The "or" alternatives. Empty for a Risk challenge. */
   cost: readonly CostOption[];

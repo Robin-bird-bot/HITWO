@@ -57,3 +57,6 @@ export {
 export { foodCarried } from './challenges/applyEffects';
 export { riskReading, riskSpendFits, type RiskReading } from './challenges/risk';
 export { deadlineOf, phaseIndex, timeLeft } from './challenges/trials';
+export { pressKey, pressesLeft, revealableFrom, unrevealedTiles } from './challenges/buttons';
+export { immovable } from './challenges/applyEffects';
+export { revealCardOn } from './challenges/reveal';

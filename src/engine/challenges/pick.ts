@@ -108,6 +108,14 @@ export function tileTier(state: GameState, tile: Tile): number {
   return state.section.tier + (tile.tierBonus ?? 0);
 }
 
+/**
+ * Opportunities have one list, written for Tier I: their X ranges scale by
+ * TIER_SCALE for each tier above I (Nov 6 update). TODO(wyatt): first guess.
+ */
+function opportunityScale(tier: number): number {
+  return BALANCE.challenges.tierScale ** Math.max(0, tier - 1);
+}
+
 /** Splits a tier above III into Tier III plus a scale. */
 function playable(tier: number): { tier: Tier; scale: number } {
   if (tier <= MAX_TIER) return { tier: Math.max(1, tier) as Tier, scale: 1 };
@@ -123,9 +131,9 @@ export function pickForTile(
   const base = tileTier(state, tile);
 
   if (tile.special === 'opportunity') {
-    const { tier, scale } = playable(base);
+    const { tier } = playable(base);
     const id = pickOne(rng, 'opportunity', state, tile, onTile, tier);
-    return id ? { cardId: id, tier, scale } : undefined;
+    return id ? { cardId: id, tier, scale: opportunityScale(base) } : undefined;
   }
 
   if (tile.special === 'challenge') {
@@ -154,7 +162,8 @@ export function pickForTile(
   // If nothing of that kind fits here, fall back to a challenge, then an opportunity.
   for (const k of [kind, 'challenge', 'opportunity'] as ChallengeKind[]) {
     const id = pickOne(rng, k, state, tile, onTile, tier);
-    if (id) return { cardId: id, tier, scale };
+    if (id)
+      return { cardId: id, tier, scale: k === 'opportunity' ? opportunityScale(base) : scale };
   }
   return undefined;
 }

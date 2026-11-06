@@ -11,7 +11,7 @@
  */
 export { TRAITS } from './traits';
 export { FAMILIES } from './families';
-export { ITEMS, findableItems } from './items';
+export { ITEMS, TIER_3_ITEMS, findableItems } from './items';
 export { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, type ScavengeCardDef } from './scavengeCards';
 export { CARDS, CHALLENGES, OPPORTUNITIES, TRIALS } from './challenges';
 export { CONDITIONS, NEGATIVE_CONDITIONS, type ConditionDef } from './conditions';

@@ -168,30 +168,6 @@ describe('Risk challenges', () => {
   });
 });
 
-describe('opportunities', () => {
-  it('Trail Angel: free, and the caps go to the purse', () => {
-    const s = opened('trail-angel');
-    const after = run(s, resolve({ pay: true, gifts: [] }));
-    expect(after.caps).toBe(2);
-    expect(after.log.some((e) => e.kind === 'gained' && e.caps === 2)).toBe(true);
-    expect(hiker(after, 'ash').xp).toBe(0);
-  });
-
-  it('Friendly Fisher: give 3 River resources for a tool, or skip for nothing', () => {
-    const s = opened('friendly-fisher', (g) => {
-      hiker(g, 'ash').inventory.resources = { fish: 2, clay: 1 };
-    });
-    const deal = run(
-      s,
-      resolve({ pay: true, option: 0, gifts: [spend('ash', 'fish', 2), spend('ash', 'clay')] }),
-    );
-    const items = [...hiker(deal, 'ash').inventory.bag, ...hiker(deal, 'birch').inventory.bag];
-    expect(items).toHaveLength(1);
-    const skipped = run(s, resolve({ pay: false, gifts: [] }));
-    expect(hiker(skipped, 'ash').inventory.resources).toEqual({ fish: 2, clay: 1 });
-  });
-});
-
 describe('special spaces', () => {
   const space = (kind: 'choice' | 'challenge' | 'opportunity', seed = 2) => {
     const s = fixtureGame({ seed, challenges: true });

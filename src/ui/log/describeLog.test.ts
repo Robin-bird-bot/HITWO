@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { applyAction, createGame, type Action, type GameState } from '../../engine';
 import { fixtureGame, place, run, toNight } from '../../engine/test/fixtures';
+import { gainResources } from '../../engine/effects';
 import { describeLog, signed } from './describeLog';
 
 const texts = (s: GameState) => describeLog(s, 50).map((l) => l.text);
@@ -154,18 +155,26 @@ describe('trail log sentences', () => {
     expect(lines.some((l) => /^Ash was swept to .+ \(Dangerous Current\)\.$/.test(l))).toBe(true);
   });
 
-  it('describe a Choice and what an opportunity gave', () => {
+  it('describe what an opportunity gave', () => {
     const s = fixtureGame({ challenges: true });
     place(s, 'ash', 'L');
+    s.hikers.find((h) => h.id === 'ash')!.inventory.resources = { wood: 2 };
     const g = run(
       s,
-      { type: 'debug', op: { kind: 'openChallenge', cardId: 'trail-angel', tileId: 'L' } },
-      { type: 'resolveChallenge', sections: [{ pay: true, gifts: [] }] },
+      { type: 'debug', op: { kind: 'openChallenge', cardId: 'hikers-exchange', tileId: 'L' } },
+      {
+        type: 'resolveChallenge',
+        sections: [
+          {
+            pay: true,
+            gifts: [{ kind: 'resource', req: 0, from: 'ash', resource: 'wood', count: 2 }],
+          },
+        ],
+      },
     );
-    expect(texts(g).slice(-2)).toEqual([
-      'Trail Angel: the party took the deal.',
-      'The party purse got 2 caps (Trail Angel).',
-    ]);
+    const lines = texts(g);
+    expect(lines).toContain('Hikers Exchange: the party spent Wood ×2.');
+    expect(lines.filter((l) => /^Ash got .+ \(Hikers Exchange\)\.$/.test(l))).toHaveLength(2);
   });
 
   it('describe a Trial starting and running out (Phase 5)', () => {
@@ -183,6 +192,46 @@ describe('trail log sentences', () => {
       'Trial: Train!! Every hiker leaves this tile by the end of the next phase.',
     );
     expect(lines).toContain('Train!!: time’s up for Ash.');
+  });
+
+  it('describe button presses and early reveals', () => {
+    const s = fixtureGame({ challenges: true });
+    place(s, 'ash', 'L');
+    const g = run(
+      s,
+      { type: 'debug', op: { kind: 'openChallenge', cardId: 'old-firewatch-tower', tileId: 'L' } },
+      { type: 'pressButton', button: 'climb', hikerId: 'ash', choice: 'M' },
+    );
+    const lines = texts(g);
+    expect(
+      lines.some((l) => /^M?.+’s card is known now: .+ \(Old Firewatch Tower\)\.$/.test(l)),
+    ).toBe(true);
+    expect(lines.some((l) => /^Old Firewatch Tower: Ash revealed a tile/.test(l))).toBe(true);
+  });
+
+  it('say who took part in a pick card, and what didn’t fit in a full pack', () => {
+    const berries = run(fixtureGame({ challenges: true }), {
+      type: 'debug',
+      op: { kind: 'openChallenge', cardId: 'mysterious-berries', tileId: 'T' },
+    });
+    const ids = berries.hikers.filter((h) => h.tileId === 'T').map((h) => h.id);
+    const done = run(berries, {
+      type: 'resolveChallenge',
+      sections: ids.map((id, i) => ({ hikerId: id, pay: i === 0, gifts: [] })),
+    });
+    const line = texts(done).find((l) => l.startsWith('Mysterious Berries:'));
+    expect(line).toMatch(/took part/);
+    expect(line).toMatch(/sat out/);
+
+    // A gain with no room left says so.
+    const full = fixtureGame();
+    const ash = full.hikers.find((h) => h.id === 'ash')!;
+    ash.inventory.resources = { wood: 10 };
+    gainResources(full, ash, ['stone', 'clay'], 'Snake Slots');
+    expect(texts(full)).toContain('Ash’s pack is full: 2 resources left behind (Snake Slots).');
+    ash.inventory.resources = { wood: 9 };
+    gainResources(full, ash, ['stone', 'clay'], 'Snake Slots');
+    expect(texts(full)).toContain('Ash got Stone, and 1 resource didn’t fit (Snake Slots).');
   });
 
   it('keep only the most recent lines', () => {

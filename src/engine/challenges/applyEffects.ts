@@ -11,11 +11,12 @@
  *   hiker or item (TODO(phase N) notes say where).
  */
 import { BALANCE } from '../../config/balance';
-import { ITEMS, findableItems } from '../../content';
+import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { addCondition, hasCondition } from '../conditions';
+import { addCondition, hasCondition, removeCondition } from '../conditions';
+import { countShelter } from '../counters';
 import type { ItemType } from '../effects';
 import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
@@ -34,7 +35,7 @@ import type {
   TileId,
 } from '../types';
 import { amount, chanceOf, type AmountContext } from './rolls';
-import { noteArrival } from './trials';
+import { noteArrival, phaseIndex } from './trials';
 import type { CardDef, Effect, EffectOp, ResourceFilter, Tier } from './types';
 
 export interface EffectRun {
@@ -52,7 +53,7 @@ export interface EffectRun {
 type MoveTo = (
   h: Hiker,
   to: TileId | undefined,
-  how: 'swept' | 'back' | 'blown' | 'falseTrail',
+  how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel',
 ) => void;
 
 export interface EffectResult {
@@ -76,12 +77,17 @@ const ONCE: ReadonlySet<EffectOp['op']> = new Set([
   'trigger',
   'gainItem',
   'gainCaps',
+  'placeShelter',
+  'tileLuck',
 ]);
 
 const isOnce = (e: Effect) =>
   ONCE.has(e.op) ||
   (e.op === 'loseResources' && e.from === 'party') ||
-  (e.op === 'move' && e.how === 'falseTrail');
+  (e.op === 'move' && (e.how === 'falseTrail' || e.how === 'tunnel'));
+
+/** Can't be moved by anything (Frozen, Napping). */
+export const immovable = (h: Hiker) => h.conditions.some((c) => CONDITIONS[c.id]?.immovable);
 
 export const isFood = (itemId: ItemId) => ITEMS[itemId]?.type === 'food';
 export const foodCarried = (h: Hiker) => h.inventory.bag.filter((i) => isFood(i.itemId)).length;
@@ -172,7 +178,7 @@ export function applyEffects(
   const moveTo: MoveTo = (h, to, how) => {
     if (!to || to === h.tileId) return;
     // Frozen: can't move or be moved (04-challenges.md, "New conditions").
-    if (hasCondition(h, 'frozen')) return;
+    if (immovable(h)) return;
     const tile = state.section.tiles[to];
     if (!tile) return;
     const wasNew = !tile.visited;
@@ -234,8 +240,27 @@ function applyToHiker(
       });
       return;
     }
+    case 'cureInjury': {
+      const healed = Math.min(h.injuries, e.count);
+      if (healed <= 0) return;
+      h.injuries -= healed;
+      if (h.status === 'passedOut' && h.injuries < BALANCE.injuries.passOutAt) h.status = 'active';
+      pushEvent(state, { kind: 'healed', hikerId: h.id, healed, injuries: h.injuries, cause });
+      return;
+    }
+    case 'cureConditions':
+      for (const c of [...h.conditions]) {
+        if (e.only === 'negative' && CONDITIONS[c.id]?.kind !== 'negative') continue;
+        removeCondition(state, h, c.id);
+      }
+      return;
+    case 'refill': {
+      const missing = BALANCE.stats.max - h.stats[e.stat];
+      if (missing > 0) changeStat(state, h, e.stat, missing, cause);
+      return;
+    }
     case 'randomCondition': {
-      const id = pick(state.rng, NEGATIVE_CONDITIONS);
+      const id = pick(state.rng, e.from ?? NEGATIVE_CONDITIONS);
       const nodes = tileNodeTypes(state, run.tileId);
       const node = CONDITIONS[id]?.takesNode && nodes.length ? pick(state.rng, nodes) : undefined;
       addCondition(state, h, id, amount(e.duration, ctx), e.unit, cause, node ? { node } : {});
@@ -321,15 +346,24 @@ function applyToHiker(
     case 'gainResources': {
       const room = BALANCE.inventory.resourceLimit - resourceCount(h);
       const options = RESOURCES.filter((r) => matches(e.filter, r.id)).map((r) => r.id);
-      const n = Math.min(room, amount(e.count, ctx));
+      const wanted = amount(e.count, ctx);
+      const n = Math.max(0, Math.min(room, wanted));
       const got: ResourceId[] = [];
       for (let i = 0; i < n; i++) {
         const id = pick(state.rng, options);
         h.inventory.resources[id] = (h.inventory.resources[id] ?? 0) + 1;
         got.push(id);
       }
-      if (got.length) {
-        pushEvent(state, { kind: 'gained', hikerId: h.id, resources: got, items: [], cause });
+      const noRoom = wanted - n;
+      if (got.length || noRoom > 0) {
+        pushEvent(state, {
+          kind: 'gained',
+          hikerId: h.id,
+          resources: got,
+          items: [],
+          ...(noRoom > 0 ? { noRoom } : {}),
+          cause,
+        });
       }
       return;
     }
@@ -342,6 +376,8 @@ function applyToHiker(
       } else if (e.how === 'cameFrom') {
         const back = h.cameFrom && adjacentTileIds(state.section, h.tileId).includes(h.cameFrom);
         moveTo(h, back ? h.cameFrom : backTile(state, h.tileId), 'back');
+      } else if (e.how === 'trailhead') {
+        moveTo(h, state.section.trailheadId, 'back');
       } else if (e.how === 'blown') {
         // Only the tile they end on triggers its challenge.
         const steps = run.risk ?? blownSteps(state, e.chances ?? [1]);
@@ -460,15 +496,37 @@ function applyOnce(
       result.triggers.push({ tileId: run.tileId, tier: e.tier, node: e.node });
       return;
     case 'gainItem': {
-      const types: ItemType[] = e.itemType
-        ? [e.itemType]
-        : ['tool', 'food', 'clothes', 'shelter', 'trinket'];
-      const options = types.flatMap((t) => findableItems(t));
+      const types: readonly ItemType[] =
+        e.itemTypes ??
+        (e.itemType ? [e.itemType] : ['tool', 'food', 'clothes', 'shelter', 'trinket']);
+      const options = e.itemId
+        ? [ITEMS[e.itemId]].filter((i) => !!i)
+        : e.tier3
+          ? TIER_3_ITEMS.flatMap((id) => (ITEMS[id] ? [ITEMS[id]] : []))
+          : types.flatMap((t) => findableItems(t));
       const to = targets.find((h) => h.inventory.bag.length < bagSlots(state, h).total);
       if (!options.length || !to) return;
       const item = pick(state.rng, options);
       to.inventory.bag.push({ uid: `gift-${state.nextEventId}-${item.id}`, itemId: item.id });
       pushEvent(state, { kind: 'gained', hikerId: to.id, resources: [], items: [item.id], cause });
+      return;
+    }
+    case 'placeShelter': {
+      // TODO(phase 9): a shelter that works like the real shelter cards.
+      if (!tile) return;
+      const shelters = findableItems('shelter');
+      if (!shelters.length) return;
+      tile.shelters = [...(tile.shelters ?? []), pick(state.rng, shelters).id];
+      countShelter(state);
+      return;
+    }
+    case 'tileLuck': {
+      if (!tile) return;
+      const now = phaseIndex(state);
+      // Until the next morning: the end of tonight.
+      const until = now - (now % 3) + 2;
+      const amountNow = tile.luckBonus && tile.luckBonus.until >= now ? tile.luckBonus.amount : 0;
+      tile.luckBonus = { amount: amountNow + amount(e.amount, ctx), until, cause };
       return;
     }
     case 'gainCaps': {
@@ -478,8 +536,18 @@ function applyOnce(
       return;
     }
     case 'move': {
-      // False Trail Markers: everyone to the same random unrevealed tile in the 3 rows behind.
       if (!tile) return;
+      if (e.how === 'tunnel') {
+        // Secret Tunnel: together to a random tile in the next row up, connected or not.
+        const up = Object.values(state.section.tiles).filter(
+          (t) => t.row === tile.row + 1 && t.kind !== 'checkpoint',
+        );
+        if (!up.length) return;
+        const to = pick(state.rng, up).id;
+        for (const h of targets) moveTo(h, to, 'tunnel');
+        return;
+      }
+      // False Trail Markers: everyone to the same random unrevealed tile in the 3 rows behind.
       const behind = Object.values(state.section.tiles).filter(
         (t) => t.kind !== 'checkpoint' && t.row < tile.row && t.row >= tile.row - 3,
       );

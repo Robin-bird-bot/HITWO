@@ -1,6 +1,7 @@
 import { tileLabel } from '../../content/tileLabels';
 import { ASSETS } from '../../config/assets';
 import type { Tile, TileNode } from '../../engine';
+import { CARDS } from '../../content';
 import { Icon } from '../icons/Icon';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
 import styles from './MapView.module.css';
@@ -25,8 +26,10 @@ interface MapTileProps {
   onClick?(): void;
   /** Simple mode: the checkpoint's label shows only on hover. */
   checkpointLabelOnHover?: boolean;
-  /** A Trial's tile (orange ring) or Rocco's red tile. */
-  mark?: 'trial' | 'target' | undefined;
+  /** A Trial's tile (orange ring), Rocco's red tile, or a tile that just got easier (blue). */
+  mark?: 'trial' | 'target' | 'easier' | undefined;
+  /** A card revealed early here: its icon opens the card. */
+  onRevealed?(): void;
 }
 
 export function MapTile({
@@ -39,6 +42,7 @@ export function MapTile({
   onClick,
   checkpointLabelOnHover,
   mark,
+  onRevealed,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
@@ -117,6 +121,10 @@ export function MapTile({
         >
           <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
         </div>
+      )}
+
+      {tile.revealedCard && !tile.visited && (
+        <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
       )}
 
       <div className={styles.nodes}>
@@ -219,4 +227,31 @@ function describeTile(tile: Tile, label: string | null): string {
       (hidden ? ` (${hidden} unknown)` : ''),
   );
   return parts.join(' · ');
+}
+
+/** A card revealed early on this tile (Old Firewatch Tower): tap it to read the card. */
+function RevealedIcon({ cardId, onOpen }: { cardId: string; onOpen: (() => void) | undefined }) {
+  const card = CARDS[cardId];
+  const kind = card?.kind ?? 'challenge';
+  const name = card?.name ?? 'A card';
+  return (
+    <button
+      type="button"
+      className={styles.revealed}
+      data-kind={kind}
+      title={`${name}: tap to read it`}
+      aria-label={`Revealed here: ${name}. Read the card`}
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen?.();
+      }}
+    >
+      <Icon
+        name={kind === 'opportunity' ? 'star' : kind === 'trial' ? 'sign' : 'alert'}
+        size={17}
+        strokeWidth={2.5}
+      />
+    </button>
+  );
 }

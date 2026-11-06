@@ -14,6 +14,7 @@ import type {
   ScavengeBonusOffer,
   ScavengeCardType,
 } from '../types';
+import { phaseIndex } from '../challenges/trials';
 import { canDeal, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 
@@ -63,6 +64,16 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   // Low Abundance: a warning for each low node here, and when every node is low, fewer
   // cards and less Luck.
   const bonuses: ScavengeBonus[] = mods.map(({ source, label, tone }) => ({ source, label, tone }));
+  // A Luck bonus left on this tile (Hungry Animals), until it runs out.
+  const tileLuck = tile?.luckBonus;
+  if (tileLuck && tileLuck.until >= phaseIndex(state)) {
+    luck += tileLuck.amount;
+    bonuses.push({
+      source: tileLuck.cause,
+      label: `+${tileLuck.amount} Luck scavenging here until morning`,
+      tone: 'luck',
+    });
+  }
   const kinds = [
     ...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type]))),
   ];

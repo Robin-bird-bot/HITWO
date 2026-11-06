@@ -1,0 +1,126 @@
+/* A card revealed early: banner and text only. Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 12, 0.3);
+}
+
+.panel {
+  width: 560px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(22, 27, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  animation: pop 160ms ease-out;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 20px;
+  background: #c8403a;
+  color: #fff6ec;
+  text-align: center;
+}
+
+.banner[data-kind='opportunity'] {
+  background: #2f6fae;
+}
+
+.banner[data-kind='trial'] {
+  background: #e0812f;
+}
+
+.kind {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.07em;
+  opacity: 0.9;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 30px;
+  letter-spacing: 0.05em;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 24px 22px;
+}
+
+.ask {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.outcome {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(229, 98, 74, 0.14);
+  border: 2px solid rgba(229, 98, 74, 0.6);
+  color: #fff6ec;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.outcome[data-kind='opportunity'] {
+  background: rgba(127, 194, 155, 0.14);
+  border-color: rgba(127, 194, 155, 0.6);
+}
+
+.outcome svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-faint);
+}
+
+.ok {
+  align-self: center;
+  width: 200px;
+  height: 48px;
+  border-radius: 12px;
+  border: none;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+}

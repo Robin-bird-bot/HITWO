@@ -239,6 +239,13 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           tone: 'injury',
         });
         break;
+      case 'healed':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} healed ${e.healed === 1 ? 'an injury' : `${e.healed} injuries`} (${e.cause}): ${e.injuries} of 3 left.`,
+          tone: 'rest',
+        });
+        break;
       case 'passedOut':
         lines.push({ id: e.id, text: `${name(e.hikerId)} passed out!`, tone: 'injury' });
         break;
@@ -253,7 +260,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           if (next?.kind !== 'stat' || next.cause !== paidCause(card)) break;
           i += 1;
         }
-        const deal = CARDS[e.cardId]?.kind === 'opportunity';
+        const def = CARDS[e.cardId];
+        const shown = def && def.kind !== 'trial' ? def : undefined;
+        const deal = shown?.kind === 'opportunity';
+        const picked = shown?.scope === 'select' || shown?.scope === 'one';
         const parts = e.results.map((r) => {
           const who = r.hikerId ? name(r.hikerId) : 'the party';
           const paid = r.paid ? describePaid(r.paid) : 'nothing';
@@ -261,6 +271,8 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
             const spent = paid === 'nothing' ? '' : ` spent ${paid} and`;
             return `${who}${spent} ${riskWords(r.risk)}`;
           }
+          if (picked) return r.passed ? `${who} took part` : `${who} sat out`;
+          if (shown?.spendAny) return `${who} spent ${paid}`;
           if (deal) return r.passed ? `${who} took the deal` : `${who} skipped it`;
           if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
           const reward = r.reward ? `, and won ${REWARD_WORDS[r.reward]}` : '';
@@ -281,6 +293,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           back: 'went back to',
           blown: 'was blown back to',
           falseTrail: 'followed false trail markers to',
+          tunnel: 'took the secret tunnel to',
         }[e.how];
         lines.push({
           id: e.id,
@@ -308,6 +321,33 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text: text.trim(), tone: 'challenge' });
         break;
       }
+      case 'pressed': {
+        const card = CARDS[e.cardId];
+        const cardName = card?.name ?? 'An opportunity';
+        const button =
+          card && card.kind !== 'trial' ? card.buttons?.find((b) => b.id === e.button) : undefined;
+        const who = e.hikerId ? name(e.hikerId) : 'The party';
+        const text =
+          button?.kind === 'slots'
+            ? `${who} pulled and won ${e.note}`
+            : button?.kind === 'buy'
+              ? `the party ${e.note}${e.note.startsWith('paid') ? ' for a resource' : ''}`
+              : button?.kind === 'revealConnected'
+                ? `${who} ${e.note}`
+                : e.note;
+        lines.push({ id: e.id, text: `${cardName}: ${text}.`, tone: 'challenge' });
+        break;
+      }
+      case 'revealedCard': {
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? tileName(tile) : 'A tile';
+        lines.push({
+          id: e.id,
+          text: `${where}’s card is known now: ${CARDS[e.cardId]?.name ?? 'a challenge'} (${e.cause}).`,
+          tone: 'challenge',
+        });
+        break;
+      }
       case 'challengeChosen':
         lines.push({
           id: e.id,
@@ -319,10 +359,16 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const what: string[] = [];
         for (const id of e.items) what.push(`a ${ITEMS[id]?.name ?? id}`);
         if (e.resources.length) what.push(titleCase(resourcesTitle(e.resources)));
-        const text = e.hikerId
-          ? `${name(e.hikerId)} got ${listNames(what)} (${e.cause}).`
-          : `The party purse got ${e.caps ?? 0} cap${e.caps === 1 ? '' : 's'} (${e.cause}).`;
-        lines.push({ id: e.id, text, tone: 'scavenge' });
+        const left = e.noRoom ?? 0;
+        const behind = `${left} resource${left === 1 ? '' : 's'}`;
+        const text = !e.hikerId
+          ? `The party purse got ${e.caps ?? 0} cap${e.caps === 1 ? '' : 's'} (${e.cause}).`
+          : !what.length
+            ? `${name(e.hikerId)}’s pack is full: ${behind} left behind (${e.cause}).`
+            : left > 0
+              ? `${name(e.hikerId)} got ${listNames(what)}, and ${behind} didn’t fit (${e.cause}).`
+              : `${name(e.hikerId)} got ${listNames(what)} (${e.cause}).`;
+        lines.push({ id: e.id, text, tone: what.length ? 'scavenge' : 'drain' });
         break;
       }
       case 'condition': {

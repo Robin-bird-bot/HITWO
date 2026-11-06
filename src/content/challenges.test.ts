@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import doc from '../../docs/design/04-challenges.md?raw';
 import type { Amount, CardDef, Effect, TextPart } from '../engine/challenges/types';
-import { CARDS, CHALLENGES, TRIALS, slug } from './challenges';
+import { CARDS, CHALLENGES, OPPORTUNITIES, TRIALS, slug } from './challenges';
 import { CONDITIONS } from './conditions';
 
 type Table = 'challenges' | 'trials' | 'wonders' | 'opportunities';
@@ -74,6 +74,7 @@ describe('challenge content matches docs/design/04-challenges.md', () => {
     expect(opportunities).toHaveLength(17);
     expect([...WONDER_ART].sort()).toEqual([...wonders].sort());
     expect([...OPPORTUNITY_ART].sort()).toEqual([...opportunities].sort());
+    expect(OPPORTUNITIES.map((o) => `${o.id}.jpg`).sort()).toEqual([...opportunities].sort());
   });
 
   it('has a picture for every challenge and Trial, and no stray pictures', () => {

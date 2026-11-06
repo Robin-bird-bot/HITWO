@@ -5,6 +5,7 @@
 import { applyDebug } from './actions/debug';
 import { applyChoose, applyResolve, validateChoose, validateResolve } from './challenges/resolve';
 import { applyAccept, validateAccept } from './challenges/trials';
+import { applyPress, validatePress } from './challenges/buttons';
 import { applyMove, validateMove } from './actions/move';
 import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
@@ -54,6 +55,7 @@ export function validateAction(state: GameState, action: Action): string | null 
     'resolveChallenge',
     'chooseChallenge',
     'acceptTrial',
+    'pressButton',
     'debug',
   ];
   if (state.challenge && !challengeSteps.includes(action.type)) {
@@ -90,6 +92,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateChoose(state, action) ?? null;
     case 'acceptTrial':
       return validateAccept(state) ?? null;
+    case 'pressButton':
+      return validatePress(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -147,6 +151,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'acceptTrial':
       applyAccept(draft);
+      break;
+    case 'pressButton':
+      applyPress(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

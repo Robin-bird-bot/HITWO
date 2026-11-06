@@ -2,7 +2,7 @@ import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
 import { pickForTile } from '../challenges/pick';
-import { openCard } from '../challenges/reveal';
+import { openCard, revealCardOn } from '../challenges/reveal';
 import { addCondition } from '../conditions';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
@@ -103,6 +103,9 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Opened ${card.name}` });
       break;
     }
+    case 'revealCard':
+      revealCardOn(state, op.tileId, 'the debug panel');
+      break;
     case 'openSpace': {
       const tile = state.section.tiles[op.tileId];
       const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');

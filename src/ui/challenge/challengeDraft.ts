@@ -84,7 +84,13 @@ const payable = (card: ChallengeDef, option: number) =>
 
 /** The draft a fresh pop-up starts with: every section empty, the first space selected. */
 export function startDraft(state: GameState, open: OpenChallenge): Draft {
-  const sections = challengeSections(state, open).map((s) => ({ ...s, gifts: [] }));
+  // Select cards: nobody takes part until ticked.
+  const optIn = isPick(openCardDef(open));
+  const sections: SectionDraft[] = challengeSections(state, open).map((s) => ({
+    ...s,
+    gifts: [],
+    ...(optIn ? { skipped: true as const } : {}),
+  }));
   const draft: Draft = { sections };
   const target = nextTarget(state, open, draft, 0);
   return target ? { ...draft, target } : draft;
@@ -233,6 +239,58 @@ function addGift(s: SectionDraft, gift: Gift): SectionDraft {
   return { ...s, gifts };
 }
 
+/** Select and One cards: a ✓/✗ per hiker. */
+export const isPick = (card: ChallengeDef | undefined) =>
+  card?.scope === 'select' || card?.scope === 'one';
+
+/** Which section a spend-any gift goes to: the giver's own, or the party's. */
+function spendSection(draft: Draft, from: HikerId): number {
+  const own = draft.sections.findIndex((s) => s.hikerId === from);
+  return own >= 0 ? own : draft.sections.findIndex((s) => !s.hikerId);
+}
+
+/** Spend any amount (Citro Tub, Hikers Exchange…): the right kind, the giver's own, under the limit. */
+function canSpendAny(state: GameState, open: OpenChallenge, draft: Draft, source: Source): boolean {
+  const spend = openCardDef(open)?.spendAny;
+  if (!spend || source.kind === 'caps') return false;
+  const section = spendSection(draft, source.from);
+  if (section < 0 || left(state, open, draft, source) < 1) return false;
+  const what = spend.what;
+  if ('stat' in what) {
+    if (source.kind !== 'stat' || source.stat !== what.stat) return false;
+  } else if ('resources' in what) {
+    if (source.kind !== 'resource') return false;
+  } else {
+    if (source.kind !== 'item') return false;
+    const h = challengeHikers(state, open).find((x) => x.id === source.from);
+    const item = h?.inventory.bag.find((i) => i.uid === source.uid);
+    if (ITEMS[item?.itemId ?? '']?.type !== what.items) return false;
+  }
+  const units = spentBy(draft, section).reduce((n, g) => n + giftCount(g), 0);
+  return spend.max === undefined || units < spend.max;
+}
+
+/** What a spend-any section has spent so far, and what it would get. */
+export function spendReadout(
+  state: GameState,
+  open: OpenChallenge,
+  draft: Draft,
+  section: number,
+): { units: number; statAfter?: number; tries?: number } {
+  const spend = openCardDef(open)?.spendAny;
+  const units = spentBy(draft, section).reduce((n, g) => n + giftCount(g), 0);
+  if (!spend) return { units };
+  const h = challengeHikers(state, open).find((x) => x.id === draft.sections[section]?.hikerId);
+  if ('stat' in spend.what && h) {
+    return {
+      units,
+      statAfter: h.stats[spend.what.stat] - units,
+      ...(spend.every ? { tries: Math.floor(units / spend.every.n) } : {}),
+    };
+  }
+  return { units };
+}
+
 /** Can this go into the selected space right now (or, on a Risk card, be spent)? */
 export function canGive(
   state: GameState,
@@ -243,6 +301,7 @@ export function canGive(
 ): boolean {
   const card = openCardDef(open);
   if (card?.risk) return canSpend(state, open, draft, source);
+  if (card?.spendAny) return canSpendAny(state, open, draft, source);
   const req = t && card?.cost[t.option]?.[t.req];
   const section = t && draft.sections[t.section];
   if (!t || !req || !section || !payable(card, t.option)) return false;
@@ -268,6 +327,14 @@ export function canGive(
 
 /** Hands one thing into the selected space, then selects the next empty one. */
 export function give(state: GameState, open: OpenChallenge, draft: Draft, source: Source): Draft {
+  if (openCardDef(open)?.spendAny && source.kind !== 'caps') {
+    if (!canSpendAny(state, open, draft, source)) return draft;
+    const section = spendSection(draft, source.from);
+    return {
+      ...draft,
+      sections: draft.sections.map((s, i) => (i === section ? addGift(s, asGift(source, 0)) : s)),
+    };
+  }
   if (openCardDef(open)?.risk && source.kind !== 'caps') {
     // A Risk card: the hiker spends it from their own pack.
     if (!canSpend(state, open, draft, source)) return draft;
@@ -345,8 +412,18 @@ export function skip(draft: Draft, section: number): Draft {
   return { ...draft, sections };
 }
 
-/** ✓ after a ✗: try paying again. */
-export function unskip(draft: Draft, section: number): Draft {
+/** ✓ after a ✗: try paying again. On a One card, the others sit out. */
+export function unskip(draft: Draft, section: number, only = false): Draft {
+  if (only) {
+    return {
+      ...draft,
+      sections: draft.sections.map((s, i) =>
+        i === section
+          ? stripUndefined({ ...s, skipped: undefined })
+          : { ...(s.hikerId ? { hikerId: s.hikerId } : {}), gifts: [], skipped: true as const },
+      ),
+    };
+  }
   return {
     ...draft,
     sections: draft.sections.map((s, i) =>
@@ -466,8 +543,13 @@ export function sectionStatus(
   const s = draft.sections[section];
   const card = openCardDef(open);
   if (!s || !card) return { decision: undefined, impossible: true, missing: 0 };
-  // Risk: nothing to decide, only what to spend. Free cards: take it, or ✗ to skip.
-  if (card.risk) return { decision: 'pay', impossible: false, missing: 0 };
+  // Risk, spend-any and button cards: nothing to decide, only what to spend or press.
+  if (card.risk || card.spendAny || card.buttons) {
+    return { decision: 'pay', impossible: false, missing: 0 };
+  }
+  // Select and One cards: ✗ means sitting out.
+  if (isPick(card) && s.skipped) return { decision: 'fail', impossible: false, missing: 0 };
+  // Free cards: take it, or ✗ to skip.
   if (card.cost.length === 0) {
     return { decision: s.skipped ? 'fail' : 'pay', impossible: false, missing: 0 };
   }
@@ -504,7 +586,8 @@ export function toAction(
     if (!status.decision) return undefined;
     const who = s.hikerId ? { hikerId: s.hikerId } : {};
     const card = openCardDef(open);
-    if (card?.risk) sections.push({ ...who, pay: true, gifts: s.gifts });
+    if (card?.risk || card?.spendAny || card?.buttons)
+      sections.push({ ...who, pay: true, gifts: s.gifts });
     else if (status.decision === 'fail') sections.push({ ...who, pay: false, gifts: [] });
     else if (card?.cost.length === 0) sections.push({ ...who, pay: true, gifts: [] });
     else {

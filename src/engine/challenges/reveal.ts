@@ -70,6 +70,25 @@ export function revealTile(
   const here = hikersHere(state, tileId, hikerIds);
   if (!tile || !here.length) return;
 
+  // A card revealed early (Old Firewatch Tower): it opens now, with its numbers rolled now.
+  const early = tile.revealedCard;
+  const stored = early && CARDS[early.cardId];
+  if (early && stored) {
+    delete tile.revealedCard;
+    openCard(
+      state,
+      stored,
+      tileId,
+      here.map((h) => h.id),
+      {
+        tier: early.tier,
+        scale: early.scale,
+        ...(early.alternative ? { alternative: early.alternative } : {}),
+      },
+    );
+    return;
+  }
+
   if (forced) {
     const card = forcedPick(state, forced);
     if (card)
@@ -138,4 +157,29 @@ export function openNext(state: GameState): void {
     else delete state.challengeQueue;
     if (next) revealTile(state, next.tileId, next.hikerIds, next.forced);
   }
+}
+
+/**
+ * Reveals a tile's card before anyone lands there (Old Firewatch Tower): it's
+ * picked now and shown on the map, and opens as usual when someone arrives.
+ * Returns the card, or nothing if the tile has no card to show.
+ *
+ * TODO(phase 5 step 6): a Wonder tile reveals the Wonder instead.
+ */
+export function revealCardOn(state: GameState, tileId: TileId, cause: string): string | undefined {
+  const tile = state.section.tiles[tileId];
+  if (!tile || tile.visited || tile.revealedCard || !triggers(state, tileId)) return undefined;
+  const picked = pickForTile(state, state.rng, tile, []);
+  if (!picked) return undefined;
+  tile.revealedCard = {
+    cardId: picked.cardId,
+    tier: picked.tier,
+    scale: picked.scale,
+    ...(picked.alternative ? { alternative: picked.alternative } : {}),
+  };
+  for (const id of [picked.cardId, ...(picked.alternative ? [picked.alternative] : [])]) {
+    if (!state.usedCards.includes(id)) state.usedCards.push(id);
+  }
+  pushEvent(state, { kind: 'revealedCard', tileId, cardId: picked.cardId, cause });
+  return picked.cardId;
 }

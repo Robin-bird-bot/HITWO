@@ -5,6 +5,7 @@
  * Phase 5 gives conditions their timing (they tick down and end) and makes
  * Frozen block moving. TODO(phase 6): every other condition's effect.
  */
+import { RESOURCES } from './resources';
 import type { Hooks } from '../engine/effects';
 
 export interface ConditionDef {
@@ -17,6 +18,10 @@ export interface ConditionDef {
   takesNode?: true;
   /** Getting this again turns it into another condition (Wet → Soaked, Wyatt Nov 5). */
   again?: string;
+  /** Can't be moved by anything (Frozen, Napping). */
+  immovable?: true;
+  /** Made up to run an opportunity's effect until Wyatt names it. */
+  placeholder?: true;
 }
 
 const isMove = (type: string) => type === 'move' || type === 'moveAll';
@@ -113,6 +118,7 @@ const LIST: ConditionDef[] = [
     name: 'Frozen',
     kind: 'negative',
     text: 'Can’t move or be moved.',
+    immovable: true,
     hooks: {
       canAct(q, ctx) {
         if (!isMove(q.action.type)) return undefined;
@@ -144,6 +150,37 @@ const LIST: ConditionDef[] = [
     kind: 'positive',
     text: 'The hiker’s next action is free.',
   },
+  // Opportunity effects (Nov 6 update), named here until Wyatt names them.
+  {
+    id: 'napping',
+    name: 'Napping',
+    kind: 'negative',
+    text: 'Can’t move, be moved, scavenge, Tend or craft.',
+    immovable: true,
+    placeholder: true,
+    hooks: {
+      canAct(q) {
+        const blocked = ['move', 'moveAll', 'scavenge', 'tend'];
+        if (!blocked.includes(q.action.type)) return undefined;
+        return q.role === 'brought'
+          ? 'Napping: can’t be moved this phase.'
+          : 'Napping: can’t move, scavenge or Tend this phase.';
+      },
+    },
+  },
+  {
+    id: 'raccoonFriend',
+    name: 'Raccoon Friend',
+    kind: 'positive',
+    text: 'Each night, a 75% chance the raccoon brings a random resource.',
+    placeholder: true,
+    hooks: {
+      // At camp, before nights tick down, so "the next 3 nights" gives 3 chances.
+      onEndOfDay(ctx) {
+        if (ctx.roll(0.75)) ctx.gain(ctx.self, [ctx.pick(RESOURCES).id], 'Raccoon Friend');
+      },
+    },
+  },
 ];
 
 export const CONDITIONS: Readonly<Record<string, ConditionDef>> = Object.fromEntries(
@@ -151,6 +188,6 @@ export const CONDITIONS: Readonly<Record<string, ConditionDef>> = Object.fromEnt
 );
 
 /** The negative conditions, for Rocco Raccoon's "a random negative condition". */
-export const NEGATIVE_CONDITIONS: readonly string[] = LIST.filter((c) => c.kind === 'negative').map(
-  (c) => c.id,
-);
+export const NEGATIVE_CONDITIONS: readonly string[] = LIST.filter(
+  (c) => c.kind === 'negative' && !c.placeholder,
+).map((c) => c.id);

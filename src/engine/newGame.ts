@@ -1,3 +1,4 @@
+import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { seedRng } from './rng';
@@ -82,6 +83,7 @@ export function createGame({
     abundance: freshAbundance(),
     scavengedToday: [],
     usedCards: [],
+    counters: freshCounters(),
     nextEventId: 1,
     log: [],
   };

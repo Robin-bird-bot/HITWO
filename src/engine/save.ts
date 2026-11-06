@@ -4,9 +4,10 @@
  * never throws: a save that can't be read comes back as { ok: false }.
  */
 import { freshAbundance } from './abundance';
+import { freshCounters } from './counters';
 import { NODE_TYPES, PHASES, type GameState } from './types';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -19,6 +20,8 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   1: (save) => ({ ...save, abundance: freshAbundance(), scavengedToday: [] }),
   // Phase 5: which challenges this section has used.
   2: (save) => ({ ...save, usedCards: [] }),
+  // Phase 5 (Nov 6 update): run counters for Wonder goals, starting from zero.
+  3: (save) => ({ ...save, counters: freshCounters() }),
 };
 
 export function serialize(state: GameState): string {
@@ -98,6 +101,7 @@ function looksLikeGameState(v: SaveData): v is SaveData & GameState {
     NODE_TYPES.every((n) => isNumber((v.abundance as SaveData)[n])) &&
     Array.isArray(v.scavengedToday) &&
     Array.isArray(v.usedCards) &&
+    isRecord(v.counters) &&
     (v.scavenge === undefined || isRecord(v.scavenge)) &&
     isNumber(v.nextEventId) &&
     Array.isArray(v.log)

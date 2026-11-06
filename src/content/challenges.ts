@@ -9,6 +9,7 @@
  * - Descriptions are "…" until Wyatt writes them (descriptionPlaceholder).
  * - The 4 opportunities are made up so the blue flow works (placeholder).
  */
+import { BALANCE } from '../config/balance';
 import type {
   Amount,
   CardDef,
@@ -1126,72 +1127,312 @@ const TIER_3: ChallengeDef[] = [
   }),
 ];
 
-// ── Opportunities (placeholders until Wyatt writes them) ────────────────────
+// ── Opportunities (Nov 6 update) ───────────────────────────────────────────
+// Optional rewards: skipping one never costs anything. X ranges scale with the
+// section's tier. Nodes are Wyatt's first guess.
+
+const SLOTS = BALANCE.opportunities.slots;
+const DAYS = BALANCE.opportunities.conditionDays;
+const op = (input: Omit<ChallengeInput, 'kind' | 'penalty' | 'penaltyText'>): ChallengeDef =>
+  ch({ ...input, kind: 'opportunity', penalty: [], penaltyText: [] });
 
 const OPPORTUNITIES: ChallengeDef[] = [
-  ch({
-    name: 'Friendly Fisher',
-    kind: 'opportunity',
-    art: false,
+  op({
+    name: 'Citro Tub',
     tier: 1,
-    nodes: [R],
-    scope: 'party',
-    quote: 'Got any bait to spare? I’ll make it worth your while.',
-    cost: [opt(res(3, nodesOf(R)))],
-    costText: ['Give 3 River resources (any mix) and get a tool. Skipping costs nothing.'],
-    penalty: [],
-    penaltyText: [],
-    reward: [{ op: 'gainItem', itemType: 'tool' }],
-    rewardText: ['A random tool.'],
-    placeholder: true,
+    nodes: 'any',
+    scope: 'each',
+    cost: [],
+    spendAny: {
+      what: { stat: 'energy' },
+      readout: 'statAfter',
+      thresholds: [
+        { atMost: 6, effects: [{ op: 'gainItem', itemId: 'citroDrink' }] },
+        { atMost: 3, effects: [cond('energized', DAYS, 'days')] },
+      ],
+    },
+    costText: ['Each hiker may spend any amount of Energy.'],
+    rewardText: [
+      'Ending at 6 Energy or less: a Citro Drink (food card). Ending at 3 or less: also Energized.',
+    ],
   }),
-  ch({
-    name: 'Berry Patch',
-    kind: 'opportunity',
-    art: false,
+  op({
+    name: 'Mysterious Berries',
     tier: 1,
     nodes: [F],
-    scope: 'party',
-    quote: 'The bushes here are heavy with fruit.',
+    scope: 'select',
+    rolls: { appetite: Y(1, 6) },
     cost: [],
-    costText: ['Free for everyone on this tile.'],
-    penalty: [],
-    penaltyText: [],
-    reward: [{ op: 'gainResources', count: 1, filter: nodesOf(F) }],
-    rewardText: ['Every hiker here gets 1 random Forest resource.'],
-    placeholder: true,
+    costText: ['Pick who eats the berries.'],
+    reward: [
+      { op: 'stat', stat: 'appetite', delta: 'appetite' },
+      { op: 'randomCondition', duration: DAYS, unit: 'days', chance: 0.5 },
+    ],
+    rewardText: [
+      'Each one gains {appetite} Appetite, with a 50% chance to gain a random negative condition.',
+    ],
   }),
-  ch({
-    name: 'Trail Angel',
-    kind: 'opportunity',
-    art: false,
+  op({
+    name: 'Secret Tunnel',
+    tier: 1,
+    nodes: [M],
+    scope: 'select',
+    moves: true,
+    cost: [],
+    costText: ['Pick who goes through the tunnel.'],
+    reward: [{ op: 'move', how: 'tunnel' }],
+    rewardText: [
+      'They move together to a random tile in the next row up, at no Appetite cost. That tile’s challenge triggers.',
+    ],
+  }),
+  op({
+    name: 'Nap Time',
+    tier: 1,
+    nodes: 'any',
+    scope: 'select',
+    cost: [],
+    costText: ['Pick who takes a nap.'],
+    reward: [{ op: 'stat', stat: 'energy', delta: 2 }, cond('napping', 1, 'phases')],
+    rewardText: [
+      'Each one gains 2 Energy, but next phase they can’t move, be moved, scavenge, Tend or craft.',
+    ],
+  }),
+  op({
+    name: 'Airlift',
+    tier: 1,
+    nodes: 'any',
+    scope: 'select',
+    anyTile: true,
+    moves: true,
+    cost: [],
+    costText: ['Pick hikers on any tile to fly back to the start of this biome.'],
+    reward: [
+      { op: 'move', how: 'trailhead' },
+      { op: 'cureInjury', count: 1 },
+      { op: 'cureConditions' },
+      { op: 'refill', stat: 'appetite' },
+    ],
+    rewardText: ['Each one cures 1 injury and all conditions, and their Appetite refills.'],
+  }),
+  op({
+    name: 'Abandoned Ranger Station',
+    tier: 1,
+    nodes: 'any',
+    scope: 'each',
+    rolls: { pct: X(65, 75) },
+    cost: [],
+    spendAny: {
+      what: { stat: 'energy' },
+      readout: 'tries',
+      // TODO(phase 9): blueprints can turn up here too.
+      every: { n: 2, chance: 'pct', effects: [{ op: 'gainItem', itemTypes: ['tool', 'clothes'] }] },
+    },
+    costText: ['Each hiker may spend Energy to search the station.'],
+    rewardText: [
+      'For every 2 Energy spent, a {pct}% chance to find a random tool or clothing item.',
+    ],
+  }),
+  op({
+    name: 'Snake Salesman',
     tier: 1,
     nodes: 'any',
     scope: 'party',
-    quote: 'A kind stranger left a jar of acorn caps by the trail.',
     cost: [],
-    costText: ['Free.'],
-    penalty: [],
-    penaltyText: [],
-    reward: [{ op: 'gainCaps', count: 2 }],
-    rewardText: ['2 caps for the party purse.'],
-    placeholder: true,
+    buttons: [
+      {
+        id: 'buy',
+        label: 'BUY',
+        per: 'party',
+        max: 5,
+        kind: 'buy',
+        price: [0, 8],
+        gives: [{ op: 'gainResources', count: 1 }],
+      },
+    ],
+    costText: ['Press Buy up to 5 times. Each press costs a random 0–8 caps.'],
+    rewardText: [
+      '1 random resource each time. If the purse can’t cover the price, nothing happens.',
+    ],
   }),
-  ch({
-    name: 'Hot Spring',
-    kind: 'opportunity',
-    art: false,
+  op({
+    name: 'Hikers Exchange',
     tier: 1,
-    nodes: [M, R],
+    nodes: 'any',
     scope: 'party',
-    quote: 'Steam rises from a warm pool between the rocks.',
     cost: [],
-    costText: ['Free for everyone on this tile.'],
-    penalty: [],
-    penaltyText: [],
-    reward: [{ op: 'stat', stat: 'morale', delta: 2 }],
-    rewardText: ['Every hiker here gains 2 Morale.'],
-    placeholder: true,
+    spendAny: {
+      what: { resources: 'any' },
+      readout: 'swaps',
+      each: [{ op: 'gainResources', count: 1 }],
+    },
+    costText: ['Pick any number of resources to swap. Once only.'],
+    rewardText: ['Each one is swapped for a random resource of any type.'],
+  }),
+  op({
+    name: 'Old Trail Sign',
+    tier: 1,
+    nodes: 'any',
+    scope: 'each',
+    cost: [],
+    costText: ['Spend 1 use from a tool to peek at an unrevealed tile’s challenge. Up to 5 times.'],
+    rewardText: ['You see the challenge without revealing it.'],
+    waitingOn: 'phase 9 (tool uses)',
+  }),
+  op({
+    name: 'Old Firewatch Tower',
+    tier: 1,
+    nodes: [F, M],
+    scope: 'each',
+    rolls: { pct: X(15, 20) },
+    cost: [],
+    buttons: [
+      { id: 'climb', label: 'REVEAL', per: 'hiker', kind: 'revealConnected', injury: 'pct' },
+    ],
+    costText: ['Climb the tower to reveal the challenge on any connected tile.'],
+    rewardText: ['Each reveal has a {pct}% chance to give the climber an injury.'],
+  }),
+  op({
+    name: 'Snake Slots',
+    tier: 1,
+    nodes: 'any',
+    scope: 'each',
+    cost: [],
+    buttons: [
+      {
+        id: 'pull',
+        label: 'PULL',
+        per: 'hiker',
+        // Wyatt, Nov 6: at most 5 pulls per hiker.
+        max: 5,
+        kind: 'slots',
+        pay: [
+          { stat: 'energy', amount: 2 },
+          { stat: 'appetite', amount: 2 },
+          { stat: 'morale', amount: 3 },
+        ],
+        table: [
+          { weight: 2, label: 'a Tier III item!', effects: [{ op: 'gainItem', tier3: true }] },
+          { weight: 3, label: 'a shelter', effects: [{ op: 'gainItem', itemType: 'shelter' }] },
+          { weight: 7, label: 'a random item', effects: [{ op: 'gainItem' }] },
+          {
+            weight: 3,
+            label: 'a lot of caps!',
+            effects: [{ op: 'gainCaps', count: SLOTS.lotOfCaps }],
+          },
+          {
+            weight: 10,
+            label: 'several resources',
+            effects: [{ op: 'gainResources', count: SLOTS.severalResources }],
+          },
+          { weight: 15, label: '1 random resource', effects: [{ op: 'gainResources', count: 1 }] },
+          { weight: 30, label: 'a few caps', effects: [{ op: 'gainCaps', count: SLOTS.fewCaps }] },
+          { weight: 30, label: 'nothing', effects: [] },
+        ],
+      },
+    ],
+    costText: ['Pull the lever: 2 Energy, 2 Appetite or 3 Morale a pull, up to 5 pulls each.'],
+    rewardText: ['Anything from nothing to a Tier III item.'],
+  }),
+  op({
+    name: 'Ruins',
+    tier: 1,
+    nodes: 'any',
+    scope: 'party',
+    cost: [opt(res(6, idsOf('wood', 'stone', 'metal', 'clay')))],
+    costText: ['Spend 6 Wood, Stone, Metal or Clay (any mix).'],
+    reward: [{ op: 'placeShelter' }],
+    rewardText: ['Build a random shelter on this tile.'],
+  }),
+  op({
+    name: 'Predator’s Den',
+    tier: 1,
+    nodes: [W],
+    scope: 'each',
+    cost: [],
+    buttons: [
+      {
+        id: 'den',
+        label: '+1 APPETITE',
+        per: 'hiker',
+        max: 3,
+        kind: 'raiseRandom',
+        gives: [{ op: 'stat', stat: 'appetite', delta: 1 }],
+      },
+    ],
+    costText: ['Each hiker may gain 1 Appetite, up to 3 times.'],
+    rewardText: [
+      'Each time, a random unrevealed tile in this biome gets a challenge 1 tier higher.',
+    ],
+  }),
+  op({
+    name: 'Predator Bait',
+    tier: 1,
+    nodes: [W],
+    scope: 'party',
+    cost: [],
+    buttons: [{ id: 'bait', label: 'SET BAIT', per: 'party', max: 3, kind: 'shiftTiers' }],
+    costText: ['Press up to 3 times.'],
+    rewardText: [
+      'Each press lowers one random unrevealed tile’s challenge by 1 tier and raises another’s by 1 tier.',
+    ],
+  }),
+  op({
+    name: 'Hungry Animals',
+    tier: 1,
+    nodes: [W, F],
+    scope: 'party',
+    cost: [],
+    spendAny: {
+      what: { items: 'food' },
+      max: 3,
+      readout: 'luck',
+      each: [{ op: 'tileLuck', amount: 2 }],
+    },
+    costText: ['Spend up to 3 food cards.'],
+    rewardText: ['Each one gives +2 Luck when scavenging on this tile until morning.'],
+  }),
+  op({
+    name: 'Raccoon Friend',
+    tier: 1,
+    nodes: [F, W],
+    scope: 'one',
+    rolls: { nights: X(2, 4) },
+    cost: [opt(items(1, 'food'))],
+    costText: ['One hiker spends 1 food card.'],
+    reward: [cond('raccoonFriend', 'nights', 'nights')],
+    rewardText: [
+      'For the next {nights} nights, a 75% chance each night to receive a random resource.',
+    ],
+  }),
+  op({
+    name: 'Mysterious Pill',
+    tier: 1,
+    nodes: 'any',
+    scope: 'select',
+    cost: [],
+    costText: ['Pick who takes the pill.'],
+    reward: [
+      {
+        op: 'randomCondition',
+        duration: DAYS,
+        unit: 'days',
+        from: [
+          'sleepy',
+          'nauseous',
+          'bored',
+          'blind',
+          'brainFog',
+          'ringingEars',
+          'refreshed',
+          'full',
+          'energized',
+          'sated',
+          'lucky',
+          'motivated',
+        ],
+      },
+    ],
+    rewardText: ['Each one gains a random condition for 1 day, good or bad.'],
   }),
 ];
 

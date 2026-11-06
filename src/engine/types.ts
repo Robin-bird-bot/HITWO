@@ -86,8 +86,19 @@ export interface Tile {
   feature?: SideFeature;
   /** A hiker has landed here. The special icon moves to the corner once true. */
   visited?: true;
-  /** Its challenge will be this many tiers higher (Warning Bird). */
+  /** Its challenge will be this many tiers higher, or lower (Warning Bird, Predator Bait). */
   tierBonus?: number;
+  /** Raised once already by Predator's Den (each tile only once). */
+  denRaised?: true;
+  /**
+   * Its card, picked early and shown on the map (Old Firewatch Tower). It opens
+   * as usual when someone lands here, with its numbers rolled then.
+   */
+  revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
+  /** Shelters built on this tile (Ruins). TODO(phase 9): hikers placing shelter cards. */
+  shelters?: ItemId[];
+  /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
+  luckBonus?: { amount: number; until: number; cause: string };
   nodes: TileNode[];
 }
 
@@ -323,6 +334,24 @@ export interface OpenChallenge {
   alternative?: { cardId: string; rolls: CardRolls };
   /** A Trial's targets, picked when it's revealed so the pop-up can show them. */
   trial?: { targetTile?: TileId; resource?: ResourceId };
+  /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
+  presses?: Record<string, number>;
+}
+
+/**
+ * Counts kept over the whole run, for Wonder goals (Nov 6 update, 3c). Saved
+ * and migrated like everything else.
+ */
+export interface RunCounters {
+  /** Challenges each hiker passed and failed (not Risk challenges). */
+  passed: Record<HikerId, number>;
+  failed: Record<HikerId, number>;
+  /** Items each hiker crafted, by type. Stays empty until Phase 9. */
+  crafted: Record<HikerId, Partial<Record<string, number>>>;
+  /** Nights in a row each hiker hasn't slept, counted at camp. */
+  daysSinceSleep: Record<HikerId, number>;
+  /** Shelters built in each section (by section index). */
+  sheltersPlaced: Record<number, number>;
 }
 
 /** A tile a hiker landed on while a challenge was open: it opens next. */
@@ -433,6 +462,8 @@ export type Action =
   | { type: 'chooseChallenge'; cardId: string }
   /** "Got it": the open Trial starts its countdown. */
   | { type: 'acceptTrial' }
+  /** A button on an opportunity (Snake Slots' Pull, Predator Bait…), which happens at once. */
+  | { type: 'pressButton'; button: string; hikerId?: HikerId; choice?: string }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -463,6 +494,8 @@ export type DebugOp =
   | { kind: 'clearConditions'; hikerId: HikerId }
   /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
   | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  /** Reveals a tile's card early, as Old Firewatch Tower does. */
+  | { kind: 'revealCard'; tileId: TileId }
   /** Picks and opens a card as if the tile were this special space. */
   | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
   /** Shows the rolled X and Y numbers in the challenge pop-up. */
@@ -492,6 +525,8 @@ export type GameEventBody =
     }
   | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
+  /** Injuries a card cured (Airlift): how many, and how many are left. */
+  | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
   | { kind: 'passedOut'; hikerId: HikerId }
   | { kind: 'sleep'; hikerId: HikerId }
   | {
@@ -548,7 +583,7 @@ export type GameEventBody =
       hikerId: HikerId;
       from: TileId;
       to: TileId;
-      how: 'swept' | 'back' | 'blown' | 'falseTrail';
+      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel';
       cause: string;
     }
   /** A Trial started, was met, ran out, ended, or a hiker earned part of it. */
@@ -562,6 +597,19 @@ export type GameEventBody =
       taken?: number;
       caps?: number;
     }
+  /** A tile's card was revealed early, and shows on the map. */
+  | { kind: 'revealedCard'; tileId: TileId; cardId: string; cause: string }
+  /** A button on an opportunity was pressed, and what came of it. */
+  | {
+      kind: 'pressed';
+      cardId: string;
+      button: string;
+      hikerId?: HikerId;
+      note: string;
+      /** Predator Bait: the tile that got easier (shown in blue for a moment) and the harder one. */
+      easier?: TileId;
+      harder?: TileId;
+    }
   /** On a Choice space, the party picked one challenge over the other. */
   | { kind: 'challengeChosen'; cardId: string; over: string }
   /** What a card gave: resources or items to a hiker, or caps to the purse. */
@@ -571,6 +619,8 @@ export type GameEventBody =
       resources: ResourceId[];
       items: ItemId[];
       caps?: number;
+      /** Resources that didn't fit in the hiker's pack and were left behind. */
+      noRoom?: number;
       cause: string;
     }
   /** Resources or items a challenge took (or gave). */
@@ -617,6 +667,8 @@ export interface GameState {
   debugRolls?: true;
   /** Debug and tests only: landing on a new tile opens no challenge. */
   noChallenges?: true;
+  /** Run counters for Wonder goals. */
+  counters: RunCounters;
   /** Trials in progress (at most BALANCE.challenges.maxTrials). */
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */

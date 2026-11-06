@@ -33,10 +33,11 @@ import type {
   StatName,
 } from '../types';
 import { pick, roll } from '../rng';
-import { applyEffects, foodCarried, type EffectResult } from './applyEffects';
+import { countChallenge } from '../counters';
+import { applyEffects, foodCarried, immovable, type EffectResult } from './applyEffects';
 import { openNext, revealTile } from './reveal';
 import { riskReading, riskSpendFits, type RiskReading } from './risk';
-import { amount, notBuiltYet } from './rolls';
+import { amount, chanceOf, notBuiltYet } from './rolls';
 import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
@@ -55,6 +56,8 @@ export function openCardDef(open: OpenChallenge): ChallengeDef | undefined {
 
 /** The hikers it opened for who are still on the tile. */
 export function challengeHikers(state: GameState, open: OpenChallenge): Hiker[] {
+  // Airlift picks hikers on any tile.
+  if (openCardDef(open)?.anyTile) return state.hikers.filter((h) => h.status !== 'abandoned');
   return open.hikerIds
     .map((id) => state.hikers.find((h) => h.id === id))
     .filter((h): h is Hiker => !!h && h.tileId === open.tileId && h.status !== 'abandoned');
@@ -82,6 +85,7 @@ export function challengeSections(state: GameState, open: OpenChallenge): { hike
   if (!card) return [];
   const here = challengeHikers(state, open);
   if (card.scope === 'party') return here.length ? [{}] : [];
+  if (card.scope === 'select' || card.scope === 'one') return here.map((h) => ({ hikerId: h.id }));
   return here.filter((h) => whoMatches(card.who ?? 'all', h)).map((h) => ({ hikerId: h.id }));
 }
 
@@ -262,6 +266,18 @@ export function validateResolve(state: GameState, action: ResolveAction): string
     return 'Every part of the challenge needs an answer.';
   }
   if (card.risk) return riskProblem(state, open, card, action.sections);
+  if (card.spendAny) return spendAnyProblem(state, open, card, action.sections);
+  if (card.buttons && action.sections.some((s) => s.gifts.length)) {
+    return 'Nothing is handed in here: use the buttons.';
+  }
+  const picked = action.sections.filter((s) => s.pay);
+  if (card.scope === 'one' && picked.length > 1) return 'Only one hiker can take this.';
+  if (card.moves) {
+    for (const s of picked) {
+      const h = state.hikers.find((x) => x.id === s.hikerId);
+      if (h && immovable(h)) return `${h.name} can’t be moved right now.`;
+    }
+  }
   for (const s of action.sections) {
     if (!s.pay) {
       if (s.gifts.length) return 'Nothing is spent when taking the penalty.';
@@ -276,6 +292,39 @@ export function validateResolve(state: GameState, action: ResolveAction): string
     if (short) return short;
   }
   return ledgerProblem(state, open, action.sections);
+}
+
+/** Spend any amount (Citro Tub, Hikers Exchange…): only the kind the card takes, up to its limit. */
+function spendAnyProblem(
+  state: GameState,
+  open: OpenChallenge,
+  card: ChallengeDef,
+  sections: readonly ChallengeSection[],
+): string | undefined {
+  const spend = card.spendAny;
+  if (!spend) return undefined;
+  const here = challengeHikers(state, open);
+  for (const s of sections) {
+    for (const g of s.gifts) {
+      if (g.kind === 'caps') return 'That can’t be spent on this.';
+      if (s.hikerId && g.from !== s.hikerId) return 'Each hiker can only spend what they carry.';
+      if (!here.some((h) => h.id === g.from)) return 'Only hikers on this tile can hand things in.';
+      const what = spend.what;
+      const fits =
+        ('stat' in what && g.kind === 'stat' && g.stat === what.stat) ||
+        ('resources' in what && g.kind === 'resource') ||
+        ('items' in what &&
+          g.kind === 'item' &&
+          ITEMS[
+            here.find((h) => h.id === g.from)?.inventory.bag.find((i) => i.uid === g.uid)?.itemId ??
+              ''
+          ]?.type === what.items);
+      if (!fits) return 'That can’t be spent on this.';
+    }
+    const units = s.gifts.reduce((n, g) => n + giftCount(g), 0);
+    if (spend.max !== undefined && units > spend.max) return `At most ${spend.max}.`;
+  }
+  return ledgerProblem(state, open, sections);
 }
 
 /** A Risk challenge: each hiker may spend only their own things, and only what the card allows. */
@@ -402,8 +451,23 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     entered.push(...r.entered);
     triggers.push(...r.triggers);
   };
+  // Passes and fails, for Wonder goals (not Risk challenges or opportunities).
+  if (card.kind === 'challenge' && !card.risk) {
+    for (const s of action.sections)
+      for (const h of targetsOf(s)) countChallenge(state, h.id, s.pay);
+  }
+  // A Select card's chosen hikers act together (Secret Tunnel moves them to the same tile).
+  const chosen = card.scope === 'select' ? action.sections.filter((s) => s.pay) : [];
+  if (chosen.length && card.reward?.length) {
+    take(applyEffects(state, run(chosen.flatMap(targetsOf)), card.reward));
+  }
   action.sections.forEach((s, i) => {
     const targets = targetsOf(s);
+    if (card.spendAny) {
+      spendAnyOutcome(state, card, open, s, here, take);
+      return;
+    }
+    if (card.scope === 'select') return;
     if (card.risk) {
       const outcome = outcomes[i];
       if (outcome?.hit) take(applyEffects(state, run(targets, outcome.amount), card.risk.outcome));
@@ -433,6 +497,52 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     ];
   }
   openNext(state);
+}
+
+/** What spending any amount gets (Nov 6 update, 2): per thing spent, per N spent, or by the stat left. */
+function spendAnyOutcome(
+  state: GameState,
+  card: ChallengeDef,
+  open: OpenChallenge,
+  s: ChallengeSection,
+  here: Hiker[],
+  take: (r: EffectResult) => void,
+): void {
+  const spend = card.spendAny;
+  if (!spend) return;
+  const run = (h: Hiker) => ({
+    card,
+    tileId: open.tileId,
+    targets: [h],
+    onTile: here,
+    rolls: open.rolls,
+  });
+  const ctx = { rolls: open.rolls, onTile: here };
+  // For each one spent, whoever spent it gets these.
+  for (const g of s.gifts) {
+    const giver = g.kind === 'caps' ? undefined : here.find((h) => h.id === g.from);
+    if (!giver || !spend.each) continue;
+    for (let i = 0; i < giftCount(g); i++) take(applyEffects(state, run(giver), spend.each));
+  }
+  const h = here.find((x) => x.id === s.hikerId);
+  if (!h) return;
+  const units = s.gifts.reduce((n, g) => n + giftCount(g), 0);
+  // For every N spent, a chance (Abandoned Ranger Station).
+  if (spend.every && units >= spend.every.n) {
+    for (let i = 0; i < Math.floor(units / spend.every.n); i++) {
+      if (roll(state.rng, chanceOf(spend.every.chance, ctx))) {
+        take(applyEffects(state, run(h), spend.every.effects));
+      }
+    }
+  }
+  // By the stat left afterwards (Citro Tub), only if they spent some.
+  // TODO(wyatt): does a hiker already at or under the line get it without spending?
+  if (spend.thresholds && 'stat' in spend.what && units > 0) {
+    const left = h.stats[spend.what.stat];
+    for (const t of spend.thresholds) {
+      if (left <= t.atMost) take(applyEffects(state, run(h), t.effects));
+    }
+  }
 }
 
 /** Rolls a hiker's danger: did it happen, and how much (a loss, or steps blown). */

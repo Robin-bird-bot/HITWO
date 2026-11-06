@@ -1218,3 +1218,113 @@
   translate: 0 3px;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
 }
+
+/* ── Phase 5 step 5: Select, buttons ── */
+
+.where {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+}
+
+.pressButton {
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: none;
+  background: var(--kind-button);
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.pressLeft {
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.pressOff {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Snake Slots' odds: a pop-over above the pull buttons while one is hovered or focused. */
+.pressWrap {
+  position: relative;
+}
+
+.odds {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 3;
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 250px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(22, 27, 25, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.buttons:hover + .odds,
+.buttons:focus-within + .odds {
+  display: flex;
+}
+
+.oddsHead {
+  margin-bottom: 4px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.oddsRow {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.oddsPct {
+  width: 36px;
+  text-align: right;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  color: #e9b44c;
+}
+
+.pressButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.happened {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #f2c978;
+}

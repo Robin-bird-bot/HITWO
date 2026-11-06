@@ -197,6 +197,14 @@ export const BALANCE = {
     spaceRewards: ['item', 'lucky', 'doubleXp'] as const,
   },
 
+  /** Opportunities (Nov 6 update). TODO(wyatt): first guesses where the doc gives no number. */
+  opportunities: {
+    /** Snake Slots: "a lot of caps", "a few caps" and "several resources". */
+    slots: { lotOfCaps: 15, fewCaps: 2, severalResources: 3 },
+    /** How long Mysterious Berries' random negative condition and Citro Tub's Energized last. */
+    conditionDays: 1,
+  },
+
   luck: {
     /** Luck is clamped to this range. */
     min: -5,

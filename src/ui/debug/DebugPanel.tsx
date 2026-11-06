@@ -13,6 +13,7 @@ import { BALANCE } from '../../config/balance';
 import {
   NODE_TYPES,
   PHASES,
+  adjacentTileIds,
   STAT_NAMES,
   type Action,
   type CardDef,
@@ -306,6 +307,13 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
   const [hikerId, setHikerId] = useState(state.hikers[0]?.id ?? '');
   const [cardId, setCardId] = useState('flies');
   const hiker = state.hikers.find((h) => h.id === hikerId);
+  // A connected tile nobody has landed on, whose card isn't known yet.
+  const nextUnknown = hiker
+    ? adjacentTileIds(state.section, hiker.tileId).find((id) => {
+        const t = state.section.tiles[id];
+        return t && t.kind === 'normal' && !t.visited && !t.revealedCard;
+      })
+    : undefined;
   const cards = Object.values(CARDS)
     .filter((c) => c.kind !== 'trial' || c.goal.kind !== 'off')
     .sort(
@@ -362,6 +370,19 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
           }
         >
           Trigger a challenge here
+        </button>
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!nextUnknown}
+          onClick={() =>
+            nextUnknown &&
+            onApply({ type: 'debug', op: { kind: 'revealCard', tileId: nextUnknown } })
+          }
+        >
+          Reveal a card next to them
         </button>
       </div>
       <div className={styles.row}>
