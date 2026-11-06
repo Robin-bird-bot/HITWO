@@ -182,7 +182,6 @@ export type TrialGoal =
   | { kind: 'apart' }
   | { kind: 'offNode'; node: NodeType }
   | { kind: 'endOnNode'; node: NodeType }
-  | { kind: 'reachMarked'; distance: readonly [number, number] }
   | { kind: 'reachShelterOrNode'; node: NodeType }
   | { kind: 'underShelter' }
   | { kind: 'skipAction' }

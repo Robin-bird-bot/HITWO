@@ -1,25 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import doc from '../../docs/design/04-challenges.md?raw';
 import type { Amount, CardDef, Effect, TextPart } from '../engine/challenges/types';
-import { CARDS, CHALLENGES, OPPORTUNITIES, TRIALS, slug } from './challenges';
+import { CARDS, CHALLENGES, TRIALS, slug } from './challenges';
 import { CONDITIONS } from './conditions';
 
-/** Rows of the doc's tables: name, art, then the tier for Trials. */
+type Table = 'challenges' | 'trials' | 'wonders' | 'opportunities';
+
+/** Rows of the doc's tables, by section: name, whether it has art, and the tier. */
 function docRows() {
-  const rows: { name: string; art: boolean; tier: number; trial: boolean }[] = [];
+  const rows: { name: string; art: boolean; tier: number; table: Table }[] = [];
   let tier = 0;
-  let trials = false;
+  let table: Table = 'challenges';
   for (const line of doc.split('\n')) {
     const heading = line.match(/^### Tier (I+)$/);
     if (heading) tier = heading[1]?.length ?? 0;
-    if (line.startsWith('## Trials')) trials = true;
+    if (line.startsWith('## Trials')) table = 'trials';
+    if (line.startsWith('## Wonders')) table = 'wonders';
+    if (line.startsWith('## Opportunities')) table = 'opportunities';
     if (!line.startsWith('| ') || line.startsWith('| ---')) continue;
     const cells = line.split('|').map((c) => c.trim());
     const name = cells[1] ?? '';
-    if (name === 'Challenge' || name === 'Trial') continue;
+    if (['Challenge', 'Trial', 'Wonder', 'Opportunity'].includes(name)) continue;
     const art = cells[2] !== '—';
-    const rowTier = trials ? (cells[4]?.length ?? 0) : tier;
-    rows.push({ name, art, tier: rowTier, trial: trials });
+    const rowTier = table === 'trials' ? (cells[4]?.length ?? 0) : tier;
+    rows.push({ name, art, tier: rowTier, table });
   }
   return rows;
 }
@@ -29,43 +33,60 @@ const fileNames = (glob: Record<string, unknown>) =>
   Object.keys(glob).map((path) => path.slice(path.lastIndexOf('/') + 1));
 const MASTERS = fileNames(import.meta.glob('/assets/challenges/*.jpg'));
 const COPIES = fileNames(import.meta.glob('/public/assets/challenges/*.jpg'));
+const WONDER_ART = fileNames(import.meta.glob('/assets/wonders/*.jpg'));
+const PUBLIC_WONDER_ART = fileNames(import.meta.glob('/public/assets/wonders/*.jpg'));
+const OPPORTUNITY_ART = fileNames(import.meta.glob('/assets/opportunities/*.jpg'));
+const PUBLIC_OPPORTUNITY_ART = fileNames(import.meta.glob('/public/assets/opportunities/*.jpg'));
 
 const TIER_WORD = { I: 1, II: 2, III: 3 } as const;
 
 describe('challenge content matches docs/design/04-challenges.md', () => {
   const rows = docRows();
+  const cardRows = rows.filter((r) => r.table === 'challenges' || r.table === 'trials');
 
   it('has every challenge and Trial, with its tier and art', () => {
-    expect(rows).toHaveLength(98);
-    for (const row of rows) {
+    expect(cardRows).toHaveLength(96);
+    for (const row of cardRows) {
       const card = CARDS[slug(row.name)];
       expect(card, row.name).toBeDefined();
       expect(card?.name).toBe(row.name.replace(/'/g, '’'));
-      expect(card?.kind === 'trial').toBe(row.trial);
+      expect(card?.kind === 'trial').toBe(row.table === 'trials');
       expect(card?.tier, row.name).toBe(row.tier || TIER_WORD.I);
       expect(card?.art, row.name).toBe(row.art);
     }
   });
 
-  it('counts 36 + 22 + 13 challenges and 27 Trials, plus placeholder opportunities', () => {
+  it('counts 36 + 22 + 13 challenges and 25 Trials (Nov 6: Firewatch and Lost Pup cut)', () => {
     expect(CHALLENGES.filter((c) => c.tier === 1)).toHaveLength(36);
     expect(CHALLENGES.filter((c) => c.tier === 2)).toHaveLength(22);
     expect(CHALLENGES.filter((c) => c.tier === 3)).toHaveLength(13);
-    expect(TRIALS).toHaveLength(27);
-    expect(OPPORTUNITIES.every((o) => o.placeholder)).toBe(true);
+    expect(TRIALS).toHaveLength(25);
+    for (const gone of ['bone-collector', 'firewatch', 'lost-pup'])
+      expect(CARDS[gone]).toBeUndefined();
   });
 
-  it('has a picture for every card marked with art, and no stray pictures', () => {
-    const files = [...MASTERS];
+  it('lists 7 Wonders and 17 opportunities, each with its picture', () => {
+    const wonders = rows.filter((r) => r.table === 'wonders').map((r) => `${slug(r.name)}.jpg`);
+    const opportunities = rows
+      .filter((r) => r.table === 'opportunities')
+      .map((r) => `${slug(r.name)}.jpg`);
+    expect(wonders).toHaveLength(7);
+    expect(opportunities).toHaveLength(17);
+    expect([...WONDER_ART].sort()).toEqual([...wonders].sort());
+    expect([...OPPORTUNITY_ART].sort()).toEqual([...opportunities].sort());
+  });
+
+  it('has a picture for every challenge and Trial, and no stray pictures', () => {
     const withArt = Object.values(CARDS)
-      .filter((c) => c.art)
+      .filter((c) => c.art && c.kind !== 'opportunity')
       .map((c) => `${c.id}.jpg`);
-    expect(files.sort()).toEqual(withArt.sort());
+    expect([...MASTERS].sort()).toEqual(withArt.sort());
   });
 
-  it('has the shrunk copy of every picture in public/assets/challenges', () => {
-    expect(MASTERS.length).toBe(51);
+  it('has the shrunk copy of every picture in public/assets', () => {
     expect([...COPIES].sort()).toEqual([...MASTERS].sort());
+    expect([...PUBLIC_OPPORTUNITY_ART].sort()).toEqual([...OPPORTUNITY_ART].sort());
+    expect([...PUBLIC_WONDER_ART].sort()).toEqual([...WONDER_ART].sort());
   });
 });
 

@@ -7,7 +7,7 @@
  * - Each entry shows its gates and anything still waiting on a later phase.
  */
 import { useMemo, useState, type CSSProperties } from 'react';
-import { challengeArt } from '../../config/assets';
+import { cardArt } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { CARDS, CONDITIONS, RESOURCES } from '../../content';
 import { STARTING_PARTY } from '../../content/characters';
@@ -290,7 +290,7 @@ function Entry({ card, seed, luck, scale, hikers }: EntryProps) {
     >
       <div className={styles.art}>
         {card.art ? (
-          <img src={challengeArt(card.id)} alt="" loading="lazy" width={960} height={540} />
+          <img src={cardArt(card)} alt="" loading="lazy" width={960} height={540} />
         ) : (
           <span>No art yet</span>
         )}

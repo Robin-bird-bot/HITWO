@@ -237,7 +237,7 @@ This keeps the download small and lets numbers and text change.
   | Kind | Color | What it is |
   | --- | --- | --- |
   | Challenge | Red `#C8403A` | Pay a cost or take a penalty. Party challenges ("If not:") are paid together; each-hiker challenges ("If failed:") are judged per hiker. |
-  | Opportunity | Blue `#2F6FAE` | A reward. None are written yet; a few placeholders (`placeholder: true`) keep the flow working. |
+  | Opportunity | Blue `#2F6FAE` | An optional reward; skipping one never costs anything. The 17 in `04-challenges.md` (Nov 6 update). |
   | Trial | Orange, about `#E0812F` | Do something before a deadline instead of paying. |
 
   **Risk challenges** are a red variant marked "Risk:" in the Cost column. They have no pass or fail: each hiker may spend resources or items to lower a chance or a loss, then the game rolls.
@@ -272,11 +272,29 @@ This keeps the download small and lets numbers and text change.
   - Build every Trial whose goal is about position or time. Trials that check sleeping, eating, crafting or Sitting by the Fire use the same framework but stay off until their system exists (`TODO(phase N)`).
 - **Debug panel:** force a specific challenge or Trial on a tile, set the tier, show the X and Y rolls, and toggle "snowy section" and the weather.
 
-**Done when:** every challenge and Trial in `04-challenges.md` exists as data, and the ones whose systems exist can be triggered and resolved. Tests cover X and Y rolls with a fixed seed, Luck shifting X, (%) penalties, picking by node, tier and gates, party vs. each-hiker paying and failing, Risk challenge odds, and Trial deadlines and rewards.
+### Nov 6 additions (`docs/UPDATE-2026-11-06.md`)
+- **Content changes:** Bone Collector is now Crow Collector (each hiker: spend X[2–3] resources of the same type, or lose 1 random unequipped item). The Firewatch and Lost Pup Trials are gone. Every challenge and Trial has art.
+- **Art:** `assets/challenges/` (96), `assets/opportunities/` (17), `assets/wonders/` (7) and `assets/night-events/` (15, for Phase 6). The game loads shrunk copies from `public/assets/`.
+- **Opportunities (real content):** the 17 in `04-challenges.md` replace the placeholders. X ranges scale with the section's tier like challenges.
+  - **Select** (✓/✗ per hiker; only ticked hikers take part): Mysterious Berries, Secret Tunnel, Nap Time, Airlift (hikers on any tile), Mysterious Pill; Raccoon Friend picks exactly one hiker.
+  - **Spend any amount** (the Risk +/− chips with a live readout): Citro Tub, Abandoned Ranger Station, Hikers Exchange, Hungry Animals.
+  - **Buttons** (each press applies at once): Snake Salesman (Buy ×5, price rolled per press), Snake Slots (Pull, paid with Energy, Appetite or Morale, odds on hover, at most 5 pulls per hiker), Predator Bait (×3; random, with a brief blue highlight on the tile that got easier), Predator's Den, Old Firewatch Tower.
+  - **Waiting on later phases** (`TODO(phase N)`): Old Trail Sign (tool uses), blueprints from the Abandoned Ranger Station, real Tier III items and traits.
+- **Early reveals** (Old Firewatch Tower, Multnomah Falls' reward): the card is fixed on the tile and a small icon appears there; clicking it opens a small pop-up with the banner and the card's text. It opens as usual when someone lands there. An early reveal that reaches a Wonder reveals the Wonder.
+- **Run counters** in `GameState`: challenges passed and failed per hiker, items crafted per hiker and type, days since each hiker last slept, shelters placed per biome.
+- **Wonders** (purple; `Wonder.dc.html`, `WonderRewards.dc.html`):
+  - **The tile:** exactly 1 per biome, at a random spot, with no nodes. It looks like any unrevealed tile until revealed.
+  - **Revealing** (landing on it, or an early reveal): pick 3 of its 5 goals and roll their X (scaled by `WONDER_BIOME_SCALE` per biome; ranges marked − go down), and pick the 3 Tier III items or traits for "pick 1 of 3" (placeholders for now). A Wonder icon stays on the tile; clicking it, or landing there again, reopens the pop-up.
+  - **Goals** are checked live against only the hikers on the tile. Goals that need a system that isn't built yet (crafting, equipping clothes, clothing durability, real weather) are left out of the pick; every Wonder still has 4–5 to pick from.
+  - **Accomplish** lights up when all 3 goals are met at once. Each hiker on the tile picks 1 reward (no two hikers take the same Tier III pick; Fort Rock's shelters: at most 2). A reward that can't be given yet shows greyed with its phase. "Claim rewards" applies them, and the Wonder turns grey for good.
+  - **The pop-up:** 1400×956, movable, not blocking. The ribbon uses the trinket card back's gradient with a slow shift (still under reduced motion); the art is a full-width banner; goals on the left, rewards on the right, then Accomplish.
+- **Wyatt's answers (Nov 6):** `WONDER_BIOME_SCALE` ×1.5; "a lot of XP" 100; "a lot of caps" 15; Pittock Mansion's caps goal X[10+] (all `TODO(wyatt)` first guesses); Airlift cures every condition, as written.
 
-**Ask Wyatt first**
-- `TIER_SCALE`, and the odds of a Trial or opportunity instead of a challenge (or approval of a first guess).
-- Any opportunities that are ready.
+**Done when:** every challenge, Trial, opportunity and Wonder in `04-challenges.md` exists as data, and the ones whose systems exist can be triggered and resolved. Tests cover X and Y rolls with a fixed seed, Luck shifting X, (%) penalties, picking by node, tier and gates, party vs. each-hiker paying and failing, Risk challenge odds, Trial deadlines and rewards, opportunity selection, buttons and limits, early reveals, the run counters, and Wonder goals and rewards.
+
+**Ask Wyatt first** (answered Nov 5 and Nov 6)
+- `TIER_SCALE` ×1.5; the mix 70% challenge, 20% Trial, 10% opportunity.
+- Wonder numbers: see "Wyatt's answers (Nov 6)" above.
 
 ---
 
@@ -287,7 +305,7 @@ This keeps the download small and lets numbers and text change.
 **Build**
 - **Night actions:** Sleep, Keep Watch, and Move or Scavenge at the night penalty.
 - **Camp step:**
-  - a night event chance (50%, from a placeholder deck);
+  - a night event chance (50%, from a placeholder deck). The art for 15 night events is in `assets/night-events/` (Bats, Bears, Bobcat, Coyote, Cultists, Drunk Hiker, Foxes, Hyenas, Leopard, Monster, Opossums, Raccoons, Raccoon Gang, Robber, Wolves); Wyatt writes their rules before this phase. Use the art with the placeholder deck until then;
   - conditions tick down;
   - clothing durability ticks down;
   - passed-out countdowns drop.
@@ -396,6 +414,7 @@ This keeps the download small and lets numbers and text change.
   - Item data marks Quality-scaled values as `(X)`, for example `{ appetite: qualityScale([2,3,4,5,6]) }`.
   - Item cards show Quality as pips.
 - Implement every item in `03-items.md`. Use placeholders for the rest.
+- Turn on what Phase 5 left waiting on items (the `TODO(phase 9)` list): tool uses (Old Trail Sign, Sticky Sap, Dull Blades), clothing durability (Freeagle, Fashion Critic, Fort Rock's goal and reward), crafting (Multnomah Falls' goal, Rocco Raccoon's Rebuilding Trial), equipping clothes (Pittock Mansion's goal), hikers placing shelters, blueprints from the Abandoned Ranger Station, and real Tier III items and traits in place of the Wonder and Snake Slots placeholders.
 
 **Ask Wyatt first:** the generic crafting costs per category, and the full item list by tier.
 

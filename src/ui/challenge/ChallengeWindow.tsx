@@ -15,7 +15,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
-import { ASSETS, challengeArt } from '../../config/assets';
+import { ASSETS, cardArt } from '../../config/assets';
 import {
   bagSlots,
   challengeHikers,
@@ -202,7 +202,7 @@ function ChallengeBody({
             <div className={styles.top}>
               <div className={styles.art}>
                 {card.art ? (
-                  <img src={challengeArt(card.id)} alt={card.name} draggable={false} />
+                  <img src={cardArt(card)} alt={card.name} draggable={false} />
                 ) : (
                   <div className={styles.noArt}>
                     <Icon
@@ -1463,7 +1463,7 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
               <div key={card.id} className={styles.choice}>
                 <div className={styles.choiceArt}>
                   {card.art ? (
-                    <img src={challengeArt(card.id)} alt={card.name} draggable={false} />
+                    <img src={cardArt(card)} alt={card.name} draggable={false} />
                   ) : (
                     <div className={styles.noArt}>
                       <Icon name="alert" size={48} color="rgba(255,246,236,0.5)" strokeWidth={2} />

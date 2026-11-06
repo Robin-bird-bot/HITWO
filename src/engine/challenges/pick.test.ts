@@ -67,17 +67,11 @@ describe('which cards fit a tile', () => {
     expect(notPlayableYet(card('fashion-critic'))).toMatch(/phase 9/);
     expect(notPlayableYet(card('sticky-sap'))).toBeUndefined(); // 2 Energy works now
     expect(notPlayableYet(card('mold-invasion'))).toMatch(/phase 9/);
-    expect(notPlayableYet(card('firewatch'))).toMatch(/phase 6/);
+    expect(notPlayableYet(card('frozen-fingers'))).toMatch(/phase 6/);
     expect(notPlayableYet(card('train'))).toBeUndefined();
     const off = TRIALS.filter((t) => notPlayableYet(t)).map((t) => t.id);
     expect(off.sort()).toEqual(
-      [
-        'bear-country',
-        'firewatch',
-        'frozen-fingers',
-        'mold-invasion',
-        'rocco-raccoons-rebuilding-trial',
-      ].sort(),
+      ['bear-country', 'frozen-fingers', 'mold-invasion', 'rocco-raccoons-rebuilding-trial'].sort(),
     );
   });
 });

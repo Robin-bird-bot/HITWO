@@ -85,7 +85,8 @@ export function slug(name: string): string {
 function ch(input: ChallengeInput): ChallengeDef {
   return {
     kind: 'challenge',
-    art: false,
+    // Every challenge and Trial has art (Nov 6 update).
+    art: true,
     ...input,
     id: slug(input.name),
     description: DESCRIPTION,
@@ -95,7 +96,7 @@ function ch(input: ChallengeInput): ChallengeDef {
 
 function trial(input: TrialInput): TrialDef {
   return {
-    art: false,
+    art: true,
     ...input,
     id: slug(input.name),
     kind: 'trial',
@@ -509,15 +510,16 @@ const TIER_1: ChallengeDef[] = [
     penaltyText: ['If not: each food card has a 25% chance to spoil and be lost.'],
   }),
   ch({
-    name: 'Bone Collector',
+    // Was Bone Collector (Nov 6 update).
+    name: 'Crow Collector',
     tier: 1,
     nodes: [W, M],
-    scope: 'party',
+    scope: 'each',
     rolls: { n: X(2, 3) },
-    cost: [opt(res('n', idsOf('bones')))],
-    costText: ['Spend {n} Bones.'],
+    cost: [opt(res('n', undefined, { same: true }))],
+    costText: ['Spend {n} resources of the same type.'],
     penalty: [{ op: 'loseItem', mode: 'randomUnequipped' }],
-    penaltyText: ['If not: lose 1 random unequipped item from a random hiker.'],
+    penaltyText: ['If failed: lose 1 random unequipped item.'],
   }),
   ch({
     name: 'Long Night Ahead',
@@ -1130,6 +1132,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
   ch({
     name: 'Friendly Fisher',
     kind: 'opportunity',
+    art: false,
     tier: 1,
     nodes: [R],
     scope: 'party',
@@ -1145,6 +1148,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
   ch({
     name: 'Berry Patch',
     kind: 'opportunity',
+    art: false,
     tier: 1,
     nodes: [F],
     scope: 'party',
@@ -1160,6 +1164,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
   ch({
     name: 'Trail Angel',
     kind: 'opportunity',
+    art: false,
     tier: 1,
     nodes: 'any',
     scope: 'party',
@@ -1175,6 +1180,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
   ch({
     name: 'Hot Spring',
     kind: 'opportunity',
+    art: false,
     tier: 1,
     nodes: [M, R],
     scope: 'party',
@@ -1414,30 +1420,6 @@ const TRIALS: TrialDef[] = [
     goalText: ['Within 2 phases, reach a tile with a shelter, a Campsite or a River node.'],
     penalty: [cond('allergies', 'days', 'days', { node: F })],
     penaltyText: ['Allergies (Forest) for {days} days.'],
-  }),
-  trial({
-    name: 'Firewatch',
-    tier: 1,
-    nodes: [F],
-    rolls: { lose: Y(1, 3) },
-    goal: { kind: 'off', waitingOn: 'phase 6 (Keep Watch)' },
-    deadline: { until: 'nextMorning' },
-    goalText: ['Someone keeps watch on this tile tonight.'],
-    penalty: [{ op: 'loseResources', count: 'lose', from: 'hiker' }],
-    penaltyText: ['Lose {lose} random resources to raccoons.'],
-  }),
-  trial({
-    name: 'Lost Pup',
-    tier: 1,
-    nodes: [F, W],
-    rolls: { morale: Y(1, 2) },
-    goal: { kind: 'reachMarked', distance: [1, 2] },
-    deadline: { phases: 3 },
-    goalText: ['Within 3 phases, any hiker reaches a marked tile 1–2 tiles away.'],
-    penalty: [lose('morale', 'morale')],
-    penaltyText: ['Every hiker loses {morale} Morale.'],
-    reward: [{ op: 'stat', stat: 'morale', delta: 2 }],
-    rewardText: ['Success: that hiker gains 2 Morale.'],
   }),
   trial({
     name: 'Ranger’s Request',
