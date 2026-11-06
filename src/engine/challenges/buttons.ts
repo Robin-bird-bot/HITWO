@@ -23,6 +23,7 @@ import type { Action, GameState, Hiker, HikerId, Tile } from '../types';
 import { applyEffects } from './applyEffects';
 import { challengeHikers, openCardDef, paidCause } from './resolve';
 import { tileTier } from './pick';
+import { isRevealed } from '../wonders/wonders';
 import { revealCardOn } from './reveal';
 import { chanceOf, rollValue } from './rolls';
 import type { ButtonDef, ChallengeDef } from './types';
@@ -42,10 +43,10 @@ export function pressesLeft(
   return button.max - (state.challenge?.presses?.[pressKey(button, hikerId)] ?? 0);
 }
 
-/** Tiles in this section nobody has landed on, whose cards are still unknown. */
+/** Tiles in this section nobody has landed on, whose cards are still unknown (not the Wonder's). */
 export function unrevealedTiles(state: GameState): Tile[] {
   return Object.values(state.section.tiles).filter(
-    (t) => t.kind === 'normal' && !t.visited && !t.revealedCard,
+    (t) => t.kind === 'normal' && !t.visited && !t.revealedCard && !t.wonder,
   );
 }
 
@@ -59,11 +60,18 @@ export function easierTiles(state: GameState): Tile[] {
   return unrevealedTiles(state).filter((t) => tileTier(state, t) > 1);
 }
 
-/** Connected tiles a hiker could reveal from here (Old Firewatch Tower). */
+/** Connected tiles a hiker could reveal from here (Old Firewatch Tower), a hidden Wonder included. */
 export function revealableFrom(state: GameState, hiker: Hiker): Tile[] {
   return adjacentTileIds(state.section, hiker.tileId)
     .map((id) => state.section.tiles[id])
-    .filter((t): t is Tile => !!t && t.kind === 'normal' && !t.visited && !t.revealedCard);
+    .filter(
+      (t): t is Tile =>
+        !!t &&
+        t.kind === 'normal' &&
+        !t.visited &&
+        !t.revealedCard &&
+        !(t.wonder && isRevealed(t.wonder)),
+    );
 }
 
 function find(state: GameState, action: PressAction) {

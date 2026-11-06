@@ -2,6 +2,7 @@
  * Plain-language facts about hikers and what they can do, for the panels.
  * Pure functions of the game state, so they're easy to test.
  */
+import { WONDER_BY_ID } from '../../content/wonders';
 import { CONDITIONS } from '../../content/conditions';
 import { tileLabel } from '../../content/tileLabels';
 import { BALANCE } from '../../config/balance';
@@ -192,6 +193,8 @@ export function xpProgress(h: Hiker): { level: number; xp: number; next: number 
 export function tileName(tile: Tile): string {
   if (tile.kind === 'trailhead') return 'Trailhead';
   if (tile.kind === 'checkpoint') return 'Checkpoint';
+  const wonder = tile.wonder?.goals && WONDER_BY_ID[tile.wonder.id];
+  if (wonder) return wonder.name;
   const allKnown = tile.nodes.length > 0 && tile.nodes.every((n) => n.revealed);
   const label = allKnown ? tileLabel(tile.nodes) : null;
   if (label) return label;

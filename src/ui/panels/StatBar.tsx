@@ -13,11 +13,19 @@ interface StatBarProps {
   ticks?: boolean;
   /** Thicker bar, for Simple mode's cards. */
   size?: 'slim' | 'regular';
+  /** The hiker's maximum, when a Wonder raised it above 10. */
+  max?: number;
 }
 
 /** An Energy, Appetite or Morale bar: amber at a threshold, red with a gentle pulse when critical. */
-export function StatBar({ stat, value, showNumber, ticks, size = 'slim' }: StatBarProps) {
-  const max = BALANCE.stats.max;
+export function StatBar({
+  stat,
+  value,
+  showNumber,
+  ticks,
+  size = 'slim',
+  max = BALANCE.stats.max,
+}: StatBarProps) {
   const level = barLevel(stat, value);
   const label = `${STAT_META[stat].label} ${value}/${max}`;
   return (

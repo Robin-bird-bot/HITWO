@@ -4,6 +4,8 @@ import { CONDITIONS } from '../../content/conditions';
 import { pickForTile } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
 import { addCondition } from '../conditions';
+import { revealWonder, wonderTile } from '../wonders/wonders';
+import { enterTile } from './common';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import type { DebugOp, GameState, NodeType } from '../types';
@@ -106,6 +108,20 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'revealCard':
       revealCardOn(state, op.tileId, 'the debug panel');
       break;
+    case 'revealWonder': {
+      const tile = wonderTile(state);
+      if (tile) revealWonder(state, tile.id, 'the debug panel');
+      break;
+    }
+    case 'gatherAt': {
+      const tile = state.section.tiles[op.tileId];
+      if (!tile) return;
+      for (const h of state.hikers) if (h.status !== 'abandoned') h.tileId = op.tileId;
+      enterTile(state, op.tileId);
+      if (tile.wonder) revealWonder(state, op.tileId, 'the debug panel');
+      pushEvent(state, { kind: 'debug', note: `Put everyone on ${op.tileId}` });
+      break;
+    }
     case 'openSpace': {
       const tile = state.section.tiles[op.tileId];
       const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');

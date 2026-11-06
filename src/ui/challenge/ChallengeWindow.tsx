@@ -983,7 +983,7 @@ function MiniItem({
 }
 
 /** A stand-in item card face (Phase 9 builds the real layered cards). */
-function ItemFace({
+export function ItemFace({
   itemId,
   width,
   style,

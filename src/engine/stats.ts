@@ -1,8 +1,9 @@
 /**
  * Stat changes, injuries and passing out.
  *
- * - Stats run 0–10. A gain stops at 10 (positive conditions can push past it
- *   in Phase 6; a stat already above 10 isn't pulled back down by a gain).
+ * - Stats run 0–10. A gain stops at 10, or the hiker's raised maximum
+ *   (positive conditions can push past it in Phase 6; a stat already above
+ *   it isn't pulled back down by a gain).
  * - Energy or Appetite reaching 0 gives an injury. Morale just stops at 0
  *   (Wyatt, Nov 5). Gaining an injury raises every stat below 5 back up to 5.
  * - The 3rd injury makes the hiker pass out.
@@ -14,6 +15,11 @@ import { fireMoraleChange } from './effects';
 import { pushEvent } from './log';
 import { STAT_NAMES, type GameState, type Hiker, type StatName } from './types';
 
+/** A stat's maximum for this hiker: 10, plus any permanent raise (Sleeping Giant). */
+export function statMax(hiker: Hiker, stat: StatName): number {
+  return BALANCE.stats.max + (hiker.maxBonus?.[stat] ?? 0);
+}
+
 export function changeStat(
   state: GameState,
   hiker: Hiker,
@@ -23,7 +29,7 @@ export function changeStat(
 ): void {
   if (delta === 0 || hiker.status === 'abandoned') return;
   const from = hiker.stats[stat];
-  const ceiling = Math.max(BALANCE.stats.max, from);
+  const ceiling = Math.max(statMax(hiker, stat), from);
   const to = Math.max(BALANCE.stats.min, Math.min(from + delta, ceiling));
   if (to === from) return;
 

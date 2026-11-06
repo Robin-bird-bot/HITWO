@@ -1,7 +1,8 @@
 import { tileLabel } from '../../content/tileLabels';
 import { ASSETS } from '../../config/assets';
-import type { Tile, TileNode } from '../../engine';
+import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engine';
 import { CARDS } from '../../content';
+import { WONDER_BY_ID } from '../../content/wonders';
 import { Icon } from '../icons/Icon';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
 import styles from './MapView.module.css';
@@ -30,6 +31,8 @@ interface MapTileProps {
   mark?: 'trial' | 'target' | 'easier' | undefined;
   /** A card revealed early here: its icon opens the card. */
   onRevealed?(): void;
+  /** A Wonder found here: its icon opens the Wonder. */
+  onWonder?(): void;
 }
 
 export function MapTile({
@@ -43,6 +46,7 @@ export function MapTile({
   checkpointLabelOnHover,
   mark,
   onRevealed,
+  onWonder,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
@@ -63,8 +67,18 @@ export function MapTile({
   const specialCentered = special && !tile.visited;
   const allKnown = tile.nodes.length > 0 && tile.nodes.every((n) => n.revealed);
   const label = tile.kind === 'trailhead' ? 'START' : allKnown ? tileLabel(tile.nodes) : null;
+  // A hidden Wonder shows unknown node badges, like any tile nobody has reached.
+  const wonder = tile.wonder;
+  const wonderName = wonder && isRevealed(wonder) ? WONDER_BY_ID[wonder.id]?.name : undefined;
+  const wonderDone = isAccomplished(wonder);
+  const nodes: TileNode[] =
+    wonder && !wonderName
+      ? Array.from({ length: wonder.decoys }, () => ({ type: 'forest', revealed: false }))
+      : tile.nodes;
 
-  const describe = describeTile(tile, label);
+  const describe = wonderName
+    ? `Wonder: ${wonderName}${wonderDone ? ' (accomplished)' : ''}`
+    : describeTile({ ...tile, nodes }, label);
   return (
     <div
       className={styles.tile}
@@ -93,7 +107,18 @@ export function MapTile({
         </div>
       )}
 
-      {!specialCentered && label && (
+      {wonderName && (
+        <div className={styles.special}>
+          <div className={styles.wonderEmblem} data-done={wonderDone}>
+            <Icon name="sparkles" size={24} strokeWidth={2.25} />
+          </div>
+          <span className={styles.specialName} style={{ color: colors.text }}>
+            {wonderName}
+          </span>
+        </div>
+      )}
+
+      {!specialCentered && !wonderName && label && (
         <div className={styles.label} style={{ color: colors.text }}>
           {label}
         </div>
@@ -127,8 +152,25 @@ export function MapTile({
         <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
       )}
 
+      {wonderName && (
+        <button
+          type="button"
+          className={styles.revealed}
+          data-kind={wonderDone ? 'wonderDone' : 'wonder'}
+          title={`${wonderName}: tap to open the Wonder`}
+          aria-label={`Wonder here: ${wonderName}. Open it`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onWonder?.();
+          }}
+        >
+          <Icon name="sparkles" size={18} strokeWidth={2.5} />
+        </button>
+      )}
+
       <div className={styles.nodes}>
-        {tile.nodes.map((n, i) => (
+        {nodes.map((n, i) => (
           <NodeBadge key={i} node={n} hiddenBg={colors.hiddenBg} />
         ))}
       </div>

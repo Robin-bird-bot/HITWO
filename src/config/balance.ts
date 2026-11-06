@@ -205,6 +205,18 @@ export const BALANCE = {
     conditionDays: 1,
   },
 
+  /** Wonders (Nov 6 update, 3). TODO(wyatt): first guesses (approved Nov 6). */
+  wonders: {
+    /** Each biome after the first multiplies a goal's X by this (an "at most" X divides). */
+    biomeScale: 1.5,
+    /** "Gain a lot of XP": about one level's worth. */
+    lotOfXp: 100,
+    /** "Gain a lot of caps": about one good shop item. */
+    lotOfCaps: 15,
+    /** Pittock Mansion: "The party has X caps" (X[?+] in the doc). */
+    pittockCaps: 10,
+  },
+
   luck: {
     /** Luck is clamped to this range. */
     min: -5,

@@ -4,6 +4,7 @@
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import { WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
   type ChallengePaid,
@@ -344,6 +345,33 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({
           id: e.id,
           text: `${where}’s card is known now: ${CARDS[e.cardId]?.name ?? 'a challenge'} (${e.cause}).`,
+          tone: 'challenge',
+        });
+        break;
+      }
+      case 'wonderRevealed': {
+        const name = WONDER_BY_ID[e.wonderId]?.name ?? 'a Wonder';
+        lines.push({
+          id: e.id,
+          text: `Found a Wonder: ${name}!${e.cause ? ` (${e.cause})` : ''}`,
+          tone: 'challenge',
+        });
+        break;
+      }
+      case 'wonderAccomplished': {
+        const def = WONDER_BY_ID[e.wonderId];
+        const parts = Object.entries(e.picks).map(([id, pick]) => {
+          const r = def?.rewards[pick.reward];
+          const what = pick.itemId
+            ? (ITEMS[pick.itemId]?.name ?? pick.itemId)
+            : pick.node
+              ? `+${r?.reward.kind === 'abundance' ? r.reward.amount : ''} ${NODE_NAME[pick.node]} Abundance`
+              : (r?.title ?? 'a reward');
+          return `${name(id)} took ${what}`;
+        });
+        lines.push({
+          id: e.id,
+          text: `${def?.name ?? 'The Wonder'} accomplished! ${parts.join(' · ')}.`,
           tone: 'challenge',
         });
         break;

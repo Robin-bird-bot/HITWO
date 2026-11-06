@@ -15,6 +15,7 @@ import { pick } from '../rng';
 import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
 import { notPlayableYet, pickForTile, type Picked } from './pick';
 import { rollCard } from './rolls';
+import { revealWonder } from '../wonders/wonders';
 import { pickTrialTargets } from './trials';
 import type { CardDef } from './types';
 
@@ -58,6 +59,11 @@ export function revealTile(
   hikerIds: readonly HikerId[],
   forced?: QueuedReveal['forced'],
 ): void {
+  // A Wonder never draws a card: landing there reveals it, even mid-challenge.
+  if (state.section.tiles[tileId]?.wonder) {
+    revealWonder(state, tileId);
+    return;
+  }
   if (state.noChallenges || !triggers(state, tileId)) return;
   if (state.challenge) {
     state.challengeQueue = [
@@ -162,12 +168,13 @@ export function openNext(state: GameState): void {
 /**
  * Reveals a tile's card before anyone lands there (Old Firewatch Tower): it's
  * picked now and shown on the map, and opens as usual when someone arrives.
- * Returns the card, or nothing if the tile has no card to show.
+ * Returns the card (or Wonder) id, or nothing if the tile has nothing to show.
  *
- * TODO(phase 5 step 6): a Wonder tile reveals the Wonder instead.
+ * A Wonder's tile reveals the Wonder instead (Nov 6 update, 3a).
  */
 export function revealCardOn(state: GameState, tileId: TileId, cause: string): string | undefined {
   const tile = state.section.tiles[tileId];
+  if (tile?.wonder) return revealWonder(state, tileId, cause) ? tile.wonder.id : undefined;
   if (!tile || tile.visited || tile.revealedCard || !triggers(state, tileId)) return undefined;
   const picked = pickForTile(state, state.rng, tile, []);
   if (!picked) return undefined;

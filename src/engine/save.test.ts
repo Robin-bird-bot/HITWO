@@ -79,6 +79,25 @@ describe('save and load', () => {
     });
   });
 
+  it('upgrades a version 4 save: the trail gets a Wonder on a tile nobody has reached', () => {
+    const v4 = structuredClone(fixtureGame());
+    v4.section.tiles.L!.visited = true;
+    const loaded = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const withWonder = Object.values(loaded.state.section.tiles).filter((t) => t.wonder);
+    expect(withWonder).toHaveLength(1);
+    const tile = withWonder[0]!;
+    expect(['M', 'R']).toContain(tile.id);
+    expect(tile.nodes).toEqual([]);
+    expect(tile.wonder?.decoys).toBeGreaterThan(0);
+    // The same save always gets the same Wonder.
+    const again = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
+    expect(again.ok && Object.values(again.state.section.tiles).find((t) => t.wonder)).toEqual(
+      tile,
+    );
+  });
+
   it('round-trips conditions with their timing', () => {
     const state = fixtureGame();
     const ash = state.hikers[0];

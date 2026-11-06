@@ -191,3 +191,8 @@ export const CONDITIONS: Readonly<Record<string, ConditionDef>> = Object.fromEnt
 export const NEGATIVE_CONDITIONS: readonly string[] = LIST.filter(
   (c) => c.kind === 'negative' && !c.placeholder,
 ).map((c) => c.id);
+
+/** The positive conditions, for Witch's Castle's "a random positive one". */
+export const POSITIVE_CONDITIONS: readonly string[] = LIST.filter(
+  (c) => c.kind === 'positive' && !c.placeholder,
+).map((c) => c.id);

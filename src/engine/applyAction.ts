@@ -25,6 +25,7 @@ import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
+import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
 
 /** What can happen while a scavenge is open (plus the debug tools). */
@@ -94,6 +95,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateAccept(state) ?? null;
     case 'pressButton':
       return validatePress(state, action) ?? null;
+    case 'accomplishWonder':
+      return validateAccomplish(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -154,6 +157,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'pressButton':
       applyPress(draft, action);
+      break;
+    case 'accomplishWonder':
+      applyAccomplish(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

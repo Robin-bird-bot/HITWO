@@ -7,7 +7,7 @@ import { useRef, useState } from 'react';
 import { characterFor } from '../../content/characters';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, type GameState, type Hiker, type HikerId } from '../../engine';
+import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
@@ -146,6 +146,7 @@ function HikerCard({
             key={stat}
             stat={stat}
             value={h.stats[stat]}
+            max={statMax(h, stat)}
             showNumber
             ticks={THRESHOLD_STATS.includes(stat)}
             size="regular"

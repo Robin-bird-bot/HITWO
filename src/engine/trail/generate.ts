@@ -8,7 +8,8 @@
  * reachable from the trailhead and can reach the checkpoint.
  */
 import { BALANCE } from '../../config/balance';
-import { int, roll, shuffle, weightedPick, type Weighted } from '../rng';
+import { WONDERS } from '../../content/wonders';
+import { int, pick, roll, shuffle, weightedPick, type Weighted } from '../rng';
 import {
   LINE_KINDS,
   NODE_TYPES,
@@ -32,6 +33,11 @@ const EDGE_WIDTH = Math.min(2, cfg.maxWidth);
 export interface SectionOptions {
   biome: BiomeId;
   tier: number;
+  /**
+   * Wonders already used this run, so each biome gets a new one.
+   * TODO(phase 7): pass these when the next section is made at a checkpoint.
+   */
+  usedWonders?: readonly string[];
 }
 
 export const tileId = (row: number, col: number): TileId => `r${row}c${col}`;
@@ -196,9 +202,28 @@ function addSideFeatures(rng: RngState, middle: Tile[]): void {
   }
 }
 
+/**
+ * One Wonder per biome (Nov 6 update, 3a), at a random middle tile without a
+ * special space or side feature. Its tile has no nodes, but shows as many
+ * hidden node badges as an ordinary tile until it's revealed.
+ */
+function placeWonder(rng: RngState, middle: Tile[], used: readonly string[]): void {
+  const spots = middle.filter((t) => !t.special && !t.feature);
+  if (!spots.length || !WONDERS.length) return;
+  const tile = pick(rng, spots);
+  const fresh = WONDERS.filter((w) => !used.includes(w.id));
+  const wonder = pick(rng, fresh.length ? fresh : WONDERS);
+  const decoys = weightedPick(rng, weightsOf(cfg.nodeCountWeights, [1, 2, 3] as const));
+  tile.nodes = [];
+  tile.wonder = { id: wonder.id, decoys };
+}
+
 // ── Section ────────────────────────────────────────────────────────────────
 
-export function generateSection(rng: RngState, { biome, tier }: SectionOptions): Section {
+export function generateSection(
+  rng: RngState,
+  { biome, tier, usedWonders = [] }: SectionOptions,
+): Section {
   const rows = layoutRows(rng);
   const lastRow = rows.length - 1;
   const tiles: Record<TileId, Tile> = {};
@@ -216,6 +241,7 @@ export function generateSection(rng: RngState, { biome, tier }: SectionOptions):
   const lines = makeLines(rng, rows);
   for (const tile of middle) decorate(rng, tile, biome);
   addSideFeatures(rng, middle);
+  placeWonder(rng, middle, usedWonders);
 
   return {
     biome,

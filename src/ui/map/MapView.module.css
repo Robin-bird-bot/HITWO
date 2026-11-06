@@ -450,6 +450,31 @@
   background: #e0812f;
 }
 
+.revealed[data-kind='wonder'] {
+  background: linear-gradient(155deg, #e2a9f1, #d675ef, #9a3f64, #cd1f66);
+}
+
+.revealed[data-kind='wonderDone'] {
+  background: #8d8794;
+}
+
+/* A found Wonder's emblem in the middle of its tile. */
+.wonderEmblem {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid #f7f1e4;
+  background: linear-gradient(155deg, #e2a9f1, #d675ef, #9a3f64, #cd1f66);
+  color: #fff6ec;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wonderEmblem[data-done='true'] {
+  background: #8d8794;
+}
+
 .revealed:hover,
 .revealed:focus-visible {
   outline: none;

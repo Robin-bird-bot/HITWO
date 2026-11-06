@@ -6,7 +6,14 @@ import { characterFor } from '../../content/characters';
 import { TRAITS } from '../../content';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, type GameState, type Hiker, type HikerId, type SlotType } from '../../engine';
+import {
+  STAT_NAMES,
+  statMax,
+  type GameState,
+  type Hiker,
+  type HikerId,
+  type SlotType,
+} from '../../engine';
 import { Icon } from '../icons/Icon';
 import {
   conditionChips,
@@ -117,7 +124,7 @@ function HikerCard({
             <span>{family.label}</span>
           </div>
           {STAT_NAMES.map((stat) => (
-            <StatBar key={stat} stat={stat} value={h.stats[stat]} ticks />
+            <StatBar key={stat} stat={stat} value={h.stats[stat]} max={statMax(h, stat)} ticks />
           ))}
           <Conditions chips={conditionChips(h)} />
         </div>

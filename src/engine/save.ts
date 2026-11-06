@@ -5,9 +5,10 @@
  */
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
-import { NODE_TYPES, PHASES, type GameState } from './types';
+import { WONDERS } from '../content/wonders';
+import { NODE_TYPES, PHASES, type GameState, type Tile } from './types';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -22,7 +23,33 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   2: (save) => ({ ...save, usedCards: [] }),
   // Phase 5 (Nov 6 update): run counters for Wonder goals, starting from zero.
   3: (save) => ({ ...save, counters: freshCounters() }),
+  // Phase 5 (Nov 6 update): every biome has a Wonder. An older trail gets one on a tile nobody has reached.
+  4: (save) => addWonder(save),
 };
+
+/**
+ * Puts a Wonder on a plain tile nobody has landed on, preferring one whose
+ * nodes are all still hidden, so the map looks the same. Picked from the seed,
+ * so loading the same save twice gives the same Wonder.
+ */
+function addWonder(save: SaveData): SaveData {
+  const section = save.section;
+  if (!isRecord(section) || !isRecord(section.tiles)) return save;
+  const tiles = Object.values(section.tiles as Record<string, Tile>);
+  if (tiles.some((t) => t.wonder)) return save;
+  const plain = tiles
+    .filter((t) => t.kind === 'normal' && !t.visited && !t.special && !t.feature && !t.revealedCard)
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const hidden = plain.filter((t) => t.nodes.every((n) => !n.revealed));
+  const spots = hidden.length ? hidden : plain;
+  const seed = isNumber(save.seed) ? Math.abs(Math.floor(save.seed)) : 0;
+  const tile = spots[seed % Math.max(1, spots.length)];
+  const wonder = WONDERS[seed % WONDERS.length];
+  if (!tile || !wonder) return save;
+  tile.wonder = { id: wonder.id, decoys: Math.max(1, tile.nodes.length) };
+  tile.nodes = [];
+  return save;
+}
 
 export function serialize(state: GameState): string {
   return JSON.stringify(state);

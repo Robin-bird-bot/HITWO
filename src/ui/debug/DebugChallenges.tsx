@@ -7,15 +7,17 @@
  * - Each entry shows its gates and anything still waiting on a later phase.
  */
 import { useMemo, useState, type CSSProperties } from 'react';
-import { cardArt } from '../../config/assets';
+import { cardArt, wonderArt } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { CARDS, CONDITIONS, RESOURCES } from '../../content';
 import { STARTING_PARTY } from '../../content/characters';
+import { WONDERS } from '../../content/wonders';
 import {
   createGame,
   notBuiltYet,
   notPlayableYet,
   rollCard,
+  scaledNumber,
   scaledRange,
   seedRng,
   type CardDef,
@@ -24,6 +26,8 @@ import {
   type Gate,
   type Hiker,
   type Who,
+  type WonderDef,
+  type WonderGoalDef,
 } from '../../engine';
 import { cardText, rangeText } from '../challenge/cardText';
 import { NODE_NAME } from '../map/looks';
@@ -120,7 +124,7 @@ function nodesText(card: CardDef): string {
   return card.nodes.map((n) => NODE_NAME[n]).join(', ');
 }
 
-type KindFilter = 'all' | CardDef['kind'];
+type KindFilter = 'all' | CardDef['kind'] | 'wonder';
 
 export function DebugChallenges() {
   const [seed, setSeed] = useState(1);
@@ -134,6 +138,17 @@ export function DebugChallenges() {
   const hikers = useMemo(() => createGame({ seed: 1, hikers: STARTING_PARTY }).hikers, []);
   const scale = up ? BALANCE.challenges.tierScale : 1;
 
+  const query = search.trim().toLowerCase();
+  const wonders =
+    (kind === 'all' || kind === 'wonder') && tier === 0
+      ? WONDERS.filter(
+          (w) =>
+            w.name.toLowerCase().includes(query) &&
+            (!onlyWaiting ||
+              w.goals.some((g) => g.waitingOn) ||
+              w.rewards.some((r) => r.waitingOn)),
+        )
+      : [];
   const shown = ALL_CARDS.filter(
     (c) =>
       (kind === 'all' || c.kind === kind) &&
@@ -191,6 +206,7 @@ export function DebugChallenges() {
             <option value="challenge">Challenges</option>
             <option value="trial">Trials</option>
             <option value="opportunity">Opportunities</option>
+            <option value="wonder">Wonders</option>
           </select>
         </label>
         <label className={map.field}>
@@ -231,8 +247,8 @@ export function DebugChallenges() {
         <p className={styles.summary}>
           {count('challenge')} challenges ({count('challenge', 1)} Tier I · {count('challenge', 2)}{' '}
           Tier II · {count('challenge', 3)} Tier III) · {count('trial')} Trials ·{' '}
-          {count('opportunity')} placeholder opportunities · {off} never picked until their systems
-          exist · showing {shown.length}
+          {count('opportunity')} opportunities · {WONDERS.length} Wonders · {off} never picked until
+          their systems exist · showing {shown.length + wonders.length}
         </p>
         <p className={styles.note}>
           Conditions are tracked with their time left. Frozen already stops moving; what the others
@@ -241,6 +257,9 @@ export function DebugChallenges() {
         </p>
 
         <div className={styles.grid}>
+          {wonders.map((w) => (
+            <WonderEntry key={w.id} wonder={w} />
+          ))}
           {shown.map((card) => (
             <Entry
               key={card.id}
@@ -254,6 +273,53 @@ export function DebugChallenges() {
         </div>
       </main>
     </div>
+  );
+}
+
+/** A Wonder: its goals with X in each biome, and its rewards. Waiting parts are marked. */
+function WonderEntry({ wonder }: { wonder: WonderDef }) {
+  const xs = (g: WonderGoalDef) =>
+    g.x ? [0, 1, 2].map((b) => scaledNumber(g.x!, b)).join(' / ') : undefined;
+  return (
+    <article className={styles.entry} style={{ '--kind': '#A06CC9' } as CSSProperties}>
+      <div className={styles.art}>
+        <img src={wonderArt(wonder.id)} alt="" loading="lazy" width={1600} height={900} />
+      </div>
+      <div className={styles.body}>
+        <p className={styles.badge}>Wonder · 3 of these 5 goals are picked</p>
+        <h2 className={styles.name}>{wonder.name}</h2>
+        <p className={styles.description}>
+          {wonder.description ?? (
+            <span className={styles.muted}>(description to come from Wyatt)</span>
+          )}
+        </p>
+        <dl className={styles.text}>
+          <dt>Goals</dt>
+          <dd>
+            <ol>
+              {wonder.goals.map((g) => (
+                <li key={g.text}>
+                  {g.text.replace('{x}', 'X')}
+                  {xs(g) && <span className={styles.muted}> X = {xs(g)} (biomes 1 / 2 / 3)</span>}
+                  {g.waitingOn && <span className={styles.gate}>Waits on {g.waitingOn}</span>}
+                </li>
+              ))}
+            </ol>
+          </dd>
+          <dt>Rewards</dt>
+          <dd>
+            <ul>
+              {wonder.rewards.map((r) => (
+                <li key={r.title}>
+                  <b>{r.title}:</b> {r.text}
+                  {r.waitingOn && <span className={styles.gate}>Waits on {r.waitingOn}</span>}
+                </li>
+              ))}
+            </ul>
+          </dd>
+        </dl>
+      </div>
+    </article>
   );
 }
 

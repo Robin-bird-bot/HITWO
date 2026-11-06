@@ -2,6 +2,7 @@
  * The shape of the whole game. Everything here is plain JSON data so a game
  * can be saved, loaded, replayed and compared in tests.
  */
+import type { WonderPick, WonderState } from './wonders/types';
 
 export type HikerId = string;
 export type TileId = string;
@@ -99,6 +100,8 @@ export interface Tile {
   shelters?: ItemId[];
   /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
   luckBonus?: { amount: number; until: number; cause: string };
+  /** This biome's Wonder (one per section). Its tile has no nodes and never draws a card. */
+  wonder?: WonderState;
   nodes: TileNode[];
 }
 
@@ -196,6 +199,8 @@ export interface Hiker {
   abilityUses: Record<string, AbilityUse>;
   xp: number;
   level: number;
+  /** Permanent raises to a stat's maximum (Sleeping Giant's +2 maximum Energy). */
+  maxBonus?: Partial<Record<StatName, number>>;
 }
 
 // ── Scavenging ─────────────────────────────────────────────────────────────
@@ -464,6 +469,8 @@ export type Action =
   | { type: 'acceptTrial' }
   /** A button on an opportunity (Snake Slots' Pull, Predator Bait…), which happens at once. */
   | { type: 'pressButton'; button: string; hikerId?: HikerId; choice?: string }
+  /** Accomplish a Wonder: every hiker on its tile picks one reward. */
+  | { type: 'accomplishWonder'; tileId: TileId; picks: Record<HikerId, WonderPick> }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -496,6 +503,10 @@ export type DebugOp =
   | { kind: 'openChallenge'; cardId: string; tileId: TileId }
   /** Reveals a tile's card early, as Old Firewatch Tower does. */
   | { kind: 'revealCard'; tileId: TileId }
+  /** Reveals this section's Wonder where it stands. */
+  | { kind: 'revealWonder' }
+  /** Puts every hiker who's still hiking on one tile (to test Wonder goals). */
+  | { kind: 'gatherAt'; tileId: TileId }
   /** Picks and opens a card as if the tile were this special space. */
   | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
   /** Shows the rolled X and Y numbers in the challenge pop-up. */
@@ -599,6 +610,15 @@ export type GameEventBody =
     }
   /** A tile's card was revealed early, and shows on the map. */
   | { kind: 'revealedCard'; tileId: TileId; cardId: string; cause: string }
+  /** A Wonder was found: its 3 goals are picked. `cause` is how, if nobody landed there. */
+  | { kind: 'wonderRevealed'; tileId: TileId; wonderId: string; cause?: string }
+  /** A Wonder was accomplished, and who took which reward. */
+  | {
+      kind: 'wonderAccomplished';
+      tileId: TileId;
+      wonderId: string;
+      picks: Record<HikerId, WonderPick>;
+    }
   /** A button on an opportunity was pressed, and what came of it. */
   | {
       kind: 'pressed';

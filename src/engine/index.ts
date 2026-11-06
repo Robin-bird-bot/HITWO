@@ -60,3 +60,17 @@ export { deadlineOf, phaseIndex, timeLeft } from './challenges/trials';
 export { pressKey, pressesLeft, revealableFrom, unrevealedTiles } from './challenges/buttons';
 export { immovable } from './challenges/applyEffects';
 export { revealCardOn } from './challenges/reveal';
+export { statMax } from './stats';
+export type * from './wonders/types';
+export {
+  GOALS_SHOWN,
+  isAccomplished,
+  isRevealed,
+  levelOf,
+  pickProblem,
+  scaledNumber,
+  wonderProgress,
+  wonderTile,
+  type GoalProgress,
+  type WonderProgress,
+} from './wonders/wonders';

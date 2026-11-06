@@ -33,6 +33,8 @@ interface MapViewProps {
   marks?: Partial<Record<string, 'trial' | 'target' | 'easier'>>;
   /** A card revealed early: its tile's icon was tapped. */
   onRevealedClick?(tileId: string): void;
+  /** A found Wonder: its tile's icon was tapped. */
+  onWonderClick?(tileId: string): void;
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -50,6 +52,7 @@ export function MapView({
   checkpointLabelOnHover,
   marks,
   onRevealedClick,
+  onWonderClick,
   selectedId,
   onSelectHiker,
   camera,
@@ -151,6 +154,7 @@ export function MapView({
             reach={reachOf(t.id)}
             mark={marks?.[t.id]}
             onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
+            onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
             checkpointLabelOnHover={checkpointLabelOnHover}
             onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
           />

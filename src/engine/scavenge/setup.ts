@@ -130,6 +130,7 @@ export function scavengeCost(state: GameState, hiker: Hiker): number {
 /** Why this tile or this hiker's pack stops a scavenge, if anything. */
 export function scavengeTileReason(state: GameState, hiker: Hiker): string | undefined {
   const tile = state.section.tiles[hiker.tileId];
+  if (tile?.wonder) return 'Nobody can scavenge at a Wonder: it has no nodes.';
   if (!tile || tile.nodes.length === 0) return 'There’s nothing to scavenge on this tile.';
   if (!canDeal({ nodes: tile.nodes, abundance: state.abundance })) {
     return 'Nothing left to find here. Tend it or move on.';

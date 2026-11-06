@@ -9,11 +9,14 @@
 import { useEffect, useState } from 'react';
 import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
 import { RESOURCES } from '../../content/resources';
+import { WONDER_BY_ID } from '../../content/wonders';
 import { BALANCE } from '../../config/balance';
 import {
   NODE_TYPES,
   PHASES,
   adjacentTileIds,
+  isRevealed,
+  wonderTile,
   STAT_NAMES,
   type Action,
   type CardDef,
@@ -23,6 +26,7 @@ import {
   type ScavengeCardType,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
+import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import styles from './DebugPanel.module.css';
 
 const PHASE_NAMES = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -307,6 +311,7 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
   const [hikerId, setHikerId] = useState(state.hikers[0]?.id ?? '');
   const [cardId, setCardId] = useState('flies');
   const hiker = state.hikers.find((h) => h.id === hikerId);
+  const wonder = wonderTile(state);
   // A connected tile nobody has landed on, whose card isn't known yet.
   const nextUnknown = hiker
     ? adjacentTileIds(state.section, hiker.tileId).find((id) => {
@@ -383,6 +388,40 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
           }
         >
           Reveal a card next to them
+        </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>
+          Wonder:{' '}
+          {wonder
+            ? `${WONDER_BY_ID[wonder.wonder?.id ?? '']?.name ?? '?'} on ${wonder.id}`
+            : 'none'}
+        </span>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!wonder || isRevealed(wonder.wonder)}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'revealWonder' } })}
+        >
+          Reveal it
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!wonder}
+          onClick={() =>
+            wonder && onApply({ type: 'debug', op: { kind: 'gatherAt', tileId: wonder.id } })
+          }
+        >
+          Everyone there
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!wonder || !isRevealed(wonder.wonder)}
+          onClick={() => window.dispatchEvent(new Event(OPEN_WONDER_EVENT))}
+        >
+          Open it
         </button>
       </div>
       <div className={styles.row}>

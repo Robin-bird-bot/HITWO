@@ -234,6 +234,17 @@ describe('trail log sentences', () => {
     expect(texts(full)).toContain('Ash got Stone, and 1 resource didn’t fit (Snake Slots).');
   });
 
+  it('describe finding and accomplishing a Wonder', () => {
+    const s = fixtureGame();
+    s.section.tiles.M!.nodes = [];
+    s.section.tiles.M!.wonder = { id: 'swiss-alps', decoys: 2 };
+    let g = run(s, { type: 'move', hikerId: 'ash', toTileId: 'M' });
+    expect(texts(g)).toContain('Found a Wonder: Swiss Alps!');
+    g.section.tiles.M!.wonder!.goals = [{ index: 3, x: 1 }];
+    g = run(g, { type: 'accomplishWonder', tileId: 'M', picks: { ash: { reward: 2 } } });
+    expect(texts(g)).toContain('Swiss Alps accomplished! Ash took Lots of XP.');
+  });
+
   it('keep only the most recent lines', () => {
     let s = fixtureGame();
     for (let i = 0; i < 9; i++) s = applyAction(s, { type: 'endPhase' });

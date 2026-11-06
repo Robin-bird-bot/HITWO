@@ -22,7 +22,7 @@ import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick, roll, shuffle } from '../rng';
-import { addInjury, changeStat } from '../stats';
+import { addInjury, changeStat, statMax } from '../stats';
 import { enterTile } from '../actions/common';
 import type {
   CardRolls,
@@ -255,7 +255,7 @@ function applyToHiker(
       }
       return;
     case 'refill': {
-      const missing = BALANCE.stats.max - h.stats[e.stat];
+      const missing = statMax(h, e.stat) - h.stats[e.stat];
       if (missing > 0) changeStat(state, h, e.stat, missing, cause);
       return;
     }

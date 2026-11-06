@@ -9,7 +9,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersWhoHaventActed,
+  isAccomplished,
+  isRevealed,
   isSheltered,
+  statMax,
+  wonderTile,
   tendAmount,
   tendCost,
   tendableNodes,
@@ -50,6 +54,7 @@ import { TrialChips } from '../challenge/TrialChips';
 import { TrialDetails } from '../challenge/TrialWindow';
 import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
+import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -106,6 +111,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   // Trial tiles on the map: orange where it was revealed, red for Rocco's tile.
   // A card revealed early whose small pop-up is open (from its tile's icon).
   const [revealedOpen, setRevealedOpen] = useState<TileId | null>(null);
+  // The Wonder pop-up: opened when a Wonder is found or a hiker arrives at it,
+  // and from its map icon.
+  const [wonderOpen, setWonderOpen] = useWonderOpener(state);
   // Predator Bait: tiles that just got easier, shown in blue until a few seconds
   // after the pop-up closes (Wyatt, Nov 6).
   const easier = useEasierTiles(state, !!state.challenge || !!result);
@@ -288,7 +296,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         name={selected.name}
         gain={gain}
         from={from}
-        to={Math.min(BALANCE.stats.max, from + gain)}
+        to={Math.min(statMax(selected, 'energy'), from + gain)}
         onCancel={reset}
         onConfirm={() => dispatch({ type: 'sleep', hikerId: selected.id })}
       />
@@ -328,6 +336,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         checkpointLabelOnHover={simple}
         marks={marks}
         onRevealedClick={setRevealedOpen}
+        onWonderClick={setWonderOpen}
         selectedId={selected?.id ?? null}
         onSelectHiker={select}
         camera={camera}
@@ -453,6 +462,14 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       {revealedOpen && !state.challenge && (
         <RevealedCard state={state} tileId={revealedOpen} onClose={() => setRevealedOpen(null)} />
       )}
+      {wonderOpen && !state.challenge && !state.scavenge && !result && (
+        <WonderWindow
+          state={state}
+          tileId={wonderOpen}
+          onClose={() => setWonderOpen(null)}
+          onAccomplish={(action) => dispatch(action)}
+        />
+      )}
 
       {confirmEnd && (
         <ConfirmDialog
@@ -472,6 +489,36 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       )}
     </Stage>
   );
+}
+
+/**
+ * Which Wonder's pop-up is open. It opens by itself when a Wonder is found
+ * (landing there or an early reveal) and when a hiker arrives at one that
+ * isn't accomplished yet; the debug panel can open it too. If a challenge is
+ * open, it waits behind it.
+ */
+function useWonderOpener(state: GameState) {
+  const [open, setOpen] = useState<TileId | null>(null);
+  const [seen, setSeen] = useState(() => state.nextEventId);
+  if (state.nextEventId !== seen) {
+    setSeen(state.nextEventId);
+    for (const e of state.log) {
+      if (e.id < seen) continue;
+      const to = e.kind === 'move' || e.kind === 'moved' ? e.to : undefined;
+      const w = to ? state.section.tiles[to]?.wonder : undefined;
+      if (e.kind === 'wonderRevealed') setOpen(e.tileId);
+      else if (to && isRevealed(w) && !isAccomplished(w)) setOpen(to);
+    }
+  }
+  useEffect(() => {
+    const onOpen = () => {
+      const tile = gameStore.getState() && wonderTile(gameStore.getState()!);
+      if (tile && isRevealed(tile.wonder)) setOpen(tile.id);
+    };
+    window.addEventListener(OPEN_WONDER_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_WONDER_EVENT, onOpen);
+  }, []);
+  return [open, setOpen] as const;
 }
 
 /** How long a tile Predator Bait made easier stays blue after its pop-up closes. */

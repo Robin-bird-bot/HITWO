@@ -4,6 +4,7 @@
  * shown on the debug map page.
  */
 import { BALANCE } from '../../config/balance';
+import { WONDER_BY_ID } from '../../content/wonders';
 import { LINE_KINDS, NODE_TYPES, type Section, type Tile, type TileId } from '../types';
 
 const cfg = BALANCE.trail;
@@ -107,9 +108,20 @@ export function checkSection(section: Section): string[] {
     for (const t of tiles) if (!reached.has(t.id)) problems.push(`Tile ${t.id} can’t be reached.`);
   }
 
+  // ── The Wonder: exactly one, on a plain middle tile with no nodes ──
+  const wonders = tiles.filter((t) => t.wonder);
+  if (wonders.length !== 1) problems.push(`Expected 1 Wonder, found ${wonders.length}.`);
+  for (const t of wonders) {
+    if (t.kind !== 'normal') problems.push(`The ${t.kind} ${t.id} holds the Wonder.`);
+    if (t.nodes.length) problems.push(`The Wonder tile ${t.id} has nodes.`);
+    if (t.special || t.feature) problems.push(`The Wonder tile ${t.id} is a special space.`);
+    if (t.wonder && !WONDER_BY_ID[t.wonder.id]) problems.push(`Unknown Wonder ${t.wonder.id}.`);
+  }
+
   // ── Nodes, specials and side features ──
   const featureCounts = { merchant: 0, trader: 0 };
   for (const t of tiles) {
+    if (t.wonder) continue;
     if (t.kind !== 'normal') {
       if (t.nodes.length) problems.push(`The ${t.kind} ${t.id} has nodes.`);
       if (t.special) problems.push(`The ${t.kind} ${t.id} is a special space.`);
