@@ -190,6 +190,11 @@ export const BALANCE = {
      * trailhead and the checkpoint.
      */
     noCardOn: [] as readonly SpecialSpace[],
+    /**
+     * On a Challenge space, each passing hiker gets one of these at random: an
+     * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.
+     */
+    spaceRewards: ['item', 'lucky', 'doubleXp'] as const,
   },
 
   luck: {

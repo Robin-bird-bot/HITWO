@@ -5,6 +5,7 @@ import {
   canGive,
   give,
   penaltyTag,
+  riskNow,
   sectionStatus,
   skip,
   startDraft,
@@ -71,6 +72,24 @@ describe('the challenge pop-up draft', () => {
     expect(d.target).toEqual({ section: 0, option: 0, req: 0 });
     d = give(state, open, d, { kind: 'stat', from: 'ash', stat: 'energy' });
     expect(d.target).toEqual({ section: 1, option: 0, req: 0 });
+  });
+
+  it('on a Risk card, lets each hiker spend only what lowers their danger', () => {
+    const { state, open } = opened('blazing-sun', (s) => {
+      hiker(s, 'ash').inventory.resources = { metal: 2, wood: 3 };
+    });
+    let d = startDraft(state, open);
+    // Metal adds to the chance of sunstroke; Wood doesn't, so spending it wouldn't help.
+    expect(canGive(state, open, d, { kind: 'resource', from: 'ash', resource: 'metal' })).toBe(
+      true,
+    );
+    expect(canGive(state, open, d, { kind: 'resource', from: 'ash', resource: 'wood' })).toBe(
+      false,
+    );
+    d = give(state, open, d, { kind: 'resource', from: 'ash', resource: 'metal' });
+    expect(riskNow(state, open, d, 0)?.value).toBe(15);
+    const action = toAction(state, open, d);
+    expect(action && validateAction(state, action)).toBeNull();
   });
 
   it('names the penalty, with each hiker’s own Y', () => {

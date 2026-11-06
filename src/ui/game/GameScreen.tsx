@@ -43,6 +43,8 @@ import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel, type StashPick } from '../panels/TurnPanel';
+import { ChallengeResult } from '../challenge/ChallengeResult';
+import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
@@ -93,6 +95,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
+  // After a Risk roll, a Challenge space or an opportunity: what happened.
+  const [result, setResult] = useState<ResultToShow | null>(null);
 
   const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
@@ -143,6 +147,17 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       const after = gameStore.getState();
       const first = after?.hikers.find((h) => h.status === 'active');
       if (first) setSelectedId(first.id);
+    }
+    return true;
+  };
+
+  /** Finishes a challenge; a random outcome then shows what happened. */
+  const resolveChallenge = (action: Extract<Action, { type: 'resolveChallenge' }>) => {
+    const open = state.challenge;
+    if (!dispatch(action) || !open) return false;
+    const event = gameStore.getState()?.log.findLast((e) => e.kind === 'challenge');
+    if (event?.kind === 'challenge' && showsResult(state, event, open.special === 'challenge')) {
+      setResult({ cardId: open.cardId, fromId: event.id });
     }
     return true;
   };
@@ -378,7 +393,15 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         />
       )}
 
-      {state.challenge && <ChallengeWindow state={state} simple={simple} onResolve={dispatch} />}
+      {state.challenge && (
+        <ChallengeWindow
+          state={state}
+          simple={simple}
+          onResolve={resolveChallenge}
+          onChoose={(cardId) => dispatch({ type: 'chooseChallenge', cardId })}
+        />
+      )}
+      {result && <ChallengeResult state={state} result={result} onClose={() => setResult(null)} />}
 
       {confirmEnd && (
         <ConfirmDialog

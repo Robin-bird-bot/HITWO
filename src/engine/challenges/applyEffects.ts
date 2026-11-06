@@ -48,6 +48,12 @@ export interface EffectRun {
   risk?: number;
 }
 
+type MoveTo = (
+  h: Hiker,
+  to: TileId | undefined,
+  how: 'swept' | 'back' | 'blown' | 'falseTrail',
+) => void;
+
 export interface EffectResult {
   /** Hikers moved onto tiles nobody had landed on: those tiles trigger next. */
   entered: { tileId: TileId; hikerIds: HikerId[] }[];
@@ -162,14 +168,18 @@ export function applyEffects(
   });
 
   const moved = new Map<TileId, HikerId[]>();
-  const moveTo = (h: Hiker, to: TileId | undefined) => {
+  const moveTo: MoveTo = (h, to, how) => {
     if (!to || to === h.tileId) return;
+    // Frozen: can't move or be moved (04-challenges.md, "New conditions").
+    if (hasCondition(h, 'frozen')) return;
     const tile = state.section.tiles[to];
     if (!tile) return;
     const wasNew = !tile.visited;
-    h.cameFrom = h.tileId;
+    const from = h.tileId;
+    h.cameFrom = from;
     h.tileId = to;
     enterTile(state, to);
+    pushEvent(state, { kind: 'moved', hikerId: h.id, from, to, how, cause });
     if (wasNew) moved.set(to, [...(moved.get(to) ?? []), h.id]);
   };
 
@@ -207,7 +217,7 @@ function applyToHiker(
   ctx: AmountContext,
   cause: string,
   result: EffectResult,
-  moveTo: (h: Hiker, to: TileId | undefined) => void,
+  moveTo: MoveTo,
 ): void {
   switch (e.op) {
     case 'condition': {
@@ -310,27 +320,32 @@ function applyToHiker(
       const room = BALANCE.inventory.resourceLimit - resourceCount(h);
       const options = RESOURCES.filter((r) => matches(e.filter, r.id)).map((r) => r.id);
       const n = Math.min(room, amount(e.count, ctx));
+      const got: ResourceId[] = [];
       for (let i = 0; i < n; i++) {
         const id = pick(state.rng, options);
         h.inventory.resources[id] = (h.inventory.resources[id] ?? 0) + 1;
+        got.push(id);
+      }
+      if (got.length) {
+        pushEvent(state, { kind: 'gained', hikerId: h.id, resources: got, items: [], cause });
       }
       return;
     }
     case 'move': {
       if (e.how === 'swept') {
         const near = neighbours(state, h.tileId);
-        moveTo(h, near.length ? pick(state.rng, near).id : undefined);
+        moveTo(h, near.length ? pick(state.rng, near).id : undefined, 'swept');
       } else if (e.how === 'back') {
-        moveTo(h, backTile(state, h.tileId));
+        moveTo(h, backTile(state, h.tileId), 'back');
       } else if (e.how === 'cameFrom') {
         const back = h.cameFrom && adjacentTileIds(state.section, h.tileId).includes(h.cameFrom);
-        moveTo(h, back ? h.cameFrom : backTile(state, h.tileId));
+        moveTo(h, back ? h.cameFrom : backTile(state, h.tileId), 'back');
       } else if (e.how === 'blown') {
         // Only the tile they end on triggers its challenge.
         const steps = run.risk ?? blownSteps(state, e.chances ?? [1]);
         let at = h.tileId;
         for (let i = 0; i < steps; i++) at = backTile(state, at) ?? at;
-        moveTo(h, at);
+        moveTo(h, at, 'blown');
       }
       return;
     }
@@ -355,7 +370,7 @@ function applyOnce(
   e: Effect,
   ctx: AmountContext,
   result: EffectResult,
-  moveTo: (h: Hiker, to: TileId | undefined) => void,
+  moveTo: MoveTo,
   only?: Hiker,
 ): void {
   const cause = run.card.name;
@@ -451,11 +466,15 @@ function applyOnce(
       if (!options.length || !to) return;
       const item = pick(state.rng, options);
       to.inventory.bag.push({ uid: `gift-${state.nextEventId}-${item.id}`, itemId: item.id });
+      pushEvent(state, { kind: 'gained', hikerId: to.id, resources: [], items: [item.id], cause });
       return;
     }
-    case 'gainCaps':
-      state.caps += amount(e.count, ctx);
+    case 'gainCaps': {
+      const n = amount(e.count, ctx);
+      state.caps += n;
+      if (n) pushEvent(state, { kind: 'gained', resources: [], items: [], caps: n, cause });
       return;
+    }
     case 'move': {
       // False Trail Markers: everyone to the same random unrevealed tile in the 3 rows behind.
       if (!tile) return;
@@ -466,7 +485,7 @@ function applyOnce(
       const choose = unrevealed.length ? unrevealed : behind;
       if (!choose.length) return;
       const to = pick(state.rng, choose).id;
-      for (const h of targets) moveTo(h, to);
+      for (const h of targets) moveTo(h, to, 'falseTrail');
       return;
     }
     default:

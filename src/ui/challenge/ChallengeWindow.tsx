@@ -30,6 +30,7 @@ import {
   type HikerId,
   type OpenChallenge,
   type Requirement,
+  type RiskReading,
   type StatName,
 } from '../../engine';
 import { BALANCE } from '../../config/balance';
@@ -48,6 +49,7 @@ import {
   penaltyTag,
   reqIcons,
   reqLabel,
+  riskNow,
   sectionStatus,
   select,
   skip,
@@ -69,15 +71,18 @@ interface ChallengeWindowProps {
   state: GameState;
   simple: boolean;
   onResolve(action: ResolveAction): boolean;
+  /** A Choice space: the party picks one of the two. */
+  onChoose(cardId: string): void;
 }
 
 const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
 const INNER_WIDTH = 1296;
 
-export function ChallengeWindow({ state, simple, onResolve }: ChallengeWindowProps) {
+export function ChallengeWindow({ state, simple, onResolve, onChoose }: ChallengeWindowProps) {
   const open = state.challenge;
   const card = open && openCardDef(open);
   if (!open || !card) return null;
+  if (open.alternative) return <ChoicePicker open={open} onChoose={onChoose} />;
   return (
     <ChallengeBody
       key={`${open.cardId}@${open.tileId}`}
@@ -129,18 +134,32 @@ function ChallengeBody({
   const nodes = [
     ...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type]))),
   ];
-  const penalty = cardText(card, card.penaltyText, { rolls: open.rolls, scale: open.scale });
-  const [penaltyLabel, penaltyBody] = splitPenalty(penalty);
+  const kind = card.kind === 'opportunity' ? 'opportunity' : 'challenge';
+  const typeLabel =
+    card.kind === 'opportunity'
+      ? 'OPPORTUNITY'
+      : open.special === 'challenge'
+        ? 'CHALLENGE SPACE'
+        : card.risk
+          ? 'RISK'
+          : 'CHALLENGE';
+  const buttonLabel = card.risk
+    ? 'ROLL'
+    : card.kind === 'opportunity'
+      ? statuses[0]?.decision === 'fail'
+        ? 'SKIP'
+        : 'TAKE THE DEAL'
+      : 'CONTINUE';
 
   return (
-    <div className={styles.overlay} data-moved={!!translate}>
+    <div className={styles.overlay} data-moved={!!translate} data-kind={kind}>
       <Drift />
       <div
         ref={ref}
         className={styles.dialog}
         role="dialog"
         aria-modal="true"
-        aria-label={`Challenge: ${card.name}`}
+        aria-label={`${typeLabel.charAt(0)}${typeLabel.slice(1).toLowerCase()}: ${card.name}`}
         tabIndex={-1}
         style={{ translate }}
         onKeyDown={(e) => {
@@ -156,8 +175,13 @@ function ChallengeBody({
         <div className={styles.window}>
           <header className={styles.banner} data-drag-handle>
             <span className={styles.bannerSide}>
-              <Icon name="alert" size={20} color="#FFF6EC" strokeWidth={2.5} />
-              CHALLENGE · TIER {TIER_WORD[open.tier]}
+              <Icon
+                name={kind === 'opportunity' ? 'star' : 'alert'}
+                size={20}
+                color="#FFF6EC"
+                strokeWidth={2.5}
+              />
+              {typeLabel} · TIER {TIER_WORD[open.tier]}
             </span>
             <span className={styles.titleRow}>
               {nodes.map((n) => (
@@ -181,7 +205,12 @@ function ChallengeBody({
                   <img src={challengeArt(card.id)} alt={card.name} draggable={false} />
                 ) : (
                   <div className={styles.noArt}>
-                    <Icon name="alert" size={56} color="rgba(255,246,236,0.5)" strokeWidth={2} />
+                    <Icon
+                      name={kind === 'opportunity' ? 'star' : 'alert'}
+                      size={56}
+                      color="rgba(255,246,236,0.5)"
+                      strokeWidth={2}
+                    />
                     <span>{card.name}</span>
                   </div>
                 )}
@@ -195,17 +224,16 @@ function ChallengeBody({
                   <p className={styles.description}>{card.description}</p>
                 )}
                 {state.debugRolls && <RollsLine state={state} open={open} />}
+                {open.special === 'challenge' && (
+                  <p className={styles.spaceReward}>
+                    <Icon name="star" size={16} color="#E9B44C" strokeWidth={2.5} />
+                    Challenge space: each hiker who passes also gets an item, Lucky for 1 day, or
+                    double XP.
+                  </p>
+                )}
                 <p className={styles.hint}>{hintFor(state, open, card, draft)}</p>
                 <div className={styles.spacer} />
-                <div className={styles.penalty}>
-                  <span className={styles.penaltyIcon}>
-                    <Icon name="alert" size={28} color="#F39A86" strokeWidth={2.5} />
-                  </span>
-                  <span className={styles.penaltyWords}>
-                    <span className={styles.penaltyLabel}>{penaltyLabel}</span>
-                    <span className={styles.penaltyText}>{penaltyBody}</span>
-                  </span>
-                </div>
+                <OutcomeBox card={card} open={open} />
               </div>
             </div>
 
@@ -213,22 +241,37 @@ function ChallengeBody({
               <p className={styles.nobody}>Nobody here is affected. Nothing happens.</p>
             ) : (
               <div className={styles.sections}>
-                {draft.sections.map((s, i) => (
-                  <Section
-                    key={s.hikerId ?? 'party'}
-                    index={i}
-                    state={state}
-                    open={open}
-                    card={card}
-                    draft={draft}
-                    status={statuses[i] ?? { decision: undefined, impossible: false, missing: 0 }}
-                    here={here}
-                    peek={peek}
-                    columns={draft.sections.length}
-                    onDraft={setDraft}
-                    onPeek={setPeek}
-                  />
-                ))}
+                {draft.sections.map((s, i) =>
+                  card.risk ? (
+                    <RiskSection
+                      key={s.hikerId ?? 'party'}
+                      index={i}
+                      state={state}
+                      open={open}
+                      card={card}
+                      draft={draft}
+                      here={here}
+                      peek={peek}
+                      onDraft={setDraft}
+                      onPeek={setPeek}
+                    />
+                  ) : (
+                    <Section
+                      key={s.hikerId ?? 'party'}
+                      index={i}
+                      state={state}
+                      open={open}
+                      card={card}
+                      draft={draft}
+                      status={statuses[i] ?? { decision: undefined, impossible: false, missing: 0 }}
+                      here={here}
+                      peek={peek}
+                      columns={draft.sections.length}
+                      onDraft={setDraft}
+                      onPeek={setPeek}
+                    />
+                  ),
+                )}
               </div>
             )}
           </div>
@@ -241,37 +284,54 @@ function ChallengeBody({
           disabled={!action}
           onClick={finish}
         >
-          <span className={styles.continueLabel}>CONTINUE</span>
+          <span className={styles.continueLabel}>{buttonLabel}</span>
           <span className={styles.continueSub}>{summary(state, open, card, draft, statuses)}</span>
         </button>
 
         <div className={styles.packs}>
-          {here.map((h) => (
-            <Pack
-              key={h.id}
-              state={state}
-              open={open}
-              card={card}
-              hiker={h}
-              draft={draft}
-              onDraft={setDraft}
-            />
-          ))}
+          {here.map((h) =>
+            card.risk ? (
+              <RiskPack
+                key={h.id}
+                state={state}
+                open={open}
+                hiker={h}
+                draft={draft}
+                onDraft={setDraft}
+              />
+            ) : (
+              <Pack
+                key={h.id}
+                state={state}
+                open={open}
+                card={card}
+                hiker={h}
+                draft={draft}
+                onDraft={setDraft}
+              />
+            ),
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/** "If not: every hiker…" → ["IF NOT", "Every hiker…"]. */
+/** "If not: every hiker…" → ["IF NOT", "Every hiker…"]. A Risk card's text has no prefix. */
 function splitPenalty(text: string): [string, string] {
   const m = text.match(/^(If not|If failed):\s*(.*)$/s);
-  if (!m) return ['IF NOT', text];
+  if (!m) return ['THE RISK', text];
   const body = m[2] ?? '';
   return [(m[1] ?? '').toUpperCase(), body.charAt(0).toUpperCase() + body.slice(1)];
 }
 
 function hintFor(state: GameState, open: OpenChallenge, card: ChallengeDef, draft: Draft): string {
+  if (card.risk) {
+    return 'Use + in the packs below to spend things that lower a hiker’s danger, then Roll.';
+  }
+  if (card.kind === 'opportunity' && card.cost.length === 0) {
+    return 'Take the deal, or ✗ to skip it.';
+  }
   const t = draft.target;
   const req = t && card.cost[t.option]?.[t.req];
   const status = t ? sectionStatus(state, open, draft, t.section) : undefined;
@@ -295,6 +355,23 @@ function summary(
   statuses: SectionStatus[],
 ): string {
   if (!draft.sections.length) return 'NOTHING HAPPENS';
+  if (card.risk) {
+    const atRisk = draft.sections.filter(
+      (_, i) => (riskNow(state, open, draft, i)?.value ?? 0) > 0,
+    );
+    return atRisk.length
+      ? `${atRisk.length} ${atRisk.length === 1 ? 'HIKER' : 'HIKERS'} AT RISK`
+      : 'EVERYONE IS SAFE';
+  }
+  if (card.kind === 'opportunity') {
+    const s = statuses[0];
+    if (s?.decision === 'fail') return 'NOTHING HAPPENS';
+    if (s?.decision === 'pay') {
+      const gifts = draft.sections[0]?.gifts ?? [];
+      return gifts.length ? `GIVE ${paidLabel(gifts, state, open)}` : 'FREE';
+    }
+    return `NEEDS ${s?.missing ?? 0} MORE`;
+  }
   const passes = statuses.filter((s) => s.decision === 'pay').length;
   const fails = statuses.filter((s) => s.decision === 'fail').length;
   const undecided = statuses.length - passes - fails;
@@ -361,8 +438,19 @@ function Section({
   );
 
   const tag = penaltyTag(card, open.rolls, hiker);
-  const pill =
-    status.decision === 'pay'
+  const deal = card.kind === 'opportunity';
+  const pill = deal
+    ? status.decision === 'pay'
+      ? {
+          tone: 'pass',
+          text: s.gifts.length
+            ? `TAKES THE DEAL · ${paidLabel(s.gifts, state, open)}`
+            : 'FREE · TAKE IT',
+        }
+      : status.decision === 'fail'
+        ? { tone: 'fail', text: 'SKIPS IT' }
+        : { tone: 'needs', text: `NEEDS ${status.missing} MORE` }
+    : status.decision === 'pay'
       ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
       : status.decision === 'fail'
         ? {
@@ -428,8 +516,14 @@ function Section({
           type="button"
           className={styles.cross}
           data-on={status.decision === 'fail'}
-          aria-label={hiker ? `${hiker.name} takes the penalty` : 'Skip and take the penalty'}
-          title={hiker ? 'Take the penalty' : 'Skip and take the penalty'}
+          aria-label={
+            deal
+              ? 'Skip the deal'
+              : hiker
+                ? `${hiker.name} takes the penalty`
+                : 'Skip and take the penalty'
+          }
+          title={deal ? 'Skip the deal' : hiker ? 'Take the penalty' : 'Skip and take the penalty'}
           onClick={() => onDraft(skip(draft, index))}
         >
           <Icon name="x" size={22} strokeWidth={2.75} />
@@ -1027,6 +1121,373 @@ function Drift() {
               !
             </span>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── The "If not" box, or an opportunity's reward ───────────────────────────
+
+function OutcomeBox({
+  card,
+  open,
+  rolls,
+}: {
+  card: ChallengeDef;
+  open: OpenChallenge;
+  rolls?: OpenChallenge['rolls'];
+}) {
+  const opts = { rolls: rolls ?? open.rolls, scale: open.scale };
+  if (card.kind === 'opportunity') {
+    return (
+      <div className={styles.reward}>
+        <span className={styles.rewardIcon}>
+          <Icon name="star" size={28} color="#A6DDBC" strokeWidth={2.5} />
+        </span>
+        <span className={styles.penaltyWords}>
+          <span className={styles.rewardLabel}>REWARD</span>
+          <span className={styles.penaltyText}>{cardText(card, card.rewardText ?? [], opts)}</span>
+        </span>
+      </div>
+    );
+  }
+  const [label, body] = splitPenalty(cardText(card, card.penaltyText, opts));
+  return (
+    <div className={styles.penalty}>
+      <span className={styles.penaltyIcon}>
+        <Icon name="alert" size={28} color="#F39A86" strokeWidth={2.5} />
+      </span>
+      <span className={styles.penaltyWords}>
+        <span className={styles.penaltyLabel}>{label}</span>
+        <span className={styles.penaltyText}>{body}</span>
+      </span>
+    </div>
+  );
+}
+
+// ── Risk challenges: each hiker's danger, and what they spend ───────────────
+
+const LOSS_UNIT: Record<StatName, string> = {
+  energy: 'ENERGY',
+  appetite: 'APPETITE',
+  morale: 'MORALE',
+};
+
+/** The big number, a line under it, and the status pill for a Risk reading. */
+function readingWords(card: ChallengeDef, r: RiskReading | undefined) {
+  const m = card.risk?.measure;
+  if (!r || !m) return { big: '—', sub: '', pill: 'SAFE', safe: true };
+  switch (r.kind) {
+    case 'chance':
+      return {
+        big: `${r.value}%`,
+        sub: '',
+        pill: r.value ? `${r.value}% CHANCE` : 'SAFE',
+        safe: r.value === 0,
+      };
+    case 'threshold':
+      return {
+        big: `${r.carried ?? 0} / ${r.at ?? 0}`,
+        sub: 'CARRIED / THE LINE',
+        pill: r.value ? 'OVER THE LINE' : 'SAFE',
+        safe: r.value === 0,
+      };
+    case 'loss': {
+      const unit = m.kind === 'loss' && m.stat ? LOSS_UNIT[m.stat] : 'PER FOOD CARD';
+      return {
+        big: `−${r.value}`,
+        sub: unit,
+        pill: r.value ? `LOSES ${r.value}` : 'NO LOSS',
+        safe: r.value === 0,
+      };
+    }
+    case 'chain':
+      return {
+        big: (r.steps ?? []).map((v) => `${v}%`).join(' · '),
+        sub: 'EACH TILE BACK',
+        pill: r.value ? 'BLOWN BACK' : 'STAYS PUT',
+        safe: r.value === 0,
+      };
+  }
+}
+
+function RiskSection({
+  index,
+  state,
+  open,
+  card,
+  draft,
+  here,
+  peek,
+  onDraft,
+  onPeek,
+}: {
+  index: number;
+  state: GameState;
+  open: OpenChallenge;
+  card: ChallengeDef;
+  draft: Draft;
+  here: readonly Hiker[];
+  peek: Target | null;
+  onDraft(d: Draft): void;
+  onPeek(t: Target | null): void;
+}) {
+  const s = draft.sections[index];
+  const hiker = here.find((h) => h.id === s?.hikerId);
+  if (!s || !hiker) return null;
+  const r = riskNow(state, open, draft, index);
+  const words = readingWords(card, r);
+  const t = { section: index, option: 0, req: 0 };
+  const peeking = !!peek && sameTarget(peek, t);
+  const units = s.gifts.reduce((n, g) => n + giftCountOf(g), 0);
+  return (
+    <div className={styles.section}>
+      <div className={styles.who}>
+        <Face hikerId={hiker.id} size={34} />
+        <span className={styles.whoName}>{hiker.name.toUpperCase()}</span>
+      </div>
+      <div className={styles.riskBox} data-safe={words.safe}>
+        <span className={styles.riskLabel}>{card.risk?.measure.readout.toUpperCase()}</span>
+        <span className={styles.riskValue} data-long={words.big.length > 8}>
+          {words.big}
+        </span>
+        {words.sub && <span className={styles.riskSub}>{words.sub}</span>}
+      </div>
+      <div className={styles.spaceBox} onPointerDown={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          className={styles.spent}
+          data-empty={units === 0}
+          aria-label={
+            units
+              ? `${hiker.name} spends ${units}: see or take back`
+              : `${hiker.name} spends nothing yet`
+          }
+          onClick={() => onPeek(units && !peeking ? t : null)}
+        >
+          <span className={styles.spentLabel}>
+            {units ? `SPENDS ${units}` : 'SPENDS NOTHING YET'}
+          </span>
+          <span className={styles.spentIcons}>
+            {s.gifts.slice(0, 6).map((g, i) => (
+              <GiftIcon key={i} gift={g} state={state} open={open} />
+            ))}
+          </span>
+        </button>
+        {peeking && (
+          <div className={styles.peek} onPointerDown={(e) => e.stopPropagation()}>
+            <span className={styles.peekHead}>SPENT · {units}</span>
+            {s.gifts.map((g, i) => (
+              <div key={i} className={styles.peekRow}>
+                <GiftIcon gift={g} state={state} open={open} />
+                <span className={styles.peekName}>{giftName(g, state, open)}</span>
+                <button
+                  type="button"
+                  className={styles.peekReturn}
+                  aria-label={`Keep ${giftName(g, state, open)}`}
+                  onClick={() => {
+                    onDraft(takeBack(draft, index, g));
+                    if (s.gifts.length === 1 && giftCountOf(g) === 1) onPeek(null);
+                  }}
+                >
+                  <Icon name="x" size={13} color="#C9C2B2" strokeWidth={2.5} />
+                </button>
+              </div>
+            ))}
+            <span className={styles.peekHint}>Tap × to keep it</span>
+          </div>
+        )}
+      </div>
+      <span className={styles.pill} data-tone={words.safe ? 'pass' : 'fail'}>
+        {words.pill}
+      </span>
+    </div>
+  );
+}
+
+/** A Risk card's pack: the things this hiker could spend that would lower their danger. */
+function RiskPack({
+  state,
+  open,
+  hiker,
+  draft,
+  onDraft,
+}: {
+  state: GameState;
+  open: OpenChallenge;
+  hiker: Hiker;
+  draft: Draft;
+  onDraft(d: Draft): void;
+}) {
+  const section = draft.sections.findIndex((s) => s.hikerId === hiker.id);
+  const gifts = draft.sections[section]?.gifts ?? [];
+  const chips: { source: Source; spent: number; left: number; can: boolean }[] = [];
+  for (const [id, n] of Object.entries(hiker.inventory.resources)) {
+    if (!n) continue;
+    const source: Source = { kind: 'resource', from: hiker.id, resource: id };
+    const spent = gifts.reduce(
+      (k, g) => k + (g.kind === 'resource' && g.resource === id ? g.count : 0),
+      0,
+    );
+    const can = canGive(state, open, draft, source);
+    if (can || spent) chips.push({ source, spent, left: left(state, open, draft, source), can });
+  }
+  for (const item of hiker.inventory.bag) {
+    const source: Source = { kind: 'item', from: hiker.id, uid: item.uid };
+    const spent = gifts.some((g) => g.kind === 'item' && g.uid === item.uid) ? 1 : 0;
+    const can = canGive(state, open, draft, source);
+    if (can || spent) chips.push({ source, spent, left: 1 - spent, can });
+  }
+  const back = (source: Source) => {
+    const g = gifts.find(
+      (x) =>
+        (source.kind === 'resource' && x.kind === 'resource' && x.resource === source.resource) ||
+        (source.kind === 'item' && x.kind === 'item' && x.uid === source.uid),
+    );
+    if (g && section >= 0) onDraft(takeBack(draft, section, g));
+  };
+  return (
+    <div className={styles.pack}>
+      <div className={styles.packHead}>
+        <Face hikerId={hiker.id} size={30} />
+        <span className={styles.packName}>{hiker.name.toUpperCase()}</span>
+        <span className={styles.packCount}>
+          RES {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit} · BAG{' '}
+          {hiker.inventory.bag.length}
+        </span>
+      </div>
+      {chips.length === 0 ? (
+        <span className={styles.resNone}>Nothing to spend that would help.</span>
+      ) : (
+        <div className={styles.chips}>
+          {chips.map(({ source, spent, left: n, can }) => {
+            const label =
+              source.kind === 'resource'
+                ? resourceName(source.resource)
+                : itemName(
+                    hiker.inventory.bag.find(
+                      (i) => i.uid === (source.kind === 'item' ? source.uid : ''),
+                    )?.itemId ?? '',
+                  );
+            return (
+              <div
+                key={
+                  source.kind === 'resource'
+                    ? source.resource
+                    : source.kind === 'item'
+                      ? source.uid
+                      : 'x'
+                }
+                className={styles.chip}
+                data-spent={spent > 0}
+              >
+                {source.kind === 'resource' ? (
+                  <img className={styles.chipIcon} src={ASSETS.resources[source.resource]} alt="" />
+                ) : (
+                  <ItemFace
+                    itemId={
+                      hiker.inventory.bag.find(
+                        (i) => i.uid === (source.kind === 'item' ? source.uid : ''),
+                      )?.itemId ?? ''
+                    }
+                    width={24}
+                  />
+                )}
+                <span className={styles.chipCount}>
+                  {source.kind === 'resource' ? `×${n}` : ''}
+                </span>
+                <button
+                  type="button"
+                  className={styles.stepper}
+                  disabled={!spent}
+                  aria-label={`Keep 1 ${label}`}
+                  onClick={() => back(source)}
+                >
+                  <Icon name="minus" size={14} strokeWidth={2.75} />
+                </button>
+                <span className={styles.statGiven}>{spent}</span>
+                <button
+                  type="button"
+                  className={styles.stepper}
+                  disabled={!can}
+                  aria-label={`Spend 1 ${label}`}
+                  onClick={() => onDraft(give(state, open, draft, source))}
+                >
+                  <Icon name="plus" size={14} strokeWidth={2.75} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── A Choice space: two challenges, the party picks one ─────────────────────
+
+function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId: string): void }) {
+  const options = [
+    { cardId: open.cardId, rolls: open.rolls },
+    ...(open.alternative ? [open.alternative] : []),
+  ].flatMap((o) => {
+    const card = openCardDef({ ...open, cardId: o.cardId });
+    return card ? [{ card, rolls: o.rolls }] : [];
+  });
+  return (
+    <div className={styles.overlay} data-kind="challenge">
+      <Drift />
+      <div
+        className={styles.dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Choice: pick a challenge"
+      >
+        <div className={styles.window}>
+          <header className={styles.banner}>
+            <span className={styles.bannerSide}>
+              <Icon name="split" size={20} color="#FFF6EC" strokeWidth={2.5} />
+              CHOICE SPACE · TIER {TIER_WORD[open.tier]}
+            </span>
+            <span className={styles.titleRow}>
+              <h2 className={styles.title}>PICK ONE</h2>
+            </span>
+            <span className={`${styles.bannerSide} ${styles.bannerRight}`}>
+              <Icon name="users" size={17} color="#FFF6EC" strokeWidth={2} />
+              THE PARTY DECIDES
+            </span>
+          </header>
+          <div className={styles.choices}>
+            {options.map(({ card, rolls }) => (
+              <div key={card.id} className={styles.choice}>
+                <div className={styles.choiceArt}>
+                  {card.art ? (
+                    <img src={challengeArt(card.id)} alt={card.name} draggable={false} />
+                  ) : (
+                    <div className={styles.noArt}>
+                      <Icon name="alert" size={48} color="rgba(255,246,236,0.5)" strokeWidth={2} />
+                      <span>{card.name}</span>
+                    </div>
+                  )}
+                </div>
+                <div className={styles.choiceHead}>
+                  <h3 className={styles.choiceName}>{card.name.toUpperCase()}</h3>
+                  <span className={styles.choiceScope}>
+                    {card.risk ? 'RISK · ' : ''}
+                    {card.scope === 'party' ? 'WHOLE PARTY' : 'EACH HIKER'}
+                  </span>
+                </div>
+                <p className={styles.cost}>
+                  {cardText(card, card.costText, { rolls, scale: open.scale })}
+                </p>
+                <OutcomeBox card={card} open={open} rolls={rolls} />
+                <button type="button" className={styles.choose1} onClick={() => onChoose(card.id)}>
+                  TAKE ON {card.name.toUpperCase()}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

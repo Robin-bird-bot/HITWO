@@ -59,6 +59,24 @@ type StatEvent = Extract<GameEvent, { kind: 'stat' }>;
 
 const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
 
+const REWARD_WORDS = { item: 'an item', lucky: 'Lucky for 1 day', doubleXp: 'double XP' } as const;
+
+type RiskResult = NonNullable<Extract<GameEvent, { kind: 'challenge' }>['results'][number]['risk']>;
+
+/** "was hit (24%)", "was safe (0%)", "lost 4", "was blown back 2 tiles". */
+function riskWords(r: RiskResult): string {
+  switch (r.kind) {
+    case 'chance':
+      return r.hit ? `was hit (${r.value}% chance)` : `was safe (${r.value}% chance)`;
+    case 'threshold':
+      return r.hit ? 'was over the line' : 'was safe';
+    case 'loss':
+      return r.hit ? `lost ${r.value}` : 'lost nothing';
+    case 'chain':
+      return r.hit ? `was blown back ${r.value} tile${r.value === 1 ? '' : 's'}` : 'held on';
+  }
+}
+
 /** "1 food card", "Trail Mix and 2 Wood", "2 Energy". */
 export function describePaid(paid: ChallengePaid): string {
   const parts: string[] = [];
@@ -234,17 +252,57 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           if (next?.kind !== 'stat' || next.cause !== paidCause(card)) break;
           i += 1;
         }
+        const deal = CARDS[e.cardId]?.kind === 'opportunity';
         const parts = e.results.map((r) => {
           const who = r.hikerId ? name(r.hikerId) : 'the party';
-          if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
           const paid = r.paid ? describePaid(r.paid) : 'nothing';
-          return paid === 'nothing' ? `${who} passed` : `${who} paid ${paid}`;
+          if (r.risk) {
+            const spent = paid === 'nothing' ? '' : ` spent ${paid} and`;
+            return `${who}${spent} ${riskWords(r.risk)}`;
+          }
+          if (deal) return r.passed ? `${who} took the deal` : `${who} skipped it`;
+          if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
+          const reward = r.reward ? `, and won ${REWARD_WORDS[r.reward]}` : '';
+          return `${paid === 'nothing' ? `${who} passed` : `${who} paid ${paid}`}${reward}`;
         });
         lines.push({
           id: e.id,
           text: `${card}: ${parts.length ? parts.join(' · ') : 'nobody here was affected'}.`,
           tone: 'challenge',
         });
+        break;
+      }
+      case 'moved': {
+        const tile = state.section.tiles[e.to];
+        const where = tile ? tileName(tile) : 'a new tile';
+        const verb = {
+          swept: 'was swept to',
+          back: 'went back to',
+          blown: 'was blown back to',
+          falseTrail: 'followed false trail markers to',
+        }[e.how];
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} ${verb} ${where} (${e.cause}).`,
+          tone: 'injury',
+        });
+        break;
+      }
+      case 'challengeChosen':
+        lines.push({
+          id: e.id,
+          text: `The party chose ${CARDS[e.cardId]?.name ?? 'a challenge'} over ${CARDS[e.over]?.name ?? 'the other'}.`,
+          tone: 'challenge',
+        });
+        break;
+      case 'gained': {
+        const what: string[] = [];
+        for (const id of e.items) what.push(`a ${ITEMS[id]?.name ?? id}`);
+        if (e.resources.length) what.push(titleCase(resourcesTitle(e.resources)));
+        const text = e.hikerId
+          ? `${name(e.hikerId)} got ${listNames(what)} (${e.cause}).`
+          : `The party purse got ${e.caps ?? 0} cap${e.caps === 1 ? '' : 's'} (${e.cause}).`;
+        lines.push({ id: e.id, text, tone: 'scavenge' });
         break;
       }
       case 'condition': {

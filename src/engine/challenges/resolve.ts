@@ -29,10 +29,13 @@ import type {
   HikerId,
   OpenChallenge,
   ResourceId,
+  SpaceReward,
   StatName,
 } from '../types';
+import { pick, roll } from '../rng';
 import { applyEffects, foodCarried, type EffectResult } from './applyEffects';
 import { openNext, revealTile } from './reveal';
+import { riskReading, riskSpendFits, type RiskReading } from './risk';
 import { amount, notBuiltYet } from './rolls';
 import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
 
@@ -106,7 +109,7 @@ export function requirementNeed(
 export function resourceFits(
   filter: ResourceFilter | undefined,
   id: ResourceId,
-  open: OpenChallenge,
+  open: Pick<OpenChallenge, 'rolls'>,
 ): boolean {
   if (!filter) return true;
   if (filter.randomOf) return open.rolls.options?.includes(id) ?? false;
@@ -249,23 +252,51 @@ function ledgerProblem(
 export function validateResolve(state: GameState, action: ResolveAction): string | undefined {
   const open = state.challenge;
   if (!open) return 'There’s no challenge to finish.';
-  if (!openCardDef(open)) return 'That card can’t be finished here.';
+  const card = openCardDef(open);
+  if (!card) return 'That card can’t be finished here.';
+  if (open.alternative) return 'Pick one of the two challenges first.';
   const expected = challengeSections(state, open);
   const answered = (hikerId?: HikerId) =>
     action.sections.filter((s) => s.hikerId === hikerId).length === 1;
   if (action.sections.length !== expected.length || !expected.every((e) => answered(e.hikerId))) {
     return 'Every part of the challenge needs an answer.';
   }
+  if (card.risk) return riskProblem(state, open, card, action.sections);
   for (const s of action.sections) {
     if (!s.pay) {
       if (s.gifts.length) return 'Nothing is spent when taking the penalty.';
       continue;
     }
-    if (s.option === undefined) return 'Pick a way to pay.';
+    if (s.option === undefined) {
+      // A free card (most opportunities): nothing to hand in.
+      if (card.cost.length === 0 && s.gifts.length === 0) continue;
+      return 'Pick a way to pay.';
+    }
     const short = optionShortfall(state, open, s.option, s.gifts, s.hikerId);
     if (short) return short;
   }
   return ledgerProblem(state, open, action.sections);
+}
+
+/** A Risk challenge: each hiker may spend only their own things, and only what the card allows. */
+function riskProblem(
+  state: GameState,
+  open: OpenChallenge,
+  card: ChallengeDef,
+  sections: readonly ChallengeSection[],
+): string | undefined {
+  const here = challengeHikers(state, open);
+  for (const s of sections) {
+    const h = here.find((x) => x.id === s.hikerId);
+    if (!h) return 'Every part of the challenge needs an answer.';
+    for (const g of s.gifts) {
+      if (g.kind === 'caps' || g.kind === 'stat' || g.from !== h.id) {
+        return 'Each hiker can only spend what they carry.';
+      }
+      if (!riskSpendFits(card, h, g, open.rolls)) return 'That can’t be spent on this.';
+    }
+  }
+  return ledgerProblem(state, open, sections);
 }
 
 function paidBy(here: readonly Hiker[], gifts: readonly Gift[]): ChallengePaid {
@@ -310,47 +341,167 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
   const card = open && openCardDef(open);
   if (!open || !card) throw new Error('applyResolve: no challenge open');
   const here = challengeHikers(state, open);
-  const xp = BALANCE.challenges.passXpPerTier * open.tier;
+  // Opportunities and Risk challenges have no pass or fail, so no XP.
+  const xp =
+    card.kind === 'challenge' && !card.risk ? BALANCE.challenges.passXpPerTier * open.tier : 0;
   const targetsOf = (s: ChallengeSection) =>
     s.hikerId ? here.filter((h) => h.id === s.hikerId) : here;
-
-  // The log line first, so the penalties that follow read in order.
-  pushEvent(state, {
-    kind: 'challenge',
-    cardId: card.id,
-    tileId: open.tileId,
-    party: card.scope === 'party',
-    results: action.sections.map((s) => ({
-      ...(s.hikerId ? { hikerId: s.hikerId } : {}),
-      passed: s.pay,
-      ...(s.pay ? { paid: paidBy(here, s.gifts), xp } : {}),
-    })),
-  });
-
-  for (const s of action.sections) if (s.pay) spend(state, here, s.gifts, paidCause(card.name));
-
-  const entered: EffectResult['entered'] = [];
-  const run = (targets: Hiker[]) => ({
+  const run = (targets: Hiker[], risk?: number) => ({
     card,
     tileId: open.tileId,
     targets,
     onTile: here,
     rolls: open.rolls,
+    ...(risk !== undefined ? { risk } : {}),
   });
+
+  // Risk: work out each hiker's danger from what they'll have left, then roll.
+  const readings = card.risk
+    ? action.sections.map((s) => {
+        const h = here.find((x) => x.id === s.hikerId);
+        return h ? riskReading(card, open.rolls, h, s.gifts) : undefined;
+      })
+    : [];
+  const outcomes = readings.map((r) => (r ? rollRisk(state, r) : undefined));
+  const rewards = action.sections.map((s) =>
+    open.special === 'challenge' && s.pay && !card.risk
+      ? targetsOf(s).map(() => pickReward(state))
+      : [],
+  );
+
+  // The log line first, so the effects that follow read in order.
+  pushEvent(state, {
+    kind: 'challenge',
+    cardId: card.id,
+    tileId: open.tileId,
+    party: card.scope === 'party',
+    results: action.sections.map((s, i) => {
+      const reading = readings[i];
+      const outcome = outcomes[i];
+      const reward = rewards[i]?.[0];
+      return {
+        ...(s.hikerId ? { hikerId: s.hikerId } : {}),
+        passed: card.risk ? !outcome?.hit : s.pay,
+        ...((s.pay || card.risk) && s.gifts.length ? { paid: paidBy(here, s.gifts) } : {}),
+        ...(s.pay && xp ? { xp } : {}),
+        ...(reading && outcome
+          ? { risk: { kind: reading.kind, value: outcome.value, hit: outcome.hit } }
+          : {}),
+        ...(reward && s.hikerId ? { reward } : {}),
+      };
+    }),
+  });
+
   for (const s of action.sections) {
+    if (s.pay || card.risk) spend(state, here, s.gifts, paidCause(card.name));
+  }
+
+  const entered: EffectResult['entered'] = [];
+  const triggers: EffectResult['triggers'] = [];
+  const take = (r: EffectResult) => {
+    entered.push(...r.entered);
+    triggers.push(...r.triggers);
+  };
+  action.sections.forEach((s, i) => {
     const targets = targetsOf(s);
+    if (card.risk) {
+      const outcome = outcomes[i];
+      if (outcome?.hit) take(applyEffects(state, run(targets, outcome.amount), card.risk.outcome));
+      return;
+    }
     if (s.pay) {
       for (const h of targets) h.xp += xp;
-      if (card.reward?.length)
-        entered.push(...applyEffects(state, run(targets), card.reward).entered);
+      if (card.reward?.length) take(applyEffects(state, run(targets), card.reward));
+      targets.forEach((h, j) => {
+        const reward = rewards[i]?.[j];
+        if (reward) giveReward(state, card, open, h, here, reward, xp);
+      });
     } else {
-      entered.push(...applyEffects(state, run(targets), card.penalty).entered);
+      take(applyEffects(state, run(targets), card.penalty));
     }
-  }
+  });
 
   delete state.challenge;
   // Hikers moved onto tiles nobody had landed on: those open next.
-  // TODO(phase 5 step 3): the `triggers` result (Bear Country's Wildlife challenge).
   for (const e of entered) revealTile(state, e.tileId, e.hikerIds);
+  // A card that starts another challenge here (Bear Country's Wildlife one).
+  for (const t of triggers) {
+    const ids = here.map((h) => h.id);
+    state.challengeQueue = [
+      ...(state.challengeQueue ?? []),
+      { tileId: t.tileId, hikerIds: ids, forced: { tier: t.tier, node: t.node } },
+    ];
+  }
   openNext(state);
+}
+
+/** Rolls a hiker's danger: did it happen, and how much (a loss, or steps blown). */
+function rollRisk(
+  state: GameState,
+  r: RiskReading,
+): { hit: boolean; value: number; amount?: number } {
+  switch (r.kind) {
+    case 'chance':
+      return { hit: roll(state.rng, r.value / 100), value: r.value };
+    case 'threshold':
+      return { hit: r.value >= 100, value: r.value };
+    case 'loss':
+      return { hit: r.value > 0, value: r.value, amount: r.value };
+    case 'chain': {
+      let steps = 0;
+      for (const c of r.steps ?? []) {
+        if (!roll(state.rng, c / 100)) break;
+        steps += 1;
+      }
+      return { hit: steps > 0, value: steps, amount: steps };
+    }
+  }
+}
+
+function pickReward(state: GameState): SpaceReward {
+  const options = BALANCE.challenges.spaceRewards;
+  return pick(state.rng, options);
+}
+
+/** A Challenge space's reward for one passing hiker. */
+function giveReward(
+  state: GameState,
+  card: ChallengeDef,
+  open: OpenChallenge,
+  h: Hiker,
+  here: Hiker[],
+  reward: SpaceReward,
+  xp: number,
+): void {
+  const run = { card, tileId: open.tileId, targets: [h], onTile: here, rolls: open.rolls };
+  if (reward === 'item') applyEffects(state, run, [{ op: 'gainItem' }]);
+  if (reward === 'lucky') {
+    applyEffects(state, run, [{ op: 'condition', id: 'lucky', duration: 1, unit: 'days' }]);
+  }
+  if (reward === 'doubleXp') h.xp += xp;
+}
+
+type ChooseAction = Extract<Action, { type: 'chooseChallenge' }>;
+
+export function validateChoose(state: GameState, action: ChooseAction): string | undefined {
+  const open = state.challenge;
+  if (!open?.alternative) return 'There’s nothing to choose between.';
+  if (action.cardId !== open.cardId && action.cardId !== open.alternative.cardId) {
+    return 'Pick one of the two challenges.';
+  }
+  return undefined;
+}
+
+/** Choice space: keep the challenge the party picked, with its own rolls. */
+export function applyChoose(state: GameState, action: ChooseAction): void {
+  const open = state.challenge;
+  const other = open?.alternative;
+  if (!open || !other) return;
+  const over = action.cardId === open.cardId ? other.cardId : open.cardId;
+  if (action.cardId === other.cardId) {
+    open.cardId = other.cardId;
+    open.rolls = other.rolls;
+  }
+  delete open.alternative;
+  pushEvent(state, { kind: 'challengeChosen', cardId: action.cardId, over });
 }

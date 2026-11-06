@@ -1,0 +1,102 @@
+/* What happened after a random outcome. Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 14, 12, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.panel {
+  width: 640px;
+  max-height: 760px;
+  box-sizing: border-box;
+  border-radius: 20px;
+  overflow: hidden;
+  background: rgba(22, 27, 25, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  animation: pop 160ms ease-out;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 24px;
+  background: #c8403a;
+  color: #fff6ec;
+}
+
+.head[data-kind='opportunity'] {
+  background: #2f6fae;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 28px;
+  letter-spacing: 0.05em;
+}
+
+.lines {
+  margin: 0;
+  padding: 20px 28px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.lines li[data-tone='challenge'] {
+  font-weight: 600;
+  color: #f2c978;
+}
+
+.lines li[data-tone='injury'] {
+  color: #f39a86;
+}
+
+.lines li[data-tone='rest'],
+.lines li[data-tone='scavenge'] {
+  color: #a6ddbc;
+}
+
+.ok {
+  align-self: center;
+  margin: 4px 0 22px;
+  width: 220px;
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.3);
+}

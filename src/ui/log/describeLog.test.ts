@@ -137,6 +137,37 @@ describe('trail log sentences', () => {
     ]);
   });
 
+  it('describe a Risk roll and a hiker swept away (Phase 5)', () => {
+    const s = fixtureGame({ challenges: true });
+    place(s, 'ash', 'L');
+    s.hikers.find((h) => h.id === 'ash')!.inventory.resources = { wood: 10, stone: 2 };
+    const open = run(s, {
+      type: 'debug',
+      op: { kind: 'openChallenge', cardId: 'dangerous-current', tileId: 'L' },
+    });
+    const g = run(open, {
+      type: 'resolveChallenge',
+      sections: [{ hikerId: 'ash', pay: true, gifts: [] }],
+    });
+    const lines = texts(g);
+    expect(lines).toContain('Dangerous Current: Ash was over the line.');
+    expect(lines.some((l) => /^Ash was swept to .+ \(Dangerous Current\)\.$/.test(l))).toBe(true);
+  });
+
+  it('describe a Choice and what an opportunity gave', () => {
+    const s = fixtureGame({ challenges: true });
+    place(s, 'ash', 'L');
+    const g = run(
+      s,
+      { type: 'debug', op: { kind: 'openChallenge', cardId: 'trail-angel', tileId: 'L' } },
+      { type: 'resolveChallenge', sections: [{ pay: true, gifts: [] }] },
+    );
+    expect(texts(g).slice(-2)).toEqual([
+      'Trail Angel: the party took the deal.',
+      'The party purse got 2 caps (Trail Angel).',
+    ]);
+  });
+
   it('keep only the most recent lines', () => {
     let s = fixtureGame();
     for (let i = 0; i < 9; i++) s = applyAction(s, { type: 'endPhase' });

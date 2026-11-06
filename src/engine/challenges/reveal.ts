@@ -9,10 +9,11 @@
  *   waits in a queue and opens next.
  */
 import { BALANCE } from '../../config/balance';
-import { CARDS } from '../../content/challenges';
+import { CARDS, CHALLENGES } from '../../content/challenges';
 import { pushEvent } from '../log';
-import type { GameState, HikerId, OpenChallenge, TileId } from '../types';
-import { pickForTile, type Picked } from './pick';
+import { pick } from '../rng';
+import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
+import { notPlayableYet, pickForTile, type Picked } from './pick';
 import { rollCard } from './rolls';
 import type { CardDef } from './types';
 
@@ -26,12 +27,22 @@ function hikersHere(state: GameState, tileId: TileId, only?: readonly HikerId[])
   );
 }
 
-/**
- * Cards the pop-up can show so far. TODO(phase 5 step 3): Risk challenges,
- * opportunities and Choice spaces. TODO(phase 5 step 4): Trials.
- */
-function canOpenYet(card: CardDef, picked: Picked): boolean {
-  return card.kind === 'challenge' && !card.risk && !picked.alternative;
+/** Cards the pop-up can show so far. TODO(phase 5 step 4): Trials. */
+function canOpenYet(card: CardDef): boolean {
+  return card.kind !== 'trial';
+}
+
+/** A challenge of a given tier and node, for a card that starts another (Bear Country). */
+function forcedPick(state: GameState, forced: NonNullable<QueuedReveal['forced']>) {
+  const fits = CHALLENGES.filter(
+    (c) =>
+      c.tier === forced.tier &&
+      (c.nodes === 'any' || c.nodes.includes(forced.node)) &&
+      !notPlayableYet(c),
+  );
+  const fresh = fits.filter((c) => !state.usedCards.includes(c.id));
+  const from = fresh.length ? fresh : fits;
+  return from.length ? pick(state.rng, from) : undefined;
 }
 
 /** Does landing on this tile trigger a card? Not the trailhead, the checkpoint or a visited tile. */
@@ -45,19 +56,39 @@ export function triggers(state: GameState, tileId: TileId): boolean {
  * Called when hikers land on a tile nobody had landed on. Picks and rolls its
  * card and opens it, or queues the tile if a challenge is already open.
  */
-export function revealTile(state: GameState, tileId: TileId, hikerIds: readonly HikerId[]): void {
+export function revealTile(
+  state: GameState,
+  tileId: TileId,
+  hikerIds: readonly HikerId[],
+  forced?: QueuedReveal['forced'],
+): void {
   if (state.noChallenges || !triggers(state, tileId)) return;
   if (state.challenge) {
-    state.challengeQueue = [...(state.challengeQueue ?? []), { tileId, hikerIds: [...hikerIds] }];
+    state.challengeQueue = [
+      ...(state.challengeQueue ?? []),
+      { tileId, hikerIds: [...hikerIds], ...(forced ? { forced } : {}) },
+    ];
     return;
   }
   const tile = state.section.tiles[tileId];
   const here = hikersHere(state, tileId, hikerIds);
   if (!tile || !here.length) return;
 
+  if (forced) {
+    const card = forcedPick(state, forced);
+    if (card)
+      openCard(
+        state,
+        card,
+        tileId,
+        here.map((h) => h.id),
+        { tier: forced.tier, scale: 1 },
+      );
+    return;
+  }
   const picked = pickForTile(state, state.rng, tile, here);
   const card = picked && CARDS[picked.cardId];
-  if (!picked || !card || !canOpenYet(card, picked)) return;
+  if (!picked || !card || !canOpenYet(card)) return;
   openCard(
     state,
     card,
@@ -73,22 +104,31 @@ export function openCard(
   card: CardDef,
   tileId: TileId,
   hikerIds: readonly HikerId[],
-  picked: Pick<Picked, 'tier' | 'scale' | 'alternative'>,
+  picked: Pick<Picked, 'tier' | 'scale' | 'alternative'> & { challengeSpace?: boolean },
 ): void {
   const here = hikersHere(state, tileId, hikerIds);
   const tile = state.section.tiles[tileId];
+  const rolls = rollCard(state.rng, card, here, picked.scale);
+  // A Choice space rolls both, so each shows its real numbers before the pick.
+  const other = picked.alternative ? CARDS[picked.alternative] : undefined;
   const open: OpenChallenge = {
     cardId: card.id,
     tileId,
     tier: picked.tier,
     scale: picked.scale,
     hikerIds: here.map((h) => h.id),
-    rolls: rollCard(state.rng, card, here, picked.scale),
-    ...(tile?.special === 'challenge' ? { special: 'challenge' as const } : {}),
-    ...(picked.alternative ? { alternative: picked.alternative } : {}),
+    rolls,
+    ...((picked.challengeSpace ?? tile?.special === 'challenge') && card.kind === 'challenge'
+      ? { special: 'challenge' as const }
+      : {}),
+    ...(other
+      ? { alternative: { cardId: other.id, rolls: rollCard(state.rng, other, here, picked.scale) } }
+      : {}),
   };
   state.challenge = open;
-  if (!state.usedCards.includes(card.id)) state.usedCards.push(card.id);
+  for (const id of [card.id, ...(other ? [other.id] : [])]) {
+    if (!state.usedCards.includes(id)) state.usedCards.push(id);
+  }
   pushEvent(state, { kind: 'challengeOpened', cardId: card.id, tileId });
 }
 
@@ -98,6 +138,6 @@ export function openNext(state: GameState): void {
     const [next, ...rest] = state.challengeQueue;
     if (rest.length) state.challengeQueue = rest;
     else delete state.challengeQueue;
-    if (next) revealTile(state, next.tileId, next.hikerIds);
+    if (next) revealTile(state, next.tileId, next.hikerIds, next.forced);
   }
 }

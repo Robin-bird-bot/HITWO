@@ -1,6 +1,7 @@
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
+import { pickForTile } from '../challenges/pick';
 import { openCard } from '../challenges/reveal';
 import { addCondition } from '../conditions';
 import { resourceCount } from '../inventory';
@@ -102,9 +103,44 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Opened ${card.name}` });
       break;
     }
+    case 'openSpace': {
+      const tile = state.section.tiles[op.tileId];
+      const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');
+      if (!tile || !here.length) return;
+      const picked = pickForTile(state, state.rng, { ...tile, special: op.space }, here);
+      const card = picked && CARDS[picked.cardId];
+      if (!picked || !card) return;
+      delete state.challenge;
+      openCard(
+        state,
+        card,
+        op.tileId,
+        here.map((h) => h.id),
+        {
+          ...picked,
+          challengeSpace: op.space === 'challenge',
+        },
+      );
+      pushEvent(state, { kind: 'debug', note: `Opened a ${op.space} space` });
+      break;
+    }
     case 'showRolls':
       if (op.on) state.debugRolls = true;
       else delete state.debugRolls;
+      break;
+    case 'setTier':
+      state.section.tier = op.tier;
+      pushEvent(state, { kind: 'debug', note: `Section tier ${op.tier}` });
+      break;
+    case 'setSnowy':
+      if (op.on) state.snowy = true;
+      else delete state.snowy;
+      pushEvent(state, { kind: 'debug', note: `Snowy section ${op.on ? 'on' : 'off'}` });
+      break;
+    case 'setWeather':
+      if (op.weather === 'clear') delete state.weather;
+      else state.weather = op.weather;
+      pushEvent(state, { kind: 'debug', note: `Weather: ${op.weather}` });
       break;
     case 'setChallenges':
       if (op.on) delete state.noChallenges;

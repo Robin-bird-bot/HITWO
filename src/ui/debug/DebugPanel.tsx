@@ -305,8 +305,19 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
   const [cardId, setCardId] = useState('flies');
   const hiker = state.hikers.find((h) => h.id === hikerId);
   const cards = Object.values(CARDS)
-    .filter((c): c is ChallengeDef => c.kind === 'challenge' && !c.risk)
-    .sort((a, b) => a.tier - b.tier || a.name.localeCompare(b.name));
+    .filter((c): c is ChallengeDef => c.kind !== 'trial')
+    .sort(
+      (a, b) =>
+        Number(a.kind === 'opportunity') - Number(b.kind === 'opportunity') ||
+        a.tier - b.tier ||
+        a.name.localeCompare(b.name),
+    );
+  const label = (c: ChallengeDef) =>
+    c.kind === 'opportunity'
+      ? `Opportunity · ${c.name}`
+      : `${tier[c.tier]} · ${c.name} (${c.risk ? 'risk' : c.scope === 'party' ? 'party' : 'each'})`;
+  const openSpace = (space: 'choice' | 'challenge' | 'opportunity') =>
+    hiker && onApply({ type: 'debug', op: { kind: 'openSpace', tileId: hiker.tileId, space } });
   const tier = { 1: 'I', 2: 'II', 3: 'III' } as const;
   return (
     <>
@@ -319,7 +330,7 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
         >
           {cards.map((c) => (
             <option key={c.id} value={c.id}>
-              {tier[c.tier]} · {c.name} ({c.scope === 'party' ? 'party' : 'each'})
+              {label(c)}
             </option>
           ))}
         </select>
@@ -351,6 +362,54 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
         >
           Trigger a challenge here
         </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>Or a space here:</span>
+        <button type="button" className={styles.button} onClick={() => openSpace('choice')}>
+          Choice
+        </button>
+        <button type="button" className={styles.button} onClick={() => openSpace('challenge')}>
+          Challenge
+        </button>
+        <button type="button" className={styles.button} onClick={() => openSpace('opportunity')}>
+          Opportunity
+        </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>Section tier:</span>
+        {([1, 2, 3] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            className={styles.button}
+            aria-pressed={state.section.tier === t}
+            onClick={() => onApply({ type: 'debug', op: { kind: 'setTier', tier: t } })}
+          >
+            {tier[t]}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={styles.button}
+          aria-pressed={!!state.snowy}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'setSnowy', on: !state.snowy } })}
+        >
+          Snowy section
+        </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>Weather:</span>
+        {(['clear', 'sunny', 'stormy'] as const).map((w) => (
+          <button
+            key={w}
+            type="button"
+            className={styles.button}
+            aria-pressed={(state.weather ?? 'clear') === w}
+            onClick={() => onApply({ type: 'debug', op: { kind: 'setWeather', weather: w } })}
+          >
+            {w.charAt(0).toUpperCase() + w.slice(1)}
+          </button>
+        ))}
       </div>
       <div className={styles.row}>
         <button

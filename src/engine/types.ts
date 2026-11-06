@@ -317,17 +317,22 @@ export interface OpenChallenge {
   /** The hikers on the tile when it was revealed: only they're affected. */
   hikerIds: HikerId[];
   rolls: CardRolls;
-  /** Opened on a Challenge space: passing hikers get a reward (step 3). */
+  /** Opened on a Challenge space: passing hikers each get a random reward. */
   special?: 'challenge';
-  /** A Choice space's other challenge (step 3). */
-  alternative?: string;
+  /** A Choice space: the other challenge, with its own rolls, until the party picks one. */
+  alternative?: { cardId: string; rolls: CardRolls };
 }
 
 /** A tile a hiker landed on while a challenge was open: it opens next. */
 export interface QueuedReveal {
   tileId: TileId;
   hikerIds: HikerId[];
+  /** A card's effect starts a challenge of this tier and node (Bear Country). */
+  forced?: { tier: 1 | 2 | 3; node: NodeType };
 }
+
+/** What a Challenge space gives a passing hiker (Phase 5 first guess). */
+export type SpaceReward = 'item' | 'lucky' | 'doubleXp';
 
 /** One thing handed in toward a challenge cost, into requirement `req` of the option. */
 export type Gift =
@@ -411,6 +416,8 @@ export type Action =
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
+  /** On a Choice space: which of the two challenges the party takes on. */
+  | { type: 'chooseChallenge'; cardId: string }
   /** Dev tools for playtesting (the backtick debug panel). Not part of the rules. */
   | { type: 'debug'; op: DebugOp };
 
@@ -441,10 +448,18 @@ export type DebugOp =
   | { kind: 'clearConditions'; hikerId: HikerId }
   /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
   | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  /** Picks and opens a card as if the tile were this special space. */
+  | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
   /** Shows the rolled X and Y numbers in the challenge pop-up. */
   | { kind: 'showRolls'; on: boolean }
   /** Turns challenges off (landing on a new tile opens nothing) or back on. */
-  | { kind: 'setChallenges'; on: boolean };
+  | { kind: 'setChallenges'; on: boolean }
+  /** The section's tier, for which challenges come up. */
+  | { kind: 'setTier'; tier: 1 | 2 | 3 }
+  /** Counts the section as snowy (Phase 11 makes this real). */
+  | { kind: 'setSnowy'; on: boolean }
+  /** The weather challenge gates check (Phase 6 makes this real). */
+  | { kind: 'setWeather'; weather: 'clear' | 'sunny' | 'stormy' };
 
 export type ActionType = Action['type'];
 
@@ -501,7 +516,36 @@ export type GameEventBody =
       cardId: string;
       tileId: TileId;
       party: boolean;
-      results: { hikerId?: HikerId; passed: boolean; paid?: ChallengePaid; xp?: number }[];
+      results: {
+        hikerId?: HikerId;
+        passed: boolean;
+        paid?: ChallengePaid;
+        xp?: number;
+        /** A Risk challenge: the odds or amount, and whether it hit. */
+        risk?: { kind: 'chance' | 'threshold' | 'loss' | 'chain'; value: number; hit: boolean };
+        /** A Challenge space's reward. */
+        reward?: SpaceReward;
+      }[];
+    }
+  /** A card moved a hiker (swept, blown back, sent back, false trail markers). */
+  | {
+      kind: 'moved';
+      hikerId: HikerId;
+      from: TileId;
+      to: TileId;
+      how: 'swept' | 'back' | 'blown' | 'falseTrail';
+      cause: string;
+    }
+  /** On a Choice space, the party picked one challenge over the other. */
+  | { kind: 'challengeChosen'; cardId: string; over: string }
+  /** What a card gave: resources or items to a hiker, or caps to the purse. */
+  | {
+      kind: 'gained';
+      hikerId?: HikerId;
+      resources: ResourceId[];
+      items: ItemId[];
+      caps?: number;
+      cause: string;
     }
   /** Resources or items a challenge took (or gave). */
   | {

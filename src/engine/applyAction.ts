@@ -3,7 +3,7 @@
  * returns a new state and never touches the one passed in.
  */
 import { applyDebug } from './actions/debug';
-import { applyResolve, validateResolve } from './challenges/resolve';
+import { applyChoose, applyResolve, validateChoose, validateResolve } from './challenges/resolve';
 import { applyMove, validateMove } from './actions/move';
 import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
@@ -49,7 +49,8 @@ export function validateAction(state: GameState, action: Action): string | null 
   // An open scavenge waits for a card before anything else happens.
   if (state.scavenge && !SCAVENGE_STEPS.has(action.type)) return 'Finish scavenging first.';
   // So does an open challenge.
-  if (state.challenge && action.type !== 'resolveChallenge' && action.type !== 'debug') {
+  const challengeSteps: Action['type'][] = ['resolveChallenge', 'chooseChallenge', 'debug'];
+  if (state.challenge && !challengeSteps.includes(action.type)) {
     return 'Finish the challenge first.';
   }
   switch (action.type) {
@@ -79,6 +80,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateReturn(state, action) ?? null;
     case 'resolveChallenge':
       return validateResolve(state, action) ?? null;
+    case 'chooseChallenge':
+      return validateChoose(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -130,6 +133,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'resolveChallenge':
       applyResolve(draft, action);
+      break;
+    case 'chooseChallenge':
+      applyChoose(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

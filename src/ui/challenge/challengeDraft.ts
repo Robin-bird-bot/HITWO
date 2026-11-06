@@ -23,7 +23,10 @@ import {
   optionShortfall,
   requirementNeed,
   resourceFits,
+  riskReading,
+  riskSpendFits,
   scaledRange,
+  type RiskReading,
   type Action,
   type CardRolls,
   type ChallengeDef,
@@ -168,7 +171,69 @@ const asGift = (source: Source, req: number): Gift =>
         ? { kind: 'resource', req, from: source.from, resource: source.resource, count: 1 }
         : { kind: 'stat', req, from: source.from, stat: source.stat, count: 1 };
 
-/** Can this go into the selected space right now? */
+/** What a section has spent so far (a Risk challenge). */
+const spentBy = (draft: Draft, section: number) => draft.sections[section]?.gifts ?? [];
+
+/** A Risk challenge: can this hiker spend this, and would it lower their danger? */
+function canSpend(state: GameState, open: OpenChallenge, draft: Draft, source: Source): boolean {
+  const card = openCardDef(open);
+  if (!card?.risk || (source.kind !== 'resource' && source.kind !== 'item')) return false;
+  const section = draft.sections.findIndex((s) => s.hikerId === source.from);
+  const h = challengeHikers(state, open).find((x) => x.id === source.from);
+  if (section < 0 || !h || left(state, open, draft, source) < 1) return false;
+  const gift = asGift(source, 0);
+  if (!riskSpendFits(card, h, gift, open.rolls)) return false;
+  const now = riskReading(card, open.rolls, h, spentBy(draft, section));
+  const next = riskReading(card, open.rolls, h, [...spentBy(draft, section), gift]);
+  return !!now && !!next && lowers(now, next);
+}
+
+function lowers(now: RiskReading, next: RiskReading): boolean {
+  // Over the line: every resource spent counts toward getting under it.
+  if (now.kind === 'threshold') return now.value >= 100;
+  if (now.kind === 'chain') {
+    const sum = (r: RiskReading) => (r.steps ?? []).reduce((a, b) => a + b, 0);
+    return sum(next) < sum(now);
+  }
+  return next.value < now.value;
+}
+
+/** A hiker's danger with what they've spent so far. */
+export function riskNow(
+  state: GameState,
+  open: OpenChallenge,
+  draft: Draft,
+  section: number,
+): RiskReading | undefined {
+  const card = openCardDef(open);
+  const s = draft.sections[section];
+  const h = challengeHikers(state, open).find((x) => x.id === s?.hikerId);
+  return card && h ? riskReading(card, open.rolls, h, spentBy(draft, section)) : undefined;
+}
+
+/** Adds one unit to a section's gifts, merging with the same thing from the same hiker. */
+function addGift(s: SectionDraft, gift: Gift): SectionDraft {
+  const gifts = [...s.gifts];
+  const at = gifts.findIndex(
+    (g) =>
+      g.req === gift.req &&
+      ((g.kind === 'resource' &&
+        gift.kind === 'resource' &&
+        g.from === gift.from &&
+        g.resource === gift.resource) ||
+        (g.kind === 'stat' &&
+          gift.kind === 'stat' &&
+          g.from === gift.from &&
+          g.stat === gift.stat)),
+  );
+  const existing = gifts[at];
+  if (existing && existing.kind !== 'item' && gift.kind !== 'item') {
+    gifts[at] = { ...existing, count: existing.count + 1 };
+  } else gifts.push(gift);
+  return { ...s, gifts };
+}
+
+/** Can this go into the selected space right now (or, on a Risk card, be spent)? */
 export function canGive(
   state: GameState,
   open: OpenChallenge,
@@ -177,6 +242,7 @@ export function canGive(
   t: Target | undefined = draft.target,
 ): boolean {
   const card = openCardDef(open);
+  if (card?.risk) return canSpend(state, open, draft, source);
   const req = t && card?.cost[t.option]?.[t.req];
   const section = t && draft.sections[t.section];
   if (!t || !req || !section || !payable(card, t.option)) return false;
@@ -202,6 +268,16 @@ export function canGive(
 
 /** Hands one thing into the selected space, then selects the next empty one. */
 export function give(state: GameState, open: OpenChallenge, draft: Draft, source: Source): Draft {
+  if (openCardDef(open)?.risk && source.kind !== 'caps') {
+    // A Risk card: the hiker spends it from their own pack.
+    if (!canSpend(state, open, draft, source)) return draft;
+    const section = draft.sections.findIndex((s) => s.hikerId === source.from);
+    return {
+      ...draft,
+      target: { section, option: 0, req: 0 },
+      sections: draft.sections.map((s, i) => (i === section ? addGift(s, asGift(source, 0)) : s)),
+    };
+  }
   const t = draft.target;
   if (!t || !canGive(state, open, draft, source)) return draft;
   const sections = draft.sections.map((s, i) => {
@@ -390,6 +466,11 @@ export function sectionStatus(
   const s = draft.sections[section];
   const card = openCardDef(open);
   if (!s || !card) return { decision: undefined, impossible: true, missing: 0 };
+  // Risk: nothing to decide, only what to spend. Free cards: take it, or ✗ to skip.
+  if (card.risk) return { decision: 'pay', impossible: false, missing: 0 };
+  if (card.cost.length === 0) {
+    return { decision: s.skipped ? 'fail' : 'pay', impossible: false, missing: 0 };
+  }
   const met = sectionMet(state, open, draft, section);
   const impossible = !card.cost.some((_, o) => couldPay(state, open, o, s.hikerId));
   const picked = draft.target?.section === section ? draft.target.option : undefined;
@@ -422,7 +503,10 @@ export function toAction(
     const status = sectionStatus(state, open, draft, i);
     if (!status.decision) return undefined;
     const who = s.hikerId ? { hikerId: s.hikerId } : {};
-    if (status.decision === 'fail') sections.push({ ...who, pay: false, gifts: [] });
+    const card = openCardDef(open);
+    if (card?.risk) sections.push({ ...who, pay: true, gifts: s.gifts });
+    else if (status.decision === 'fail') sections.push({ ...who, pay: false, gifts: [] });
+    else if (card?.cost.length === 0) sections.push({ ...who, pay: true, gifts: [] });
     else {
       const gifts = s.option === status.option ? s.gifts : [];
       sections.push({ ...who, pay: true, option: status.option ?? 0, gifts });
