@@ -22,7 +22,7 @@ import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { hikersOnTile } from '../map';
 import { pick, shuffle } from '../rng';
-import { changeStat, statMax } from '../stats';
+import { changeStat, cureInjuries, statMax } from '../stats';
 import { isExhausted, isFatigued } from '../thresholds';
 import {
   NODE_TYPES,
@@ -427,14 +427,9 @@ function giveReward(
     case 'abundance':
       if (choice.node) changeAbundance(state, choice.node, reward.amount);
       return;
-    case 'cureInjuries': {
-      const healed = h.injuries;
-      if (!healed) return;
-      h.injuries = 0;
-      if (h.status === 'passedOut') h.status = 'active';
-      pushEvent(state, { kind: 'healed', hikerId: h.id, healed, injuries: 0, cause });
+    case 'cureInjuries':
+      cureInjuries(state, h, h.injuries, cause);
       return;
-    }
     case 'revealBiome':
       for (const t of Object.values(state.section.tiles)) {
         if (t.id === tileId || t.kind !== 'normal' || t.visited || t.revealedCard || t.wonder) {

@@ -6,12 +6,14 @@
  *   it isn't pulled back down by a gain).
  * - Energy or Appetite reaching 0 gives an injury. Morale just stops at 0
  *   (Wyatt, Nov 5). Gaining an injury raises every stat below 5 back up to 5.
- * - The 3rd injury makes the hiker pass out.
+ * - The 3rd injury makes the hiker pass out (src/engine/health.ts). Injuries
+ *   stop there. Curing one below 3 wakes them.
  * - Changes resolve one at a time: each finishes, injury included, before the
  *   next starts (Wyatt, Nov 3).
  */
 import { BALANCE } from '../config/balance';
 import { adjustStatChange, fireMoraleChange, fireStatChange, statMaxModifiers } from './effects';
+import { passOut, wakeUp } from './health';
 import { pushEvent } from './log';
 import { STAT_NAMES, type GameState, type Hiker, type StatName } from './types';
 
@@ -115,13 +117,12 @@ export function shiftStat(
 }
 
 export function addInjury(state: GameState, hiker: Hiker, cause: string): void {
+  // Injuries stop at the one that passes a hiker out.
+  if (hiker.status === 'abandoned' || hiker.injuries >= BALANCE.injuries.passOutAt) return;
   hiker.injuries += 1;
   pushEvent(state, { kind: 'injury', hikerId: hiker.id, injuries: hiker.injuries, cause });
 
-  if (hiker.injuries >= BALANCE.injuries.passOutAt && hiker.status === 'active') {
-    hiker.status = 'passedOut';
-    pushEvent(state, { kind: 'passedOut', hikerId: hiker.id });
-  }
+  if (hiker.injuries >= BALANCE.injuries.passOutAt) passOut(state, hiker);
 
   const floor = BALANCE.injuries.raiseStatsBelowTo;
   for (const stat of STAT_NAMES) {
@@ -130,4 +131,13 @@ export function addInjury(state: GameState, hiker: Hiker, cause: string): void {
     hiker.stats[stat] = floor;
     pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to: floor, cause: 'injury' });
   }
+}
+
+/** Cures up to `n` injuries. A passed-out hiker who drops below the line wakes up. */
+export function cureInjuries(state: GameState, hiker: Hiker, n: number, cause: string): void {
+  const healed = Math.min(hiker.injuries, n);
+  if (healed <= 0 || hiker.status === 'abandoned') return;
+  hiker.injuries -= healed;
+  pushEvent(state, { kind: 'healed', hikerId: hiker.id, healed, injuries: hiker.injuries, cause });
+  if (hiker.injuries < BALANCE.injuries.passOutAt) wakeUp(state, hiker, cause);
 }

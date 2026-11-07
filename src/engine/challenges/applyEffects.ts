@@ -22,7 +22,7 @@ import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick, roll, shuffle } from '../rng';
-import { addInjury, changeStat, statMax } from '../stats';
+import { addInjury, changeStat, cureInjuries, statMax } from '../stats';
 import { enterTile } from '../actions/common';
 import type {
   CardRolls,
@@ -268,14 +268,9 @@ function applyToHiker(
       });
       return;
     }
-    case 'cureInjury': {
-      const healed = Math.min(h.injuries, e.count);
-      if (healed <= 0) return;
-      h.injuries -= healed;
-      if (h.status === 'passedOut' && h.injuries < BALANCE.injuries.passOutAt) h.status = 'active';
-      pushEvent(state, { kind: 'healed', hikerId: h.id, healed, injuries: h.injuries, cause });
+    case 'cureInjury':
+      cureInjuries(state, h, e.count, cause);
       return;
-    }
     case 'cureConditions':
       for (const c of [...h.conditions]) {
         if (e.only === 'negative' && CONDITIONS[c.id]?.kind !== 'negative') continue;

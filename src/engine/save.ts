@@ -3,13 +3,14 @@
  * of GameState changes, and add a migration from the old version. Loading
  * never throws: a save that can't be read comes back as { ok: false }.
  */
+import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
 import { NODE_TYPES, PHASES, type GameState, type Tile, type WeatherState } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -28,7 +29,23 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   4: (save) => addWonder(save),
   // Phase 6: real weather with a forecast. The old debug weather carries over as Storm or Heatwave.
   5: (save) => ({ ...save, weather: upgradeWeather(save) }),
+  // Phase 7: a passed-out hiker's countdown, starting full; injuries stop at the pass-out line.
+  6: (save) => ({
+    ...save,
+    hikers: Array.isArray(save.hikers) ? save.hikers.map(addCountdown) : [],
+  }),
 };
+
+/** A passed-out hiker gets a full countdown, and injuries past the line come down to it. */
+function addCountdown(h: unknown): unknown {
+  if (!isRecord(h)) return h;
+  const out = { ...h };
+  if (isNumber(out.injuries)) out.injuries = Math.min(out.injuries, BALANCE.injuries.passOutAt);
+  if (out.status === 'passedOut' && !isNumber(out.countdown)) {
+    out.countdown = BALANCE.passOut.countdownNights;
+  }
+  return out;
+}
 
 /** The weather a version 5 save had ('stormy', 'sunny' or none), as today's, with a fresh forecast. */
 function upgradeWeather(save: SaveData): WeatherState {

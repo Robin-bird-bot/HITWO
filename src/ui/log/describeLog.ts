@@ -300,8 +300,40 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           tone: 'rest',
         });
         break;
-      case 'passedOut':
-        lines.push({ id: e.id, text: `${name(e.hikerId)} passed out!`, tone: 'injury' });
+      case 'passedOut': {
+        const nights = `${e.countdown} night${e.countdown === 1 ? '' : 's'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} passed out! Left alone, they abandon the hike in ${nights}.`,
+          tone: 'injury',
+        });
+        break;
+      }
+      case 'woke':
+        lines.push({ id: e.id, text: `${name(e.hikerId)} woke up (${e.cause}).`, tone: 'rest' });
+        break;
+      case 'countdown':
+        lines.push({
+          id: e.id,
+          text:
+            e.left > 0
+              ? `${name(e.hikerId)} spent the night alone: ${e.left} night${e.left === 1 ? '' : 's'} left.`
+              : `${name(e.hikerId)} spent another night alone.`,
+          tone: 'injury',
+        });
+        break;
+      case 'abandoned':
+        lines.push({
+          id: e.id,
+          text:
+            e.why === 'countdown'
+              ? `${name(e.hikerId)} was left alone too long and abandoned the hike.`
+              : `${name(e.hikerId)} abandoned the hike.`,
+          tone: 'injury',
+        });
+        break;
+      case 'hikeOver':
+        lines.push({ id: e.id, text: `The hike is over (Day ${e.day}).`, tone: 'phase' });
         break;
       case 'phase':
         lines.push({ id: e.id, text: `Day ${e.day} · ${PHASE_LABEL[e.phase]}`, tone: 'phase' });

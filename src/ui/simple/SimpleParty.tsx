@@ -97,6 +97,13 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
   );
 }
 
+/** What the card's label says about a hiker who isn't active. */
+const OUT_WORDS: Partial<Record<Hiker['status'], string>> = {
+  passedOut: ' (passed out)',
+  abandoned: ' (left the hike)',
+  checkedIn: ' (checked in)',
+};
+
 function HikerCard({
   state,
   hiker: h,
@@ -121,7 +128,7 @@ function HikerCard({
       className={styles.card}
       data-faded={(h.acted || out) && !selected}
       aria-pressed={selected}
-      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}${
+      aria-label={`${h.name}${OUT_WORDS[h.status] ?? (h.acted ? ' (has acted)' : '')}${
         conditions.length ? `: ${conditions.join(', ')}` : ''
       }. Show details`}
       style={

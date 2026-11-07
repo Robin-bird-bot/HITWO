@@ -10,6 +10,7 @@ import { revealWonder, wonderTile } from '../wonders/wonders';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { runNightEvent } from '../night/nightEvents';
 import { enterTile } from './common';
+import { passOut, wakeUp } from '../health';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import type { DebugOp, GameState, NodeType } from '../types';
@@ -51,10 +52,10 @@ export function applyDebug(state: GameState, op: DebugOp): void {
         }
       }
       if (op.injuries !== undefined) {
-        hiker.injuries = Math.max(0, op.injuries);
+        hiker.injuries = Math.min(BALANCE.injuries.passOutAt, Math.max(0, op.injuries));
         const out = hiker.injuries >= BALANCE.injuries.passOutAt;
-        if (out && hiker.status === 'active') hiker.status = 'passedOut';
-        if (!out && hiker.status === 'passedOut') hiker.status = 'active';
+        if (out) passOut(state, hiker);
+        else wakeUp(state, hiker, 'debug');
       }
       pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s stats` });
       break;
@@ -219,6 +220,13 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'runNight':
       runNightEvent(state);
       break;
+    case 'setCountdown': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (hiker?.status !== 'passedOut') return;
+      hiker.countdown = Math.max(1, Math.round(op.nights));
+      pushEvent(state, { kind: 'debug', note: `${hiker.name}’s countdown: ${hiker.countdown}` });
+      break;
+    }
     case 'setChallenges':
       if (op.on) delete state.noChallenges;
       else state.noChallenges = true;

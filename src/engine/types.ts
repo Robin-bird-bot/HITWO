@@ -239,6 +239,11 @@ export interface Hiker {
   slept: boolean;
   /** Is keeping watch tonight: hikers on this tile are safe from the night event. */
   watching?: true;
+  /**
+   * Passed out: camp steps left before they abandon the hike. It drops at each
+   * camp step where no active hiker shares their tile.
+   */
+  countdown?: number;
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -580,7 +585,9 @@ export type DebugOp =
   /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
   | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
   /** Runs tonight's night event now, as if it were camp. */
-  | { kind: 'runNight' };
+  | { kind: 'runNight' }
+  /** Sets a passed-out hiker's countdown (nights before they abandon if left alone). */
+  | { kind: 'setCountdown'; hikerId: HikerId; nights: number };
 
 export type ActionType = Action['type'];
 
@@ -600,7 +607,16 @@ export type GameEventBody =
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   /** Injuries a card cured (Airlift): how many, and how many are left. */
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
-  | { kind: 'passedOut'; hikerId: HikerId }
+  /** The 3rd injury: the hiker passed out, with this many nights before they abandon if left alone. */
+  | { kind: 'passedOut'; hikerId: HikerId; countdown: number }
+  /** A passed-out hiker came to (an injury was cured). */
+  | { kind: 'woke'; hikerId: HikerId; cause: string }
+  /** A passed-out hiker spent a night with no active hiker beside them. */
+  | { kind: 'countdown'; hikerId: HikerId; left: number }
+  /** A hiker left the party: their countdown ran out, or the player chose it. */
+  | { kind: 'abandoned'; hikerId: HikerId; why: 'countdown' | 'choice' }
+  /** No hiker can act any more. */
+  | { kind: 'hikeOver'; day: number }
   | { kind: 'sleep'; hikerId: HikerId }
   | {
       kind: 'scavenge';

@@ -8,6 +8,7 @@
  * Phases 7 and 9.
  */
 import { countSleep } from './counters';
+import { countdownAtCamp } from './health';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
@@ -92,6 +93,8 @@ function campStep(state: GameState): void {
   countSleep(state);
   recoverOvernight(state);
   tickConditions(state, 'days');
+  // Passed-out hikers left alone count down, last.
+  countdownAtCamp(state);
 }
 
 function startNewDay(state: GameState): void {
