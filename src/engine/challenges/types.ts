@@ -153,16 +153,21 @@ export type EffectOp =
       /**
        * tunnel: together to a random tile in the next row up (Secret Tunnel).
        * trailhead: back to the start of this biome (Airlift).
+       * chased: to a random connected tile in the row behind (a night event).
        */
-      how: 'back' | 'cameFrom' | 'swept' | 'blown' | 'falseTrail' | 'tunnel' | 'trailhead';
+      how:
+        'back' | 'cameFrom' | 'swept' | 'blown' | 'falseTrail' | 'tunnel' | 'trailhead' | 'chased';
       /** Blown: the chance of each further step (1, 0.75, 0.5, 0.25). */
       chances?: readonly number[];
     }
   | { op: 'raiseTier'; where: 'unrevealedConnected' }
   /** Start another challenge on this tile (Bear Country's failure). */
   | { op: 'trigger'; tier: Tier; node: NodeType }
-  /** Food cards give less Appetite. TODO(phase 9): recorded on the items, used when eating arrives. */
-  | { op: 'foodAppetite'; delta: Amount }
+  /**
+   * Food cards give less Appetite: all of them, or one at random.
+   * TODO(phase 9): recorded on the items, used when eating arrives.
+   */
+  | { op: 'foodAppetite'; delta: Amount; which?: 'all' | 'one' }
   /** Each food card can spoil. TODO(phase 9). */
   | { op: 'spoilFood'; chance: number }
   /** Tools lose uses. TODO(phase 9). */
@@ -189,7 +194,20 @@ export type EffectOp =
   /** Scavenging on this tile gets extra Luck until the next morning (Hungry Animals). */
   | { op: 'tileLuck'; amount: Amount }
   | { op: 'gainResources'; count: Amount; filter?: ResourceFilter }
-  | { op: 'gainCaps'; count: Amount };
+  | { op: 'gainCaps'; count: Amount }
+  /** Swaps N of the hiker's resources for random ones. */
+  | { op: 'swapResources'; count: Amount }
+  /** Takes caps from the party purse, as many as it has. */
+  | { op: 'loseCaps'; count: Amount }
+  /**
+   * Equipped clothes lose durability: one item at random, or all of them.
+   * TODO(phase 9): recorded as wear on the item until durability arrives.
+   */
+  | { op: 'wearClothes'; which: 'one' | 'all'; amount: Amount }
+  /** Swaps a random bag item with a random one from a hiker on another tile. */
+  | { op: 'swapItemFar' }
+  /** Takes N random bag items from the hiker. */
+  | { op: 'stealItems'; count: Amount };
 
 export type Effect = EffectOp & {
   /** The chance this effect happens, rolled for each hiker it applies to. */

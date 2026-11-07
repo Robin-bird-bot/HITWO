@@ -127,6 +127,16 @@ export interface Section {
   checkpointId: TileId;
 }
 
+// ── Night events ───────────────────────────────────────────────────────────
+
+/** One hiker a night event hit: what happened, as a sentence and a short chip. */
+export interface NightHit {
+  hikerId: HikerId;
+  outcomeId: string;
+  text: string;
+  chip: string;
+}
+
 // ── Weather ────────────────────────────────────────────────────────────────
 
 export type WeatherId = 'clear' | 'rain' | 'storm' | 'snow' | 'heatwave';
@@ -227,6 +237,8 @@ export interface Hiker {
   acted: boolean;
   /** Has slept this night. */
   slept: boolean;
+  /** Is keeping watch tonight: hikers on this tile are safe from the night event. */
+  watching?: true;
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -472,6 +484,8 @@ export type Action =
   | { type: 'move'; hikerId: HikerId; toTileId: TileId }
   | { type: 'moveAll'; hikerId: HikerId; toTileId: TileId; bring: HikerId[] }
   | { type: 'sleep'; hikerId: HikerId }
+  /** Night only: keeps watch, so hikers on this tile are safe from tonight's night event. */
+  | { type: 'keepWatch'; hikerId: HikerId }
   | { type: 'useAbility'; hikerId: HikerId; abilityId: string; choice?: string }
   /** Deals the scavenge cards, face down. Nothing is paid until a card is taken. */
   | { type: 'scavenge'; hikerId: HikerId }
@@ -562,7 +576,11 @@ export type DebugOp =
   /** Turns a tile's first fitting node flooded, frozen or on fire. */
   | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
   /** Puts a clothing item on a hiker (equipping arrives in Phase 9). */
-  | { kind: 'wearClothes'; hikerId: HikerId };
+  | { kind: 'wearClothes'; hikerId: HikerId }
+  /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
+  | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
+  /** Runs tonight's night event now, as if it were camp. */
+  | { kind: 'runNight' };
 
 export type ActionType = Action['type'];
 
@@ -621,6 +639,19 @@ export type GameEventBody =
   | { kind: 'weatherChanged'; from: WeatherId; to: WeatherId; days: number }
   /** Weather changed nodes this phase: which tiles, and (fires) which tiles it spread to. */
   | { kind: 'nodesChanged'; state: NodeWeatherState; tiles: TileId[]; spread?: TileId[] }
+  /** A hiker is keeping watch tonight. */
+  | { kind: 'watch'; hikerId: HikerId }
+  /** The night event (05-nights-and-weather.md): the creature, who it hit, and who was safe. */
+  | {
+      kind: 'nightEvent';
+      tier: 1 | 2 | 3;
+      creatureId: string;
+      hits: NightHit[];
+      /** Hikers who were safe: someone kept watch on their tile (`by`), or a shelter. */
+      safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[];
+      /** The events from this id up to this one are what it did (the log folds them in). */
+      from: number;
+    }
   /** A condition made this action free (Motivated). */
   | { kind: 'freeAction'; hikerId: HikerId; cause: string }
   /** A hiker landed on a new tile and its challenge opened. */
@@ -648,7 +679,7 @@ export type GameEventBody =
       hikerId: HikerId;
       from: TileId;
       to: TileId;
-      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel';
+      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel' | 'chased';
       cause: string;
     }
   /** A Trial started, was met, ran out, ended, or a hiker earned part of it. */
@@ -697,12 +728,13 @@ export type GameEventBody =
       noRoom?: number;
       cause: string;
     }
-  /** Resources or items a challenge took (or gave). */
+  /** Resources, items or caps a challenge or night event took. */
   | {
       kind: 'lost';
       hikerId: HikerId;
       resources: ResourceId[];
       items: ItemId[];
+      caps?: number;
       cause: string;
     }
   | { kind: 'debug'; note: string };
@@ -739,6 +771,10 @@ export interface GameState {
   challengeQueue?: QueuedReveal[];
   /** Debug only: show the rolled numbers in the challenge pop-up. */
   debugRolls?: true;
+  /** Debug only: what tonight's night event will be. */
+  debugNight?: { tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId };
+  /** Tests only: no night event at camp (unless the debug panel forces one). */
+  noNightEvents?: true;
   /** Debug and tests only: landing on a new tile opens no challenge. */
   noChallenges?: true;
   /** Run counters for Wonder goals. */

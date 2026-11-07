@@ -30,6 +30,7 @@ import {
 } from './actions/scavenge';
 import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
+import { applyWatch, validateWatch } from './actions/watch';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
@@ -76,6 +77,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateMoveAll(state, action) ?? null;
     case 'sleep':
       return validateSleep(state, action) ?? null;
+    case 'keepWatch':
+      return validateWatch(state, action) ?? null;
     case 'useAbility':
       return validateUseAbility(state, action) ?? null;
     case 'scavenge':
@@ -127,6 +130,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'sleep':
       applySleep(draft, action);
+      break;
+    case 'keepWatch':
+      applyWatch(draft, action);
       break;
     case 'useAbility':
       applyUseAbility(draft, action);

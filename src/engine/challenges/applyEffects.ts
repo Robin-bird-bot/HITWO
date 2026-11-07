@@ -30,16 +30,18 @@ import type {
   Hiker,
   HikerId,
   ItemId,
+  ItemInstance,
   NodeType,
   ResourceId,
   TileId,
 } from '../types';
 import { amount, chanceOf, type AmountContext } from './rolls';
 import { noteArrival, phaseIndex } from './trials';
-import type { CardDef, Effect, EffectOp, ResourceFilter, Tier } from './types';
+import type { Effect, EffectOp, ResourceFilter, Tier } from './types';
 
 export interface EffectRun {
-  card: CardDef;
+  /** Where the effects come from (a challenge card, a night event's creature), for the log. */
+  card: { name: string };
   tileId: TileId;
   /** The hikers these effects are for. */
   targets: readonly Hiker[];
@@ -53,7 +55,7 @@ export interface EffectRun {
 type MoveTo = (
   h: Hiker,
   to: TileId | undefined,
-  how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel',
+  how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel' | 'chased',
 ) => void;
 
 export interface EffectResult {
@@ -62,6 +64,8 @@ export interface EffectResult {
   /** Other challenges to start (Bear Country). */
   triggers: { tileId: TileId; tier: Tier; node: NodeType }[];
   injured: Set<HikerId>;
+  /** What the effects actually took or touched, for a night event's line. */
+  touched: { resources: number; caps: number; items: ItemId[]; other?: HikerId };
 }
 
 /** Effects that happen once for the whole card, not once per hiker. */
@@ -96,6 +100,13 @@ export const immovable = (h: Hiker) =>
   });
 
 export const isFood = (itemId: ItemId) => ITEMS[itemId]?.type === 'food';
+/** Clothing items a hiker has on (Phase 9 adds the ways to put them on). */
+export const equippedClothes = (h: Hiker): ItemInstance[] =>
+  Object.values(h.inventory.equipped).filter(
+    (i): i is ItemInstance => !!i && ITEMS[i.itemId]?.type === 'clothes',
+  );
+/** On the map: not checked in or gone from the hike. */
+export const onMap = (h: Hiker) => h.status === 'active' || h.status === 'passedOut';
 export const foodCarried = (h: Hiker) => h.inventory.bag.filter((i) => isFood(i.itemId)).length;
 
 function matches(filter: ResourceFilter | undefined, id: ResourceId): boolean {
@@ -146,6 +157,12 @@ function neighbours(state: GameState, tileId: TileId) {
     .filter((t): t is NonNullable<typeof t> => !!t && t.kind !== 'checkpoint');
 }
 
+/** Connected tiles in the rows behind (a night event chases a hiker onto one). */
+export function behindTiles(state: GameState, tileId: TileId) {
+  const from = state.section.tiles[tileId];
+  return from ? neighbours(state, tileId).filter((t) => t.row < from.row) : [];
+}
+
 /**
  * "Back one tile": a landed-on tile connected behind, picked at random if
  * there are several; if none, an unrevealed one behind; if nothing is behind,
@@ -170,7 +187,12 @@ export function applyEffects(
   run: EffectRun,
   effects: readonly Effect[],
 ): EffectResult {
-  const result: EffectResult = { entered: [], triggers: [], injured: new Set() };
+  const result: EffectResult = {
+    entered: [],
+    triggers: [],
+    injured: new Set(),
+    touched: { resources: 0, caps: 0, items: [] },
+  };
   const cause = run.card.name;
   const ctxFor = (h?: Hiker): AmountContext => ({
     rolls: run.rolls,
@@ -290,12 +312,65 @@ function applyToHiker(
       const lost = shuffle(state.rng, units(h)).slice(0, amount(e.count, ctx));
       for (const id of lost) takeResource(h, id);
       logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
       return;
     }
     case 'loseEachResource': {
       const lost = units(h, e.filter).filter(() => roll(state.rng, chanceOf(e.chance, ctx)));
       for (const id of lost) takeResource(h, id);
       logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
+      return;
+    }
+    case 'swapResources': {
+      const lost = shuffle(state.rng, units(h)).slice(0, amount(e.count, ctx));
+      if (!lost.length) return;
+      for (const id of lost) takeResource(h, id);
+      const got = lost.map(() => pick(state.rng, RESOURCES).id);
+      for (const id of got) h.inventory.resources[id] = (h.inventory.resources[id] ?? 0) + 1;
+      logLost(state, h, lost, [], cause);
+      pushEvent(state, { kind: 'gained', hikerId: h.id, resources: got, items: [], cause });
+      result.touched.resources += lost.length;
+      return;
+    }
+    case 'loseCaps': {
+      const n = Math.min(state.caps, amount(e.count, ctx));
+      if (n <= 0) return;
+      state.caps -= n;
+      pushEvent(state, { kind: 'lost', hikerId: h.id, resources: [], items: [], caps: n, cause });
+      result.touched.caps += n;
+      return;
+    }
+    case 'wearClothes': {
+      // TODO(phase 9): durability arrives with items; the wear is kept on the item until then.
+      const worn = equippedClothes(h);
+      const hit = e.which === 'all' ? worn : worn.length ? [pick(state.rng, worn)] : [];
+      const n = amount(e.amount, ctx);
+      for (const item of hit) item.wear = (item.wear ?? 0) + n;
+      result.touched.items.push(...hit.map((i) => i.itemId));
+      return;
+    }
+    case 'swapItemFar': {
+      const far = state.hikers.filter(
+        (o) => o.tileId !== h.tileId && onMap(o) && o.inventory.bag.length > 0,
+      );
+      if (!h.inventory.bag.length || !far.length) return;
+      const other = pick(state.rng, far);
+      const mine = pick(state.rng, h.inventory.bag);
+      const theirs = pick(state.rng, other.inventory.bag);
+      h.inventory.bag = h.inventory.bag.map((i) => (i === mine ? theirs : i));
+      other.inventory.bag = other.inventory.bag.map((i) => (i === theirs ? mine : i));
+      result.touched.items.push(mine.itemId, theirs.itemId);
+      result.touched.other = other.id;
+      return;
+    }
+    case 'stealItems': {
+      const lost = shuffle(state.rng, [...h.inventory.bag]).slice(0, amount(e.count, ctx));
+      if (!lost.length) return;
+      h.inventory.bag = h.inventory.bag.filter((i) => !lost.includes(i));
+      const ids = lost.map((i) => i.itemId);
+      logLost(state, h, [], ids, cause);
+      result.touched.items.push(...ids);
       return;
     }
     case 'loseBagItems': {
@@ -333,9 +408,10 @@ function applyToHiker(
       // TODO(phase 9): eating uses appetiteMod.
       const n = amount(e.delta, ctx);
       const change = typeof e.delta === 'number' ? n : -n;
-      for (const item of h.inventory.bag) {
-        if (isFood(item.itemId)) item.appetiteMod = (item.appetiteMod ?? 0) + change;
-      }
+      const food = h.inventory.bag.filter((i) => isFood(i.itemId));
+      const hit = e.which === 'one' ? (food.length ? [pick(state.rng, food)] : []) : food;
+      for (const item of hit) item.appetiteMod = (item.appetiteMod ?? 0) + change;
+      result.touched.items.push(...hit.map((i) => i.itemId));
       return;
     }
     case 'toolUses': {
@@ -382,6 +458,9 @@ function applyToHiker(
       } else if (e.how === 'cameFrom') {
         const back = h.cameFrom && adjacentTileIds(state.section, h.tileId).includes(h.cameFrom);
         moveTo(h, back ? h.cameFrom : backTile(state, h.tileId), 'back');
+      } else if (e.how === 'chased') {
+        const behind = behindTiles(state, h.tileId);
+        moveTo(h, behind.length ? pick(state.rng, behind).id : undefined, 'chased');
       } else if (e.how === 'trailhead') {
         moveTo(h, state.section.trailheadId, 'back');
       } else if (e.how === 'blown') {

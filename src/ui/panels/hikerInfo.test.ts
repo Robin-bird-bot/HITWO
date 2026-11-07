@@ -11,9 +11,17 @@ const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
 describe('action grid', () => {
   it('marks unbuilt actions with the phase they arrive in', () => {
     const a = byId(fixtureGame(), 'ash');
-    expect(a.watch?.status).toBe('soon');
+    expect(a.craft?.status).toBe('soon');
     expect(a.fire?.reason).toBe('Sitting by the fire arrives in Phase 6.');
     expect(a.craft?.sub).toBe('Phase 9');
+  });
+
+  it('makes Watch ready at night only', () => {
+    expect(byId(fixtureGame(), 'ash').watch).toMatchObject({ status: 'blocked', sub: 'Night' });
+    expect(byId(toNight(fixtureGame()), 'ash').watch).toMatchObject({
+      status: 'ready',
+      sub: 'Guards tile',
+    });
   });
 
   it('marks actions stopped by a status red, and keeps them in Simple mode (Nov 5)', () => {

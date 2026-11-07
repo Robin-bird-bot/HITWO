@@ -73,6 +73,8 @@ export interface FixtureOptions {
   challenges?: boolean;
   /** The weather follows its schedule. Off (held at Clear) unless a test is about weather. */
   weather?: boolean;
+  /** A night event at every camp. Off unless a test is about night events. */
+  nightEvents?: boolean;
 }
 
 /** Four placeholder hikers on the trailhead, Day 1 Morning. */
@@ -81,6 +83,7 @@ export function fixtureGame({
   hikers,
   challenges = false,
   weather = false,
+  nightEvents = false,
 }: FixtureOptions = {}): GameState {
   const state = createGame({
     seed,
@@ -89,6 +92,7 @@ export function fixtureGame({
   });
   if (!challenges) state.noChallenges = true;
   if (!weather) state.weather.hold = true;
+  if (!nightEvents) state.noNightEvents = true;
   return state;
 }
 

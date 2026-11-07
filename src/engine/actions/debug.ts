@@ -7,6 +7,8 @@ import { findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
 import { STATE_FROM, changeWeather, setNodeState } from '../weather';
 import { revealWonder, wonderTile } from '../wonders/wonders';
+import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
+import { runNightEvent } from '../night/nightEvents';
 import { enterTile } from './common';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
@@ -191,6 +193,32 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `${hiker.name} put on ${clothes.name}` });
       break;
     }
+    case 'forceNight': {
+      const next = {
+        ...(op.tier ? { tier: op.tier } : {}),
+        ...(op.creatureId ? { creatureId: op.creatureId } : {}),
+        ...(op.hit ? { hit: op.hit } : {}),
+      };
+      if (Object.keys(next).length) state.debugNight = next;
+      else delete state.debugNight;
+      const creature = op.creatureId ? NIGHT_CREATURE_BY_ID[op.creatureId]?.name : undefined;
+      const hiker = op.hit ? state.hikers.find((h) => h.id === op.hit)?.name : undefined;
+      const parts = [
+        op.tier && !creature ? `Tier ${op.tier}` : '',
+        creature ?? '',
+        hiker ? `hits ${hiker}` : '',
+      ].filter(Boolean);
+      pushEvent(state, {
+        kind: 'debug',
+        note: parts.length
+          ? `Tonight’s night event: ${parts.join(', ')}`
+          : 'Night event: back to random',
+      });
+      break;
+    }
+    case 'runNight':
+      runNightEvent(state);
+      break;
     case 'setChallenges':
       if (op.on) delete state.noChallenges;
       else state.noChallenges = true;

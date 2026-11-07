@@ -4,13 +4,15 @@
  * when the address has ?debug.
  *
  * Tools: a new game from a seed, phases, revealing the map, stats, resources,
- * traits, the next scavenge, Abundance and conditions.
+ * traits, the next scavenge, Abundance, conditions, challenges, weather and
+ * tonight's night event.
  */
 import { useEffect, useState } from 'react';
 import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
+import { NIGHT_CREATURES, NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { BALANCE } from '../../config/balance';
 import {
   NODE_TYPES,
@@ -210,6 +212,11 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
       <section className={styles.group}>
         <h3 className={styles.heading}>Conditions</h3>
         <ConditionEditor hikers={state.hikers} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Night event</h3>
+        <NightTools state={state} onApply={run} />
       </section>
 
       <section className={styles.group}>
@@ -529,6 +536,95 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
         >
           Challenges {state.noChallenges ? 'off' : 'on'}
         </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Tonight's night event: pick its tier or creature and a hiker it surely hits
+ * (unless they're safe), for tonight's camp or right now.
+ */
+function NightTools({ state, onApply }: { state: GameState; onApply(action: Action): void }) {
+  const [what, setWhat] = useState('random');
+  const [hit, setHit] = useState('');
+  const forced = state.debugNight;
+  const op = () => {
+    const tier = what.startsWith('t') ? (Number(what.slice(1)) as 1 | 2 | 3) : undefined;
+    const creatureId = what.startsWith('c:') ? what.slice(2) : undefined;
+    return {
+      kind: 'forceNight' as const,
+      ...(tier ? { tier } : {}),
+      ...(creatureId ? { creatureId } : {}),
+      ...(hit ? { hit } : {}),
+    };
+  };
+  const set = forced
+    ? [
+        forced.creatureId
+          ? NIGHT_CREATURE_BY_ID[forced.creatureId]?.name
+          : forced.tier
+            ? `Tier ${forced.tier}`
+            : 'Random',
+        forced.hit ? `hits ${state.hikers.find((h) => h.id === forced.hit)?.name}` : '',
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : 'random';
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={what}
+          onChange={(e) => setWhat(e.target.value)}
+          aria-label="Tier or creature"
+        >
+          <option value="random">Random tier</option>
+          {([1, 2, 3] as const).map((t) => (
+            <optgroup key={t} label={`Tier ${t}`}>
+              <option value={`t${t}`}>Any Tier {t}</option>
+              {NIGHT_CREATURES.filter((c) => c.tier === t).map((c) => (
+                <option key={c.id} value={`c:${c.id}`}>
+                  {c.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={hit}
+          onChange={(e) => setHit(e.target.value)}
+          aria-label="Hiker it hits"
+        >
+          <option value="">Hits by chance</option>
+          {state.hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              Hits {h.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => onApply({ type: 'debug', op: op() })}
+        >
+          Set for tonight
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => {
+            onApply({ type: 'debug', op: op() });
+            onApply({ type: 'debug', op: { kind: 'runNight' } });
+          }}
+        >
+          Run it now
+        </button>
+        <span className={styles.note}>Tonight: {set}</span>
       </div>
     </>
   );

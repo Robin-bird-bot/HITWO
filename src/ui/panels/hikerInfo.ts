@@ -224,10 +224,8 @@ export interface ActionState {
   reason?: string;
 }
 
-const SOON: Record<'craft' | 'fire' | 'tend' | 'watch', { phase: number; what: string }> = {
-  tend: { phase: 4, what: 'Tending' },
+const SOON: Record<'craft' | 'fire', { phase: number; what: string }> = {
   fire: { phase: 6, what: 'Sitting by the fire' },
-  watch: { phase: 6, what: 'Keeping watch' },
   craft: { phase: 9, what: 'Crafting' },
 };
 
@@ -332,6 +330,14 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     ...judge(state, [{ type: 'sleep', hikerId: h.id }], ''),
   };
 
+  const watch: ActionState = {
+    id: 'watch',
+    label: 'Watch',
+    icon: 'eye',
+    sub: state.phase === 'night' ? 'Guards tile' : 'Night',
+    ...judge(state, [{ type: 'keepWatch', hikerId: h.id }], ''),
+  };
+
   return [
     move,
     moveAll,
@@ -340,7 +346,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     soon('fire', 'Fire', 'flame'),
     tend,
     sleep,
-    soon('watch', 'Watch', 'eye'),
+    watch,
   ];
 }
 

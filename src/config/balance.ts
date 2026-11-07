@@ -113,6 +113,64 @@ export const BALANCE = {
     scavengeExtraAppetite: 1,
   },
 
+  /**
+   * Night events (05-nights-and-weather.md). Every number here is the doc's
+   * first guess. TODO(wyatt): tune.
+   */
+  nightEvents: {
+    /** Tier odds by biome (sectionIndex 0, 1, 2): Tier 1, 2, 3. */
+    tierOdds: [
+      [0.7, 0.25, 0.05],
+      [0.45, 0.4, 0.15],
+      [0.25, 0.45, 0.3],
+    ] as readonly (readonly [number, number, number])[],
+    /** Each exposed hiker's chance to be hit. */
+    chance: {
+      base: 0.3,
+      /** Alone on their tile. */
+      alone: 1.5,
+      /** For each other hiker on the tile. */
+      perOther: 0.75,
+      /** Low Morale adds points: +10 at Morale 5 or less, +20 at 2 or less. */
+      lowMorale: [
+        { atMost: 2, add: 0.2 },
+        { atMost: 5, add: 0.1 },
+      ] as readonly { atMost: number; add: number }[],
+    },
+    /**
+     * The X and Y ranges in the outcomes. Each hiker hit rolls their own.
+     * TODO(wyatt): night numbers are rolled flat; should Luck skew them, as it does a challenge's?
+     */
+    ranges: {
+      swapResources: [1, 5],
+      stealCaps: [1, 3],
+      stealResources: [1, 3],
+      loseMorale: [1, 2],
+      loseXp: [1, 3],
+      loseEnergy: [1, 3],
+      loseAppetite: [1, 3],
+      allFood: [1, 2],
+      stealItems: [1, 2],
+      allClothes: [2, 3],
+      bigLoss: [2, 3],
+      everyStat: [1, 2],
+      bleedingPhases: [2, 3],
+      conditionDays: [1, 2],
+    } as Record<string, readonly [number, number]>,
+    /** The night conditions that last a set time: Wet, Unlucky or Clumsy (Tier 1) last a day. */
+    tier1ConditionDays: 1,
+    /**
+     * Tier 3's Frozen and Soaked: the doc gives no time.
+     * TODO(wyatt): a first guess of Frozen for 1 phase and Soaked for 1 day.
+     */
+    frozenPhases: 1,
+    soakedDays: 1,
+    /** Tier 2's injury: only for a hiker alone with this much Energy or Appetite or less. */
+    tier2Injury: { energyOrAppetiteAtMost: 4 },
+    /** Tier 3's injuries: on a tile with this many hikers or fewer. */
+    tier3Injury: { energyOrAppetiteAtMost: 6, moraleAtMost: 5, maxOnTile: 2 },
+  },
+
   moveAll: {
     /**
      * The mover pays their own crossing (the line's base Appetite) plus this

@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
+  hikersOnTile,
   hikersWhoHaventActed,
   isAccomplished,
   isRevealed,
@@ -66,13 +67,18 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { MovePopover } from './MovePopover';
 import { StashMenu } from './StashMenu';
 import { bringOptions, movePreview, moveTargets, nextReadyHiker, type MoveMode } from './movePlan';
-import { MoveAllPicker, SleepConfirm, TendPicker } from './TurnExtras';
+import { MoveAllPicker, SleepConfirm, TendPicker, WatchConfirm } from './TurnExtras';
+import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
 /** What the player is in the middle of doing. */
 type Mode =
-  { kind: 'idle' } | { kind: 'moveAll'; bring: HikerId[] } | { kind: 'sleep' } | { kind: 'tend' };
+  | { kind: 'idle' }
+  | { kind: 'moveAll'; bring: HikerId[] }
+  | { kind: 'sleep' }
+  | { kind: 'watch' }
+  | { kind: 'tend' };
 
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
@@ -118,6 +124,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const [wonderOpen, setWonderOpen] = useWonderOpener(state);
   // The weather change screen, when the weather changes (including back to Clear).
   const [weatherShown, setWeatherShown] = useWeatherChange(state);
+  // The night event window, when something hit the party at camp.
+  const [nightShown, setNightShown] = useNightEvent(state);
   // Predator Bait: tiles that just got easier, shown in blue until a few seconds
   // after the pop-up closes (Wyatt, Nov 6).
   const easier = useEasierTiles(state, !!state.challenge || !!result);
@@ -184,6 +192,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       action.type === 'move' ||
       action.type === 'moveAll' ||
       action.type === 'sleep' ||
+      action.type === 'keepWatch' ||
       action.type === 'tend' ||
       action.type === 'scavengeTake';
     if (usedPhase && actorId) {
@@ -231,7 +240,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const moveMode: MoveMode =
     mode.kind === 'moveAll' ? { kind: 'moveAll', bring: mode.bring } : { kind: 'move' };
   const targets =
-    selected && selected.status === 'active' && mode.kind !== 'sleep'
+    selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
       ? moveTargets(state, selected, moveMode)
       : [];
   const preview =
@@ -249,6 +258,9 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       setNote(undefined);
     } else if (id === 'sleep') {
       setMode({ kind: 'sleep' });
+      setNote(undefined);
+    } else if (id === 'watch') {
+      setMode({ kind: 'watch' });
       setNote(undefined);
     } else if (id === 'tend') {
       setMode({ kind: 'tend' });
@@ -303,6 +315,20 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         to={Math.min(statMax(state, selected, 'energy'), from + gain)}
         onCancel={reset}
         onConfirm={() => dispatch({ type: 'sleep', hikerId: selected.id })}
+      />
+    );
+  }
+
+  if (selected && mode.kind === 'watch') {
+    slot = (
+      <WatchConfirm
+        name={selected.name}
+        others={hikersOnTile(state, selected.tileId)
+          .filter((h) => h.id !== selected.id)
+          .map((h) => h.name)}
+        noSleep={BALANCE.night.noSleepEnergy}
+        onCancel={reset}
+        onConfirm={() => dispatch({ type: 'keepWatch', hikerId: selected.id })}
       />
     );
   }
@@ -376,7 +402,10 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               note={note}
               slot={slot}
               activeAction={
-                mode.kind === 'moveAll' || mode.kind === 'sleep' || mode.kind === 'tend'
+                mode.kind === 'moveAll' ||
+                mode.kind === 'sleep' ||
+                mode.kind === 'watch' ||
+                mode.kind === 'tend'
                   ? mode.kind
                   : null
               }
@@ -466,6 +495,14 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       {revealedOpen && !state.challenge && (
         <RevealedCard state={state} tileId={revealedOpen} onClose={() => setRevealedOpen(null)} />
       )}
+      {nightShown && (
+        <NightEventWindow
+          key={nightShown.id}
+          state={state}
+          event={nightShown}
+          onClose={() => setNightShown(null)}
+        />
+      )}
       {weatherShown && (
         <WeatherScreen
           weather={weatherShown.weather}
@@ -510,6 +547,18 @@ function useWeatherChange(state: GameState) {
     setSeen(state.nextEventId);
     const change = state.log.findLast((e) => e.id >= seen && e.kind === 'weatherChanged');
     if (change?.kind === 'weatherChanged') setShown({ weather: change.to, days: change.days });
+  }
+  return [shown, setShown] as const;
+}
+
+/** The newest night event that hit someone, not yet seen (not one from before a reload). */
+function useNightEvent(state: GameState) {
+  const [shown, setShown] = useState<NightEventShown | null>(null);
+  const [seen, setSeen] = useState(() => state.nextEventId);
+  if (state.nextEventId !== seen) {
+    setSeen(state.nextEventId);
+    const night = state.log.findLast((e) => e.id >= seen && e.kind === 'nightEvent');
+    if (night?.kind === 'nightEvent' && night.hits.length) setShown(night);
   }
   return [shown, setShown] as const;
 }

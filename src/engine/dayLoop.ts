@@ -2,11 +2,14 @@
  * The day loop: Morning → Afternoon → Night → camp step → the next Morning.
  * Each hiker gets one action per phase; ending a phase clears that.
  *
- * Camp step (Phase 1 part): a night without sleep costs Energy, and the end of
- * the day costs Appetite. Night events, conditions, clothing durability and
- * passed-out countdowns join in Phases 6 and 7.
+ * Camp step: first the night event (05-nights-and-weather.md), then a night
+ * without sleep costs Energy and the end of the day costs Appetite, then
+ * conditions tick. Clothing durability and passed-out countdowns join in
+ * Phases 7 and 9.
  */
 import { countSleep } from './counters';
+import { openNext } from './challenges/reveal';
+import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
@@ -75,6 +78,7 @@ function endOfDayDrain(state: GameState, h: Hiker): void {
 }
 
 function campStep(state: GameState): void {
+  runNightEvent(state);
   for (const h of state.hikers) {
     if (BALANCE.rules.noSleepDrainFirst) {
       noSleepDrain(state, h);
@@ -93,10 +97,15 @@ function campStep(state: GameState): void {
 function startNewDay(state: GameState): void {
   state.day += 1;
   state.phase = 'morning';
-  for (const h of state.hikers) h.slept = false;
+  for (const h of state.hikers) {
+    h.slept = false;
+    delete h.watching;
+  }
   state.scavengedToday = [];
   pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
   advanceWeather(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
   weatherPhaseStart(state);
+  // A hiker chased onto a new tile in the night: its challenge opens now.
+  openNext(state);
 }
