@@ -146,7 +146,7 @@
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   padding: 8px 10px;
   border-radius: 10px;
@@ -163,6 +163,13 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
 }
 
 .rowName {
@@ -190,8 +197,7 @@
 }
 
 .rowTime {
-  flex: none;
-  max-width: 96px;
+  margin-left: auto;
   text-align: right;
   font-family: var(--font-pixel);
   font-size: 11px;

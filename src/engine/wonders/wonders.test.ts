@@ -415,7 +415,8 @@ describe('accomplishing a Wonder', () => {
     place(giant, 'ash', 'M', { energy: 4 });
     showing(giant, 'sleeping-giant', [{ index: 1 }]);
     const woke = run(giant, accomplish({ ash: { reward: 0 } }));
-    expect(hiker(woke, 'ash').stats.energy).toBe(9);
+    // 4, +1 from Energized itself (Phase 6), +5 from the reward.
+    expect(hiker(woke, 'ash').stats.energy).toBe(10);
     expect(hiker(woke, 'ash').conditions.map((c) => c.id)).toContain('energized');
     const bigger = run(giant, accomplish({ ash: { reward: 2 } }));
     const ash = hiker(bigger, 'ash');

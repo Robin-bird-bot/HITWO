@@ -274,3 +274,28 @@
 .conditionLine .chips {
   margin-top: 0;
 }
+
+/* Condition pills under the bars, and injury pips by the name (Phase 6 mockup). */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  margin-top: 5px;
+}
+
+.cardPips {
+  display: flex;
+  gap: 3px;
+  flex: none;
+}
+
+.cardPips span {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1.5px solid #e5624a;
+}
+
+.cardPips span[data-filled='true'] {
+  background: #e5624a;
+}

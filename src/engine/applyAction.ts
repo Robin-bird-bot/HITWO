@@ -7,7 +7,14 @@ import { applyChoose, applyResolve, validateChoose, validateResolve } from './ch
 import { applyAccept, validateAccept } from './challenges/trials';
 import { applyPress, validatePress } from './challenges/buttons';
 import { applyMove, validateMove } from './actions/move';
-import { applyGive, applyReturn, validateGive, validateReturn } from './actions/give';
+import {
+  applyDrop,
+  applyGive,
+  applyReturn,
+  validateDrop,
+  validateGive,
+  validateReturn,
+} from './actions/give';
 import { applyMoveAll, validateMoveAll } from './actions/moveAll';
 import {
   applyCancel,
@@ -87,6 +94,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateGive(state, action) ?? null;
     case 'returnToNature':
       return validateReturn(state, action) ?? null;
+    case 'dropItem':
+      return validateDrop(state, action) ?? null;
     case 'resolveChallenge':
       return validateResolve(state, action) ?? null;
     case 'chooseChallenge':
@@ -145,6 +154,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'returnToNature':
       applyReturn(draft, action);
+      break;
+    case 'dropItem':
+      applyDrop(draft, action);
       break;
     case 'resolveChallenge':
       applyResolve(draft, action);

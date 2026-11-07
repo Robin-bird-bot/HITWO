@@ -1,8 +1,10 @@
 /**
  * The menu for a resource or bag item the player clicked in the turn panel:
- * give it to a hiker on the same tile, or (resources) return it to nature for
- * +1 Abundance. Both are free actions. Closes on click-away or Esc.
+ * give it to a hiker on the same tile, (resources) return it to nature for
+ * +1 Abundance, or (items) drop it for good, after a second tap to be sure.
+ * All free actions. Closes on click-away or Esc.
  */
+import { useState } from 'react';
 import { ITEMS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { ASSETS } from '../../config/assets';
@@ -32,6 +34,7 @@ interface StashMenuProps {
 const WIDTH = 260;
 
 export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
+  const [confirmDrop, setConfirmDrop] = useState(false);
   const others = hikersOnTile(state, hiker.tileId).filter(
     (h) => h.id !== hiker.id && h.status === 'active',
   );
@@ -53,7 +56,7 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
 
   return (
     <Popout
-      label={`${name}: give or return`}
+      label={`${name}: give${resource ? ' or return' : ' or drop'}`}
       dragId="inventory"
       className={styles.menu}
       style={{
@@ -69,6 +72,11 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
         {resource && count > 1 && <span className={styles.count}>×{count}</span>}
       </span>
 
+      {item && hiker.inventory.bag.length > bagSlots(state, hiker).total && (
+        <span className={styles.over}>
+          {hiker.name} has more items than fit (Weak). Give one away or drop one.
+        </span>
+      )}
       {others.length === 0 && (
         <span className={styles.none}>No one else is here to give it to.</span>
       )}
@@ -114,6 +122,29 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
           </span>
         </button>
       )}
+
+      {item &&
+        (confirmDrop ? (
+          <div className={styles.confirm}>
+            <span className={styles.none}>Drop the {name} for good? It can’t be undone.</span>
+            <button
+              type="button"
+              className={`${styles.option} ${styles.danger}`}
+              onClick={() => act({ type: 'dropItem', hikerId: hiker.id, itemUid: item.uid })}
+            >
+              <Icon name="x" size={16} />
+              Yes, drop it
+            </button>
+            <button type="button" className={styles.option} onClick={() => setConfirmDrop(false)}>
+              Keep it
+            </button>
+          </div>
+        ) : (
+          <button type="button" className={styles.option} onClick={() => setConfirmDrop(true)}>
+            <Icon name="x" size={16} />
+            Drop it
+          </button>
+        ))}
     </Popout>
   );
 }

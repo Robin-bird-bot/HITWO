@@ -137,17 +137,27 @@ export interface TraitSlot {
 }
 
 /** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
+/**
+ * How a condition's time is counted. Phases tick down at the end of every
+ * phase; days and nights at camp. 'weather' never ticks: it lasts until the
+ * weather that caused it ends (Shivering, Burning).
+ */
+export type ConditionUnit = 'days' | 'phases' | 'nights' | 'weather';
+
 export interface ConditionInstance {
   id: ConditionId;
   remaining: number;
-  /** Phases tick down at the end of every phase; days and nights at camp. */
-  unit: 'days' | 'phases' | 'nights';
+  unit: ConditionUnit;
   /** Allergies: which node. */
   node?: NodeType;
   /** A condition that starts when this one ends ("Hangry, then Nauseous"). */
   then?: { id: ConditionId; remaining: number; unit: 'days' | 'phases' | 'nights' };
   /** Added during this phase: its first end of phase doesn't count. */
   fresh?: true;
+  /** Stacking conditions (Shivering, Burning): how many. */
+  stacks?: number;
+  /** What its stat change actually moved, given back or taken back when it ends (Sleepy, Energized). */
+  applied?: Partial<Record<StatName, number>>;
 }
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
@@ -296,6 +306,8 @@ export interface PendingScavenge {
   /** The RNG before the deal. "Not now" puts it back, so dealing again gives the same cards. */
   rngBefore: RngState;
   bonusOffers?: ScavengeBonusOffer[];
+  /** Butterfingers: the chance the card taken slips away. */
+  dropChance?: number;
 }
 
 /** Who scavenged where today (Copier, Copydog, and the night's Abundance recovery). */
@@ -460,6 +472,8 @@ export type Action =
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
+  /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
+  | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
@@ -552,6 +566,8 @@ export type GameEventBody =
       left?: number;
       /** Bonus resources from traits (Copier, Copydog), included in resources. */
       bonus?: number;
+      /** Butterfingers: the card slipped away and the hiker got nothing. */
+      dropped?: true;
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
   | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
@@ -565,10 +581,14 @@ export type GameEventBody =
       hikerId: HikerId;
       condition: ConditionId;
       remaining: number;
-      unit: 'days' | 'phases' | 'nights';
+      unit: ConditionUnit;
       cause: string;
+      /** A stacking condition's new count. */
+      stacks?: number;
     }
   | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** A condition made this action free (Motivated). */
+  | { kind: 'freeAction'; hikerId: HikerId; cause: string }
   /** A hiker landed on a new tile and its challenge opened. */
   | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
   /** A challenge was resolved: who passed, and what they paid. */

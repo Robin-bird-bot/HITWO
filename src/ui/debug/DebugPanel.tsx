@@ -542,6 +542,7 @@ function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action:
           value={remaining}
           onChange={(e) => setRemaining(Math.max(1, Number(e.target.value) || 1))}
           aria-label="How long"
+          title="For Shivering and Burning: how many stacks"
         />
         <select
           className={styles.button}

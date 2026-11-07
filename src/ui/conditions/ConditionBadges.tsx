@@ -52,11 +52,14 @@ export function ConditionDot({
   look,
   size = 34,
   open,
+  focusable = true,
 }: {
   look: ConditionLook;
   size?: number;
   /** Mockup only: show the description without hovering. */
   open?: boolean;
+  /** Off inside another control (a Simple card is one big button). */
+  focusable?: boolean;
 }) {
   const tone = TONE_LOOK[look.tone];
   const corner = look.stacks !== undefined ? `×${look.stacks}` : look.short;
@@ -65,7 +68,7 @@ export function ConditionDot({
       className={styles.dot}
       data-tone={look.tone}
       data-open={open || undefined}
-      tabIndex={0}
+      tabIndex={focusable ? 0 : undefined}
       aria-label={describe(look)}
       style={{
         width: size,
@@ -96,13 +99,15 @@ export function ConditionRow({ look }: { look: ConditionLook }) {
     <div className={styles.row}>
       <ConditionDot look={{ ...look, short: undefined }} size={30} />
       <div className={styles.rowText}>
-        <span className={styles.rowName}>
-          {look.name.toUpperCase()}
-          {look.stacks !== undefined && <span className={styles.rowStack}>×{look.stacks}</span>}
+        <span className={styles.rowHead}>
+          <span className={styles.rowName}>
+            {look.name.toUpperCase()}
+            {look.stacks !== undefined && <span className={styles.rowStack}>×{look.stacks}</span>}
+          </span>
+          {look.long && <span className={styles.rowTime}>{look.long}</span>}
         </span>
         <span className={styles.rowEffect}>{look.text}</span>
       </div>
-      {look.long && <span className={styles.rowTime}>{look.long}</span>}
     </div>
   );
 }

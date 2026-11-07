@@ -8,7 +8,7 @@ import { changeAbundance } from '../abundance';
 import { computeCost, computeGain } from '../effects';
 import { pushEvent } from '../log';
 import type { Action, GameState, Hiker, NodeType } from '../types';
-import { findHiker, mustFindHiker, payCost, phaseActionReason } from './common';
+import { findHiker, mustFindHiker, payCost, phaseActionReason, spendAction } from './common';
 
 type TendAction = Extract<Action, { type: 'tend' }>;
 
@@ -76,7 +76,7 @@ export function applyTend(state: GameState, action: TendAction): void {
   const hiker = mustFindHiker(state, action.hikerId);
   const from = state.abundance[action.node];
   changeAbundance(state, action.node, tendAmount(state, hiker));
-  hiker.acted = true;
+  spendAction(state, hiker);
   pushEvent(state, {
     kind: 'tend',
     hikerId: hiker.id,

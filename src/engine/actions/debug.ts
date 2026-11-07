@@ -3,7 +3,7 @@ import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
 import { pickForTile } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
-import { addCondition } from '../conditions';
+import { addCondition, removeCondition } from '../conditions';
 import { revealWonder, wonderTile } from '../wonders/wonders';
 import { enterTile } from './common';
 import { resourceCount } from '../inventory';
@@ -85,7 +85,8 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'clearConditions': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       if (!hiker) return;
-      hiker.conditions = [];
+      // Ending each one properly gives back what Sleepy and the like took.
+      for (const c of [...hiker.conditions]) removeCondition(state, hiker, c.id);
       pushEvent(state, { kind: 'debug', note: `Cleared ${hiker.name}'s conditions` });
       break;
     }

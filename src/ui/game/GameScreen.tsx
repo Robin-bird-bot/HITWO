@@ -296,7 +296,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
         name={selected.name}
         gain={gain}
         from={from}
-        to={Math.min(statMax(selected, 'energy'), from + gain)}
+        to={Math.min(statMax(state, selected, 'energy'), from + gain)}
         onCancel={reset}
         onConfirm={() => dispatch({ type: 'sleep', hikerId: selected.id })}
       />

@@ -154,8 +154,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const left = e.left ? ` ${e.left} more didn’t fit.` : '';
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
-          tone: 'scavenge',
+          text: e.dropped
+            ? `${name(e.hikerId)} scavenged, but it slipped away (Butterfingers${cost ? `, ${cost}` : ''}).`
+            : `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
+          tone: e.dropped ? 'drain' : 'scavenge',
         });
         break;
       }
@@ -238,6 +240,13 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           id: e.id,
           text: `${name(e.hikerId)} took an injury (${e.cause}): ${e.injuries} of 3. Stats below 5 rise to 5.`,
           tone: 'injury',
+        });
+        break;
+      case 'freeAction':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)}’s action was free (${e.cause}).`,
+          tone: 'rest',
         });
         break;
       case 'healed':
@@ -401,10 +410,16 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
       }
       case 'condition': {
         const def = CONDITIONS[e.condition];
-        const unit = `${UNIT_WORD[e.unit]}${e.remaining === 1 ? '' : 's'}`;
+        const called = def?.name ?? e.condition;
+        const how =
+          e.stacks !== undefined
+            ? `${called} ×${e.stacks}`
+            : e.unit === 'weather'
+              ? `${called} until the weather ends`
+              : `${called} for ${e.remaining} ${UNIT_WORD[e.unit]}${e.remaining === 1 ? '' : 's'}`;
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} is ${def?.name ?? e.condition} for ${e.remaining} ${unit} (${e.cause}).`,
+          text: `${name(e.hikerId)} is ${how} (${e.cause}).`,
           tone: def?.kind === 'positive' ? 'rest' : 'injury',
         });
         break;

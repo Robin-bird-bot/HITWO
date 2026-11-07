@@ -284,9 +284,41 @@ export const BALANCE = {
     default: 0.25,
   },
 
+  /** Condition numbers from 02-traits-and-conditions.md (Phase 6). */
+  conditions: {
+    /** Sleepy, Nauseous, Bored, Sated, Energized: the stat change while it lasts. */
+    shift: { sleepy: -2, nauseous: -2, bored: -2, sated: 1, energized: 1 },
+    /** "Can't go above": Dejected (Morale), Inappetent (Appetite), Buzzed (Energy). */
+    caps: { dejected: 5, inappetent: 7, buzzed: 7 },
+    /** Strained: extra Energy lost each time. Inspired: extra Morale gained each time. */
+    strainedExtra: 1,
+    inspiredExtra: 1,
+    /** Sluggish: extra Appetite to move. */
+    sluggishAppetite: 1,
+    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 9). */
+    luck: 1,
+    /** Weak: item slots lost. Tunnel Vision: cards lost. */
+    weakSlots: 1,
+    tunnelVisionCards: 1,
+    /** Wet (each day), Soaked and Allergies (each phase): Morale lost. */
+    moraleLoss: 1,
+    /**
+     * Ringing Ears: "each phase, a chance to lose 1 Morale (75%), or 1 Energy at
+     * night (25%)". TODO(wyatt): read as 75% for Morale in a day phase, 25% for
+     * Energy at night.
+     */
+    ringingEars: { dayMorale: 0.75, nightEnergy: 0.25 },
+    /** Shivering: Frozen at this many; an injury and back to 0 at this many. */
+    shivering: { frozenAt: 3, injuryAt: 5 },
+    /** Burning: −1 maximum Energy a stack; an injury and back to 0 at this many; cools 1 a quiet night. */
+    burning: { injuryAt: 5, coolPerNight: 1 },
+  },
+
   /** Numbers used by specific traits (see src/content/traits.ts). */
   traits: {
     leader: { moveAllDiscount: 1 },
+    /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
+    thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },
     extrinsic: { together: 1, alone: -1 },
     forager: { cards: 1 },

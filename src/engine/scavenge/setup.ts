@@ -28,6 +28,8 @@ const NODE_LABEL: Record<NodeType, string> = {
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   bonuses: ScavengeBonus[];
   bonusOffers: ScavengeBonusOffer[];
+  /** Butterfingers: the chance the card taken slips away. */
+  dropChance: number;
 }
 
 export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
@@ -40,7 +42,9 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   const typeWeight: Partial<Record<ScavengeCardType, number>> = {};
   const nodeTypeWeight: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>> = {};
   const bonusOffers: ScavengeBonusOffer[] = [];
+  let dropChance = 0;
   for (const m of mods) {
+    dropChance = Math.max(dropChance, m.dropChance ?? 0);
     for (const [node, weights] of Object.entries(m.nodeTypeWeight ?? {}) as [
       NodeType,
       Partial<Record<ScavengeCardType, number>>,
@@ -106,6 +110,7 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     nodeTypeWeight,
     bonuses,
     bonusOffers,
+    dropChance,
   };
 }
 

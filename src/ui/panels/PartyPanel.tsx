@@ -15,15 +15,9 @@ import {
   type SlotType,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
-import {
-  conditionChips,
-  FAMILY_LOOK,
-  STAT_META,
-  statNote,
-  statusTag,
-  xpProgress,
-  type ConditionChip,
-} from './hikerInfo';
+import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
+import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
+import { FAMILY_LOOK, STAT_META, statNote, statusTag, xpProgress } from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import styles from './PartyPanel.module.css';
@@ -53,7 +47,13 @@ export function PartyPanel({ state, selectedId, onSelect }: PartyPanelProps) {
     >
       <div className={styles.list}>
         {state.hikers.map((h) => (
-          <HikerCard key={h.id} hiker={h} selected={h.id === selectedId} onSelect={onSelect} />
+          <HikerCard
+            key={h.id}
+            state={state}
+            hiker={h}
+            selected={h.id === selectedId}
+            onSelect={onSelect}
+          />
         ))}
       </div>
     </Panel>
@@ -67,10 +67,12 @@ const TAG_COLORS: Record<string, { bg: string; fg: string }> = {
 };
 
 function HikerCard({
+  state,
   hiker: h,
   selected,
   onSelect,
 }: {
+  state: GameState;
   hiker: Hiker;
   selected: boolean;
   onSelect(id: HikerId): void;
@@ -103,6 +105,17 @@ function HikerCard({
         <div className={styles.info}>
           <div className={styles.nameRow}>
             <span className={styles.name}>{h.name.toUpperCase()}</span>
+            {h.injuries > 0 && (
+              <span
+                className={styles.cardPips}
+                title={`${h.injuries} of ${BALANCE.injuries.passOutAt} injuries`}
+                aria-label={`${h.injuries} of ${BALANCE.injuries.passOutAt} injuries`}
+              >
+                {Array.from({ length: BALANCE.injuries.passOutAt }, (_, i) => (
+                  <span key={i} data-filled={i < h.injuries} />
+                ))}
+              </span>
+            )}
             <span className={styles.tag} style={{ background: tagColors.bg, color: tagColors.fg }}>
               {tag}
             </span>
@@ -124,48 +137,32 @@ function HikerCard({
             <span>{family.label}</span>
           </div>
           {STAT_NAMES.map((stat) => (
-            <StatBar key={stat} stat={stat} value={h.stats[stat]} max={statMax(h, stat)} ticks />
+            <StatBar
+              key={stat}
+              stat={stat}
+              value={h.stats[stat]}
+              max={statMax(state, h, stat)}
+              ticks
+            />
           ))}
-          <Conditions chips={conditionChips(h)} />
+          <ConditionPills hiker={h} />
         </div>
       </div>
 
-      {selected && <Details hiker={h} />}
+      {selected && <Details state={state} hiker={h} />}
     </div>
   );
 }
 
-const CHIP_LOOK: Record<ConditionChip['kind'], { ring: string; bg: string; fg: string }> = {
-  positive: { ring: '#7FC29B', bg: 'rgba(127,194,155,0.16)', fg: '#A6DDBC' },
-  negative: { ring: '#E5624A', bg: 'rgba(229,98,74,0.16)', fg: '#F39A86' },
-  state: { ring: '#E9B44C', bg: 'rgba(233,180,76,0.16)', fg: '#F2C978' },
-  injury: { ring: '#E5624A', bg: '#E5624A', fg: '#1D2220' },
-};
-
-export function Conditions({ chips }: { chips: ConditionChip[] }) {
-  if (!chips.length) return null;
+/** The card's condition pills (the approved Phase 6 mockup): states, then timed and stacking ones. */
+export function ConditionPills({ hiker: h }: { hiker: Hiker }) {
+  const looks = [...thresholdLooks(h), ...timedLooks(h)];
+  if (!looks.length) return null;
   return (
-    <div className={styles.chips}>
-      {chips.map((c) => {
-        const look = CHIP_LOOK[c.kind];
-        return (
-          <span
-            key={c.key}
-            className={styles.chip}
-            title={c.label}
-            aria-label={c.label}
-            style={{ borderColor: look.ring, background: look.bg }}
-          >
-            <Icon
-              name={c.icon}
-              size={12}
-              color={look.fg}
-              strokeWidth={2.5}
-              solid={c.kind === 'injury'}
-            />
-          </span>
-        );
-      })}
+    <div className={styles.pills}>
+      {looks.map((l) => (
+        <ConditionPill key={l.key} look={l} />
+      ))}
     </div>
   );
 }
@@ -191,24 +188,19 @@ const SLOT_NAME: Record<SlotType, string> = {
 };
 const MAX_SLOTS = 6;
 
-/** Exact stats with thresholds, injury pips, conditions, trait slots and XP. */
-export function Details({ hiker: h, showConditions }: { hiker: Hiker; showConditions?: boolean }) {
+/** Exact stats with thresholds, every condition with what it does, trait slots and XP. */
+export function Details({ state, hiker: h }: { state: GameState; hiker: Hiker }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
-  // Simple lists every chip here; Informative's card already shows the states,
-  // so its details list only the timed conditions, with their time left.
-  const chips = conditionChips(h).filter(
-    (c) => showConditions || c.kind === 'positive' || c.kind === 'negative',
-  );
+  // The full list (the approved Phase 6 mockup): injuries, states, then the rest.
+  const injury = injuryLook(h);
+  const rows = [...(injury ? [injury] : []), ...thresholdLooks(h), ...timedLooks(h)];
   return (
     <div className={styles.details}>
-      {chips.length > 0 && (
-        <div className={styles.conditionList}>
-          {chips.map((c) => (
-            <span key={c.key} className={styles.conditionLine}>
-              <Conditions chips={[c]} />
-              {c.label}
-            </span>
+      {rows.length > 0 && (
+        <div className={styles.conditionList} aria-label="Conditions">
+          {rows.map((l) => (
+            <ConditionRow key={l.key} look={l} />
           ))}
         </div>
       )}
@@ -217,7 +209,9 @@ export function Details({ hiker: h, showConditions }: { hiker: Hiker; showCondit
           <div key={stat} className={styles.statRow}>
             <Icon name={STAT_META[stat].icon} size={14} />
             <span className={styles.statName}>{STAT_META[stat].label}</span>
-            <span className={styles.statValue}>{h.stats[stat]}/10</span>
+            <span className={styles.statValue}>
+              {h.stats[stat]}/{statMax(state, h, stat)}
+            </span>
             <span className={styles.statNote}>{statNote(stat, h.stats[stat])}</span>
           </div>
         ))}

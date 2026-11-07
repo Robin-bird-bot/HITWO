@@ -1,6 +1,10 @@
+import { Fragment } from 'react';
 import { characterFor } from '../../content/characters';
 import { ASSETS } from '../../config/assets';
-import type { Hiker, HikerId, Section } from '../../engine';
+import { immovable, type Hiker, type HikerId, type Section } from '../../engine';
+import { conditionCounts } from '../conditions/hikerConditions';
+import { TONE_LOOK } from '../conditions/conditionLook';
+import { Icon } from '../icons/Icon';
 import { lastRowOf, tileCenter } from './mapLayout';
 import styles from './MapView.module.css';
 
@@ -52,33 +56,58 @@ export function HikerTokens({ section, hikers, selectedId, onSelect }: HikerToke
           const size = selected ? 48 : 40;
           const color = characterFor(h.id).color;
           const out = h.status !== 'active';
+          const { bad, good } = conditionCounts(h);
+          const stuck = immovable(h);
+          const left = c.x + dx - size / 2;
+          const top = c.y + dy - size / 2;
+          const marks = [
+            bad > 0 ? `${bad} bad condition${bad === 1 ? '' : 's'}` : '',
+            good > 0 ? `${good} good condition${good === 1 ? '' : 's'}` : '',
+            stuck ? 'can’t move' : '',
+          ].filter(Boolean);
           return (
-            <button
-              key={h.id}
-              type="button"
-              className={styles.token}
-              aria-label={`${h.name}${selected ? ' (selected)' : ''}`}
-              aria-pressed={selected}
-              title={h.name}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelect(h.id);
-              }}
-              style={{
-                left: c.x + dx - size / 2,
-                top: c.y + dy - size / 2,
-                width: size,
-                height: size,
-                zIndex: selected ? 3 : 2,
-                opacity: h.acted || out ? 0.6 : 1,
-                filter: h.acted || out ? 'grayscale(1)' : 'none',
-                boxShadow: selected
-                  ? `0 0 0 3px ${color}, 0 0 0 6px #F7F1E4, 0 10px 16px rgba(0,0,0,0.3)`
-                  : `0 0 0 3px ${color}, 0 6px 10px rgba(0,0,0,0.25)`,
-              }}
-            >
-              <img src={ASSETS.portraits.placeholder} alt="" draggable={false} />
-            </button>
+            <Fragment key={h.id}>
+              <button
+                type="button"
+                className={styles.token}
+                aria-label={`${h.name}${selected ? ' (selected)' : ''}${marks.length ? `: ${marks.join(', ')}` : ''}`}
+                aria-pressed={selected}
+                title={h.name}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelect(h.id);
+                }}
+                style={{
+                  left,
+                  top,
+                  width: size,
+                  height: size,
+                  zIndex: selected ? 3 : 2,
+                  opacity: h.acted || out ? 0.6 : 1,
+                  filter: h.acted || out ? 'grayscale(1)' : 'none',
+                  boxShadow: selected
+                    ? `0 0 0 3px ${color}, 0 0 0 6px #F7F1E4, 0 10px 16px rgba(0,0,0,0.3)`
+                    : `0 0 0 3px ${color}, 0 6px 10px rgba(0,0,0,0.25)`,
+                }}
+              >
+                <img src={ASSETS.portraits.placeholder} alt="" draggable={false} />
+                {stuck && (
+                  <span className={styles.tokenFrozen} aria-hidden="true">
+                    <Icon name="snowflake" size={Math.round(size * 0.6)} strokeWidth={2.5} />
+                  </span>
+                )}
+              </button>
+              {(bad > 0 || good > 0) && (
+                <span
+                  className={styles.tokenMarks}
+                  aria-hidden="true"
+                  style={{ left: left + size - 12, top: top + size - 14, zIndex: selected ? 4 : 3 }}
+                >
+                  {bad > 0 && <span style={{ background: TONE_LOOK.negative.ring }}>{bad}</span>}
+                  {good > 0 && <span style={{ background: TONE_LOOK.positive.ring }}>{good}</span>}
+                </span>
+              )}
+            </Fragment>
           );
         });
       })}

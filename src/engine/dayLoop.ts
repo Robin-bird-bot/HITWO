@@ -11,7 +11,7 @@ import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
-import { computeCost, fireHook } from './effects';
+import { computeCost, fireHook, firePhaseEnd } from './effects';
 import { pushEvent } from './log';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
@@ -25,6 +25,8 @@ export function endPhase(state: GameState): void {
   // Trials are judged first: Jogger needs to know who acted this phase.
   checkTrials(state);
   for (const h of state.hikers) h.acted = false;
+  // Conditions that act each phase (Soaked, Allergies, Burning cooling off), then the tick.
+  for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
   tickConditions(state, 'phases');
 
   if (state.phase === 'morning') {

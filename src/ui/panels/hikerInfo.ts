@@ -102,8 +102,9 @@ export interface ConditionChip {
 
 const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
 
-/** "2 more phases", "1 more day". */
+/** "2 more phases", "1 more day", or "until the weather ends". */
 export function timeLeft(c: ConditionInstance): string {
+  if (c.unit === 'weather') return 'until the weather ends';
   const word = UNIT_WORD[c.unit];
   return `${c.remaining} more ${c.remaining === 1 ? word : `${word}s`}`;
 }

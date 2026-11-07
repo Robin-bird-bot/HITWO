@@ -13,6 +13,7 @@ import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
+import { roll } from '../rng';
 import { abilitiesFor, abilityPeriod } from '../effects';
 import { dealCard, dealCards } from '../scavenge/deal';
 import { scavengeCost, scavengeSetup, scavengeTileReason } from '../scavenge/setup';
@@ -25,7 +26,14 @@ import type {
   RngState,
   ScavengeBonusOffer,
 } from '../types';
-import { findHiker, mustFindHiker, notActiveReason, payCost, phaseActionReason } from './common';
+import {
+  findHiker,
+  mustFindHiker,
+  notActiveReason,
+  payCost,
+  phaseActionReason,
+  spendAction,
+} from './common';
 
 type ScavengeAction = Extract<Action, { type: 'scavenge' }>;
 type FlipAction = Extract<Action, { type: 'scavengeFlip' }>;
@@ -58,6 +66,7 @@ export function applyScavenge(state: GameState, action: ScavengeAction): void {
     bonuses: setup.bonuses,
     rngBefore,
     ...(setup.bonusOffers.length ? { bonusOffers: setup.bonusOffers } : {}),
+    ...(setup.dropChance > 0 ? { dropChance: setup.dropChance } : {}),
   };
 }
 
@@ -189,7 +198,27 @@ export function applyTake(state: GameState, action: TakeAction): void {
   const bonus = bonusTaken(open.bonusOffers ?? [], action.bonus ?? 0, gains.resources.length > 0);
   const cost = scavengeCost(state, hiker) + bonus.appetite;
 
-  hiker.acted = true;
+  spendAction(state, hiker);
+
+  // Butterfingers: the card slips away. The scavenge still costs its Appetite.
+  if (open.dropChance && roll(state.rng, open.dropChance)) {
+    pushEvent(state, {
+      kind: 'scavenge',
+      hikerId: hiker.id,
+      tileId: open.tileId,
+      card: card.type,
+      resources: [],
+      dropped: true,
+    });
+    delete state.scavenge;
+    payCost(
+      state,
+      hiker,
+      { appetite: scavengeCost(state, hiker), energy: 0, morale: 0 },
+      'Scavenge',
+    );
+    return;
+  }
 
   // Bonus resources are more of the first resource taken (Copier, Copydog).
   const first = gains.resources[0];

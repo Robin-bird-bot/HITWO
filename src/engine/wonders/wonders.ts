@@ -228,8 +228,8 @@ function checkGoal(
     }
     case 'fullStats':
       return one(
-        (h) => STAT_NAMES.filter((s) => h.stats[s] >= statMax(h, s)).length,
-        (h) => STAT_NAMES.every((s) => h.stats[s] >= statMax(h, s)),
+        (h) => STAT_NAMES.filter((s) => h.stats[s] >= statMax(state, h, s)).length,
+        (h) => STAT_NAMES.every((s) => h.stats[s] >= statMax(state, h, s)),
       );
     case 'noInjuries':
       return each((h) => h.injuries === 0);

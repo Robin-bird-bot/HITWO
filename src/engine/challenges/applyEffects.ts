@@ -87,7 +87,13 @@ const isOnce = (e: Effect) =>
   (e.op === 'move' && (e.how === 'falseTrail' || e.how === 'tunnel'));
 
 /** Can't be moved by anything (Frozen, Napping). */
-export const immovable = (h: Hiker) => h.conditions.some((c) => CONDITIONS[c.id]?.immovable);
+/** Can't be moved by anything: Frozen, Napping, or enough Shivering to count as Frozen. */
+export const immovable = (h: Hiker) =>
+  h.conditions.some((c) => {
+    const def = CONDITIONS[c.id];
+    const frozenAt = def?.stacking?.frozenAt;
+    return !!def?.immovable || (frozenAt !== undefined && (c.stacks ?? 0) >= frozenAt);
+  });
 
 export const isFood = (itemId: ItemId) => ITEMS[itemId]?.type === 'food';
 export const foodCarried = (h: Hiker) => h.inventory.bag.filter((i) => isFood(i.itemId)).length;
@@ -255,7 +261,7 @@ function applyToHiker(
       }
       return;
     case 'refill': {
-      const missing = statMax(h, e.stat) - h.stats[e.stat];
+      const missing = statMax(state, h, e.stat) - h.stats[e.stat];
       if (missing > 0) changeStat(state, h, e.stat, missing, cause);
       return;
     }
