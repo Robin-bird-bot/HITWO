@@ -317,3 +317,19 @@
 .abandon:hover {
   background: rgba(229, 98, 74, 0.16);
 }
+
+/* Passing out and carrying, in one short line (Phase 7). */
+.carryNote {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.carryNote[data-tone='danger'] {
+  color: #f39a86;
+}
+
+.carryNote[data-tone='carry'] {
+  color: var(--gold);
+}

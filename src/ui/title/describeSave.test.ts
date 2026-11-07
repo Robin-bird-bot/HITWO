@@ -16,4 +16,12 @@ describe('the Continue button', () => {
     const loaded = deserialize(serialize(game));
     expect(loaded.ok && describeSave(loaded.state)).toBe(describeSave(game));
   });
+
+  it('says when the hike is over', () => {
+    let game = createGame({ seed: 8, hikers: STARTING_PARTY });
+    for (const h of game.hikers) {
+      game = applyAction(game, { type: 'abandon', hikerId: h.id });
+    }
+    expect(describeSave(game)).toBe('Hike over · Day 1 · Meadow');
+  });
 });

@@ -497,6 +497,38 @@
   pointer-events: none;
 }
 
+/* A passed-out hiker's red medical badge (docs/mockups/Kit.dc.html). */
+.tokenOut {
+  position: absolute;
+  border-radius: 50%;
+  background: #e5624a;
+  border: 2px solid #1d2220;
+  box-sizing: content-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Nights left before a passed-out hiker left alone abandons the hike. */
+.tokenCountdown {
+  position: absolute;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  border: 2px solid #1d2220;
+  background: #2c3566;
+  color: #e6e9ff;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 .tokenMarks {
   position: absolute;
   display: flex;

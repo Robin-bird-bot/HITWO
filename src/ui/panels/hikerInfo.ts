@@ -178,6 +178,34 @@ export function statusTag(h: Hiker, selected: boolean): StatusTag {
   return selected ? 'ACTING' : 'READY';
 }
 
+/**
+ * One short line for a hiker card about passing out and carrying:
+ * "Alone: leaves in 2 nights", "Carried by Ash", "Carrying Birch". `short`
+ * fits after "Passed out ·" on Simple mode's narrower cards.
+ */
+export function carryNote(
+  state: GameState,
+  h: Hiker,
+): { text: string; short: string; tone: 'danger' | 'calm' | 'carry' } | undefined {
+  if (h.status === 'passedOut') {
+    const carrier = state.hikers.find((o) => o.carrying === h.id);
+    if (carrier) return { text: `Carried by ${carrier.name}`, short: 'carried', tone: 'calm' };
+    const company = state.hikers.some(
+      (o) => o.status === 'active' && o.tileId === h.tileId && o.id !== h.id,
+    );
+    if (company) return { text: 'Someone is with them', short: 'not alone', tone: 'calm' };
+    const n = h.countdown ?? BALANCE.passOut.countdownNights;
+    const left = `${n} night${n === 1 ? '' : 's'}`;
+    return { text: `Alone: leaves in ${left}`, short: `${left} left`, tone: 'danger' };
+  }
+  const carried = h.carrying ? state.hikers.find((o) => o.id === h.carrying) : undefined;
+  if (h.status === 'active' && carried) {
+    const text = `Carrying ${carried.name}`;
+    return { text, short: text, tone: 'carry' };
+  }
+  return undefined;
+}
+
 export const FAMILY_LOOK = {
   human: { label: 'HUMAN', icon: 'user' },
   dog: { label: 'DOG', icon: 'paw' },

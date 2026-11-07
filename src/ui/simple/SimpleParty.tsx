@@ -9,7 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
+import { FAMILY_LOOK, THRESHOLD_STATS, carryNote } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { ConditionDot } from '../conditions/ConditionBadges';
@@ -130,6 +130,14 @@ function HikerCard({
 }) {
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
+  // Passing out and carrying, in one short line under the name.
+  const carry = carryNote(state, h);
+  const note =
+    h.status === 'passedOut' && carry
+      ? { ...carry, text: `Passed out · ${carry.short}` }
+      : h.status === 'abandoned'
+        ? { text: 'Left the hike', tone: 'calm' as const }
+        : carry;
   const out = h.status !== 'active';
   // The badges can't be focused inside the button, so the label names them.
   const conditions = [...thresholdLooks(h), ...timedLooks(h)].map(
@@ -143,7 +151,7 @@ function HikerCard({
       aria-pressed={selected}
       aria-label={`${h.name}${OUT_WORDS[h.status] ?? (h.acted ? ' (has acted)' : '')}${
         conditions.length ? `: ${conditions.join(', ')}` : ''
-      }. Show details`}
+      }${carry ? `. ${carry.text}` : ''}. Show details`}
       style={
         selected
           ? { boxShadow: `0 0 0 2px ${color}, 0 0 18px ${color}88`, borderColor: color }
@@ -172,6 +180,11 @@ function HikerCard({
             ))}
           </span>
         </span>
+        {note && (
+          <span className={styles.carryNote} data-tone={note.tone}>
+            {note.text}
+          </span>
+        )}
         {STAT_NAMES.map((stat) => (
           <StatBar
             key={stat}

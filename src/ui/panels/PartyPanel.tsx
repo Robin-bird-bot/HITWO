@@ -17,7 +17,7 @@ import {
 import { Icon } from '../icons/Icon';
 import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
 import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
-import { FAMILY_LOOK, STAT_META, statNote, statusTag, xpProgress } from './hikerInfo';
+import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import styles from './PartyPanel.module.css';
@@ -88,6 +88,7 @@ function HikerCard({
     tag === 'ACTING' ? { bg: color, fg: '#1D2220' } : (TAG_COLORS[tag] ?? TAG_COLORS.ACTED!);
   const dim = h.acted || h.status !== 'active';
   const family = FAMILY_LOOK[h.family];
+  const note = carryNote(state, h);
 
   return (
     <div
@@ -141,6 +142,11 @@ function HikerCard({
             <Icon name={family.icon} size={11} strokeWidth={2.25} />
             <span>{family.label}</span>
           </div>
+          {note && (
+            <span className={styles.carryNote} data-tone={note.tone}>
+              {note.text}
+            </span>
+          )}
           {STAT_NAMES.map((stat) => (
             <StatBar
               key={stat}

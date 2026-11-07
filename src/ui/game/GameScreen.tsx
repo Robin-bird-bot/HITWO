@@ -10,6 +10,7 @@ import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
   hikersWhoHaventActed,
+  isHikeOver,
   resourceCount,
   isAccomplished,
   isRevealed,
@@ -60,6 +61,7 @@ import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
+import { HikeOverScreen } from '../hike/HikeOverScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -108,7 +110,16 @@ function listNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }
 
-export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void }) {
+export function GameScreen({
+  state,
+  onQuit,
+  onNewHike,
+}: {
+  state: GameState;
+  onQuit(): void;
+  /** Starts a new hike straight away (from the hike over screen). */
+  onNewHike?(): void;
+}) {
   const { section, hikers } = state;
   const uiMode = useUiMode();
   const simple = uiMode === 'simple';
@@ -557,6 +568,10 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           onClose={() => setWonderOpen(null)}
           onAccomplish={(action) => dispatch(action)}
         />
+      )}
+
+      {isHikeOver(state) && (
+        <HikeOverScreen state={state} onTitle={onQuit} {...(onNewHike ? { onNewHike } : {})} />
       )}
 
       {abandoning && (
