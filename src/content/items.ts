@@ -4,7 +4,21 @@
  * - the items named in docs/design/03-items.md exist so scavenging can find
  *   them, but they do nothing yet (Wyatt, Nov 4).
  */
-import type { ItemDef } from '../engine/effects';
+import { BALANCE } from '../config/balance';
+import type { ItemDef, ItemUse } from '../engine/effects';
+
+const M = BALANCE.medical;
+
+/** A medical item: it works now (Phase 7), as a free action from the bag. */
+function medical(
+  id: string,
+  name: string,
+  text: string,
+  use: ItemUse,
+  placeholder = false,
+): ItemDef {
+  return { id, name, type: 'tool', tier: 1, text, use, ...(placeholder ? { placeholder } : {}) };
+}
 
 const backpack: ItemDef = {
   id: 'backpack',
@@ -107,8 +121,29 @@ const NAMED: ItemDef[] = [
     'tool',
     'Higher chance of Choice cards when scavenging',
   ),
-  inert('medicine', 'Medicine', 'tool', 'Cures a condition'),
-  inert('medkit', 'Medkit', 'tool', 'Cures a condition and an injury'),
+  medical('medicine', 'Medicine', 'Cures a condition', { pickCondition: true }),
+  medical('medkit', 'Medkit', 'Cures a condition and an injury', {
+    injuries: M.medkitInjuries,
+    pickCondition: true,
+  }),
+  // Named in 01-design-doc.md, not 03-items.md yet. TODO(wyatt): their type, tier and wording.
+  medical(
+    'bandages',
+    'Bandages',
+    'Cures 1 injury, and Bleeding',
+    { injuries: M.bandagesInjuries, cures: ['bleeding'] },
+    true,
+  ),
+  medical(
+    'splint',
+    'Splint',
+    `−1 injury for ${M.splint.days} days, then it comes back`,
+    {
+      injuries: M.splint.injuries,
+      gives: { id: 'splinted', duration: M.splint.days, unit: 'days' },
+    },
+    true,
+  ),
   inert('phone', 'Phone', 'tool', 'Several uses: Uber Eats (a food), Call, Maps (reveal tiles)'),
   inert('bundle', 'Bundle', 'tool', 'Gives 5 random resources. Crafted from any 6 resources'),
   // Shelters

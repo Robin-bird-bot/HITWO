@@ -321,7 +321,11 @@ function ItemCard({
   return (
     <Tag
       {...(onClick
-        ? { type: 'button' as const, onClick, 'aria-label': `${name}: give it away` }
+        ? {
+            type: 'button' as const,
+            onClick,
+            'aria-label': `${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`,
+          }
         : {})}
       className={styles.itemCard}
       data-size={size}

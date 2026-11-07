@@ -8,7 +8,14 @@
  * tonight's night event.
  */
 import { useEffect, useState } from 'react';
-import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
+import {
+  CARDS,
+  CONDITIONS,
+  ITEMS,
+  SCAVENGE_CARDS,
+  SCAVENGE_CARD_ORDER,
+  TRAITS,
+} from '../../content';
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
@@ -183,6 +190,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
             Give one of every resource
           </button>
         </div>
+        <ItemGiver hikers={state.hikers} onApply={run} />
       </section>
 
       <section className={styles.group}>
@@ -627,6 +635,51 @@ function NightTools({ state, onApply }: { state: GameState; onApply(action: Acti
         <span className={styles.note}>Tonight: {set}</span>
       </div>
     </>
+  );
+}
+
+/** Put any item in a hiker's bag (medical items first: they're the ones that work now). */
+function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [itemId, setItemId] = useState('bandages');
+  const items = Object.values(ITEMS).sort(
+    (a, b) => Number(!a.use) - Number(!b.use) || a.name.localeCompare(b.name),
+  );
+  return (
+    <div className={styles.row}>
+      <select
+        className={styles.button}
+        value={hikerId}
+        onChange={(e) => setHikerId(e.target.value)}
+        aria-label="Hiker to give an item"
+      >
+        {hikers.map((h) => (
+          <option key={h.id} value={h.id}>
+            {h.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.button}
+        value={itemId}
+        onChange={(e) => setItemId(e.target.value)}
+        aria-label="Item"
+      >
+        {items.map((i) => (
+          <option key={i.id} value={i.id}>
+            {i.name}
+            {i.use ? ' (usable)' : ''}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={() => onApply({ type: 'debug', op: { kind: 'giveItem', hikerId, itemId } })}
+      >
+        Give item
+      </button>
+    </div>
   );
 }
 

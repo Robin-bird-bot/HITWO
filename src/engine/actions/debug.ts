@@ -3,7 +3,7 @@ import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
 import { pickForTile } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
-import { findableItems } from '../../content';
+import { ITEMS, findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
 import { STATE_FROM, changeWeather, setNodeState } from '../weather';
 import { revealWonder, wonderTile } from '../wonders/wonders';
@@ -220,6 +220,14 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'runNight':
       runNightEvent(state);
       break;
+    case 'giveItem': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const item = ITEMS[op.itemId];
+      if (!hiker || !item) return;
+      hiker.inventory.bag.push({ uid: `debug-${state.nextEventId}-${item.id}`, itemId: item.id });
+      pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} ${item.name}` });
+      break;
+    }
     case 'setCountdown': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       if (hiker?.status !== 'passedOut') return;

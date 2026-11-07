@@ -102,3 +102,40 @@
   font-size: 13px;
   color: #f39a86;
 }
+
+/* Using an item: who it's for, and what it does. */
+.label {
+  padding: 6px 4px 0;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.tall {
+  min-height: 52px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.useText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.effect {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.option:hover:not(:disabled) .effect {
+  color: inherit;
+}
+
+.useIt {
+  border-color: rgba(127, 194, 155, 0.6);
+  color: #9fd8b5;
+}

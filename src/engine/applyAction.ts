@@ -31,6 +31,7 @@ import {
 import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
+import { applyUse, validateUse } from './actions/useItem';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
@@ -103,6 +104,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateReturn(state, action) ?? null;
     case 'dropItem':
       return validateDrop(state, action) ?? null;
+    case 'useItem':
+      return validateUse(state, action) ?? null;
     case 'resolveChallenge':
       return validateResolve(state, action) ?? null;
     case 'chooseChallenge':
@@ -167,6 +170,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'dropItem':
       applyDrop(draft, action);
+      break;
+    case 'useItem':
+      applyUse(draft, action);
       break;
     case 'resolveChallenge':
       applyResolve(draft, action);

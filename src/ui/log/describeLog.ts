@@ -309,6 +309,12 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'used': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;
+        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}.`, tone: 'rest' });
+        break;
+      }
       case 'woke':
         lines.push({ id: e.id, text: `${name(e.hikerId)} woke up (${e.cause}).`, tone: 'rest' });
         break;

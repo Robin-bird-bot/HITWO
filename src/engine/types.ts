@@ -514,6 +514,8 @@ export type Action =
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
+  /** A free action: uses a bag item on a hiker on the same tile (the medical items). */
+  | { type: 'useItem'; hikerId: HikerId; itemUid: string; targetId: HikerId; conditionId?: string }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
@@ -586,6 +588,8 @@ export type DebugOp =
   | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
   /** Runs tonight's night event now, as if it were camp. */
   | { kind: 'runNight' }
+  /** Puts any item in a hiker's bag, even past the limit. */
+  | { kind: 'giveItem'; hikerId: HikerId; itemId: ItemId }
   /** Sets a passed-out hiker's countdown (nights before they abandon if left alone). */
   | { kind: 'setCountdown'; hikerId: HikerId; nights: number };
 
@@ -609,6 +613,8 @@ export type GameEventBody =
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
   /** The 3rd injury: the hiker passed out, with this many nights before they abandon if left alone. */
   | { kind: 'passedOut'; hikerId: HikerId; countdown: number }
+  /** A hiker used an item on someone on their tile (or themselves); it's used up. */
+  | { kind: 'used'; hikerId: HikerId; targetId: HikerId; itemId: ItemId }
   /** A passed-out hiker came to (an injury was cured). */
   | { kind: 'woke'; hikerId: HikerId; cause: string }
   /** A passed-out hiker spent a night with no active hiker beside them. */

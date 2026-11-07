@@ -91,6 +91,19 @@ export const BALANCE = {
     raiseStatsBelowTo: 5,
   },
 
+  /**
+   * The medical items (Phase 7). Each is used up after one use.
+   * TODO(phase 9): uses and Quality.
+   */
+  medical: {
+    /** Bandages: injuries cured (and Bleeding). TODO(wyatt): Bandages and the Splint are placeholders. */
+    bandagesInjuries: 1,
+    /** The Splint: injuries held off, for this many days, then they come back. */
+    splint: { injuries: 1, days: 3 },
+    /** Medkit: injuries cured, plus one condition. */
+    medkitInjuries: 1,
+  },
+
   /** Passing out (01-design-doc.md, "Passing out, abandoning, rejoining"). */
   passOut: {
     /**
