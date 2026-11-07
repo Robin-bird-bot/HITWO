@@ -217,7 +217,7 @@ function hikerEffect(state: GameState, kind: HikerEffectKind, cause: string, h: 
       if (clothes === 0 && !isSheltered(state, h)) {
         addCondition(state, h, 'wet', W.drizzleWetDays, 'days', cause);
       }
-      // TODO(phase 9): durability arrives with items; the wear is kept on the item until then.
+      // TODO(phase 8): durability arrives with items; the wear is kept on the item until then.
       for (const item of Object.values(h.inventory.equipped)) {
         if (!item || ITEMS[item.itemId]?.type !== 'clothes') continue;
         if (roll(state.rng, W.drizzleWear)) item.wear = (item.wear ?? 0) + 1;

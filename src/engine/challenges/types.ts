@@ -51,9 +51,9 @@ export type Requirement =
   | { kind: 'caps'; count: Amount }
   /** Stat points. With several stats, any mix. */
   | { kind: 'stat'; stats: readonly StatName[]; count: Amount }
-  /** Clothing durability. TODO(phase 9): durability arrives with items, so this can't be met yet. */
+  /** Clothing durability. TODO(phase 8): durability arrives with items, so this can't be met yet. */
   | { kind: 'durability'; count: Amount; slot?: 'gear'; oneItem?: true }
-  /** A use from a tool. TODO(phase 9). */
+  /** A use from a tool. TODO(phase 8). */
   | { kind: 'toolUse'; count: Amount }
   /** Carry no more than this many resources; extras can be spent to pass (Rocky Path). */
   | { kind: 'carryLimit'; max: number };
@@ -165,14 +165,14 @@ export type EffectOp =
   | { op: 'trigger'; tier: Tier; node: NodeType }
   /**
    * Food cards give less Appetite: all of them, or one at random.
-   * TODO(phase 9): recorded on the items, used when eating arrives.
+   * TODO(phase 8): recorded on the items, used when eating arrives.
    */
   | { op: 'foodAppetite'; delta: Amount; which?: 'all' | 'one' }
-  /** Each food card can spoil. TODO(phase 9). */
+  /** Each food card can spoil. TODO(phase 8). */
   | { op: 'spoilFood'; chance: number }
-  /** Tools lose uses. TODO(phase 9). */
+  /** Tools lose uses. TODO(phase 8). */
   | { op: 'toolUses'; delta: Amount }
-  /** Clothing can be lost, by durability left. TODO(phase 9). */
+  /** Clothing can be lost, by durability left. TODO(phase 8). */
   | { op: 'loseClothes'; chancePerDurability: number }
   /** A random negative condition (Rocco Raccoon), or a random one from a list (Mysterious Pill). */
   | { op: 'randomCondition'; duration: Amount; unit: 'days'; from?: readonly string[] }
@@ -201,7 +201,7 @@ export type EffectOp =
   | { op: 'loseCaps'; count: Amount }
   /**
    * Equipped clothes lose durability: one item at random, or all of them.
-   * TODO(phase 9): recorded as wear on the item until durability arrives.
+   * TODO(phase 8): recorded as wear on the item until durability arrives.
    */
   | { op: 'wearClothes'; which: 'one' | 'all'; amount: Amount }
   /** Swaps a random bag item with a random one from a hiker on another tile. */
@@ -227,7 +227,7 @@ export interface RiskDef {
   spend: readonly (
     | { resources: ResourceFilter | 'any' }
     | { items: ItemType | 'any' }
-    /** TODO(phase 9): clothing durability. */
+    /** TODO(phase 8): clothing durability. */
     | { durability: true }
   )[];
   measure:

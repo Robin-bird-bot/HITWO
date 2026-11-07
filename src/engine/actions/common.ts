@@ -72,7 +72,7 @@ export function moraleCostReason(hiker: Hiker, moraleCost: number): string | und
 export function tileEntryReason(state: GameState, tileId: TileId): string | undefined {
   const tile = state.section.tiles[tileId];
   if (!tile) return 'That tile isn’t on the map.';
-  if (tile.kind === 'checkpoint') return 'Checking in at the checkpoint arrives in Phase 8.';
+  if (tile.kind === 'checkpoint') return 'Checking in at the checkpoint arrives in Phase 9.';
   return undefined;
 }
 

@@ -93,7 +93,7 @@ describe('revealing a Wonder', () => {
       expect(after.challenge).toBeUndefined();
       const w = after.section.tiles.M!.wonder!;
       expect(w.goals).toHaveLength(3);
-      // Fort Rock's clothing durability goal (index 4) waits on Phase 9.
+      // Fort Rock's clothing durability goal (index 4) waits on Phase 8.
       expect(w.goals!.map((g) => g.index)).not.toContain(4);
       expect(new Set(w.goals!.map((g) => g.index)).size).toBe(3);
       expect([...w.tier3!].sort()).toEqual([...TIER_3_ITEMS].sort());

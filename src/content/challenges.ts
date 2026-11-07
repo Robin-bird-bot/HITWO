@@ -759,14 +759,14 @@ const TIER_2: ChallengeDef[] = [
     nodes: 'any',
     scope: 'each',
     who: 'wearingClothes',
-    // TODO(phase 9): the cost is 1 cap for every 2 durability left on their clothes.
+    // TODO(phase 8): the cost is 1 cap for every 2 durability left on their clothes.
     cost: [opt(durability(1))],
     costText: ['Spend 1 cap for every 2 durability left on their equipped clothes (rounded up).'],
     penalty: [{ op: 'loseClothes', chancePerDurability: 0.1 }],
     penaltyText: [
       'If failed: each equipped clothing item has a 10% chance per durability left on it to be lost.',
     ],
-    waitingOn: 'phase 9 (clothing durability)',
+    waitingOn: 'phase 8 (clothing durability)',
   }),
   ch({
     name: 'Thorn Thicket',
@@ -1076,7 +1076,7 @@ const TIER_3: ChallengeDef[] = [
     penaltyText: [
       'Each hiker has a 100% chance to gain 1 injury and become Frozen for 1 phase. Each clothing durability spent lowers it by {points} points.',
     ],
-    waitingOn: 'phase 9 (clothing durability)',
+    waitingOn: 'phase 8 (clothing durability)',
   }),
   ch({
     name: 'Snow Leopard',
@@ -1224,7 +1224,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
     spendAny: {
       what: { stat: 'energy' },
       readout: 'tries',
-      // TODO(phase 9): blueprints can turn up here too.
+      // TODO(phase 8): blueprints can turn up here too.
       every: { n: 2, chance: 'pct', effects: [{ op: 'gainItem', itemTypes: ['tool', 'clothes'] }] },
     },
     costText: ['Each hiker may spend Energy to search the station.'],
@@ -1276,7 +1276,7 @@ const OPPORTUNITIES: ChallengeDef[] = [
     cost: [],
     costText: ['Spend 1 use from a tool to peek at an unrevealed tile’s challenge. Up to 5 times.'],
     rewardText: ['You see the challenge without revealing it.'],
-    waitingOn: 'phase 9 (tool uses)',
+    waitingOn: 'phase 8 (tool uses)',
   }),
   op({
     name: 'Old Firewatch Tower',
@@ -1508,7 +1508,7 @@ const TRIALS: TrialDef[] = [
     tier: 1,
     nodes: [F, R],
     rolls: { days: X(1, 2), sick: Y(1, 2) },
-    goal: { kind: 'off', waitingOn: 'phase 9 (eating)' },
+    goal: { kind: 'off', waitingOn: 'phase 8 (eating)' },
     deadline: { days: 'days' },
     goalText: ['No hiker on this tile eats for {days} days.'],
     penalty: [cond('foodPoisoning', 'sick', 'days')],
@@ -1615,7 +1615,7 @@ const TRIALS: TrialDef[] = [
     tier: 1,
     nodes: 'any',
     rolls: { caps: X(2, 4, true) },
-    goal: { kind: 'off', waitingOn: 'phase 9 (crafting)' },
+    goal: { kind: 'off', waitingOn: 'phase 8 (crafting)' },
     deadline: { days: 4 },
     goalText: [
       'Picks a random item type. Each hiker who crafts an item of that type earns rewards, which stack.',

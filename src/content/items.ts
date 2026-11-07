@@ -1,5 +1,5 @@
 /**
- * Items as typed data. Phase 9 builds their effects. Until then:
+ * Items as typed data. Phase 8 builds their effects. Until then:
  * - a placeholder Backpack shows how slots added by an item look in the bag;
  * - the items named in docs/design/03-items.md exist so scavenging can find
  *   them, but they do nothing yet (Wyatt, Nov 4).
@@ -27,7 +27,7 @@ const backpack: ItemDef = {
   slot: 'gear',
   tier: 1,
   text: '+2 bag slots.',
-  placeholder: true, // TODO(wyatt): stand-in until Phase 9's item list.
+  placeholder: true, // TODO(wyatt): stand-in until Phase 8's item list.
   hooks: {
     modifyCapacity(q) {
       return q.key === 'bag.slots' ? { source: 'Backpack', flat: 2 } : undefined;
@@ -37,7 +37,7 @@ const backpack: ItemDef = {
 
 /**
  * An item from docs/design/03-items.md, with its exact wording, that does
- * nothing until Phase 9. TODO(wyatt): every tier is a stand-in 1.
+ * nothing until Phase 8. TODO(wyatt): every tier is a stand-in 1.
  */
 function inert(
   id: string,
@@ -164,7 +164,7 @@ const REWARDS: ItemDef[] = [
 
 /**
  * Tier III stand-ins for a Wonder's "pick 1 of 3" and Snake Slots' jackpot.
- * TODO(phase 9): the real Tier III items and traits.
+ * TODO(phase 8): the real Tier III items and traits.
  */
 const TIER_3: ItemDef[] = [
   { ...inert('tier3Tool', 'Tier III Tool', 'tool', 'A top-tier tool (placeholder)'), tier: 3 },

@@ -43,7 +43,7 @@ const DAY_1: Action[] = [
   move('birch', 'L'),
   END,
   // Night. Ash and Dot sleep at the campsite; Birch walks back down in the dark
-  // (1 + 1 night Appetite). The checkpoint itself is off limits until Phase 8.
+  // (1 + 1 night Appetite). The checkpoint itself is off limits until Phase 9.
   sleep('ash'),
   sleep('dot'),
   move('birch', 'T'),

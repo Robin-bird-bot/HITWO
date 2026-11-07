@@ -101,7 +101,7 @@ export const immovable = (h: Hiker) =>
   });
 
 export const isFood = (itemId: ItemId) => ITEMS[itemId]?.type === 'food';
-/** Clothing items a hiker has on (Phase 9 adds the ways to put them on). */
+/** Clothing items a hiker has on (Phase 8 adds the ways to put them on). */
 export const equippedClothes = (h: Hiker): ItemInstance[] =>
   Object.values(h.inventory.equipped).filter(
     (i): i is ItemInstance => !!i && ITEMS[i.itemId]?.type === 'clothes',
@@ -151,7 +151,7 @@ function tileNodeTypes(state: GameState, tileId: TileId): NodeType[] {
   return [...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
 }
 
-/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 8). */
+/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 9). */
 function neighbours(state: GameState, tileId: TileId) {
   return adjacentTileIds(state.section, tileId)
     .map((id) => state.section.tiles[id])
@@ -340,7 +340,7 @@ function applyToHiker(
       return;
     }
     case 'wearClothes': {
-      // TODO(phase 9): durability arrives with items; the wear is kept on the item until then.
+      // TODO(phase 8): durability arrives with items; the wear is kept on the item until then.
       const worn = equippedClothes(h);
       const hit = e.which === 'all' ? worn : worn.length ? [pick(state.rng, worn)] : [];
       const n = amount(e.amount, ctx);
@@ -404,7 +404,7 @@ function applyToHiker(
       return;
     }
     case 'foodAppetite': {
-      // TODO(phase 9): eating uses appetiteMod.
+      // TODO(phase 8): eating uses appetiteMod.
       const n = amount(e.delta, ctx);
       const change = typeof e.delta === 'number' ? n : -n;
       const food = h.inventory.bag.filter((i) => isFood(i.itemId));
@@ -414,7 +414,7 @@ function applyToHiker(
       return;
     }
     case 'toolUses': {
-      // TODO(phase 9): tools take usesLost off their uses.
+      // TODO(phase 8): tools take usesLost off their uses.
       const n = amount(e.delta, ctx);
       for (const item of h.inventory.bag) {
         if (ITEMS[item.itemId]?.type === 'tool') item.usesLost = (item.usesLost ?? 0) + n;
@@ -422,7 +422,7 @@ function applyToHiker(
       return;
     }
     case 'loseClothes':
-      // TODO(phase 9): clothing durability. Fashion Critic waits until then.
+      // TODO(phase 8): clothing durability. Fashion Critic waits until then.
       return;
     case 'gainResources': {
       const room = BALANCE.inventory.resourceLimit - resourceCount(h);
@@ -596,7 +596,7 @@ function applyOnce(
       return;
     }
     case 'placeShelter': {
-      // TODO(phase 9): a shelter that works like the real shelter cards.
+      // TODO(phase 8): a shelter that works like the real shelter cards.
       if (!tile) return;
       const shelters = findableItems('shelter');
       if (!shelters.length) return;

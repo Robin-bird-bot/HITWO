@@ -101,7 +101,7 @@ export const WONDERS: readonly WonderDef[] = [
         text: 'The hikers here have {x} clothing durability between them.',
         check: { kind: 'waiting' },
         x: X(10),
-        waitingOn: 'Phase 9 (clothing durability)',
+        waitingOn: 'Phase 8 (clothing durability)',
       },
     ],
     rewards: [
@@ -115,7 +115,7 @@ export const WONDERS: readonly WonderDef[] = [
         title: 'Double durability',
         text: 'Double the current and maximum durability of one equipped clothing item.',
         reward: { kind: 'waiting' },
-        waitingOn: 'Phase 9 (durability)',
+        waitingOn: 'Phase 8 (durability)',
       },
       XP,
     ],
@@ -127,7 +127,7 @@ export const WONDERS: readonly WonderDef[] = [
       {
         text: 'One hiker has 3 clothing items equipped.',
         check: { kind: 'waiting' },
-        waitingOn: 'Phase 9 (equipping clothes)',
+        waitingOn: 'Phase 8 (equipping clothes)',
       },
       {
         text: 'The party has {x} caps.',
@@ -239,7 +239,7 @@ export const WONDERS: readonly WonderDef[] = [
         text: 'One hiker has crafted {x} items of one type.',
         check: { kind: 'waiting' },
         x: X(3),
-        waitingOn: 'Phase 9 (crafting)',
+        waitingOn: 'Phase 8 (crafting)',
       },
       {
         text: 'One hiker here has 2 or less Morale and another has 8 or more.',

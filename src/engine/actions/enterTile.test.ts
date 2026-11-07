@@ -35,11 +35,11 @@ describe('entering a tile', () => {
     expect(s.log.find((e) => e.kind === 'move')).not.toHaveProperty('revealed');
   });
 
-  it('can’t be the checkpoint until checking in arrives in Phase 8', () => {
+  it('can’t be the checkpoint until checking in arrives in Phase 9', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L');
     place(s, 'birch', 'L');
-    const reason = 'Checking in at the checkpoint arrives in Phase 8.';
+    const reason = 'Checking in at the checkpoint arrives in Phase 9.';
     expect(validateAction(s, { type: 'move', hikerId: 'ash', toTileId: 'C' })).toBe(reason);
     expect(
       validateAction(s, { type: 'moveAll', hikerId: 'ash', toTileId: 'C', bring: ['birch'] }),

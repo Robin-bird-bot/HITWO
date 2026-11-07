@@ -398,7 +398,7 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
           type="button"
           className={styles.feature}
           aria-disabled="true"
-          title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 8`}
+          title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
         >
           <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
           {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
@@ -450,7 +450,7 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
   );
 }
 
-/** A stand-in item card (Phase 9 builds the real layered cards). */
+/** A stand-in item card (Phase 8 builds the real layered cards). */
 function ItemCard({
   item,
   size,
@@ -647,7 +647,7 @@ function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void })
         type="button"
         className={styles.blueprints}
         aria-disabled="true"
-        title="Blueprints arrive in Phase 9"
+        title="Blueprints arrive in Phase 8"
       >
         <Icon name="book" size={18} />
         Blueprints

@@ -222,9 +222,9 @@ export interface Hooks {
     q: ScavengeQuery,
     ctx: QueryContext,
   ): ScavengeModifier | ScavengeModifier[] | undefined;
-  /** Phase 9. */
+  /** Phase 8. */
   onCraft?(e: unknown, ctx: EffectContext): void;
-  /** Phase 9. */
+  /** Phase 8. */
   onEat?(e: unknown, ctx: EffectContext): void;
 }
 
@@ -264,7 +264,7 @@ export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
 
 /**
  * What using an item does to its target (Phase 7: the medical items). A use
- * that would do nothing is refused. TODO(phase 9): every item's use, uses and
+ * that would do nothing is refused. TODO(phase 8): every item's use, uses and
  * Quality.
  */
 export interface ItemUse {
@@ -378,7 +378,7 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
   };
 }
 
-/** Clothing items a hiker has equipped (Phase 9 adds the ways to put them on). */
+/** Clothing items a hiker has equipped (Phase 8 adds the ways to put them on). */
 export function clothesWorn(hiker: Hiker): number {
   return Object.values(hiker.inventory.equipped).filter(
     (i) => i && ITEMS[i.itemId]?.type === 'clothes',

@@ -258,7 +258,7 @@ export interface ActionState {
  */
 const SOON: Record<'craft' | 'fire', { phase?: number; what: string }> = {
   fire: { what: 'Sitting by the fire' },
-  craft: { phase: 9, what: 'Crafting' },
+  craft: { phase: 8, what: 'Crafting' },
 };
 
 function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState {

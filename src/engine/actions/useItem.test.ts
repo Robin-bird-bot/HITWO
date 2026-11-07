@@ -146,10 +146,10 @@ describe('who can use what', () => {
     );
   });
 
-  it('items without a use wait for Phase 9', () => {
+  it('items without a use wait for Phase 8', () => {
     const s = fixtureGame();
     expect(validateAction(s, use('ash', give(s, 'ash', 'phone'), 'ash'))).toBe(
-      'Phone can’t be used yet (Phase 9).',
+      'Phone can’t be used yet (Phase 8).',
     );
   });
 

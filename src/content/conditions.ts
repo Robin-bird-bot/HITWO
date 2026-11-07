@@ -11,7 +11,7 @@
  *   of each phase or day).
  *
  * Waiting on later phases: Food Poisoning (eating), Inept (crafting) and
- * Clumsy (tools) in Phase 9; Bleeding's injury in Phase 7.
+ * Clumsy (tools) in Phase 8; Bleeding's injury in Phase 7.
  */
 import { BALANCE } from '../config/balance';
 import type { CostKey, EffectContext, Hooks } from '../engine/effects';
@@ -143,7 +143,7 @@ const LIST: ConditionDef[] = [
     id: 'foodPoisoning',
     name: 'Food Poisoning',
     kind: 'negative',
-    // TODO(phase 9): food gives 2 less Appetite, when eating arrives.
+    // TODO(phase 8): food gives 2 less Appetite, when eating arrives.
     text: 'Food gives 2 less Appetite.',
   },
   {
@@ -221,7 +221,7 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '−1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
+      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
         source: 'Unlucky',
         label: `Unlucky: −${C.luck} Luck`,
@@ -253,7 +253,7 @@ const LIST: ConditionDef[] = [
       },
     },
   },
-  // TODO(phase 9): Inept and Clumsy stop crafting and using tools.
+  // TODO(phase 8): Inept and Clumsy stop crafting and using tools.
   { id: 'inept', name: 'Inept', kind: 'negative', text: 'Can’t craft.' },
   { id: 'clumsy', name: 'Clumsy', kind: 'negative', text: 'Can’t use tools.' },
   {
@@ -286,7 +286,7 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '1 fewer card to choose from when scavenging or crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
+      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
         source: 'Tunnel Vision',
         label: `Tunnel Vision: ${C.tunnelVisionCards} fewer card`,
@@ -407,7 +407,7 @@ const LIST: ConditionDef[] = [
     kind: 'positive',
     text: '+1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
+      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
         source: 'Lucky',
         label: `Lucky: +${C.luck} Luck`,

@@ -729,7 +729,7 @@ function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek
         style={{ width: size, height: size }}
         onClick={onClick}
         disabled={off}
-        aria-label={`${label} space: ${need === 0 ? 'nothing needed' : `${got} of ${need}`}${off ? ' (arrives in Phase 9)' : ''}`}
+        aria-label={`${label} space: ${need === 0 ? 'nothing needed' : `${got} of ${need}`}${off ? ' (arrives in Phase 8)' : ''}`}
       >
         {gifts.length === 0 ? (
           <EmptySpace
@@ -836,7 +836,7 @@ function EmptySpace({
       ) : (
         <>
           <Icon name="plus" size={38 * k} color="rgba(241,234,219,0.75)" strokeWidth={2.5} />
-          <span className={styles.emptyLabel}>{off ? `${label} · PHASE 9` : label}</span>
+          <span className={styles.emptyLabel}>{off ? `${label} · PHASE 8` : label}</span>
           {icons.length > 0 && (
             <span className={styles.emptyIcons}>
               {icons.map((id) => (
@@ -993,7 +993,7 @@ function MiniItem({
   return <ItemFace itemId={item?.itemId ?? ''} width={width} />;
 }
 
-/** A stand-in item card face (Phase 9 builds the real layered cards). */
+/** A stand-in item card face (Phase 8 builds the real layered cards). */
 export function ItemFace({
   itemId,
   width,

@@ -142,7 +142,7 @@ export function chanceOf(c: Chance, ctx: AmountContext): number {
   return amount(c, ctx) / 100;
 }
 
-/** Whether a requirement is one the game can't take yet. TODO(phase 9). */
+/** Whether a requirement is one the game can't take yet. TODO(phase 8). */
 export function notBuiltYet(req: Requirement): boolean {
   return req.kind === 'durability' || req.kind === 'toolUse';
 }

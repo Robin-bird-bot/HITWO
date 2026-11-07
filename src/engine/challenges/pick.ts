@@ -34,11 +34,11 @@ export function notPlayableYet(card: CardDef): string | undefined {
   if (card.waitingOn) return card.waitingOn;
   if (card.risk) {
     const canSpend = card.risk.spend.some((s) => !('durability' in s));
-    return canSpend ? undefined : 'phase 9 (clothing durability)';
+    return canSpend ? undefined : 'phase 8 (clothing durability)';
   }
   if (card.cost.length === 0) return undefined;
   const payable = card.cost.some((option) => !option.some(notBuiltYet));
-  return payable ? undefined : 'phase 9 (clothing durability or tool uses)';
+  return payable ? undefined : 'phase 8 (clothing durability or tool uses)';
 }
 
 export function gatePasses(gate: Gate, state: GameState, onTile: readonly Hiker[]): boolean {

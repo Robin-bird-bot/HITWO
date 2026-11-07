@@ -93,7 +93,7 @@ export const BALANCE = {
 
   /**
    * The medical items (Phase 7). Each is used up after one use.
-   * TODO(phase 9): uses and Quality.
+   * TODO(phase 8): uses and Quality.
    */
   medical: {
     /** Bandages: injuries cured (and Bleeding). TODO(wyatt): Bandages and the Splint are placeholders. */
@@ -107,7 +107,7 @@ export const BALANCE = {
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
    * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
-   * TODO(phase 9): the Carrier Pack makes it free.
+   * TODO(phase 8): the Carrier Pack makes it free.
    */
   carry: {
     /** The carrier's extra Appetite on each move. */
@@ -417,7 +417,7 @@ export const BALANCE = {
     inspiredExtra: 1,
     /** Sluggish: extra Appetite to move. */
     sluggishAppetite: 1,
-    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 9). */
+    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 8). */
     luck: 1,
     /** Weak: item slots lost. Tunnel Vision: cards lost. */
     weakSlots: 1,

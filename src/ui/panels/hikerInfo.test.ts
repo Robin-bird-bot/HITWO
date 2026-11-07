@@ -13,7 +13,7 @@ describe('action grid', () => {
     const a = byId(fixtureGame(), 'ash');
     expect(a.craft?.status).toBe('soon');
     expect(a.fire?.reason).toBe('Sitting by the fire isn’t built yet.');
-    expect(a.craft?.sub).toBe('Phase 9');
+    expect(a.craft?.sub).toBe('Phase 8');
   });
 
   it('makes Watch ready at night only', () => {

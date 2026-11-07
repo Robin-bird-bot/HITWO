@@ -60,10 +60,10 @@ describe('which cards fit a tile', () => {
   });
 
   it('leaves out cards whose systems aren’t built yet', () => {
-    expect(notPlayableYet(card('thorn-thicket'))).toMatch(/phase 9/); // durability only
-    expect(notPlayableYet(card('fashion-critic'))).toMatch(/phase 9/);
+    expect(notPlayableYet(card('thorn-thicket'))).toMatch(/phase 8/); // durability only
+    expect(notPlayableYet(card('fashion-critic'))).toMatch(/phase 8/);
     expect(notPlayableYet(card('sticky-sap'))).toBeUndefined(); // 2 Energy works now
-    expect(notPlayableYet(card('mold-invasion'))).toMatch(/phase 9/);
+    expect(notPlayableYet(card('mold-invasion'))).toMatch(/phase 8/);
     expect(notPlayableYet(card('frozen-fingers'))).toMatch(/phase 6/);
     expect(notPlayableYet(card('train'))).toBeUndefined();
     const off = TRIALS.filter((t) => notPlayableYet(t)).map((t) => t.id);

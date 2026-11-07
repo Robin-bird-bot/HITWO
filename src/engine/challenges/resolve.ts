@@ -169,7 +169,7 @@ export function optionShortfall(
 ): string | undefined {
   const reqs = openCardDef(open)?.cost[option];
   if (!reqs) return 'Pick a way to pay.';
-  if (reqs.some(notBuiltYet)) return 'That way to pay arrives in Phase 9.';
+  if (reqs.some(notBuiltYet)) return 'That way to pay arrives in Phase 8.';
   if (gifts.some((g) => !reqs[g.req]))
     return 'Something was handed in that this cost doesn’t ask for.';
   for (const [i, req] of reqs.entries()) {

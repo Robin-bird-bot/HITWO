@@ -133,7 +133,7 @@ describe('hiker effects (after the grace day)', () => {
     expect(conditionsOf(two, 'ash')).toContain('soaked');
   });
 
-  it('Drizzle: clothes keep a hiker dry, and wear them (kept for Phase 9)', () => {
+  it('Drizzle: clothes keep a hiker dry, and wear them (kept for Phase 8)', () => {
     let worn = 0;
     for (let seed = 1; seed <= 40; seed++) {
       const s = weathered(

@@ -221,7 +221,7 @@ This keeps the download small and lets numbers and text change.
 - Rarity odds: at Luck 0, 75 / 15 / 6 / 2.5 / 1 / 0.5%; at Luck +5, 50 / 25 / 14 / 7 / 3 / 1%.
 - A Mixed card on a 3-node tile: 1 resource from each of 2 random nodes on that tile.
 - Dogs get 1 extra card to choose from (this replaces "more Choice cards").
-- Until Phase 9, Item finds give the items named in `03-items.md`, which do nothing yet.
+- Until Phase 8, Item finds give the items named in `03-items.md`, which do nothing yet.
 - The art for bones, flint and salt has arrived.
 
 ---
@@ -310,7 +310,7 @@ This keeps the download small and lets numbers and text change.
 - **Waiting on later phases** (`TODO(phase N)`):
   - Phase 6: condition effects (only Frozen works now), weather for gates and Crater Lake's goal.
   - Phase 7: Bleeding's injury when it runs out; giving the next biome a Wonder not used yet.
-  - Phase 9: durability, tool uses, food Appetite and spoiling, losing clothes (Fashion Critic), shelter cards placed by hikers, blueprints, the real Tier III items and traits, crafting (Multnomah Falls' goal), equipping clothes (Pittock Mansion's goal) and Old Trail Sign.
+  - Phase 8: durability, tool uses, food Appetite and spoiling, losing clothes (Fashion Critic), shelter cards placed by hikers, blueprints, the real Tier III items and traits, crafting (Multnomah Falls' goal), equipping clothes (Pittock Mansion's goal) and Old Trail Sign.
 - **Conditions now:** every condition in `02-traits-and-conditions.md` can be given, counts down by days or phases, and shows on the hiker cards. Only Frozen has its effect (can't move or be moved). Two placeholders exist for opportunities: Napping (Nap Time: can't move, be moved, scavenge or tend next phase) and Raccoon Friend (a random resource most nights). Everything else arrives in Phase 6.
 - **Saves:** version 5. Version 4 added the run counters and version 5 a Wonder per section; older saves are upgraded.
 
@@ -407,7 +407,7 @@ Follow `docs/design/05-nights-and-weather.md`.
   - Sit by the Fire isn't in any phase yet, so its button says "Soon".
 - **Waiting on later phases** (`TODO(phase N)`):
   - Phase 7: Bleeding's injury when it runs out; passed-out countdowns at camp.
-  - Phase 9: clothing durability (Drizzle and night events record wear on the item until then); equipping clothes (night outcomes that need clothes are skipped); food giving less Appetite (recorded on the item); Food Poisoning, Inept and Clumsy; Lucky and Unlucky for crafting.
+  - Phase 8: clothing durability (Drizzle and night events record wear on the item until then); equipping clothes (night outcomes that need clothes are skipped); food giving less Appetite (recorded on the item); Food Poisoning, Inept and Clumsy; Lucky and Unlucky for crafting.
   - Phase 11: each biome's own weather odds.
 - **Saves:** version 6. Version 6 adds real weather with a forecast; an older save's Storm or Heatwave carries over.
 
@@ -430,7 +430,7 @@ Follow `docs/design/05-nights-and-weather.md`.
 
 **Phase 7 notes (built Nov 7)**
 - **Wyatt's answers (Nov 7):**
-  - Build the medical items now, with a small "Use" free action that Phase 9 extends.
+  - Build the medical items now, with a small "Use" free action that Phase 8 extends.
   - Carrying: pick up, then carry. Picking up and putting down are free; each of the carrier's moves costs +1 Appetite; one carried hiker each.
   - Passed-out hikers skip the camp drains.
   - Hikers on the same tile can take a passed-out hiker's things; whatever is left leaves with them.
@@ -451,13 +451,69 @@ Follow `docs/design/05-nights-and-weather.md`.
   - Passed-out hikers can still be hit by challenges, night events and weather on their tile.
 - **Fixed from Phase 6:** a condition a night event gave lasted no time at all when counted in days; it now lasts through the next day.
 - **Waiting on later phases** (`TODO(phase N)`):
-  - Phase 8: station healing and rejoining; a carried hiker arriving at a checkpoint; giving the next biome a Wonder not used yet.
-  - Phase 9: item uses and Quality; the Carrier Pack, Medic Tent, Safety Vest and Helmet; taking a passed-out hiker's worn clothes.
+  - Phase 8: item uses and Quality; the Carrier Pack, Medic Tent, Safety Vest and Helmet; taking a passed-out hiker's worn clothes.
+  - Phase 9: station healing and rejoining; a carried hiker arriving at a checkpoint; giving the next biome a Wonder not used yet.
 - **Saves:** version 7. Version 7 adds the countdown and carrying; an older save's passed-out hiker gets a full countdown.
 
 ---
 
-## Phase 8: Checkpoints and ranger stations
+## Phase 8: Items, crafting and blueprints
+
+**Build**
+- Item types: tools (uses), clothes (equipment slots Body, Feet and Gear, durability in days or charges), food (a free action), shelters (placed on a tile), and trinkets.
+- Tiers 1–4. Tier 4 only comes from luck and never teaches a blueprint.
+- **Generic craft:** pay the category cost, see 2+ random items of that type at your tier with a small chance of a higher tier, and pick 1.
+- **Blueprints and recipes:**
+  - crafting an item learns it;
+  - a known blueprint gives the exact item for a higher cost;
+  - teaching costs 4/6/8 Morale;
+  - bundles.
+- **Quality:**
+  - Tools, food and clothes have Quality 1–5. Shelters and trinkets have none.
+  - The roll is a bell curve. Starting odds in `balance.ts`: 10 / 20 / 40 / 20 / 10%.
+  - The crafter's Luck (mostly from Morale) shifts the curve up or down. Lovingly Made adds Luck at Morale 8+. Talented, Chef and Careful Hands push it up; Dogs push it down.
+  - Found and bought items roll the plain curve.
+  - Item data marks Quality-scaled values as `(X)`, for example `{ appetite: qualityScale([2,3,4,5,6]) }`.
+  - Item cards show Quality as pips.
+- Implement every item in `03-items.md`. Use placeholders for the rest.
+- Turn on what Phase 5 left waiting on items (the `TODO(phase 8)` list; it was `TODO(phase 9)` before the Nov 7 swap): tool uses (Old Trail Sign, Sticky Sap, Dull Blades), clothing durability (Freeagle, Fashion Critic, Fort Rock's goal and reward), crafting (Multnomah Falls' goal, Rocco Raccoon's Rebuilding Trial), equipping clothes (Pittock Mansion's goal), hikers placing shelters, blueprints from the Abandoned Ranger Station, and real Tier III items and traits in place of the Wonder and Snake Slots placeholders.
+
+### Nov 7 update (`docs/UPDATE-2026-11-07-items.md`, 2)
+Follow `docs/design/03-items.md` (the source of truth for items) and the item card mockups.
+- **Crafting:**
+  - **Generic craft:** each type's basic recipe from the Crafting table: one key resource (pick from 2) plus a broad part (any mix from a wide group). Trinkets take 5 random different resources, re-rolled after every trinket. Tier 2 adds 1 key and 1 broad; Tier 3 adds 2 of each.
+  - **Blueprint recipes:** each item's own recipe from its table row.
+  - **Resource packs** craft from 5 resources of their type (any 5 for the Resource Pack): a way to swap unwanted resources.
+  - "Not crafted" items only come from finds, shops or events.
+  - The Tailgate and Lodge shelters give +1 Quality to food, or to tools and clothes, crafted on their tile.
+- **Items:**
+  - **Tools:** uses count down, and the tool is removed at 0.
+  - **Clothes:** three slots, Gear, Body and Feet (Feet takes shoes or socks). Anyone can wear anything. Durability ticks down at camp, and some effects cost extra.
+  - **Food:** eating is a free action, one bite at a time.
+  - **Shelters:** placed on a tile and gone after their nights. Every shelter is a basic shelter (+1 Energy when sleeping, safe from night events, Drizzle and Sheer Cold), plus its own effect.
+  - **Trinkets:** Use (consumed) or Keep (works while carried). Trinkets that touch traits, slots or XP are data now, with their effects `TODO(phase 10)`.
+  - Effects run through the shared effect engine and the trait/item hooks, never through name checks.
+- **Item cards** (`ItemCard.dc.html`, `ItemCardAnatomy.dc.html`):
+  - the item art centered in the cloud window of the front background;
+  - the title in Edit Undo, then the type (and slot for clothes), then the effect in DM Sans with this card's actual Quality values;
+  - the tier as a roman numeral at the top center: Tier I shows nothing, II silver, III gold, IV a rainbow mix;
+  - the bottom row: Quality diamonds on the left, a labeled counter on the right (USES as squares, DURABILITY as thin bars, BITES as circles; filled pips are what's left).
+- **Hidden challenges** (a setting for Wyatt to try):
+  - `CHALLENGE_SHARE` per biome in `balance.ts`, defaulting to 1.0, so nothing changes until Wyatt lowers it. Below 1.0, only that share of a biome's tiles get a challenge.
+  - Opportunities and Trials only happen on tiles with a challenge. Wonders are always extra.
+  - The scouting tools marked \* in `03-items.md` (Scanner, Security Camera, Minesweeper, Linescan, Radar Scanner) read it. The Scanner sweeps a red hexagon out from the tile's center and puts a small red ! on tiles with a challenge. Minesweeper and Linescan show colored numbers that fade away, not a pop-up.
+- **Debug panel:** give any item at any tier and Quality, and refill uses, bites and durability.
+
+**Ask Wyatt first** (Nov 7 update, 3)
+- Whether to build the "Suggested" items as placeholders now, or skip them.
+- Anything marked [first guess]: shelter nights, Diploma XP, Postcard XP, and the higher-tier recipe costs.
+- The Quality roll odds (10/20/40/20/10%) and how much Luck shifts them.
+
+---
+
+## Phase 9: Checkpoints and ranger stations
+
+(Phase 9 since the Nov 7 update: items and crafting come first, because the station shop sells items.)
 
 **Goal:** finish the Meadow section and move on to the next.
 
@@ -506,31 +562,6 @@ Follow `docs/design/05-nights-and-weather.md`.
   - **Hovering** a card in a hiker's pack (long-press on a phone) shows a larger version of the card with its sell price at this station.
 
 **Ask Wyatt first:** which station themes to build first, and their stock.
-
----
-
-## Phase 9: Items, crafting and blueprints
-
-**Build**
-- Item types: tools (uses), clothes (equipment slots Body, Feet and Gear, durability in days or charges), food (a free action), shelters (placed on a tile), and trinkets.
-- Tiers 1–4. Tier 4 only comes from luck and never teaches a blueprint.
-- **Generic craft:** pay the category cost, see 2+ random items of that type at your tier with a small chance of a higher tier, and pick 1.
-- **Blueprints and recipes:**
-  - crafting an item learns it;
-  - a known blueprint gives the exact item for a higher cost;
-  - teaching costs 4/6/8 Morale;
-  - bundles.
-- **Quality:**
-  - Tools, food and clothes have Quality 1–5. Shelters and trinkets have none.
-  - The roll is a bell curve. Starting odds in `balance.ts`: 10 / 20 / 40 / 20 / 10%.
-  - The crafter's Luck (mostly from Morale) shifts the curve up or down. Lovingly Made adds Luck at Morale 8+. Talented, Chef and Careful Hands push it up; Dogs push it down.
-  - Found and bought items roll the plain curve.
-  - Item data marks Quality-scaled values as `(X)`, for example `{ appetite: qualityScale([2,3,4,5,6]) }`.
-  - Item cards show Quality as pips.
-- Implement every item in `03-items.md`. Use placeholders for the rest.
-- Turn on what Phase 5 left waiting on items (the `TODO(phase 9)` list): tool uses (Old Trail Sign, Sticky Sap, Dull Blades), clothing durability (Freeagle, Fashion Critic, Fort Rock's goal and reward), crafting (Multnomah Falls' goal, Rocco Raccoon's Rebuilding Trial), equipping clothes (Pittock Mansion's goal), hikers placing shelters, blueprints from the Abandoned Ranger Station, and real Tier III items and traits in place of the Wonder and Snake Slots placeholders.
-
-**Ask Wyatt first:** the generic crafting costs per category, and the full item list by tier.
 
 ---
 

@@ -1,13 +1,13 @@
 /**
  * Using an item (a free action): an active hiker uses a bag item on themselves
  * or a hiker on their tile, passed out included. Phase 7 builds the medical
- * items (ItemDef.use); Phase 9 builds the rest.
+ * items (ItemDef.use); Phase 8 builds the rest.
  *
  * - Conditions go first (picked, or the item's own list), then injuries,
  *   then anything the item gives (the Splint's Splinted).
  * - Curing a passed-out hiker below 3 injuries wakes them.
  * - A use that would do nothing is refused, so the item isn't wasted.
- * - The item is used up. TODO(phase 9): uses and Quality.
+ * - The item is used up. TODO(phase 8): uses and Quality.
  */
 import { CONDITIONS } from '../../content/conditions';
 import { ITEMS } from '../../content/items';
@@ -32,7 +32,7 @@ export function validateUse(state: GameState, action: UseAction): string | undef
   if (!item) return `${user.name} doesn’t have that.`;
   const def = ITEMS[item.itemId];
   const use = def?.use;
-  if (!def || !use) return `${def?.name ?? 'That item'} can’t be used yet (Phase 9).`;
+  if (!def || !use) return `${def?.name ?? 'That item'} can’t be used yet (Phase 8).`;
 
   const target = findHiker(state, action.targetId);
   if (!target || target.status === 'abandoned' || target.status === 'checkedIn') {

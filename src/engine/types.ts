@@ -101,7 +101,7 @@ export interface Tile {
    * as usual when someone lands here, with its numbers rolled then.
    */
   revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
-  /** Shelters built on this tile (Ruins). TODO(phase 9): hikers placing shelter cards. */
+  /** Shelters built on this tile (Ruins). TODO(phase 8): hikers placing shelter cards. */
   shelters?: ItemId[];
   /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
   luckBonus?: { amount: number; until: number; cause: string };
@@ -196,18 +196,18 @@ export interface ConditionInstance {
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
 
-/** One item a hiker carries (Phase 9 fills in the details). */
+/** One item a hiker carries (Phase 8 fills in the details). */
 export interface ItemInstance {
   uid: string;
   itemId: ItemId;
   quality?: number;
   usesLeft?: number;
   daysLeft?: number;
-  /** Food: gives this much more (or less) Appetite. TODO(phase 9): used when eating arrives. */
+  /** Food: gives this much more (or less) Appetite. TODO(phase 8): used when eating arrives. */
   appetiteMod?: number;
-  /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
+  /** Tools: uses lost to challenges. TODO(phase 8): taken off its uses when tools arrive. */
   usesLost?: number;
-  /** Clothes: durability lost to weather and night events. TODO(phase 9): taken off its durability. */
+  /** Clothes: durability lost to weather and night events. TODO(phase 8): taken off its durability. */
   wear?: number;
 }
 
@@ -408,7 +408,7 @@ export interface RunCounters {
   /** Challenges each hiker passed and failed (not Risk challenges). */
   passed: Record<HikerId, number>;
   failed: Record<HikerId, number>;
-  /** Items each hiker crafted, by type. Stays empty until Phase 9. */
+  /** Items each hiker crafted, by type. Stays empty until Phase 8. */
   crafted: Record<HikerId, Partial<Record<string, number>>>;
   /** Nights in a row each hiker hasn't slept, counted at camp. */
   daysSinceSleep: Record<HikerId, number>;
@@ -596,7 +596,7 @@ export type DebugOp =
   | { kind: 'skipGraceDay' }
   /** Turns a tile's first fitting node flooded, frozen or on fire. */
   | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
-  /** Puts a clothing item on a hiker (equipping arrives in Phase 9). */
+  /** Puts a clothing item on a hiker (equipping arrives in Phase 8). */
   | { kind: 'wearClothes'; hikerId: HikerId }
   /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
   | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }

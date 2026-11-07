@@ -9,7 +9,7 @@ describe('move targets', () => {
     const targets = moveTargets(s, hiker(s, 'ash'), { kind: 'move' });
     expect(targets.map((t) => t.tileId).sort()).toEqual(['C', 'M', 'T']);
     expect(targets.find((t) => t.tileId === 'C')?.reason).toBe(
-      'Checking in at the checkpoint arrives in Phase 8.',
+      'Checking in at the checkpoint arrives in Phase 9.',
     );
     expect(targets.find((t) => t.tileId === 'M')?.reason).toBeNull();
   });

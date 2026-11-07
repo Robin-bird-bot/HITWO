@@ -10,7 +10,7 @@ const FREE = { percent: -100 };
 export const FAMILIES: Readonly<Record<Family, FamilyDef>> = {
   human: { name: 'Human', hooks: {} },
 
-  // "+1 card to choose from when scavenging" (Wyatt, Nov 4). Crafts lower-quality items (Phase 9).
+  // "+1 card to choose from when scavenging" (Wyatt, Nov 4). Crafts lower-quality items (Phase 8).
   dog: {
     name: 'Dog',
     hooks: {

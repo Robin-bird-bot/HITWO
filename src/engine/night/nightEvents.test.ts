@@ -367,7 +367,7 @@ describe('the new effects', () => {
     expect(hit.chip).toMatch(/^\d resources? swapped$/);
   });
 
-  it('wear on clothes is recorded on the item until Phase 9', () => {
+  it('wear on clothes is recorded on the item until Phase 8', () => {
     const { s, hit } = findHit(
       (seed) => {
         const s = run(night(seed), { type: 'debug', op: { kind: 'wearClothes', hikerId: 'ash' } });
