@@ -62,6 +62,8 @@ export type GoalCheck =
   | { kind: 'eachThreshold'; states: readonly ('fatigued' | 'exhausted')[] }
   /** One hiker here has one of these conditions. */
   | { kind: 'oneHasCondition'; conditions: readonly ConditionId[] }
+  /** There's a weather right now (not Clear). */
+  | { kind: 'weatherActive' }
   /** Needs a system that isn't built yet; never picked until then. */
   | { kind: 'waiting' };
 

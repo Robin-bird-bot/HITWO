@@ -113,6 +113,64 @@ export const BALANCE = {
     scavengeExtraAppetite: 1,
   },
 
+  /**
+   * Night events (05-nights-and-weather.md). Every number here is the doc's
+   * first guess. TODO(wyatt): tune.
+   */
+  nightEvents: {
+    /** Tier odds by biome (sectionIndex 0, 1, 2): Tier 1, 2, 3. */
+    tierOdds: [
+      [0.7, 0.25, 0.05],
+      [0.45, 0.4, 0.15],
+      [0.25, 0.45, 0.3],
+    ] as readonly (readonly [number, number, number])[],
+    /** Each exposed hiker's chance to be hit. */
+    chance: {
+      base: 0.3,
+      /** Alone on their tile. */
+      alone: 1.5,
+      /** For each other hiker on the tile. */
+      perOther: 0.75,
+      /** Low Morale adds points: +10 at Morale 5 or less, +20 at 2 or less. */
+      lowMorale: [
+        { atMost: 2, add: 0.2 },
+        { atMost: 5, add: 0.1 },
+      ] as readonly { atMost: number; add: number }[],
+    },
+    /**
+     * The X and Y ranges in the outcomes. Each hiker hit rolls their own.
+     * TODO(wyatt): night numbers are rolled flat; should Luck skew them, as it does a challenge's?
+     */
+    ranges: {
+      swapResources: [1, 5],
+      stealCaps: [1, 3],
+      stealResources: [1, 3],
+      loseMorale: [1, 2],
+      loseXp: [1, 3],
+      loseEnergy: [1, 3],
+      loseAppetite: [1, 3],
+      allFood: [1, 2],
+      stealItems: [1, 2],
+      allClothes: [2, 3],
+      bigLoss: [2, 3],
+      everyStat: [1, 2],
+      bleedingPhases: [2, 3],
+      conditionDays: [1, 2],
+    } as Record<string, readonly [number, number]>,
+    /** The night conditions that last a set time: Wet, Unlucky or Clumsy (Tier 1) last a day. */
+    tier1ConditionDays: 1,
+    /**
+     * Tier 3's Frozen and Soaked: the doc gives no time.
+     * TODO(wyatt): a first guess of Frozen for 1 phase and Soaked for 1 day.
+     */
+    frozenPhases: 1,
+    soakedDays: 1,
+    /** Tier 2's injury: only for a hiker alone with this much Energy or Appetite or less. */
+    tier2Injury: { energyOrAppetiteAtMost: 4 },
+    /** Tier 3's injuries: on a tile with this many hikers or fewer. */
+    tier3Injury: { energyOrAppetiteAtMost: 6, moraleAtMost: 5, maxOnTile: 2 },
+  },
+
   moveAll: {
     /**
      * The mover pays their own crossing (the line's base Appetite) plus this
@@ -284,9 +342,71 @@ export const BALANCE = {
     default: 0.25,
   },
 
+  /** Weather (05-nights-and-weather.md, Phase 6). */
+  weather: {
+    /**
+     * The placeholder schedule until Phase 11 gives each biome its own odds:
+     * Clear for 2–4 days, then a random weather for 2–3 days (Wyatt, Nov 6).
+     * TODO(phase 11): per-biome odds (Snow up high, Heatwave in the Meadow).
+     */
+    schedule: {
+      clearDays: { min: 2, max: 4 },
+      weatherDays: { min: 2, max: 3 },
+      weights: { rain: 35, storm: 20, snow: 15, heatwave: 30 },
+    },
+    /** How many days ahead the forecast shows. */
+    forecastDays: 3,
+    /** Each phase, the chance a node floods, freezes or catches fire. */
+    nodeChance: 0.15,
+    /** Each phase, the chance fire spreads to a connected tile with a Forest node. */
+    fireSpread: 0.35,
+    /** Luck a Fire node gives the other nodes on its tile. */
+    fireLuck: 1,
+    /** Drizzle: each clothing item's chance to lose 1 durability each phase. */
+    drizzleWear: 0.35,
+    /** Drizzle: how long Wet lasts. TODO(wyatt): the doc doesn't say; first guess. */
+    drizzleWetDays: 1,
+    /** Thunder: how likely Wildlife cards are while it storms. */
+    thunderWildlifeWeight: 0.25,
+    /** Sheer Cold: Shivering each phase, less 1 a clothing item, 1 a hiker with you, 2 for a shelter. */
+    sheerCold: { base: 3, perClothes: 1, perHiker: 1, shelter: 2 },
+  },
+
+  /** Condition numbers from 02-traits-and-conditions.md (Phase 6). */
+  conditions: {
+    /** Sleepy, Nauseous, Bored, Sated, Energized: the stat change while it lasts. */
+    shift: { sleepy: -2, nauseous: -2, bored: -2, sated: 1, energized: 1 },
+    /** "Can't go above": Dejected (Morale), Inappetent (Appetite), Buzzed (Energy). */
+    caps: { dejected: 5, inappetent: 7, buzzed: 7 },
+    /** Strained: extra Energy lost each time. Inspired: extra Morale gained each time. */
+    strainedExtra: 1,
+    inspiredExtra: 1,
+    /** Sluggish: extra Appetite to move. */
+    sluggishAppetite: 1,
+    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 9). */
+    luck: 1,
+    /** Weak: item slots lost. Tunnel Vision: cards lost. */
+    weakSlots: 1,
+    tunnelVisionCards: 1,
+    /** Wet (each day), Soaked and Allergies (each phase): Morale lost. */
+    moraleLoss: 1,
+    /**
+     * Ringing Ears: "each phase, a chance to lose 1 Morale (75%), or 1 Energy at
+     * night (25%)". TODO(wyatt): read as 75% for Morale in a day phase, 25% for
+     * Energy at night.
+     */
+    ringingEars: { dayMorale: 0.75, nightEnergy: 0.25 },
+    /** Shivering: Frozen at this many; an injury and back to 0 at this many. */
+    shivering: { frozenAt: 3, injuryAt: 5 },
+    /** Burning: −1 maximum Energy a stack; an injury and back to 0 at this many; cools 1 a quiet night. */
+    burning: { injuryAt: 5, coolPerNight: 1 },
+  },
+
   /** Numbers used by specific traits (see src/content/traits.ts). */
   traits: {
     leader: { moveAllDiscount: 1 },
+    /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
+    thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },
     extrinsic: { together: 1, alone: -1 },
     forager: { cards: 1 },

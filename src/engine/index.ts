@@ -74,3 +74,5 @@ export {
   type GoalProgress,
   type WonderProgress,
 } from './wonders/wonders';
+export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
+export { overBag } from './actions/give';

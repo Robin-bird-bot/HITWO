@@ -6,9 +6,10 @@
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
-import { NODE_TYPES, PHASES, type GameState, type Tile } from './types';
+import { NODE_TYPES, PHASES, type GameState, type Tile, type WeatherState } from './types';
+import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -25,7 +26,19 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   3: (save) => ({ ...save, counters: freshCounters() }),
   // Phase 5 (Nov 6 update): every biome has a Wonder. An older trail gets one on a tile nobody has reached.
   4: (save) => addWonder(save),
+  // Phase 6: real weather with a forecast. The old debug weather carries over as Storm or Heatwave.
+  5: (save) => ({ ...save, weather: upgradeWeather(save) }),
 };
+
+/** The weather a version 5 save had ('stormy', 'sunny' or none), as today's, with a fresh forecast. */
+function upgradeWeather(save: SaveData): WeatherState {
+  const seed = isNumber(save.seed) ? save.seed : 0;
+  const day = isNumber(save.day) ? save.day : 1;
+  const w = freshWeather(seed, day);
+  const old = save.weather;
+  w.today = old === 'stormy' ? 'storm' : old === 'sunny' ? 'heatwave' : 'clear';
+  return w;
+}
 
 /**
  * Puts a Wonder on a plain tile nobody has landed on, preferring one whose
@@ -129,6 +142,9 @@ function looksLikeGameState(v: SaveData): v is SaveData & GameState {
     Array.isArray(v.scavengedToday) &&
     Array.isArray(v.usedCards) &&
     isRecord(v.counters) &&
+    isRecord(v.weather) &&
+    isString(v.weather.today) &&
+    Array.isArray(v.weather.ahead) &&
     (v.scavenge === undefined || isRecord(v.scavenge)) &&
     isNumber(v.nextEventId) &&
     Array.isArray(v.log)

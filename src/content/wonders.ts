@@ -4,7 +4,8 @@
  * tile picks 1. Numbers marked X in the doc scale by biome (see GoalNumber).
  *
  * Goals that need a later system are marked `waitingOn` and never picked yet
- * (Wyatt, Nov 6). Every Wonder still has 4 or 5 goals to pick from.
+ * (Wyatt, Nov 6). Every Wonder still has 4 or 5 goals to pick from. Crater
+ * Lake's weather goal came in with Phase 6.
  */
 import { BALANCE } from '../config/balance';
 import type { WonderDef, WonderRewardDef } from '../engine/wonders/types';
@@ -179,8 +180,7 @@ export const WONDERS: readonly WonderDef[] = [
       },
       {
         text: 'There’s a weather condition right now.',
-        check: { kind: 'waiting' },
-        waitingOn: 'Phase 6 (weather)',
+        check: { kind: 'weatherActive' },
       },
       {
         text: 'The hikers here carry {x} tools between them.',

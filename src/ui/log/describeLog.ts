@@ -4,6 +4,8 @@
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
+import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
@@ -18,9 +20,13 @@ import { NODE_NAME } from '../map/looks';
 import { cardText } from '../challenge/cardText';
 import { tileName } from '../panels/hikerInfo';
 import { resourceName, resourcesTitle } from '../scavenge/cardLook';
+import { safeLines } from '../night/nightLines';
 
 export interface LogLine {
+  /** The event it describes. */
   id: number;
+  /** One event that makes several lines (a night event) numbers them. */
+  part?: number;
   text: string;
   tone:
     'move' | 'rest' | 'drain' | 'injury' | 'phase' | 'ability' | 'scavenge' | 'challenge' | 'debug';
@@ -113,9 +119,23 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
       .map((s) => signed(s.to - s.from, s.stat))
       .join(', ');
 
+  // A night event's own sentences say what it did, so the losses it logged on
+  // the way fold into it. Injuries from a stat hitting 0, and passing out, still show.
+  const folded = new Set<number>();
+  for (const e of events) {
+    if (e.kind !== 'nightEvent') continue;
+    const cause = NIGHT_CREATURE_BY_ID[e.creatureId]?.name;
+    for (const d of events) {
+      if (d.id < e.from || d.id >= e.id || d.kind === 'passedOut') continue;
+      if (d.kind === 'injury' && d.cause !== cause) continue;
+      folded.add(d.id);
+    }
+  }
+
   for (let i = 0; i < events.length;) {
     const e = events[i] as GameEvent;
     i += 1;
+    if (folded.has(e.id)) continue;
     switch (e.kind) {
       case 'move': {
         const { taken, next } = takeStats(i, ['Move', 'Move All', 'Moved with the group']);
@@ -154,8 +174,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const left = e.left ? ` ${e.left} more didn’t fit.` : '';
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
-          tone: 'scavenge',
+          text: e.dropped
+            ? `${name(e.hikerId)} scavenged, but it slipped away (Butterfingers${cost ? `, ${cost}` : ''}).`
+            : `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
+          tone: e.dropped ? 'drain' : 'scavenge',
         });
         break;
       }
@@ -240,6 +262,37 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           tone: 'injury',
         });
         break;
+      case 'weatherChanged': {
+        const to = WEATHERS[e.to];
+        const days = `${e.days} day${e.days === 1 ? '' : 's'}`;
+        const text =
+          e.to === 'clear'
+            ? `The ${WEATHERS[e.from].name.toLowerCase()} is over: clear skies.`
+            : `${to.name} for the next ${days}: ${to.node?.name} now, ${to.hiker?.name} from tomorrow.`;
+        lines.push({ id: e.id, text, tone: 'phase' });
+        break;
+      }
+      case 'nodesChanged': {
+        const tiles = [...e.tiles, ...(e.spread ?? [])]
+          .map((id) => state.section.tiles[id])
+          .filter((t) => !!t)
+          .map((t) => tileName(t));
+        const verb =
+          e.state === 'flooded' ? 'flooded' : e.state === 'frozen' ? 'froze over' : 'caught fire';
+        const where = listNames(tiles);
+        const text = e.spread?.length
+          ? `The fire spread to ${where}.`
+          : `A node ${verb} on ${where}.`;
+        lines.push({ id: e.id, text, tone: 'drain' });
+        break;
+      }
+      case 'freeAction':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)}’s action was free (${e.cause}).`,
+          tone: 'rest',
+        });
+        break;
       case 'healed':
         lines.push({
           id: e.id,
@@ -295,6 +348,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           blown: 'was blown back to',
           falseTrail: 'followed false trail markers to',
           tunnel: 'took the secret tunnel to',
+          chased: 'was chased back to',
         }[e.how];
         lines.push({
           id: e.id,
@@ -401,10 +455,16 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
       }
       case 'condition': {
         const def = CONDITIONS[e.condition];
-        const unit = `${UNIT_WORD[e.unit]}${e.remaining === 1 ? '' : 's'}`;
+        const called = def?.name ?? e.condition;
+        const how =
+          e.stacks !== undefined
+            ? `${called} ×${e.stacks}`
+            : e.unit === 'weather'
+              ? `${called} until the weather ends`
+              : `${called} for ${e.remaining} ${UNIT_WORD[e.unit]}${e.remaining === 1 ? '' : 's'}`;
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} is ${def?.name ?? e.condition} for ${e.remaining} ${unit} (${e.cause}).`,
+          text: `${name(e.hikerId)} is ${how} (${e.cause}).`,
           tone: def?.kind === 'positive' ? 'rest' : 'injury',
         });
         break;
@@ -425,6 +485,29 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           text: `${name(e.hikerId)} lost ${listNames(what)} (${e.cause}).`,
           tone: 'injury',
         });
+        break;
+      }
+      case 'watch':
+        lines.push({ id: e.id, text: `${name(e.hikerId)} kept watch.`, tone: 'rest' });
+        break;
+      case 'nightEvent': {
+        // Nobody hit: nothing to say (the window doesn't show either).
+        if (!e.hits.length) break;
+        const called = NIGHT_CREATURE_BY_ID[e.creatureId]?.called ?? e.creatureId;
+        lines.push({
+          id: e.id,
+          text: `Night event: ${called.charAt(0).toUpperCase()}${called.slice(1)} came to camp.`,
+          tone: 'challenge',
+        });
+        let part = 0;
+        for (const hit of e.hits) {
+          part += 1;
+          lines.push({ id: e.id, part, text: `${hit.text} (${hit.chip})`, tone: 'injury' });
+        }
+        for (const s of safeLines(e.safe, name)) {
+          part += 1;
+          lines.push({ id: e.id, part, text: s.text, tone: 'rest' });
+        }
         break;
       }
       case 'debug':

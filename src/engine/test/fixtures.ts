@@ -71,6 +71,10 @@ export interface FixtureOptions {
   hikers?: HikerSetup[];
   /** Landing on a new tile opens a challenge. Off unless a test is about challenges. */
   challenges?: boolean;
+  /** The weather follows its schedule. Off (held at Clear) unless a test is about weather. */
+  weather?: boolean;
+  /** A night event at every camp. Off unless a test is about night events. */
+  nightEvents?: boolean;
 }
 
 /** Four placeholder hikers on the trailhead, Day 1 Morning. */
@@ -78,6 +82,8 @@ export function fixtureGame({
   seed = 1,
   hikers,
   challenges = false,
+  weather = false,
+  nightEvents = false,
 }: FixtureOptions = {}): GameState {
   const state = createGame({
     seed,
@@ -85,6 +91,8 @@ export function fixtureGame({
     hikers: hikers ?? ['ash', 'birch', 'cedar', 'dot'].map((id) => fixtureHiker(id)),
   });
   if (!challenges) state.noChallenges = true;
+  if (!weather) state.weather.hold = true;
+  if (!nightEvents) state.noNightEvents = true;
   return state;
 }
 

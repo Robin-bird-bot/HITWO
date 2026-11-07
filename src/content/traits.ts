@@ -70,6 +70,28 @@ const extrinsic: TraitDef = {
   },
 };
 
+/**
+ * Thrill Seeker (Nov 6, Tier I, Trail). Not the Morale trait Thrill-Seeker.
+ * Every Energy loss in a phase counts, costs included; it triggers once a phase.
+ */
+const thrillSeeker: TraitDef = {
+  id: 'thrillSeeker',
+  name: 'Thrill Seeker',
+  type: 'T',
+  tier: 1,
+  text: 'Losing 3 or more Energy in a single phase makes this hiker Energized for 1 day.',
+  hooks: {
+    onStatChange(e, ctx) {
+      if (e.stat !== 'energy' || e.to >= e.from) return;
+      const lost = ctx.tally(ctx.self, 'energyLost', e.from - e.to, 'phase');
+      if (lost < N.thrillSeeker.energyLost) return;
+      if (ctx.tally(ctx.self, 'thrillSeeker', 0, 'phase') > 0) return;
+      ctx.tally(ctx.self, 'thrillSeeker', 1, 'phase');
+      ctx.addCondition(ctx.self, 'energized', N.thrillSeeker.days, 'days', 'Thrill Seeker');
+    },
+  },
+};
+
 // ── Scavenging (Phase 4) ───────────────────────────────────────────────────
 
 const forager: TraitDef = {
@@ -232,6 +254,7 @@ export const TRAITS: Readonly<Record<string, TraitDef>> = Object.fromEntries(
     leader,
     stoic,
     extrinsic,
+    thrillSeeker,
     forager,
     gambler,
     ...finders,

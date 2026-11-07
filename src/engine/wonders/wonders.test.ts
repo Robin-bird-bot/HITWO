@@ -85,7 +85,7 @@ describe('Wonder tiles', () => {
 describe('revealing a Wonder', () => {
   it('landing there reveals it: 3 goals that can be met now, and 3 Tier III items, never a card', () => {
     for (let seed = 1; seed <= 20; seed++) {
-      const s = withWonder('crater-lake', (g) => {
+      const s = withWonder('fort-rock', (g) => {
         g.seed = seed;
         g.rng = seedRng(seed);
       });
@@ -93,8 +93,8 @@ describe('revealing a Wonder', () => {
       expect(after.challenge).toBeUndefined();
       const w = after.section.tiles.M!.wonder!;
       expect(w.goals).toHaveLength(3);
-      // Crater Lake's weather goal (index 3) waits on Phase 6.
-      expect(w.goals!.map((g) => g.index)).not.toContain(3);
+      // Fort Rock's clothing durability goal (index 4) waits on Phase 9.
+      expect(w.goals!.map((g) => g.index)).not.toContain(4);
       expect(new Set(w.goals!.map((g) => g.index)).size).toBe(3);
       expect([...w.tier3!].sort()).toEqual([...TIER_3_ITEMS].sort());
       expect(after.log.at(-1)).toMatchObject({ kind: 'wonderRevealed', tileId: 'M' });
@@ -260,6 +260,14 @@ describe('Wonder goals, against only the hikers on the tile', () => {
     expect(met(s, 'swiss-alps', 4, 2)).toBe(true);
   });
 
+  it('Crater Lake: there’s a weather right now (Phase 6)', () => {
+    const s = fixtureGame();
+    place(s, 'ash', 'M');
+    expect(met(s, 'crater-lake', 3)).toBe(false);
+    s.weather.today = 'rain';
+    expect(met(s, 'crater-lake', 3)).toBe(true);
+  });
+
   it('nothing about the hikers ticks with nobody there', () => {
     const s = fixtureGame();
     expect(met(s, 'multnomah-falls', 2)).toBe(false);
@@ -415,7 +423,8 @@ describe('accomplishing a Wonder', () => {
     place(giant, 'ash', 'M', { energy: 4 });
     showing(giant, 'sleeping-giant', [{ index: 1 }]);
     const woke = run(giant, accomplish({ ash: { reward: 0 } }));
-    expect(hiker(woke, 'ash').stats.energy).toBe(9);
+    // 4, +1 from Energized itself (Phase 6), +5 from the reward.
+    expect(hiker(woke, 'ash').stats.energy).toBe(10);
     expect(hiker(woke, 'ash').conditions.map((c) => c.id)).toContain('energized');
     const bigger = run(giant, accomplish({ ash: { reward: 2 } }));
     const ash = hiker(bigger, 'ash');

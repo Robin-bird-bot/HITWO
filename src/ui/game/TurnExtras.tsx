@@ -1,6 +1,6 @@
 /**
  * Small boxes shown under the action grid: who's coming along for Move All,
- * the Sleep confirm, and which node to Tend.
+ * the Sleep and Keep Watch confirms, and which node to Tend.
  */
 import { useEffect, useRef } from 'react';
 import type { HikerId, NodeType } from '../../engine';
@@ -79,6 +79,51 @@ export function SleepConfirm({ name, gain, from, to, onConfirm, onCancel }: Slee
         </button>
         <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
           Sleep
+        </button>
+      </div>
+    </div>
+  );
+}
+
+interface WatchConfirmProps {
+  name: string;
+  /** Everyone else on the tile, who'll be safe too. */
+  others: string[];
+  /** What the night without sleep costs. */
+  noSleep: number;
+  onConfirm(): void;
+  onCancel(): void;
+}
+
+/** Keep Watch: who it keeps safe, and that the watcher doesn't sleep. */
+export function WatchConfirm({ name, others, noSleep, onConfirm, onCancel }: WatchConfirmProps) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    confirmRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel]);
+
+  // "Ash is", "Ash and Birch are", "Ash, Birch and Cedar are".
+  const all = [name, ...others];
+  const who =
+    all.length === 1 ? `${name} is` : `${all.slice(0, -1).join(', ')} and ${all.at(-1)} are`;
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>KEEP WATCH · SAFE TONIGHT</span>
+      <span className={styles.text}>
+        {name} keeps watch tonight. {who} safe from the night event. {name} won’t sleep, so the
+        night costs {noSleep} Energy.
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          Cancel
+        </button>
+        <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
+          Keep Watch
         </button>
       </div>
     </div>

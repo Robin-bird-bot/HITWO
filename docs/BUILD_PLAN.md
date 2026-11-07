@@ -323,7 +323,7 @@ This keeps the download small and lets numbers and text change.
 **Build**
 - **Night actions:** Sleep, Keep Watch, and Move or Scavenge at the night penalty.
 - **Camp step:**
-  - a night event chance (50%, from a placeholder deck). The art for 15 night events is in `assets/night-events/` (Bats, Bears, Bobcat, Coyote, Cultists, Drunk Hiker, Foxes, Hyenas, Leopard, Monster, Opossums, Raccoons, Raccoon Gang, Robber, Wolves); Wyatt writes their rules before this phase. Use the art with the placeholder deck until then;
+  - a night event (see "Night events" below). The art for all 15 creatures is in `assets/night-events/`;
   - conditions tick down;
   - clothing durability ticks down;
   - passed-out countdowns drop.
@@ -333,14 +333,83 @@ This keeps the download small and lets numbers and text change.
   - caps that change the maximum;
   - positive conditions can push a stat above 10.
   - Implement every condition in `02-traits-and-conditions.md`.
-- **Weather** affects every tile, with the 3-day forecast shown.
+- **Weather** affects every tile, with the 3-day forecast shown (see "Weather" below).
 
 - **Conditions must be easy to see and understand in both modes.** Design how they show on the hiker cards and the map so a glance tells you who has what, how long it lasts and what it does (for example, bigger condition icons with a time-left count, positive and negative clearly colored, and a one-line description on hover or tap). Make a mockup for Wyatt to approve before building it.
 - Turn on the challenge and Trial effects that were waiting on Phase 6 (the `TODO(phase 6)` list from Phase 5).
 
+### Night events (`docs/UPDATE-2026-11-06-nights-weather.md`, 2)
+Follow `docs/design/05-nights-and-weather.md`.
+- **Each night:**
+  1. Pick a tier using the odds for the current biome.
+  2. Pick a creature from that tier.
+  3. Roll for each exposed hiker. A hiker is safe on a tile with a shelter, or on a tile where any hiker chose Keep Watch.
+  4. Pick a random outcome from the tier's list for each hiker hit, skipping outcomes that can't apply.
+- **Data:** creatures, tiers, outcomes, odds and the per-hiker chance formula all go in `src/content/nightEvents.ts` and `balance.ts`. Outcomes run through the same effect engine as challenges.
+- **Lines:** each outcome has a generic sentence template with `{creature}`, `{hiker}` and `{X}`. Creatures can override any template with their own version. Write a placeholder set (`placeholder: true`) so Wyatt can replace them.
+- **The window** (follow `NightEvent.dc.html`):
+  - a small side window styled like the side panels, sitting beside the right-hand panel. It doesn't dim or blur the map. It has a − button to minimize it and is movable like the other windows;
+  - a midnight-blue ribbon, the creature art as a banner, and the creature name;
+  - one line per hiker hit, with a result chip;
+  - an optional "safe" note;
+  - an OK button.
+  - It only appears if someone was hit.
+- **Debug panel:** force a tier and creature, and force a hit on a chosen hiker.
+
+### Weather (`docs/UPDATE-2026-11-06-nights-weather.md`, 3: Phase 6 engine, Phase 11 schedules)
+- **Four weathers:** Rain, Storm, Snow and Heatwave. Each has a hiker effect and a node effect, as in the doc's table. Clear has no effects.
+- **Timing:** hiker effects start after the first full day of the weather. Node effects start at once, and roll at the start of each phase.
+- **Drizzle:** each phase, every equipped clothing item has a 35% chance to lose 1 durability.
+- **Burning** goes down by 1 in any Night phase where the hiker gains none.
+- **Sheer Cold** stays at 3 Shivering per phase (Wyatt's call).
+- **New node states:** Flooded (counts as River), Frozen (gives no resources) and Fire (not Forest; +1 Luck to the other nodes on the tile; spreads to connected Forest tiles at 35%).
+  - Use the new node icons.
+  - Store the original node type, so everything changed reverts when the weather ends.
+  - Shivering and Burning end then too.
+- **Shivering and Burning** are stacking conditions. Show the stack count on the condition icon.
+- **The weather change screen** (follow `Weather.dc.html` and `WeatherIcons.dc.html`):
+  - not a pop-up: the whole screen blurs;
+  - the animated icon, the weather's name, its two effects, and a Ready button.
+  - In the game the icon animation plays **once** and holds its last frame. It doesn't loop like the mockup.
+  - Show it when the weather changes, including back to Clear (the sun icon, "CLEAR SKIES", no effects).
+  - Under reduced motion, show the final frame.
+- **Scheduling:** until Phase 11, use a simple placeholder schedule plus the debug panel to set the weather. Phase 11 gives each biome its own weather odds (Snow mostly in the high, snowy part; Heatwave in the Meadow).
+- No special weather challenges for now.
+
 **Done when:** every listed condition has a test.
 
-**Ask Wyatt first:** the night event list, if it's ready.
+**Ask Wyatt first** (answered Nov 6)
+- The first-guess numbers in `05-nights-and-weather.md`: tier odds by biome, the per-hiker night chance, and the X ranges.
+- The balance notes at the end of `05-nights-and-weather.md`. Drizzle, Burning and Sheer Cold are settled.
+
+**Phase 6 notes (built Nov 6)**
+- **Wyatt's answers (Nov 6):**
+  - The doc's first-guess night numbers as written.
+  - Drizzle keeps Wet, then Soaked.
+  - Conditions give back what they took when they end, and take back what they gave. Energized can pass 10, and taking it back never goes below 0. Caps just lift.
+  - Thrill Seeker is a Trail trait.
+  - A Fire node gives nothing when scavenged.
+  - Refreshed and Full block every loss of their stat, chosen costs too.
+  - A simple random weather schedule until Phase 11.
+- **Where things are:**
+  - Conditions: `src/content/conditions.ts` (every condition as data) and `src/engine/conditions.ts`. The new hook points (`modifyStatChange`, `modifyStatMax`, `onStatChange`, `onPhaseEnd`, `suppressTraits`) are in `src/engine/effects.ts`. Badges and tooltips are in `src/ui/conditions/`; the approved mockup is `#mockup-conditions`.
+  - Weather: `src/content/weather.ts`, `src/engine/weather.ts`, and the change screen in `src/ui/weather/`.
+  - Night events: `src/content/nightEvents.ts` (creatures, outcomes and placeholder lines), `src/engine/night/`, Keep Watch in `src/engine/actions/watch.ts`, and the window in `src/ui/night/`.
+  - The backtick debug panel sets the weather (and holds it), skips the grace day, floods, freezes or burns a node, puts clothes on a hiker, and forces tonight's night event (tier, creature, a hit) or runs it now.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - Night numbers are rolled evenly; challenges let Luck tilt theirs. Tier 1's conditions last 1 day. Tier 3's Frozen lasts 1 phase and Soaked 1 day (the doc gives no time).
+  - Only one hiker per tile can keep watch. Passed-out hikers can be hit. Stealing takes bag items, not worn ones. An outcome that would take only stats already at 0 is skipped.
+  - Drizzle's Wet lasts 1 day.
+  - Ringing Ears: a 75% chance of −1 Morale in each day phase, and 25% of −1 Energy at night.
+  - Blind stops the Move action; Move All can still bring the hiker.
+  - A condition's loss follows the normal rules, so Sleepy taking Energy to 0 gives an injury. While Burning's cap holds Energy, Energized can't push past it.
+  - Phase 5's gates: "stormy" means Storm and "sunny" means Heatwave.
+  - Sit by the Fire isn't in any phase yet, so its button says "Soon".
+- **Waiting on later phases** (`TODO(phase N)`):
+  - Phase 7: Bleeding's injury when it runs out; passed-out countdowns at camp.
+  - Phase 9: clothing durability (Drizzle and night events record wear on the item until then); equipping clothes (night outcomes that need clothes are skipped); food giving less Appetite (recorded on the item); Food Poisoning, Inept and Clumsy; Lucky and Unlucky for crafting.
+  - Phase 11: each biome's own weather odds.
+- **Saves:** version 6. Version 6 adds real weather with a forecast; an older save's Storm or Heatwave carries over.
 
 ---
 

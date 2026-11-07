@@ -23,7 +23,8 @@ export type WindowId =
   | 'inventory'
   | 'weather'
   | 'goal'
-  | 'wonder';
+  | 'wonder'
+  | 'nightEvent';
 
 export interface Offset {
   x: number;

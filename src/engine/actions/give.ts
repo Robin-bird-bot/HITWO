@@ -75,3 +75,35 @@ export function applyReturn(state: GameState, action: ReturnAction): void {
   changeAbundance(state, node, BALANCE.abundance.returnToNature);
   pushEvent(state, { kind: 'returned', hikerId: hiker.id, resource: r, node });
 }
+
+type DropAction = Extract<Action, { type: 'dropItem' }>;
+
+/** Dropping a bag item for good (Weak can leave a hiker with one more than fits). */
+export function validateDrop(state: GameState, action: DropAction): string | undefined {
+  const hiker = findHiker(state, action.hikerId);
+  const reason = notActiveReason(hiker);
+  if (reason || !hiker) return reason;
+  if (!hiker.inventory.bag.some((i) => i.uid === action.itemUid)) {
+    return `${hiker.name} doesn’t have that.`;
+  }
+  return undefined;
+}
+
+export function applyDrop(state: GameState, action: DropAction): void {
+  const hiker = mustFindHiker(state, action.hikerId);
+  const i = hiker.inventory.bag.findIndex((it) => it.uid === action.itemUid);
+  const [item] = hiker.inventory.bag.splice(i, 1);
+  if (!item) return;
+  pushEvent(state, {
+    kind: 'lost',
+    hikerId: hiker.id,
+    resources: [],
+    items: [item.itemId],
+    cause: 'dropped',
+  });
+}
+
+/** How many bag items don't fit any more (Weak). */
+export function overBag(state: GameState, hiker: GameState['hikers'][number]): number {
+  return Math.max(0, hiker.inventory.bag.length - bagSlots(state, hiker).total);
+}

@@ -339,3 +339,11 @@
   width: 344px;
   display: flex;
 }
+
+/* Condition badges on a Simple card (Phase 6 mockup). */
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}

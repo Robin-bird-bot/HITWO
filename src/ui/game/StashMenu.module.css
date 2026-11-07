@@ -76,3 +76,29 @@
   gap: 4px;
   font-size: 12px;
 }
+
+/* Dropping an item asks twice. */
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.danger {
+  border-color: rgba(229, 98, 74, 0.6);
+  color: #f39a86;
+}
+
+.option.danger:hover:not(:disabled) {
+  background: #e5624a;
+  border-color: #e5624a;
+  color: var(--page);
+}
+
+.over {
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(229, 98, 74, 0.14);
+  font-size: 13px;
+  color: #f39a86;
+}

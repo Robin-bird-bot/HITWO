@@ -98,6 +98,21 @@ describe('save and load', () => {
     );
   });
 
+  it('upgrades a version 5 save: the old debug weather becomes today’s, with a forecast', () => {
+    const v5 = structuredClone(fixtureGame()) as unknown as Record<string, unknown>;
+    v5.weather = 'stormy';
+    const loaded = deserialize(JSON.stringify({ ...v5, saveVersion: 5 }));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.state.weather.today).toBe('storm');
+    expect(loaded.state.weather.since).toBe(loaded.state.day);
+    expect(loaded.state.weather.ahead.length).toBeGreaterThanOrEqual(3);
+    const none = structuredClone(fixtureGame()) as unknown as Record<string, unknown>;
+    delete none.weather;
+    const clear = deserialize(JSON.stringify({ ...none, saveVersion: 5 }));
+    expect(clear.ok && clear.state.weather.today).toBe('clear');
+  });
+
   it('round-trips conditions with their timing', () => {
     const state = fixtureGame();
     const ash = state.hikers[0];

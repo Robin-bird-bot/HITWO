@@ -13,6 +13,7 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, POSITIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCE_BY_ID } from '../../content/resources';
+import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { changeAbundance } from '../abundance';
 import { revealCardOn } from '../challenges/reveal';
@@ -228,8 +229,8 @@ function checkGoal(
     }
     case 'fullStats':
       return one(
-        (h) => STAT_NAMES.filter((s) => h.stats[s] >= statMax(h, s)).length,
-        (h) => STAT_NAMES.every((s) => h.stats[s] >= statMax(h, s)),
+        (h) => STAT_NAMES.filter((s) => h.stats[s] >= statMax(state, h, s)).length,
+        (h) => STAT_NAMES.every((s) => h.stats[s] >= statMax(state, h, s)),
       );
     case 'noInjuries':
       return each((h) => h.injuries === 0);
@@ -261,6 +262,10 @@ function checkGoal(
         (h) => (has(h) ? 1 : 0),
         (h) => has(h),
       );
+    }
+    case 'weatherActive': {
+      const today = WEATHERS[state.weather.today];
+      return { met: state.weather.today !== 'clear', readout: today.name.toUpperCase() };
     }
     case 'waiting':
       return { met: false };

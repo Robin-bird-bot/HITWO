@@ -1,4 +1,7 @@
+import { CONDITIONS } from '../../content/conditions';
+import { removeCondition } from '../conditions';
 import { canActReason } from '../effects';
+import { pushEvent } from '../log';
 import { changeStat } from '../stats';
 import type { Action, GameState, Hiker, HikerId, NodeKind, StatAmounts, TileId } from '../types';
 
@@ -32,6 +35,24 @@ export function phaseActionReason(
   if (reason || !hiker) return reason;
   if (hiker.acted) return `${hiker.name} has already acted this ${state.phase}.`;
   return canActReason(state, hiker, { action, role: 'actor', phase: state.phase });
+}
+
+/**
+ * Uses up the hiker's action this phase, unless a condition makes this one
+ * free (Motivated), which then ends.
+ */
+export function spendAction(state: GameState, hiker: Hiker): void {
+  const free = hiker.conditions.find((c) => CONDITIONS[c.id]?.freeAction);
+  if (!free) {
+    hiker.acted = true;
+    return;
+  }
+  pushEvent(state, {
+    kind: 'freeAction',
+    hikerId: hiker.id,
+    cause: CONDITIONS[free.id]?.name ?? free.id,
+  });
+  removeCondition(state, hiker, free.id, { quiet: true });
 }
 
 /** Pays a cost one stat at a time, so each change (and any injury) resolves before the next. */

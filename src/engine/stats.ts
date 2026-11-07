@@ -11,16 +11,94 @@
  *   next starts (Wyatt, Nov 3).
  */
 import { BALANCE } from '../config/balance';
-import { fireMoraleChange } from './effects';
+import { adjustStatChange, fireMoraleChange, fireStatChange, statMaxModifiers } from './effects';
 import { pushEvent } from './log';
 import { STAT_NAMES, type GameState, type Hiker, type StatName } from './types';
 
-/** A stat's maximum for this hiker: 10, plus any permanent raise (Sleeping Giant). */
-export function statMax(hiker: Hiker, stat: StatName): number {
-  return BALANCE.stats.max + (hiker.maxBonus?.[stat] ?? 0);
+/**
+ * A stat's maximum for this hiker right now: 10, plus any permanent raise
+ * (Sleeping Giant), less what conditions take (Burning), and no higher than
+ * any cap (Dejected: Morale 5).
+ */
+export function statMax(state: GameState, hiker: Hiker, stat: StatName): number {
+  let max = BALANCE.stats.max + (hiker.maxBonus?.[stat] ?? 0);
+  const mods = statMaxModifiers(state, hiker, stat);
+  for (const m of mods) max += m.delta ?? 0;
+  for (const m of mods) if (m.cap !== undefined) max = Math.min(max, m.cap);
+  return Math.max(BALANCE.stats.min, max);
 }
 
+/** Is something holding this stat below its usual maximum (a cap, Burning)? */
+function capped(state: GameState, hiker: Hiker, stat: StatName): boolean {
+  return statMaxModifiers(state, hiker, stat).some(
+    (m) => m.cap !== undefined || (m.delta ?? 0) < 0,
+  );
+}
+
+/**
+ * Lowers any stat above a cap to the cap (a new Dejected, more Burning, or
+ * Hangry as Appetite drops). A stat above 10 from a positive condition is left
+ * alone unless a cap holds it.
+ */
+export function clampToCaps(state: GameState, hiker: Hiker): void {
+  for (const stat of STAT_NAMES) {
+    if (!capped(state, hiker, stat)) continue;
+    const max = statMax(state, hiker, stat);
+    const from = hiker.stats[stat];
+    if (from <= max) continue;
+    hiker.stats[stat] = max;
+    pushEvent(state, {
+      kind: 'stat',
+      hikerId: hiker.id,
+      stat,
+      from,
+      to: max,
+      cause: 'its maximum',
+    });
+  }
+}
+
+export interface StatChangeOptions {
+  /** A positive condition can push a stat above its maximum (Energized). */
+  pastMax?: boolean;
+}
+
+/**
+ * Changes a stat. Sources change it first (Strained loses 1 more, Refreshed
+ * loses none, Inspired gains 1 more). Energy or Appetite reaching 0 gives an injury.
+ */
 export function changeStat(
+  state: GameState,
+  hiker: Hiker,
+  stat: StatName,
+  delta: number,
+  cause: string,
+  { pastMax = false }: StatChangeOptions = {},
+): void {
+  if (delta === 0 || hiker.status === 'abandoned') return;
+  const change = adjustStatChange(state, hiker, { stat, delta, cause });
+  if (change === 0) return;
+  const from = hiker.stats[stat];
+  const ceiling = pastMax ? Infinity : Math.max(statMax(state, hiker, stat), from);
+  const to = Math.max(BALANCE.stats.min, Math.min(from + change, ceiling));
+  if (to === from) return;
+
+  hiker.stats[stat] = to;
+  pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
+
+  if (stat === 'morale') fireMoraleChange(state, hiker, to - from, cause);
+  fireStatChange(state, hiker, { stat, from, to, cause });
+  const injures = BALANCE.injuries.fromStats.includes(stat);
+  if (injures && to === BALANCE.stats.min && change < 0) addInjury(state, hiker, `${stat} hit 0`);
+  // Hangry's Morale cap moves with Appetite.
+  clampToCaps(state, hiker);
+}
+
+/**
+ * Gives back or takes back a condition's stat change when it ends: no
+ * sources, no injury, never below 0, and never above the maximum.
+ */
+export function shiftStat(
   state: GameState,
   hiker: Hiker,
   stat: StatName,
@@ -29,16 +107,11 @@ export function changeStat(
 ): void {
   if (delta === 0 || hiker.status === 'abandoned') return;
   const from = hiker.stats[stat];
-  const ceiling = Math.max(statMax(hiker, stat), from);
+  const ceiling = Math.max(statMax(state, hiker, stat), from);
   const to = Math.max(BALANCE.stats.min, Math.min(from + delta, ceiling));
   if (to === from) return;
-
   hiker.stats[stat] = to;
   pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
-
-  if (stat === 'morale') fireMoraleChange(state, hiker, to - from, cause);
-  const injures = BALANCE.injuries.fromStats.includes(stat);
-  if (injures && to === BALANCE.stats.min && delta < 0) addInjury(state, hiker, `${stat} hit 0`);
 }
 
 export function addInjury(state: GameState, hiker: Hiker, cause: string): void {

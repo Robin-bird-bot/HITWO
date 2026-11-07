@@ -251,3 +251,35 @@ describe('trail log sentences', () => {
     expect(describeLog(s, 3)).toHaveLength(3);
   });
 });
+
+describe('night events in the log', () => {
+  it('say what happened in their own words, not as separate losses', () => {
+    for (let seed = 1; seed < 400; seed++) {
+      const s = toNight(fixtureGame({ seed, nightEvents: true }));
+      place(s, 'ash', 'L');
+      s.caps = 0;
+      for (const h of s.hikers) h.inventory.bag = [];
+      s.hikers[0]!.inventory.resources = { wood: 2 };
+      s.hikers[0]!.xp = 0;
+      const after = run(
+        s,
+        { type: 'debug', op: { kind: 'forceNight', creatureId: 'raccoons', hit: 'ash' } },
+        { type: 'debug', op: { kind: 'runNight' } },
+      );
+      const e = after.log.findLast((x) => x.kind === 'nightEvent');
+      const hit = e?.kind === 'nightEvent' ? e.hits.find((h) => h.hikerId === 'ash') : undefined;
+      if (hit?.outcomeId !== 'stealResources') continue;
+      const lines = texts(after);
+      expect(lines).toContain('Night event: The raccoons came to camp.');
+      expect(lines).toContain(`${hit.text} (${hit.chip})`);
+      expect(lines.some((l) => /^Ash lost/.test(l))).toBe(false);
+      return;
+    }
+    throw new Error('No seed stole resources');
+  });
+
+  it('says who kept watch', () => {
+    const s = run(toNight(fixtureGame()), { type: 'keepWatch', hikerId: 'ash' });
+    expect(texts(s).at(-1)).toBe('Ash kept watch.');
+  });
+});

@@ -102,8 +102,9 @@ export interface ConditionChip {
 
 const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
 
-/** "2 more phases", "1 more day". */
+/** "2 more phases", "1 more day", or "until the weather ends". */
 export function timeLeft(c: ConditionInstance): string {
+  if (c.unit === 'weather') return 'until the weather ends';
   const word = UNIT_WORD[c.unit];
   return `${c.remaining} more ${c.remaining === 1 ? word : `${word}s`}`;
 }
@@ -223,10 +224,12 @@ export interface ActionState {
   reason?: string;
 }
 
-const SOON: Record<'craft' | 'fire' | 'tend' | 'watch', { phase: number; what: string }> = {
-  tend: { phase: 4, what: 'Tending' },
-  fire: { phase: 6, what: 'Sitting by the fire' },
-  watch: { phase: 6, what: 'Keeping watch' },
+/**
+ * Actions that aren't built yet, and the phase that builds them.
+ * TODO(wyatt): no phase in BUILD_PLAN builds Sit by the Fire yet, so it says "Soon".
+ */
+const SOON: Record<'craft' | 'fire', { phase?: number; what: string }> = {
+  fire: { what: 'Sitting by the fire' },
   craft: { phase: 9, what: 'Crafting' },
 };
 
@@ -236,9 +239,9 @@ function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState
     id,
     label,
     icon,
-    sub: `Phase ${phase}`,
+    sub: phase ? `Phase ${phase}` : 'Soon',
     status: 'soon',
-    reason: `${what} arrives in Phase ${phase}.`,
+    reason: phase ? `${what} arrives in Phase ${phase}.` : `${what} isn’t built yet.`,
   };
 }
 
@@ -331,6 +334,14 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     ...judge(state, [{ type: 'sleep', hikerId: h.id }], ''),
   };
 
+  const watch: ActionState = {
+    id: 'watch',
+    label: 'Watch',
+    icon: 'eye',
+    sub: state.phase === 'night' ? 'Guards tile' : 'Night',
+    ...judge(state, [{ type: 'keepWatch', hikerId: h.id }], ''),
+  };
+
   return [
     move,
     moveAll,
@@ -339,7 +350,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     soon('fire', 'Fire', 'flame'),
     tend,
     sleep,
-    soon('watch', 'Watch', 'eye'),
+    watch,
   ];
 }
 

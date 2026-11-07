@@ -13,6 +13,7 @@ import {
   payCost,
   phaseActionReason,
   tileEntryReason,
+  spendAction,
 } from './common';
 
 type MoveAction = Extract<Action, { type: 'move' }>;
@@ -40,7 +41,7 @@ export function applyMove(state: GameState, action: MoveAction): void {
   const firstHere = !state.section.tiles[action.toTileId]?.visited;
   hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
-  hiker.acted = true;
+  spendAction(state, hiker);
   const revealed = enterTile(state, hiker.tileId);
   pushEvent(state, {
     kind: 'move',

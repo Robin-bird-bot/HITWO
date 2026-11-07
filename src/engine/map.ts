@@ -26,3 +26,9 @@ export function isAlone(state: GameState, hiker: Hiker): boolean {
     (h) => h.id !== hiker.id && h.status === 'active' && h.tileId === hiker.tileId,
   );
 }
+
+/** A campsite is a built-in shelter; Ruins can build one on a tile. Placed shelters arrive with items (Phase 9). */
+export function isSheltered(state: GameState, hiker: Hiker): boolean {
+  const tile = state.section.tiles[hiker.tileId];
+  return tile?.special === 'campsite' || (tile?.shelters?.length ?? 0) > 0;
+}

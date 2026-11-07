@@ -13,6 +13,7 @@ import {
   payCost,
   phaseActionReason,
   tileEntryReason,
+  spendAction,
 } from './common';
 
 type MoveAllAction = Extract<Action, { type: 'moveAll' }>;
@@ -62,7 +63,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   for (const h of group) {
     h.cameFrom = from;
     h.tileId = action.toTileId;
-    h.acted = true;
+    spendAction(state, h);
   }
   const revealed = enterTile(state, action.toTileId);
   pushEvent(state, {

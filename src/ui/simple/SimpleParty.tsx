@@ -12,6 +12,8 @@ import { Icon } from '../icons/Icon';
 import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
+import { ConditionDot } from '../conditions/ConditionBadges';
+import { thresholdLooks, timedLooks } from '../conditions/hikerConditions';
 import { Popout } from '../panels/Popout';
 import { StatBar } from '../panels/StatBar';
 import { useStage } from '../stage/StageContext';
@@ -63,6 +65,7 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
           {state.hikers.map((h) => (
             <HikerCard
               key={h.id}
+              state={state}
               hiker={h}
               selected={h.id === selectedId}
               onClick={(card) => click(h, card)}
@@ -87,7 +90,7 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
                 FAMILY_LOOK[openHiker.family].label.slice(1).toLowerCase()}
             </span>
           </div>
-          <Details hiker={openHiker} showConditions />
+          <Details state={state} hiker={openHiker} />
         </Popout>
       )}
     </>
@@ -95,10 +98,12 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
 }
 
 function HikerCard({
+  state,
   hiker: h,
   selected,
   onClick,
 }: {
+  state: GameState;
   hiker: Hiker;
   selected: boolean;
   onClick(card: HTMLElement): void;
@@ -106,13 +111,19 @@ function HikerCard({
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
   const out = h.status !== 'active';
+  // The badges can't be focused inside the button, so the label names them.
+  const conditions = [...thresholdLooks(h), ...timedLooks(h)].map(
+    (l) => `${l.name}${l.stacks !== undefined ? ` ×${l.stacks}` : ''}`,
+  );
   return (
     <button
       type="button"
       className={styles.card}
       data-faded={(h.acted || out) && !selected}
       aria-pressed={selected}
-      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}. Show details`}
+      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}${
+        conditions.length ? `: ${conditions.join(', ')}` : ''
+      }. Show details`}
       style={
         selected
           ? { boxShadow: `0 0 0 2px ${color}, 0 0 18px ${color}88`, borderColor: color }
@@ -146,13 +157,28 @@ function HikerCard({
             key={stat}
             stat={stat}
             value={h.stats[stat]}
-            max={statMax(h, stat)}
+            max={statMax(state, h, stat)}
             showNumber
             ticks={THRESHOLD_STATS.includes(stat)}
             size="regular"
           />
         ))}
+        <ConditionDots hiker={h} />
       </span>
     </button>
+  );
+}
+
+/** Simple mode's condition badges (the approved Phase 6 mockup): icons, time on the corner. */
+function ConditionDots({ hiker: h }: { hiker: Hiker }) {
+  const looks = [...thresholdLooks(h), ...timedLooks(h)];
+  if (!looks.length) return null;
+  return (
+    <span className={styles.dots}>
+      {looks.map((l) => (
+        // Inside the card's button, so not a separate stop for the keyboard.
+        <ConditionDot key={l.key} look={l} size={32} focusable={false} />
+      ))}
+    </span>
   );
 }

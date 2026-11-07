@@ -5,12 +5,14 @@
 import { useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
+import { WEATHERS } from '../../content/weather';
 import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME } from '../map/looks';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { resetWindowLayout } from '../windows/windowLayout';
+import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weather/weatherLook';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
 import { usePanelCollapsed } from './panelState';
@@ -56,9 +58,6 @@ const PHASE_LOOK: Record<Phase, { label: string; icon: IconName }> = {
   night: { label: 'NIGHT', icon: 'moon' },
 };
 
-// Placeholder weather until Phase 6 brings real weather and forecasts.
-const FORECAST: IconName[] = ['sun', 'cloud', 'rain'];
-
 export function DayBar({ state }: { state: GameState }) {
   // The bar is one row, so shrinking it keeps just the day and the current phase.
   const [collapsed] = usePanelCollapsed('day');
@@ -88,21 +87,26 @@ export function DayBar({ state }: { state: GameState }) {
           {!collapsed && (
             <>
               <span className={styles.divider} />
-              <div className={styles.weather} title="Weather arrives in Phase 6 (placeholder)">
-                <Icon name="sun" size={20} color="#F2C978" />
+              <div className={styles.weather} title={weatherTitle(state)}>
+                <Icon
+                  name={WEATHER_ICON[state.weather.today]}
+                  size={20}
+                  color={WEATHER_COLOR[state.weather.today]}
+                />
                 <div className={styles.weatherText}>
-                  <span className={styles.weatherName}>Clear skies</span>
-                  <span className={styles.small}>Placeholder</span>
+                  <span className={styles.weatherName}>{WEATHERS[state.weather.today].title}</span>
+                  <span className={styles.small}>{weatherNote(state)}</span>
                 </div>
               </div>
               <span className={styles.divider} />
-              <div
-                className={styles.forecast}
-                title="3-day forecast arrives in Phase 6 (placeholder)"
-              >
-                {FORECAST.map((icon, i) => (
-                  <div key={i} className={styles.forecastDay}>
-                    <Icon name={icon} size={15} color="#C9C2B2" />
+              <div className={styles.forecast} aria-label="The next 3 days">
+                {state.weather.ahead.slice(0, 3).map((w, i) => (
+                  <div
+                    key={i}
+                    className={styles.forecastDay}
+                    title={`Day ${state.day + i + 1}: ${WEATHERS[w].title}`}
+                  >
+                    <Icon name={WEATHER_ICON[w]} size={15} color={WEATHER_COLOR[w]} />
                     <span>D{state.day + i + 1}</span>
                   </div>
                 ))}

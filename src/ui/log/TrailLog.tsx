@@ -33,7 +33,7 @@ export function TrailLog({ state }: { state: GameState }) {
       <ol className={styles.list} aria-live="polite">
         {lines.length === 0 && <li className={styles.empty}>Nothing yet. The hike begins!</li>}
         {lines.map((l) => (
-          <li key={l.id} className={styles.line} data-tone={l.tone}>
+          <li key={`${l.id}-${l.part ?? 0}`} className={styles.line} data-tone={l.tone}>
             {l.text}
           </li>
         ))}

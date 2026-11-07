@@ -47,6 +47,7 @@ Trail traits (yellow) cover movement, carrying, food and managing the party's re
 | I | Prepared | At the start of each biome, the nodes and challenge of a random tile are revealed for the rest of the biome. |
 | I | Short | Moving costs 1 less Appetite, whether moving alone or being moved with the group (never below 0). −1 item slot. |
 | I | Never Hungry | 25% chance not to lose Appetite at the end of the day. Every food restores 1 less Appetite for this hiker. |
+| I | Thrill Seeker | Losing 3 or more Energy in a single phase makes this hiker Energized for 1 day. |
 | II | Puller | Moving the group costs 1 Energy instead of Appetite. |
 | II | Prowler | Moving alone at night costs no extra Appetite. |
 | II | Susceptible | While sharing a tile with other hikers, also has their positive conditions. |
@@ -70,6 +71,8 @@ Trail traits (yellow) cover movement, carrying, food and managing the party's re
 | III | Carrier Pigeon | Can send items or resources to any hiker anywhere, but can't receive them from afar. |
 
 Added during design (tiers proposed): Short, Shrug Off, Lookout, Trespasser, Sherpa, Second Wind. Supportive's once-per-day limit is also new.
+
+Added Nov 6 (type proposed): Thrill Seeker (Tier I). It's a different trait from the Morale trait Thrill-Seeker.
 
 ## Utility traits
 
@@ -270,6 +273,8 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Frozen | Can't move or be moved. |
 | Bleeding | When it runs out, the hiker gains 1 injury. If it's cured before then, there's no injury. Cured by specific tools, traits and clothes (to be named). |
 | Ringing Ears | Each phase, a chance to lose 1 Morale (75%), or 1 Energy at night (25%). |
+| Shivering (stacks) | From Snow. At 3 or more, the hiker is Frozen. At 5 or more, they gain 1 injury and Shivering resets to 0. Lasts until the snow ends or it drops to 0. |
+| Burning (stacks) | From Heatwave and Fire nodes. −1 maximum Energy for each stack. At 5, the hiker gains 1 injury and Burning resets to 0. Goes down by 1 in any Night phase where the hiker gains none. Lasts until the heatwave ends or the injury. |
 
 **Positive conditions**
 
@@ -286,3 +291,5 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 New this round: Nauseous (replaces Gorged), Soaked, Inspired, Motivated.
 
 Added Nov 5: Frozen and Bleeding, and Wet turning into Soaked.
+
+Added Nov 6: Shivering and Burning, which stack instead of counting down (see `05-nights-and-weather.md`).

@@ -29,7 +29,7 @@ import {
   type ResourceId,
   type TileId,
 } from '../types';
-import { applyEffects, type EffectRun } from './applyEffects';
+import { applyEffects } from './applyEffects';
 import { openNext } from './reveal';
 import { amount } from './rolls';
 import type { Deadline, TrialDef } from './types';
@@ -253,7 +253,7 @@ function apply(
   trial: ActiveTrial,
   card: TrialDef,
   targets: Hiker[],
-  effects: EffectRun['card']['penalty'],
+  effects: TrialDef['penalty'],
 ): void {
   if (!targets.length) return;
   applyEffects(

@@ -63,12 +63,17 @@ export const SPECIAL_SPACES: readonly SpecialSpace[] = [
 /** Side features attach to a normal tile and add an extra option there. */
 export type SideFeature = 'merchant' | 'trader';
 
+/** What weather did to a node (Phase 6): flooded counts as River; frozen and on fire give nothing. */
+export type NodeWeatherState = 'flooded' | 'frozen' | 'fire';
+
 export interface TileNode {
   type: NodeKind;
   /** Shown on the map. Hidden nodes show as ? until a hiker enters or scouts the tile. */
   revealed: boolean;
   /** A Bounty node: extra resources are more likely, at an extra Abundance cost. */
   bounty?: true;
+  /** Changed by the weather, and what it was before, so it goes back when the weather ends. */
+  weather?: { state: NodeWeatherState; was: NodeType };
 }
 
 export interface Tile {
@@ -122,6 +127,32 @@ export interface Section {
   checkpointId: TileId;
 }
 
+// ── Night events ───────────────────────────────────────────────────────────
+
+/** One hiker a night event hit: what happened, as a sentence and a short chip. */
+export interface NightHit {
+  hikerId: HikerId;
+  outcomeId: string;
+  text: string;
+  chip: string;
+}
+
+// ── Weather ────────────────────────────────────────────────────────────────
+
+export type WeatherId = 'clear' | 'rain' | 'storm' | 'snow' | 'heatwave';
+
+export interface WeatherState {
+  today: WeatherId;
+  /** The day this weather began. Its hiker effect starts the day after (a grace day). */
+  since: number;
+  /** The weather on each coming day, tomorrow first (at least the forecast's length). */
+  ahead: WeatherId[];
+  /** Its own RNG stream for the schedule, so planning ahead doesn't shift other draws. */
+  rng: RngState;
+  /** Debug and tests: the weather stays as it is. */
+  hold?: true;
+}
+
 // ── Hikers ─────────────────────────────────────────────────────────────────
 
 export type Family = 'human' | 'dog' | 'cat';
@@ -137,17 +168,27 @@ export interface TraitSlot {
 }
 
 /** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
+/**
+ * How a condition's time is counted. Phases tick down at the end of every
+ * phase; days and nights at camp. 'weather' never ticks: it lasts until the
+ * weather that caused it ends (Shivering, Burning).
+ */
+export type ConditionUnit = 'days' | 'phases' | 'nights' | 'weather';
+
 export interface ConditionInstance {
   id: ConditionId;
   remaining: number;
-  /** Phases tick down at the end of every phase; days and nights at camp. */
-  unit: 'days' | 'phases' | 'nights';
+  unit: ConditionUnit;
   /** Allergies: which node. */
   node?: NodeType;
   /** A condition that starts when this one ends ("Hangry, then Nauseous"). */
   then?: { id: ConditionId; remaining: number; unit: 'days' | 'phases' | 'nights' };
   /** Added during this phase: its first end of phase doesn't count. */
   fresh?: true;
+  /** Stacking conditions (Shivering, Burning): how many. */
+  stacks?: number;
+  /** What its stat change actually moved, given back or taken back when it ends (Sleepy, Energized). */
+  applied?: Partial<Record<StatName, number>>;
 }
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
@@ -163,6 +204,8 @@ export interface ItemInstance {
   appetiteMod?: number;
   /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
   usesLost?: number;
+  /** Clothes: durability lost to weather and night events. TODO(phase 9): taken off its durability. */
+  wear?: number;
 }
 
 export interface Inventory {
@@ -194,6 +237,8 @@ export interface Hiker {
   acted: boolean;
   /** Has slept this night. */
   slept: boolean;
+  /** Is keeping watch tonight: hikers on this tile are safe from the night event. */
+  watching?: true;
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -296,6 +341,8 @@ export interface PendingScavenge {
   /** The RNG before the deal. "Not now" puts it back, so dealing again gives the same cards. */
   rngBefore: RngState;
   bonusOffers?: ScavengeBonusOffer[];
+  /** Butterfingers: the chance the card taken slips away. */
+  dropChance?: number;
 }
 
 /** Who scavenged where today (Copier, Copydog, and the night's Abundance recovery). */
@@ -437,6 +484,8 @@ export type Action =
   | { type: 'move'; hikerId: HikerId; toTileId: TileId }
   | { type: 'moveAll'; hikerId: HikerId; toTileId: TileId; bring: HikerId[] }
   | { type: 'sleep'; hikerId: HikerId }
+  /** Night only: keeps watch, so hikers on this tile are safe from tonight's night event. */
+  | { type: 'keepWatch'; hikerId: HikerId }
   | { type: 'useAbility'; hikerId: HikerId; abilityId: string; choice?: string }
   /** Deals the scavenge cards, face down. Nothing is paid until a card is taken. */
   | { type: 'scavenge'; hikerId: HikerId }
@@ -460,6 +509,8 @@ export type Action =
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
+  /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
+  | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
@@ -518,7 +569,18 @@ export type DebugOp =
   /** Counts the section as snowy (Phase 11 makes this real). */
   | { kind: 'setSnowy'; on: boolean }
   /** The weather challenge gates check (Phase 6 makes this real). */
-  | { kind: 'setWeather'; weather: 'clear' | 'sunny' | 'stormy' };
+  /** Sets today's weather (it starts today), and whether it holds instead of changing. */
+  | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
+  /** Skips the grace day, so the weather's hiker effect starts now. */
+  | { kind: 'skipGraceDay' }
+  /** Turns a tile's first fitting node flooded, frozen or on fire. */
+  | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
+  /** Puts a clothing item on a hiker (equipping arrives in Phase 9). */
+  | { kind: 'wearClothes'; hikerId: HikerId }
+  /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
+  | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
+  /** Runs tonight's night event now, as if it were camp. */
+  | { kind: 'runNight' };
 
 export type ActionType = Action['type'];
 
@@ -552,6 +614,8 @@ export type GameEventBody =
       left?: number;
       /** Bonus resources from traits (Copier, Copydog), included in resources. */
       bonus?: number;
+      /** Butterfingers: the card slipped away and the hiker got nothing. */
+      dropped?: true;
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
   | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
@@ -565,10 +629,31 @@ export type GameEventBody =
       hikerId: HikerId;
       condition: ConditionId;
       remaining: number;
-      unit: 'days' | 'phases' | 'nights';
+      unit: ConditionUnit;
       cause: string;
+      /** A stacking condition's new count. */
+      stacks?: number;
     }
   | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** The weather changed at the start of a day. */
+  | { kind: 'weatherChanged'; from: WeatherId; to: WeatherId; days: number }
+  /** Weather changed nodes this phase: which tiles, and (fires) which tiles it spread to. */
+  | { kind: 'nodesChanged'; state: NodeWeatherState; tiles: TileId[]; spread?: TileId[] }
+  /** A hiker is keeping watch tonight. */
+  | { kind: 'watch'; hikerId: HikerId }
+  /** The night event (05-nights-and-weather.md): the creature, who it hit, and who was safe. */
+  | {
+      kind: 'nightEvent';
+      tier: 1 | 2 | 3;
+      creatureId: string;
+      hits: NightHit[];
+      /** Hikers who were safe: someone kept watch on their tile (`by`), or a shelter. */
+      safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[];
+      /** The events from this id up to this one are what it did (the log folds them in). */
+      from: number;
+    }
+  /** A condition made this action free (Motivated). */
+  | { kind: 'freeAction'; hikerId: HikerId; cause: string }
   /** A hiker landed on a new tile and its challenge opened. */
   | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
   /** A challenge was resolved: who passed, and what they paid. */
@@ -594,7 +679,7 @@ export type GameEventBody =
       hikerId: HikerId;
       from: TileId;
       to: TileId;
-      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel';
+      how: 'swept' | 'back' | 'blown' | 'falseTrail' | 'tunnel' | 'chased';
       cause: string;
     }
   /** A Trial started, was met, ran out, ended, or a hiker earned part of it. */
@@ -643,12 +728,13 @@ export type GameEventBody =
       noRoom?: number;
       cause: string;
     }
-  /** Resources or items a challenge took (or gave). */
+  /** Resources, items or caps a challenge or night event took. */
   | {
       kind: 'lost';
       hikerId: HikerId;
       resources: ResourceId[];
       items: ItemId[];
+      caps?: number;
       cause: string;
     }
   | { kind: 'debug'; note: string };
@@ -685,6 +771,10 @@ export interface GameState {
   challengeQueue?: QueuedReveal[];
   /** Debug only: show the rolled numbers in the challenge pop-up. */
   debugRolls?: true;
+  /** Debug only: what tonight's night event will be. */
+  debugNight?: { tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId };
+  /** Tests only: no night event at camp (unless the debug panel forces one). */
+  noNightEvents?: true;
   /** Debug and tests only: landing on a new tile opens no challenge. */
   noChallenges?: true;
   /** Run counters for Wonder goals. */
@@ -693,8 +783,8 @@ export interface GameState {
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
   snowy?: true;
-  /** The weather for challenge gates (Phase 6). Until then, a debug setting. */
-  weather?: 'clear' | 'sunny' | 'stormy';
+  /** Today's weather, since when, and the days ahead (the forecast). */
+  weather: WeatherState;
   nextEventId: number;
   /** The most recent events, oldest first. */
   log: GameEvent[];

@@ -36,9 +36,23 @@ export const ASSETS = {
     wildlife: asset('nodes/wildlife.png'),
     mountain: asset('nodes/mountain.png'),
   },
+  /** Weather node states (Phase 6): cropped to the hex from assets/nodes, clipped to a hex in CSS. */
+  nodeStates: {
+    fire: asset('nodes/fire.png'),
+    frozen: asset('nodes/frozen.png'),
+    flooded: asset('nodes/flooded.png'),
+  },
+  /** The same art as squares (128px), for the weather change screen's cards. */
+  nodeStateSquares: {
+    fire: asset('nodes/fire-square.png'),
+    frozen: asset('nodes/frozen-square.png'),
+    flooded: asset('nodes/flooded-square.png'),
+  },
   icons: {
     acornCaps: asset('icons/acorn-caps.png'),
   },
+  /** Night event creatures (Phase 6), by creature id, shrunk from assets/night-events. */
+  nightEvent: (creatureId: string) => asset(`night-events/${creatureId}.jpg`),
   /** Resource icons by resource id (all 16). */
   resources: Object.fromEntries(
     [

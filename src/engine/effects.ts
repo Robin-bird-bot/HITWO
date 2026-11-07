@@ -9,13 +9,17 @@
 import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
 import { CONDITIONS } from '../content/conditions';
+import { WEATHERS } from '../content/weather';
+import { addCondition, addStacks } from './conditions';
 import { pushEvent } from './log';
-import { hikersOnTile, isAlone } from './map';
+import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
 import { thresholdSources } from './thresholds';
 import type {
   Action,
+  ConditionInstance,
+  ConditionUnit,
   EquipSlot,
   GameState,
   Hiker,
@@ -110,6 +114,8 @@ export interface ScavengeModifier {
   nodeTypeWeight?: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>>;
   /** Extra copies of the first resource taken (Copier, Copydog). */
   bonus?: { count: number; appetiteEach: number };
+  /** A chance the card taken slips away and the hiker gets nothing (Butterfingers). */
+  dropChance?: number;
 }
 
 export interface ActQuery {
@@ -126,6 +132,12 @@ export interface QueryContext {
   readonly self: Hiker;
   hikersOnTile(tileId: TileId): Hiker[];
   isAlone(hiker: Hiker): boolean;
+  /** On a campsite or a tile with a shelter. */
+  sheltered(hiker: Hiker): boolean;
+  /** How many clothing items the hiker has equipped. */
+  clothesWorn(hiker: Hiker): number;
+  /** The hiker's instance of a condition, if they have it (its stacks, node, time left). */
+  condition(hiker: Hiker, id: string): ConditionInstance | undefined;
 }
 
 /** What an event handler or ability can do. */
@@ -133,6 +145,20 @@ export interface EffectContext extends QueryContext {
   changeStat(hiker: Hiker, stat: StatName, delta: number, cause: string): void;
   /** Gives a hiker resources, as many as fit (Raccoon Friend), and logs it. */
   gain(hiker: Hiker, resources: readonly ResourceId[], cause: string): void;
+  addCondition(
+    hiker: Hiker,
+    id: string,
+    remaining: number,
+    unit: ConditionUnit,
+    cause: string,
+  ): void;
+  /** Adds (or, with a negative n, takes away) stacks of a stacking condition. */
+  addStacks(hiker: Hiker, id: string, n: number, cause: string): void;
+  /**
+   * Adds to a running count for this hiker that resets each phase or day, and
+   * returns the new total (Thrill Seeker's Energy lost this phase).
+   */
+  tally(hiker: Hiker, key: string, add: number, per: 'phase' | 'day'): number;
   roll(chance: number): boolean;
   int(min: number, max: number): number;
   pick<T>(items: readonly T[]): T;
@@ -149,8 +175,37 @@ export interface MoveHookEvent {
   line: Line;
 }
 
+/** A stat change about to happen, for sources that change it (Strained, Refreshed, Inspired). */
+export interface StatChangeQuery {
+  stat: StatName;
+  delta: number;
+  cause: string;
+}
+
+/** What a source does to a stat change: add to it, or stop a loss altogether. */
+export interface StatChangeModifier {
+  add?: number;
+  /** No loss at all (Refreshed, Full). */
+  blockLoss?: true;
+}
+
+/** A stat's maximum: a hard cap (Dejected: Morale 5) or a change to it (Burning: −1 a stack). */
+export interface StatMaxModifier {
+  cap?: number;
+  delta?: number;
+}
+
 export interface Hooks {
   modifyCost?(q: CostQuery, ctx: QueryContext): ModifierResult;
+  modifyStatChange?(q: StatChangeQuery, ctx: QueryContext): StatChangeModifier | undefined;
+  modifyStatMax?(stat: StatName, ctx: QueryContext): StatMaxModifier | undefined;
+  /** After a stat changed (Thrill Seeker). */
+  onStatChange?(
+    e: { stat: StatName; from: number; to: number; cause: string },
+    ctx: EffectContext,
+  ): void;
+  /** At the end of every phase, before conditions tick (Soaked, Allergies, Ringing Ears). */
+  onPhaseEnd?(e: { phase: Phase }, ctx: EffectContext): void;
   modifyGain?(q: GainQuery, ctx: QueryContext): ModifierResult;
   modifyCapacity?(q: CapacityQuery, ctx: QueryContext): ModifierResult;
   /** Returns a reason when this source stops the action. */
@@ -226,18 +281,33 @@ export interface FamilyDef {
 
 export interface EffectSource {
   id: string;
-  kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item';
+  kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item' | 'weather';
   name: string;
   hooks: Hooks;
   ability?: AbilityDef;
 }
 
-/**
- * Every source affecting a hiker right now. `_state` is unused until tile
- * conditions and weather become sources (Phase 6).
- */
-export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[] {
+/** Trait types a condition switches off while it lasts (Brain Fog: Utility). */
+function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
+  const off = new Set<TraitType>();
+  for (const c of hiker.conditions) {
+    for (const t of CONDITIONS[c.id]?.suppressTraits ?? []) off.add(t);
+  }
+  return off;
+}
+
+/** Every source affecting a hiker right now, the weather included (Storm's Thunder). */
+export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
+  const weather = WEATHERS[state.weather?.today ?? 'clear'];
+  if (weather?.hooks) {
+    sources.push({
+      id: `weather:${weather.id}`,
+      kind: 'weather',
+      name: weather.node?.name ?? weather.name,
+      hooks: weather.hooks,
+    });
+  }
   const family = FAMILIES[hiker.family];
   if (family) {
     sources.push({
@@ -257,11 +327,12 @@ export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[
     if (!def?.hooks) continue;
     sources.push({ id: `condition:${c.id}`, kind: 'condition', name: def.name, hooks: def.hooks });
   }
+  const off = suppressedTraitTypes(hiker);
   for (const slot of hiker.slots) {
     if (!slot.traitId) continue;
     const def = TRAITS[slot.traitId];
     // An unknown id (content removed since the save) is skipped, not fatal.
-    if (!def) continue;
+    if (!def || off.has(def.type)) continue;
     sources.push({
       id: `trait:${def.id}`,
       kind: 'trait',
@@ -281,7 +352,17 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
     self,
     hikersOnTile: (tileId) => hikersOnTile(state, tileId),
     isAlone: (hiker) => isAlone(state, hiker),
+    sheltered: (hiker) => isSheltered(state, hiker),
+    clothesWorn,
+    condition: (hiker, id) => hiker.conditions.find((c) => c.id === id),
   };
+}
+
+/** Clothing items a hiker has equipped (Phase 9 adds the ways to put them on). */
+export function clothesWorn(hiker: Hiker): number {
+  return Object.values(hiker.inventory.equipped).filter(
+    (i) => i && ITEMS[i.itemId]?.type === 'clothes',
+  ).length;
 }
 
 export function effectContext(state: GameState, self: Hiker): EffectContext {
@@ -289,10 +370,30 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
     ...queryContext(state, self),
     changeStat: (hiker, stat, delta, cause) => changeStat(state, hiker, stat, delta, cause),
     gain: (hiker, resources, cause) => gainResources(state, hiker, resources, cause),
+    addCondition: (hiker, id, remaining, unit, cause) =>
+      addCondition(state, hiker, id, remaining, unit, cause),
+    addStacks: (hiker, id, n, cause) => addStacks(state, hiker, id, n, cause),
+    tally: (hiker, key, add, per) => tally(state, hiker, key, add, per),
     roll: (chance) => roll(state.rng, chance),
     int: (min, max) => int(state.rng, min, max),
     pick: (items) => pick(state.rng, items),
   };
+}
+
+/** A per-hiker count that starts over each phase or day, kept with the ability uses. */
+export function tally(
+  state: GameState,
+  hiker: Hiker,
+  key: string,
+  add: number,
+  per: 'phase' | 'day',
+): number {
+  const id = `tally:${key}`;
+  const period = abilityPeriod(state, per);
+  const use = hiker.abilityUses[id];
+  const count = (use && use.period === period ? use.count : 0) + add;
+  if (add !== 0) hiker.abilityUses[id] = { period, count };
+  return count;
 }
 
 // ── Modifiers ──────────────────────────────────────────────────────────────
@@ -394,6 +495,52 @@ export function fireHook(state: GameState, hiker: Hiker, name: EventHookName): v
 export function fireMove(state: GameState, hiker: Hiker, e: MoveHookEvent): void {
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onMove?.(e, ctx);
+}
+
+/** The total change to a stat change from the hiker's sources. A blocked loss becomes 0. */
+export function adjustStatChange(state: GameState, hiker: Hiker, q: StatChangeQuery): number {
+  const ctx = queryContext(state, hiker);
+  let delta = q.delta;
+  let blocked = false;
+  for (const source of effectSourcesFor(state, hiker)) {
+    const m = source.hooks.modifyStatChange?.(q, ctx);
+    if (!m) continue;
+    delta += m.add ?? 0;
+    if (m.blockLoss) blocked = true;
+  }
+  // Adding can't flip a loss into a gain, or the other way.
+  if (q.delta < 0) delta = Math.min(0, delta);
+  if (q.delta > 0) delta = Math.max(0, delta);
+  return blocked && delta < 0 ? 0 : delta;
+}
+
+/** Every change the hiker's sources make to a stat's maximum. */
+export function statMaxModifiers(
+  state: GameState,
+  hiker: Hiker,
+  stat: StatName,
+): StatMaxModifier[] {
+  const ctx = queryContext(state, hiker);
+  const out: StatMaxModifier[] = [];
+  for (const source of effectSourcesFor(state, hiker)) {
+    const m = source.hooks.modifyStatMax?.(stat, ctx);
+    if (m) out.push(m);
+  }
+  return out;
+}
+
+export function fireStatChange(
+  state: GameState,
+  hiker: Hiker,
+  e: { stat: StatName; from: number; to: number; cause: string },
+): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onStatChange?.(e, ctx);
+}
+
+export function firePhaseEnd(state: GameState, hiker: Hiker, phase: Phase): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onPhaseEnd?.({ phase }, ctx);
 }
 
 export function fireMoraleChange(state: GameState, hiker: Hiker, delta: number, cause: string) {

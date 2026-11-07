@@ -6,7 +6,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | --- | --- | --- |
 | `fonts/` | Edit Undo, Edit Undo Dot, Edit Undo Line (Brian Kent), Game Quotes (Typia Nesia) | See "Licensing" below |
 | `resources/` | all 16: clay, fish, fur, grass, meat, metal, moss, mushroom, oil, seaweed, shell, stone, wood, bones, flint, salt | Transparent PNGs. mushroom is only 128px |
-| `nodes/` | forest, river, wildlife, mountain | Hex node badges for tiles and card backs |
+| `nodes/` | forest, river, wildlife, mountain; fire, frozen, flooded | Hex node badges for tiles and card backs. Fire, Frozen and Flooded (750×750) are the weather node states (Phase 6). The game uses copies cropped to the hex (104×120) in `public/assets/nodes/<state>.png` on tiles, and 128 px squares (`<state>-square.png`) on the weather change screen |
 | `scavenge/backdrops/` | forest, river, wildlife, mountain, any-node, caps (brown redwoods), items (rainbow mountain lake) | **Blank** 750×750 card backgrounds with no rays. The game layers rays and icons on top |
 | `scavenge/rays/` | forest, river, wildlife, mountain, caps, any-node-cream, items-white | Full-opacity sunburst rays, one color per backdrop. See "Scavenge card layers" below |
 | `scavenge/backs/` | caps-back-icon, item-back-icon | Transparent hex icons laid over the caps and items backdrops to make those card backs. Node backs use `nodes/` |
@@ -22,7 +22,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `challenges/` | One 1920×1080 JPEG per challenge and Trial (96), named after it (`flies.jpg`, `the-grim-sleeper.jpg`…) | Challenge and Trial pop-up art at 16:9. The game loads shrunk copies (960×540 JPEG) from `public/assets/challenges/<id>.jpg`, via `cardArt(card)` |
 | `opportunities/` | One 1920×1080 JPEG per opportunity (17): `snake-slots.jpg`, `citro-tub.jpg`… | Opportunity pop-up art. Shrunk copies (960×540) in `public/assets/opportunities/`, via `cardArt(card)` |
 | `wonders/` | One 1920×1080 JPEG per Wonder (7): `crater-lake.jpg`, `multnomah-falls.jpg`… | The Wonder pop-up's full-width banner. Shrunk copies (1600×900) in `public/assets/wonders/`, via `wonderArt(id)` |
-| `night-events/` | One 1920×1080 JPEG per night event (15): `raccoons.jpg`, `cultists.jpg`… | Phase 6 night events. Not copied into `public/` until then |
+| `night-events/` | One 1920×1080 JPEG per night event creature (15): `raccoons.jpg`, `cultists.jpg`… | The night event window's banner. Shrunk copies (960×540) in `public/assets/night-events/<id>.jpg`, via `ASSETS.nightEvent(id)` |
 
 **Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
 

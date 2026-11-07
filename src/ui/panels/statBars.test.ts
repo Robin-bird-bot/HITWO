@@ -51,7 +51,7 @@ describe('Simple mode actions', () => {
   it('show only what the hiker can do right now', () => {
     const s = fixtureGame();
     expect(ids(s, 'ash')).toEqual(['move', 'moveAll']);
-    expect(ids(toNight(fixtureGame()), 'ash')).toEqual(['move', 'moveAll', 'sleep']);
+    expect(ids(toNight(fixtureGame()), 'ash')).toEqual(['move', 'moveAll', 'sleep', 'watch']);
   });
 
   it('drop Move All when the hiker is alone', () => {
