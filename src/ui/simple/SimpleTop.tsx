@@ -10,6 +10,8 @@ import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME } from '../map/looks';
 import { Popout } from '../panels/Popout';
+import { WEATHER_COLOR, WEATHER_ICON, weatherNote } from '../weather/weatherLook';
+import { WEATHERS } from '../../content/weather';
 import styles from './Simple.module.css';
 
 const BIOME: Record<BiomeId, string> = {
@@ -38,13 +40,10 @@ const PHASE_ICON: Record<Phase, { icon: IconName; name: string }> = {
   night: { icon: 'moon', name: 'Night' },
 };
 
-// Placeholder weather until Phase 6.
-const FORECAST: IconName[] = ['sun', 'cloud', 'rain'];
-const FORECAST_NAME: Record<string, string> = { sun: 'Clear', cloud: 'Cloudy', rain: 'Rain' };
-
 /** "DAY 2" with the three phase icons, and the weather as an icon you can click. */
 export function DayPill({ state }: { state: GameState }) {
   const [weatherOpen, setWeatherOpen] = useState(false);
+  const today = WEATHERS[state.weather.today];
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <>
@@ -70,11 +69,15 @@ export function DayPill({ state }: { state: GameState }) {
           ref={buttonRef}
           type="button"
           className={styles.weatherButton}
-          aria-label="Weather: clear skies. Show the forecast"
+          aria-label={`Weather: ${today.title.toLowerCase()}. Show the forecast`}
           aria-expanded={weatherOpen}
           onClick={() => setWeatherOpen((o) => !o)}
         >
-          <Icon name="sun" size={18} color="#F2C978" />
+          <Icon
+            name={WEATHER_ICON[state.weather.today]}
+            size={18}
+            color={WEATHER_COLOR[state.weather.today]}
+          />
         </button>
       </div>
       {weatherOpen && (
@@ -87,15 +90,21 @@ export function DayPill({ state }: { state: GameState }) {
           onClose={() => setWeatherOpen(false)}
         >
           <span className={styles.infoTitle} data-drag-handle>
-            CLEAR SKIES
+            {today.title.toUpperCase()}
           </span>
-          <span className={styles.info}>
-            No weather effects today. (Placeholder: weather arrives in Phase 6.)
-          </span>
-          <div className={styles.forecast}>
-            {FORECAST.map((icon, i) => (
-              <div key={i} className={styles.forecastDay} title={FORECAST_NAME[icon]}>
-                <Icon name={icon} size={16} color="#C9C2B2" />
+          <span className={styles.info}>{weatherNote(state)}.</span>
+          {[today.hiker, today.node].map(
+            (e) =>
+              e && (
+                <span key={e.name} className={styles.info}>
+                  <b>{e.name}:</b> {e.text}
+                </span>
+              ),
+          )}
+          <div className={styles.forecast} aria-label="The next 3 days">
+            {state.weather.ahead.slice(0, 3).map((w, i) => (
+              <div key={i} className={styles.forecastDay} title={WEATHERS[w].title}>
+                <Icon name={WEATHER_ICON[w]} size={16} color={WEATHER_COLOR[w]} />
                 <span>D{state.day + i + 1}</span>
               </div>
             ))}

@@ -1,0 +1,192 @@
+/*
+ * The weather icons (docs/mockups/WeatherIcons.dc.html), playing once.
+ * Base styles are the final frame; animations run from the first frame with
+ * fill-mode `both`, so the icon holds its end. Reduced motion skips straight
+ * to the end (src/styles/global.css).
+ */
+
+.wx {
+  overflow: visible;
+  animation: fadeIn 300ms ease-out both;
+}
+
+.wx * {
+  transform-box: view-box;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Rain, Storm, Snow: the sun slides out, the cloud slides in. */
+.sunOut {
+  transform: translate(-26px, -8px);
+  opacity: 0;
+  animation: sunOut 6s ease-in-out both;
+}
+
+@keyframes sunOut {
+  0%,
+  18% {
+    transform: translate(22px, 22px);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-6px, -4px);
+    opacity: 0.9;
+  }
+  60%,
+  100% {
+    transform: translate(-26px, -8px);
+    opacity: 0;
+  }
+}
+
+.cloudIn {
+  transform: translateX(0);
+  opacity: 1;
+  animation: cloudIn 6s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes cloudIn {
+  0%,
+  18% {
+    transform: translateX(150px);
+    opacity: 0;
+  }
+  42%,
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* What comes after the cloud: rain or snow. */
+.after {
+  opacity: 1;
+  animation: after 6s linear both;
+}
+
+@keyframes after {
+  0%,
+  44% {
+    opacity: 0;
+  }
+  52%,
+  100% {
+    opacity: 1;
+  }
+}
+
+.fall {
+  transform: translateY(0);
+  opacity: 1;
+  animation: fall 600ms ease-out both;
+}
+
+@keyframes fall {
+  from {
+    transform: translateY(-14px);
+    opacity: 0;
+  }
+}
+
+.drift {
+  transform: translate(0, 0);
+  opacity: 1;
+  animation: drift 1200ms ease-out both;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(-5px, -16px);
+    opacity: 0;
+  }
+}
+
+/* Storm: the bolt flashes, then stays. */
+.bolt {
+  opacity: 1;
+  animation: bolt 6s linear both;
+}
+
+@keyframes bolt {
+  0%,
+  46% {
+    opacity: 0;
+  }
+  48% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.2;
+  }
+  55%,
+  70% {
+    opacity: 1;
+  }
+  74% {
+    opacity: 0;
+  }
+  80%,
+  100% {
+    opacity: 1;
+  }
+}
+
+/*
+ * Heatwave: the sun swells as its rays shrink and spin faster. It ends at
+ * 1.2 and 0.9 (the mockup's loop goes to 1.32 and 0.72, where the rays hide
+ * behind the sun), so the held frame still shows a sun with rays.
+ */
+.heatCore {
+  transform-origin: 78px 78px;
+  transform: scale(1.2);
+  animation: heatCore 6s ease-in-out both;
+}
+
+@keyframes heatCore {
+  0% {
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    transform: scale(1.2);
+  }
+}
+
+.heatRays {
+  transform-origin: 78px 78px;
+  transform: rotate(900deg) scale(0.9);
+  animation: heatRays 6s cubic-bezier(0.5, 0, 0.9, 0.4) both;
+}
+
+@keyframes heatRays {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  40% {
+    transform: rotate(120deg) scale(0.96);
+  }
+  70% {
+    transform: rotate(420deg) scale(0.92);
+  }
+  100% {
+    transform: rotate(900deg) scale(0.9);
+  }
+}
+
+/* Clear: the sun's rays turn once and settle. */
+.spinIn {
+  transform-origin: 78px 78px;
+  transform: rotate(0);
+  animation: spinIn 3s ease-out both;
+}
+
+@keyframes spinIn {
+  from {
+    transform: rotate(-180deg);
+  }
+}

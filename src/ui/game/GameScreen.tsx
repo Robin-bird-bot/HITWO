@@ -21,6 +21,7 @@ import {
   type GameState,
   type HikerId,
   type TileId,
+  type WeatherId,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
 import { useUiMode } from '../app/uiMode';
@@ -55,6 +56,7 @@ import { TrialDetails } from '../challenge/TrialWindow';
 import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
+import { WeatherScreen } from '../weather/WeatherScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
@@ -114,6 +116,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   // The Wonder pop-up: opened when a Wonder is found or a hiker arrives at it,
   // and from its map icon.
   const [wonderOpen, setWonderOpen] = useWonderOpener(state);
+  // The weather change screen, when the weather changes (including back to Clear).
+  const [weatherShown, setWeatherShown] = useWeatherChange(state);
   // Predator Bait: tiles that just got easier, shown in blue until a few seconds
   // after the pop-up closes (Wyatt, Nov 6).
   const easier = useEasierTiles(state, !!state.challenge || !!result);
@@ -462,6 +466,13 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       {revealedOpen && !state.challenge && (
         <RevealedCard state={state} tileId={revealedOpen} onClose={() => setRevealedOpen(null)} />
       )}
+      {weatherShown && (
+        <WeatherScreen
+          weather={weatherShown.weather}
+          days={weatherShown.days}
+          onReady={() => setWeatherShown(null)}
+        />
+      )}
       {wonderOpen && !state.challenge && !state.scavenge && !result && (
         <WonderWindow
           state={state}
@@ -489,6 +500,18 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       )}
     </Stage>
   );
+}
+
+/** The newest weather change not yet seen (not one from before a reload). */
+function useWeatherChange(state: GameState) {
+  const [shown, setShown] = useState<{ weather: WeatherId; days: number } | null>(null);
+  const [seen, setSeen] = useState(() => state.nextEventId);
+  if (state.nextEventId !== seen) {
+    setSeen(state.nextEventId);
+    const change = state.log.findLast((e) => e.id >= seen && e.kind === 'weatherChanged');
+    if (change?.kind === 'weatherChanged') setShown({ weather: change.to, days: change.days });
+  }
+  return [shown, setShown] as const;
 }
 
 /**

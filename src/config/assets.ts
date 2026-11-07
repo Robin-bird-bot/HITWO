@@ -42,6 +42,12 @@ export const ASSETS = {
     frozen: asset('nodes/frozen.png'),
     flooded: asset('nodes/flooded.png'),
   },
+  /** The same art as squares (128px), for the weather change screen's cards. */
+  nodeStateSquares: {
+    fire: asset('nodes/fire-square.png'),
+    frozen: asset('nodes/frozen-square.png'),
+    flooded: asset('nodes/flooded-square.png'),
+  },
   icons: {
     acornCaps: asset('icons/acorn-caps.png'),
   },
