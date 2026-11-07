@@ -36,6 +36,12 @@ export const ASSETS = {
     wildlife: asset('nodes/wildlife.png'),
     mountain: asset('nodes/mountain.png'),
   },
+  /** Weather node states (Phase 6): cropped to the hex from assets/nodes, clipped to a hex in CSS. */
+  nodeStates: {
+    fire: asset('nodes/fire.png'),
+    frozen: asset('nodes/frozen.png'),
+    flooded: asset('nodes/flooded.png'),
+  },
   icons: {
     acornCaps: asset('icons/acorn-caps.png'),
   },

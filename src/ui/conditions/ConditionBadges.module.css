@@ -1,0 +1,200 @@
+/* Condition badges (Phase 6 step 1 mockup). Stage pixels. */
+
+.pill,
+.dot {
+  position: relative;
+  box-sizing: border-box;
+  border: 2px solid;
+  outline-offset: 2px;
+  cursor: help;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 8px 0 6px;
+  border-radius: 13px;
+}
+
+.pillName {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.pillTime {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: rgba(29, 34, 32, 0.45);
+  color: var(--text);
+}
+
+/* ×3: Game Quotes, for stack counts (CLAUDE.md fonts). */
+.stack {
+  position: absolute;
+  right: -9px;
+  top: -10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: #f1eadb;
+  color: #1d2220;
+  font-family: var(--font-callout);
+  font-size: 13px;
+  line-height: 20px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 50%;
+}
+
+.dot[data-tone='injury'] {
+  border-color: transparent;
+}
+
+.corner {
+  position: absolute;
+  right: -8px;
+  bottom: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #1d2220;
+  border: 1.5px solid currentColor;
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 15px;
+  text-align: center;
+}
+
+.corner[data-stack='true'] {
+  top: -8px;
+  bottom: auto;
+  background: #f1eadb;
+  border-color: #f1eadb;
+  color: #1d2220;
+  font-family: var(--font-callout);
+  font-size: 12px;
+}
+
+/* The one-line description: on hover, keyboard focus, or a tap (focus). */
+.tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  translate: -50% 0;
+  z-index: 20;
+  display: none;
+  flex-direction: column;
+  gap: 3px;
+  width: 230px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(22, 27, 25, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  text-align: left;
+  pointer-events: none;
+}
+
+.pill[data-open] .tip,
+.dot[data-open] .tip,
+.pill:hover .tip,
+.pill:focus-visible .tip,
+.pill:focus .tip,
+.dot:hover .tip,
+.dot:focus-visible .tip,
+.dot:focus .tip {
+  display: flex;
+}
+
+.tipName {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+
+.tipText {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.tipTime {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #f2c978;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.row .tip {
+  display: none !important;
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rowName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.rowStack {
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #f1eadb;
+  color: #1d2220;
+  font-family: var(--font-callout);
+  font-size: 12px;
+}
+
+.rowEffect {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.rowTime {
+  flex: none;
+  max-width: 96px;
+  text-align: right;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #f2c978;
+}

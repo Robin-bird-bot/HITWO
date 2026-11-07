@@ -1,0 +1,340 @@
+/* #mockup-conditions (Phase 6 step 1). Stage pixels. */
+
+.page {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 70% 20%, rgba(80, 110, 90, 0.18), transparent), var(--page);
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.header {
+  position: absolute;
+  left: 32px;
+  top: 24px;
+  right: 32px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+}
+
+.lede {
+  margin: 8px 0 0;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.lede a {
+  color: var(--gold);
+}
+
+.section {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+
+.note {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--text-faint);
+  min-height: 34px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 32px rgba(15, 22, 19, 0.28);
+}
+
+.card,
+.simpleCard {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.portrait {
+  flex: none;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name,
+.simpleName {
+  flex: 1;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.03em;
+}
+
+.simpleName {
+  font-size: 18px;
+}
+
+.injuryPips {
+  display: flex;
+  gap: 3px;
+}
+
+.injuryPips span {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1.5px solid #e5624a;
+}
+
+.injuryPips span[data-filled='true'] {
+  background: #e5624a;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  margin-top: 6px;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px 4px;
+}
+
+.count {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+/* ── The map ── */
+
+.map {
+  position: relative;
+  height: 330px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #3f5a52, #2c403a);
+  overflow: visible;
+}
+
+.hex {
+  position: absolute;
+  width: 140px;
+  height: 160px;
+}
+
+.hexEdge,
+.hexFill {
+  position: absolute;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.hexEdge {
+  inset: 0;
+  background: #f7f1e4;
+}
+
+.hexFill {
+  inset: 5px;
+  background: #e8dcc0;
+}
+
+.hexLabel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #5d5446;
+}
+
+.hexNodes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* The weather nodes are cropped squares: clip them to the hex like the others. */
+.hexNode {
+  width: 30px;
+  height: 35px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+.token {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+}
+
+.token img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.tokenFrozen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(127, 211, 230, 0.45);
+  color: #f2fbff;
+}
+
+.tokenMarks {
+  position: absolute;
+  right: -10px;
+  bottom: -6px;
+  display: flex;
+  gap: 2px;
+}
+
+.tokenMarks span {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  border: 2px solid #1d2220;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 14px;
+  text-align: center;
+}
+
+.nodeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.nodeRow {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.nodeRow > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nodeName {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.nodeText {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* ── The legend ── */
+
+.legend {
+  position: absolute;
+  left: 32px;
+  right: 32px;
+  bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  align-items: center;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legendItem b {
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  color: var(--text);
+}
+
+.legendRing {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.legendStack {
+  padding: 0 5px;
+  border-radius: 6px;
+  background: #f1eadb;
+  color: #1d2220 !important;
+  font-family: var(--font-callout) !important;
+}
