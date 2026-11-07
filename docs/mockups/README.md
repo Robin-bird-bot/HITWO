@@ -23,6 +23,8 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `ScavCard.dc.html` | The reusable square scavenge card |
 | `Challenge.dc.html` / `ChallengeParty.dc.html` / `ChallengeOpportunity.dc.html` | Challenge pop-up: each-hiker and whole-party versions (red), and an opportunity (blue) |
 | `Wonder.dc.html` / `WonderRewards.dc.html` / `Wonder.png` | The Wonder pop-up (purple, 1400×956): goals and rewards before the goals are met, and the reward picking after |
+| `NightEvent.dc.html` | The night event side window (Phase 6): midnight-blue ribbon, creature art, one line per hiker hit |
+| `Weather.dc.html` / `WeatherIcons.dc.html` | The weather change screen (Phase 6, Snow shown), and the 5 animated weather icons plus the 3 new nodes. Copy the icons' SVG and keyframes from `WeatherIcons.dc.html` |
 | `Station.dc.html` / `StationAhead.dc.html` | The ranger station (Phase 8): the room, the shopkeeper, the counter and the hikers' packs; and the same screen with "What's ahead?" open |
 | `Kit.dc.html` | Visual kit: tile states, tokens, special icons, bars, condition icons, palette |
 | `Ic.dc.html` | Stroke icon set (SVG paths), including binoculars, chat, trendUp and trendDown for the station |

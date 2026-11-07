@@ -6,7 +6,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | --- | --- | --- |
 | `fonts/` | Edit Undo, Edit Undo Dot, Edit Undo Line (Brian Kent), Game Quotes (Typia Nesia) | See "Licensing" below |
 | `resources/` | all 16: clay, fish, fur, grass, meat, metal, moss, mushroom, oil, seaweed, shell, stone, wood, bones, flint, salt | Transparent PNGs. mushroom is only 128px |
-| `nodes/` | forest, river, wildlife, mountain | Hex node badges for tiles and card backs |
+| `nodes/` | forest, river, wildlife, mountain; fire, frozen, flooded | Hex node badges for tiles and card backs. Fire, Frozen and Flooded (750×750) are the weather node states (Phase 6) |
 | `scavenge/backdrops/` | forest, river, wildlife, mountain, any-node, caps (brown redwoods), items (rainbow mountain lake) | **Blank** 750×750 card backgrounds with no rays. The game layers rays and icons on top |
 | `scavenge/rays/` | forest, river, wildlife, mountain, caps, any-node-cream, items-white | Full-opacity sunburst rays, one color per backdrop. See "Scavenge card layers" below |
 | `scavenge/backs/` | caps-back-icon, item-back-icon | Transparent hex icons laid over the caps and items backdrops to make those card backs. Node backs use `nodes/` |

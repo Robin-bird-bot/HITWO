@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — weather change</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+button{font-family:'EditUndo',monospace;cursor:pointer}
+
+.wx{overflow:visible}
+.wx *{transform-box:view-box}
+@keyframes wxShow{0%{opacity:0}5%{opacity:1}93%{opacity:1}100%{opacity:0}}
+@keyframes wxSunOut{0%,18%{transform:translate(22px,22px);opacity:1}40%{transform:translate(-6px,-4px);opacity:.9}60%,100%{transform:translate(-26px,-8px);opacity:0}}
+@keyframes wxCloudIn{0%,18%{transform:translateX(150px);opacity:0}42%,100%{transform:translateX(0);opacity:1}}
+@keyframes wxAfter{0%,44%{opacity:0}52%,100%{opacity:1}}
+@keyframes wxDrop{0%{transform:translateY(-6px);opacity:0}20%{opacity:1}100%{transform:translateY(26px);opacity:0}}
+@keyframes wxFlake{0%{transform:translate(0,-8px);opacity:0}20%{opacity:1}100%{transform:translate(6px,30px);opacity:0}}
+@keyframes wxBolt{0%,46%{opacity:0}48%{opacity:1}52%{opacity:.2}55%{opacity:1}70%{opacity:1}74%{opacity:0}80%{opacity:1}100%{opacity:1}}
+@keyframes wxSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes wxHeatCore{0%{transform:scale(1)}70%,100%{transform:scale(1.32)}}
+@keyframes wxHeatRays{0%{transform:rotate(0) scale(1)}40%{transform:rotate(120deg) scale(.9)}70%{transform:rotate(420deg) scale(.78)}100%{transform:rotate(900deg) scale(.72)}}
+
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: #1D2220">
+<div style="position: absolute; left: 0; top: 0"><dc-import name="Main" show-hints="{{false}}" hint-size="1600px,1000px"></dc-import></div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(16,26,38,0.42); backdrop-filter: blur(12px) saturate(0.8); -webkit-backdrop-filter: blur(12px) saturate(0.8)"></div>
+<div style="position: absolute; left: 0; right: 0; top: 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-shadow: 0 2px 10px rgba(0,0,0,0.35)">
+<svg class="wx" width="230" height="230" viewBox="0 0 200 200" aria-hidden="true"><g style="animation: wxShow 6s linear infinite"><g style="animation: wxSunOut 6s ease-in-out infinite"><g style="transform-origin: 78px 78px; animation: wxSpin 14s linear infinite"><line x1="120.0" y1="78.0" x2="132.0" y2="78.0" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="107.7" y1="107.7" x2="116.2" y2="116.2" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="78.0" y1="120.0" x2="78.0" y2="132.0" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="48.3" y1="107.7" x2="39.8" y2="116.2" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="36.0" y1="78.0" x2="24.0" y2="78.0" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="48.3" y1="48.3" x2="39.8" y2="39.8" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="78.0" y1="36.0" x2="78.0" y2="24.0" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/><line x1="107.7" y1="48.3" x2="116.2" y2="39.8" stroke="#FFC23D" stroke-width="7" stroke-linecap="round"/></g><circle cx="78" cy="78" r="30" fill="#FFC23D" style="transform-origin: 78px 78px; "/></g><g transform="translate(-22 0)"><g style="animation: wxCloudIn 6s cubic-bezier(.2,.8,.3,1) infinite"><circle cx="94" cy="110" r="28" fill="#F4F6F9"/><circle cx="128" cy="98" r="36" fill="#F4F6F9"/><circle cx="158" cy="118" r="22" fill="#F4F6F9"/><rect x="70" y="112" width="110" height="30" rx="15" fill="#F4F6F9"/><rect x="74" y="128" width="102" height="14" rx="7" fill="#DCE2EA"/></g><g style="animation: wxAfter 6s linear infinite"><g style="animation: wxFlake 1.8s linear 0s infinite"><line x1="96" y1="153" x2="96" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(0 96 160)"/><line x1="96" y1="153" x2="96" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(60 96 160)"/><line x1="96" y1="153" x2="96" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(120 96 160)"/></g><g style="animation: wxFlake 1.8s linear 0.6s infinite"><line x1="124" y1="153" x2="124" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(0 124 160)"/><line x1="124" y1="153" x2="124" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(60 124 160)"/><line x1="124" y1="153" x2="124" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(120 124 160)"/></g><g style="animation: wxFlake 1.8s linear 1.2s infinite"><line x1="152" y1="153" x2="152" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(0 152 160)"/><line x1="152" y1="153" x2="152" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(60 152 160)"/><line x1="152" y1="153" x2="152" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(120 152 160)"/></g><g style="animation: wxFlake 1.8s linear 0.9s infinite"><line x1="110" y1="153" x2="110" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(0 110 160)"/><line x1="110" y1="153" x2="110" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(60 110 160)"/><line x1="110" y1="153" x2="110" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(120 110 160)"/></g><g style="animation: wxFlake 1.8s linear 0.3s infinite"><line x1="138" y1="153" x2="138" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(0 138 160)"/><line x1="138" y1="153" x2="138" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(60 138 160)"/><line x1="138" y1="153" x2="138" y2="167" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" transform="rotate(120 138 160)"/></g></g></g></g></svg>
+<span style="font-family: 'EditUndo', monospace; font-size: 78px; letter-spacing: 0.1em; line-height: 1; margin-top: -6px">SNOW</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.08em; color: #CFE6FA">FOR THE NEXT 3 DAYS</span>
+<div style="display: flex; gap: 18px; margin-top: 26px; text-shadow: none">
+<div style="width: 360px; box-sizing: border-box; display: flex; gap: 14px; padding: 16px 18px; border-radius: 16px; background: rgba(14,20,26,0.55); border: 1px solid rgba(255,255,255,0.14)"><div style="width: 54px; height: 54px; flex: none; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08)"><svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><line x1="17" y1="4" x2="17" y2="30" stroke="#CFE6FA" stroke-width="3" stroke-linecap="round" transform="rotate(0 17 17)"/><line x1="17" y1="4" x2="17" y2="30" stroke="#CFE6FA" stroke-width="3" stroke-linecap="round" transform="rotate(60 17 17)"/><line x1="17" y1="4" x2="17" y2="30" stroke="#CFE6FA" stroke-width="3" stroke-linecap="round" transform="rotate(120 17 17)"/></svg></div><div style="display: flex; flex-direction: column; gap: 5px"><div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'EditUndo', monospace; font-size: 18px; letter-spacing: 0.06em">SHEER COLD</span><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.05em; color: #9FC4E8">FROM TOMORROW</span></div><span style="font-size: 14px; line-height: 1.45; color: #E4E8EC">Each phase, hikers gain 3 Shivering, minus 1 for each clothing item, each hiker with them, and 2 under a shelter. 3 = Frozen, 5 = injury.</span></div></div>
+<div style="width: 360px; box-sizing: border-box; display: flex; gap: 14px; padding: 16px 18px; border-radius: 16px; background: rgba(14,20,26,0.55); border: 1px solid rgba(255,255,255,0.14)"><div style="width: 54px; height: 54px; flex: none; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.08)"><img src="/_blob/807eeedcc014bc0a1bb6a37b9552d3be" alt="" style="width: 100%; height: 100%; object-fit: cover"></div><div style="display: flex; flex-direction: column; gap: 5px"><div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'EditUndo', monospace; font-size: 18px; letter-spacing: 0.06em">FREEZING</span><span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.05em; color: #9FC4E8">STARTS NOW</span></div><span style="font-size: 14px; line-height: 1.45; color: #E4E8EC">Each phase, River nodes have a 15% chance to freeze over and give no resources until the snow ends.</span></div></div>
+</div>
+<button style="margin-top: 34px; width: 260px; height: 56px; border-radius: 14px; border: none; background: #F1EADB; color: #1D2220; font-size: 20px; letter-spacing: 0.1em; box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 12px 24px rgba(0,0,0,0.3)">READY</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
