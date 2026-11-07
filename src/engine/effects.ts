@@ -272,7 +272,7 @@ export interface ItemUse {
   injuries?: number;
   /** Cures these conditions if the target has them (Bandages: Bleeding). */
   cures?: readonly string[];
-  /** Cures one negative condition the player picks (Medkit, Medicine). */
+  /** Cures one negative condition the player picks (Medkit, Medicine). TODO(wyatt): the player picks. */
   pickCondition?: true;
   /** Then gives this condition; a target who has it already can't use another. */
   gives?: { id: string; duration: number; unit: 'days' | 'phases' };

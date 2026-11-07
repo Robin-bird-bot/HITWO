@@ -428,6 +428,33 @@ Follow `docs/design/05-nights-and-weather.md`.
   - carrying, where the carrier's moves cost +1 Appetite;
   - abandoning when the countdown hits 0, or by choice.
 
+**Phase 7 notes (built Nov 7)**
+- **Wyatt's answers (Nov 7):**
+  - Build the medical items now, with a small "Use" free action that Phase 9 extends.
+  - Carrying: pick up, then carry. Picking up and putting down are free; each of the carrier's moves costs +1 Appetite; one carried hiker each.
+  - Passed-out hikers skip the camp drains.
+  - Hikers on the same tile can take a passed-out hiker's things; whatever is left leaves with them.
+  - The hike ends when no hiker is active.
+  - Bandages and Medkit cure Bleeding for now.
+- **Where things are:**
+  - Passing out, waking, the countdown, abandoning and the hike ending: `src/engine/health.ts`.
+  - The actions: `src/engine/actions/useItem.ts`, `carry.ts` and `abandon.ts`; taking from a passed-out hiker is `give` (`give.ts`).
+  - Item uses: `ItemDef.use` (`src/engine/effects.ts`), filled in for Medkit, Medicine, Bandages and the Splint in `src/content/items.ts`. Numbers in `BALANCE.medical`, `BALANCE.carry` and `BALANCE.passOut`.
+  - On screen: the stash menu's "Use on…" (`src/ui/game/StashMenu.tsx`), the Carry and passed-out cards in the turn panel (`src/ui/panels/TurnPanel.tsx`), tokens (`src/ui/map/HikerTokens.tsx`) and the end screen (`src/ui/hike/`).
+  - The backtick debug panel can pass out or wake a hiker, set their nights left, and give any item.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - Injuries stop at 3.
+  - The countdown starts full (2 nights) every time a hiker passes out, and drops the night they pass out too.
+  - A woken hiker can still act this phase if they hadn't already.
+  - Bandages (1 injury, and Bleeding) and the Splint (1 injury for 3 days, shown as a Splinted condition) are placeholder tools: only Medkit and Medicine are in `03-items.md`. Every medical item is used up after one use. The player picks which condition Medkit or Medicine cures.
+  - Anyone can carry anyone, and Cats pay the +1 too. A Frozen hiker can't be carried. A card that moves the carrier (or the carried hiker) drops them.
+  - Passed-out hikers can still be hit by challenges, night events and weather on their tile.
+- **Fixed from Phase 6:** a condition a night event gave lasted no time at all when counted in days; it now lasts through the next day.
+- **Waiting on later phases** (`TODO(phase N)`):
+  - Phase 8: station healing and rejoining; a carried hiker arriving at a checkpoint; giving the next biome a Wonder not used yet.
+  - Phase 9: item uses and Quality; the Carrier Pack, Medic Tent, Safety Vest and Helmet; taking a passed-out hiker's worn clothes.
+- **Saves:** version 7. Version 7 adds the countdown and carrying; an older save's passed-out hiker gets a full countdown.
+
 ---
 
 ## Phase 8: Checkpoints and ranger stations

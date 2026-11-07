@@ -283,5 +283,15 @@ export function runNightEvent(state: GameState): void {
     }
   }
 
+  // A condition given at camp counts from tomorrow: this camp step's tick skips it,
+  // so "Wet for 1 day" lasts through the next day.
+  for (const e of state.log) {
+    if (e.id < from || e.kind !== 'condition' || e.unit === 'phases') continue;
+    const c = state.hikers
+      .find((h) => h.id === e.hikerId)
+      ?.conditions.find((x) => x.id === e.condition);
+    if (c) c.fresh = true;
+  }
+
   pushEvent(state, { kind: 'nightEvent', tier, creatureId: creature.id, hits, safe, from });
 }

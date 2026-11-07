@@ -183,7 +183,10 @@ export interface ConditionInstance {
   node?: NodeType;
   /** A condition that starts when this one ends ("Hangry, then Nauseous"). */
   then?: { id: ConditionId; remaining: number; unit: 'days' | 'phases' | 'nights' };
-  /** Added during this phase: its first end of phase doesn't count. */
+  /**
+   * Added during this phase (or, for days, during the camp step): its first
+   * tick doesn't count.
+   */
   fresh?: true;
   /** Stacking conditions (Shivering, Burning): how many. */
   stacks?: number;

@@ -36,7 +36,10 @@ export function passOut(state: GameState, hiker: Hiker): void {
   pushEvent(state, { kind: 'passedOut', hikerId: hiker.id, countdown: hiker.countdown });
 }
 
-/** A passed-out hiker comes to. */
+/**
+ * A passed-out hiker comes to. TODO(wyatt): if they hadn't acted this phase
+ * before passing out, they can still act now.
+ */
 export function wakeUp(state: GameState, hiker: Hiker, cause: string): void {
   if (hiker.status !== 'passedOut') return;
   hiker.status = 'active';

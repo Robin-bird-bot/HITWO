@@ -35,7 +35,7 @@ export interface SectionOptions {
   tier: number;
   /**
    * Wonders already used this run, so each biome gets a new one.
-   * TODO(phase 7): pass these when the next section is made at a checkpoint.
+   * TODO(phase 8): pass these when the next section is made at a checkpoint.
    */
   usedWonders?: readonly string[];
 }

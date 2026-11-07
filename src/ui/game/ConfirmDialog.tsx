@@ -7,29 +7,37 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel: string;
   cancelLabel?: string;
+  /** Start on the cancel button, so Enter keeps things as they are (abandoning a hiker). */
+  focusCancel?: boolean;
   onConfirm(): void;
   onCancel(): void;
 }
 
-/** A small confirm box over the game, for anything that can't be undone. Enter confirms, Esc cancels. */
+/**
+ * A small confirm box over the game, for anything that can't be undone. Esc
+ * cancels; Enter presses whichever button has focus (confirm, unless
+ * `focusCancel`).
+ */
 export function ConfirmDialog({
   title,
   message,
   confirmLabel,
   cancelLabel = 'Keep playing',
+  focusCancel = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('confirm');
   useEffect(() => {
-    confirmRef.current?.focus();
+    (focusCancel ? cancelRef : confirmRef).current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+  }, [onCancel, focusCancel]);
 
   return (
     <div className={styles.backdrop} onClick={onCancel}>
@@ -51,7 +59,7 @@ export function ConfirmDialog({
           {message}
         </p>
         <div className={styles.buttons}>
-          <button type="button" className={styles.cancel} onClick={onCancel}>
+          <button ref={cancelRef} type="button" className={styles.cancel} onClick={onCancel}>
             {cancelLabel}
           </button>
           <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>

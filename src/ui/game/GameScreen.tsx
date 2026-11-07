@@ -580,6 +580,7 @@ export function GameScreen({
           message={abandonMessage(state, abandoning)}
           confirmLabel="Abandon"
           cancelLabel={`Keep ${abandoning.name}`}
+          focusCancel
           onCancel={() => setConfirmAbandon(null)}
           onConfirm={() => {
             setConfirmAbandon(null);

@@ -470,3 +470,29 @@ describe('stat chips', () => {
     expect(hit.chip).toBe('−1 Appetite, +1 injury');
   });
 });
+
+describe('conditions from the night event', () => {
+  it('last through the next day: the camp step that gave them doesn’t count them down', () => {
+    for (let seed = 1; seed < 400; seed++) {
+      const s = toNight(fixtureGame({ seed, nightEvents: true }));
+      place(s, 'ash', 'L');
+      s.debugNight = { creatureId: 'drunk-hiker', hit: 'ash' };
+      s.caps = 0;
+      for (const h of s.hikers) {
+        h.inventory.resources = {};
+        h.inventory.bag = [];
+        h.xp = 0;
+      }
+      const morning = run(s, END);
+      const hit = lastNight(morning)?.hits.find((h) => h.hikerId === 'ash');
+      if (hit?.outcomeId !== 'condition') continue;
+      const id = morning.log.findLast((e) => e.kind === 'condition' && e.hikerId === 'ash');
+      if (id?.kind !== 'condition' || id.unit !== 'days') continue;
+      expect(hasCondition(hiker(morning, 'ash'), id.condition)).toBe(true);
+      const nextMorning = run(morning, END, END, END);
+      expect(hasCondition(hiker(nextMorning, 'ash'), id.condition)).toBe(false);
+      return;
+    }
+    throw new Error('No seed gave a day-long condition');
+  });
+});
