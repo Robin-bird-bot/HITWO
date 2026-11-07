@@ -516,6 +516,11 @@ export type Action =
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
+  /**
+   * The hiker leaves the party for good, taking everything they carry. Any
+   * hiker, any time; the UI confirms it first.
+   */
+  | { type: 'abandon'; hikerId: HikerId }
   /** A free action: picks up a passed-out hiker on the same tile, to carry them along. */
   | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
   /** A free action: puts down the hiker being carried. */
@@ -654,7 +659,15 @@ export type GameEventBody =
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
   | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
-  | { kind: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemId?: ItemId }
+  | {
+      kind: 'give';
+      fromId: HikerId;
+      toId: HikerId;
+      resource?: ResourceId;
+      itemId?: ItemId;
+      /** Taken from a passed-out hiker, rather than given. */
+      taken?: true;
+    }
   | { kind: 'returned'; hikerId: HikerId; resource: ResourceId; node: NodeType }
   /** Overnight, nodes nobody scavenged recover. */
   | { kind: 'recovered'; nodes: NodeType[] }

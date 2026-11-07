@@ -23,11 +23,13 @@ interface SimplePartyProps {
   state: GameState;
   selectedId: HikerId | null;
   onSelect(id: HikerId): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
 }
 
 const POPOUT_HEIGHT = 470;
 
-export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
+export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePartyProps) {
   const fit = useStage();
   const listRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ id: HikerId; top: number } | null>(null);
@@ -90,7 +92,18 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
                 FAMILY_LOOK[openHiker.family].label.slice(1).toLowerCase()}
             </span>
           </div>
-          <Details state={state} hiker={openHiker} />
+          <Details
+            state={state}
+            hiker={openHiker}
+            {...(onAbandon
+              ? {
+                  onAbandon: (id: HikerId) => {
+                    setOpen(null);
+                    onAbandon(id);
+                  },
+                }
+              : {})}
+          />
         </Popout>
       )}
     </>

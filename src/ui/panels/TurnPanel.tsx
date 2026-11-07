@@ -18,6 +18,7 @@ import {
   type EquipSlot,
   type GameState,
   type Hiker,
+  type HikerId,
   type ItemInstance,
   type ResourceId,
 } from '../../engine';
@@ -48,6 +49,8 @@ interface TurnPanelProps {
   onPick?(pick: StashPick): void;
   /** A free action (picking up or putting down a passed-out hiker). */
   onFree?(action: Action): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
 }
 
 export function TurnPanel({
@@ -60,6 +63,7 @@ export function TurnPanel({
   slot,
   onPick,
   onFree,
+  onAbandon,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -72,8 +76,14 @@ export function TurnPanel({
       aside={<span>{PHASE_NAME[state.phase]}</span>}
     >
       <div className={styles.scroll}>
-        <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
-        <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+        {hiker.status === 'active' ? (
+          <>
+            <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
+            <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+          </>
+        ) : (
+          <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
+        )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
         <TileCard state={state} hiker={hiker} />
         <Equipped hiker={hiker} />
@@ -216,6 +226,57 @@ export function Abilities({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * A hiker who can't act: passed out (the countdown, how to help, and
+ * Abandon), or gone from the hike.
+ */
+export function OutCard({
+  state,
+  hiker,
+  onAbandon,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onAbandon?(id: HikerId): void;
+}) {
+  if (hiker.status === 'abandoned') {
+    return (
+      <div className={styles.block}>
+        <p className={styles.outText}>{hiker.name} left the hike.</p>
+      </div>
+    );
+  }
+  if (hiker.status !== 'passedOut') return null;
+  const nights = hiker.countdown ?? BALANCE.passOut.countdownNights;
+  const carrier = state.hikers.find((h) => h.carrying === hiker.id);
+  const company = hikersOnTile(state, hiker.tileId);
+  const things = hiker.inventory.bag.length + resourceCount(hiker);
+  return (
+    <div className={styles.block}>
+      <div className={styles.out}>
+        <span className={styles.outKicker}>
+          <Icon name="medical" size={14} solid />
+          PASSED OUT · {nights} NIGHT{nights === 1 ? '' : 'S'}
+        </span>
+        <span className={styles.outText}>
+          {company.length
+            ? `${carrier ? `${carrier.name} is carrying them` : `${company.map((h) => h.name).join(' and ')} ${company.length === 1 ? 'is' : 'are'} with them`}, so the countdown waits.`
+            : `Alone, ${hiker.name} abandons the hike in ${nights} night${nights === 1 ? '' : 's'}.`}{' '}
+          A medical item from a hiker on this tile wakes them, or someone can carry them.
+        </span>
+        {company.length > 0 && things > 0 && (
+          <span className={styles.small}>Others here can take things from their pack below.</span>
+        )}
+      </div>
+      {onAbandon && (
+        <button type="button" className={styles.abandon} onClick={() => onAbandon(hiker.id)}>
+          Abandon {hiker.name}…
+        </button>
+      )}
     </div>
   );
 }

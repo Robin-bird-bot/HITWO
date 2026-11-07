@@ -55,6 +55,8 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
 
   const name = resource?.name ?? ITEMS[item?.itemId ?? '']?.name ?? 'Item';
   const usable = !!item && !!ITEMS[item.itemId]?.use && hiker.status === 'active';
+  // A passed-out hiker can't act: others here can only take things from them.
+  const out = hiker.status !== 'active';
   const roomFor = (h: Hiker) =>
     resource
       ? resourceCount(h) < BALANCE.inventory.resourceLimit
@@ -66,7 +68,7 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
 
   return (
     <Popout
-      label={`${name}: give${resource ? ' or return' : ' or drop'}`}
+      label={`${name}: ${out ? 'take it' : `give${resource ? ' or return' : ' or drop'}`}`}
       dragId="inventory"
       className={styles.menu}
       style={{
@@ -89,7 +91,9 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
         </span>
       )}
       {others.length === 0 && (
-        <span className={styles.none}>No one else is here to give it to.</span>
+        <span className={styles.none}>
+          {out ? 'No one is here to take it.' : 'No one else is here to give it to.'}
+        </span>
       )}
       {others.map((h) => {
         const room = roomFor(h);
@@ -108,13 +112,13 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
             }
           >
             <Icon name="user" size={16} />
-            Give to {h.name}
+            {out ? `${h.name} takes it` : `Give to ${h.name}`}
             {!room && <span className={styles.full}>{resource ? 'Full' : 'Bag full'}</span>}
           </button>
         );
       })}
 
-      {resource && (
+      {resource && !out && (
         <button
           type="button"
           className={styles.option}
@@ -148,6 +152,7 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
 
       {item &&
         !useStep &&
+        !out &&
         (confirmDrop ? (
           <div className={styles.confirm}>
             <span className={styles.none}>Drop the {name} for good? It can’t be undone.</span>

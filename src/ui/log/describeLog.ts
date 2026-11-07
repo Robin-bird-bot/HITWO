@@ -199,7 +199,9 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           : `the ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
         lines.push({
           id: e.id,
-          text: `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
+          text: e.taken
+            ? `${name(e.toId)} took ${what} from ${name(e.fromId)}.`
+            : `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
           tone: 'scavenge',
         });
         break;

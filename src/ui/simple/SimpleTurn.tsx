@@ -5,13 +5,14 @@
  * with short labels and counts. Fewer words, not fewer visuals.
  */
 import { useState, type ReactNode } from 'react';
-import { abilitiesFor, type Action, type GameState, type Hiker } from '../../engine';
+import { abilitiesFor, type Action, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { nothingToDoReason, simpleActions, type ActionId } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import {
   Abilities,
   CarryCard,
+  OutCard,
   Bag,
   EndButton,
   Equipped,
@@ -30,6 +31,8 @@ interface SimpleTurnProps {
   onAbility(abilityId: string, choice?: string): void;
   /** A free action (picking up or putting down a passed-out hiker). */
   onFree?(action: Action): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
   onEndPhase(): void;
   note?: string;
   slot?: ReactNode;
@@ -50,6 +53,7 @@ export function SimpleTurn({
   activeAction,
   onPick,
   onFree,
+  onAbandon,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker);
   // Why a red action is stopped, after tapping it.
@@ -73,7 +77,10 @@ export function SimpleTurn({
         aside={<span>{PHASE_NAME[state.phase]}</span>}
       >
         <div className={styles.scroll}>
-          {slot ??
+          {hiker.status !== 'active' ? (
+            <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
+          ) : (
+            (slot ??
             (actions.length ? (
               <div className={styles.actions}>
                 {actions.map((a) => {
@@ -99,10 +106,13 @@ export function SimpleTurn({
               </div>
             ) : (
               <p className={styles.nothing}>{nothingToDoReason(state, hiker)}</p>
-            ))}
+            )))
+          )}
           {!slot && whyText && <p className={styles.why}>{whyText}</p>}
           {note && <p className={styles.note}>{note}</p>}
-          {hasAbilities && <Abilities state={state} hiker={hiker} onAbility={onAbility} />}
+          {hiker.status === 'active' && hasAbilities && (
+            <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+          )}
           {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
           <TileCard state={state} hiker={hiker} />
           <Equipped hiker={hiker} compact />

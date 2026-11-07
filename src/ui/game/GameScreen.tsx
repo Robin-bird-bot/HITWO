@@ -10,6 +10,7 @@ import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
   hikersWhoHaventActed,
+  resourceCount,
   isAccomplished,
   isRevealed,
   isSheltered,
@@ -20,6 +21,7 @@ import {
   tendableNodes,
   type Action,
   type GameState,
+  type Hiker,
   type HikerId,
   type TileId,
   type WeatherId,
@@ -80,6 +82,27 @@ type Mode =
   | { kind: 'watch' }
   | { kind: 'tend' };
 
+/** What abandoning the hike means for this hiker: they go for good, with everything they carry. */
+function abandonMessage(state: GameState, h: Hiker): string {
+  const items = h.inventory.bag.length + Object.keys(h.inventory.equipped).length;
+  const resources = resourceCount(h);
+  const carried = [
+    items ? `${items} item${items === 1 ? '' : 's'}` : '',
+    resources ? `${resources} resource${resources === 1 ? '' : 's'}` : '',
+  ].filter(Boolean);
+  const others = hikersOnTile(state, h.tileId).some((o) => o.id !== h.id);
+  const take = carried.length
+    ? ` They take everything they carry (${carried.join(' and ')}).${
+        !others
+          ? ''
+          : h.status === 'passedOut'
+            ? ' Others on their tile can take things first.'
+            : ' They can give things to someone on their tile first.'
+      }`
+    : '';
+  return `${h.name} leaves the party for good.${take} This can’t be undone.`;
+}
+
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
@@ -107,6 +130,8 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
   const [mode, setMode] = useState<Mode>({ kind: 'idle' });
   const [pendingTile, setPendingTile] = useState<TileId | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  // A hiker the player asked to abandon the hike, waiting on the confirm.
+  const [confirmAbandon, setConfirmAbandon] = useState<HikerId | null>(null);
   // The card just taken, shown for a moment before the scavenge window closes.
   const [took, setTook] = useState<TookCard | null>(null);
   // The resource or item whose give / return menu is open.
@@ -200,7 +225,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
       if (next) setSelectedId(next.id);
       else setNote('Everyone has acted. End the phase when you’re ready.');
     }
-    if (action.type === 'endPhase') {
+    if (action.type === 'abandon' || action.type === 'endPhase') {
       const after = gameStore.getState();
       const first = after?.hikers.find((h) => h.status === 'active');
       if (first) setSelectedId(first.id);
@@ -281,6 +306,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
     });
 
   const waiting = hikersWhoHaventActed(state);
+  const abandoning = confirmAbandon ? hikers.find((h) => h.id === confirmAbandon) : undefined;
   const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
   const phaseWord = PHASE_WORD[state.phase];
 
@@ -394,7 +420,12 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           <GoalPill />
           <CapsPill state={state} />
           <MenuButton onTitle={onQuit} />
-          <SimpleParty state={state} selectedId={selected?.id ?? null} onSelect={select} />
+          <SimpleParty
+            state={state}
+            selectedId={selected?.id ?? null}
+            onSelect={select}
+            onAbandon={setConfirmAbandon}
+          />
           {selected && (
             <SimpleTurn
               state={state}
@@ -414,6 +445,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               onEndPhase={endPhase}
               onPick={setStash}
               onFree={dispatch}
+              onAbandon={setConfirmAbandon}
             />
           )}
         </>
@@ -424,7 +456,12 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           <ObjectiveCard />
           <AbundanceCard state={state} />
           <MenuButton onTitle={onQuit} />
-          <PartyPanel state={state} selectedId={selected?.id ?? null} onSelect={select} />
+          <PartyPanel
+            state={state}
+            selectedId={selected?.id ?? null}
+            onSelect={select}
+            onAbandon={setConfirmAbandon}
+          />
           {selected && (
             <TurnPanel
               state={state}
@@ -436,6 +473,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               onEndPhase={endPhase}
               onPick={setStash}
               onFree={dispatch}
+              onAbandon={setConfirmAbandon}
             />
           )}
         </>
@@ -518,6 +556,20 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
           tileId={wonderOpen}
           onClose={() => setWonderOpen(null)}
           onAccomplish={(action) => dispatch(action)}
+        />
+      )}
+
+      {abandoning && (
+        <ConfirmDialog
+          title={`Abandon the hike for ${abandoning.name}?`}
+          message={abandonMessage(state, abandoning)}
+          confirmLabel="Abandon"
+          cancelLabel={`Keep ${abandoning.name}`}
+          onCancel={() => setConfirmAbandon(null)}
+          onConfirm={() => {
+            setConfirmAbandon(null);
+            dispatch({ type: 'abandon', hikerId: abandoning.id });
+          }}
         />
       )}
 
