@@ -284,6 +284,36 @@ export const BALANCE = {
     default: 0.25,
   },
 
+  /** Weather (05-nights-and-weather.md, Phase 6). */
+  weather: {
+    /**
+     * The placeholder schedule until Phase 11 gives each biome its own odds:
+     * Clear for 2–4 days, then a random weather for 2–3 days (Wyatt, Nov 6).
+     * TODO(phase 11): per-biome odds (Snow up high, Heatwave in the Meadow).
+     */
+    schedule: {
+      clearDays: { min: 2, max: 4 },
+      weatherDays: { min: 2, max: 3 },
+      weights: { rain: 35, storm: 20, snow: 15, heatwave: 30 },
+    },
+    /** How many days ahead the forecast shows. */
+    forecastDays: 3,
+    /** Each phase, the chance a node floods, freezes or catches fire. */
+    nodeChance: 0.15,
+    /** Each phase, the chance fire spreads to a connected tile with a Forest node. */
+    fireSpread: 0.35,
+    /** Luck a Fire node gives the other nodes on its tile. */
+    fireLuck: 1,
+    /** Drizzle: each clothing item's chance to lose 1 durability each phase. */
+    drizzleWear: 0.35,
+    /** Drizzle: how long Wet lasts. TODO(wyatt): the doc doesn't say; first guess. */
+    drizzleWetDays: 1,
+    /** Thunder: how likely Wildlife cards are while it storms. */
+    thunderWildlifeWeight: 0.25,
+    /** Sheer Cold: Shivering each phase, less 1 a clothing item, 1 a hiker with you, 2 for a shelter. */
+    sheerCold: { base: 3, perClothes: 1, perHiker: 1, shelter: 2 },
+  },
+
   /** Condition numbers from 02-traits-and-conditions.md (Phase 6). */
   conditions: {
     /** Sleepy, Nauseous, Bored, Sated, Energized: the stat change while it lasts. */

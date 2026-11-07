@@ -11,6 +11,7 @@
 import { BALANCE } from '../../config/balance';
 import { CHALLENGES, OPPORTUNITIES, TRIALS } from '../../content/challenges';
 import { weightedPick } from '../rng';
+import { nodeCounts } from '../weather';
 import type { GameState, Hiker, RngState, Tile } from '../types';
 import { notBuiltYet } from './rolls';
 import type { CardDef, ChallengeKind, Gate, Tier } from './types';
@@ -45,9 +46,11 @@ export function gatePasses(gate: Gate, state: GameState, onTile: readonly Hiker[
     case 'snow':
       return !!state.snowy;
     case 'stormy':
-      return state.weather === 'stormy';
+      // TODO(wyatt): "stormy weather only" means Storm.
+      return state.weather.today === 'storm';
     case 'sunny':
-      return state.weather === 'sunny';
+      // TODO(wyatt): "sunny weather only" means Heatwave.
+      return state.weather.today === 'heatwave';
     case 'afternoon':
       return state.phase === 'afternoon';
     case 'dogOnTile':
@@ -57,7 +60,8 @@ export function gatePasses(gate: Gate, state: GameState, onTile: readonly Hiker[
 
 function nodesMatch(card: CardDef, tile: Tile): boolean {
   if (card.nodes === 'any') return true;
-  return tile.nodes.some((n) => n.type !== 'caps' && card.nodes.includes(n.type));
+  // A Fire node isn't Forest any more (Phase 6 weather).
+  return tile.nodes.some((n) => n.type !== 'caps' && nodeCounts(n) && card.nodes.includes(n.type));
 }
 
 /** Can this card appear on this tile right now (ignoring "used this section")? */

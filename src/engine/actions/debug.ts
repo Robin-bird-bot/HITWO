@@ -3,7 +3,9 @@ import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
 import { pickForTile } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
+import { findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
+import { STATE_FROM, changeWeather, setNodeState } from '../weather';
 import { revealWonder, wonderTile } from '../wonders/wonders';
 import { enterTile } from './common';
 import { resourceCount } from '../inventory';
@@ -158,10 +160,37 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Snowy section ${op.on ? 'on' : 'off'}` });
       break;
     case 'setWeather':
-      if (op.weather === 'clear') delete state.weather;
-      else state.weather = op.weather;
-      pushEvent(state, { kind: 'debug', note: `Weather: ${op.weather}` });
+      if (op.weather !== state.weather.today) changeWeather(state, op.weather);
+      if (op.hold) state.weather.hold = true;
+      else delete state.weather.hold;
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Weather: ${op.weather}${op.hold ? ', holding' : ''}`,
+      });
       break;
+    case 'skipGraceDay':
+      state.weather.since = state.day - 1;
+      pushEvent(state, { kind: 'debug', note: 'Skipped the weather’s grace day' });
+      break;
+    case 'nodeState': {
+      const node = state.section.tiles[op.tileId]?.nodes.find(
+        (n) => !n.weather && n.type === STATE_FROM[op.state],
+      );
+      if (!node) return;
+      setNodeState(node, op.state);
+      pushEvent(state, { kind: 'nodesChanged', state: op.state, tiles: [op.tileId] });
+      break;
+    }
+    case 'wearClothes': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const slot = (['body', 'feet', 'gear'] as const).find((s) => !hiker?.inventory.equipped[s]);
+      const clothes =
+        findableItems('clothes').find((i) => i.slot === slot) ?? findableItems('clothes')[0];
+      if (!hiker || !slot || !clothes) return;
+      hiker.inventory.equipped[slot] = { uid: `debug-${state.nextEventId}`, itemId: clothes.id };
+      pushEvent(state, { kind: 'debug', note: `${hiker.name} put on ${clothes.name}` });
+      break;
+    }
     case 'setChallenges':
       if (op.on) delete state.noChallenges;
       else state.noChallenges = true;

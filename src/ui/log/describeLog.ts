@@ -4,6 +4,7 @@
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
@@ -242,6 +243,30 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           tone: 'injury',
         });
         break;
+      case 'weatherChanged': {
+        const to = WEATHERS[e.to];
+        const days = `${e.days} day${e.days === 1 ? '' : 's'}`;
+        const text =
+          e.to === 'clear'
+            ? `The ${WEATHERS[e.from].name.toLowerCase()} is over: clear skies.`
+            : `${to.name} for the next ${days}: ${to.node?.name} now, ${to.hiker?.name} from tomorrow.`;
+        lines.push({ id: e.id, text, tone: 'phase' });
+        break;
+      }
+      case 'nodesChanged': {
+        const tiles = [...e.tiles, ...(e.spread ?? [])]
+          .map((id) => state.section.tiles[id])
+          .filter((t) => !!t)
+          .map((t) => tileName(t));
+        const verb =
+          e.state === 'flooded' ? 'flooded' : e.state === 'frozen' ? 'froze over' : 'caught fire';
+        const where = listNames(tiles);
+        const text = e.spread?.length
+          ? `The fire spread to ${where}.`
+          : `A node ${verb} on ${where}.`;
+        lines.push({ id: e.id, text, tone: 'drain' });
+        break;
+      }
       case 'freeAction':
         lines.push({
           id: e.id,

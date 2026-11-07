@@ -4,6 +4,7 @@ import { freshAbundance } from './abundance';
 import { seedRng } from './rng';
 import { SAVE_VERSION } from './save';
 import { generateSection } from './trail/generate';
+import { freshWeather } from './weather';
 import type {
   BiomeId,
   Family,
@@ -57,6 +58,7 @@ export function createGame({
     phase: 'morning',
     sectionIndex: 0,
     section,
+    weather: freshWeather(seed),
     hikers: hikers.map((setup): Hiker => ({
       id: setup.id,
       name: setup.name,

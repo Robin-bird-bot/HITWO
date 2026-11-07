@@ -517,3 +517,8 @@
   line-height: 14px;
   text-align: center;
 }
+
+/* Weather node states (Phase 6): cropped squares, clipped to the hex like the others. */
+.nodeState {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}

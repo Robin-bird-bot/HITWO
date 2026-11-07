@@ -9,6 +9,7 @@
 import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
 import { CONDITIONS } from '../content/conditions';
+import { WEATHERS } from '../content/weather';
 import { addCondition, addStacks } from './conditions';
 import { pushEvent } from './log';
 import { hikersOnTile, isAlone, isSheltered } from './map';
@@ -280,7 +281,7 @@ export interface FamilyDef {
 
 export interface EffectSource {
   id: string;
-  kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item';
+  kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item' | 'weather';
   name: string;
   hooks: Hooks;
   ability?: AbilityDef;
@@ -295,12 +296,18 @@ function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
   return off;
 }
 
-/**
- * Every source affecting a hiker right now. `_state` is unused until weather
- * becomes a source (Phase 6, step 3).
- */
-export function effectSourcesFor(_state: GameState, hiker: Hiker): EffectSource[] {
+/** Every source affecting a hiker right now, the weather included (Storm's Thunder). */
+export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
+  const weather = WEATHERS[state.weather?.today ?? 'clear'];
+  if (weather?.hooks) {
+    sources.push({
+      id: `weather:${weather.id}`,
+      kind: 'weather',
+      name: weather.node?.name ?? weather.name,
+      hooks: weather.hooks,
+    });
+  }
   const family = FAMILIES[hiker.family];
   if (family) {
     sources.push({

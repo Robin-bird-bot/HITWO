@@ -63,12 +63,17 @@ export const SPECIAL_SPACES: readonly SpecialSpace[] = [
 /** Side features attach to a normal tile and add an extra option there. */
 export type SideFeature = 'merchant' | 'trader';
 
+/** What weather did to a node (Phase 6): flooded counts as River; frozen and on fire give nothing. */
+export type NodeWeatherState = 'flooded' | 'frozen' | 'fire';
+
 export interface TileNode {
   type: NodeKind;
   /** Shown on the map. Hidden nodes show as ? until a hiker enters or scouts the tile. */
   revealed: boolean;
   /** A Bounty node: extra resources are more likely, at an extra Abundance cost. */
   bounty?: true;
+  /** Changed by the weather, and what it was before, so it goes back when the weather ends. */
+  weather?: { state: NodeWeatherState; was: NodeType };
 }
 
 export interface Tile {
@@ -122,6 +127,22 @@ export interface Section {
   checkpointId: TileId;
 }
 
+// ── Weather ────────────────────────────────────────────────────────────────
+
+export type WeatherId = 'clear' | 'rain' | 'storm' | 'snow' | 'heatwave';
+
+export interface WeatherState {
+  today: WeatherId;
+  /** The day this weather began. Its hiker effect starts the day after (a grace day). */
+  since: number;
+  /** The weather on each coming day, tomorrow first (at least the forecast's length). */
+  ahead: WeatherId[];
+  /** Its own RNG stream for the schedule, so planning ahead doesn't shift other draws. */
+  rng: RngState;
+  /** Debug and tests: the weather stays as it is. */
+  hold?: true;
+}
+
 // ── Hikers ─────────────────────────────────────────────────────────────────
 
 export type Family = 'human' | 'dog' | 'cat';
@@ -173,6 +194,8 @@ export interface ItemInstance {
   appetiteMod?: number;
   /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
   usesLost?: number;
+  /** Clothes: durability lost to weather and night events. TODO(phase 9): taken off its durability. */
+  wear?: number;
 }
 
 export interface Inventory {
@@ -532,7 +555,14 @@ export type DebugOp =
   /** Counts the section as snowy (Phase 11 makes this real). */
   | { kind: 'setSnowy'; on: boolean }
   /** The weather challenge gates check (Phase 6 makes this real). */
-  | { kind: 'setWeather'; weather: 'clear' | 'sunny' | 'stormy' };
+  /** Sets today's weather (it starts today), and whether it holds instead of changing. */
+  | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
+  /** Skips the grace day, so the weather's hiker effect starts now. */
+  | { kind: 'skipGraceDay' }
+  /** Turns a tile's first fitting node flooded, frozen or on fire. */
+  | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
+  /** Puts a clothing item on a hiker (equipping arrives in Phase 9). */
+  | { kind: 'wearClothes'; hikerId: HikerId };
 
 export type ActionType = Action['type'];
 
@@ -587,6 +617,10 @@ export type GameEventBody =
       stacks?: number;
     }
   | { kind: 'conditionEnded'; hikerId: HikerId; condition: ConditionId }
+  /** The weather changed at the start of a day. */
+  | { kind: 'weatherChanged'; from: WeatherId; to: WeatherId; days: number }
+  /** Weather changed nodes this phase: which tiles, and (fires) which tiles it spread to. */
+  | { kind: 'nodesChanged'; state: NodeWeatherState; tiles: TileId[]; spread?: TileId[] }
   /** A condition made this action free (Motivated). */
   | { kind: 'freeAction'; hikerId: HikerId; cause: string }
   /** A hiker landed on a new tile and its challenge opened. */
@@ -713,8 +747,8 @@ export interface GameState {
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
   snowy?: true;
-  /** The weather for challenge gates (Phase 6). Until then, a debug setting. */
-  weather?: 'clear' | 'sunny' | 'stormy';
+  /** Today's weather, since when, and the days ahead (the forecast). */
+  weather: WeatherState;
   nextEventId: number;
   /** The most recent events, oldest first. */
   log: GameEvent[];

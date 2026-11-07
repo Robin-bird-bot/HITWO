@@ -13,6 +13,7 @@ import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
 import { computeCost, fireHook, firePhaseEnd } from './effects';
 import { pushEvent } from './log';
+import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
 
@@ -25,16 +26,20 @@ export function endPhase(state: GameState): void {
   // Trials are judged first: Jogger needs to know who acted this phase.
   checkTrials(state);
   for (const h of state.hikers) h.acted = false;
-  // Conditions that act each phase (Soaked, Allergies, Burning cooling off), then the tick.
+  // A Fire node burns whoever ends the phase on it; then conditions that act each phase
+  // (Soaked, Allergies, Burning cooling off), then the tick.
+  weatherPhaseEnd(state);
   for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
   tickConditions(state, 'phases');
 
   if (state.phase === 'morning') {
     state.phase = 'afternoon';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+    weatherPhaseStart(state);
   } else if (state.phase === 'afternoon') {
     state.phase = 'night';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+    weatherPhaseStart(state);
   } else {
     campStep(state);
     startNewDay(state);
@@ -91,5 +96,7 @@ function startNewDay(state: GameState): void {
   for (const h of state.hikers) h.slept = false;
   state.scavengedToday = [];
   pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
+  advanceWeather(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
+  weatherPhaseStart(state);
 }

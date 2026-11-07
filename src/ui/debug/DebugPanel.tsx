@@ -8,6 +8,7 @@
  */
 import { useEffect, useState } from 'react';
 import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
+import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { BALANCE } from '../../config/balance';
@@ -460,17 +461,52 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
       </div>
       <div className={styles.row}>
         <span className={styles.note}>Weather:</span>
-        {(['clear', 'sunny', 'stormy'] as const).map((w) => (
+        {WEATHER_IDS.map((w) => (
           <button
             key={w}
             type="button"
             className={styles.button}
-            aria-pressed={(state.weather ?? 'clear') === w}
-            onClick={() => onApply({ type: 'debug', op: { kind: 'setWeather', weather: w } })}
+            aria-pressed={state.weather.today === w}
+            onClick={() =>
+              onApply({
+                type: 'debug',
+                op: { kind: 'setWeather', weather: w, hold: !!state.weather.hold },
+              })
+            }
           >
-            {w.charAt(0).toUpperCase() + w.slice(1)}
+            {WEATHERS[w].name}
           </button>
         ))}
+      </div>
+      <div className={styles.row}>
+        <button
+          type="button"
+          className={styles.button}
+          aria-pressed={!!state.weather.hold}
+          onClick={() =>
+            onApply({
+              type: 'debug',
+              op: { kind: 'setWeather', weather: state.weather.today, hold: !state.weather.hold },
+            })
+          }
+        >
+          Hold the weather
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={state.day > state.weather.since}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'skipGraceDay' } })}
+        >
+          Skip the grace day
+        </button>
+        <span className={styles.note}>
+          Ahead:{' '}
+          {state.weather.ahead
+            .slice(0, 3)
+            .map((w) => WEATHERS[w].name)
+            .join(', ')}
+        </span>
       </div>
       <div className={styles.row}>
         <button
@@ -572,6 +608,35 @@ function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action:
           onClick={() => onApply({ type: 'debug', op: { kind: 'clearConditions', hikerId } })}
         >
           Clear all
+        </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>On their tile:</span>
+        {(
+          [
+            ['flooded', 'Flood'],
+            ['frozen', 'Freeze'],
+            ['fire', 'Burn'],
+          ] as const
+        ).map(([state, label]) => (
+          <button
+            key={state}
+            type="button"
+            className={styles.button}
+            onClick={() => {
+              const tileId = hikers.find((h) => h.id === hikerId)?.tileId;
+              if (tileId) onApply({ type: 'debug', op: { kind: 'nodeState', tileId, state } });
+            }}
+          >
+            {label} a node
+          </button>
+        ))}
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'wearClothes', hikerId } })}
+        >
+          Put on clothes
         </button>
       </div>
     </>

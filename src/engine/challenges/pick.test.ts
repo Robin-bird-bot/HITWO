@@ -54,12 +54,9 @@ describe('which cards fit a tile', () => {
     expect(cardFits(card('snow-leopard'), snowy, anyTile, s.hikers, 3)).toBe(true);
 
     expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(false);
-    expect(cardFits(card('lightning'), { ...s, weather: 'stormy' }, anyTile, s.hikers, 3)).toBe(
-      true,
-    );
-    expect(cardFits(card('blazing-sun'), { ...s, weather: 'sunny' }, anyTile, s.hikers, 2)).toBe(
-      true,
-    );
+    const as = (today: 'storm' | 'heatwave') => ({ ...s, weather: { ...s.weather, today } });
+    expect(cardFits(card('lightning'), as('storm'), anyTile, s.hikers, 3)).toBe(true);
+    expect(cardFits(card('blazing-sun'), as('heatwave'), anyTile, s.hikers, 2)).toBe(true);
   });
 
   it('leaves out cards whose systems aren’t built yet', () => {

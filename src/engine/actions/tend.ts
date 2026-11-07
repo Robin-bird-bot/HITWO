@@ -7,6 +7,7 @@ import { BALANCE } from '../../config/balance';
 import { changeAbundance } from '../abundance';
 import { computeCost, computeGain } from '../effects';
 import { pushEvent } from '../log';
+import { nodeGives } from '../weather';
 import type { Action, GameState, Hiker, NodeType } from '../types';
 import { findHiker, mustFindHiker, payCost, phaseActionReason, spendAction } from './common';
 
@@ -54,7 +55,10 @@ export function tendCost(state: GameState, hiker: Hiker): number {
 /** The resource nodes on the hiker's tile, once each. */
 export function tendableNodes(state: GameState, hiker: Hiker): NodeType[] {
   const tile = state.section.tiles[hiker.tileId];
-  const kinds = (tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type]));
+  // Frozen and Fire nodes give nothing, so there's nothing to tend there.
+  const kinds = (tile?.nodes ?? []).flatMap((n) =>
+    n.type === 'caps' || !nodeGives(n) ? [] : [n.type],
+  );
   return [...new Set(kinds)];
 }
 
