@@ -378,9 +378,38 @@ Follow `docs/design/05-nights-and-weather.md`.
 
 **Done when:** every listed condition has a test.
 
-**Ask Wyatt first**
+**Ask Wyatt first** (answered Nov 6)
 - The first-guess numbers in `05-nights-and-weather.md`: tier odds by biome, the per-hiker night chance, and the X ranges.
 - The balance notes at the end of `05-nights-and-weather.md`. Drizzle, Burning and Sheer Cold are settled.
+
+**Phase 6 notes (built Nov 6)**
+- **Wyatt's answers (Nov 6):**
+  - The doc's first-guess night numbers as written.
+  - Drizzle keeps Wet, then Soaked.
+  - Conditions give back what they took when they end, and take back what they gave. Energized can pass 10, and taking it back never goes below 0. Caps just lift.
+  - Thrill Seeker is a Trail trait.
+  - A Fire node gives nothing when scavenged.
+  - Refreshed and Full block every loss of their stat, chosen costs too.
+  - A simple random weather schedule until Phase 11.
+- **Where things are:**
+  - Conditions: `src/content/conditions.ts` (every condition as data) and `src/engine/conditions.ts`. The new hook points (`modifyStatChange`, `modifyStatMax`, `onStatChange`, `onPhaseEnd`, `suppressTraits`) are in `src/engine/effects.ts`. Badges and tooltips are in `src/ui/conditions/`; the approved mockup is `#mockup-conditions`.
+  - Weather: `src/content/weather.ts`, `src/engine/weather.ts`, and the change screen in `src/ui/weather/`.
+  - Night events: `src/content/nightEvents.ts` (creatures, outcomes and placeholder lines), `src/engine/night/`, Keep Watch in `src/engine/actions/watch.ts`, and the window in `src/ui/night/`.
+  - The backtick debug panel sets the weather (and holds it), skips the grace day, floods, freezes or burns a node, puts clothes on a hiker, and forces tonight's night event (tier, creature, a hit) or runs it now.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - Night numbers are rolled evenly; challenges let Luck tilt theirs. Tier 1's conditions last 1 day. Tier 3's Frozen lasts 1 phase and Soaked 1 day (the doc gives no time).
+  - Only one hiker per tile can keep watch. Passed-out hikers can be hit. Stealing takes bag items, not worn ones. An outcome that would take only stats already at 0 is skipped.
+  - Drizzle's Wet lasts 1 day.
+  - Ringing Ears: a 75% chance of −1 Morale in each day phase, and 25% of −1 Energy at night.
+  - Blind stops the Move action; Move All can still bring the hiker.
+  - A condition's loss follows the normal rules, so Sleepy taking Energy to 0 gives an injury. While Burning's cap holds Energy, Energized can't push past it.
+  - Phase 5's gates: "stormy" means Storm and "sunny" means Heatwave.
+  - Sit by the Fire isn't in any phase yet, so its button says "Soon".
+- **Waiting on later phases** (`TODO(phase N)`):
+  - Phase 7: Bleeding's injury when it runs out; passed-out countdowns at camp.
+  - Phase 9: clothing durability (Drizzle and night events record wear on the item until then); equipping clothes (night outcomes that need clothes are skipped); food giving less Appetite (recorded on the item); Food Poisoning, Inept and Clumsy; Lucky and Unlucky for crafting.
+  - Phase 11: each biome's own weather odds.
+- **Saves:** version 6. Version 6 adds real weather with a forecast; an older save's Storm or Heatwave carries over.
 
 ---
 

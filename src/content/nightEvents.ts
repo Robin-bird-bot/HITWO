@@ -84,6 +84,7 @@ const range = (key: string): readonly [number, number] => R[key] ?? [1, 1];
 const has = (kind: 'caps' | 'resources' | 'items' | 'clothes' | 'food' | 'xp'): NightNeed => ({
   kind,
 });
+/** TODO(wyatt): an outcome that would only take stats already at 0 is skipped. */
 const above0 = (...stats: StatName[]): NightNeed => ({ kind: 'stat', stats });
 const lose = (stat: StatName): Effect => ({ op: 'stat', stat, delta: 'X', lose: true });
 

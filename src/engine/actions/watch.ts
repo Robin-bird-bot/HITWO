@@ -21,6 +21,7 @@ export function validateWatch(state: GameState, action: WatchAction): string | u
   const reason = phaseActionReason(state, hiker, action);
   if (reason || !hiker) return reason;
   if (state.phase !== 'night') return 'Hikers keep watch at night.';
+  // TODO(wyatt): one watcher per tile, since a second keeps nobody safer.
   const watcher = hikersOnTile(state, hiker.tileId).find((h) => h.watching);
   if (watcher) return `${watcher.name} is already keeping watch on this tile.`;
   return undefined;

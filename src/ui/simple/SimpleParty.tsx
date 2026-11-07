@@ -111,13 +111,19 @@ function HikerCard({
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
   const out = h.status !== 'active';
+  // The badges can't be focused inside the button, so the label names them.
+  const conditions = [...thresholdLooks(h), ...timedLooks(h)].map(
+    (l) => `${l.name}${l.stacks !== undefined ? ` ×${l.stacks}` : ''}`,
+  );
   return (
     <button
       type="button"
       className={styles.card}
       data-faded={(h.acted || out) && !selected}
       aria-pressed={selected}
-      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}. Show details`}
+      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}${
+        conditions.length ? `: ${conditions.join(', ')}` : ''
+      }. Show details`}
       style={
         selected
           ? { boxShadow: `0 0 0 2px ${color}, 0 0 18px ${color}88`, borderColor: color }

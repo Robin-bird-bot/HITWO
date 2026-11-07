@@ -224,8 +224,12 @@ export interface ActionState {
   reason?: string;
 }
 
-const SOON: Record<'craft' | 'fire', { phase: number; what: string }> = {
-  fire: { phase: 6, what: 'Sitting by the fire' },
+/**
+ * Actions that aren't built yet, and the phase that builds them.
+ * TODO(wyatt): no phase in BUILD_PLAN builds Sit by the Fire yet, so it says "Soon".
+ */
+const SOON: Record<'craft' | 'fire', { phase?: number; what: string }> = {
+  fire: { what: 'Sitting by the fire' },
   craft: { phase: 9, what: 'Crafting' },
 };
 
@@ -235,9 +239,9 @@ function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState
     id,
     label,
     icon,
-    sub: `Phase ${phase}`,
+    sub: phase ? `Phase ${phase}` : 'Soon',
     status: 'soon',
-    reason: `${what} arrives in Phase ${phase}.`,
+    reason: phase ? `${what} arrives in Phase ${phase}.` : `${what} isn’t built yet.`,
   };
 }
 

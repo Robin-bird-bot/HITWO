@@ -365,6 +365,7 @@ function applyToHiker(
       return;
     }
     case 'stealItems': {
+      // TODO(wyatt): from the bag, not clothes being worn.
       const lost = shuffle(state.rng, [...h.inventory.bag]).slice(0, amount(e.count, ctx));
       if (!lost.length) return;
       h.inventory.bag = h.inventory.bag.filter((i) => !lost.includes(i));

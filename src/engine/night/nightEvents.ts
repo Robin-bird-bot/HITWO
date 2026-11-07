@@ -256,6 +256,7 @@ export function runNightEvent(state: GameState): void {
   // Who's exposed, and who's hit: rolled for everyone before anything happens.
   const safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[] = [];
   const hitIds: HikerId[] = [];
+  // TODO(wyatt): passed-out hikers are on the map, so they can be hit too.
   for (const h of state.hikers.filter(onMap)) {
     const isSafe = safeFrom(state, h);
     if (isSafe) {
