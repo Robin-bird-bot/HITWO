@@ -83,11 +83,45 @@ export const BALANCE = {
   },
 
   injuries: {
+    /** The 3rd injury passes a hiker out. TODO(wyatt): injuries stop there, so a passed-out hiker gains no more. */
     passOutAt: 3,
     /** Stats that give an injury when they hit 0 (Wyatt, Nov 5: not Morale, which stops at 0). */
     fromStats: ['energy', 'appetite'] as StatName[],
     /** Gaining an injury raises each stat below this back up to it. */
     raiseStatsBelowTo: 5,
+  },
+
+  /**
+   * The medical items (Phase 7). Each is used up after one use.
+   * TODO(phase 9): uses and Quality.
+   */
+  medical: {
+    /** Bandages: injuries cured (and Bleeding). TODO(wyatt): Bandages and the Splint are placeholders. */
+    bandagesInjuries: 1,
+    /** The Splint: injuries held off, for this many days, then they come back. */
+    splint: { injuries: 1, days: 3 },
+    /** Medkit: injuries cured, plus one condition. */
+    medkitInjuries: 1,
+  },
+
+  /**
+   * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
+   * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
+   * TODO(phase 9): the Carrier Pack makes it free.
+   */
+  carry: {
+    /** The carrier's extra Appetite on each move. */
+    appetite: 1,
+  },
+
+  /** Passing out (01-design-doc.md, "Passing out, abandoning, rejoining"). */
+  passOut: {
+    /**
+     * Nights a passed-out hiker can be left alone before they abandon the hike.
+     * TODO(wyatt): it starts full every time they pass out, and drops at each camp
+     * step with no active hiker on their tile, the night they pass out included.
+     */
+    countdownNights: 2,
   },
 
   lines: {
@@ -428,7 +462,7 @@ export const BALANCE = {
   rules: {
     /** TODO(wyatt): at camp, the no-sleep Energy drain happens before the end-of-day Appetite drain. */
     noSleepDrainFirst: true,
-    /** TODO(wyatt): passed-out hikers skip the camp-step drains until Phase 7 settles passing out. */
+    /** Passed-out hikers skip the camp-step drains: they're out cold (Wyatt, Nov 7). */
     passedOutHikersDrainAtCamp: false,
     /** TODO(wyatt): two percentage modifiers multiply in turn (−50% twice = 25%) rather than add. */
     percentModifiersMultiply: true,

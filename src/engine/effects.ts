@@ -43,6 +43,8 @@ export type CostKey =
   | 'move.appetite'
   | 'move.energy'
   | 'move.morale'
+  /** Carrying a passed-out hiker: the carrier's extra Appetite on each move. */
+  | 'move.carry'
   /** The mover's whole Appetite cost for Move All (own crossing plus the group). */
   | 'moveAll.appetite'
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */
@@ -260,6 +262,22 @@ export interface TraitDef {
 
 export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
 
+/**
+ * What using an item does to its target (Phase 7: the medical items). A use
+ * that would do nothing is refused. TODO(phase 9): every item's use, uses and
+ * Quality.
+ */
+export interface ItemUse {
+  /** Cures this many injuries (waking a passed-out hiker who drops below 3). */
+  injuries?: number;
+  /** Cures these conditions if the target has them (Bandages: Bleeding). */
+  cures?: readonly string[];
+  /** Cures one negative condition the player picks (Medkit, Medicine). TODO(wyatt): the player picks. */
+  pickCondition?: true;
+  /** Then gives this condition; a target who has it already can't use another. */
+  gives?: { id: string; duration: number; unit: 'days' | 'phases' };
+}
+
 export interface ItemDef {
   id: string;
   name: string;
@@ -270,6 +288,8 @@ export interface ItemDef {
   text: string;
   /** Equipped items plug into hooks, like traits. */
   hooks?: Hooks;
+  /** Can be used from the bag, as a free action, on a hiker on the same tile. */
+  use?: ItemUse;
   placeholder?: boolean;
 }
 

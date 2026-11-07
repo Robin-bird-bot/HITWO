@@ -448,3 +448,47 @@ button.itemCard:hover {
   outline: 2px solid var(--gold);
   outline-offset: 1px;
 }
+
+/* A passed-out hiker (Phase 7): the countdown, how to help, and Abandon. */
+.out {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 98, 74, 0.45);
+  background: rgba(229, 98, 74, 0.12);
+}
+
+.outKicker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: #f39a86;
+}
+
+.outText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.abandon {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(229, 98, 74, 0.45);
+  background: transparent;
+  color: #f39a86;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.abandon:hover {
+  background: rgba(229, 98, 74, 0.16);
+}

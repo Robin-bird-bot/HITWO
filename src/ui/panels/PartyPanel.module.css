@@ -299,3 +299,37 @@
 .cardPips span[data-filled='true'] {
   background: #e5624a;
 }
+
+/* Abandoning the hike: quiet, at the bottom of the details, and always confirmed. */
+.abandon {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(229, 98, 74, 0.45);
+  background: transparent;
+  color: #f39a86;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.abandon:hover {
+  background: rgba(229, 98, 74, 0.16);
+}
+
+/* Passing out and carrying, in one short line (Phase 7). */
+.carryNote {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.carryNote[data-tone='danger'] {
+  color: #f39a86;
+}
+
+.carryNote[data-tone='carry'] {
+  color: var(--gold);
+}

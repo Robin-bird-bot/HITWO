@@ -43,6 +43,10 @@ export interface ConditionDef {
   again?: string;
   /** Can't be moved by anything (Frozen, Napping). */
   immovable?: true;
+  /** Running out (not being cured) gives the hiker 1 injury (Bleeding, Splinted). */
+  onRunOut?: 'injury';
+  /** Only an item gives it (Splinted), so random picks never do. */
+  fromItemOnly?: true;
   /** Made up to run an opportunity's effect until Wyatt names it. */
   placeholder?: true;
 }
@@ -58,7 +62,13 @@ const capOn = (stat: StatName, cap: number): Hooks => ({
 /** Costs this hiker pays in a stat (their own move, Tend, the night and end-of-day drains). */
 const OWN_COSTS: Record<'energy' | 'appetite', readonly CostKey[]> = {
   energy: ['move.energy', 'tend.energy', 'night.noSleepEnergy'],
-  appetite: ['move.appetite', 'moveAll.appetite', 'endOfDay.appetite', 'scavenge.appetite'],
+  appetite: [
+    'move.appetite',
+    'move.carry',
+    'moveAll.appetite',
+    'endOfDay.appetite',
+    'scavenge.appetite',
+  ],
 };
 
 /** Refreshed and Full: no loss of a stat at all, chosen costs included (Wyatt, Nov 6). */
@@ -323,8 +333,9 @@ const LIST: ConditionDef[] = [
     id: 'bleeding',
     name: 'Bleeding',
     kind: 'negative',
-    // TODO(phase 7): when it runs out, the hiker gains 1 injury.
     text: 'When it runs out, the hiker gains 1 injury. Curing it first means no injury.',
+    onRunOut: 'injury',
+    // TODO(wyatt): cured by Bandages and Medkit for now; name the traits and clothes.
   },
   {
     id: 'shivering',
@@ -422,6 +433,16 @@ const LIST: ConditionDef[] = [
     text: 'The hiker’s next action is free.',
     freeAction: true,
   },
+  // Medical items (Phase 7).
+  {
+    // TODO(wyatt): the Splint's "−1 injury for 3 days, then it returns", shown as a condition.
+    id: 'splinted',
+    name: 'Splinted',
+    kind: 'positive',
+    text: 'A Splint holds off 1 injury. When it runs out, the injury comes back.',
+    onRunOut: 'injury',
+    fromItemOnly: true,
+  },
   // Opportunity effects (Nov 6 update), named here until Wyatt names them.
   {
     id: 'napping',
@@ -464,10 +485,10 @@ export const CONDITIONS: Readonly<Record<string, ConditionDef>> = Object.fromEnt
  * Stacking ones come only from weather.
  */
 export const NEGATIVE_CONDITIONS: readonly string[] = LIST.filter(
-  (c) => c.kind === 'negative' && !c.placeholder && !c.stacking,
+  (c) => c.kind === 'negative' && !c.placeholder && !c.stacking && !c.fromItemOnly,
 ).map((c) => c.id);
 
 /** The positive conditions, for Witch's Castle's "a random positive one". */
 export const POSITIVE_CONDITIONS: readonly string[] = LIST.filter(
-  (c) => c.kind === 'positive' && !c.placeholder,
+  (c) => c.kind === 'positive' && !c.placeholder && !c.fromItemOnly,
 ).map((c) => c.id);

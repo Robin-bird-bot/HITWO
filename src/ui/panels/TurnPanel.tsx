@@ -13,9 +13,12 @@ import {
   hikersOnTile,
   hikersWhoHaventActed,
   resourceCount,
+  validateAction,
+  type Action,
   type EquipSlot,
   type GameState,
   type Hiker,
+  type HikerId,
   type ItemInstance,
   type ResourceId,
 } from '../../engine';
@@ -44,6 +47,10 @@ interface TurnPanelProps {
   slot?: ReactNode;
   /** A resource or bag item was clicked: open its give / return menu. */
   onPick?(pick: StashPick): void;
+  /** A free action (picking up or putting down a passed-out hiker). */
+  onFree?(action: Action): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
 }
 
 export function TurnPanel({
@@ -55,6 +62,8 @@ export function TurnPanel({
   note,
   slot,
   onPick,
+  onFree,
+  onAbandon,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -67,8 +76,15 @@ export function TurnPanel({
       aside={<span>{PHASE_NAME[state.phase]}</span>}
     >
       <div className={styles.scroll}>
-        <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
-        <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+        {hiker.status === 'active' ? (
+          <>
+            <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
+            <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+          </>
+        ) : (
+          <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
+        )}
+        {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
         <TileCard state={state} hiker={hiker} />
         <Equipped hiker={hiker} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
@@ -214,6 +230,135 @@ export function Abilities({
   );
 }
 
+/**
+ * A hiker who can't act: passed out (the countdown, how to help, and
+ * Abandon), or gone from the hike.
+ */
+export function OutCard({
+  state,
+  hiker,
+  onAbandon,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onAbandon?(id: HikerId): void;
+}) {
+  if (hiker.status === 'abandoned') {
+    return (
+      <div className={styles.block}>
+        <p className={styles.outText}>{hiker.name} left the hike.</p>
+      </div>
+    );
+  }
+  if (hiker.status !== 'passedOut') return null;
+  const nights = hiker.countdown ?? BALANCE.passOut.countdownNights;
+  const carrier = state.hikers.find((h) => h.carrying === hiker.id);
+  const company = hikersOnTile(state, hiker.tileId);
+  const things = hiker.inventory.bag.length + resourceCount(hiker);
+  return (
+    <div className={styles.block}>
+      <div className={styles.out}>
+        <span className={styles.outKicker}>
+          <Icon name="medical" size={14} solid />
+          PASSED OUT · {nights} NIGHT{nights === 1 ? '' : 'S'}
+        </span>
+        <span className={styles.outText}>
+          {company.length
+            ? `${carrier ? `${carrier.name} is carrying them` : `${company.map((h) => h.name).join(' and ')} ${company.length === 1 ? 'is' : 'are'} with them`}, so the countdown waits.`
+            : `Alone, ${hiker.name} abandons the hike in ${nights} night${nights === 1 ? '' : 's'}.`}{' '}
+          A medical item from a hiker on this tile wakes them, or someone can carry them.
+        </span>
+        {company.length > 0 && things > 0 && (
+          <span className={styles.small}>Others here can take things from their pack below.</span>
+        )}
+      </div>
+      {onAbandon && (
+        <button type="button" className={styles.abandon} onClick={() => onAbandon(hiker.id)}>
+          Abandon {hiker.name}…
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Carrying (a free action): who this hiker carries, with Put down, or a
+ * passed-out hiker on their tile, with Pick up.
+ */
+export function CarryCard({
+  state,
+  hiker,
+  onFree,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onFree(action: Action): void;
+}) {
+  if (hiker.status !== 'active') return null;
+  const carried = hiker.carrying ? state.hikers.find((h) => h.id === hiker.carrying) : undefined;
+  const down = state.hikers.filter(
+    (h) => h.status === 'passedOut' && h.tileId === hiker.tileId && h.id !== carried?.id,
+  );
+  if (!carried && !down.length) return null;
+  const extra = `+${BALANCE.carry.appetite} Appetite on every move`;
+  return (
+    <div className={styles.block}>
+      <span className={panel.label}>CARRY</span>
+      {carried && (
+        <div className={styles.ability} style={CARRY_LOOK}>
+          <div className={styles.abilityHead}>
+            <Icon name="users" size={18} color={CARRY_COLOR} />
+            <div className={styles.abilityText}>
+              <span className={styles.abilityName} style={{ color: CARRY_COLOR }}>
+                CARRYING {carried.name.toUpperCase()}
+              </span>
+              <span className={styles.small}>{extra}. Putting them down is free.</span>
+            </div>
+            <button
+              type="button"
+              className={styles.use}
+              style={{ background: CARRY_COLOR }}
+              onClick={() => onFree({ type: 'putDown', carrierId: hiker.id })}
+            >
+              PUT DOWN
+            </button>
+          </div>
+        </div>
+      )}
+      {down.map((h) => {
+        const action: Action = { type: 'pickUp', carrierId: hiker.id, hikerId: h.id };
+        const reason = validateAction(state, action);
+        return (
+          <div key={h.id} className={styles.ability} style={CARRY_LOOK} data-used={!!reason}>
+            <div className={styles.abilityHead}>
+              <Icon name="medical" size={18} color={CARRY_COLOR} />
+              <div className={styles.abilityText}>
+                <span className={styles.abilityName} style={{ color: CARRY_COLOR }}>
+                  {h.name.toUpperCase()} HAS PASSED OUT
+                </span>
+                <span className={styles.small}>{reason ?? `Carry them along: ${extra}.`}</span>
+              </div>
+              {!reason && (
+                <button
+                  type="button"
+                  className={styles.use}
+                  style={{ background: CARRY_COLOR }}
+                  onClick={() => onFree(action)}
+                >
+                  PICK UP
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const CARRY_COLOR = '#E9B44C';
+const CARRY_LOOK = { borderColor: `${CARRY_COLOR}59`, background: `${CARRY_COLOR}1A` };
+
 export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
@@ -321,7 +466,11 @@ function ItemCard({
   return (
     <Tag
       {...(onClick
-        ? { type: 'button' as const, onClick, 'aria-label': `${name}: give it away` }
+        ? {
+            type: 'button' as const,
+            onClick,
+            'aria-label': `${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`,
+          }
         : {})}
       className={styles.itemCard}
       data-size={size}

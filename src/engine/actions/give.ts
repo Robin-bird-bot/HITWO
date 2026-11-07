@@ -1,6 +1,8 @@
 /**
  * Free actions with resources and items (they don't use the phase):
- * - give one resource or bag item to a hiker on the same tile;
+ * - give one resource or bag item to a hiker on the same tile (an active
+ *   hiker can also take things from a passed-out one: Wyatt, Nov 7. TODO(phase 9):
+ *   their worn clothes too, once equipping exists);
  * - return a resource to nature, +1 Abundance to its node.
  */
 import { BALANCE } from '../../config/balance';
@@ -17,7 +19,9 @@ type ReturnAction = Extract<Action, { type: 'returnToNature' }>;
 export function validateGive(state: GameState, action: GiveAction): string | undefined {
   const from = findHiker(state, action.fromId);
   const to = findHiker(state, action.toId);
-  const reason = notActiveReason(from) ?? notActiveReason(to);
+  // A passed-out hiker's things can be taken by an active hiker beside them.
+  const takeFromOut = from?.status === 'passedOut';
+  const reason = (takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to);
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
   if (from.tileId !== to.tileId) return `${to.name} isn’t on this tile.`;
@@ -40,19 +44,20 @@ export function validateGive(state: GameState, action: GiveAction): string | und
 export function applyGive(state: GameState, action: GiveAction): void {
   const from = mustFindHiker(state, action.fromId);
   const to = mustFindHiker(state, action.toId);
+  const taken = from.status === 'passedOut' ? { taken: true as const } : {};
   if (action.resource) {
     const r = action.resource;
     from.inventory.resources[r] = (from.inventory.resources[r] ?? 0) - 1;
     if (!from.inventory.resources[r]) delete from.inventory.resources[r];
     to.inventory.resources[r] = (to.inventory.resources[r] ?? 0) + 1;
-    pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, resource: r });
+    pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, resource: r, ...taken });
     return;
   }
   const i = from.inventory.bag.findIndex((it) => it.uid === action.itemUid);
   const [item] = from.inventory.bag.splice(i, 1);
   if (!item) return;
   to.inventory.bag.push(item);
-  pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, itemId: item.itemId });
+  pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, itemId: item.itemId, ...taken });
 }
 
 export function validateReturn(state: GameState, action: ReturnAction): string | undefined {

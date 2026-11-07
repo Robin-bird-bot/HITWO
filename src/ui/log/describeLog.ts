@@ -145,9 +145,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const own = costsOf(taken, e.hikerId);
         const cost = own ? ` (${own})` : '';
         const found = e.revealed?.length ? ` Revealed ${describeNodes(e.revealed)}.` : '';
+        const carrying = e.carried?.length ? `, carrying ${listNames(e.carried.map(name))}` : '';
         const text = e.brought.length
-          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${cost}.${found}`
-          : `${name(e.hikerId)} moved to ${where}${cost}.${found}`;
+          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${carrying}${cost}.${found}`
+          : `${name(e.hikerId)} moved to ${where}${carrying}${cost}.${found}`;
         lines.push({ id: e.id, text, tone: 'move' });
         break;
       }
@@ -198,7 +199,9 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           : `the ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
         lines.push({
           id: e.id,
-          text: `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
+          text: e.taken
+            ? `${name(e.toId)} took ${what} from ${name(e.fromId)}.`
+            : `${name(e.fromId)} gave ${what} to ${name(e.toId)}.`,
           tone: 'scavenge',
         });
         break;
@@ -300,8 +303,55 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           tone: 'rest',
         });
         break;
-      case 'passedOut':
-        lines.push({ id: e.id, text: `${name(e.hikerId)} passed out!`, tone: 'injury' });
+      case 'passedOut': {
+        const nights = `${e.countdown} night${e.countdown === 1 ? '' : 's'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} passed out! Left alone, they abandon the hike in ${nights}.`,
+          tone: 'injury',
+        });
+        break;
+      }
+      case 'used': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;
+        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}.`, tone: 'rest' });
+        break;
+      }
+      case 'carry': {
+        const text = {
+          pickedUp: `${name(e.carrierId)} picked up ${name(e.hikerId)} to carry them.`,
+          putDown: `${name(e.carrierId)} put ${name(e.hikerId)} down.`,
+          dropped: `${name(e.carrierId)} dropped ${name(e.hikerId)}.`,
+        }[e.how];
+        lines.push({ id: e.id, text, tone: e.how === 'dropped' ? 'injury' : 'move' });
+        break;
+      }
+      case 'woke':
+        lines.push({ id: e.id, text: `${name(e.hikerId)} woke up (${e.cause}).`, tone: 'rest' });
+        break;
+      case 'countdown':
+        lines.push({
+          id: e.id,
+          text:
+            e.left > 0
+              ? `${name(e.hikerId)} spent the night alone: ${e.left} night${e.left === 1 ? '' : 's'} left.`
+              : `${name(e.hikerId)} spent another night alone.`,
+          tone: 'injury',
+        });
+        break;
+      case 'abandoned':
+        lines.push({
+          id: e.id,
+          text:
+            e.why === 'countdown'
+              ? `${name(e.hikerId)} was left alone too long and abandoned the hike.`
+              : `${name(e.hikerId)} abandoned the hike.`,
+          tone: 'injury',
+        });
+        break;
+      case 'hikeOver':
+        lines.push({ id: e.id, text: `The hike is over (Day ${e.day}).`, tone: 'phase' });
         break;
       case 'phase':
         lines.push({ id: e.id, text: `Day ${e.day} · ${PHASE_LABEL[e.phase]}`, tone: 'phase' });

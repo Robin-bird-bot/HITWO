@@ -8,7 +8,14 @@
  * tonight's night event.
  */
 import { useEffect, useState } from 'react';
-import { CARDS, CONDITIONS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, TRAITS } from '../../content';
+import {
+  CARDS,
+  CONDITIONS,
+  ITEMS,
+  SCAVENGE_CARDS,
+  SCAVENGE_CARD_ORDER,
+  TRAITS,
+} from '../../content';
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
@@ -183,6 +190,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
             Give one of every resource
           </button>
         </div>
+        <ItemGiver hikers={state.hikers} onApply={run} />
       </section>
 
       <section className={styles.group}>
@@ -212,6 +220,11 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
       <section className={styles.group}>
         <h3 className={styles.heading}>Conditions</h3>
         <ConditionEditor hikers={state.hikers} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Passing out</h3>
+        <PassOutTools state={state} onApply={run} />
       </section>
 
       <section className={styles.group}>
@@ -627,6 +640,120 @@ function NightTools({ state, onApply }: { state: GameState; onApply(action: Acti
         <span className={styles.note}>Tonight: {set}</span>
       </div>
     </>
+  );
+}
+
+/**
+ * Pass a hiker out (3 injuries) or wake them (back to 2), and set how many
+ * nights alone they have left before they abandon the hike.
+ */
+function PassOutTools({ state, onApply }: { state: GameState; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(state.hikers[0]?.id ?? '');
+  const [nights, setNights] = useState(1);
+  const h = state.hikers.find((x) => x.id === hikerId);
+  const out = BALANCE.injuries.passOutAt;
+  const set = (injuries: number) =>
+    onApply({ type: 'debug', op: { kind: 'setStats', hikerId, stats: {}, injuries } });
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={hikerId}
+          onChange={(e) => setHikerId(e.target.value)}
+          aria-label="Hiker to pass out or wake"
+        >
+          {state.hikers.map((x) => (
+            <option key={x.id} value={x.id}>
+              {x.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={h?.status !== 'active'}
+          onClick={() => set(out)}
+        >
+          Pass out
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={h?.status !== 'passedOut'}
+          onClick={() => set(out - 1)}
+        >
+          Wake
+        </button>
+      </div>
+      <div className={styles.row}>
+        <input
+          className={styles.number}
+          type="number"
+          min={1}
+          max={9}
+          value={nights}
+          onChange={(e) => setNights(Math.max(1, Number(e.target.value) || 1))}
+          aria-label="Nights left"
+        />
+        <button
+          type="button"
+          className={styles.button}
+          disabled={h?.status !== 'passedOut'}
+          onClick={() => onApply({ type: 'debug', op: { kind: 'setCountdown', hikerId, nights } })}
+        >
+          Set nights left
+        </button>
+        <span className={styles.note}>
+          {h?.status === 'passedOut' ? `Now: ${h.countdown ?? '?'}` : h?.status}
+        </span>
+      </div>
+    </>
+  );
+}
+
+/** Put any item in a hiker's bag (medical items first: they're the ones that work now). */
+function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [itemId, setItemId] = useState('bandages');
+  const items = Object.values(ITEMS).sort(
+    (a, b) => Number(!a.use) - Number(!b.use) || a.name.localeCompare(b.name),
+  );
+  return (
+    <div className={styles.row}>
+      <select
+        className={styles.button}
+        value={hikerId}
+        onChange={(e) => setHikerId(e.target.value)}
+        aria-label="Hiker to give an item"
+      >
+        {hikers.map((h) => (
+          <option key={h.id} value={h.id}>
+            {h.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.button}
+        value={itemId}
+        onChange={(e) => setItemId(e.target.value)}
+        aria-label="Item"
+      >
+        {items.map((i) => (
+          <option key={i.id} value={i.id}>
+            {i.name}
+            {i.use ? ' (usable)' : ''}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={() => onApply({ type: 'debug', op: { kind: 'giveItem', hikerId, itemId } })}
+      >
+        Give item
+      </button>
+    </div>
   );
 }
 

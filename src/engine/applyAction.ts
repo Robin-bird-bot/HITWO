@@ -31,8 +31,13 @@ import {
 import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
+import { applyUse, validateUse } from './actions/useItem';
+import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
+import { isHikeOver } from './health';
+import { pushEvent } from './log';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
 
@@ -57,6 +62,8 @@ export class InvalidActionError extends Error {
 
 /** Why the action isn't allowed right now, for the UI to show, or null when it is. */
 export function validateAction(state: GameState, action: Action): string | null {
+  // Nobody can act any more (the debug panel still works).
+  if (action.type !== 'debug' && isHikeOver(state)) return 'The hike is over.';
   // An open scavenge waits for a card before anything else happens.
   if (state.scavenge && !SCAVENGE_STEPS.has(action.type)) return 'Finish scavenging first.';
   // So does an open challenge.
@@ -99,6 +106,14 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateReturn(state, action) ?? null;
     case 'dropItem':
       return validateDrop(state, action) ?? null;
+    case 'useItem':
+      return validateUse(state, action) ?? null;
+    case 'pickUp':
+      return validatePickUp(state, action) ?? null;
+    case 'abandon':
+      return validateAbandon(state, action) ?? null;
+    case 'putDown':
+      return validatePutDown(state, action) ?? null;
     case 'resolveChallenge':
       return validateResolve(state, action) ?? null;
     case 'chooseChallenge':
@@ -164,6 +179,18 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'dropItem':
       applyDrop(draft, action);
       break;
+    case 'useItem':
+      applyUse(draft, action);
+      break;
+    case 'pickUp':
+      applyPickUp(draft, action);
+      break;
+    case 'abandon':
+      applyAbandon(draft, action);
+      break;
+    case 'putDown':
+      applyPutDown(draft, action);
+      break;
     case 'resolveChallenge':
       applyResolve(draft, action);
       break;
@@ -186,5 +213,8 @@ export function applyAction(state: GameState, action: Action): GameState {
       applyDebug(draft, action.op);
       break;
   }
+  // The last active hiker passed out or abandoned: the hike is over.
+  if (!isHikeOver(state) && isHikeOver(draft))
+    pushEvent(draft, { kind: 'hikeOver', day: draft.day });
   return draft;
 }

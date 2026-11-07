@@ -9,7 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK, THRESHOLD_STATS } from '../panels/hikerInfo';
+import { FAMILY_LOOK, THRESHOLD_STATS, carryNote } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { ConditionDot } from '../conditions/ConditionBadges';
@@ -23,11 +23,13 @@ interface SimplePartyProps {
   state: GameState;
   selectedId: HikerId | null;
   onSelect(id: HikerId): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
 }
 
 const POPOUT_HEIGHT = 470;
 
-export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
+export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePartyProps) {
   const fit = useStage();
   const listRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ id: HikerId; top: number } | null>(null);
@@ -90,12 +92,30 @@ export function SimpleParty({ state, selectedId, onSelect }: SimplePartyProps) {
                 FAMILY_LOOK[openHiker.family].label.slice(1).toLowerCase()}
             </span>
           </div>
-          <Details state={state} hiker={openHiker} />
+          <Details
+            state={state}
+            hiker={openHiker}
+            {...(onAbandon
+              ? {
+                  onAbandon: (id: HikerId) => {
+                    setOpen(null);
+                    onAbandon(id);
+                  },
+                }
+              : {})}
+          />
         </Popout>
       )}
     </>
   );
 }
+
+/** What the card's label says about a hiker who isn't active. */
+const OUT_WORDS: Partial<Record<Hiker['status'], string>> = {
+  passedOut: ' (passed out)',
+  abandoned: ' (left the hike)',
+  checkedIn: ' (checked in)',
+};
 
 function HikerCard({
   state,
@@ -110,6 +130,14 @@ function HikerCard({
 }) {
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
+  // Passing out and carrying, in one short line under the name.
+  const carry = carryNote(state, h);
+  const note =
+    h.status === 'passedOut' && carry
+      ? { ...carry, text: `Passed out · ${carry.short}` }
+      : h.status === 'abandoned'
+        ? { text: 'Left the hike', tone: 'calm' as const }
+        : carry;
   const out = h.status !== 'active';
   // The badges can't be focused inside the button, so the label names them.
   const conditions = [...thresholdLooks(h), ...timedLooks(h)].map(
@@ -121,9 +149,9 @@ function HikerCard({
       className={styles.card}
       data-faded={(h.acted || out) && !selected}
       aria-pressed={selected}
-      aria-label={`${h.name}${out ? ' (passed out)' : h.acted ? ' (has acted)' : ''}${
+      aria-label={`${h.name}${OUT_WORDS[h.status] ?? (h.acted ? ' (has acted)' : '')}${
         conditions.length ? `: ${conditions.join(', ')}` : ''
-      }. Show details`}
+      }${carry ? `. ${carry.text}` : ''}. Show details`}
       style={
         selected
           ? { boxShadow: `0 0 0 2px ${color}, 0 0 18px ${color}88`, borderColor: color }
@@ -152,6 +180,11 @@ function HikerCard({
             ))}
           </span>
         </span>
+        {note && (
+          <span className={styles.carryNote} data-tone={note.tone}>
+            {note.text}
+          </span>
+        )}
         {STAT_NAMES.map((stat) => (
           <StatBar
             key={stat}

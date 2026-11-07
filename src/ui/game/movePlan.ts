@@ -63,6 +63,8 @@ export interface MovePreview {
   /** Hidden nodes the move would reveal. */
   reveals: number;
   night: boolean;
+  /** Passed-out hikers carried along, by name (their carriers pay extra Appetite). */
+  carrying: string[];
   /** Why it can't happen, if it can't. */
   reason: string | null;
 }
@@ -111,6 +113,11 @@ export function movePreview(
     rows,
     reveals: to.nodes.filter((n) => !n.revealed).length,
     night: state.phase === 'night',
+    carrying: (mode.kind === 'moveAll' ? [hiker.id, ...mode.bring] : [hiker.id]).flatMap((id) => {
+      const carried = state.hikers.find((h) => h.id === id)?.carrying;
+      const c = carried ? state.hikers.find((h) => h.id === carried) : undefined;
+      return c ? [c.name] : [];
+    }),
     reason,
   };
 }

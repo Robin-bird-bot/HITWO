@@ -17,7 +17,7 @@ import {
 import { Icon } from '../icons/Icon';
 import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
 import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
-import { FAMILY_LOOK, STAT_META, statNote, statusTag, xpProgress } from './hikerInfo';
+import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import styles from './PartyPanel.module.css';
@@ -26,9 +26,11 @@ interface PartyPanelProps {
   state: GameState;
   selectedId: HikerId | null;
   onSelect(id: HikerId): void;
+  /** Asks to confirm abandoning the hike for this hiker. */
+  onAbandon?(id: HikerId): void;
 }
 
-export function PartyPanel({ state, selectedId, onSelect }: PartyPanelProps) {
+export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPanelProps) {
   const active = state.hikers.filter((h) => h.status === 'active');
   const acted = active.filter((h) => h.acted).length;
   return (
@@ -53,6 +55,7 @@ export function PartyPanel({ state, selectedId, onSelect }: PartyPanelProps) {
             hiker={h}
             selected={h.id === selectedId}
             onSelect={onSelect}
+            {...(onAbandon ? { onAbandon } : {})}
           />
         ))}
       </div>
@@ -71,11 +74,13 @@ function HikerCard({
   hiker: h,
   selected,
   onSelect,
+  onAbandon,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
   onSelect(id: HikerId): void;
+  onAbandon?(id: HikerId): void;
 }) {
   const color = characterFor(h.id).color;
   const tag = statusTag(h, selected);
@@ -83,6 +88,7 @@ function HikerCard({
     tag === 'ACTING' ? { bg: color, fg: '#1D2220' } : (TAG_COLORS[tag] ?? TAG_COLORS.ACTED!);
   const dim = h.acted || h.status !== 'active';
   const family = FAMILY_LOOK[h.family];
+  const note = carryNote(state, h);
 
   return (
     <div
@@ -136,6 +142,11 @@ function HikerCard({
             <Icon name={family.icon} size={11} strokeWidth={2.25} />
             <span>{family.label}</span>
           </div>
+          {note && (
+            <span className={styles.carryNote} data-tone={note.tone}>
+              {note.text}
+            </span>
+          )}
           {STAT_NAMES.map((stat) => (
             <StatBar
               key={stat}
@@ -149,7 +160,7 @@ function HikerCard({
         </div>
       </div>
 
-      {selected && <Details state={state} hiker={h} />}
+      {selected && <Details state={state} hiker={h} {...(onAbandon ? { onAbandon } : {})} />}
     </div>
   );
 }
@@ -189,7 +200,16 @@ const SLOT_NAME: Record<SlotType, string> = {
 const MAX_SLOTS = 6;
 
 /** Exact stats with thresholds, every condition with what it does, trait slots and XP. */
-export function Details({ state, hiker: h }: { state: GameState; hiker: Hiker }) {
+export function Details({
+  state,
+  hiker: h,
+  onAbandon,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  /** Asks to confirm abandoning the hike for this hiker (kept away from the action grid). */
+  onAbandon?(id: HikerId): void;
+}) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
   // The full list (the approved Phase 6 mockup): injuries, states, then the rest.
@@ -274,6 +294,12 @@ export function Details({ state, hiker: h }: { state: GameState; hiker: Hiker })
           {xp.xp}/{xp.next ?? '—'} XP
         </span>
       </div>
+
+      {onAbandon && (h.status === 'active' || h.status === 'passedOut') && (
+        <button type="button" className={styles.abandon} onClick={() => onAbandon(h.id)}>
+          Abandon the hike…
+        </button>
+      )}
     </div>
   );
 }

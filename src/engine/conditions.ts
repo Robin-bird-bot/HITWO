@@ -190,7 +190,9 @@ export function tickConditions(state: GameState, which: 'phases' | 'days'): void
     }
     for (const c of ended) {
       removeCondition(state, hiker, c.id);
-      // TODO(phase 7): Bleeding gives an injury when it runs out.
+      // Bleeding and a Splint give an injury when they run out (not when cured).
+      const def = CONDITIONS[c.id];
+      if (def?.onRunOut === 'injury') addInjury(state, hiker, `${def.name} ran out`);
       if (c.then) addCondition(state, hiker, c.then.id, c.then.remaining, c.then.unit, 'follow-on');
     }
   }

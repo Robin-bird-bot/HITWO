@@ -5,6 +5,7 @@ import { canActReason, fireMove } from '../effects';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
+import { bringCarried, carryMoveReason } from './carry';
 import {
   enterTile,
   findHiker,
@@ -41,6 +42,9 @@ export function validateMoveAll(state: GameState, action: MoveAllAction): string
     const blocked = canActReason(state, b, { action, role: 'brought', phase: state.phase });
     if (blocked) return `${b.name} can’t come along. ${blocked}`;
   }
+  const group = [mover, ...action.bring.flatMap((id) => findHiker(state, id) ?? [])];
+  const carry = carryMoveReason(state, group);
+  if (carry) return carry;
   // Rough lines cost each crosser Morale; nobody at 0 Morale can pay it.
   for (const { hikerId, cost } of moveAllCost(state, mover.id, action.toTileId, action.bring) ??
     []) {
@@ -65,6 +69,8 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
     h.tileId = action.toTileId;
     spendAction(state, h);
   }
+  // Whoever they carry comes along.
+  const carried = bringCarried(state, group, from).map((c) => c.id);
   const revealed = enterTile(state, action.toTileId);
   pushEvent(state, {
     kind: 'move',
@@ -72,6 +78,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
     from,
     to: action.toTileId,
     brought: [...action.bring],
+    ...(carried.length ? { carried } : {}),
     ...(revealed.length ? { revealed } : {}),
   });
   for (const { hikerId, cost } of costs) {
@@ -90,16 +97,8 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
       line,
     });
   }
-  noteArrival(
-    state,
-    group.map((h) => h.id),
-    action.toTileId,
-  );
+  const arrived = [...group.map((h) => h.id), ...carried];
+  noteArrival(state, arrived, action.toTileId);
   // The first hikers to land on a tile trigger its card.
-  if (firstHere)
-    revealTile(
-      state,
-      action.toTileId,
-      group.map((h) => h.id),
-    );
+  if (firstHere) revealTile(state, action.toTileId, arrived);
 }

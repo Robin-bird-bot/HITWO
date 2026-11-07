@@ -1,0 +1,138 @@
+/* The hike is over: the whole screen blurs, like the weather change screen. Stage pixels. */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  animation: fade 400ms ease-out;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.blur {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 20, 18, 0.55);
+  backdrop-filter: blur(12px) saturate(0.7);
+  -webkit-backdrop-filter: blur(12px) saturate(0.7);
+}
+
+.content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.kicker {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 72px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.text {
+  margin: 6px 0 0;
+  font-size: 18px;
+  color: #e4e8ec;
+}
+
+.party {
+  display: flex;
+  gap: 18px;
+  margin: 34px 0 0;
+  padding: 0;
+  list-style: none;
+  text-shadow: none;
+}
+
+.hiker {
+  width: 170px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px 16px;
+  border-radius: 16px;
+  background: rgba(14, 20, 18, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hiker img {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  -webkit-user-drag: none;
+}
+
+.name {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
+.ended {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.ended[data-status='passedOut'] {
+  color: #f39a86;
+}
+
+.buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+.primary,
+.secondary {
+  width: 240px;
+  height: 56px;
+  border-radius: 14px;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  letter-spacing: 0.1em;
+}
+
+.primary {
+  border: none;
+  background: var(--gold);
+  color: var(--page);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+}
+
+.secondary {
+  border: 2px solid rgba(241, 234, 219, 0.5);
+  background: rgba(14, 20, 18, 0.4);
+  color: var(--text);
+}
+
+.primary:active {
+  translate: 0 3px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
