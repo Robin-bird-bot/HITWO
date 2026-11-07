@@ -43,6 +43,8 @@ export type CostKey =
   | 'move.appetite'
   | 'move.energy'
   | 'move.morale'
+  /** Carrying a passed-out hiker: the carrier's extra Appetite on each move. */
+  | 'move.carry'
   /** The mover's whole Appetite cost for Move All (own crossing plus the group). */
   | 'moveAll.appetite'
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */

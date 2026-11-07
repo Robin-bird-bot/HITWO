@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { BALANCE } from '../../config/balance';
 import { Icon } from '../icons/Icon';
 import { MAP_VIEW, type Point } from '../map/mapLayout';
 import { STAT_META } from '../panels/hikerInfo';
@@ -79,6 +80,12 @@ export function MovePopover({ preview, above, below, onConfirm, onCancel }: Move
               </div>
             ))}
           </div>
+          {preview.carrying.length > 0 && (
+            <span className={styles.note}>
+              Carrying {preview.carrying.join(' and ')}: {BALANCE.carry.appetite} extra Appetite
+              {preview.carrying.length > 1 ? ' each' : ''}.
+            </span>
+          )}
           {preview.night && (
             <span className={styles.note}>Moving at night costs 1 extra Appetite.</span>
           )}

@@ -5,12 +5,13 @@
  * with short labels and counts. Fewer words, not fewer visuals.
  */
 import { useState, type ReactNode } from 'react';
-import { abilitiesFor, type GameState, type Hiker } from '../../engine';
+import { abilitiesFor, type Action, type GameState, type Hiker } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { nothingToDoReason, simpleActions, type ActionId } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import {
   Abilities,
+  CarryCard,
   Bag,
   EndButton,
   Equipped,
@@ -27,6 +28,8 @@ interface SimpleTurnProps {
   hiker: Hiker;
   onAction(id: ActionId): void;
   onAbility(abilityId: string, choice?: string): void;
+  /** A free action (picking up or putting down a passed-out hiker). */
+  onFree?(action: Action): void;
   onEndPhase(): void;
   note?: string;
   slot?: ReactNode;
@@ -46,6 +49,7 @@ export function SimpleTurn({
   slot,
   activeAction,
   onPick,
+  onFree,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker);
   // Why a red action is stopped, after tapping it.
@@ -99,6 +103,7 @@ export function SimpleTurn({
           {!slot && whyText && <p className={styles.why}>{whyText}</p>}
           {note && <p className={styles.note}>{note}</p>}
           {hasAbilities && <Abilities state={state} hiker={hiker} onAbility={onAbility} />}
+          {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
           <TileCard state={state} hiker={hiker} />
           <Equipped hiker={hiker} compact />
           <Bag state={state} hiker={hiker} compact onPick={onPick} />

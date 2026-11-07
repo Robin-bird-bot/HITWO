@@ -62,7 +62,13 @@ const capOn = (stat: StatName, cap: number): Hooks => ({
 /** Costs this hiker pays in a stat (their own move, Tend, the night and end-of-day drains). */
 const OWN_COSTS: Record<'energy' | 'appetite', readonly CostKey[]> = {
   energy: ['move.energy', 'tend.energy', 'night.noSleepEnergy'],
-  appetite: ['move.appetite', 'moveAll.appetite', 'endOfDay.appetite', 'scavenge.appetite'],
+  appetite: [
+    'move.appetite',
+    'move.carry',
+    'moveAll.appetite',
+    'endOfDay.appetite',
+    'scavenge.appetite',
+  ],
 };
 
 /** Refreshed and Full: no loss of a stat at all, chosen costs included (Wyatt, Nov 6). */

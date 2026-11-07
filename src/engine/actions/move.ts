@@ -5,6 +5,7 @@ import { fireMove } from '../effects';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
+import { bringCarried, carryMoveReason } from './carry';
 import {
   enterTile,
   findHiker,
@@ -28,6 +29,8 @@ export function validateMove(state: GameState, action: MoveAction): string | und
   }
   const entry = tileEntryReason(state, action.toTileId);
   if (entry) return entry;
+  const carry = carryMoveReason(state, [hiker]);
+  if (carry) return carry;
   return moraleCostReason(hiker, moveCost(state, hiker.id, action.toTileId)?.morale ?? 0);
 }
 
@@ -41,6 +44,8 @@ export function applyMove(state: GameState, action: MoveAction): void {
   const firstHere = !state.section.tiles[action.toTileId]?.visited;
   hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
+  // Whoever they carry comes along.
+  const carried = bringCarried(state, [hiker], from).map((c) => c.id);
   spendAction(state, hiker);
   const revealed = enterTile(state, hiker.tileId);
   pushEvent(state, {
@@ -49,11 +54,12 @@ export function applyMove(state: GameState, action: MoveAction): void {
     from,
     to: hiker.tileId,
     brought: [],
+    ...(carried.length ? { carried } : {}),
     ...(revealed.length ? { revealed } : {}),
   });
   payCost(state, hiker, cost, 'Move');
   fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line });
-  noteArrival(state, [hiker.id], hiker.tileId);
+  noteArrival(state, [hiker.id, ...carried], hiker.tileId);
   // The first hiker to land on a tile triggers its card.
-  if (firstHere) revealTile(state, hiker.tileId, [hiker.id]);
+  if (firstHere) revealTile(state, hiker.tileId, [hiker.id, ...carried]);
 }

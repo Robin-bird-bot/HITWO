@@ -413,6 +413,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               onAbility={onAbility}
               onEndPhase={endPhase}
               onPick={setStash}
+              onFree={dispatch}
             />
           )}
         </>
@@ -434,6 +435,7 @@ export function GameScreen({ state, onQuit }: { state: GameState; onQuit(): void
               onAbility={onAbility}
               onEndPhase={endPhase}
               onPick={setStash}
+              onFree={dispatch}
             />
           )}
         </>

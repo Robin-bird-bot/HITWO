@@ -23,6 +23,7 @@ import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick, roll, shuffle } from '../rng';
 import { addInjury, changeStat, cureInjuries, statMax } from '../stats';
+import { endCarry } from '../health';
 import { enterTile } from '../actions/common';
 import type {
   CardRolls,
@@ -211,6 +212,8 @@ export function applyEffects(
     if (!tile) return;
     const wasNew = !tile.visited;
     const from = h.tileId;
+    // Carried or carrying, a card moving either one breaks the carry.
+    endCarry(state, h, 'dropped');
     h.cameFrom = from;
     h.tileId = to;
     enterTile(state, to);

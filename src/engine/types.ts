@@ -244,6 +244,8 @@ export interface Hiker {
    * camp step where no active hiker shares their tile.
    */
   countdown?: number;
+  /** The passed-out hiker this hiker is carrying: they travel along on every move. */
+  carrying?: HikerId;
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -514,6 +516,10 @@ export type Action =
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
   /** A free action: puts a resource back, +1 Abundance to its node. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
+  /** A free action: picks up a passed-out hiker on the same tile, to carry them along. */
+  | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
+  /** A free action: puts down the hiker being carried. */
+  | { type: 'putDown'; carrierId: HikerId }
   /** A free action: uses a bag item on a hiker on the same tile (the medical items). */
   | { type: 'useItem'; hikerId: HikerId; itemUid: string; targetId: HikerId; conditionId?: string }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
@@ -604,6 +610,8 @@ export type GameEventBody =
       from: TileId;
       to: TileId;
       brought: HikerId[];
+      /** Passed-out hikers carried along. */
+      carried?: HikerId[];
       /** Nodes shown for the first time by entering the tile. */
       revealed?: NodeKind[];
     }
@@ -615,6 +623,11 @@ export type GameEventBody =
   | { kind: 'passedOut'; hikerId: HikerId; countdown: number }
   /** A hiker used an item on someone on their tile (or themselves); it's used up. */
   | { kind: 'used'; hikerId: HikerId; targetId: HikerId; itemId: ItemId }
+  /**
+   * Carrying: picked up, put down, or dropped (the carrier passed out or a
+   * card moved one of them).
+   */
+  | { kind: 'carry'; carrierId: HikerId; hikerId: HikerId; how: 'pickedUp' | 'putDown' | 'dropped' }
   /** A passed-out hiker came to (an injury was cured). */
   | { kind: 'woke'; hikerId: HikerId; cause: string }
   /** A passed-out hiker spent a night with no active hiker beside them. */

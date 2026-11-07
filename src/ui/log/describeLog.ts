@@ -145,9 +145,10 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const own = costsOf(taken, e.hikerId);
         const cost = own ? ` (${own})` : '';
         const found = e.revealed?.length ? ` Revealed ${describeNodes(e.revealed)}.` : '';
+        const carrying = e.carried?.length ? `, carrying ${listNames(e.carried.map(name))}` : '';
         const text = e.brought.length
-          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${cost}.${found}`
-          : `${name(e.hikerId)} moved to ${where}${cost}.${found}`;
+          ? `${name(e.hikerId)} led ${listNames(e.brought.map(name))} to ${where}${carrying}${cost}.${found}`
+          : `${name(e.hikerId)} moved to ${where}${carrying}${cost}.${found}`;
         lines.push({ id: e.id, text, tone: 'move' });
         break;
       }
@@ -313,6 +314,15 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const item = ITEMS[e.itemId]?.name ?? 'an item';
         const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;
         lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}.`, tone: 'rest' });
+        break;
+      }
+      case 'carry': {
+        const text = {
+          pickedUp: `${name(e.carrierId)} picked up ${name(e.hikerId)} to carry them.`,
+          putDown: `${name(e.carrierId)} put ${name(e.hikerId)} down.`,
+          dropped: `${name(e.carrierId)} dropped ${name(e.hikerId)}.`,
+        }[e.how];
+        lines.push({ id: e.id, text, tone: e.how === 'dropped' ? 'injury' : 'move' });
         break;
       }
       case 'woke':

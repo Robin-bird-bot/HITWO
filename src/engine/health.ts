@@ -13,9 +13,24 @@ import { pushEvent } from './log';
 import { hikersOnTile } from './map';
 import type { GameState, Hiker } from './types';
 
+/**
+ * Ends any carry this hiker is part of, as carrier or carried. `dropped` logs
+ * it (the carrier passed out, or a card moved one of them); waking or
+ * leaving the hike ends it quietly.
+ */
+export function endCarry(state: GameState, hiker: Hiker, how?: 'dropped'): void {
+  const carrier = hiker.carrying ? hiker : state.hikers.find((h) => h.carrying === hiker.id);
+  const carriedId = carrier?.carrying;
+  if (!carrier || !carriedId) return;
+  delete carrier.carrying;
+  if (how) pushEvent(state, { kind: 'carry', carrierId: carrier.id, hikerId: carriedId, how });
+}
+
 /** The hiker passes out: they can't act, and their countdown starts full. */
 export function passOut(state: GameState, hiker: Hiker): void {
   if (hiker.status !== 'active') return;
+  // A carrier who passes out drops whoever they were carrying.
+  if (hiker.carrying) endCarry(state, hiker, 'dropped');
   hiker.status = 'passedOut';
   hiker.countdown = BALANCE.passOut.countdownNights;
   pushEvent(state, { kind: 'passedOut', hikerId: hiker.id, countdown: hiker.countdown });
@@ -26,12 +41,14 @@ export function wakeUp(state: GameState, hiker: Hiker, cause: string): void {
   if (hiker.status !== 'passedOut') return;
   hiker.status = 'active';
   delete hiker.countdown;
+  endCarry(state, hiker);
   pushEvent(state, { kind: 'woke', hikerId: hiker.id, cause });
 }
 
 /** The hiker leaves the party for good. What they carry leaves with them. */
 export function abandonHike(state: GameState, hiker: Hiker, why: 'countdown' | 'choice'): void {
   if (hiker.status === 'abandoned' || hiker.status === 'checkedIn') return;
+  endCarry(state, hiker);
   hiker.status = 'abandoned';
   delete hiker.countdown;
   delete hiker.watching;

@@ -104,6 +104,16 @@ export const BALANCE = {
     medkitInjuries: 1,
   },
 
+  /**
+   * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
+   * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
+   * TODO(phase 9): the Carrier Pack makes it free.
+   */
+  carry: {
+    /** The carrier's extra Appetite on each move. */
+    appetite: 1,
+  },
+
   /** Passing out (01-design-doc.md, "Passing out, abandoning, rejoining"). */
   passOut: {
     /**
