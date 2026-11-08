@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { TIER_3_ITEMS } from '../../content';
+import { ITEMS, TIER_3_ITEMS } from '../../content';
 import { WONDER_BY_ID, WONDERS } from '../../content/wonders';
 import { validateAction } from '../applyAction';
 import { revealableFrom, unrevealedTiles } from '../challenges/buttons';
@@ -192,7 +192,7 @@ describe('Wonder goals, against only the hikers on the tile', () => {
     bag.push({ uid: 'c', itemId: 'medicTent' });
     expect(met(s, 'pittock-mansion', 4, 3)).toBe(true);
     expect(met(s, 'crater-lake', 4, 1)).toBe(true);
-    bag.push({ uid: 'd', itemId: 'medicine' }, { uid: 'e', itemId: 'medkit' });
+    bag.push({ uid: 'd', itemId: 'bandaid' }, { uid: 'e', itemId: 'medkit' });
     expect(met(s, 'crater-lake', 4, 1)).toBe(false);
   });
 
@@ -337,7 +337,7 @@ describe('accomplishing a Wonder', () => {
     const s = ready();
     hiker(s, 'ash').inventory.bag = ['a', 'b', 'c', 'd'].map((uid) => ({
       uid,
-      itemId: 'medicine',
+      itemId: 'bandaid',
     }));
     expect(
       validateAction(
@@ -392,10 +392,10 @@ describe('accomplishing a Wonder', () => {
       s,
       accomplish({ ash: { reward: 0 }, birch: { reward: 0 }, cedar: { reward: 2 } }),
     );
-    expect(hiker(after, 'ash').inventory.bag.map((i) => i.itemId)).toEqual([
-      'medicTent',
-      'medicTent',
-    ]);
+    // Two shelters from the Meadow's tier (Tier 1: Hammock or Tent).
+    const got = hiker(after, 'ash').inventory.bag.map((i) => ITEMS[i.itemId]);
+    expect(got).toHaveLength(2);
+    expect(got.every((d) => d?.type === 'shelter' && d.tier === 1)).toBe(true);
   });
 
   it('the other rewards: caps, healing, revealing the biome, Energy, conditions turned good', () => {

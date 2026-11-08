@@ -7,10 +7,19 @@ import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
-import { NODE_TYPES, PHASES, type GameState, type Tile, type WeatherState } from './types';
+import { RENAMED_ITEMS } from '../content/items';
+import { withDefaults } from './items/make';
+import {
+  NODE_TYPES,
+  PHASES,
+  type GameState,
+  type ItemInstance,
+  type Tile,
+  type WeatherState,
+} from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -34,7 +43,55 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
     ...save,
     hikers: Array.isArray(save.hikers) ? save.hikers.map(addCountdown) : [],
   }),
+  // Phase 8: the Nov 7 item list. Old items become their replacements, and every
+  // item gets a Quality (3) and full uses, bites or durability.
+  7: (save) => upgradeItems(save),
 };
+
+/** An old item id's replacement (03-items.md, "Older items, merged or replaced"). */
+const renamed = (id: unknown) => (isString(id) ? (RENAMED_ITEMS[id] ?? id) : id);
+
+function upgradeItem(item: unknown): unknown {
+  if (!isRecord(item) || !isString(item.itemId)) return item;
+  return withDefaults({
+    ...(item as unknown as ItemInstance),
+    itemId: String(renamed(item.itemId)),
+  });
+}
+
+/** Ids shown in the trail log and on an open scavenge deal, renamed. */
+function renameIds(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(renameIds);
+  if (!isRecord(v)) return v;
+  const out: SaveData = {};
+  for (const [k, x] of Object.entries(v)) {
+    if (k === 'itemId') out[k] = renamed(x);
+    else if (k === 'items' && Array.isArray(x)) out[k] = x.map(renamed);
+    else out[k] = renameIds(x);
+  }
+  return out;
+}
+
+/** Every item a save holds, renamed and filled in. */
+function upgradeItems(save: SaveData): SaveData {
+  const hikers = Array.isArray(save.hikers)
+    ? save.hikers.map((h) => {
+        if (!isRecord(h) || !isRecord(h.inventory)) return h;
+        const inv = h.inventory;
+        const equipped = isRecord(inv.equipped)
+          ? Object.fromEntries(Object.entries(inv.equipped).map(([k, v]) => [k, upgradeItem(v)]))
+          : {};
+        const bag = Array.isArray(inv.bag) ? inv.bag.map(upgradeItem) : [];
+        return { ...h, inventory: { ...inv, bag, equipped } };
+      })
+    : save.hikers;
+  return {
+    ...save,
+    hikers,
+    ...(Array.isArray(save.log) ? { log: renameIds(save.log) } : {}),
+    ...(isRecord(save.scavenge) ? { scavenge: renameIds(save.scavenge) } : {}),
+  };
+}
 
 /** A passed-out hiker gets a full countdown, and injuries past the line come down to it. */
 function addCountdown(h: unknown): unknown {

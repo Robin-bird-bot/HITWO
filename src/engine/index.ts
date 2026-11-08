@@ -33,6 +33,25 @@ export { seedRng } from './rng';
 export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
 export { negativeConditions } from './actions/useItem';
+export {
+  QUALITIES,
+  hasQuality,
+  qualityScale,
+  valueAt,
+  type Quality,
+  type QualityValues,
+} from './items/quality';
+export { itemText } from './items/text';
+export { recipeSize, type Recipe, type RecipePart } from './items/recipe';
+export {
+  fullCounters,
+  fullDurability,
+  makeItem,
+  qualityOdds,
+  qualityOf,
+  rollQuality,
+  withDefaults,
+} from './items/make';
 export { isHikeOver } from './health';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';

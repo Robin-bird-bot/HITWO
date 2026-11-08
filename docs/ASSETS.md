@@ -16,8 +16,8 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `sky/` | sun (soft glow), moon | 1500×1500 transparent PNGs |
 | `icons/acorn-caps.png` | Acorn caps icon | Stand-in drawn in code to match the resource style. Wyatt may repaint it |
 | `item-cards/` | `gradients/`, `type-icons/`, `rays/` (one per type), `front-background.png`, `palette-reference.png` | Layers the game builds item cards from. See "Item card layers" below |
-| `item-card-front-background.png` | The card front background (Nov 7), cropped to square corners (1422×1982) | Round it in CSS to match the card: `border-radius` 7.5% of the card's width, `overflow: hidden`. Supersedes `item-cards/front-background.png` for the card front |
-| `items/` | 141 item images, one per item, named after it (`fishing-rod.png`, `din-tai-fung.png`…) | Trimmed and evened out on a 1024×1024 transparent square. The game loads copies from `public/assets/items/` (Phase 8) |
+| `item-card-front-background.png` | The card front background (Nov 7), cropped to square corners (1422×1982) | Round it in CSS to match the card: `border-radius` 7.5% of the card's width, `overflow: hidden`. Supersedes `item-cards/front-background.png` for the card front. The game loads a 717×1000 JPEG copy, `public/assets/item-cards/front.jpg` |
+| `items/` | 141 item images, one per item, named after it (`fishing-rod.png`, `din-tai-fung.png`…) | Trimmed and evened out on a 1024×1024 transparent square. The game loads 384 px copies from `public/assets/items/<art>.png`, via `ASSETS.itemArt(art)` |
 | `item-cards/samples/` | bandages, hatchet, jerky, net, rain jacket, shovel, trail mix, trail shoes | Old flat card art from the card game, for reference only |
 | `portraits/` | placeholder, placeholder-character-card | **Use the placeholder for every hiker for now.** Real character art comes later |
 | `art/` | challenge-bear, challenge-fallen-tree | Early challenge pop-up art (superseded by `challenges/`) |

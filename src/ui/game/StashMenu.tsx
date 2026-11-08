@@ -26,6 +26,7 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { Popout } from '../panels/Popout';
 import type { StashPick } from '../panels/TurnPanel';
 import { whatItDoes } from '../items/whatItDoes';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import styles from './StashMenu.module.css';
 
 interface StashMenuProps {
@@ -79,6 +80,12 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
       }}
       onClose={onClose}
     >
+      {item && (
+        // The whole card, beside the menu, so its effect and Quality are easy to read.
+        <div className={styles.preview}>
+          <CardFace itemId={item.itemId} item={item} width={180} />
+        </div>
+      )}
       <span className={styles.head} data-drag-handle>
         {resource && <img src={ASSETS.resources[resource.id]} alt="" width={28} height={28} />}
         {name.toUpperCase()}

@@ -270,6 +270,12 @@ export function GameScreen({
       resources: event.resources,
       caps: event.caps ?? 0,
       items: event.items ?? [],
+      // The items as they landed in the bag, with their Quality.
+      found:
+        gameStore
+          .getState()
+          ?.hikers.find((h) => h.id === open?.hikerId)
+          ?.inventory.bag.filter((i) => i.uid.startsWith(`found-${event.id}-`)) ?? [],
     });
   };
 

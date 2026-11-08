@@ -14,7 +14,7 @@
  *   Continue.
  */
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import { CARDS, CONDITIONS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { ASSETS, cardArt } from '../../config/assets';
 import {
@@ -34,6 +34,7 @@ import {
   type Gift,
   type Hiker,
   type HikerId,
+  type ItemInstance,
   type OpenChallenge,
   type Requirement,
   type RiskReading,
@@ -43,7 +44,8 @@ import { BALANCE } from '../../config/balance';
 import { Icon } from '../icons/Icon';
 import { NODE_IMAGE } from '../map/looks';
 import { STAT_META } from '../panels/hikerInfo';
-import { ITEM_TYPE_COLORS, itemName, resourceName } from '../scavenge/cardLook';
+import { itemName, resourceName } from '../scavenge/cardLook';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { useDraggable } from '../windows/useDraggable';
 import { describeLog } from '../log/describeLog';
 import { tileName } from '../panels/hikerInfo';
@@ -993,36 +995,27 @@ function MiniItem({
   return <ItemFace itemId={item?.itemId ?? ''} width={width} />;
 }
 
-/** A stand-in item card face (Phase 8 builds the real layered cards). */
+/** A small item card (the compact real card): in packs, spaces and handed-in slots. */
 export function ItemFace({
   itemId,
+  item,
   width,
   style,
 }: {
   itemId: string;
+  /** The instance, for its Quality and what's left. */
+  item?: ItemInstance;
   width: number;
   style?: CSSProperties;
 }) {
-  const def = ITEMS[itemId];
-  const type = def?.type ?? 'clothes';
   return (
-    <span
-      className={styles.itemFace}
-      title={def ? `${def.name}: ${def.text}` : itemId}
-      style={{
-        width,
-        height: Math.round((width * 7) / 5),
-        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[type].join(', ')})`,
-        ...style,
-      }}
-    >
-      <img src={ASSETS.itemCards.typeIcons[type]} alt="" />
-      {width >= 40 && (
-        <span style={{ fontSize: Math.max(7, width / 7) }}>
-          {(def?.name ?? itemId).toUpperCase()}
-        </span>
-      )}
-    </span>
+    <CardFace
+      itemId={itemId}
+      width={width}
+      compact
+      {...(item ? { item } : {})}
+      {...(style ? { style } : {})}
+    />
   );
 }
 
@@ -1124,9 +1117,9 @@ function Pack({
                   aria-disabled={!fits}
                   aria-label={`${itemName(item.itemId)}${used ? ' (handed in)' : fits ? ': put it in the selected space' : ''}`}
                   onClick={() => fits && tryGive(source)}
-                  {...drag(source, <ItemFace itemId={item.itemId} width={50} />)}
+                  {...drag(source, <ItemFace itemId={item.itemId} item={item} width={50} />)}
                 >
-                  <ItemFace itemId={item.itemId} width={50} />
+                  <ItemFace itemId={item.itemId} item={item} width={50} />
                   {used && (
                     <span className={styles.usedMark}>
                       <Icon name="check" size={16} color="#1D2220" strokeWidth={3} />

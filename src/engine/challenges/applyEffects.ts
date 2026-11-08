@@ -10,6 +10,7 @@
  * - Effects that wait on a later phase still record their data on the
  *   hiker or item (TODO(phase N) notes say where).
  */
+import { makeItem } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
@@ -591,7 +592,7 @@ function applyOnce(
       const to = targets.find((h) => h.inventory.bag.length < bagSlots(state, h).total);
       if (!options.length || !to) return;
       const item = pick(state.rng, options);
-      to.inventory.bag.push({ uid: `gift-${state.nextEventId}-${item.id}`, itemId: item.id });
+      to.inventory.bag.push(makeItem(state, item.id, { prefix: 'gift' }));
       pushEvent(state, { kind: 'gained', hikerId: to.id, resources: [], items: [item.id], cause });
       return;
     }

@@ -22,6 +22,7 @@ import {
   type Action,
   type GameState,
   type ItemId,
+  type ItemInstance,
   type NodeType,
   type ResourceId,
   type ScavengeBonus,
@@ -32,7 +33,7 @@ import type { IconName } from '../icons/paths';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { useDraggable } from '../windows/useDraggable';
 import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from './cardLook';
-import { ItemBack } from './ItemBack';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard } from './ScavCard';
 import styles from './ScavengeWindow.module.css';
 
@@ -45,6 +46,8 @@ export interface TookCard {
   resources: ResourceId[];
   caps: number;
   items: ItemId[];
+  /** The items as they landed in the bag, with their Quality. */
+  found?: ItemInstance[];
 }
 
 interface ScavengeWindowProps {
@@ -452,7 +455,7 @@ function ItemChips({
             aria-pressed={item === id}
             onClick={() => onItem(id)}
           >
-            {type && <ItemBack type={type} width={18} />}
+            {type ? <CardFace itemId={id} width={26} compact /> : null}
             {itemName(id)}
           </button>
         ))}
@@ -470,6 +473,9 @@ function Result({ took, simple, onClose }: { took: TookCard; simple: boolean; on
   return (
     <button type="button" className={styles.result} onClick={onClose} aria-label="Close">
       <ScavCard card={took.card} size={196} faceUp reveal caption={simple ? 'simple' : 'full'} />
+      {took.found?.map((item) => (
+        <CardFace key={item.uid} itemId={item.itemId} item={item} width={196} />
+      ))}
       <span className={styles.got}>
         <span className={styles.gotLabel}>{took.hikerName.toUpperCase()} GOT</span>
         <span className={styles.gotWhat}>

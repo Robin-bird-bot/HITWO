@@ -91,16 +91,50 @@ export const BALANCE = {
     raiseStatsBelowTo: 5,
   },
 
+  /** Items (docs/design/03-items.md). */
+  items: {
+    /**
+     * Quality rolls: the odds of Quality 1–5 (Wyatt, Nov 7). Each point of the
+     * crafter's Luck moves `luckStep` points from Quality 1–2 to 4–5, half from
+     * each (Luck +2: 5/15/40/25/15).
+     */
+    quality: { odds: [10, 20, 40, 20, 10] as readonly number[], luckStep: 5 },
+    /** Clothing durability in days, by tier, at Quality 1–5. */
+    durability: {
+      1: [4, 5, 5, 5, 6],
+      2: [5, 7, 7, 7, 9],
+      3: [8, 10, 10, 10, 12],
+    } as Record<number, readonly [number, number, number, number, number]>,
+    /**
+     * Nights each shelter lasts once placed.
+     * TODO(wyatt): Tailgate, Yurt, Hostel, Tree-House, RV, Medic Tent and Lodge are the doc's first guesses.
+     */
+    shelterNights: {
+      hammock: 1,
+      tent: 3,
+      cabin: 5,
+      tailgate: 3,
+      yurt: 4,
+      hostel: 4,
+      treeHouse: 4,
+      rv: 4,
+      medicTent: 3,
+      lodge: 5,
+    } as Record<string, number>,
+    /** TODO(wyatt): the Diploma's XP, as a share of a level (first guess 60–100%). TODO(phase 10). */
+    diplomaXp: { min: 0.6, max: 1 },
+    /** TODO(wyatt): the Postcard's extra XP (first guess). TODO(phase 10). */
+    postcardXp: { checkpoint: 5, challenge: 1 },
+  },
+
   /**
-   * The medical items (Phase 7). Each is used up after one use.
-   * TODO(phase 8): uses and Quality.
+   * The medical items (Phase 7).
+   * TODO(phase 8): uses count down (step 2).
    */
   medical: {
-    /** Bandages: injuries cured (and Bleeding). TODO(wyatt): Bandages and the Splint are placeholders. */
+    /** Bandages: injuries cured (and Bleeding: Wyatt, Nov 7). */
     bandagesInjuries: 1,
-    /** The Splint: injuries held off, for this many days, then they come back. */
-    splint: { injuries: 1, days: 3 },
-    /** Medkit: injuries cured, plus one condition. */
+    /** Medkit: injuries cured, plus every negative condition. */
     medkitInjuries: 1,
   },
 

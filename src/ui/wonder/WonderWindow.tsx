@@ -451,8 +451,8 @@ function RewardCard({
   } else if (kind === 'shelters') {
     picture = (
       <div className={styles.items}>
-        <ItemFace itemId="medicTent" width={56} />
-        <ItemFace itemId="medicTent" width={56} />
+        <ItemFace itemId="hammock" width={56} />
+        <ItemFace itemId="tent" width={56} />
       </div>
     );
   } else {

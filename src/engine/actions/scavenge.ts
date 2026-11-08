@@ -6,6 +6,7 @@
  *   card shows, and drains the card's node.
  * While a scavenge is open, every other action waits (see applyAction).
  */
+import { makeItem } from '../items/make';
 import { noteScavenged } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS } from '../../content';
@@ -231,7 +232,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
   for (const r of kept) hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) + 1;
   state.caps += gains.caps;
   for (const itemId of gains.items) {
-    hiker.inventory.bag.push({ uid: `found-${state.nextEventId}-${itemId}`, itemId });
+    hiker.inventory.bag.push(makeItem(state, itemId, { prefix: 'found' }));
   }
 
   const nodes: NodeType[] = [];

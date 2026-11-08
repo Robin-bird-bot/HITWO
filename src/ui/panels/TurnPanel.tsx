@@ -23,7 +23,7 @@ import {
   type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { ITEM_TYPE_COLORS } from '../scavenge/cardLook';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
@@ -450,7 +450,7 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
   );
 }
 
-/** A stand-in item card (Phase 8 builds the real layered cards). */
+/** A card in the bag or an equipment slot: the compact real card, a button when it opens a menu. */
 function ItemCard({
   item,
   size,
@@ -462,26 +462,26 @@ function ItemCard({
 }) {
   const def = ITEMS[item.itemId];
   const name = def?.name ?? item.itemId;
-  const Tag = onClick ? 'button' : 'div';
+  const face = (
+    <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
+  );
+  if (!onClick) {
+    return (
+      <div className={styles.itemCard} data-size={size}>
+        {face}
+      </div>
+    );
+  }
   return (
-    <Tag
-      {...(onClick
-        ? {
-            type: 'button' as const,
-            onClick,
-            'aria-label': `${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`,
-          }
-        : {})}
+    <button
+      type="button"
       className={styles.itemCard}
       data-size={size}
-      title={def ? `${def.name}: ${def.text}` : item.itemId}
-      style={{
-        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[def?.type ?? 'clothes'].join(', ')})`,
-      }}
+      onClick={onClick}
+      aria-label={`${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`}
     >
-      <img src={ASSETS.itemCards.typeIcons[def?.type ?? 'clothes']} alt="" />
-      <span>{name.toUpperCase()}</span>
-    </Tag>
+      {face}
+    </button>
   );
 }
 

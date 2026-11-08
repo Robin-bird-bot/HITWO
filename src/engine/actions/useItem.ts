@@ -13,6 +13,8 @@ import { CONDITIONS } from '../../content/conditions';
 import { ITEMS } from '../../content/items';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { pushEvent } from '../log';
+import { qualityOf } from '../items/make';
+import { valueAt } from '../items/quality';
 import { cureInjuries } from '../stats';
 import type { Action, ConditionInstance, GameState, Hiker } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
@@ -32,7 +34,8 @@ export function validateUse(state: GameState, action: UseAction): string | undef
   if (!item) return `${user.name} doesn’t have that.`;
   const def = ITEMS[item.itemId];
   const use = def?.use;
-  if (!def || !use) return `${def?.name ?? 'That item'} can’t be used yet (Phase 8).`;
+  // TODO(phase 8): every item's use (step 3).
+  if (!def || !use) return `${def?.name ?? 'That item'} can’t be used yet.`;
 
   const target = findHiker(state, action.targetId);
   if (!target || target.status === 'abandoned' || target.status === 'checkedIn') {
@@ -50,13 +53,13 @@ export function validateUse(state: GameState, action: UseAction): string | undef
     return 'Pick which condition to cure.';
   }
   if (use.gives && hasCondition(target, use.gives.id)) {
-    return `${target.name} already has a ${def.name}.`;
+    return `${target.name} is already ${CONDITIONS[use.gives.id]?.name ?? use.gives.id}.`;
   }
 
   const helps =
     ((use.injuries ?? 0) > 0 && target.injuries > 0) ||
     (use.cures ?? []).some((id) => hasCondition(target, id)) ||
-    (!!use.pickCondition && bad.length > 0);
+    ((!!use.pickCondition || !!use.allNegative) && bad.length > 0);
   if (!helps) return `${def.name} wouldn’t help ${target.name} right now.`;
   return undefined;
 }
@@ -78,8 +81,12 @@ export function applyUse(state: GameState, action: UseAction): void {
     const id = action.conditionId ?? negativeConditions(target)[0]?.id;
     if (id) removeCondition(state, target, id);
   }
+  if (use.allNegative) {
+    for (const c of negativeConditions(target)) removeCondition(state, target, c.id);
+  }
   if (use.injuries) cureInjuries(state, target, use.injuries, def.name);
   if (use.gives) {
-    addCondition(state, target, use.gives.id, use.gives.duration, use.gives.unit, def.name);
+    const days = valueAt(use.gives.duration, qualityOf(item));
+    addCondition(state, target, use.gives.id, days, use.gives.unit, def.name);
   }
 }

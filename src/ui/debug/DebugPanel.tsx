@@ -191,6 +191,11 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
           </button>
         </div>
         <ItemGiver hikers={state.hikers} onApply={run} />
+        <div className={styles.row}>
+          <a className={styles.button} href="#debug-items">
+            Every item card
+          </a>
+        </div>
       </section>
 
       <section className={styles.group}>

@@ -435,11 +435,11 @@ const LIST: ConditionDef[] = [
   },
   // Medical items (Phase 7).
   {
-    // TODO(wyatt): the Splint's "−1 injury for 3 days, then it returns", shown as a condition.
+    // TODO(wyatt): Crutches' "remove 1 injury for N days; then it comes back", shown as a condition.
     id: 'splinted',
-    name: 'Splinted',
+    name: 'On Crutches',
     kind: 'positive',
-    text: 'A Splint holds off 1 injury. When it runs out, the injury comes back.',
+    text: 'Crutches hold off 1 injury. When they run out, the injury comes back.',
     onRunOut: 'injury',
     fromItemOnly: true,
   },

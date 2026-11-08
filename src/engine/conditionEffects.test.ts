@@ -223,7 +223,7 @@ describe('what a hiker can do', () => {
     const slots = bagSlots(s, ash(s)).total;
     ash(s).inventory.bag = Array.from({ length: slots }, (_, i) => ({
       uid: `i${i}`,
-      itemId: 'medicine',
+      itemId: 'bandaid',
     }));
     addCondition(s, ash(s), 'weak', 1, 'days', 'test');
     expect(bagSlots(s, ash(s)).total).toBe(slots - 1);
@@ -232,7 +232,7 @@ describe('what a hiker can do', () => {
     expect(overBag(dropped, ash(dropped))).toBe(0);
     expect(dropped.log.at(-1)).toMatchObject({
       kind: 'lost',
-      items: ['medicine'],
+      items: ['bandaid'],
       cause: 'dropped',
     });
   });

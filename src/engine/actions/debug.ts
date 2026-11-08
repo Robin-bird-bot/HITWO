@@ -1,3 +1,4 @@
+import { makeItem } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
@@ -190,7 +191,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const clothes =
         findableItems('clothes').find((i) => i.slot === slot) ?? findableItems('clothes')[0];
       if (!hiker || !slot || !clothes) return;
-      hiker.inventory.equipped[slot] = { uid: `debug-${state.nextEventId}`, itemId: clothes.id };
+      hiker.inventory.equipped[slot] = makeItem(state, clothes.id, { prefix: 'debug', quality: 3 });
       pushEvent(state, { kind: 'debug', note: `${hiker.name} put on ${clothes.name}` });
       break;
     }
@@ -224,7 +225,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       const item = ITEMS[op.itemId];
       if (!hiker || !item) return;
-      hiker.inventory.bag.push({ uid: `debug-${state.nextEventId}-${item.id}`, itemId: item.id });
+      hiker.inventory.bag.push(makeItem(state, item.id, { prefix: 'debug', quality: 3 }));
       pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} ${item.name}` });
       break;
     }

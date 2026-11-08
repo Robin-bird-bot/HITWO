@@ -190,7 +190,7 @@ describe('picking an outcome', () => {
     ash.inventory.resources = { wood: 2 };
     ash.xp = 3;
     ash.inventory.bag = [{ uid: 'f1', itemId: 'energyDrink' }];
-    hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'medicine' }];
+    hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'bandaid' }];
     expect(NIGHT_OUTCOMES[1].filter((o) => canApply(s, ash, o)).map((o) => o.id)).toEqual([
       'swapResources',
       'stealCaps',
@@ -335,14 +335,14 @@ describe('the lines', () => {
         const s = night(seed);
         place(s, 'ash', 'L');
         hiker(s, 'ash').inventory.bag = [{ uid: 'f1', itemId: 'energyDrink' }];
-        hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'medicine' }];
+        hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'bandaid' }];
         return s;
       },
       { creatureId: 'raccoons', hit: 'ash' },
       'swapItemFar',
     );
-    expect(hit.text).toBe('The raccoons swapped Ash’s Energy Drink for Birch’s Medicine.');
-    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['medicine']);
+    expect(hit.text).toBe('The raccoons swapped Ash’s Energy Drink for Birch’s Bandaid.');
+    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['bandaid']);
     expect(hiker(s, 'birch').inventory.bag.map((i) => i.itemId)).toEqual(['energyDrink']);
   });
 });
@@ -388,9 +388,9 @@ describe('the new effects', () => {
         const s = night(seed);
         place(s, 'ash', 'L');
         hiker(s, 'ash').inventory.bag = [
-          { uid: 'a', itemId: 'medicine' },
+          { uid: 'a', itemId: 'bandaid' },
           { uid: 'b', itemId: 'energyDrink' },
-          { uid: 'c', itemId: 'medicine' },
+          { uid: 'c', itemId: 'bandaid' },
         ];
         return s;
       },

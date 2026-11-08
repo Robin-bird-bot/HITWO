@@ -16,6 +16,8 @@ import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
 import { thresholdSources } from './thresholds';
+import { valueAt, type QualityValues } from './items/quality';
+import type { Recipe } from './items/recipe';
 import type {
   Action,
   ConditionInstance,
@@ -24,6 +26,7 @@ import type {
   GameState,
   Hiker,
   HikerId,
+  ItemInstance,
   Line,
   NodeType,
   Phase,
@@ -264,18 +267,19 @@ export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
 
 /**
  * What using an item does to its target (Phase 7: the medical items). A use
- * that would do nothing is refused. TODO(phase 8): every item's use, uses and
- * Quality.
+ * that would do nothing is refused. TODO(phase 8): every item's use (step 3).
  */
 export interface ItemUse {
   /** Cures this many injuries (waking a passed-out hiker who drops below 3). */
   injuries?: number;
   /** Cures these conditions if the target has them (Bandages: Bleeding). */
   cures?: readonly string[];
-  /** Cures one negative condition the player picks (Medkit, Medicine). TODO(wyatt): the player picks. */
+  /** Cures one negative condition the player picks (Bandaid). TODO(wyatt): the player picks. */
   pickCondition?: true;
+  /** Cures every negative condition (Medkit, Ointment). */
+  allNegative?: true;
   /** Then gives this condition; a target who has it already can't use another. */
-  gives?: { id: string; duration: number; unit: 'days' | 'phases' };
+  gives?: { id: string; duration: QualityValues | number; unit: 'days' | 'phases' };
 }
 
 export interface ItemDef {
@@ -284,10 +288,42 @@ export interface ItemDef {
   type: ItemType;
   /** Clothes are equipped in one of these slots. */
   slot?: EquipSlot;
+  /** Feet: shoes or socks (a hiker wears one or the other). */
+  footwear?: 'shoes' | 'socks';
   tier: 1 | 2 | 3 | 4;
+  /**
+   * The effect, as a template for the card (src/engine/items/text.ts): {key}
+   * is a value at this item's Quality, [ ... ] drops out when a value in it is 0.
+   */
   text: string;
+  /** Food at Quality 1: its downside, added to the card. */
+  atQuality1?: string;
+  /** Values that change with Quality ((X a/b/c/d/e) in 03-items.md), for the text and effects. */
+  values?: Readonly<Record<string, QualityValues>>;
+  /** Tools: uses. */
+  uses?: QualityValues | number;
+  /** Food: bites. */
+  bites?: QualityValues | number;
+  /** Clothes: days of durability, when not the tier's usual (Plain Shirt lasts longer). */
+  durability?: QualityValues;
+  /** Shelters: nights it lasts once placed. */
+  nights?: number;
+  /** Trinkets: used up when used, or works while carried. */
+  trinket?: 'use' | 'keep';
+  /** Its own recipe, used once the hiker knows its blueprint. */
+  recipe?: Recipe;
+  /** Only from finds, shops or events. */
+  notCrafted?: true;
+  /** Never found by scavenging either (Puked Nuggets: only from the Nugget Puker). */
+  notFound?: true;
+  /** Its art in public/assets/items/{art}.png; null when there's none yet (the type's icon). */
+  art?: string | null;
   /** Equipped items plug into hooks, like traits. */
   hooks?: Hooks;
+  /** Hooks that read the item's own values at its Quality (`v('items')` for a Backpack). */
+  hooksAt?: (v: (key: string) => number) => Hooks;
+  /** Always this Quality (Puked Nuggets: always 1). */
+  fixedQuality?: 1 | 2 | 3 | 4 | 5;
   /** Can be used from the bag, as a free action, on a hiker on the same tile. */
   use?: ItemUse;
   placeholder?: boolean;
@@ -340,7 +376,12 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
   for (const item of Object.values(hiker.inventory.equipped)) {
     const def = item && ITEMS[item.itemId];
     if (!item || !def) continue;
-    sources.push({ id: `item:${item.uid}`, kind: 'item', name: def.name, hooks: def.hooks ?? {} });
+    sources.push({
+      id: `item:${item.uid}`,
+      kind: 'item',
+      name: def.name,
+      hooks: itemHooks(def, item),
+    });
   }
   for (const c of hiker.conditions) {
     const def = CONDITIONS[c.id];
@@ -362,6 +403,13 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     });
   }
   return sources;
+}
+
+/** An item's hooks, reading its own values at its Quality. */
+function itemHooks(def: ItemDef, item: ItemInstance): Hooks {
+  if (!def.hooksAt) return def.hooks ?? {};
+  const quality = def.fixedQuality ?? item.quality ?? 3;
+  return { ...def.hooks, ...def.hooksAt((key) => valueAt(def.values?.[key], quality)) };
 }
 
 // ── Contexts ───────────────────────────────────────────────────────────────

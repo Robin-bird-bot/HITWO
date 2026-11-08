@@ -139,3 +139,11 @@
   border-color: rgba(127, 194, 155, 0.6);
   color: #9fd8b5;
 }
+
+/* A bag item's whole card, just left of the menu. */
+.preview {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 12px);
+  pointer-events: none;
+}

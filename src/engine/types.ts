@@ -196,13 +196,18 @@ export interface ConditionInstance {
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
 
-/** One item a hiker carries (Phase 8 fills in the details). */
+/** One item a hiker carries (docs/design/03-items.md). */
 export interface ItemInstance {
   uid: string;
   itemId: ItemId;
-  quality?: number;
+  /** Quality 1–5 for tools, food and clothes (3 when missing); none for shelters and trinkets. */
+  quality?: 1 | 2 | 3 | 4 | 5;
+  /** Tools: uses left. */
   usesLeft?: number;
-  daysLeft?: number;
+  /** Food: bites left. */
+  bitesLeft?: number;
+  /** Clothes: days of durability left. */
+  durability?: number;
   /** Food: gives this much more (or less) Appetite. TODO(phase 8): used when eating arrives. */
   appetiteMod?: number;
   /** Tools: uses lost to challenges. TODO(phase 8): taken off its uses when tools arrive. */
@@ -822,6 +827,8 @@ export interface GameState {
   challengeQueue?: QueuedReveal[];
   /** Debug only: show the rolled numbers in the challenge pop-up. */
   debugRolls?: true;
+  /** Counts items made, so every item's uid is unique. */
+  itemSerial?: number;
   /** Debug only: what tonight's night event will be. */
   debugNight?: { tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId };
   /** Tests only: no night event at camp (unless the debug panel forces one). */

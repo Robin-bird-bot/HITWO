@@ -9,6 +9,7 @@
  *   the tile. When all 3 are met, `accomplishWonder` gives each of those
  *   hikers the reward they picked, and the Wonder is done for good.
  */
+import { makeItem } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, POSITIVE_CONDITIONS } from '../../content/conditions';
@@ -389,7 +390,7 @@ export function applyAccomplish(state: GameState, action: AccomplishAction): voi
 
 function giveItems(state: GameState, h: Hiker, itemIds: string[], cause: string): void {
   for (const itemId of itemIds) {
-    h.inventory.bag.push({ uid: `wonder-${state.nextEventId}-${itemId}`, itemId });
+    h.inventory.bag.push(makeItem(state, itemId, { prefix: 'wonder' }));
   }
   if (itemIds.length) {
     pushEvent(state, { kind: 'gained', hikerId: h.id, resources: [], items: itemIds, cause });
