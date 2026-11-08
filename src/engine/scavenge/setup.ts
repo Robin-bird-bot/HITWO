@@ -110,6 +110,7 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   return {
     nodes: giving,
     abundance: state.abundance,
+    itemTier: state.section.tier,
     luck: clampLuck(luck),
     count: Math.max(1, cards),
     nodeWeight,

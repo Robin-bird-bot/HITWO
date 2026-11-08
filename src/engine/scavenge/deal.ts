@@ -11,7 +11,8 @@
 import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS, findableItems, type ScavengeCardDef } from '../../content';
 import { RESOURCES } from '../../content/resources';
-import { int, pick, shuffle, weightedPick } from '../rng';
+import { int, pick, roll, shuffle, weightedPick } from '../rng';
+import type { ItemType } from '../effects';
 import type {
   NodeType,
   Rarity,
@@ -36,6 +37,8 @@ export interface DealInput {
   nodeTypeWeight?: Partial<Record<NodeType, Partial<Record<ScavengeCardType, number>>>>;
   /** Debug only: deal these types first, in order, where they can happen. */
   forceTypes?: readonly ScavengeCardType[];
+  /** The tier item finds come at: the biome's (Wyatt, Nov 7). */
+  itemTier?: number;
 }
 
 interface Spot {
@@ -78,7 +81,7 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
   if (spots.length === 0) {
     // Only Cap nodes left: every card is acorn caps.
     if (!hasCapNode) throw new Error('dealCard(): nothing on this tile can give a card');
-    return contents(rng, SCAVENGE_CARDS.caps, null, false, []);
+    return contents(rng, SCAVENGE_CARDS.caps, null, false, [], input.itemTier);
   }
 
   const spot = weightedPick(
@@ -92,7 +95,7 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
 
   const forcedDef = forced ? SCAVENGE_CARDS[forced] : undefined;
   if (forcedDef && possible(forcedDef)) {
-    return contents(rng, forcedDef, spot.node, spot.bounty, otherNodes);
+    return contents(rng, forcedDef, spot.node, spot.bounty, otherNodes, input.itemTier);
   }
 
   let rarity: Rarity = rollRarity(rng, input.luck);
@@ -110,7 +113,7 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
             (input.nodeTypeWeight?.[spot.node]?.[d.id] ?? 1),
         })),
       );
-      return contents(rng, def, spot.node, spot.bounty, otherNodes);
+      return contents(rng, def, spot.node, spot.bounty, otherNodes, input.itemTier);
     }
     if (rarity === 'common') throw new Error('dealCard(): no Common card types');
     rarity = stepDown(rarity);
@@ -137,6 +140,7 @@ function contents(
   node: NodeType | null,
   bounty: boolean,
   otherNodes: readonly NodeType[],
+  itemTier = 1,
 ): ScavengeCard {
   const card: ScavengeCard = {
     type: def.id,
@@ -206,11 +210,32 @@ function contents(
     default: {
       const type = def.itemType;
       if (!type) throw new Error(`dealCard(): ${def.id} has no contents`);
-      const options = findableItems(type).map((i) => i.id);
-      card.items = def.choiceItem
-        ? shuffle(rng, options).slice(0, BALANCE.scavenge.choiceItemOptions)
-        : [pick(rng, options)];
+      // Each item comes at the biome's tier, with a small chance of one higher.
+      const count = def.choiceItem ? BALANCE.scavenge.choiceItemOptions : 1;
+      const items: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const options = findableAt(type, foundTier(rng, itemTier)).filter(
+          (o) => !items.includes(o.id),
+        );
+        if (options.length) items.push(pick(rng, options).id);
+      }
+      card.items = items;
     }
   }
   return card;
+}
+
+/** A found item's tier: the biome's, and now and then one higher (BALANCE.items.findHigher). */
+export function foundTier(rng: RngState, tier: number): number {
+  const top = BALANCE.items.maxFoundTier;
+  return Math.min(top, roll(rng, BALANCE.items.findHigher) ? tier + 1 : tier);
+}
+
+/** Items of a type to find at a tier, or the nearest lower tier that has some. */
+function findableAt(type: ItemType, tier: number) {
+  for (let t = tier; t >= 1; t--) {
+    const found = findableItems(type, t);
+    if (found.length) return found;
+  }
+  return findableItems(type, 1);
 }

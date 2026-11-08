@@ -86,7 +86,7 @@ export function TurnPanel({
         )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
         <TileCard state={state} hiker={hiker} />
-        <Equipped hiker={hiker} />
+        <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
         <Resources hiker={hiker} onPick={onPick} />
       </div>
@@ -421,8 +421,9 @@ interface InventoryProps {
   onPick?(pick: StashPick): void;
 }
 
-export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
+export function Equipped({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
   const worn = EQUIP.filter(({ slot }) => hiker.inventory.equipped[slot]).length;
+  const stageTop = useStageTop();
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -437,7 +438,18 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
         {EQUIP.map(({ slot, label, icon }) => {
           const item = hiker.inventory.equipped[slot];
           return item ? (
-            <ItemCard key={slot} item={item} size="large" />
+            <ItemCard
+              key={slot}
+              item={item}
+              size="large"
+              worn
+              {...(onPick
+                ? {
+                    onClick: (e: React.MouseEvent<HTMLElement>) =>
+                      onPick({ kind: 'equipped', slot, top: stageTop(e.currentTarget) }),
+                  }
+                : {})}
+            />
           ) : (
             <div key={slot} className={styles.empty} data-size="large" title={`${label}: empty`}>
               <Icon name={icon} size={18} color="#6F6A60" />
@@ -454,14 +466,22 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
 function ItemCard({
   item,
   size,
+  worn = false,
   onClick,
 }: {
   item: ItemInstance;
   size: 'large' | 'small';
+  /** Clothes being worn: the menu takes them off. */
+  worn?: boolean;
   onClick?(e: React.MouseEvent<HTMLElement>): void;
 }) {
   const def = ITEMS[item.itemId];
   const name = def?.name ?? item.itemId;
+  const what = worn
+    ? 'take off'
+    : [def?.type === 'clothes' ? 'put on' : '', def?.use ? 'use' : '', 'give or drop']
+        .filter(Boolean)
+        .join(', ');
   const face = (
     <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
   );
@@ -478,7 +498,7 @@ function ItemCard({
       className={styles.itemCard}
       data-size={size}
       onClick={onClick}
-      aria-label={`${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`}
+      aria-label={`${name}: ${what}`}
     >
       {face}
     </button>
@@ -487,7 +507,9 @@ function ItemCard({
 
 /** A resource or bag item the player clicked, and where (stage pixels) to open its menu. */
 export type StashPick =
-  { kind: 'resource'; id: ResourceId; top: number } | { kind: 'item'; uid: string; top: number };
+  | { kind: 'resource'; id: ResourceId; top: number }
+  | { kind: 'item'; uid: string; top: number }
+  | { kind: 'equipped'; slot: EquipSlot; top: number };
 
 /** The clicked element's top, in stage pixels. */
 function useStageTop() {

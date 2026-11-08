@@ -7,13 +7,14 @@
  *   then anything the item gives (the Splint's Splinted).
  * - Curing a passed-out hiker below 3 injuries wakes them.
  * - A use that would do nothing is refused, so the item isn't wasted.
- * - The item is used up. TODO(phase 8): uses and Quality.
+ * - It takes a use; a tool with none left is gone.
  */
 import { CONDITIONS } from '../../content/conditions';
 import { ITEMS } from '../../content/items';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { pushEvent } from '../log';
 import { qualityOf } from '../items/make';
+import { loseUses } from '../items/wear';
 import { valueAt } from '../items/quality';
 import { cureInjuries } from '../stats';
 import type { Action, ConditionInstance, GameState, Hiker } from '../types';
@@ -67,8 +68,7 @@ export function validateUse(state: GameState, action: UseAction): string | undef
 export function applyUse(state: GameState, action: UseAction): void {
   const user = mustFindHiker(state, action.hikerId);
   const target = mustFindHiker(state, action.targetId);
-  const index = user.inventory.bag.findIndex((i) => i.uid === action.itemUid);
-  const [item] = user.inventory.bag.splice(index, 1);
+  const item = user.inventory.bag.find((i) => i.uid === action.itemUid);
   const def = item && ITEMS[item.itemId];
   const use = def?.use;
   if (!item || !def || !use) return;
@@ -89,4 +89,5 @@ export function applyUse(state: GameState, action: UseAction): void {
     const days = valueAt(use.gives.duration, qualityOf(item));
     addCondition(state, target, use.gives.id, days, use.gives.unit, def.name);
   }
+  loseUses(state, user, item, 1, '');
 }

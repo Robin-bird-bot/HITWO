@@ -115,7 +115,7 @@ export function SimpleTurn({
           )}
           {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
           <TileCard state={state} hiker={hiker} />
-          <Equipped hiker={hiker} compact />
+          <Equipped hiker={hiker} compact {...(onPick ? { onPick } : {})} />
           <Bag state={state} hiker={hiker} compact onPick={onPick} />
           <Resources hiker={hiker} compact onPick={onPick} />
         </div>

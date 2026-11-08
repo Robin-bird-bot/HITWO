@@ -33,6 +33,7 @@ import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
 import { applyUse, validateUse } from './actions/useItem';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
@@ -112,6 +113,10 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validatePickUp(state, action) ?? null;
     case 'abandon':
       return validateAbandon(state, action) ?? null;
+    case 'putOn':
+      return validatePutOn(state, action) ?? null;
+    case 'takeOff':
+      return validateTakeOff(state, action) ?? null;
     case 'putDown':
       return validatePutDown(state, action) ?? null;
     case 'resolveChallenge':
@@ -187,6 +192,12 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'abandon':
       applyAbandon(draft, action);
+      break;
+    case 'putOn':
+      applyPutOn(draft, action);
+      break;
+    case 'takeOff':
+      applyTakeOff(draft, action);
       break;
     case 'putDown':
       applyPutDown(draft, action);

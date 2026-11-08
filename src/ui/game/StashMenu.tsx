@@ -18,6 +18,7 @@ import {
   resourceCount,
   validateAction,
   type Action,
+  type EquipSlot,
   type GameState,
   type Hiker,
 } from '../../engine';
@@ -42,7 +43,84 @@ const WIDTH = 260;
 /** Using an item: who it's for, which condition (if it cures one you pick), then a confirm. */
 type UseStep = { targetId: string; conditionId?: string; picking?: boolean };
 
-export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
+export function StashMenu(props: StashMenuProps) {
+  return props.pick.kind === 'equipped' ? (
+    <WornMenu {...props} slot={props.pick.slot} top={props.pick.top} />
+  ) : (
+    <PackMenu {...props} />
+  );
+}
+
+/** Clothes a hiker has on: take them off (or, for a passed-out hiker, someone here takes them). */
+function WornMenu({
+  state,
+  hiker,
+  slot,
+  top,
+  onDispatch,
+  onClose,
+}: StashMenuProps & { slot: EquipSlot; top: number }) {
+  const item = hiker.inventory.equipped[slot];
+  if (!item) return null;
+  const name = ITEMS[item.itemId]?.name ?? 'Clothes';
+  const act = (action: Action) => {
+    onDispatch(action);
+    onClose();
+  };
+  const choices: { label: string; action: Action }[] =
+    hiker.status === 'active'
+      ? [{ label: 'Take off', action: { type: 'takeOff', hikerId: hiker.id, slot } }]
+      : hikersOnTile(state, hiker.tileId)
+          .filter((h) => h.id !== hiker.id)
+          .map((h) => ({
+            label: `${h.name} takes it off`,
+            action: { type: 'takeOff', hikerId: hiker.id, slot, toId: h.id },
+          }));
+  return (
+    <Popout
+      label={`${name}: take off`}
+      dragId="inventory"
+      className={styles.menu}
+      style={{
+        left: 1240 - WIDTH - 12,
+        top: Math.max(16, Math.min(top - 20, 1000 - 280)),
+        width: WIDTH,
+      }}
+      onClose={onClose}
+    >
+      <div className={styles.preview}>
+        <CardFace itemId={item.itemId} item={item} width={180} />
+      </div>
+      <span className={styles.head} data-drag-handle>
+        {name.toUpperCase()}
+      </span>
+      {choices.length === 0 && (
+        <span className={styles.none}>No one is here to take it off them.</span>
+      )}
+      {choices.map((c) => {
+        const reason = validateAction(state, c.action);
+        return (
+          <button
+            key={c.label}
+            type="button"
+            className={styles.option}
+            disabled={!!reason}
+            title={reason ?? undefined}
+            onClick={() => act(c.action)}
+          >
+            <Icon name="shirt" size={16} />
+            {c.label}
+            {reason && (
+              <span className={styles.full}>{reason.includes('full') ? 'Bag full' : ''}</span>
+            )}
+          </button>
+        );
+      })}
+    </Popout>
+  );
+}
+
+function PackMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
   const [confirmDrop, setConfirmDrop] = useState(false);
   const [useStep, setUseStep] = useState<UseStep | null>(null);
   const others = hikersOnTile(state, hiker.tileId).filter(
@@ -91,6 +169,8 @@ export function StashMenu({ state, hiker, pick, onDispatch, onClose }: StashMenu
         {name.toUpperCase()}
         {resource && count > 1 && <span className={styles.count}>×{count}</span>}
       </span>
+
+      {item && !out && <PutOn state={state} hiker={hiker} itemUid={item.uid} onPutOn={act} />}
 
       {item && hiker.inventory.bag.length > bagSlots(state, hiker).total && (
         <span className={styles.over}>
@@ -309,4 +389,36 @@ function onlyCondition(h: Hiker, use: { pickCondition?: true }): string | undefi
   if (!use.pickCondition) return undefined;
   const conds = negativeConditions(h);
   return conds.length === 1 ? conds[0]?.id : undefined;
+}
+
+/** Clothes in the bag: put them on (swapping out whatever is in that slot). */
+function PutOn({
+  state,
+  hiker,
+  itemUid,
+  onPutOn,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  itemUid: string;
+  onPutOn(action: Action): void;
+}) {
+  const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
+  const def = item && ITEMS[item.itemId];
+  if (def?.type !== 'clothes' || !def.slot) return null;
+  const old = hiker.inventory.equipped[def.slot];
+  const action: Action = { type: 'putOn', hikerId: hiker.id, itemUid };
+  const reason = validateAction(state, action);
+  return (
+    <button
+      type="button"
+      className={styles.option}
+      disabled={!!reason}
+      title={reason ?? undefined}
+      onClick={() => onPutOn(action)}
+    >
+      <Icon name="shirt" size={16} />
+      {old ? `Put on (for the ${ITEMS[old.itemId]?.name ?? 'old one'})` : 'Put on'}
+    </button>
+  );
 }

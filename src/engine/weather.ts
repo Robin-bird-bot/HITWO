@@ -13,7 +13,7 @@
  * Effects are kinds named in src/content/weather.ts; nothing here names a weather.
  */
 import { BALANCE } from '../config/balance';
-import { ITEMS } from '../content';
+import { loseDurability, wornClothes } from './items/wear';
 import { WEATHERS, type HikerEffectKind, type NodeEffectKind } from '../content/weather';
 import { addCondition, addStacks, endWeatherConditions } from './conditions';
 import { clothesWorn } from './effects';
@@ -217,10 +217,9 @@ function hikerEffect(state: GameState, kind: HikerEffectKind, cause: string, h: 
       if (clothes === 0 && !isSheltered(state, h)) {
         addCondition(state, h, 'wet', W.drizzleWetDays, 'days', cause);
       }
-      // TODO(phase 8): durability arrives with items; the wear is kept on the item until then.
-      for (const item of Object.values(h.inventory.equipped)) {
-        if (!item || ITEMS[item.itemId]?.type !== 'clothes') continue;
-        if (roll(state.rng, W.drizzleWear)) item.wear = (item.wear ?? 0) + 1;
+      // Each clothing item has a chance to lose 1 durability.
+      for (const item of wornClothes(h)) {
+        if (roll(state.rng, W.drizzleWear)) loseDurability(state, h, item, 1, cause);
       }
       return;
     }

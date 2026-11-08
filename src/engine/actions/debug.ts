@@ -1,4 +1,4 @@
-import { makeItem } from '../items/make';
+import { fullCounters, makeItem, qualityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
@@ -14,7 +14,7 @@ import { enterTile } from './common';
 import { passOut, wakeUp } from '../health';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
-import type { DebugOp, GameState, NodeType } from '../types';
+import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
 export function applyDebug(state: GameState, op: DebugOp): void {
@@ -225,8 +225,25 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       const item = ITEMS[op.itemId];
       if (!hiker || !item) return;
-      hiker.inventory.bag.push(makeItem(state, item.id, { prefix: 'debug', quality: 3 }));
+      hiker.inventory.bag.push(
+        makeItem(state, item.id, {
+          prefix: 'debug',
+          ...(op.quality ? { quality: op.quality } : {}),
+        }),
+      );
       pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} ${item.name}` });
+      break;
+    }
+    case 'refillItems': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const refill = (i: ItemInstance) => {
+        const def = ITEMS[i.itemId];
+        if (def) Object.assign(i, fullCounters(def, qualityOf(i)));
+      };
+      hiker.inventory.bag.forEach(refill);
+      for (const i of Object.values(hiker.inventory.equipped)) if (i) refill(i);
+      pushEvent(state, { kind: 'debug', note: `Refilled ${hiker.name}’s items` });
       break;
     }
     case 'setCountdown': {

@@ -137,11 +137,12 @@ describe('the effect engine', () => {
     }
   });
 
-  it('records effects that wait for later phases on the items', () => {
+  it('takes uses off tools (gone at 0), and records food’s lost Appetite for eating', () => {
     const s = setup();
     hiker(s, 'ash').inventory.bag = [
       { uid: 'f', itemId: 'energyDrink' },
-      { uid: 't', itemId: 'phone' },
+      { uid: 't', itemId: 'scanner', quality: 3, usesLeft: 3 },
+      { uid: 'u', itemId: 'binoculars', quality: 3, usesLeft: 2 },
     ];
     run(s, [
       { op: 'foodAppetite', delta: -1 },
@@ -149,8 +150,9 @@ describe('the effect engine', () => {
     ]);
     expect(hiker(s, 'ash').inventory.bag).toEqual([
       { uid: 'f', itemId: 'energyDrink', appetiteMod: -1 },
-      { uid: 't', itemId: 'phone', usesLost: 2 },
+      { uid: 't', itemId: 'scanner', quality: 3, usesLeft: 1 },
     ]);
+    expect(s.log.some((e) => e.kind === 'itemGone' && e.itemId === 'binoculars')).toBe(true);
   });
 
   it('gives rewards: an item to someone with room, caps to the purse', () => {

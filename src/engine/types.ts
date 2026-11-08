@@ -210,10 +210,6 @@ export interface ItemInstance {
   durability?: number;
   /** Food: gives this much more (or less) Appetite. TODO(phase 8): used when eating arrives. */
   appetiteMod?: number;
-  /** Tools: uses lost to challenges. TODO(phase 8): taken off its uses when tools arrive. */
-  usesLost?: number;
-  /** Clothes: durability lost to weather and night events. TODO(phase 8): taken off its durability. */
-  wear?: number;
 }
 
 export interface Inventory {
@@ -533,6 +529,13 @@ export type Action =
   | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
   /** A free action: puts down the hiker being carried. */
   | { type: 'putDown'; carrierId: HikerId }
+  /** A free action: puts on clothes from the bag (swapping out whatever is in that slot). */
+  | { type: 'putOn'; hikerId: HikerId; itemUid: string }
+  /**
+   * A free action: takes clothes off into the bag. For a passed-out wearer,
+   * `toId` is the active hiker on their tile who takes them.
+   */
+  | { type: 'takeOff'; hikerId: HikerId; slot: EquipSlot; toId?: HikerId }
   /** A free action: uses a bag item on a hiker on the same tile (the medical items). */
   | { type: 'useItem'; hikerId: HikerId; itemUid: string; targetId: HikerId; conditionId?: string }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
@@ -607,8 +610,10 @@ export type DebugOp =
   | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
   /** Runs tonight's night event now, as if it were camp. */
   | { kind: 'runNight' }
-  /** Puts any item in a hiker's bag, even past the limit. */
-  | { kind: 'giveItem'; hikerId: HikerId; itemId: ItemId }
+  /** Puts any item in a hiker's bag, even past the limit, at a Quality (or rolled). */
+  | { kind: 'giveItem'; hikerId: HikerId; itemId: ItemId; quality?: 1 | 2 | 3 | 4 | 5 }
+  /** Fills every item a hiker has back up: uses, bites and durability. */
+  | { kind: 'refillItems'; hikerId: HikerId }
   /** Sets a passed-out hiker's countdown (nights before they abandon if left alone). */
   | { kind: 'setCountdown'; hikerId: HikerId; nights: number };
 
@@ -634,6 +639,16 @@ export type GameEventBody =
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
   /** The 3rd injury: the hiker passed out, with this many nights before they abandon if left alone. */
   | { kind: 'passedOut'; hikerId: HikerId; countdown: number }
+  /** An item is gone: clothes worn out, a tool used up, food eaten. */
+  | {
+      kind: 'itemGone';
+      hikerId: HikerId;
+      itemId: ItemId;
+      why: 'worn' | 'used' | 'eaten';
+      cause: string;
+    }
+  /** A hiker put clothes on or took them off (`by`: someone took them off a passed-out hiker). */
+  | { kind: 'dressed'; hikerId: HikerId; itemId: ItemId; on: boolean; by?: HikerId }
   /** A hiker used an item on someone on their tile (or themselves); it's used up. */
   | { kind: 'used'; hikerId: HikerId; targetId: HikerId; itemId: ItemId }
   /**

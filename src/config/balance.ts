@@ -99,6 +99,12 @@ export const BALANCE = {
      * each (Luck +2: 5/15/40/25/15).
      */
     quality: { odds: [10, 20, 40, 20, 10] as readonly number[], luckStep: 5 },
+    /** A found item is one tier above the biome's this often (Wyatt, Nov 7). */
+    findHigher: 0.1,
+    /** The highest tier a find can be: Tier 4 waits on Tier 4 items (Wyatt, Nov 7). */
+    maxFoundTier: 3,
+    /** Equipped clothes lose this much durability at each camp step. */
+    campWear: 1,
     /** Clothing durability in days, by tier, at Quality 1–5. */
     durability: {
       1: [4, 5, 5, 5, 6],

@@ -11,6 +11,7 @@
  *   hiker or item (TODO(phase N) notes say where).
  */
 import { makeItem } from '../items/make';
+import { loseDurability, loseUses } from '../items/wear';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
@@ -341,11 +342,10 @@ function applyToHiker(
       return;
     }
     case 'wearClothes': {
-      // TODO(phase 8): durability arrives with items; the wear is kept on the item until then.
       const worn = equippedClothes(h);
       const hit = e.which === 'all' ? worn : worn.length ? [pick(state.rng, worn)] : [];
       const n = amount(e.amount, ctx);
-      for (const item of hit) item.wear = (item.wear ?? 0) + n;
+      for (const item of hit) loseDurability(state, h, item, n, cause);
       result.touched.items.push(...hit.map((i) => i.itemId));
       return;
     }
@@ -415,11 +415,9 @@ function applyToHiker(
       return;
     }
     case 'toolUses': {
-      // TODO(phase 8): tools take usesLost off their uses.
+      // Tools at 0 uses are gone.
       const n = amount(e.delta, ctx);
-      for (const item of h.inventory.bag) {
-        if (ITEMS[item.itemId]?.type === 'tool') item.usesLost = (item.usesLost ?? 0) + n;
-      }
+      for (const item of [...h.inventory.bag]) loseUses(state, h, item, n, cause);
       return;
     }
     case 'loseClothes':

@@ -312,6 +312,26 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'itemGone': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const text = {
+          worn: `${name(e.hikerId)}’s ${item} wore out (${e.cause}).`,
+          used: `${name(e.hikerId)} used up the ${item}${e.cause ? ` (${e.cause})` : ''}.`,
+          eaten: `${name(e.hikerId)} finished the ${item}.`,
+        }[e.why];
+        lines.push({ id: e.id, text, tone: 'drain' });
+        break;
+      }
+      case 'dressed': {
+        const item = ITEMS[e.itemId]?.name ?? 'clothes';
+        const text = e.by
+          ? `${name(e.by)} took the ${item} off ${name(e.hikerId)}.`
+          : e.on
+            ? `${name(e.hikerId)} put on the ${item}.`
+            : `${name(e.hikerId)} took off the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'scavenge' });
+        break;
+      }
       case 'used': {
         const item = ITEMS[e.itemId]?.name ?? 'an item';
         const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;

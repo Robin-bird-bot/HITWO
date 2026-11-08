@@ -721,6 +721,8 @@ function PassOutTools({ state, onApply }: { state: GameState; onApply(action: Ac
 function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
   const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
   const [itemId, setItemId] = useState('bandages');
+  // 0 rolls the plain curve.
+  const [quality, setQuality] = useState(0);
   const items = Object.values(ITEMS).sort(
     (a, b) => Number(!a.use) - Number(!b.use) || a.name.localeCompare(b.name),
   );
@@ -746,17 +748,47 @@ function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Actio
       >
         {items.map((i) => (
           <option key={i.id} value={i.id}>
-            {i.name}
+            {i.name} · Tier {i.tier}
             {i.use ? ' (usable)' : ''}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.button}
+        value={quality}
+        onChange={(e) => setQuality(Number(e.target.value))}
+        aria-label="Quality"
+      >
+        <option value={0}>Rolled</option>
+        {[1, 2, 3, 4, 5].map((q) => (
+          <option key={q} value={q}>
+            Quality {q}
           </option>
         ))}
       </select>
       <button
         type="button"
         className={styles.button}
-        onClick={() => onApply({ type: 'debug', op: { kind: 'giveItem', hikerId, itemId } })}
+        onClick={() =>
+          onApply({
+            type: 'debug',
+            op: {
+              kind: 'giveItem',
+              hikerId,
+              itemId,
+              ...(quality ? { quality: quality as 1 | 2 | 3 | 4 | 5 } : {}),
+            },
+          })
+        }
       >
         Give item
+      </button>
+      <button
+        type="button"
+        className={styles.button}
+        onClick={() => onApply({ type: 'debug', op: { kind: 'refillItems', hikerId } })}
+      >
+        Refill their items
       </button>
     </div>
   );

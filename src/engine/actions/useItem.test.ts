@@ -33,7 +33,7 @@ describe('Bandages', () => {
     expect(hiker(s, 'birch')).toMatchObject({ status: 'active', injuries: 2 });
     expect(hiker(s, 'ash').inventory.bag).toEqual([]);
     expect(hiker(s, 'ash').acted).toBe(false); // a free action
-    expect(s.log.slice(-3).map((e) => e.kind)).toEqual(['used', 'healed', 'woke']);
+    expect(s.log.slice(-4).map((e) => e.kind)).toEqual(['used', 'healed', 'woke', 'itemGone']);
   });
 
   it('cure Bleeding, so it never turns into an injury', () => {

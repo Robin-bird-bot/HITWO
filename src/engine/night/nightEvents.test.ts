@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { ITEMS } from '../../content';
 import { NIGHT_CREATURES, NIGHT_OUTCOMES, type NightOutcome } from '../../content/nightEvents';
+import { fullDurability } from '../items/make';
 import { validateAction } from '../applyAction';
 import { addCondition, hasCondition } from '../conditions';
 import { deserialize, serialize } from '../save';
@@ -367,7 +369,7 @@ describe('the new effects', () => {
     expect(hit.chip).toMatch(/^\d resources? swapped$/);
   });
 
-  it('wear on clothes is recorded on the item until Phase 8', () => {
+  it('wear on clothes takes durability off the item', () => {
     const { s, hit } = findHit(
       (seed) => {
         const s = run(night(seed), { type: 'debug', op: { kind: 'wearClothes', hikerId: 'ash' } });
@@ -377,8 +379,9 @@ describe('the new effects', () => {
       { creatureId: 'bats', hit: 'ash' },
       'wearOne',
     );
-    const worn = Object.values(hiker(s, 'ash').inventory.equipped).find((i) => i?.wear);
-    expect(worn?.wear).toBe(1);
+    const worn = Object.values(hiker(s, 'ash').inventory.equipped)[0];
+    const def = ITEMS[worn?.itemId ?? ''];
+    expect(worn?.durability).toBe(fullDurability(def!, 3) - 1);
     expect(hit.chip).toBe('−1 durability');
   });
 

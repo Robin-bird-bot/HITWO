@@ -53,10 +53,17 @@ const renamed = (id: unknown) => (isString(id) ? (RENAMED_ITEMS[id] ?? id) : id)
 
 function upgradeItem(item: unknown): unknown {
   if (!isRecord(item) || !isString(item.itemId)) return item;
-  return withDefaults({
-    ...(item as unknown as ItemInstance),
+  // Wear and lost uses were recorded on items until they had durability and uses.
+  const { wear, usesLost, ...rest } = item;
+  const out = withDefaults({
+    ...(rest as unknown as ItemInstance),
     itemId: String(renamed(item.itemId)),
   });
+  if (isNumber(wear) && out.durability !== undefined)
+    out.durability = Math.max(1, out.durability - wear);
+  if (isNumber(usesLost) && out.usesLeft !== undefined)
+    out.usesLeft = Math.max(1, out.usesLeft - usesLost);
+  return out;
 }
 
 /** Ids shown in the trail log and on an open scavenge deal, renamed. */
