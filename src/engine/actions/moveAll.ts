@@ -1,7 +1,7 @@
 import { revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveAllCost } from '../costs';
-import { canActReason, fireMove } from '../effects';
+import { canActReason, effectSourcesFor, fireMove, queryContext } from '../effects';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
@@ -64,9 +64,18 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   const from = mover.tileId;
   const firstHere = !state.section.tiles[action.toTileId]?.visited;
   const group = [mover, ...action.bring.map((id) => mustFindHiker(state, id))];
+  // Lifted Boots: bringing exactly 1 hiker leaves them their action.
+  const ctx = queryContext(state, mover);
+  const keep = effectSourcesFor(state, mover).find((s) =>
+    s.hooks.broughtKeepAction?.(action.bring.length, ctx),
+  );
   for (const h of group) {
     h.cameFrom = from;
     h.tileId = action.toTileId;
+    if (h !== mover && keep) {
+      pushEvent(state, { kind: 'freeAction', hikerId: h.id, cause: keep.name });
+      continue;
+    }
     spendAction(state, h);
   }
   // Whoever they carry comes along.
@@ -95,6 +104,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
       to: action.toTileId,
       role: h === mover ? 'actor' : 'brought',
       line,
+      via: 'moveAll',
     });
   }
   const arrived = [...group.map((h) => h.id), ...carried];

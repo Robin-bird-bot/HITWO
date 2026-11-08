@@ -12,7 +12,7 @@ import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { runNightEvent } from '../night/nightEvents';
 import { enterTile } from './common';
 import { passOut, wakeUp } from '../health';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 
@@ -33,7 +33,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'giveResources': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       if (!hiker) return;
-      let room = BALANCE.inventory.resourceLimit - resourceCount(hiker);
+      let room = resourceLimit(state, hiker) - resourceCount(hiker);
       for (const [id, n] of Object.entries(op.resources)) {
         const add = Math.min(room, Math.max(0, n ?? 0));
         if (add <= 0) continue;

@@ -5,7 +5,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { computeCost, scavengeModifiers } from '../effects';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import type {
   GameState,
   Hiker,
@@ -34,6 +34,8 @@ export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   dropChance: number;
   /** Extra cards the hiker can keep from this deal (a Sack). */
   keeps: number;
+  /** Cards the hiker can reroll in this scavenge (Glasses). */
+  rerolls: number;
 }
 
 export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
@@ -50,9 +52,11 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   const extraCards: { type: ScavengeCardType; node: NodeType }[] = [];
   let dropChance = 0;
   let keeps = 0;
+  let rerolls = 0;
   for (const m of mods) {
     dropChance = Math.max(dropChance, m.dropChance ?? 0);
     keeps += m.keep ?? 0;
+    rerolls += m.rerolls ?? 0;
     for (const [k, v] of Object.entries(m.resourceWeight ?? {}) as [ResourceId, number][]) {
       resourceWeight[k] = (resourceWeight[k] ?? 1) * v;
     }
@@ -129,6 +133,7 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     resourceWeight,
     extraCards: extraCards.filter((c) => canGive.has(c.node)),
     keeps,
+    rerolls,
     luck: clampLuck(luck),
     count: Math.max(1, cards),
     nodeWeight,
@@ -168,8 +173,8 @@ export function scavengeTileReason(state: GameState, hiker: Hiker): string | und
       ? 'Nothing to find here: the weather has frozen or burned the nodes.'
       : 'Nothing left to find here. Tend it or move on.';
   }
-  if (resourceCount(hiker) >= BALANCE.inventory.resourceLimit) {
-    return `${hiker.name}’s resources are full (${BALANCE.inventory.resourceLimit}/${BALANCE.inventory.resourceLimit}). Give some away or return them to nature first.`;
+  if (resourceCount(hiker) >= resourceLimit(state, hiker)) {
+    return `${hiker.name}’s resources are full (${resourceLimit(state, hiker)}/${resourceLimit(state, hiker)}). Give some away or return them to nature first.`;
   }
   return undefined;
 }

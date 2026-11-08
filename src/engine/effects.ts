@@ -16,7 +16,9 @@ import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
 import { thresholdSources } from './thresholds';
+import { resourceLimit } from './inventory';
 import { boostSources } from './items/boosts';
+import { loseDurability, removeItem } from './items/wear';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -67,7 +69,9 @@ export type GainKey =
   /** Appetite from a bite of food (Food Poisoning takes 2 off it). */
   | 'eat.appetite'
   /** Abundance restored by Tend (the Thumbs and Maintenance add to it). */
-  | 'tend.abundance';
+  | 'tend.abundance'
+  /** Caps the party gains, each time (Fancy Attire: +1). */
+  | 'caps';
 
 /** Whether a hiker is acting themselves or being brought along by someone's Move All. */
 export type Role = 'actor' | 'brought';
@@ -81,13 +85,24 @@ export interface AmountQuery<K extends string> {
   role: Role;
   phase: Phase;
   line?: Line;
+  /** Moves: the Move action or Move All. */
+  via?: 'move' | 'moveAll';
+  /** Moves: where from and to (Roller Skates: sideways or backward). */
+  fromTileId?: TileId;
+  toTileId?: TileId;
+  /**
+   * Moves (move.appetite, move.energy, move.morale): what the base amount is
+   * made of, the line's base cost, its extra (Steep, Muddy, Rough) and the
+   * night extra (Light-Up Skechers, Trooper Mask).
+   */
+  parts?: { base: number; line: number; night: number };
 }
 
 export type CostQuery = AmountQuery<CostKey>;
 export type GainQuery = AmountQuery<GainKey>;
 
 /** How much a hiker can hold. Flat modifiers only. */
-export type CapacityKey = 'bag.slots';
+export type CapacityKey = 'bag.slots' | 'resources';
 
 export interface CapacityQuery {
   key: CapacityKey;
@@ -127,6 +142,8 @@ export interface ScavengeModifier {
   dropChance?: number;
   /** Extra cards the hiker can keep from this deal (a Sack). */
   keep?: number;
+  /** Cards the hiker can reroll in this scavenge (Glasses). */
+  rerolls?: number;
   /** Multipliers on how likely each resource is, on cards of one resource (Swiss Army Knife). */
   resourceWeight?: Partial<Record<ResourceId, number>>;
   /** Cards added to the deal (a Supply Map's Choice card for a node). */
@@ -169,6 +186,10 @@ export interface EffectContext extends QueryContext {
   ): void;
   /** Adds (or, with a negative n, takes away) stacks of a stacking condition. */
   addStacks(hiker: Hiker, id: string, n: number, cause: string): void;
+  /** A hiker's item loses durability (worn out at 0). */
+  wearItem(hiker: Hiker, uid: string, n: number, cause: string): void;
+  /** A hiker's item breaks: gone at once (the Hardhat). */
+  breakItem(hiker: Hiker, uid: string, cause: string): void;
   /**
    * Adds to a running count for this hiker that resets each phase or day, and
    * returns the new total (Thrill Seeker's Energy lost this phase).
@@ -188,6 +209,8 @@ export interface MoveHookEvent {
   to: TileId;
   role: Role;
   line: Line;
+  /** The Move action, or Move All. */
+  via: 'move' | 'moveAll';
 }
 
 /** A stat change about to happen, for sources that change it (Strained, Refreshed, Inspired). */
@@ -247,6 +270,18 @@ export interface Hooks {
   tradeAnywhere?(ctx: QueryContext): boolean;
   /** Can't be hit by night events (Bear Spray). */
   nightSafe?(ctx: QueryContext): boolean;
+  /** Hikers on this one's tile are this many percent less likely to be hit at night (Disco Harness). */
+  nightShield?(ctx: QueryContext): number;
+  /** At the start of every phase, after the last one ended (Dog Socks, Sleepy Socks). */
+  onPhaseStart?(e: { phase: Phase }, ctx: EffectContext): void;
+  /** The hiker took a scavenge card (the first, with a Sack) (Jeans, Pajamas). */
+  onScavenge?(e: { tileId: TileId }, ctx: EffectContext): void;
+  /** Someone on this hiker's tile (them included) ate a bite (Soup Socks). */
+  onTileEat?(e: { eaterId: HikerId; itemId: ItemId }, ctx: EffectContext): void;
+  /** Moving costs Energy instead of Appetite when Appetite is lower (Trail Shoes). */
+  moveWithEnergy?(ctx: QueryContext): boolean;
+  /** Move All with this many others: they keep their action (Lifted Boots). */
+  broughtKeepAction?(count: number, ctx: QueryContext): boolean;
 }
 
 export type EventHookName = 'onStartOfDay' | 'onEndOfDay' | 'onSleep';
@@ -373,8 +408,29 @@ export interface ItemDef {
   art?: string | null;
   /** Equipped items plug into hooks, like traits. */
   hooks?: Hooks;
-  /** Hooks that read the item's own values at its Quality (`v('items')` for a Backpack). */
-  hooksAt?: (v: (key: string) => number) => Hooks;
+  /**
+   * Hooks that read the item's own values at its Quality (`v('items')` for a
+   * Backpack) and know the item itself (Jeans wear themselves out).
+   */
+  hooksAt?: (v: (key: string) => number, item: ItemInstance) => Hooks;
+  /** Clothes: the hiker's other clothes' durability losses come off this instead (Umbrella). */
+  takesWear?: true;
+  /**
+   * Clothes: a chance (a value at its Quality) not to lose durability; with
+   * `onNode`, only on a tile with the node it was made with (Birkenstocks).
+   */
+  wearSave?: { value: string; onNode?: true };
+  /** Made with a random node, shown on the card (Birkenstocks). */
+  madeWithNode?: true;
+  /**
+   * Shoes: a move that doesn't use the hiker's action. `eachPhase` is the
+   * first move each phase (Jogging Shoes); the others come after passing a
+   * challenge (Hiking Crocs) or crafting (Work Boots), once a day, cost 1 less
+   * Appetite and take 1 more durability.
+   */
+  freeMove?: 'eachPhase' | 'afterChallenge' | 'afterCraft';
+  /** Body: turns a failed challenge into a pass, for this much durability (a value) (Harness). */
+  harness?: string;
   /** Always this Quality (Puked Nuggets: always 1). */
   fixedQuality?: 1 | 2 | 3 | 4 | 5;
   /** Can be used from the bag, as a free action, on a hiker on the same tile. */
@@ -471,6 +527,8 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
       hooks: family.hooks,
     });
   }
+  // Boosts before worn items, so a free block (a Star) comes before one that costs (Puffer Jacket).
+  sources.push(...boostSources(state, hiker));
   for (const item of Object.values(hiker.inventory.equipped)) {
     const def = item && ITEMS[item.itemId];
     if (!item || !def) continue;
@@ -482,7 +540,6 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
       hooks: itemHooks(def, item),
     });
   }
-  sources.push(...boostSources(state, hiker));
   for (const c of hiker.conditions) {
     const def = CONDITIONS[c.id];
     if (!def?.hooks) continue;
@@ -509,7 +566,15 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
 function itemHooks(def: ItemDef, item: ItemInstance): Hooks {
   if (!def.hooksAt) return def.hooks ?? {};
   const quality = def.fixedQuality ?? item.quality ?? 3;
-  return { ...def.hooks, ...def.hooksAt((key) => valueAt(def.values?.[key], quality)) };
+  return { ...def.hooks, ...def.hooksAt((key) => valueAt(def.values?.[key], quality), item) };
+}
+
+/** An item a hiker wears or carries, by uid. */
+function findCarried(hiker: Hiker, uid: string): ItemInstance | undefined {
+  return (
+    Object.values(hiker.inventory.equipped).find((i) => i?.uid === uid) ??
+    hiker.inventory.bag.find((i) => i.uid === uid)
+  );
 }
 
 // ── Contexts ───────────────────────────────────────────────────────────────
@@ -541,6 +606,22 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
     addCondition: (hiker, id, remaining, unit, cause) =>
       addCondition(state, hiker, id, remaining, unit, cause),
     addStacks: (hiker, id, n, cause) => addStacks(state, hiker, id, n, cause),
+    wearItem: (hiker, uid, n, cause) => {
+      const item = findCarried(hiker, uid);
+      if (item) loseDurability(state, hiker, item, n, cause);
+    },
+    breakItem: (hiker, uid, cause) => {
+      const item = findCarried(hiker, uid);
+      if (!item) return;
+      removeItem(hiker, uid);
+      pushEvent(state, {
+        kind: 'itemGone',
+        hikerId: hiker.id,
+        itemId: item.itemId,
+        why: 'broke',
+        cause,
+      });
+    },
     tally: (hiker, key, add, per) => tally(state, hiker, key, add, per),
     roll: (chance) => roll(state.rng, chance),
     int: (min, max) => int(state.rng, min, max),
@@ -731,6 +812,46 @@ export function fireStatChange(
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onStatChange?.(e, ctx);
 }
 
+/** A new phase has started (Dog Socks, Sleepy Socks). Active hikers only. */
+export function firePhaseStart(state: GameState): void {
+  for (const hiker of state.hikers) {
+    if (hiker.status !== 'active') continue;
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) {
+      source.hooks.onPhaseStart?.({ phase: state.phase }, ctx);
+    }
+  }
+}
+
+/** A hiker took a scavenge card (Jeans and Pajamas wear). */
+export function fireScavenge(state: GameState, hiker: Hiker, tileId: TileId): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onScavenge?.({ tileId }, ctx);
+}
+
+/** Someone ate a bite: every hiker on their tile hears of it (Soup Socks). */
+export function fireTileEat(state: GameState, eater: Hiker, itemId: ItemId): void {
+  for (const hiker of hikersOnTile(state, eater.tileId)) {
+    if (hiker.status !== 'active') continue;
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) {
+      source.hooks.onTileEat?.({ eaterId: eater.id, itemId }, ctx);
+    }
+  }
+}
+
+/** How much less likely a hiker is to be hit tonight, from anyone on their tile (Disco Harness). */
+export function nightShield(state: GameState, hiker: Hiker): number {
+  let best = 0;
+  for (const other of hikersOnTile(state, hiker.tileId)) {
+    const ctx = queryContext(state, other);
+    for (const source of effectSourcesFor(state, other)) {
+      best = Math.max(best, source.hooks.nightShield?.(ctx) ?? 0);
+    }
+  }
+  return Math.min(100, best);
+}
+
 export function firePhaseEnd(state: GameState, hiker: Hiker, phase: Phase): void {
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onPhaseEnd?.({ phase }, ctx);
@@ -787,7 +908,7 @@ export function gainResources(
     (n, c) => n + (c ?? 0),
     0,
   );
-  let room = BALANCE.inventory.resourceLimit - carried;
+  let room = resourceLimit(state, hiker) - carried;
   const got: ResourceId[] = [];
   for (const id of resources) {
     if (room <= 0) break;
@@ -806,4 +927,24 @@ export function gainResources(
       cause,
     });
   }
+}
+
+/**
+ * The party gains caps. Each gain can be bigger (Fancy Attire: +1, from any
+ * hiker on the trail wearing it). Returns how many were gained.
+ */
+export function gainCaps(state: GameState, n: number): number {
+  if (n <= 0) return 0;
+  const party = state.hikers.filter((h) => h.status === 'active' || h.status === 'passedOut');
+  const first = party[0];
+  const total = first
+    ? computeGain(
+        state,
+        party,
+        { key: 'caps', actorId: first.id, subjectId: first.id, role: 'actor', phase: state.phase },
+        n,
+      )
+    : n;
+  state.caps += total;
+  return total;
 }

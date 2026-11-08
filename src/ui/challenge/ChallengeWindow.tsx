@@ -20,12 +20,14 @@ import { ASSETS, cardArt } from '../../config/assets';
 import {
   bagSlots,
   challengeHikers,
+  harnessFor,
   openCardDef,
   pressesLeft,
   revealableFrom,
   validateAction,
   immovable,
   resourceCount,
+  resourceLimit,
   STAT_NAMES,
   type Action,
   type ChallengeDef,
@@ -40,7 +42,6 @@ import {
   type RiskReading,
   type StatName,
 } from '../../engine';
-import { BALANCE } from '../../config/balance';
 import { Icon } from '../icons/Icon';
 import { NODE_IMAGE } from '../map/looks';
 import { STAT_META } from '../panels/hikerInfo';
@@ -72,6 +73,7 @@ import {
   startDraft,
   takeBack,
   toAction,
+  toggleHarness,
   unskip,
   type Draft,
   type SectionStatus,
@@ -535,6 +537,17 @@ function Section({
 
   const tag = penaltyTag(card, open.rolls, hiker);
   const deal = card.kind === 'opportunity';
+  // A Harness here can turn a fail into a pass; each one saves one section.
+  const harness = harnessFor(state, open, s.hikerId);
+  const harnessTaken =
+    !!harness &&
+    !s.harness &&
+    draft.sections.some(
+      (o, i) =>
+        i !== index &&
+        o.harness &&
+        harnessFor(state, open, o.hikerId)?.item.uid === harness.item.uid,
+    );
   const pickCard = isPick(card);
   // A card that moves who it picks can't pick someone who can't be moved.
   const stuck = pickCard && card.moves && hiker ? immovable(hiker) : false;
@@ -559,14 +572,16 @@ function Section({
         : status.decision === 'fail'
           ? { tone: 'fail', text: 'SKIPS IT' }
           : { tone: 'needs', text: `NEEDS ${status.missing} MORE` }
-      : status.decision === 'pay'
-        ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
-        : status.decision === 'fail'
-          ? {
-              tone: 'fail',
-              text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
-            }
-          : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
+      : s.harness && harness
+        ? { tone: 'pass', text: `PASSES · HARNESS −${harness.cost} DURABILITY` }
+        : status.decision === 'pay'
+          ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
+          : status.decision === 'fail'
+            ? {
+                tone: 'fail',
+                text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
+              }
+            : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
 
   return (
     <div className={styles.section} data-decision={status.decision ?? 'open'}>
@@ -614,7 +629,7 @@ function Section({
         <button
           type="button"
           className={styles.check}
-          data-on={status.decision === 'pay'}
+          data-on={status.decision === 'pay' && !s.harness}
           disabled={stuck || (status.decision !== 'pay' && !s.skipped)}
           aria-label={
             pickCard && hiker
@@ -654,6 +669,24 @@ function Section({
         >
           <Icon name="x" size={22} strokeWidth={2.75} />
         </button>
+        {harness && (
+          <button
+            type="button"
+            className={styles.harness}
+            data-on={!!s.harness}
+            disabled={harnessTaken}
+            aria-label={`${harness.hiker.name}’s Harness passes it, for ${harness.cost} durability`}
+            title={
+              harnessTaken
+                ? 'This Harness is already saving another fail'
+                : `Pass with ${harness.hiker.name}’s Harness: −${harness.cost} durability`
+            }
+            onClick={() => onDraft(toggleHarness(draft, index))}
+          >
+            <Icon name="shirt" size={18} strokeWidth={2.25} />
+            HARNESS
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1132,7 +1165,7 @@ function Pack({
 
           <div className={styles.resRow}>
             <span className={styles.resCount}>
-              RES {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit}
+              RES {resourceCount(hiker)}/{resourceLimit(state, hiker)}
             </span>
             {resources.length === 0 && <span className={styles.resNone}>None</span>}
             {resources.map(([id]) => {
@@ -1618,7 +1651,7 @@ function RiskPack({
         <Face hikerId={hiker.id} size={30} />
         <span className={styles.packName}>{hiker.name.toUpperCase()}</span>
         <span className={styles.packCount}>
-          RES {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit} · BAG{' '}
+          RES {resourceCount(hiker)}/{resourceLimit(state, hiker)} · BAG{' '}
           {hiker.inventory.bag.length}
         </span>
       </div>

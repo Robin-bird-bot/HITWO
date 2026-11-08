@@ -1,7 +1,8 @@
 import { revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveCost } from '../costs';
-import { fireMove } from '../effects';
+import { canActReason, fireMove } from '../effects';
+import { freeMoveFor, spendFreeMove } from '../items/freeMoves';
 import { pushEvent } from '../log';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
@@ -21,7 +22,11 @@ type MoveAction = Extract<Action, { type: 'move' }>;
 
 export function validateMove(state: GameState, action: MoveAction): string | undefined {
   const hiker = findHiker(state, action.hikerId);
-  const reason = phaseActionReason(state, hiker, action);
+  // Shoes can give a move that doesn't use the action (Jogging Shoes, Hiking Crocs).
+  const free = hiker?.status === 'active' && hiker.acted && freeMoveFor(state, hiker);
+  const reason = free
+    ? canActReason(state, hiker, { action, role: 'actor', phase: state.phase })
+    : phaseActionReason(state, hiker, action);
   if (reason || !hiker) return reason;
   if (!state.section.tiles[action.toTileId]) return 'That tile isn’t on the map.';
   if (!lineBetween(state.section, hiker.tileId, action.toTileId)) {
@@ -46,7 +51,9 @@ export function applyMove(state: GameState, action: MoveAction): void {
   hiker.tileId = action.toTileId;
   // Whoever they carry comes along.
   const carried = bringCarried(state, [hiker], from).map((c) => c.id);
-  spendAction(state, hiker);
+  const free = freeMoveFor(state, hiker);
+  if (free) spendFreeMove(state, hiker, free);
+  else spendAction(state, hiker);
   const revealed = enterTile(state, hiker.tileId);
   pushEvent(state, {
     kind: 'move',
@@ -58,7 +65,7 @@ export function applyMove(state: GameState, action: MoveAction): void {
     ...(revealed.length ? { revealed } : {}),
   });
   payCost(state, hiker, cost, 'Move');
-  fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line });
+  fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line, via: 'move' });
   noteArrival(state, [hiker.id, ...carried], hiker.tileId);
   // The first hiker to land on a tile triggers its card.
   if (firstHere) revealTile(state, hiker.tileId, [hiker.id, ...carried]);

@@ -9,7 +9,7 @@ import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { tradesAnywhere } from '../effects';
-import { bagSlots, resourceCount } from '../inventory';
+import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import type { Action, GameState } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
@@ -33,8 +33,7 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   if (action.resource) {
     if ((from.inventory.resources[action.resource] ?? 0) < 1)
       return `${from.name} doesn’t have that.`;
-    if (resourceCount(to) >= BALANCE.inventory.resourceLimit)
-      return `${to.name}’s resources are full.`;
+    if (resourceCount(to) >= resourceLimit(state, to)) return `${to.name}’s resources are full.`;
   }
   if (action.itemUid) {
     if (!from.inventory.bag.some((i) => i.uid === action.itemUid))

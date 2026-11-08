@@ -41,7 +41,7 @@ import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { hikersOnTile, isSheltered } from '../map';
 import { nextFloat, pick, roll } from '../rng';
-import { nightSafeItem } from '../effects';
+import { nightSafeItem, nightShield } from '../effects';
 import type {
   CardRolls,
   GameEvent,
@@ -81,6 +81,8 @@ export function hitChance(state: GameState, h: Hiker): number {
     .sort((a, b) => a.atMost - b.atMost)
     .find((m) => h.stats.morale <= m.atMost);
   if (low) p += low.add;
+  // A Disco Harness on the tile makes everyone there less likely to be hit.
+  p *= 1 - nightShield(state, h) / 100;
   return Math.min(1, p);
 }
 

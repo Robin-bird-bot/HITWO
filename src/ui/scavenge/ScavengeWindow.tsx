@@ -19,7 +19,7 @@ import {
   bonusTaken,
   cardGains,
   pickOptions,
-  rerollAbility,
+  rerollsLeft,
   scavengeCost,
   validateAction,
   type Action,
@@ -60,7 +60,7 @@ interface ScavengeWindowProps {
   took: TookCard | null;
   onFlip(cards: number[]): void;
   onCancel(): void;
-  /** Gambler: reroll one flipped card. */
+  /** Glasses or Gambler: reroll one flipped card. */
   onReroll(card: number): void;
   onTake(action: TakeAction): void;
   onClose(): void;
@@ -97,7 +97,7 @@ export function ScavengeWindow({
   const paidCount = offers.filter((o) => o.appetiteEach > 0).reduce((n, o) => n + o.count, 0);
   const hasResources = !!card && cardGains(card, picks, item ?? undefined).resources.length > 0;
   const bonus = bonusTaken(offers, paidBonus ? paidCount : 0, hasResources);
-  const reroll = rerollAbility(state);
+  const reroll = rerollsLeft(state);
   const take: TakeAction | null =
     open && selected !== null
       ? {
@@ -288,11 +288,11 @@ export function ScavengeWindow({
                 <button
                   type="button"
                   className={styles.secondary}
-                  disabled={!card?.flipped || reroll.usesLeft <= 0}
+                  disabled={!card?.flipped || reroll.left <= 0}
                   onClick={() => selected !== null && onReroll(selected)}
-                  title={`${reroll.ability.label}: reroll the picked card`}
+                  title={`${reroll.label}: reroll the picked card`}
                 >
-                  <Icon name="dice" size={16} /> Reroll · {reroll.usesLeft}
+                  <Icon name="dice" size={16} /> Reroll · {reroll.left}
                 </button>
               )}
               {canCancel && (

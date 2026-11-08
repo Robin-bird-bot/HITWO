@@ -318,6 +318,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           worn: `${name(e.hikerId)}’s ${item} wore out (${e.cause}).`,
           used: `${name(e.hikerId)} used up the ${item}${e.cause ? ` (${e.cause})` : ''}.`,
           eaten: `${name(e.hikerId)} finished the ${item}.`,
+          broke: `${name(e.hikerId)}’s ${item} broke (${e.cause}).`,
         }[e.why];
         lines.push({ id: e.id, text, tone: 'drain' });
         break;
@@ -417,6 +418,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           if (deal) return r.passed ? `${who} took the deal` : `${who} skipped it`;
           if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
           const reward = r.reward ? `, and won ${REWARD_WORDS[r.reward]}` : '';
+          if (r.harness) return `${who} passed with the Harness${reward}`;
           return `${paid === 'nothing' ? `${who} passed` : `${who} paid ${paid}`}${reward}`;
         });
         lines.push({

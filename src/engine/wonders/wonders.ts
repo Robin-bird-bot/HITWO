@@ -20,6 +20,7 @@ import { changeAbundance } from '../abundance';
 import { revealCardOn } from '../challenges/reveal';
 import { addCondition, removeCondition } from '../conditions';
 import { bagSlots, resourceCount } from '../inventory';
+import { gainCaps } from '../effects';
 import { pushEvent } from '../log';
 import { hikersOnTile } from '../map';
 import { pick, shuffle } from '../rng';
@@ -410,8 +411,7 @@ function giveReward(
       h.xp += BALANCE.wonders.lotOfXp;
       return;
     case 'caps': {
-      const n = BALANCE.wonders.lotOfCaps;
-      state.caps += n;
+      const n = gainCaps(state, BALANCE.wonders.lotOfCaps);
       pushEvent(state, { kind: 'gained', resources: [], items: [], caps: n, cause });
       return;
     }

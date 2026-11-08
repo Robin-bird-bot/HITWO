@@ -10,8 +10,8 @@
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import type { ItemDef } from '../effects';
-import { weightedPick } from '../rng';
-import type { GameState, ItemId, ItemInstance, RngState } from '../types';
+import { pick, weightedPick } from '../rng';
+import type { GameState, ItemId, ItemInstance, NodeType, RngState } from '../types';
 import { hasQuality, valueAt, type Quality } from './quality';
 
 /** The Quality odds (1 to 5) for a crafter with this much Luck. */
@@ -98,5 +98,9 @@ export function makeItem(
   if (!def || !hasQuality(def))
     return { uid, itemId, ...(def ? fullCounters(def, undefined) : {}) };
   const q = def.fixedQuality ?? quality ?? rollQuality(state.rng, luck);
-  return { uid, itemId, quality: q, ...fullCounters(def, q) };
+  // TODO(phase 8): a crafter picks the node (step 7); found ones get a random one.
+  const node = def.madeWithNode ? { node: pick(state.rng, NODES) } : {};
+  return { uid, itemId, quality: q, ...fullCounters(def, q), ...node };
 }
+
+const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];

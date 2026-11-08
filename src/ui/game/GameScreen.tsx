@@ -231,7 +231,9 @@ export function GameScreen({
       action.type === 'keepWatch' ||
       action.type === 'tend' ||
       action.type === 'scavengeTake';
-    if (usedPhase && actorId) {
+    // A free move (Jogging Shoes, Motivated…) leaves the hiker their action: stay on them.
+    const actedNow = gameStore.getState()?.hikers.find((h) => h.id === actorId)?.acted;
+    if (usedPhase && actorId && actedNow) {
       const next = nextReadyHiker(gameStore.getState() ?? state, actorId);
       if (next) setSelectedId(next.id);
       else setNote('Everyone has acted. End the phase when you’re ready.');

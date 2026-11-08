@@ -117,7 +117,7 @@ export function SimpleTurn({
           <TileCard state={state} hiker={hiker} />
           <Equipped hiker={hiker} compact {...(onPick ? { onPick } : {})} />
           <Bag state={state} hiker={hiker} compact onPick={onPick} />
-          <Resources hiker={hiker} compact onPick={onPick} />
+          <Resources state={state} hiker={hiker} compact onPick={onPick} />
         </div>
       </Panel>
       <div className={styles.end}>

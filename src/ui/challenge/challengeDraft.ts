@@ -52,6 +52,8 @@ export interface SectionDraft {
   gifts: Gift[];
   /** ✗ was pressed: take the penalty. */
   skipped?: true;
+  /** A Harness turns this fail into a pass (for its durability). */
+  harness?: true;
 }
 
 /** The selected space: section, option and requirement. */
@@ -402,6 +404,16 @@ function stripUndefined(s: SectionDraft): SectionDraft {
   return out;
 }
 
+/** The Harness button: pass with the Harness instead (again: back to choosing). */
+export function toggleHarness(draft: Draft, section: number): Draft {
+  const sections = draft.sections.map((s, i) => {
+    if (i !== section) return s;
+    const who = s.hikerId ? { hikerId: s.hikerId } : {};
+    return s.harness ? { ...who, gifts: [] } : { ...who, gifts: [], harness: true as const };
+  });
+  return { ...draft, sections };
+}
+
 /** ✗: take the penalty. Whatever was handed in goes back. */
 export function skip(draft: Draft, section: number): Draft {
   const sections = draft.sections.map((s, i) =>
@@ -547,6 +559,8 @@ export function sectionStatus(
   if (card.risk || card.spendAny || card.buttons) {
     return { decision: 'pay', impossible: false, missing: 0 };
   }
+  // A Harness passes it.
+  if (s.harness) return { decision: 'pay', impossible: false, missing: 0 };
   // Select and One cards: ✗ means sitting out.
   if (isPick(card) && s.skipped) return { decision: 'fail', impossible: false, missing: 0 };
   // Free cards: take it, or ✗ to skip.
@@ -586,7 +600,8 @@ export function toAction(
     if (!status.decision) return undefined;
     const who = s.hikerId ? { hikerId: s.hikerId } : {};
     const card = openCardDef(open);
-    if (card?.risk || card?.spendAny || card?.buttons)
+    if (s.harness) sections.push({ ...who, pay: false, harness: true as const, gifts: [] });
+    else if (card?.risk || card?.spendAny || card?.buttons)
       sections.push({ ...who, pay: true, gifts: s.gifts });
     else if (status.decision === 'fail') sections.push({ ...who, pay: false, gifts: [] });
     else if (card?.cost.length === 0) sections.push({ ...who, pay: true, gifts: [] });

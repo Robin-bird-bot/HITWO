@@ -9,6 +9,7 @@
  * - at Quality 1, food adds its downside (atQuality1).
  */
 import type { ItemDef } from '../effects';
+import type { NodeType } from '../types';
 import { valueAt, type Quality } from './quality';
 
 function fill(text: string, value: (key: string) => number | undefined): string {
@@ -19,12 +20,26 @@ function fill(text: string, value: (key: string) => number | undefined): string 
   });
 }
 
-/** The effect text as the card shows it, at this Quality. */
-export function itemText(def: ItemDef, quality?: Quality): string {
+const NODE_NAME: Record<NodeType, string> = {
+  forest: 'Forest',
+  river: 'River',
+  wildlife: 'Wildlife',
+  mountain: 'Mountain',
+};
+
+/**
+ * The effect text as the card shows it, at this Quality. {node} is the node
+ * the item was made with (Birkenstocks), or "its node" on a blank card.
+ */
+export function itemText(def: ItemDef, quality?: Quality, node?: NodeType): string {
   const value = (key: string) =>
     def.values?.[key] !== undefined ? valueAt(def.values[key], quality) : undefined;
+  const text = def.text.replace(
+    '{node}',
+    node ? `a ${NODE_NAME[node]} node` : 'its node (picked when made)',
+  );
   // Optional parts: dropped when their value (or any value inside) is 0.
-  const kept = def.text.replace(
+  const kept = text.replace(
     /\[(?:(\w+)\?)?([^\]]*)\]/g,
     (_, flag: string | undefined, inner: string) => {
       const keys = [...inner.matchAll(/\{(\w+)(?::s)?\}/g)].map((m) => m[1] ?? '');

@@ -30,7 +30,7 @@ export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure
 export { generateSection, type SectionOptions } from './trail/generate';
 export { checkSection } from './trail/check';
 export { seedRng } from './rng';
-export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
+export { bagSlots, resourceCount, resourceLimit, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
 export {
   clothesOf,
@@ -66,7 +66,7 @@ export { isHikeOver } from './health';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
-export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/scavenge';
+export { bonusTaken, cardGains, pickOptions, rerollAbility, rerollsLeft } from './actions/scavenge';
 export { isLow } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
@@ -79,6 +79,7 @@ export {
   challengeSections,
   giftCount,
   giftFits,
+  harnessFor,
   openCardDef,
   optionShortfall,
   paidCause,

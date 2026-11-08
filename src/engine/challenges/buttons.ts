@@ -13,8 +13,7 @@
  *
  * Kinds are data (ButtonDef); nothing here names a card.
  */
-import { BALANCE } from '../../config/balance';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick, roll, weightedPick } from '../rng';
@@ -152,7 +151,7 @@ export function applyPress(state: GameState, action: PressAction): void {
       state.caps -= price;
       log(`paid ${price} cap${price === 1 ? '' : 's'}`);
       // The first hiker here with room in their pack takes it.
-      const to = here.find((h) => resourceCount(h) < BALANCE.inventory.resourceLimit) ?? here[0];
+      const to = here.find((h) => resourceCount(h) < resourceLimit(state, h)) ?? here[0];
       if (to) give([to], button.gives);
       return;
     }

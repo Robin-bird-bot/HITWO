@@ -17,7 +17,7 @@ import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
-import { computeCost, fireHook, firePhaseEnd } from './effects';
+import { computeCost, fireHook, firePhaseEnd, firePhaseStart } from './effects';
 import { pushEvent } from './log';
 import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
@@ -44,10 +44,12 @@ export function endPhase(state: GameState): void {
     state.phase = 'afternoon';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
     weatherPhaseStart(state);
+    firePhaseStart(state);
   } else if (state.phase === 'afternoon') {
     state.phase = 'night';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
     weatherPhaseStart(state);
+    firePhaseStart(state);
   } else {
     campStep(state);
     startNewDay(state);
@@ -118,6 +120,7 @@ function startNewDay(state: GameState): void {
   advanceWeather(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
   weatherPhaseStart(state);
+  firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);
 }

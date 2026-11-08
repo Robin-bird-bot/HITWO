@@ -133,6 +133,12 @@ export const BALANCE = {
     postcardXp: { checkpoint: 5, challenge: 1 },
     /** A Planter can't add a node to a tile that already has this many. */
     maxNodes: 3,
+    /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
+    freeMove: { discount: 1, wear: 1 },
+    /** Jeans: scavenging costs this much less Appetite. */
+    jeansAppetite: 1,
+    /** Sleepy Socks also work at the start of a phase with at least this much Energy. */
+    sleepySocksEnergy: 7,
     /**
      * TODO(wyatt): the Appetite for each extra card a Sack keeps. First guess: none;
      * the scavenge's cost is paid once.

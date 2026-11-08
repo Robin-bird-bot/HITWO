@@ -19,7 +19,7 @@ import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { canActReason, gainResources, type ItemDef, type ItemUse } from '../effects';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import { addBoost, hasBoost } from '../items/boosts';
 import { fullDurability, qualityOf } from '../items/make';
 import { valueAt } from '../items/quality';
@@ -218,7 +218,7 @@ function uselessReason(
     return tile?.lampTonight ? 'A Camping Lamp is already lit here tonight.' : undefined;
   }
   if (use.resources) {
-    return resourceCount(target) >= BALANCE.inventory.resourceLimit
+    return resourceCount(target) >= resourceLimit(state, target)
       ? `${target.name}’s resources are full.`
       : undefined;
   }

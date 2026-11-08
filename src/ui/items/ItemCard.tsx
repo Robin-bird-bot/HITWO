@@ -27,7 +27,7 @@ import {
 import { SLOT_NAME, TIER_LOOK, TYPE_LOOK } from './itemLook';
 import styles from './ItemCard.module.css';
 
-type Counters = Pick<ItemInstance, 'quality' | 'usesLeft' | 'bitesLeft' | 'durability'>;
+type Counters = Pick<ItemInstance, 'quality' | 'usesLeft' | 'bitesLeft' | 'durability' | 'node'>;
 
 export interface ItemCardProps {
   itemId: string;
@@ -111,7 +111,7 @@ export function ItemCard({
       style={{ width: W, height: H, borderRadius: Math.round(W * 0.075), ...style }}
       role="img"
       aria-label={label}
-      title={compact ? `${def.name}: ${itemText(def, quality)}` : undefined}
+      title={compact ? `${def.name}: ${itemText(def, quality, item?.node)}` : undefined}
     >
       <img className={styles.front} src={ASSETS.itemCards.front} alt="" draggable={false} />
       <div
@@ -201,7 +201,7 @@ export function ItemCard({
             {def.slot ? ` · ${SLOT_NAME[def.slot]}` : ''}
           </span>
           <span className={styles.effect} style={{ fontSize: Math.max(8, Math.round(14.5 * k)) }}>
-            {itemText(def, quality)}
+            {itemText(def, quality, item?.node)}
           </span>
           <span className={styles.spacer} />
           <div className={styles.bottom}>

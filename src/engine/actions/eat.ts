@@ -11,7 +11,13 @@
  */
 import { ITEMS } from '../../content/items';
 import { addCondition, addRandomConditions, removeCondition } from '../conditions';
-import { canActReason, computeGain, effectContext, effectSourcesFor } from '../effects';
+import {
+  canActReason,
+  computeGain,
+  effectContext,
+  effectSourcesFor,
+  fireTileEat,
+} from '../effects';
 import type { EatContext } from '../effects';
 import { hikersOnTile } from '../map';
 import { pushEvent } from '../log';
@@ -128,6 +134,7 @@ export function applyEat(state: GameState, action: EatAction): void {
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker))
     source.hooks.onEat?.({ itemId: item.itemId }, ctx);
+  fireTileEat(state, hiker, item.itemId);
 
   if (keep) {
     pushEvent(state, { kind: 'biteKept', hikerId: hiker.id, itemId: item.itemId });

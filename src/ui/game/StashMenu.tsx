@@ -23,6 +23,7 @@ import {
   qualityOf,
   resourceChoices,
   resourceCount,
+  resourceLimit,
   statMax,
   tradesAnywhere,
   choiceOfUse,
@@ -156,7 +157,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
   const usable = !!item && !!ITEMS[item.itemId]?.use && hiker.status === 'active';
   const roomFor = (h: Hiker) =>
     resource
-      ? resourceCount(h) < BALANCE.inventory.resourceLimit
+      ? resourceCount(h) < resourceLimit(state, h)
       : h.inventory.bag.length < bagSlots(state, h).total;
   const act = (action: Action) => {
     onDispatch(action);

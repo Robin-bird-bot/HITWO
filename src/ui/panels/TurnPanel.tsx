@@ -13,6 +13,7 @@ import {
   hikersOnTile,
   hikersWhoHaventActed,
   resourceCount,
+  resourceLimit,
   validateAction,
   type Action,
   type EquipSlot,
@@ -89,7 +90,7 @@ export function TurnPanel({
         <TileCard state={state} hiker={hiker} />
         <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
-        <Resources hiker={hiker} onPick={onPick} />
+        <Resources state={state} hiker={hiker} onPick={onPick} />
       </div>
       <Footer state={state} onEndPhase={onEndPhase} />
     </Panel>
@@ -590,7 +591,12 @@ export function Bag({
   );
 }
 
-export function Resources({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
+export function Resources({
+  state,
+  hiker,
+  compact,
+  onPick,
+}: { state: GameState; hiker: Hiker } & InventoryProps) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
   const stageTop = useStageTop();
   return (
@@ -598,7 +604,7 @@ export function Resources({ hiker, compact, onPick }: { hiker: Hiker } & Invento
       <div className={styles.blockHead}>
         <span className={panel.label}>RESOURCES</span>
         <span className={styles.count}>
-          {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit}
+          {resourceCount(hiker)}/{resourceLimit(state, hiker)}
         </span>
       </div>
       {held.length === 0 ? (

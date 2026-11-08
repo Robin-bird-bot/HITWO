@@ -4,14 +4,17 @@
  *   or their own effects cost some; at 0 they're gone;
  * - tools lose uses when used (or to a challenge); at 0 they're gone.
  *
- * Every loss goes through here, so clothes that change it (Umbrella, Heavy
- * Jacket, Birkenstocks: Phase 8 step 4) have one place to plug in.
+ * Every loss goes through here, so clothes that change it have one place to
+ * plug in: an Umbrella takes the other clothes' losses, and a Heavy Jacket or
+ * Birkenstocks (on their node) have a chance not to lose any.
  */
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { pushEvent } from '../log';
+import { roll } from '../rng';
 import { fullCounters, fullDurability, qualityOf } from './make';
-import type { EquipSlot, GameState, Hiker, ItemInstance } from '../types';
+import { valueAt } from './quality';
+import type { EquipSlot, GameState, Hiker, ItemInstance, NodeType } from '../types';
 
 /** Takes an item off a hiker, wherever it is (bag or an equip slot). */
 export function removeItem(hiker: Hiker, uid: string): ItemInstance | undefined {
@@ -35,8 +38,18 @@ export function loseDurability(
   n: number,
   cause: string,
 ): number {
+  if (n <= 0 || ITEMS[item.itemId]?.type !== 'clothes') return 0;
+  // An Umbrella takes what the hiker's other clothes would lose.
+  const umbrella = wornClothes(hiker).find((i) => i !== item && ITEMS[i.itemId]?.takesWear);
+  if (umbrella) item = umbrella;
   const def = ITEMS[item.itemId];
-  if (n <= 0 || def?.type !== 'clothes') return 0;
+  if (!def) return 0;
+  // A chance not to lose any (Heavy Jacket; Birkenstocks on their node).
+  const save = def.wearSave;
+  if (save && (!save.onNode || (item.node && tileHasNode(state, hiker, item.node)))) {
+    const pct = valueAt(def.values?.[save.value], qualityOf(item));
+    if (roll(state.rng, pct / 100)) return 0;
+  }
   // An item with no count yet (an old save, a test) starts full.
   const before = item.durability ?? fullDurability(def, qualityOf(item));
   item.durability = Math.max(0, before - n);
@@ -75,6 +88,10 @@ export function loseUses(
       cause,
     });
   }
+}
+
+function tileHasNode(state: GameState, hiker: Hiker, node: NodeType): boolean {
+  return (state.section.tiles[hiker.tileId]?.nodes ?? []).some((n) => n.type === node);
 }
 
 /** The clothes a hiker has on. */

@@ -14,10 +14,10 @@ import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { bagSlots, resourceCount } from '../inventory';
+import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { roll } from '../rng';
-import { abilitiesFor, abilityPeriod } from '../effects';
+import { abilitiesFor, abilityPeriod, fireScavenge, gainCaps } from '../effects';
 import { spendOnceBoosts } from '../items/boosts';
 import { dealCard, dealCards } from '../scavenge/deal';
 import { scavengeCost, scavengeSetup, scavengeTileReason } from '../scavenge/setup';
@@ -74,6 +74,7 @@ export function applyScavenge(state: GameState, action: ScavengeAction): void {
     ...(setup.bonusOffers.length ? { bonusOffers: setup.bonusOffers } : {}),
     ...(setup.dropChance > 0 ? { dropChance: setup.dropChance } : {}),
     ...(setup.keeps > 0 ? { keeps: setup.keeps } : {}),
+    ...(setup.rerolls > 0 ? { rerolls: setup.rerolls } : {}),
   };
 }
 
@@ -85,12 +86,25 @@ export function rerollAbility(state: GameState) {
   return abilitiesFor(state, hiker).find((a) => a.ability.scavengeReroll);
 }
 
+/**
+ * Every reroll the scavenger has: Glasses' for this scavenge first, then an
+ * ability's for the day (Gambler). Undefined when they have none at all.
+ */
+export function rerollsLeft(state: GameState): { left: number; label: string } | undefined {
+  const glasses = state.scavenge?.rerolls ?? 0;
+  const ability = rerollAbility(state);
+  if (!glasses && !ability) return undefined;
+  const label = glasses ? 'Glasses' : (ability?.ability.label ?? 'Reroll');
+  return { left: glasses + (ability?.usesLeft ?? 0), label };
+}
+
 export function validateReroll(state: GameState, action: RerollAction): string | undefined {
   const open = state.scavenge;
   if (!open) return NOTHING_OPEN;
   const card = open.cards[action.card];
   if (!card) return 'That card isn’t on the table.';
   if (!card.flipped) return 'Flip that card first.';
+  if (open.rerolls) return undefined;
   const found = rerollAbility(state);
   if (!found) return 'Nobody here can reroll a card.';
   if (found.usesLeft <= 0) return `${found.ability.label} is used up today.`;
@@ -99,20 +113,26 @@ export function validateReroll(state: GameState, action: RerollAction): string |
 
 export function applyReroll(state: GameState, action: RerollAction): void {
   const open = state.scavenge;
-  const found = rerollAbility(state);
-  if (!open || !found) throw new Error('applyReroll: nothing to reroll');
+  if (!open) throw new Error('applyReroll: nothing to reroll');
   const hiker = mustFindHiker(state, open.hikerId);
-  const { ability } = found;
-  const period = abilityPeriod(state, ability.limit.per);
-  const use = hiker.abilityUses[ability.id];
-  hiker.abilityUses[ability.id] = {
-    period,
-    count: use && use.period === period ? use.count + 1 : 1,
-  };
+  if (open.rerolls) {
+    // Glasses' rerolls go first.
+    open.rerolls -= 1;
+  } else {
+    const found = rerollAbility(state);
+    if (!found) throw new Error('applyReroll: nothing to reroll');
+    const { ability } = found;
+    const period = abilityPeriod(state, ability.limit.per);
+    const use = hiker.abilityUses[ability.id];
+    hiker.abilityUses[ability.id] = {
+      period,
+      count: use && use.period === period ? use.count + 1 : 1,
+    };
+    pushEvent(state, { kind: 'ability', hikerId: hiker.id, abilityId: ability.id });
+  }
   // A fresh card, face up, from the same tile and odds.
   const card = dealCard(state.rng, scavengeSetup(state, hiker));
   open.cards[action.card] = { ...card, flipped: true };
-  pushEvent(state, { kind: 'ability', hikerId: hiker.id, abilityId: ability.id });
 }
 
 export function validateFlip(state: GameState, action: FlipAction): string | undefined {
@@ -225,7 +245,11 @@ export function applyTake(state: GameState, action: TakeAction): void {
     }
   };
 
-  if (first) spendAction(state, hiker);
+  if (first) {
+    spendAction(state, hiker);
+    // Jeans and Pajamas wear a little with each scavenge.
+    fireScavenge(state, hiker, open.tileId);
+  }
 
   // Butterfingers: the card slips away. The scavenge still costs its Appetite.
   if (open.dropChance && roll(state.rng, open.dropChance)) {
@@ -247,11 +271,11 @@ export function applyTake(state: GameState, action: TakeAction): void {
   const all = firstResource
     ? [...gains.resources, ...Array.from({ length: bonus.count }, () => firstResource)]
     : gains.resources;
-  const room = Math.max(0, BALANCE.inventory.resourceLimit - resourceCount(hiker));
+  const room = Math.max(0, resourceLimit(state, hiker) - resourceCount(hiker));
   const kept = all.slice(0, room);
   const bonusKept = Math.max(0, kept.length - gains.resources.length);
   for (const r of kept) hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) + 1;
-  state.caps += gains.caps;
+  const caps = gainCaps(state, gains.caps);
   for (const itemId of gains.items) {
     hiker.inventory.bag.push(makeItem(state, itemId, { prefix: 'found' }));
   }
@@ -275,7 +299,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     tileId: open.tileId,
     card: card.type,
     resources: kept,
-    ...(gains.caps ? { caps: gains.caps } : {}),
+    ...(caps ? { caps } : {}),
     ...(gains.items.length ? { items: gains.items } : {}),
     ...(kept.length < all.length ? { left: all.length - kept.length } : {}),
     ...(bonusKept ? { bonus: bonusKept } : {}),

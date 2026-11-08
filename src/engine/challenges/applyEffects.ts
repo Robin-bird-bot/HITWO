@@ -12,15 +12,14 @@
  */
 import { makeItem } from '../items/make';
 import { loseDurability, loseUses } from '../items/wear';
-import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { countShelter } from '../counters';
-import type { ItemType } from '../effects';
-import { bagSlots, resourceCount } from '../inventory';
+import { gainCaps, type ItemType } from '../effects';
+import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds, tileNodeTypes } from '../map';
 import { pick, roll, shuffle } from '../rng';
@@ -421,7 +420,7 @@ function applyToHiker(
       // TODO(phase 8): clothing durability. Fashion Critic waits until then.
       return;
     case 'gainResources': {
-      const room = BALANCE.inventory.resourceLimit - resourceCount(h);
+      const room = resourceLimit(state, h) - resourceCount(h);
       const options = RESOURCES.filter((r) => matches(e.filter, r.id)).map((r) => r.id);
       const wanted = amount(e.count, ctx);
       const n = Math.max(0, Math.min(room, wanted));
@@ -610,8 +609,7 @@ function applyOnce(
       return;
     }
     case 'gainCaps': {
-      const n = amount(e.count, ctx);
-      state.caps += n;
+      const n = gainCaps(state, amount(e.count, ctx));
       if (n) pushEvent(state, { kind: 'gained', resources: [], items: [], caps: n, cause });
       return;
     }

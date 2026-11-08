@@ -16,6 +16,7 @@
 import { CARDS } from '../../content/challenges';
 import { RESOURCES } from '../../content/resources';
 import { isSheltered } from '../actions/sleep';
+import { gainCaps } from '../effects';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick } from '../rng';
@@ -333,7 +334,7 @@ function payRanger(state: GameState, trial: ActiveTrial, card: TrialDef, people:
     else delete h.inventory.resources[id];
     taken += n;
   }
-  state.caps += taken * pay;
+  gainCaps(state, taken * pay);
   pushEvent(state, {
     kind: 'trial',
     cardId: card.id,

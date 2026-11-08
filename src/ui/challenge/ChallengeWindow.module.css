@@ -682,6 +682,36 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* A Harness turns the fail into a pass. */
+.harness {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c9c2b2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.harness:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.harness[data-on='true'] {
+  background: #e9b44c;
+  color: #1d2220;
+}
+
+.harness:hover:not(:disabled):not([data-on='true']) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 /* ── Continue ── */
 
 .continue {

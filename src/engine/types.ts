@@ -229,8 +229,10 @@ export interface ItemInstance {
   durability?: number;
   /** Food eaten one bite a day (Advent Calendar): the day of the last bite. */
   lastBiteDay?: number;
-  /** Food: gives this much more (or less) Appetite. TODO(phase 8): used when eating arrives. */
+  /** Food: gives this much more (or less) Appetite (a challenge's −1, Meatball Soup's +1). */
   appetiteMod?: number;
+  /** Made with a node, which its effect needs (Birkenstocks). */
+  node?: NodeType;
 }
 
 export interface Inventory {
@@ -253,6 +255,8 @@ export interface Hiker {
   status: HikerStatus;
   tileId: TileId;
   stats: Stats;
+  /** A move their shoes gave them that doesn't use their action (Hiking Crocs, Work Boots). */
+  freeMove?: { itemId: ItemId; day: number };
   /** Strikes toward passing out. */
   injuries: number;
   slots: TraitSlot[];
@@ -392,6 +396,8 @@ export interface PendingScavenge {
   dropChance?: number;
   /** A Sack: how many more cards can be kept after the first. */
   keeps?: number;
+  /** Glasses: cards left to reroll in this scavenge. */
+  rerolls?: number;
   /** Cards taken so far (with a Sack, the window stays open for the next). */
   took?: number;
 }
@@ -481,6 +487,8 @@ export interface ChallengeSection {
   hikerId?: HikerId;
   /** Pay the cost, or take the penalty. */
   pay: boolean;
+  /** A Harness turns the fail into a pass, for its durability (with `pay: false`). */
+  harness?: true;
   /** Which cost option ("or" alternative) was paid. */
   option?: number;
   gifts: Gift[];
@@ -698,7 +706,7 @@ export type GameEventBody =
       kind: 'itemGone';
       hikerId: HikerId;
       itemId: ItemId;
-      why: 'worn' | 'used' | 'eaten';
+      why: 'worn' | 'used' | 'eaten' | 'broke';
       cause: string;
     }
   /** A hiker put clothes on or took them off (`by`: someone took them off a passed-out hiker). */
@@ -803,6 +811,8 @@ export type GameEventBody =
       results: {
         hikerId?: HikerId;
         passed: boolean;
+        /** Passed thanks to a Harness. */
+        harness?: true;
         paid?: ChallengePaid;
         xp?: number;
         /** A Risk challenge: the odds or amount, and whether it hit. */
