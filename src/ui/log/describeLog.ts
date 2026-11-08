@@ -332,10 +332,27 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'scavenge' });
         break;
       }
+      case 'ate': {
+        const item = ITEMS[e.itemId]?.name ?? 'some food';
+        const left =
+          e.bitesLeft > 0 ? ` (${e.bitesLeft} bite${e.bitesLeft === 1 ? '' : 's'} left)` : '';
+        lines.push({ id: e.id, text: `${name(e.hikerId)} ate the ${item}${left}.`, tone: 'rest' });
+        break;
+      }
+      case 'biteKept': {
+        const item = ITEMS[e.itemId]?.name ?? 'food';
+        lines.push({ id: e.id, text: `Lucky: the ${item} bite wasn’t used up.`, tone: 'scavenge' });
+        break;
+      }
       case 'used': {
         const item = ITEMS[e.itemId]?.name ?? 'an item';
-        const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;
-        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}.`, tone: 'rest' });
+        const on = e.everyone
+          ? ' for everyone here'
+          : e.targetId === e.hikerId
+            ? ''
+            : ` on ${name(e.targetId)}`;
+        const did = e.detail ? `: ${e.detail}` : '';
+        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}${did}.`, tone: 'rest' });
         break;
       }
       case 'carry': {

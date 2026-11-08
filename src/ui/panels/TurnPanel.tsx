@@ -29,6 +29,7 @@ import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks'
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
 import { Panel } from './Panel';
 import panel from './Panel.module.css';
+import { BoostChips } from '../items/BoostChips';
 import styles from './TurnPanel.module.css';
 
 const PHASE_NAME = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -368,43 +369,50 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
     : 'Alone here';
   const special = tile.special ? SPECIAL_LOOK[tile.special].name : null;
   return (
-    <div className={styles.tile}>
-      <div className={styles.tileNodes}>
-        {tile.nodes.length === 0 && <Icon name="footprints" size={22} color="#C9C2B2" />}
-        {tile.nodes.map((n, i) =>
-          n.revealed && n.type !== 'caps' ? (
-            <img
-              key={i}
-              src={NODE_IMAGE[n.type]}
-              alt={`${NODE_NAME[n.type]} node`}
-              width={24}
-              height={28}
-            />
-          ) : (
-            <span key={i} className={styles.nodeQ} title={n.revealed ? 'Cap node' : 'Unknown node'}>
-              {n.revealed ? 'C' : '?'}
-            </span>
-          ),
+    <>
+      <div className={styles.tile}>
+        <div className={styles.tileNodes}>
+          {tile.nodes.length === 0 && <Icon name="footprints" size={22} color="#C9C2B2" />}
+          {tile.nodes.map((n, i) =>
+            n.revealed && n.type !== 'caps' ? (
+              <img
+                key={i}
+                src={NODE_IMAGE[n.type]}
+                alt={`${NODE_NAME[n.type]} node`}
+                width={24}
+                height={28}
+              />
+            ) : (
+              <span
+                key={i}
+                className={styles.nodeQ}
+                title={n.revealed ? 'Cap node' : 'Unknown node'}
+              >
+                {n.revealed ? 'C' : '?'}
+              </span>
+            ),
+          )}
+        </div>
+        <div className={styles.tileText}>
+          <span className={styles.tileName}>{tileName(tile).toUpperCase()}</span>
+          <span className={styles.small}>
+            {special && tileName(tile) !== special ? `${special} · ${company}` : company}
+          </span>
+        </div>
+        {tile.feature && (
+          <button
+            type="button"
+            className={styles.feature}
+            aria-disabled="true"
+            title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
+          >
+            <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
+            {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
+          </button>
         )}
       </div>
-      <div className={styles.tileText}>
-        <span className={styles.tileName}>{tileName(tile).toUpperCase()}</span>
-        <span className={styles.small}>
-          {special && tileName(tile) !== special ? `${special} · ${company}` : company}
-        </span>
-      </div>
-      {tile.feature && (
-        <button
-          type="button"
-          className={styles.feature}
-          aria-disabled="true"
-          title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
-        >
-          <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
-          {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
-        </button>
-      )}
-    </div>
+      <BoostChips state={state} hiker={hiker} />
+    </>
   );
 }
 

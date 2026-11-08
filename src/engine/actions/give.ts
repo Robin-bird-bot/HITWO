@@ -8,6 +8,7 @@
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
+import { tradesAnywhere } from '../effects';
 import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import type { Action, GameState } from '../types';
@@ -24,7 +25,9 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   const reason = (takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to);
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
-  if (from.tileId !== to.tileId) return `${to.name} isn’t on this tile.`;
+  // A Walkie-Talkie lets either one trade with anyone, anywhere.
+  const anywhere = !takeFromOut && (tradesAnywhere(state, from) || tradesAnywhere(state, to));
+  if (from.tileId !== to.tileId && !anywhere) return `${to.name} isn’t on this tile.`;
   if ((action.resource ? 1 : 0) + (action.itemUid ? 1 : 0) !== 1) return 'Pick one thing to give.';
 
   if (action.resource) {

@@ -107,6 +107,10 @@ export interface Tile {
   luckBonus?: { amount: number; until: number; cause: string };
   /** This biome's Wonder (one per section). Its tile has no nodes and never draws a card. */
   wonder?: WonderState;
+  /** Items working for everyone on this tile this phase (a Wheelbarrow). */
+  boosts?: ItemBoost[];
+  /** A Camping Lamp keeps watch here tonight. */
+  lampTonight?: true;
   nodes: TileNode[];
 }
 
@@ -196,6 +200,21 @@ export interface ConditionInstance {
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
 
+/** An item's effect that lasts a while after it's used (docs/design/03-items.md). */
+export interface ItemBoost {
+  itemId: ItemId;
+  quality?: 1 | 2 | 3 | 4 | 5;
+  /** Phases or nights left, counting this one. */
+  remaining: number;
+  unit: 'phases' | 'nights';
+  /** What was picked when it was used (the Swiss Army Knife's resource). */
+  choice?: string;
+  /** Only works on this tile (a Supply Map). */
+  tileId?: TileId;
+  /** Gone after one scavenge on its tile (a Supply Map). */
+  once?: true;
+}
+
 /** One item a hiker carries (docs/design/03-items.md). */
 export interface ItemInstance {
   uid: string;
@@ -208,6 +227,8 @@ export interface ItemInstance {
   bitesLeft?: number;
   /** Clothes: days of durability left. */
   durability?: number;
+  /** Food eaten one bite a day (Advent Calendar): the day of the last bite. */
+  lastBiteDay?: number;
   /** Food: gives this much more (or less) Appetite. TODO(phase 8): used when eating arrives. */
   appetiteMod?: number;
 }
@@ -250,6 +271,8 @@ export interface Hiker {
   countdown?: number;
   /** The passed-out hiker this hiker is carrying: they travel along on every move. */
   carrying?: HikerId;
+  /** Items used for an effect that lasts a while (a Shovel this phase, Bear Spray for nights). */
+  boosts?: ItemBoost[];
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -302,6 +325,17 @@ export type ScavengeCardType =
   | 'choiceShelter'
   | 'choiceTrinket';
 
+/**
+ * Why a hiker was safe from a night event: someone kept watch, a shelter, a
+ * Camping Lamp on or next to their tile, or an item of their own (Bear Spray).
+ */
+export interface NightSafe {
+  hikerId: HikerId;
+  why: 'watch' | 'shelter' | 'lamp' | 'item';
+  by?: HikerId;
+  item?: ItemId;
+}
+
 /** One dealt card. Its contents are rolled when it's dealt; a Wild's stay hidden until taken. */
 export interface ScavengeCard {
   type: ScavengeCardType;
@@ -323,6 +357,8 @@ export interface ScavengeCard {
   /** Item finds: the item. Choice items: the items to pick 1 from. */
   items?: ItemId[];
   flipped: boolean;
+  /** Already taken, on a scavenge that keeps more than one card (a Sack). */
+  taken?: true;
 }
 
 /** A line in the scavenge window's bonuses pop-over: what's changing this draw, and why. */
@@ -354,6 +390,10 @@ export interface PendingScavenge {
   bonusOffers?: ScavengeBonusOffer[];
   /** Butterfingers: the chance the card taken slips away. */
   dropChance?: number;
+  /** A Sack: how many more cards can be kept after the first. */
+  keeps?: number;
+  /** Cards taken so far (with a Sack, the window stays open for the next). */
+  took?: number;
 }
 
 /** Who scavenged where today (Copier, Copydog, and the night's Abundance recovery). */
@@ -537,7 +577,21 @@ export type Action =
    */
   | { type: 'takeOff'; hikerId: HikerId; slot: EquipSlot; toId?: HikerId }
   /** A free action: uses a bag item on a hiker on the same tile (the medical items). */
-  | { type: 'useItem'; hikerId: HikerId; itemUid: string; targetId: HikerId; conditionId?: string }
+  /**
+   * Use a bag item. `conditionId` is the condition to cure (Bandaid); `choice`
+   * is whatever else the item asks for: a stat, a node, a resource or a
+   * clothing item's uid.
+   */
+  | {
+      type: 'useItem';
+      hikerId: HikerId;
+      itemUid: string;
+      targetId: HikerId;
+      conditionId?: string;
+      choice?: string;
+    }
+  /** Eat one bite of a food in the bag (a free action). */
+  | { type: 'eat'; hikerId: HikerId; itemUid: string }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
@@ -650,7 +704,20 @@ export type GameEventBody =
   /** A hiker put clothes on or took them off (`by`: someone took them off a passed-out hiker). */
   | { kind: 'dressed'; hikerId: HikerId; itemId: ItemId; on: boolean; by?: HikerId }
   /** A hiker used an item on someone on their tile (or themselves); it's used up. */
-  | { kind: 'used'; hikerId: HikerId; targetId: HikerId; itemId: ItemId }
+  | {
+      kind: 'used';
+      hikerId: HikerId;
+      targetId: HikerId;
+      itemId: ItemId;
+      /** Used for everyone on the tile (Ukulele, Healing Spray). */
+      everyone?: true;
+      /** What it did, when the stats and conditions don't say (Fertilizer: "Forest Abundance +2"). */
+      detail?: string;
+    }
+  /** A hiker ate a bite of food; bitesLeft is what's left after it. */
+  | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
+  /** Costco Sample: the bite wasn't used up. */
+  | { kind: 'biteKept'; hikerId: HikerId; itemId: ItemId }
   /**
    * Carrying: picked up, put down, or dropped (the carrier passed out or a
    * card moved one of them).
@@ -719,7 +786,7 @@ export type GameEventBody =
       creatureId: string;
       hits: NightHit[];
       /** Hikers who were safe: someone kept watch on their tile (`by`), or a shelter. */
-      safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[];
+      safe: NightSafe[];
       /** The events from this id up to this one are what it did (the log folds them in). */
       from: number;
     }

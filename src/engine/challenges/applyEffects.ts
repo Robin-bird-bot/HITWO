@@ -22,7 +22,7 @@ import { countShelter } from '../counters';
 import type { ItemType } from '../effects';
 import { bagSlots, resourceCount } from '../inventory';
 import { pushEvent } from '../log';
-import { adjacentTileIds } from '../map';
+import { adjacentTileIds, tileNodeTypes } from '../map';
 import { pick, roll, shuffle } from '../rng';
 import { addInjury, changeStat, cureInjuries, statMax } from '../stats';
 import { endCarry } from '../health';
@@ -146,11 +146,6 @@ function logLost(
   if (resources.length || items.length) {
     pushEvent(state, { kind: 'lost', hikerId: h.id, resources, items, cause });
   }
-}
-
-function tileNodeTypes(state: GameState, tileId: TileId): NodeType[] {
-  const tile = state.section.tiles[tileId];
-  return [...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
 }
 
 /** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 9). */
@@ -405,10 +400,12 @@ function applyToHiker(
       return;
     }
     case 'foodAppetite': {
-      // TODO(phase 8): eating uses appetiteMod.
+      // Eating adds appetiteMod to the bite. Jerky never loses Appetite value.
       const n = amount(e.delta, ctx);
       const change = typeof e.delta === 'number' ? n : -n;
-      const food = h.inventory.bag.filter((i) => isFood(i.itemId));
+      const food = h.inventory.bag.filter(
+        (i) => isFood(i.itemId) && !(change < 0 && ITEMS[i.itemId]?.keepsValue),
+      );
       const hit = e.which === 'one' ? (food.length ? [pick(state.rng, food)] : []) : food;
       for (const item of hit) item.appetiteMod = (item.appetiteMod ?? 0) + change;
       result.touched.items.push(...hit.map((i) => i.itemId));

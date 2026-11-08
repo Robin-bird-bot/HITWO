@@ -32,7 +32,17 @@ export { checkSection } from './trail/check';
 export { seedRng } from './rng';
 export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
-export { negativeConditions } from './actions/useItem';
+export {
+  clothesOf,
+  negativeConditions,
+  nodeChoices,
+  resourceChoices,
+  choiceOfUse,
+  targetOfUse,
+  type UseChoice,
+} from './actions/useItem';
+export { biteAppetite } from './actions/eat';
+export { tradesAnywhere } from './effects';
 export {
   QUALITIES,
   hasQuality,

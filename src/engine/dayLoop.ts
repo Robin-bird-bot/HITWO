@@ -10,6 +10,7 @@
 import { countSleep } from './counters';
 import { countdownAtCamp } from './health';
 import { wearAtCamp } from './items/wear';
+import { tickBoosts } from './items/boosts';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
@@ -36,6 +37,8 @@ export function endPhase(state: GameState): void {
   weatherPhaseEnd(state);
   for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
   tickConditions(state, 'phases');
+  // Items used "this phase" stop working.
+  tickBoosts(state, 'phases');
 
   if (state.phase === 'morning') {
     state.phase = 'afternoon';
@@ -81,6 +84,9 @@ function endOfDayDrain(state: GameState, h: Hiker): void {
 
 function campStep(state: GameState): void {
   runNightEvent(state);
+  // Bear Spray counts the night it guarded; Camping Lamps go out.
+  tickBoosts(state, 'nights');
+  for (const t of Object.values(state.section.tiles)) delete t.lampTonight;
   for (const h of state.hikers) {
     if (BALANCE.rules.noSleepDrainFirst) {
       noSleepDrain(state, h);

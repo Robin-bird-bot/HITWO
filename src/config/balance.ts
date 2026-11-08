@@ -131,12 +131,16 @@ export const BALANCE = {
     diplomaXp: { min: 0.6, max: 1 },
     /** TODO(wyatt): the Postcard's extra XP (first guess). TODO(phase 10). */
     postcardXp: { checkpoint: 5, challenge: 1 },
+    /** A Planter can't add a node to a tile that already has this many. */
+    maxNodes: 3,
+    /**
+     * TODO(wyatt): the Appetite for each extra card a Sack keeps. First guess: none;
+     * the scavenge's cost is paid once.
+     */
+    sackAppetite: 0,
   },
 
-  /**
-   * The medical items (Phase 7).
-   * TODO(phase 8): uses count down (step 2).
-   */
+  /** The medical items (Phase 7). */
   medical: {
     /** Bandages: injuries cured (and Bleeding: Wyatt, Nov 7). */
     bandagesInjuries: 1,
@@ -454,6 +458,8 @@ export const BALANCE = {
     caps: { dejected: 5, inappetent: 7, buzzed: 7 },
     /** Strained: extra Energy lost each time. Inspired: extra Morale gained each time. */
     strainedExtra: 1,
+    /** Food Poisoning: food gives this much less Appetite. */
+    foodPoisoning: 2,
     inspiredExtra: 1,
     /** Sluggish: extra Appetite to move. */
     sluggishAppetite: 1,

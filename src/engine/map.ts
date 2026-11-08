@@ -1,4 +1,4 @@
-import type { GameState, Hiker, Line, Section, TileId } from './types';
+import type { GameState, Hiker, Line, NodeType, Section, TileId } from './types';
 
 /** The line joining two tiles, if they are adjacent. */
 export function lineBetween(section: Section, a: TileId, b: TileId): Line | undefined {
@@ -31,4 +31,10 @@ export function isAlone(state: GameState, hiker: Hiker): boolean {
 export function isSheltered(state: GameState, hiker: Hiker): boolean {
   const tile = state.section.tiles[hiker.tileId];
   return tile?.special === 'campsite' || (tile?.shelters?.length ?? 0) > 0;
+}
+
+/** The kinds of node on a tile (caps nodes aside), each once. */
+export function tileNodeTypes(state: GameState, tileId: TileId): NodeType[] {
+  const tile = state.section.tiles[tileId];
+  return [...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
 }

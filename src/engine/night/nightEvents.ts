@@ -41,7 +41,16 @@ import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { hikersOnTile, isSheltered } from '../map';
 import { nextFloat, pick, roll } from '../rng';
-import type { CardRolls, GameEvent, GameState, Hiker, HikerId, NightHit } from '../types';
+import { nightSafeItem } from '../effects';
+import type {
+  CardRolls,
+  GameEvent,
+  GameState,
+  Hiker,
+  HikerId,
+  NightHit,
+  NightSafe,
+} from '../types';
 
 const N = BALANCE.nightEvents;
 
@@ -75,16 +84,19 @@ export function hitChance(state: GameState, h: Hiker): number {
   return Math.min(1, p);
 }
 
-/** Why a hiker is safe tonight: someone keeps watch on their tile, or a shelter. */
-export function safeFrom(
-  state: GameState,
-  h: Hiker,
-): { why: 'watch' | 'shelter'; by?: HikerId } | undefined {
+/**
+ * Why a hiker is safe tonight: someone keeps watch on their tile, a shelter,
+ * a Camping Lamp on or next to it, or their own Bear Spray.
+ */
+export function safeFrom(state: GameState, h: Hiker): Omit<NightSafe, 'hikerId'> | undefined {
   if (isWatched(state, h.tileId)) {
     const by = hikersOnTile(state, h.tileId).find((o) => o.watching);
     return { why: 'watch', ...(by ? { by: by.id } : {}) };
   }
   if (isSheltered(state, h)) return { why: 'shelter' };
+  if (state.section.tiles[h.tileId]?.lampTonight) return { why: 'lamp' };
+  const item = nightSafeItem(state, h);
+  if (item) return { why: 'item', item };
   return undefined;
 }
 
@@ -254,7 +266,7 @@ export function runNightEvent(state: GameState): void {
   const from = state.nextEventId;
 
   // Who's exposed, and who's hit: rolled for everyone before anything happens.
-  const safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[] = [];
+  const safe: NightSafe[] = [];
   const hitIds: HikerId[] = [];
   // TODO(wyatt): passed-out hikers are on the map, so they can be hit too.
   for (const h of state.hikers.filter(onMap)) {

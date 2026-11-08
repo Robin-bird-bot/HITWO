@@ -16,6 +16,7 @@ import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat } from './stats';
 import { thresholdSources } from './thresholds';
+import { boostSources } from './items/boosts';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -26,6 +27,7 @@ import type {
   GameState,
   Hiker,
   HikerId,
+  ItemId,
   ItemInstance,
   Line,
   NodeType,
@@ -62,6 +64,8 @@ export type CostKey =
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey =
   | 'sleep.energy'
+  /** Appetite from a bite of food (Food Poisoning takes 2 off it). */
+  | 'eat.appetite'
   /** Abundance restored by Tend (the Thumbs and Maintenance add to it). */
   | 'tend.abundance';
 
@@ -121,6 +125,12 @@ export interface ScavengeModifier {
   bonus?: { count: number; appetiteEach: number };
   /** A chance the card taken slips away and the hiker gets nothing (Butterfingers). */
   dropChance?: number;
+  /** Extra cards the hiker can keep from this deal (a Sack). */
+  keep?: number;
+  /** Multipliers on how likely each resource is, on cards of one resource (Swiss Army Knife). */
+  resourceWeight?: Partial<Record<ResourceId, number>>;
+  /** Cards added to the deal (a Supply Map's Choice card for a node). */
+  addCards?: { type: ScavengeCardType; node: NodeType }[];
 }
 
 export interface ActQuery {
@@ -225,10 +235,18 @@ export interface Hooks {
     q: ScavengeQuery,
     ctx: QueryContext,
   ): ScavengeModifier | ScavengeModifier[] | undefined;
-  /** Phase 8. */
+  /** Phase 8 step 7. */
   onCraft?(e: unknown, ctx: EffectContext): void;
-  /** Phase 8. */
-  onEat?(e: unknown, ctx: EffectContext): void;
+  /** The hiker ate a bite of food. */
+  onEat?(e: { itemId: ItemId }, ctx: EffectContext): void;
+  /** Stops a negative condition before it lands (a Star; the Puffer Jacket in step 4). */
+  blockCondition?(id: string, ctx: EffectContext): boolean;
+  /** Stops an injury before it lands (a Star; the Hardhat in step 4). */
+  blockInjury?(cause: string, ctx: EffectContext): boolean;
+  /** Can trade items and resources with any hiker on any tile (Walkie-Talkie). */
+  tradeAnywhere?(ctx: QueryContext): boolean;
+  /** Can't be hit by night events (Bear Spray). */
+  nightSafe?(ctx: QueryContext): boolean;
 }
 
 export type EventHookName = 'onStartOfDay' | 'onEndOfDay' | 'onSleep';
@@ -280,6 +298,41 @@ export interface ItemUse {
   allNegative?: true;
   /** Then gives this condition; a target who has it already can't use another. */
   gives?: { id: string; duration: QualityValues | number; unit: 'days' | 'phases' };
+  /**
+   * Who it's for: the user ('self'), a hiker on the tile they pick ('hiker',
+   * the default), or every hiker on the tile ('tile').
+   */
+  target?: 'self' | 'hiker' | 'tile';
+  /** Morale gained, from a value at the item's Quality (Stuffed Animal, Ukulele). */
+  morale?: string;
+  /** Fills a stat the player picks to its maximum (Survival Kit). */
+  fillStat?: true;
+  /** Evens out each stat across every hiker on the tile, rounded down (Liberal Policy). */
+  averageStats?: true;
+  /** Clothes gain durability: one item the player picks, or every item worn. */
+  repair?: { value: string; which: 'one' | 'worn' };
+  /** Nodes on the tile gain Abundance: one at random, or every one. */
+  abundance?: { value: string; which: 'random' | 'all' };
+  /** Adds a node the player picks to the tile (Planter). */
+  addNode?: true;
+  /** Gives random resources from a node, or any (the resource packs). */
+  resources?: { value: string; node?: NodeType };
+  /** Keeps watch over this tile and the ones next to it tonight (Camping Lamp). */
+  lampTonight?: true;
+  /** Works for a while: its `boostHooks` (src/engine/items/boosts.ts). */
+  boost?: {
+    lasts: { unit: 'phases' | 'nights'; n: number | string };
+    /** For every hiker on the tile (Wheelbarrow). */
+    tile?: true;
+    /** Gone after the next scavenge on this tile (Supply Map). */
+    once?: true;
+    /** Pick a resource for it (Swiss Army Knife). */
+    chooseResource?: true;
+    /** Only worth using on a tile with this node (Woodcutting Axe). */
+    needsNode?: NodeType;
+    /** For scavenging: only worth it while the hiker can still scavenge this phase. */
+    scavenging?: true;
+  };
 }
 
 export interface ItemDef {
@@ -326,7 +379,50 @@ export interface ItemDef {
   fixedQuality?: 1 | 2 | 3 | 4 | 5;
   /** Can be used from the bag, as a free action, on a hiker on the same tile. */
   use?: ItemUse;
+  /** Food: what eating a bite does (src/engine/actions/eat.ts). */
+  onEat?: (e: EatContext) => void;
+  /** Food that never loses Appetite value (Jerky). */
+  keepsValue?: true;
+  /** Food: only 1 bite a day (Advent Calendar). */
+  oneBiteADay?: true;
+  /**
+   * Hooks that work for a while once the item is used (a Shovel this phase),
+   * reading its values at its Quality and what was picked.
+   */
+  boostHooks?: (v: (key: string) => number, choice?: string) => Hooks;
   placeholder?: boolean;
+}
+
+/** What a food's onEat can do (src/engine/actions/eat.ts). */
+export interface EatContext {
+  hiker: Hiker;
+  /** A value at this food's Quality. */
+  v(key: string): number;
+  /** Bites left, counting this one (Din Tai Fung). */
+  bitesLeft: number;
+  /** Eaten at night (S'mores). */
+  night: boolean;
+  /** Gains Appetite from the food: plus any change recorded on it, less Food Poisoning. */
+  appetite(n: number): void;
+  /** Any other stat change (Morale, Energy). */
+  stat(stat: StatName, n: number): void;
+  condition(
+    id: string,
+    n: number,
+    unit: 'phases' | 'days',
+    extra?: { stacks?: number; thisPhase?: true; then?: { id: string; n: number; unit: 'days' } },
+  ): void;
+  /** A chance out of 100. */
+  chance(pct: number): boolean;
+  /** A whole number from lo to hi (Y[1–10]). */
+  rollY(lo: number, hi: number): number;
+  randomPositive(count: number, n: number, unit: 'phases' | 'days'): void;
+  randomNegative(n: number, unit: 'phases' | 'days'): void;
+  cureRandomNegative(count: number): void;
+  /** Other food carried by hikers on this tile, or only this hiker's (Meatball Soup). */
+  otherFood(scope: 'tile' | 'own'): ItemInstance[];
+  /** This bite isn't used up (Costco Sample). */
+  keepBite(): void;
 }
 
 /** A family's built-in strengths and drawbacks (always on, no slot). */
@@ -339,6 +435,8 @@ export interface EffectSource {
   id: string;
   kind: 'threshold' | 'trait' | 'family' | 'condition' | 'item' | 'weather';
   name: string;
+  /** Items and boosts: which item. */
+  itemId?: ItemId;
   hooks: Hooks;
   ability?: AbilityDef;
 }
@@ -379,10 +477,12 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     sources.push({
       id: `item:${item.uid}`,
       kind: 'item',
+      itemId: item.itemId,
       name: def.name,
       hooks: itemHooks(def, item),
     });
   }
+  sources.push(...boostSources(state, hiker));
   for (const c of hiker.conditions) {
     const def = CONDITIONS[c.id];
     if (!def?.hooks) continue;
@@ -551,6 +651,31 @@ export function canActReason(state: GameState, hiker: Hiker, q: ActQuery): strin
     if (reason) return reason;
   }
   return undefined;
+}
+
+/** Does anything stop this negative condition reaching the hiker? */
+export function blocksCondition(state: GameState, hiker: Hiker, id: string): boolean {
+  const ctx = effectContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.blockCondition?.(id, ctx));
+}
+
+/** Does anything stop this injury reaching the hiker? */
+export function blocksInjury(state: GameState, hiker: Hiker, cause: string): boolean {
+  const ctx = effectContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.blockInjury?.(cause, ctx));
+}
+
+/** Can this hiker trade with any hiker on any tile right now (Walkie-Talkie)? */
+export function tradesAnywhere(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.tradeAnywhere?.(ctx));
+}
+
+/** The item keeping this hiker safe from night events whatever their tile (Bear Spray). */
+export function nightSafeItem(state: GameState, hiker: Hiker): ItemId | undefined {
+  const ctx = queryContext(state, hiker);
+  const source = effectSourcesFor(state, hiker).find((s) => s.hooks.nightSafe?.(ctx));
+  return source?.itemId;
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────

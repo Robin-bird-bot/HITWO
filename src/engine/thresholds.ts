@@ -27,7 +27,9 @@ export function thresholdStates(h: Hiker): ThresholdState[] {
 }
 
 const isMove = (a: Action) => a.type === 'move' || a.type === 'moveAll';
-const usesAction = (q: ActQuery) => q.role === 'brought' || q.action.type !== 'useAbility';
+/** Free actions (abilities, eating, using a tool) don't count: Exhausted only stops the phase's action. */
+const FREE: readonly ActQuery['action']['type'][] = ['useAbility', 'eat', 'useItem'];
+const usesAction = (q: ActQuery) => q.role === 'brought' || !FREE.includes(q.action.type);
 const isSleep = (q: ActQuery) => q.role === 'actor' && q.action.type === 'sleep';
 const canBeBrought = BALANCE.rules.exhaustedOrFatiguedCanBeBrought;
 

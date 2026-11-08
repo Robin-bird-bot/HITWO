@@ -16,6 +16,7 @@ import type { ItemType } from '../effects';
 import type {
   NodeType,
   Rarity,
+  ResourceId,
   RngState,
   ScavengeCard,
   ScavengeCardType,
@@ -39,6 +40,10 @@ export interface DealInput {
   forceTypes?: readonly ScavengeCardType[];
   /** The tier item finds come at: the biome's (Wyatt, Nov 7). */
   itemTier?: number;
+  /** Multipliers on single resources, on cards of one resource (Swiss Army Knife). */
+  resourceWeight?: Partial<Record<ResourceId, number>>;
+  /** Cards dealt on top of `count`, of a set type and node (a Supply Map's Choice card). */
+  extraCards?: readonly { type: ScavengeCardType; node: NodeType }[];
 }
 
 interface Spot {
@@ -69,6 +74,23 @@ export function canDeal(input: Pick<DealInput, 'nodes' | 'abundance' | 'nodeWeig
 export function dealCards(rng: RngState, input: DealInput): ScavengeCard[] {
   const cards: ScavengeCard[] = [];
   for (let i = 0; i < input.count; i++) cards.push(dealCard(rng, input, input.forceTypes?.[i]));
+  for (const extra of input.extraCards ?? []) {
+    const spots = scavengeSpots(input).filter((s) => s.node === extra.node);
+    const others = [...new Set(scavengeSpots(input).map((s) => s.node))].filter(
+      (n) => n !== extra.node,
+    );
+    cards.push(
+      contents(
+        rng,
+        SCAVENGE_CARDS[extra.type],
+        extra.node,
+        spots.some((s) => s.bounty),
+        others,
+        input.itemTier,
+        input.resourceWeight,
+      ),
+    );
+  }
   return cards;
 }
 
@@ -81,7 +103,15 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
   if (spots.length === 0) {
     // Only Cap nodes left: every card is acorn caps.
     if (!hasCapNode) throw new Error('dealCard(): nothing on this tile can give a card');
-    return contents(rng, SCAVENGE_CARDS.caps, null, false, [], input.itemTier);
+    return contents(
+      rng,
+      SCAVENGE_CARDS.caps,
+      null,
+      false,
+      [],
+      input.itemTier,
+      input.resourceWeight,
+    );
   }
 
   const spot = weightedPick(
@@ -95,7 +125,15 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
 
   const forcedDef = forced ? SCAVENGE_CARDS[forced] : undefined;
   if (forcedDef && possible(forcedDef)) {
-    return contents(rng, forcedDef, spot.node, spot.bounty, otherNodes, input.itemTier);
+    return contents(
+      rng,
+      forcedDef,
+      spot.node,
+      spot.bounty,
+      otherNodes,
+      input.itemTier,
+      input.resourceWeight,
+    );
   }
 
   let rarity: Rarity = rollRarity(rng, input.luck);
@@ -113,7 +151,15 @@ export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardT
             (input.nodeTypeWeight?.[spot.node]?.[d.id] ?? 1),
         })),
       );
-      return contents(rng, def, spot.node, spot.bounty, otherNodes, input.itemTier);
+      return contents(
+        rng,
+        def,
+        spot.node,
+        spot.bounty,
+        otherNodes,
+        input.itemTier,
+        input.resourceWeight,
+      );
     }
     if (rarity === 'common') throw new Error('dealCard(): no Common card types');
     rarity = stepDown(rarity);
@@ -141,6 +187,7 @@ function contents(
   bounty: boolean,
   otherNodes: readonly NodeType[],
   itemTier = 1,
+  resourceWeight: DealInput['resourceWeight'] = {},
 ): ScavengeCard {
   const card: ScavengeCard = {
     type: def.id,
@@ -150,20 +197,30 @@ function contents(
     flipped: false,
   };
   const own = node ? resourcesOf(node) : [];
+  // One resource, more likely when something favors it (Swiss Army Knife).
+  // Without one, the plain pick, so ordinary deals stay the same.
+  const weighted = own.some((r) => (resourceWeight[r] ?? 1) !== 1);
+  const one = () =>
+    weighted
+      ? weightedPick(
+          rng,
+          own.map((r) => ({ item: r, weight: resourceWeight[r] ?? 1 })),
+        )
+      : pick(rng, own);
 
   switch (def.id) {
     case 'resource':
     case 'wild':
-      card.resources = [pick(rng, own)];
+      card.resources = [one()];
       break;
     case 'x2':
     case 'wildX2': {
-      const r = pick(rng, own);
+      const r = one();
       card.resources = [r, r];
       break;
     }
     case 'x3': {
-      const r = pick(rng, own);
+      const r = one();
       card.resources = [r, r, r];
       break;
     }

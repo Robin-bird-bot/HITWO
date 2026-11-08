@@ -16,6 +16,7 @@
 import { BALANCE } from '../config/balance';
 import type { CostKey, EffectContext, Hooks } from '../engine/effects';
 import type { Action, StatName, TraitType } from '../engine/types';
+import { ITEMS } from './items';
 import { RESOURCES } from './resources';
 
 export interface ConditionDef {
@@ -143,8 +144,11 @@ const LIST: ConditionDef[] = [
     id: 'foodPoisoning',
     name: 'Food Poisoning',
     kind: 'negative',
-    // TODO(phase 8): food gives 2 less Appetite, when eating arrives.
     text: 'Food gives 2 less Appetite.',
+    hooks: {
+      modifyGain: (q) =>
+        q.key === 'eat.appetite' ? { source: 'Food Poisoning', flat: -C.foodPoisoning } : undefined,
+    },
   },
   {
     id: 'blind',
@@ -253,9 +257,24 @@ const LIST: ConditionDef[] = [
       },
     },
   },
-  // TODO(phase 8): Inept and Clumsy stop crafting and using tools.
+  // TODO(phase 8): Inept stops the Craft action (step 7).
   { id: 'inept', name: 'Inept', kind: 'negative', text: 'Can’t craft.' },
-  { id: 'clumsy', name: 'Clumsy', kind: 'negative', text: 'Can’t use tools.' },
+  {
+    id: 'clumsy',
+    name: 'Clumsy',
+    kind: 'negative',
+    text: 'Can’t use tools.',
+    hooks: {
+      canAct: (q, ctx) => {
+        if (q.action.type !== 'useItem') return undefined;
+        const uid = q.action.itemUid;
+        const item = ctx.self.inventory.bag.find((i) => i.uid === uid);
+        return item && ITEMS[item.itemId]?.type === 'tool'
+          ? `${ctx.self.name} is Clumsy and can’t use tools.`
+          : undefined;
+      },
+    },
+  },
   {
     id: 'weak',
     name: 'Weak',
