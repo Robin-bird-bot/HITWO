@@ -9,6 +9,7 @@ import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
+import { shelterNights } from './items/shelters';
 import {
   NODE_TYPES,
   PHASES,
@@ -19,7 +20,7 @@ import {
 } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -46,7 +47,22 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 8: the Nov 7 item list. Old items become their replacements, and every
   // item gets a Quality (3) and full uses, bites or durability.
   7: (save) => upgradeItems(save),
+  // Phase 8 step 5: a shelter on a tile is an object with its nights left (Ruins built ids).
+  8: (save) => upgradeShelters(save),
 };
+
+/** Shelters stored as item ids become placed shelters with their full nights. */
+function upgradeShelters(save: SaveData): SaveData {
+  const section = save.section;
+  if (!isRecord(section) || !isRecord(section.tiles)) return save;
+  for (const [id, tile] of Object.entries(section.tiles)) {
+    if (!isRecord(tile) || !Array.isArray(tile.shelters)) continue;
+    tile.shelters = tile.shelters.map((s, i) =>
+      isString(s) ? { uid: `shelter-${id}-${i}-${s}`, itemId: s, nightsLeft: shelterNights(s) } : s,
+    );
+  }
+  return save;
+}
 
 /** An old item id's replacement (03-items.md, "Older items, merged or replaced"). */
 const renamed = (id: unknown) => (isString(id) ? (RENAMED_ITEMS[id] ?? id) : id);

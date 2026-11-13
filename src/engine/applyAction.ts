@@ -33,6 +33,7 @@ import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
 import { applyUse, validateUse } from './actions/useItem';
 import { applyEat, validateEat } from './actions/eat';
+import { applyPlaceShelter, validatePlaceShelter } from './actions/shelter';
 import { applyAbandon, validateAbandon } from './actions/abandon';
 import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
@@ -112,6 +113,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateUse(state, action) ?? null;
     case 'eat':
       return validateEat(state, action) ?? null;
+    case 'placeShelter':
+      return validatePlaceShelter(state, action) ?? null;
     case 'pickUp':
       return validatePickUp(state, action) ?? null;
     case 'abandon':
@@ -192,6 +195,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'eat':
       applyEat(draft, action);
+      break;
+    case 'placeShelter':
+      applyPlaceShelter(draft, action);
       break;
     case 'pickUp':
       applyPickUp(draft, action);

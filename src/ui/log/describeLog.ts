@@ -333,6 +333,28 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'scavenge' });
         break;
       }
+      case 'shelterPlaced': {
+        const item = ITEMS[e.itemId]?.name ?? 'A shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? tileName(tile) : 'the tile';
+        const nights = `${e.nights} night${e.nights === 1 ? '' : 's'}`;
+        const text = e.hikerId
+          ? `${name(e.hikerId)} put up a ${item} on ${where} (${nights}).`
+          : `A ${item} now stands on ${where} (${nights}).`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterGone': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? ` on ${tileName(tile)}` : '';
+        lines.push({
+          id: e.id,
+          text: `The ${item}${where} has had its last night.`,
+          tone: 'drain',
+        });
+        break;
+      }
       case 'ate': {
         const item = ITEMS[e.itemId]?.name ?? 'some food';
         const left =

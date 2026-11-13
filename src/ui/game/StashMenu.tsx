@@ -38,6 +38,7 @@ import {
 } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
+import { tileName } from '../panels/hikerInfo';
 import { Popout } from '../panels/Popout';
 import type { StashPick } from '../panels/TurnPanel';
 import { usesAfter, whatItDoes } from '../items/whatItDoes';
@@ -193,6 +194,10 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
         <>
           <EatSection state={state} hiker={hiker} itemUid={item.uid} name={name} onEat={act} />
           <PutOn state={state} hiker={hiker} itemUid={item.uid} onPutOn={act} />
+          <PlaceSection state={state} hiker={hiker} itemUid={item.uid} name={name} onPlace={act} />
+          {ITEMS[item.itemId]?.notYet && (
+            <span className={styles.none}>{ITEMS[item.itemId]?.notYet}</span>
+          )}
         </>
       )}
 
@@ -594,6 +599,68 @@ function EatSection({
       <span className={styles.useText}>
         {bites > 1 ? `Eat a bite (${bites} left)` : 'Eat it'}
         {(reason || note) && <span className={styles.effect}>{reason ?? note}</span>}
+      </span>
+    </button>
+  );
+}
+
+/** A shelter: place it on this tile (asks first, since it can't be picked up again). */
+function PlaceSection({
+  state,
+  hiker,
+  itemUid,
+  name,
+  onPlace,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  itemUid: string;
+  name: string;
+  onPlace(action: Action): void;
+}) {
+  const [asking, setAsking] = useState(false);
+  const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
+  const def = item && ITEMS[item.itemId];
+  if (!item || def?.type !== 'shelter') return null;
+  const action: Action = { type: 'placeShelter', hikerId: hiker.id, itemUid };
+  const reason = validateAction(state, action);
+  const nights = def.nights ?? 1;
+  const lasts = `${nights} night${nights === 1 ? '' : 's'}`;
+  const tile = state.section.tiles[hiker.tileId];
+  const where = tile ? tileName(tile) : 'this tile';
+
+  if (asking) {
+    return (
+      <div className={styles.confirm}>
+        <span className={styles.none}>
+          Place the {name} on {where}? It stays there for {lasts}, then it’s gone.
+        </span>
+        <button
+          type="button"
+          className={`${styles.option} ${styles.useIt}`}
+          onClick={() => onPlace(action)}
+        >
+          <Icon name="tent" size={16} />
+          Yes, place it
+        </button>
+        <button type="button" className={styles.option} onClick={() => setAsking(false)}>
+          Not now
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`${styles.option} ${styles.tall}`}
+      disabled={!!reason}
+      title={reason ?? undefined}
+      onClick={() => setAsking(true)}
+    >
+      <Icon name="tent" size={16} />
+      <span className={styles.useText}>
+        Place here
+        <span className={styles.effect}>{reason ?? `Lasts ${lasts}`}</span>
       </span>
     </button>
   );

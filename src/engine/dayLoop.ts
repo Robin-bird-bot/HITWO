@@ -11,6 +11,7 @@ import { countSleep } from './counters';
 import { countdownAtCamp } from './health';
 import { wearAtCamp } from './items/wear';
 import { tickBoosts } from './items/boosts';
+import { sheltersAtCamp } from './items/shelters';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
@@ -102,8 +103,9 @@ function campStep(state: GameState): void {
   countSleep(state);
   recoverOvernight(state);
   tickConditions(state, 'days');
-  // Worn clothes lose a day of durability.
+  // Worn clothes lose a day of durability, and shelters count a night.
   wearAtCamp(state);
+  sheltersAtCamp(state);
   // Passed-out hikers left alone count down, last.
   countdownAtCamp(state);
 }

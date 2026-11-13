@@ -1,7 +1,8 @@
 /**
- * Tools working right now for this hiker or on their tile: a Shovel this
+ * Items working right now for this hiker or on their tile: a Shovel this
  * phase, Bear Spray for 2 nights, a Wheelbarrow for everyone here, a Supply
- * Map waiting for the next scavenge, a Camping Lamp tonight.
+ * Map waiting for the next scavenge, a Camping Lamp tonight, and shelters
+ * standing here with their nights left.
  */
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
@@ -27,9 +28,14 @@ export function BoostChips({ state, hiker }: { state: GameState; hiker: Hiker })
   if (tile?.lampTonight) {
     chips.push({ key: 'lamp', itemId: 'campingLamp', text: 'keeping watch tonight' });
   }
+  // Shelters standing here, with their nights left.
+  for (const sh of tile?.shelters ?? []) {
+    const nights = `${sh.nightsLeft} night${sh.nightsLeft === 1 ? '' : 's'} left`;
+    chips.push({ key: sh.uid, itemId: sh.itemId, text: `shelter here, ${nights}` });
+  }
   if (!chips.length) return null;
   return (
-    <ul className={styles.list} aria-label="Tools working now">
+    <ul className={styles.list} aria-label="Items working now">
       {chips.map((c) => {
         const def = ITEMS[c.itemId];
         return (

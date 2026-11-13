@@ -12,12 +12,12 @@
  */
 import { makeItem } from '../items/make';
 import { loseDurability, loseUses } from '../items/wear';
+import { placeShelterOn } from '../items/shelters';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
-import { countShelter } from '../counters';
 import { gainCaps, type ItemType } from '../effects';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
@@ -591,12 +591,12 @@ function applyOnce(
       return;
     }
     case 'placeShelter': {
-      // TODO(phase 8): a shelter that works like the real shelter cards.
+      // Ruins: a real random shelter, at the biome's tier.
       if (!tile) return;
-      const shelters = findableItems('shelter');
-      if (!shelters.length) return;
-      tile.shelters = [...(tile.shelters ?? []), pick(state.rng, shelters).id];
-      countShelter(state);
+      const shelters = findableItems('shelter', state.section.tier);
+      const pool = shelters.length ? shelters : findableItems('shelter');
+      if (!pool.length) return;
+      placeShelterOn(state, tile.id, pick(state.rng, pool).id);
       return;
     }
     case 'tileLuck': {

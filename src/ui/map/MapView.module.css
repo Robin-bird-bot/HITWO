@@ -167,6 +167,28 @@
   justify-content: center;
 }
 
+/* A shelter standing on the tile: a tent and its nights left, above the top point. */
+.shelter {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 24px;
+  padding: 0 8px 0 6px;
+  border-radius: 12px;
+  border: 2px solid #f7f1e4;
+  background: #1d2220;
+  color: #f1eadb;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shelterNights {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
 .cornerNumber {
   font-family: var(--font-pixel);
   font-size: 13px;

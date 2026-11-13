@@ -137,6 +137,23 @@ export const BALANCE = {
     freeMove: { discount: 1, wear: 1 },
     /** Jeans: scavenging costs this much less Appetite. */
     jeansAppetite: 1,
+    /** Shelters' own effects (03-items.md, "Shelters"). */
+    shelter: {
+      /** Cabin and RV: more Energy from sleeping there. */
+      sleepEnergy: 1,
+      /** Hostel: more Energy with 2 or more hikers on the tile, and again with all 4. */
+      hostel: { company: 2, companyEnergy: 1, everyone: 4, everyoneEnergy: 1 },
+      /** Yurt: extra cards when scavenging there. */
+      yurtCards: 1,
+      /** Medic Tent: injuries healed, once per hiker. */
+      medicInjuries: 1,
+      /** Tailgate and Lodge: Quality added to what's crafted there (up to 5). */
+      craftQuality: 1,
+    },
+    /** Wallet: added to every caps gain, for good. */
+    walletCaps: 1,
+    /** Serums: added to a stat's maximum, for good. */
+    serumMax: 1,
     /** Sleepy Socks also work at the start of a phase with at least this much Energy. */
     sleepySocksEnergy: 7,
     /**

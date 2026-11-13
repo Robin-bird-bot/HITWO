@@ -1,11 +1,14 @@
 /**
  * Trinkets (docs/design/03-items.md, "Trinkets"): no Quality, and only the
  * generic recipe (5 random different resources). Use trinkets are used up;
- * Keep trinkets work while carried. The ones that touch traits, slots or XP
- * wait on Phase 10. Effects arrive in Phase 8 step 5.
+ * Keep trinkets work while carried. Using one is a free action, like a tool
+ * (src/engine/actions/useItem.ts). The ones that touch traits, slots or XP
+ * wait on Phase 10, and say so when someone tries.
  */
 import type { ItemDef } from '../../engine/effects';
 import { item } from './build';
+
+const PHASE_10 = 'It works once traits and levels arrive (Phase 10).';
 
 const trinket = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef =>
   item({ ...def, type: 'trinket' });
@@ -13,6 +16,7 @@ const trinket = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef =>
 export const TRINKETS: readonly ItemDef[] = [
   trinket({
     id: 'diploma',
+    notYet: PHASE_10,
     name: 'Diploma',
     tier: 2,
     trinket: 'use',
@@ -21,6 +25,7 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'cherishedPhoto',
+    notYet: PHASE_10,
     name: 'Cherished Photo',
     tier: 2,
     trinket: 'use',
@@ -29,6 +34,7 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'familyPhoto',
+    notYet: PHASE_10,
     name: 'Family Photo',
     tier: 3,
     trinket: 'use',
@@ -37,6 +43,7 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'oldPhoto',
+    notYet: PHASE_10,
     name: 'Old Photo',
     tier: 2,
     trinket: 'use',
@@ -45,6 +52,7 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'instructionManual',
+    notYet: PHASE_10,
     name: 'Instruction Manual',
     tier: 3,
     trinket: 'use',
@@ -57,9 +65,11 @@ export const TRINKETS: readonly ItemDef[] = [
     tier: 2,
     trinket: 'use',
     text: 'Permanently: +1 to all caps the party gains.',
+    use: { target: 'self', capsBonus: true },
   }),
   trinket({
     id: 'postcard',
+    notYet: PHASE_10,
     name: 'Postcard',
     tier: 1,
     trinket: 'keep',
@@ -68,6 +78,7 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'textbook',
+    notYet: PHASE_10,
     name: 'Textbook',
     tier: 1,
     trinket: 'keep',
@@ -80,6 +91,7 @@ export const TRINKETS: readonly ItemDef[] = [
     tier: 3,
     trinket: 'use',
     text: 'Permanently +1 maximum Energy.',
+    use: { maxStat: 'energy' },
   }),
   trinket({
     id: 'appetiteSerum',
@@ -87,6 +99,7 @@ export const TRINKETS: readonly ItemDef[] = [
     tier: 3,
     trinket: 'use',
     text: 'Permanently +1 maximum Appetite.',
+    use: { maxStat: 'appetite' },
   }),
   trinket({
     id: 'moraleSerum',
@@ -94,6 +107,7 @@ export const TRINKETS: readonly ItemDef[] = [
     tier: 3,
     trinket: 'use',
     text: 'Permanently +1 maximum Morale.',
+    use: { maxStat: 'morale' },
   }),
   trinket({
     id: 'ring',
@@ -103,5 +117,6 @@ export const TRINKETS: readonly ItemDef[] = [
     art: null,
     // TODO(wyatt): which family, and for how many days.
     text: 'Changes a hiker’s family for a set number of days.',
+    notYet: 'It works once Wyatt decides which family and for how long.',
   }),
 ];

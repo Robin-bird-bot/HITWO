@@ -14,10 +14,11 @@ import { addCondition, addStacks } from './conditions';
 import { pushEvent } from './log';
 import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
-import { changeStat } from './stats';
+import { changeStat, cureInjuries } from './stats';
 import { thresholdSources } from './thresholds';
 import { resourceLimit } from './inventory';
 import { boostSources } from './items/boosts';
+import { shelterSources } from './items/shelters';
 import { loseDurability, removeItem } from './items/wear';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
@@ -31,6 +32,7 @@ import type {
   HikerId,
   ItemId,
   ItemInstance,
+  PlacedShelter,
   Line,
   NodeType,
   Phase,
@@ -190,6 +192,8 @@ export interface EffectContext extends QueryContext {
   wearItem(hiker: Hiker, uid: string, n: number, cause: string): void;
   /** A hiker's item breaks: gone at once (the Hardhat). */
   breakItem(hiker: Hiker, uid: string, cause: string): void;
+  /** Cures injuries (the Medic Tent). */
+  heal(hiker: Hiker, n: number, cause: string): void;
   /**
    * Adds to a running count for this hiker that resets each phase or day, and
    * returns the new total (Thrill Seeker's Energy lost this phase).
@@ -354,6 +358,10 @@ export interface ItemUse {
   resources?: { value: string; node?: NodeType };
   /** Keeps watch over this tile and the ones next to it tonight (Camping Lamp). */
   lampTonight?: true;
+  /** For good: every caps gain is bigger (Wallet: BALANCE.items.walletCaps). */
+  capsBonus?: true;
+  /** For good: the target's maximum of this stat goes up (the Serums: BALANCE.items.serumMax). */
+  maxStat?: StatName;
   /** Works for a while: its `boostHooks` (src/engine/items/boosts.ts). */
   boost?: {
     lasts: { unit: 'phases' | 'nights'; n: number | string };
@@ -431,6 +439,14 @@ export interface ItemDef {
   freeMove?: 'eachPhase' | 'afterChallenge' | 'afterCraft';
   /** Body: turns a failed challenge into a pass, for this much durability (a value) (Harness). */
   harness?: string;
+  /** Shelters: hooks that know the placed shelter (the Medic Tent remembers who it healed). */
+  placedHooks?: (placed: PlacedShelter) => Hooks;
+  /** Shelters: also shelters the tiles next to it (RV), or guards them from night events (Tree-House). */
+  shelterReach?: 'shelters' | 'guards';
+  /** Shelters: items of these types crafted on its tile get +1 Quality (Tailgate, Lodge). */
+  craftQualityFor?: readonly ItemType[];
+  /** Why an item can't be used yet, when its use waits on a later phase (the Photos). */
+  notYet?: string;
   /** Always this Quality (Puked Nuggets: always 1). */
   fixedQuality?: 1 | 2 | 3 | 4 | 5;
   /** Can be used from the bag, as a free action, on a hiker on the same tile. */
@@ -529,6 +545,7 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
   }
   // Boosts before worn items, so a free block (a Star) comes before one that costs (Puffer Jacket).
   sources.push(...boostSources(state, hiker));
+  sources.push(...shelterSources(state, hiker));
   for (const item of Object.values(hiker.inventory.equipped)) {
     const def = item && ITEMS[item.itemId];
     if (!item || !def) continue;
@@ -610,6 +627,7 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
       const item = findCarried(hiker, uid);
       if (item) loseDurability(state, hiker, item, n, cause);
     },
+    heal: (hiker, n, cause) => cureInjuries(state, hiker, n, cause),
     breakItem: (hiker, uid, cause) => {
       const item = findCarried(hiker, uid);
       if (!item) return;
@@ -945,6 +963,8 @@ export function gainCaps(state: GameState, n: number): number {
         n,
       )
     : n;
-  state.caps += total;
-  return total;
+  // Each Wallet used adds to every gain, for good.
+  const withWallets = total + (state.capsBonus ?? 0);
+  state.caps += withWallets;
+  return withWallets;
 }

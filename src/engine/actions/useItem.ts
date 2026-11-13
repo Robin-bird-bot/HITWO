@@ -23,7 +23,7 @@ import { resourceCount, resourceLimit } from '../inventory';
 import { addBoost, hasBoost } from '../items/boosts';
 import { fullDurability, qualityOf } from '../items/make';
 import { valueAt } from '../items/quality';
-import { loseUses } from '../items/wear';
+import { loseUses, removeItem } from '../items/wear';
 import { pushEvent } from '../log';
 import { adjacentTileIds, hikersOnTile, tileNodeTypes } from '../map';
 import { pick } from '../rng';
@@ -214,6 +214,8 @@ function uselessReason(
     }
     return undefined;
   }
+  // Raising a maximum or the caps bonus always does something.
+  if (use.capsBonus || use.maxStat) return undefined;
   if (use.lampTonight) {
     return tile?.lampTonight ? 'A Camping Lamp is already lit here tonight.' : undefined;
   }
@@ -275,7 +277,9 @@ export function validateUse(state: GameState, action: UseAction): string | undef
   if (!item) return `${user.name} doesn’t have that.`;
   const def = ITEMS[item.itemId];
   const use = def?.use;
-  if (!def || !use) return `${def?.name ?? 'That item'} can’t be used yet.`;
+  if (!def || !use) {
+    return `${def?.name ?? 'That item'} can’t be used yet.${def?.notYet ? ` ${def.notYet}` : ''}`;
+  }
   const blocked = canActReason(state, user, { action, role: 'actor', phase: state.phase });
   if (blocked) return blocked;
 
@@ -400,6 +404,30 @@ export function applyUse(state: GameState, action: UseAction): void {
     if (use.boost.once && choice)
       details.push(`a Choice card for ${NODE_NAME[choice as NodeType]}`);
   }
+  if (use.capsBonus) {
+    state.capsBonus = (state.capsBonus ?? 0) + BALANCE.items.walletCaps;
+    details.push(`+${state.capsBonus} to every caps gain, for good`);
+  }
+  if (use.maxStat) {
+    const stat = use.maxStat;
+    target.maxBonus = {
+      ...target.maxBonus,
+      [stat]: (target.maxBonus?.[stat] ?? 0) + BALANCE.items.serumMax,
+    };
+    details.push(`maximum ${STAT_NAME[stat]} now ${statMax(state, target, stat)}`);
+  }
   if (details.length && usedEvent?.kind === 'used') usedEvent.detail = details.join(', ');
-  loseUses(state, user, item, 1, '');
+  // A tool takes a use; a trinket is used up.
+  if (def.type === 'trinket') {
+    removeItem(user, item.uid);
+    pushEvent(state, {
+      kind: 'itemGone',
+      hikerId: user.id,
+      itemId: item.itemId,
+      why: 'used',
+      cause: '',
+    });
+  } else {
+    loseUses(state, user, item, 1, '');
+  }
 }

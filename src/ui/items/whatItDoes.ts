@@ -92,6 +92,13 @@ export function whatItDoes(
     out.push(`${v(use.resources.value)} random ${node ? `${NODE_NAME[node]} ` : ''}resources`);
   }
   if (use.lampTonight) out.push('keeps watch here and next door tonight');
+  if (use.capsBonus) out.push(`+${BALANCE.items.walletCaps} to every caps gain, for good`);
+  if (use.maxStat) {
+    const max = statMax(state, target, use.maxStat);
+    out.push(
+      `maximum ${STAT_NAME[use.maxStat]} ${max} → ${max + BALANCE.items.serumMax}, for good`,
+    );
+  }
   if (use.boost) {
     if (use.boost.chooseResource && choice) {
       const name = RESOURCES.find((r) => r.id === choice)?.name ?? choice;
@@ -105,6 +112,7 @@ export function whatItDoes(
 
 /** "2 uses left after this", or "The Shovel is used up." */
 export function usesAfter(item: ItemInstance, name: string): string {
+  if (ITEMS[item.itemId]?.type === 'trinket') return `The ${name} is used up.`;
   const left = (item.usesLeft ?? 1) - 1;
   if (left > 0) return `${left} use${left === 1 ? '' : 's'} left after this.`;
   return `The ${name} ${name.endsWith('s') ? 'are' : 'is'} used up.`;

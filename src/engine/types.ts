@@ -101,8 +101,8 @@ export interface Tile {
    * as usual when someone lands here, with its numbers rolled then.
    */
   revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
-  /** Shelters built on this tile (Ruins). TODO(phase 8): hikers placing shelter cards. */
-  shelters?: ItemId[];
+  /** Shelters placed on this tile, by a hiker or Ruins. */
+  shelters?: PlacedShelter[];
   /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
   luckBonus?: { amount: number; until: number; cause: string };
   /** This biome's Wonder (one per section). Its tile has no nodes and never draws a card. */
@@ -216,6 +216,21 @@ export interface ItemBoost {
 }
 
 /** One item a hiker carries (docs/design/03-items.md). */
+/**
+ * A shelter standing on a tile (03-items.md, "Shelters"). It counts down its
+ * nights at each camp step and is gone when they run out.
+ */
+export interface PlacedShelter {
+  uid: string;
+  itemId: ItemId;
+  /** Nights left, counting tonight. */
+  nightsLeft: number;
+  /** Who placed it; none when Ruins built it. */
+  by?: HikerId;
+  /** Medic Tent: hikers it has already healed. */
+  healed?: HikerId[];
+}
+
 export interface ItemInstance {
   uid: string;
   itemId: ItemId;
@@ -600,6 +615,8 @@ export type Action =
     }
   /** Eat one bite of a food in the bag (a free action). */
   | { type: 'eat'; hikerId: HikerId; itemUid: string }
+  /** Place a shelter from the bag on the hiker's tile (a free action). */
+  | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
@@ -722,6 +739,10 @@ export type GameEventBody =
       /** What it did, when the stats and conditions don't say (Fertilizer: "Forest Abundance +2"). */
       detail?: string;
     }
+  /** A shelter went up on a tile: placed by a hiker, or built by Ruins. */
+  | { kind: 'shelterPlaced'; tileId: TileId; itemId: ItemId; nights: number; hikerId?: HikerId }
+  /** A shelter's last night is over. */
+  | { kind: 'shelterGone'; tileId: TileId; itemId: ItemId }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */
   | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
   /** Costco Sample: the bite wasn't used up. */
@@ -903,6 +924,8 @@ export interface GameState {
   hikers: Hiker[];
   /** The party purse of acorn caps. */
   caps: number;
+  /** Added to every caps gain for good (each Wallet used: +1). */
+  capsBonus?: number;
   /** Each node type's Abundance meter, 0 to BALANCE.abundance.max. */
   abundance: Record<NodeType, number>;
   /** Who scavenged where today. Cleared each morning. */

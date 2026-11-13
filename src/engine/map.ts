@@ -1,3 +1,4 @@
+import { ITEMS } from '../content/items';
 import type { GameState, Hiker, Line, NodeType, Section, TileId } from './types';
 
 /** The line joining two tiles, if they are adjacent. */
@@ -27,10 +28,18 @@ export function isAlone(state: GameState, hiker: Hiker): boolean {
   );
 }
 
-/** A campsite is a built-in shelter; Ruins can build one on a tile. Placed shelters arrive with items (Phase 8). */
+/**
+ * Under a shelter: a campsite (built in), a shelter placed on the tile (a
+ * hiker's, or Ruins'), or an RV on a tile next to it.
+ */
 export function isSheltered(state: GameState, hiker: Hiker): boolean {
   const tile = state.section.tiles[hiker.tileId];
-  return tile?.special === 'campsite' || (tile?.shelters?.length ?? 0) > 0;
+  if (tile?.special === 'campsite' || (tile?.shelters?.length ?? 0) > 0) return true;
+  return adjacentTileIds(state.section, hiker.tileId).some((id) =>
+    (state.section.tiles[id]?.shelters ?? []).some(
+      (s) => ITEMS[s.itemId]?.shelterReach === 'shelters',
+    ),
+  );
 }
 
 /** The kinds of node on a tile (caps nodes aside), each once. */

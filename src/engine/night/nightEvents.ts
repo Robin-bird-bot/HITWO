@@ -42,6 +42,7 @@ import { pushEvent } from '../log';
 import { hikersOnTile, isSheltered } from '../map';
 import { nextFloat, pick, roll } from '../rng';
 import { nightSafeItem, nightShield } from '../effects';
+import { neighborShelter } from '../items/shelters';
 import type {
   CardRolls,
   GameEvent,
@@ -96,6 +97,9 @@ export function safeFrom(state: GameState, h: Hiker): Omit<NightSafe, 'hikerId'>
     return { why: 'watch', ...(by ? { by: by.id } : {}) };
   }
   if (isSheltered(state, h)) return { why: 'shelter' };
+  // A Tree-House next door guards this tile too.
+  const tree = neighborShelter(state, h.tileId, 'guards');
+  if (tree) return { why: 'item', item: tree.itemId };
   if (state.section.tiles[h.tileId]?.lampTonight) return { why: 'lamp' };
   const item = nightSafeItem(state, h);
   if (item) return { why: 'item', item };

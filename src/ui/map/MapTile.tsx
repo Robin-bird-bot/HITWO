@@ -1,7 +1,7 @@
 import { tileLabel } from '../../content/tileLabels';
 import { ASSETS } from '../../config/assets';
 import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engine';
-import { CARDS } from '../../content';
+import { CARDS, ITEMS } from '../../content';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { Icon } from '../icons/Icon';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
@@ -148,6 +148,15 @@ export function MapTile({
         </div>
       )}
 
+      {tile.shelters?.length ? (
+        <div className={styles.shelter} title={shelterWords(tile)}>
+          <Icon name="tent" size={13} strokeWidth={2.5} />
+          <span className={styles.shelterNights}>
+            {Math.max(...tile.shelters.map((s) => s.nightsLeft))}
+          </span>
+        </div>
+      ) : null}
+
       {tile.revealedCard && !tile.visited && (
         <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
       )}
@@ -275,11 +284,22 @@ function CheckpointTile({
   );
 }
 
+/** "Tent, 2 nights left · Cabin, 5 nights left". */
+function shelterWords(tile: Tile): string {
+  return (tile.shelters ?? [])
+    .map((s) => {
+      const name = ITEMS[s.itemId]?.name ?? 'Shelter';
+      return `${name}, ${s.nightsLeft} night${s.nightsLeft === 1 ? '' : 's'} left`;
+    })
+    .join(' · ');
+}
+
 function describeTile(tile: Tile, label: string | null): string {
   if (tile.kind === 'trailhead') return 'Trailhead';
   const parts = [label ?? 'Trail tile'];
   if (tile.special) parts.push(SPECIAL_LOOK[tile.special].name);
   if (tile.feature) parts.push(FEATURE_LOOK[tile.feature].name);
+  if (tile.shelters?.length) parts.push(`Shelter: ${shelterWords(tile)}`);
   const known = tile.nodes
     .filter((n) => n.revealed)
     .map((n) => (n.weather ? NODE_STATE_LABEL[n.weather.state] : NODE_NAME[n.type]));
