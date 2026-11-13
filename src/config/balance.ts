@@ -150,6 +150,28 @@ export const BALANCE = {
       /** Tailgate and Lodge: Quality added to what's crafted there (up to 5). */
       craftQuality: 1,
     },
+    /** Crafting (03-items.md, "Crafting"; Wyatt, Nov 7 and Nov 13). */
+    craft: {
+      /** Every hiker crafts every type at this tier until a workbench raises it (Phase 9). */
+      startTier: 1,
+      maxTier: 3,
+      /** A basic recipe deals this many items to pick 1 from. */
+      choices: 3,
+      /** Each one is a tier higher this often. */
+      higher: 0.1,
+      /**
+       * Higher tiers add to the basic recipe: key and broad resources.
+       * TODO(wyatt): the doc's first guess. Trinkets add `trinket` more different resources.
+       */
+      tierExtra: {
+        2: { key: 1, broad: 1, trinket: 1 },
+        3: { key: 2, broad: 2, trinket: 2 },
+      } as Record<number, { key: number; broad: number; trinket: number }>,
+      /** TODO(wyatt): Dogs craft with this Luck for Quality (first guess). */
+      dogLuck: -1,
+      /** Teaching a blueprint costs the teacher this much Morale, by its tier (Wyatt, Nov 13). */
+      teachMorale: { 1: 4, 2: 6, 3: 8 } as Record<number, number>,
+    },
     /** Wallet: added to every caps gain, for good. */
     walletCaps: 1,
     /** Serums: added to a stat's maximum, for good. */

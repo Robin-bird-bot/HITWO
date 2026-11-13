@@ -272,6 +272,10 @@ export interface Hiker {
   stats: Stats;
   /** A move their shoes gave them that doesn't use their action (Hiking Crocs, Work Boots). */
   freeMove?: { itemId: ItemId; day: number };
+  /** Blueprints this hiker knows: crafted, taught or found. They leave if the hiker abandons. */
+  blueprints?: ItemId[];
+  /** The tier they craft each type at, when above BALANCE.items.craft.startTier (a workbench). */
+  craftTier?: Partial<Record<ItemTypeName, number>>;
   /** Strikes toward passing out. */
   injuries: number;
   slots: TraitSlot[];
@@ -395,6 +399,26 @@ export interface ScavengeBonusOffer {
   count: number;
   /** Appetite for each one; 0 means they come free and are always taken. */
   appetiteEach: number;
+}
+
+/** Item types (the same as ItemType in effects.ts, here for the state's shape). */
+export type ItemTypeName = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
+
+/** One resource in one space of a recipe, and who gives it. */
+export interface PaidSlot {
+  from: HikerId;
+  resource: ResourceId;
+}
+
+/** A basic craft, paid for and dealt, waiting for the crafter to pick 1. */
+export interface PendingCraft {
+  hikerId: HikerId;
+  type: ItemTypeName;
+  options: { itemId: ItemId; quality?: 1 | 2 | 3 | 4 | 5 }[];
+  /** Extra durability for clothes (Engineering Vest). */
+  durability?: number;
+  /** What was paid, for the log. */
+  paid: PaidSlot[];
 }
 
 /** An open scavenge: dealt, waiting for the hiker to take a card. */
@@ -617,6 +641,25 @@ export type Action =
   | { type: 'eat'; hikerId: HikerId; itemUid: string }
   /** Place a shelter from the bag on the hiker's tile (a free action). */
   | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
+  /**
+   * Craft (uses the action): a basic recipe for a type (then pick 1 of the
+   * cards dealt), or a known blueprint for exactly that item. `slots` says
+   * who gives what for each space, in the recipe's order; left out, the game
+   * fills them (the crafter's own first). `node` is for an item made with one
+   * (Birkenstocks).
+   */
+  | {
+      type: 'craft';
+      hikerId: HikerId;
+      itemType: ItemTypeName;
+      blueprint?: ItemId;
+      slots?: PaidSlot[];
+      node?: NodeType;
+    }
+  /** Take one of the cards a basic craft dealt. */
+  | { type: 'craftTake'; index: number; node?: NodeType }
+  /** Teach a blueprint to a hiker on the same tile (a free action; the teacher pays Morale). */
+  | { type: 'teach'; hikerId: HikerId; toId: HikerId; itemId: ItemId }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
@@ -694,7 +737,11 @@ export type DebugOp =
   /** Fills every item a hiker has back up: uses, bites and durability. */
   | { kind: 'refillItems'; hikerId: HikerId }
   /** Sets a passed-out hiker's countdown (nights before they abandon if left alone). */
-  | { kind: 'setCountdown'; hikerId: HikerId; nights: number };
+  | { kind: 'setCountdown'; hikerId: HikerId; nights: number }
+  /** Sets the tier a hiker crafts one type at (the workbench does this in Phase 9). */
+  | { kind: 'setCraftTier'; hikerId: HikerId; itemType: ItemTypeName; tier: number }
+  /** Teaches a hiker a blueprint, for free. */
+  | { kind: 'learnBlueprint'; hikerId: HikerId; itemId: ItemId };
 
 export type ActionType = Action['type'];
 
@@ -743,6 +790,19 @@ export type GameEventBody =
   | { kind: 'shelterPlaced'; tileId: TileId; itemId: ItemId; nights: number; hikerId?: HikerId }
   /** A shelter's last night is over. */
   | { kind: 'shelterGone'; tileId: TileId; itemId: ItemId }
+  /** A hiker crafted an item, from a basic recipe or a blueprint. */
+  | {
+      kind: 'crafted';
+      hikerId: HikerId;
+      itemId: ItemId;
+      quality?: number;
+      blueprint: boolean;
+      /** They learned its blueprint just now. */
+      learned?: true;
+      paid: PaidSlot[];
+    }
+  /** A hiker taught another a blueprint, for Morale. */
+  | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */
   | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
   /** Costco Sample: the bite wasn't used up. */
@@ -932,6 +992,10 @@ export interface GameState {
   scavengedToday: ScavengeRecord[];
   /** An open scavenge, waiting for a card to be taken. */
   scavenge?: PendingScavenge;
+  /** A basic craft waiting for its pick. Everything else waits for it too. */
+  crafting?: PendingCraft;
+  /** The trinket recipe's random different resources, longest first; a new set after each trinket. */
+  trinketRecipe?: ResourceId[];
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
   /** Challenges, Trials and opportunities already seen in this section (no repeats). */

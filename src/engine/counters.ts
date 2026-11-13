@@ -27,3 +27,9 @@ export function countShelter(state: GameState): void {
   const i = state.sectionIndex;
   state.counters.sheltersPlaced[i] = (state.counters.sheltersPlaced[i] ?? 0) + 1;
 }
+
+/** A hiker crafted an item of this type (Multnomah Falls' goal). */
+export function countCrafted(state: GameState, hikerId: HikerId, type: string): void {
+  const mine = (state.counters.crafted[hikerId] ??= {});
+  mine[type] = (mine[type] ?? 0) + 1;
+}

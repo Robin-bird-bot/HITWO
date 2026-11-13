@@ -302,7 +302,17 @@ const BODY: ItemDef[] = [
     values: { durability: q(1, 1, 1, 2, 2) },
     text: 'Clothes this hiker crafts get +{durability} durability.',
     recipe: 'Fur 2, Metal 1, Oil 1, Moss 1, any 2',
-    // TODO(phase 8): crafted clothes get the durability (step 7).
+    hooksAt: (v) => ({
+      modifyCraft: (q) =>
+        q.type === 'clothes'
+          ? {
+              source: 'Engineering Vest',
+              label: `Engineering Vest: +${v('durability')} durability`,
+              tone: 'bonus',
+              durability: v('durability'),
+            }
+          : undefined,
+    }),
   }),
   body({
     id: 'cozySweater',
@@ -395,7 +405,6 @@ const SHOES: ItemDef[] = [
     tier: 2,
     text: 'After crafting: one free move that doesn’t use an action and costs 1 less Appetite. It uses 1 extra durability.',
     recipe: 'Fur 2, Oil 1, Metal 1, Stone 1, any 2',
-    // TODO(phase 8): crafting earns the move (step 7).
     freeMove: 'afterCraft',
   }),
   shoes({
@@ -471,8 +480,13 @@ const SOCKS: ItemDef[] = [
     'soupSocks',
     'Soup Socks',
     'Each time a hiker on this tile eats or crafts food, a {pct}% chance to gain 1 Morale.',
-    // TODO(wyatt): the wearer gains the Morale. TODO(phase 8): crafting food too (step 7).
-    (v) => ({ onTileEat: (_e, ctx) => maybeMorale(ctx, v('pct'), 'Soup Socks') }),
+    // TODO(wyatt): the wearer gains the Morale.
+    (v) => ({
+      onTileEat: (_e, ctx) => maybeMorale(ctx, v('pct'), 'Soup Socks'),
+      onTileCraft: (e, ctx) => {
+        if (e.type === 'food') maybeMorale(ctx, v('pct'), 'Soup Socks');
+      },
+    }),
   ),
   sock(
     'sleepySocks',

@@ -234,6 +234,25 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} ${item.name}` });
       break;
     }
+    case 'setCraftTier': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const tier = Math.max(1, Math.min(BALANCE.items.craft.maxTier, Math.round(op.tier)));
+      hiker.craftTier = { ...hiker.craftTier, [op.itemType]: tier };
+      pushEvent(state, {
+        kind: 'debug',
+        note: `${hiker.name} crafts ${op.itemType} at Tier ${tier}`,
+      });
+      break;
+    }
+    case 'learnBlueprint': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const item = ITEMS[op.itemId];
+      if (!hiker || !item || (hiker.blueprints ?? []).includes(item.id)) return;
+      hiker.blueprints = [...(hiker.blueprints ?? []), item.id];
+      pushEvent(state, { kind: 'debug', note: `${hiker.name} learned the ${item.name} blueprint` });
+      break;
+    }
     case 'refillItems': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       if (!hiker) return;

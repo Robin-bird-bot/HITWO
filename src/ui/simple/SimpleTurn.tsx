@@ -40,6 +40,8 @@ interface SimpleTurnProps {
   activeAction?: ActionId | null;
   /** A resource or bag item was clicked: open its give / return menu. */
   onPick?(pick: StashPick): void;
+  /** Opens the hiker's blueprints (the Craft window's Teach tab). */
+  onBlueprints?(): void;
 }
 
 export function SimpleTurn({
@@ -54,6 +56,7 @@ export function SimpleTurn({
   onPick,
   onFree,
   onAbandon,
+  onBlueprints,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker);
   // Why a red action is stopped, after tapping it.
@@ -121,6 +124,20 @@ export function SimpleTurn({
         </div>
       </Panel>
       <div className={styles.end}>
+        {onBlueprints && (
+          <button
+            type="button"
+            className={styles.bookButton}
+            onClick={onBlueprints}
+            aria-label={`${hiker.name}’s blueprints`}
+            title={`${hiker.name}’s blueprints`}
+          >
+            <Icon name="book" size={20} />
+            {hiker.blueprints?.length ? (
+              <span className={styles.bookCount}>{hiker.blueprints.length}</span>
+            ) : null}
+          </button>
+        )}
         <EndButton state={state} onEndPhase={onEndPhase} />
       </div>
     </>

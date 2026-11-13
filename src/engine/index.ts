@@ -108,3 +108,19 @@ export {
 } from './wonders/wonders';
 export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
 export { overBag } from './actions/give';
+export {
+  autoPay,
+  basicRecipe,
+  craftPool,
+  craftRecipe,
+  craftSetup,
+  craftTier,
+  fitsPart,
+  knowsBlueprint,
+  paymentReason,
+  spaceParts,
+  CRAFT_TYPES,
+  type CraftSetup,
+} from './items/craft';
+export { craftOpenReason, teachCost } from './actions/craft';
+export type { CraftModifier } from './effects';

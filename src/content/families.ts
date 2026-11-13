@@ -2,6 +2,7 @@
  * Built-in family traits (docs/design/02-traits-and-conditions.md, "Families").
  * Always on, no slot. They plug into engine hooks like any trait.
  */
+import { BALANCE } from '../config/balance';
 import type { FamilyDef } from '../engine/effects';
 import type { Family } from '../engine/types';
 
@@ -10,7 +11,8 @@ const FREE = { percent: -100 };
 export const FAMILIES: Readonly<Record<Family, FamilyDef>> = {
   human: { name: 'Human', hooks: {} },
 
-  // "+1 card to choose from when scavenging" (Wyatt, Nov 4). Crafts lower-quality items (Phase 8).
+  // "+1 card to choose from when scavenging" (Wyatt, Nov 4). Crafts lower-quality items:
+  // less Luck for Quality (BALANCE.items.craft.dogLuck).
   dog: {
     name: 'Dog',
     hooks: {
@@ -19,6 +21,12 @@ export const FAMILIES: Readonly<Record<Family, FamilyDef>> = {
         label: 'Dog: 1 extra card to choose from',
         tone: 'bonus',
         cards: 1,
+      }),
+      modifyCraft: () => ({
+        source: 'Dog',
+        label: `Dog: ${BALANCE.items.craft.dogLuck} Luck for Quality`,
+        tone: 'warning',
+        luck: BALANCE.items.craft.dogLuck,
       }),
     },
   },

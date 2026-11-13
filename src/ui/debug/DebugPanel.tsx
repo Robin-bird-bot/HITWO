@@ -28,10 +28,12 @@ import {
   isRevealed,
   wonderTile,
   STAT_NAMES,
+  CRAFT_TYPES,
   type Action,
   type CardDef,
   type GameState,
   type Hiker,
+  type ItemTypeName,
   type NodeType,
   type ScavengeCardType,
 } from '../../engine';
@@ -191,6 +193,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
           </button>
         </div>
         <ItemGiver hikers={state.hikers} onApply={run} />
+        <CraftDebug hikers={state.hikers} onApply={run} />
         <div className={styles.row}>
           <a className={styles.button} href="#debug-items">
             Every item card
@@ -718,6 +721,91 @@ function PassOutTools({ state, onApply }: { state: GameState; onApply(action: Ac
 }
 
 /** Put any item in a hiker's bag (medical items first: they're the ones that work now). */
+/** Crafting: a hiker's tier for one type (the workbench, Phase 9), and any blueprint. */
+function CraftDebug({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [itemType, setItemType] = useState<ItemTypeName>('tool');
+  const [tier, setTier] = useState(2);
+  const [itemId, setItemId] = useState('shovel');
+  const blueprints = Object.values(ITEMS)
+    .filter((i) => i.recipe)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={hikerId}
+          onChange={(e) => setHikerId(e.target.value)}
+          aria-label="Hiker for crafting"
+        >
+          {hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={itemType}
+          onChange={(e) => setItemType(e.target.value as ItemTypeName)}
+          aria-label="Item type"
+        >
+          {CRAFT_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={tier}
+          onChange={(e) => setTier(Number(e.target.value))}
+          aria-label="Craft tier"
+        >
+          {[1, 2, 3].map((t) => (
+            <option key={t} value={t}>
+              Tier {t}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'setCraftTier', hikerId, itemType, tier } })
+          }
+        >
+          Set craft tier
+        </button>
+      </div>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={itemId}
+          onChange={(e) => setItemId(e.target.value)}
+          aria-label="Blueprint"
+        >
+          {blueprints.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.name} · {i.type} · Tier {i.tier}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'learnBlueprint', hikerId, itemId } })
+          }
+        >
+          Learn blueprint
+        </button>
+      </div>
+    </>
+  );
+}
+
 function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
   const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
   const [itemId, setItemId] = useState('bandages');

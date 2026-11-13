@@ -90,7 +90,8 @@ export function makeItem(
     quality,
     prefix = 'item',
     luck = 0,
-  }: { quality?: Quality; prefix?: string; luck?: number } = {},
+    node,
+  }: { quality?: Quality; prefix?: string; luck?: number; node?: NodeType } = {},
 ): ItemInstance {
   const def = ITEMS[itemId];
   const uid = `${prefix}-${state.nextEventId}-${state.itemSerial ?? 0}-${itemId}`;
@@ -98,9 +99,9 @@ export function makeItem(
   if (!def || !hasQuality(def))
     return { uid, itemId, ...(def ? fullCounters(def, undefined) : {}) };
   const q = def.fixedQuality ?? quality ?? rollQuality(state.rng, luck);
-  // TODO(phase 8): a crafter picks the node (step 7); found ones get a random one.
-  const node = def.madeWithNode ? { node: pick(state.rng, NODES) } : {};
-  return { uid, itemId, quality: q, ...fullCounters(def, q), ...node };
+  // A crafter picks the node; found ones get a random one.
+  const made = def.madeWithNode ? { node: node ?? pick(state.rng, NODES) } : {};
+  return { uid, itemId, quality: q, ...fullCounters(def, q), ...made };
 }
 
 const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];

@@ -152,6 +152,27 @@ export interface ScavengeModifier {
   addCards?: { type: ScavengeCardType; node: NodeType }[];
 }
 
+/** A hiker about to craft an item of this type on a tile. */
+export interface CraftQuery {
+  type: ItemType;
+  tileId: TileId;
+}
+
+/** How a source changes crafting. Each one shows in the Craft window. */
+export interface CraftModifier {
+  source: string;
+  label: string;
+  tone: ScavengeBonus['tone'];
+  /** Luck for the Quality roll (Morale, Lucky, Dogs). */
+  luck?: number;
+  /** More (or fewer) cards to pick from on a basic recipe (Tunnel Vision). */
+  cards?: number;
+  /** Quality added after the roll, up to 5 (a Tailgate or Lodge on the tile). */
+  quality?: number;
+  /** Clothes come out with this much more durability (Engineering Vest). */
+  durability?: number;
+}
+
 export interface ActQuery {
   action: Action;
   role: Role;
@@ -262,8 +283,12 @@ export interface Hooks {
     q: ScavengeQuery,
     ctx: QueryContext,
   ): ScavengeModifier | ScavengeModifier[] | undefined;
-  /** Phase 8 step 7. */
-  onCraft?(e: unknown, ctx: EffectContext): void;
+  /** Changes to a craft: Luck, cards, Quality and durability. */
+  modifyCraft?(q: CraftQuery, ctx: QueryContext): CraftModifier | CraftModifier[] | undefined;
+  /** The hiker crafted an item. */
+  onCraft?(e: { itemId: ItemId; type: ItemType }, ctx: EffectContext): void;
+  /** Someone on this hiker's tile (them included) crafted an item (Soup Socks). */
+  onTileCraft?(e: { crafterId: HikerId; itemId: ItemId; type: ItemType }, ctx: EffectContext): void;
   /** The hiker ate a bite of food. */
   onEat?(e: { itemId: ItemId }, ctx: EffectContext): void;
   /** Stops a negative condition before it lands (a Star; the Puffer Jacket in step 4). */
@@ -443,8 +468,6 @@ export interface ItemDef {
   placedHooks?: (placed: PlacedShelter) => Hooks;
   /** Shelters: also shelters the tiles next to it (RV), or guards them from night events (Tree-House). */
   shelterReach?: 'shelters' | 'guards';
-  /** Shelters: items of these types crafted on its tile get +1 Quality (Tailgate, Lodge). */
-  craftQualityFor?: readonly ItemType[];
   /** Why an item can't be used yet, when its use waits on a later phase (the Photos). */
   notYet?: string;
   /** Always this Quality (Puked Nuggets: always 1). */
@@ -725,6 +748,31 @@ export function computeGain(
     }
   }
   return applyModifiers(base, mods, 'gain');
+}
+
+/** Every change the hiker's sources make to crafting this type here. */
+export function craftModifiers(state: GameState, hiker: Hiker, q: CraftQuery): CraftModifier[] {
+  const ctx = queryContext(state, hiker);
+  const out: CraftModifier[] = [];
+  for (const source of effectSourcesFor(state, hiker)) {
+    const result = source.hooks.modifyCraft?.(q, ctx);
+    if (result) out.push(...(Array.isArray(result) ? result : [result]));
+  }
+  return out;
+}
+
+/** A hiker crafted an item: their own sources hear of it, then everyone on the tile's. */
+export function fireCraft(state: GameState, crafter: Hiker, itemId: ItemId, type: ItemType): void {
+  const own = effectContext(state, crafter);
+  for (const source of effectSourcesFor(state, crafter))
+    source.hooks.onCraft?.({ itemId, type }, own);
+  for (const hiker of hikersOnTile(state, crafter.tileId)) {
+    if (hiker.status !== 'active') continue;
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) {
+      source.hooks.onTileCraft?.({ crafterId: crafter.id, itemId, type }, ctx);
+    }
+  }
 }
 
 /** Every change the hiker's sources make to a scavenge on this tile. */

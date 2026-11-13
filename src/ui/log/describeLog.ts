@@ -333,6 +333,27 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'scavenge' });
         break;
       }
+      case 'crafted': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const quality = e.quality ? ` (Quality ${e.quality})` : '';
+        const how = e.blueprint ? ' from its blueprint' : '';
+        const learned = e.learned ? ', and learned its blueprint' : '';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} crafted a ${item}${quality}${how}${learned}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'taught': {
+        const item = ITEMS[e.itemId]?.name ?? 'a';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} taught ${name(e.toId)} the ${item} blueprint (−${e.morale} Morale).`,
+          tone: 'rest',
+        });
+        break;
+      }
       case 'shelterPlaced': {
         const item = ITEMS[e.itemId]?.name ?? 'A shelter';
         const tile = state.section.tiles[e.tileId];

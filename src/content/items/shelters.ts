@@ -6,11 +6,24 @@
  * Nights marked [first guess] in the doc are in BALANCE.items.
  */
 import { BALANCE } from '../../config/balance';
-import type { Hooks, ItemDef } from '../../engine/effects';
+import type { Hooks, ItemDef, ItemType } from '../../engine/effects';
 import { item } from './build';
 
 const N = BALANCE.items.shelterNights;
 const S = BALANCE.items.shelter;
+
+/** +1 Quality (up to 5) for these types crafted on this tile (Tailgate, Lodge). */
+const craftQuality = (name: string, types: readonly ItemType[]): Hooks => ({
+  modifyCraft: (q) =>
+    types.includes(q.type)
+      ? {
+          source: name,
+          label: `${name}: +${S.craftQuality} Quality`,
+          tone: 'bonus',
+          quality: S.craftQuality,
+        }
+      : undefined,
+});
 
 /** More Energy from sleeping here (Cabin, RV). */
 const moreSleep = (name: string): Hooks => ({
@@ -49,8 +62,7 @@ export const SHELTERS: readonly ItemDef[] = [
     tier: 2,
     text: 'Food crafted on this tile gets +1 Quality (up to 5).',
     recipe: 'Metal 3, Oil 2, any 3',
-    // TODO(phase 8): crafting reads it (step 7).
-    craftQualityFor: ['food'],
+    hooks: craftQuality('Tailgate', ['food']),
   }),
   shelter({
     id: 'yurt',
@@ -122,7 +134,6 @@ export const SHELTERS: readonly ItemDef[] = [
     tier: 3,
     text: 'Tools and clothes crafted on this tile get +1 Quality (up to 5).',
     recipe: 'Wood 4, Stone 2, Metal 1, Fur 1, any 1',
-    // TODO(phase 8): crafting reads it (step 7).
-    craftQualityFor: ['tool', 'clothes'],
+    hooks: craftQuality('Lodge', ['tool', 'clothes']),
   }),
 ];

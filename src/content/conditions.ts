@@ -225,8 +225,13 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '−1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
+        source: 'Unlucky',
+        label: `Unlucky: −${C.luck} Luck`,
+        tone: 'warning',
+        luck: -C.luck,
+      }),
+      modifyCraft: () => ({
         source: 'Unlucky',
         label: `Unlucky: −${C.luck} Luck`,
         tone: 'warning',
@@ -257,8 +262,16 @@ const LIST: ConditionDef[] = [
       },
     },
   },
-  // TODO(phase 8): Inept stops the Craft action (step 7).
-  { id: 'inept', name: 'Inept', kind: 'negative', text: 'Can’t craft.' },
+  {
+    id: 'inept',
+    name: 'Inept',
+    kind: 'negative',
+    text: 'Can’t craft.',
+    hooks: {
+      canAct: (q, ctx) =>
+        q.action.type === 'craft' ? `${ctx.self.name} is Inept and can’t craft.` : undefined,
+    },
+  },
   {
     id: 'clumsy',
     name: 'Clumsy',
@@ -305,8 +318,13 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '1 fewer card to choose from when scavenging or crafting.',
     hooks: {
-      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
+        source: 'Tunnel Vision',
+        label: `Tunnel Vision: ${C.tunnelVisionCards} fewer card`,
+        tone: 'warning',
+        cards: -C.tunnelVisionCards,
+      }),
+      modifyCraft: () => ({
         source: 'Tunnel Vision',
         label: `Tunnel Vision: ${C.tunnelVisionCards} fewer card`,
         tone: 'warning',
@@ -426,8 +444,13 @@ const LIST: ConditionDef[] = [
     kind: 'positive',
     text: '+1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 8): crafting too.
       modifyScavenge: () => ({
+        source: 'Lucky',
+        label: `Lucky: +${C.luck} Luck`,
+        tone: 'luck',
+        luck: C.luck,
+      }),
+      modifyCraft: () => ({
         source: 'Lucky',
         label: `Lucky: +${C.luck} Luck`,
         tone: 'luck',

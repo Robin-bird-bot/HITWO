@@ -397,6 +397,18 @@ button.itemCard:focus-visible > * {
   cursor: help;
 }
 
+.blueprints[data-ready='true'] {
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.blueprints[data-ready='true']:hover {
+  border-color: var(--gold);
+}
+
 .end {
   flex: 1;
   height: 52px;

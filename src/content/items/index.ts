@@ -43,6 +43,11 @@ export function findableItems(type: ItemType, tier: number = 1): ItemDef[] {
   return TABLE_ITEMS.filter((i) => i.type === type && !i.notFound && i.tier === tier);
 }
 
+/** Items a basic recipe can deal at exactly this tier: never "Not crafted" ones. */
+export function craftableItems(type: ItemType, tier: number): ItemDef[] {
+  return TABLE_ITEMS.filter((i) => i.type === type && !i.notCrafted && i.tier === tier);
+}
+
 /**
  * Old item ids from before the Nov 7 item list, and what they became
  * (03-items.md, "Older items, merged or replaced"). Saves are upgraded with it.

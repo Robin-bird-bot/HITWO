@@ -115,6 +115,13 @@ export function thresholdSources(h: Hiker): EffectSource[] {
           tone: high ? 'luck' : 'warning',
           luck,
         }),
+        // The same Luck shifts a crafted item's Quality.
+        modifyCraft: () => ({
+          source: high ? 'High Morale' : 'Low Morale',
+          label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from Morale (${h.stats.morale})`,
+          tone: high ? 'luck' : 'warning',
+          luck,
+        }),
       },
     });
   }

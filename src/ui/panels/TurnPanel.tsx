@@ -53,6 +53,8 @@ interface TurnPanelProps {
   onFree?(action: Action): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
+  /** Opens the hiker's blueprints (the Craft window's Teach tab). */
+  onBlueprints?(): void;
 }
 
 export function TurnPanel({
@@ -66,6 +68,7 @@ export function TurnPanel({
   onPick,
   onFree,
   onAbandon,
+  onBlueprints,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -92,7 +95,12 @@ export function TurnPanel({
         <Bag state={state} hiker={hiker} onPick={onPick} />
         <Resources state={state} hiker={hiker} onPick={onPick} />
       </div>
-      <Footer state={state} onEndPhase={onEndPhase} />
+      <Footer
+        state={state}
+        hiker={hiker}
+        onEndPhase={onEndPhase}
+        {...(onBlueprints ? { onBlueprints } : {})}
+      />
     </Panel>
   );
 }
@@ -676,17 +684,29 @@ export function EndButton({ state, onEndPhase }: { state: GameState; onEndPhase(
   );
 }
 
-function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void }) {
+function Footer({
+  state,
+  hiker,
+  onEndPhase,
+  onBlueprints,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onEndPhase(): void;
+  onBlueprints?(): void;
+}) {
+  const n = hiker.blueprints?.length ?? 0;
   return (
     <div className={styles.footer}>
       <button
         type="button"
         className={styles.blueprints}
-        aria-disabled="true"
-        title="Blueprints arrive in Phase 8"
+        data-ready={!!onBlueprints}
+        onClick={onBlueprints}
+        title={`${hiker.name}’s blueprints: teach one to a hiker on this tile`}
       >
         <Icon name="book" size={18} />
-        Blueprints
+        Blueprints{n ? ` · ${n}` : ''}
       </button>
       <EndButton state={state} onEndPhase={onEndPhase} />
     </div>

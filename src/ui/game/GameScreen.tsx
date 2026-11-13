@@ -63,6 +63,7 @@ import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
+import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
 import { SimpleTurn } from '../simple/SimpleTurn';
@@ -145,6 +146,8 @@ export function GameScreen({
   const [confirmAbandon, setConfirmAbandon] = useState<HikerId | null>(null);
   // The card just taken, shown for a moment before the scavenge window closes.
   const [took, setTook] = useState<TookCard | null>(null);
+  // The Craft window: whose, and on which tab.
+  const [craftOpen, setCraftOpen] = useState<{ hikerId: string; tab: CraftTab } | null>(null);
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
@@ -230,6 +233,7 @@ export function GameScreen({
       action.type === 'sleep' ||
       action.type === 'keepWatch' ||
       action.type === 'tend' ||
+      action.type === 'craft' ||
       action.type === 'scavengeTake';
     // A free move (Jogging Shoes, Motivated…) leaves the hiker their action: stay on them.
     const actedNow = gameStore.getState()?.hikers.find((h) => h.id === actorId)?.acted;
@@ -312,8 +316,14 @@ export function GameScreen({
     } else if (id === 'scavenge') {
       setMode({ kind: 'idle' });
       dispatch({ type: 'scavenge', hikerId: selected.id });
+    } else if (id === 'craft') {
+      setMode({ kind: 'idle' });
+      setCraftOpen({ hikerId: selected.id, tab: 'craft' });
     }
   };
+  const openBlueprints = () => selected && setCraftOpen({ hikerId: selected.id, tab: 'teach' });
+  // A basic craft waiting for its pick keeps the window open on its crafter.
+  const crafter = state.crafting?.hikerId ?? craftOpen?.hikerId;
 
   const onAbility = (abilityId: string, choice?: string) =>
     selected &&
@@ -465,6 +475,7 @@ export function GameScreen({
               onPick={setStash}
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
+              onBlueprints={openBlueprints}
             />
           )}
         </>
@@ -493,6 +504,7 @@ export function GameScreen({
               onPick={setStash}
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
+              onBlueprints={openBlueprints}
             />
           )}
         </>
@@ -529,6 +541,19 @@ export function GameScreen({
           onReroll={(card) => dispatch({ type: 'scavengeReroll', card })}
           onTake={takeCard}
           onClose={closeScavenge}
+        />
+      )}
+
+      {crafter && !state.challenge && (
+        <CraftWindow
+          key={crafter}
+          state={state}
+          hikerId={crafter}
+          tab={craftOpen?.tab ?? 'craft'}
+          simple={simple}
+          onTab={(tab) => setCraftOpen({ hikerId: crafter, tab })}
+          onDispatch={dispatch}
+          onClose={() => setCraftOpen(null)}
         />
       )}
 
