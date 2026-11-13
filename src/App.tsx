@@ -7,6 +7,7 @@ import { DebugItems } from './ui/debug/DebugItems';
 import { DebugCards } from './ui/debug/DebugCards';
 import { DebugChallenges } from './ui/debug/DebugChallenges';
 import { ConditionsMockup } from './ui/mockup/ConditionsMockup';
+import { CraftingMockup } from './ui/mockup/CraftingMockup';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
 import { debugEnabled } from './ui/debug/debugEnabled';
@@ -37,6 +38,7 @@ export function App() {
   if (hash.startsWith('#debug-items') && debugEnabled()) return <DebugItems />;
   if (hash.startsWith('#debug-challenges') && debugEnabled()) return <DebugChallenges />;
   if (hash.startsWith('#mockup-conditions') && debugEnabled()) return <ConditionsMockup />;
+  if (hash.startsWith('#mockup-crafting') && debugEnabled()) return <CraftingMockup />;
 
   const startNew = (seed = randomSeed()) => {
     gameStore.newGame(createGame({ seed, hikers: STARTING_PARTY }));
