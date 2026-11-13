@@ -585,46 +585,6 @@
   color: var(--text-faint);
 }
 
-.packs {
-  width: 100%;
-  margin-top: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 12px;
-}
-
-.packsHead {
-  font-family: var(--font-pixel);
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-}
-
-.packsWords {
-  flex: 1 1 260px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.packIcons {
-  display: flex;
-  gap: 6px;
-}
-
-.packIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.07);
-  display: grid;
-  place-items: center;
-  color: var(--gold);
-}
-
 /* ── The pool ── */
 
 .pool {

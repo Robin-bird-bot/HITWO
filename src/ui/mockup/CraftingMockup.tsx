@@ -517,7 +517,6 @@ function CraftBody({
                 onPick={() => onBlueprint(id === blueprint ? null : id)}
               />
             ))}
-            {type === 'tool' && <PackRow simple={simple} />}
           </div>
         </div>
 
@@ -678,31 +677,6 @@ function Blueprint({
         {status}
       </span>
     </button>
-  );
-}
-
-/** Resource packs: always on the Tool tab, a way to swap 5 unwanted resources. */
-function PackRow({ simple }: { simple: boolean }) {
-  return (
-    <div className={styles.packs}>
-      <span className={styles.packsHead}>SWAP · RESOURCE PACKS</span>
-      {!simple && (
-        <span className={styles.packsWords}>
-          5 of a node’s resources (any 5 for the Resource Pack) → a pack that gives 3–5 random ones
-          back.
-        </span>
-      )}
-      <span className={styles.packIcons}>
-        {(['forest', 'river', 'wildlife', 'mountain'] as NodeType[]).map((n) => (
-          <span key={n} className={styles.packIcon} title={`${NODE_NAME[n]} Pack`}>
-            <img src={NODE_IMAGE[n]} alt="" width={22} height={25} />
-          </span>
-        ))}
-        <span className={styles.packIcon} title="Resource Pack">
-          <Icon name="sparkles" size={18} />
-        </span>
-      </span>
-    </div>
   );
 }
 
