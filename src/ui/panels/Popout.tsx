@@ -67,14 +67,20 @@ export function Popout({
   }, [focusFirst, ref]);
   // A step that swaps its buttons (Use → pick → confirm) drops focus: catch it, on the
   // button the step marks `data-autofocus` (a confirm's safe answer) or the first one.
+  // Watched as the box changes, since a step's state can live in any child.
   useEffect(() => {
-    if (!focusFirst || document.activeElement !== document.body) return;
     const box = ref.current;
-    const next =
-      box?.querySelector<HTMLElement>('[data-autofocus]') ??
-      box?.querySelector<HTMLElement>(FOCUSABLE);
-    next?.focus({ preventScroll: true });
-  });
+    if (!focusFirst || !box) return;
+    const watch = new MutationObserver(() => {
+      if (document.activeElement !== document.body) return;
+      const next =
+        box.querySelector<HTMLElement>('[data-autofocus]') ??
+        box.querySelector<HTMLElement>(FOCUSABLE);
+      next?.focus({ preventScroll: true });
+    });
+    watch.observe(box, { childList: true, subtree: true });
+    return () => watch.disconnect();
+  }, [focusFirst, ref]);
 
   return (
     <div

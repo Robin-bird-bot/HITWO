@@ -112,6 +112,22 @@ export function whatItDoes(
 }
 
 /** "2 uses left after this", or "The Shovel is used up." */
+/** What the stash menu can do with a bag item, for labels: "eat, give or drop". */
+export function itemVerbs(itemId: string): string {
+  const def = ITEMS[itemId];
+  const first =
+    def?.type === 'clothes'
+      ? 'put on'
+      : def?.type === 'food'
+        ? 'eat'
+        : def?.type === 'shelter'
+          ? 'place'
+          : def?.use
+            ? 'use'
+            : '';
+  return [first, 'give or drop'].filter(Boolean).join(', ');
+}
+
 export function usesAfter(item: ItemInstance, name: string): string {
   if (ITEMS[item.itemId]?.type === 'trinket') return `The ${name} is used up.`;
   const left = (item.usesLeft ?? 1) - 1;

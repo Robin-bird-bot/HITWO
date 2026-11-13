@@ -43,7 +43,7 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
 import { Popout } from '../panels/Popout';
 import type { StashPick } from '../panels/TurnPanel';
-import { usesAfter, whatItDoes } from '../items/whatItDoes';
+import { itemVerbs, usesAfter, whatItDoes } from '../items/whatItDoes';
 import { ItemCard as CardFace } from '../items/ItemCard';
 import styles from './StashMenu.module.css';
 
@@ -172,7 +172,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
 
   return (
     <Popout
-      label={`${name}: ${out ? 'take it' : `give${resource ? ' or return' : ' or drop'}`}`}
+      label={`${name}: ${out ? 'take it' : resource ? 'give or return' : itemVerbs(item?.itemId ?? '')}`}
       dragId="inventory"
       focusFirst
       className={styles.menu}

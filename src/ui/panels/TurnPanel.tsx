@@ -31,6 +31,7 @@ import { actionStates, tileName, type ActionId, type ActionState } from './hiker
 import { Panel } from './Panel';
 import panel from './Panel.module.css';
 import { BoostChips } from '../items/BoostChips';
+import { itemVerbs } from '../items/whatItDoes';
 import styles from './TurnPanel.module.css';
 
 const PHASE_NAME = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -494,11 +495,7 @@ function ItemCard({
 }) {
   const def = ITEMS[item.itemId];
   const name = def?.name ?? item.itemId;
-  const what = worn
-    ? 'take off'
-    : [def?.type === 'clothes' ? 'put on' : '', def?.use ? 'use' : '', 'give or drop']
-        .filter(Boolean)
-        .join(', ');
+  const what = worn ? 'take off' : itemVerbs(item.itemId);
   const face = (
     <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
   );

@@ -489,6 +489,9 @@ export function GameScreen({
         section={section}
         hikers={hikers}
         targets={targets}
+        reachLabel={
+          toolMap && toolItem ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here` : undefined
+        }
         onTileClick={(tileId) => (toolMap ? setToolTile(tileId) : setPendingTile(tileId))}
         fx={fx}
         checkpointLabelOnHover={simple}

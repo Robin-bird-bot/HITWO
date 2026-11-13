@@ -24,6 +24,8 @@ interface MapTileProps {
   hikerCount: number;
   /** A connected tile the selected hiker can move to ('ok', gold ring) or can't ('blocked'). */
   reach?: 'ok' | 'blocked';
+  /** What clicking a reachable tile does ("Move here", "Use the Scanner here"). */
+  reachLabel?: string;
   onClick?(): void;
   /** Simple mode: the checkpoint's label shows only on hover. */
   checkpointLabelOnHover?: boolean;
@@ -42,6 +44,7 @@ export function MapTile({
   currentColor,
   hikerCount,
   reach,
+  reachLabel = 'Move here',
   onClick,
   checkpointLabelOnHover,
   mark,
@@ -85,7 +88,7 @@ export function MapTile({
       style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
       title={describe}
       data-reach={reach}
-      {...clickable(onClick, reach === 'ok' ? `Move here: ${describe}` : describe)}
+      {...clickable(onClick, reach === 'ok' ? `${reachLabel}: ${describe}` : describe)}
     >
       {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
       {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
