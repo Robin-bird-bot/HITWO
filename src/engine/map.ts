@@ -47,3 +47,24 @@ export function tileNodeTypes(state: GameState, tileId: TileId): NodeType[] {
   const tile = state.section.tiles[tileId];
   return [...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
 }
+
+/**
+ * Every tile touching this one on the hex grid, with or without a line
+ * (Trampoline, Minesweeper, Radar Scanner): the same row 2 columns over, and
+ * the rows above and below 1 column over.
+ */
+export function besideTileIds(section: Section, tileId: TileId): TileId[] {
+  const t = section.tiles[tileId];
+  if (!t) return [];
+  const spots: [number, number][] = [
+    [0, -2],
+    [0, 2],
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ];
+  return Object.values(section.tiles)
+    .filter((o) => spots.some(([dr, dc]) => o.row === t.row + dr && o.col === t.col + dc))
+    .map((o) => o.id);
+}

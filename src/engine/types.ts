@@ -100,7 +100,18 @@ export interface Tile {
    * Its card, picked early and shown on the map (Old Firewatch Tower). It opens
    * as usual when someone lands here, with its numbers rolled then.
    */
-  revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
+  revealedCard?: {
+    cardId: string;
+    tier: 1 | 2 | 3;
+    scale: number;
+    alternative?: string;
+    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
+    hidden?: true;
+  };
+  /** No card here: CHALLENGE_SHARE left it empty, or a Fire Flower burned it away. */
+  quiet?: true;
+  /** What scouting found out, shown on the map: a card or not, and maybe its kind and tier. */
+  scan?: { has: boolean; kind?: 'challenge' | 'opportunity' | 'trial'; tier?: number };
   /** Shelters placed on this tile, by a hiker or Ruins. */
   shelters?: PlacedShelter[];
   /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
@@ -800,6 +811,18 @@ export type GameEventBody =
       /** They learned its blueprint just now. */
       learned?: true;
       paid: PaidSlot[];
+    }
+  /**
+   * A scouting tool counted the cards on tiles (Minesweeper around the hiker,
+   * Linescan along a row), or swept tiles (Scanner, Radar Scanner).
+   */
+  | {
+      kind: 'scouted';
+      hikerId: HikerId;
+      itemId: ItemId;
+      tileIds: TileId[];
+      counts?: { challenge: number; opportunity: number; trial: number };
+      row?: number;
     }
   /** A hiker taught another a blueprint, for Morale. */
   | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }

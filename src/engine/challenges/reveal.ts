@@ -45,7 +45,7 @@ function forcedPick(state: GameState, forced: NonNullable<QueuedReveal['forced']
 /** Does landing on this tile trigger a card? Not the trailhead, the checkpoint or a visited tile. */
 export function triggers(state: GameState, tileId: TileId): boolean {
   const tile = state.section.tiles[tileId];
-  if (!tile || tile.kind !== 'normal') return false;
+  if (!tile || tile.kind !== 'normal' || tile.quiet) return false;
   return !(tile.special && BALANCE.challenges.noCardOn.includes(tile.special));
 }
 
@@ -175,7 +175,14 @@ export function openNext(state: GameState): void {
 export function revealCardOn(state: GameState, tileId: TileId, cause: string): string | undefined {
   const tile = state.section.tiles[tileId];
   if (tile?.wonder) return revealWonder(state, tileId, cause) ? tile.wonder.id : undefined;
-  if (!tile || tile.visited || tile.revealedCard || !triggers(state, tileId)) return undefined;
+  if (!tile || tile.visited || !triggers(state, tileId)) return undefined;
+  // Picked already but not shown (a Security Camera): show it now.
+  if (tile.revealedCard?.hidden) {
+    delete tile.revealedCard.hidden;
+    pushEvent(state, { kind: 'revealedCard', tileId, cardId: tile.revealedCard.cardId, cause });
+    return tile.revealedCard.cardId;
+  }
+  if (tile.revealedCard) return undefined;
   const picked = pickForTile(state, state.rng, tile, []);
   if (!picked) return undefined;
   tile.revealedCard = {
@@ -189,4 +196,38 @@ export function revealCardOn(state: GameState, tileId: TileId, cause: string): s
   }
   pushEvent(state, { kind: 'revealedCard', tileId, cardId: picked.cardId, cause });
   return picked.cardId;
+}
+
+/** Is this tile's early card shown on the map (not just picked by a scouting tool)? */
+export const cardShown = (tile: { revealedCard?: { hidden?: true } }) =>
+  !!tile.revealedCard && !tile.revealedCard.hidden;
+
+/**
+ * What a tile nobody has reached holds, for the scouting tools: a card or
+ * not, and its kind and tier. Knowing the kind means picking the card now,
+ * without showing it; it opens as usual when someone lands there.
+ */
+export function peekTile(
+  state: GameState,
+  tileId: TileId,
+): { has: boolean; kind?: 'challenge' | 'opportunity' | 'trial'; tier?: number } {
+  const tile = state.section.tiles[tileId];
+  if (!tile || tile.visited || state.noChallenges || !triggers(state, tileId))
+    return { has: false };
+  if (!tile.revealedCard) {
+    const picked = pickForTile(state, state.rng, tile, []);
+    if (!picked) return { has: false };
+    tile.revealedCard = {
+      cardId: picked.cardId,
+      tier: picked.tier,
+      scale: picked.scale,
+      ...(picked.alternative ? { alternative: picked.alternative } : {}),
+      hidden: true,
+    };
+    for (const id of [picked.cardId, ...(picked.alternative ? [picked.alternative] : [])]) {
+      if (!state.usedCards.includes(id)) state.usedCards.push(id);
+    }
+  }
+  const card = CARDS[tile.revealedCard.cardId];
+  return card ? { has: true, kind: card.kind, tier: tile.revealedCard.tier } : { has: false };
 }

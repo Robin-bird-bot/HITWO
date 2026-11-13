@@ -372,6 +372,13 @@ export const BALANCE = {
      */
     noCardOn: [] as readonly SpecialSpace[],
     /**
+     * CHALLENGE_SHARE: the share of each biome's plain tiles (no special space,
+     * no Wonder) that hold a card. 1 means every one, as before. Below 1, the
+     * rest are quiet, and the scouting tools are worth more. Special spaces
+     * and Wonders always keep theirs. TODO(wyatt): try lowering it.
+     */
+    share: { meadow: 1, temperateRainforest: 1, alpine: 1 } as Record<BiomeId, number>,
+    /**
      * On a Challenge space, each passing hiker gets one of these at random: an
      * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.
      */

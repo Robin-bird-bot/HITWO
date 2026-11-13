@@ -345,7 +345,7 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
   const nextUnknown = hiker
     ? adjacentTileIds(state.section, hiker.tileId).find((id) => {
         const t = state.section.tiles[id];
-        return t && t.kind === 'normal' && !t.visited && !t.revealedCard;
+        return t && t.kind === 'normal' && !t.visited && (!t.revealedCard || t.revealedCard.hidden);
       })
     : undefined;
   const cards = Object.values(CARDS)

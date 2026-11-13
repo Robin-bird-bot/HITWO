@@ -23,7 +23,7 @@ import { applyEffects } from './applyEffects';
 import { challengeHikers, openCardDef, paidCause } from './resolve';
 import { tileTier } from './pick';
 import { isRevealed } from '../wonders/wonders';
-import { revealCardOn } from './reveal';
+import { cardShown, revealCardOn } from './reveal';
 import { chanceOf, rollValue } from './rolls';
 import type { ButtonDef, ChallengeDef } from './types';
 
@@ -45,7 +45,7 @@ export function pressesLeft(
 /** Tiles in this section nobody has landed on, whose cards are still unknown (not the Wonder's). */
 export function unrevealedTiles(state: GameState): Tile[] {
   return Object.values(state.section.tiles).filter(
-    (t) => t.kind === 'normal' && !t.visited && !t.revealedCard && !t.wonder,
+    (t) => t.kind === 'normal' && !t.visited && !cardShown(t) && !t.wonder,
   );
 }
 
@@ -68,7 +68,7 @@ export function revealableFrom(state: GameState, hiker: Hiker): Tile[] {
         !!t &&
         t.kind === 'normal' &&
         !t.visited &&
-        !t.revealedCard &&
+        !cardShown(t) &&
         !(t.wonder && isRevealed(t.wonder)),
     );
 }

@@ -342,6 +342,9 @@ function pickOptions(state: GameState, user: Hiker, target: Hiker, kind: UseChoi
         label: NODE_NAME[n],
         image: NODE_IMAGE[n],
       }));
+    case 'tile':
+      // Map tools pick on the map itself. TODO(phase 8): the map-pick mode (step 8).
+      return [];
     case 'resource':
       return resourceChoices(state, user).map((r) => ({
         value: r,
@@ -357,6 +360,7 @@ const PICK_QUESTION: Record<UseChoice, string> = {
   clothes: 'Which clothing item?',
   node: 'Which node should it add?',
   resource: 'Which resource?',
+  tile: 'Which tile?',
 };
 
 /** Using a tool: who it's for, anything to pick, then a confirm (it can't be undone). */

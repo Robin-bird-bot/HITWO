@@ -17,7 +17,7 @@ import { RESOURCE_BY_ID } from '../../content/resources';
 import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { changeAbundance } from '../abundance';
-import { revealCardOn } from '../challenges/reveal';
+import { cardShown, revealCardOn } from '../challenges/reveal';
 import { addCondition, removeCondition } from '../conditions';
 import { bagSlots, resourceCount } from '../inventory';
 import { gainCaps } from '../effects';
@@ -433,7 +433,7 @@ function giveReward(
       return;
     case 'revealBiome':
       for (const t of Object.values(state.section.tiles)) {
-        if (t.id === tileId || t.kind !== 'normal' || t.visited || t.revealedCard || t.wonder) {
+        if (t.id === tileId || t.kind !== 'normal' || t.visited || cardShown(t) || t.wonder) {
           continue;
         }
         revealCardOn(state, t.id, cause);

@@ -387,6 +387,26 @@ export interface ItemUse {
   capsBonus?: true;
   /** For good: the target's maximum of this stat goes up (the Serums: BALANCE.items.serumMax). */
   maxStat?: StatName;
+  /**
+   * A map tool (src/engine/items/scout.ts): what it does, and the tile the
+   * player picks on the map as `choice` (adjacent along a line, beside it on
+   * the grid, any tile, or any tile in a row). No pick: it works around the hiker.
+   */
+  map?: {
+    does:
+      | 'scan'
+      | 'scanAround'
+      | 'kind'
+      | 'countAround'
+      | 'countRow'
+      | 'look'
+      | 'reveal'
+      | 'pave'
+      | 'hop'
+      | 'remove'
+      | 'lower';
+    pick?: 'adjacent' | 'beside' | 'any' | 'row';
+  };
   /** Works for a while: its `boostHooks` (src/engine/items/boosts.ts). */
   boost?: {
     lasts: { unit: 'phases' | 'nights'; n: number | string };

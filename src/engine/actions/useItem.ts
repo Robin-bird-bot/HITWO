@@ -10,7 +10,7 @@
  * - A use that would do nothing is refused, so the tool isn't wasted.
  * - It takes a use; a tool with none left is gone.
  * - Clumsy hikers can't use tools (the condition's canAct hook).
- * TODO(phase 8): the moving and scouting tools, Fire Flower and Poo Bag (step 8).
+ * - Map tools pick a tile on the map (src/engine/items/scout.ts).
  */
 import { BALANCE } from '../../config/balance';
 import { CONDITIONS } from '../../content/conditions';
@@ -21,6 +21,7 @@ import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { canActReason, gainResources, type ItemDef, type ItemUse } from '../effects';
 import { resourceCount, resourceLimit } from '../inventory';
 import { addBoost, hasBoost } from '../items/boosts';
+import { applyMapUse, mapUseReason } from '../items/scout';
 import { fullDurability, qualityOf } from '../items/make';
 import { valueAt } from '../items/quality';
 import { loseUses, removeItem } from '../items/wear';
@@ -62,9 +63,10 @@ export function negativeConditions(hiker: Hiker): ConditionInstance[] {
 }
 
 /** What a use asks the player to pick, if anything. */
-export type UseChoice = 'condition' | 'stat' | 'node' | 'resource' | 'clothes';
+export type UseChoice = 'condition' | 'stat' | 'node' | 'resource' | 'clothes' | 'tile';
 
 export function choiceOfUse(use: ItemUse): UseChoice | undefined {
+  if (use.map?.pick) return 'tile';
   if (use.pickCondition) return 'condition';
   if (use.fillStat) return 'stat';
   if (use.addNode) return 'node';
@@ -146,6 +148,8 @@ function choiceReason(
     return undefined;
   }
   if (action.conditionId !== undefined) return `${def.name} doesn’t cure a condition you pick.`;
+  // A map tool checks its tile itself (src/engine/items/scout.ts).
+  if (kind === 'tile') return undefined;
   if (!kind) return choice === undefined ? undefined : `${def.name} doesn’t need a pick.`;
   if (choice === undefined) {
     return {
@@ -189,6 +193,7 @@ function uselessReason(
   const no = `${def.name} wouldn’t help ${who} right now.`;
   const tile = state.section.tiles[user.tileId];
 
+  if (use.map) return mapUseReason(state, user, use.map, action.choice);
   if (use.boost) {
     const b = use.boost;
     if (b.needsNode && !tileNodeTypes(state, user.tileId).includes(b.needsNode)) {
@@ -403,6 +408,10 @@ export function applyUse(state: GameState, action: UseAction): void {
     addBoost(state, target, item, choice);
     if (use.boost.once && choice)
       details.push(`a Choice card for ${NODE_NAME[choice as NodeType]}`);
+  }
+  if (use.map) {
+    const did = applyMapUse(state, user, item.itemId, use.map, action.choice);
+    if (did) details.push(did);
   }
   if (use.capsBonus) {
     state.capsBonus = (state.capsBonus ?? 0) + BALANCE.items.walletCaps;

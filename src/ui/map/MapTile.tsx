@@ -157,7 +157,7 @@ export function MapTile({
         </div>
       ) : null}
 
-      {tile.revealedCard && !tile.visited && (
+      {tile.revealedCard && !tile.revealedCard.hidden && !tile.visited && (
         <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
       )}
 
