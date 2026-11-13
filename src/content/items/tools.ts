@@ -3,7 +3,7 @@
  * gone when they run out. `use` says who a tool is for and what it does
  * (src/engine/actions/useItem.ts); `boostHooks` are what it does while it
  * lasts (src/engine/items/boosts.ts). The moving and scouting tools, Fire
- * Flower and Poo Bag arrive with hidden challenges: TODO(phase 8) step 8.
+ * Flower and Poo Bag pick a tile on the map (src/engine/items/scout.ts).
  */
 import { BALANCE } from '../../config/balance';
 import type { Hooks, ItemDef, ItemUse, ScavengeModifier } from '../../engine/effects';
@@ -43,6 +43,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 2, 2, 2, 3),
     text: 'Make a line from this tile 1 step better: Steep, Muddy or Rough becomes normal, and normal becomes Paved.',
     recipe: 'Stone 3, Clay 2, Metal 1, any 1',
+    use: { target: 'self', map: { does: 'pave', pick: 'adjacent' } },
   }),
   tool({
     id: 'scanner',
@@ -51,6 +52,7 @@ const MOVING: ItemDef[] = [
     uses: q(2, 3, 3, 3, 4),
     text: 'Scan 1 adjacent tile. If it has a challenge, a red ! appears on it.',
     recipe: 'Metal 2, Flint 1, Oil 1, any 2',
+    use: { target: 'self', map: { does: 'scan', pick: 'adjacent' } },
   }),
   tool({
     id: 'securityCamera',
@@ -59,6 +61,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 2, 2, 3, 3),
     text: 'Scan 1 adjacent tile: shows whether it has a challenge, an opportunity or a Trial, and its tier.',
     recipe: 'Metal 2, Shell 1, Oil 1, Flint 1, any 2',
+    use: { target: 'self', map: { does: 'kind', pick: 'adjacent' } },
   }),
   tool({
     id: 'minesweeper',
@@ -67,6 +70,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 2, 2, 2, 3),
     text: 'Shows how many challenges, opportunities and Trials are on the tiles around you, as colored numbers that fade away.',
     recipe: 'Metal 2, Stone 1, Flint 1, Salt 1, any 2',
+    use: { target: 'self', map: { does: 'countAround' } },
   }),
   tool({
     id: 'linescan',
@@ -75,6 +79,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 1, 1, 2, 2),
     text: 'Pick a row: shows how many challenges, opportunities and Trials are on it.',
     recipe: 'Metal 3, Flint 2, Shell 1, Oil 1, any 2',
+    use: { target: 'self', map: { does: 'countRow', pick: 'row' } },
   }),
   tool({
     id: 'radarScanner',
@@ -83,6 +88,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 1, 1, 2, 2),
     text: 'Scan every unrevealed tile around you. A red ! appears on each one with a challenge.',
     recipe: 'Metal 3, Oil 2, Flint 1, Shell 1, any 2',
+    use: { target: 'self', map: { does: 'scanAround' } },
   }),
   tool({
     id: 'binoculars',
@@ -91,6 +97,7 @@ const MOVING: ItemDef[] = [
     uses: q(2, 3, 3, 3, 4),
     text: 'Look at the challenge on an adjacent tile.',
     recipe: 'Shell 2, Metal 1, Fur 1, any 2',
+    use: { target: 'self', map: { does: 'look', pick: 'adjacent' } },
   }),
   tool({
     id: 'telescope',
@@ -99,6 +106,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 2, 2, 2, 3),
     text: 'Look at the challenge on any tile.',
     recipe: 'Shell 2, Metal 2, Wood 2, Flint 1, any 2',
+    use: { target: 'self', map: { does: 'look', pick: 'any' } },
   }),
   tool({
     id: 'camera',
@@ -107,6 +115,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 2, 2, 2, 3),
     text: 'Reveal the challenge on an adjacent tile.',
     recipe: 'Metal 2, Shell 1, Oil 1, Salt 1, any 2',
+    use: { target: 'self', map: { does: 'reveal', pick: 'adjacent' } },
   }),
   tool({
     id: 'droneCamera',
@@ -115,6 +124,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 1, 1, 2, 2),
     text: 'Reveal the challenge on any tile.',
     recipe: 'Metal 3, Oil 2, Shell 1, Flint 1, any 2',
+    use: { target: 'self', map: { does: 'reveal', pick: 'any' } },
   }),
   tool({
     id: 'trampoline',
@@ -123,6 +133,7 @@ const MOVING: ItemDef[] = [
     uses: q(1, 1, 1, 2, 2),
     text: 'Move to any tile next to you, even without a line, at no Appetite cost.',
     recipe: 'Metal 2, Fur 2, Oil 1, any 2',
+    use: { target: 'self', map: { does: 'hop', pick: 'beside' } },
   }),
 ];
 
@@ -337,6 +348,7 @@ const CHALLENGES: ItemDef[] = [
     uses: 1,
     text: 'Remove the challenge on an adjacent tile.',
     recipe: 'Oil 2, Flint 2, Grass 2, Moss 1, any 2',
+    use: { target: 'self', map: { does: 'remove', pick: 'adjacent' } },
   }),
   tool({
     id: 'pooBag',
@@ -345,6 +357,7 @@ const CHALLENGES: ItemDef[] = [
     uses: q(1, 1, 1, 1, 2),
     text: 'Lower the challenge on an adjacent tile by 1 tier.',
     recipe: 'Grass 2, Bones 1, Mushroom 1, any 2',
+    use: { target: 'self', map: { does: 'lower', pick: 'adjacent' } },
   }),
   tool({
     id: 'star',

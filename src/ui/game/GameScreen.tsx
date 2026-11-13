@@ -16,6 +16,8 @@ import {
   isRevealed,
   isSheltered,
   statMax,
+  mapTargets,
+  validateAction,
   wonderTile,
   tendAmount,
   tendCost,
@@ -28,6 +30,7 @@ import {
   type WeatherId,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
+import { ITEMS } from '../../content';
 import { useUiMode } from '../app/uiMode';
 import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
@@ -64,6 +67,9 @@ import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
+import type { ScoutFx } from '../map/MapView';
+import { usesAfter } from '../items/whatItDoes';
+import { tileName } from '../panels/hikerInfo';
 import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
 import { SimpleTurn } from '../simple/SimpleTurn';
@@ -77,13 +83,18 @@ import { NightEventWindow, type NightEventShown } from '../night/NightEventWindo
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
+/** How long scouting effects stay on the map. */
+const FX_MS = 5500;
+
 /** What the player is in the middle of doing. */
 type Mode =
   | { kind: 'idle' }
   | { kind: 'moveAll'; bring: HikerId[] }
   | { kind: 'sleep' }
   | { kind: 'watch' }
-  | { kind: 'tend' };
+  | { kind: 'tend' }
+  /** A map tool waiting for its tile (a Scanner, a Paver…). */
+  | { kind: 'tool'; itemUid: string };
 
 /** What abandoning the hike means for this hiker: they go for good, with everything they carry. */
 function abandonMessage(state: GameState, h: Hiker): string {
@@ -146,6 +157,15 @@ export function GameScreen({
   const [confirmAbandon, setConfirmAbandon] = useState<HikerId | null>(null);
   // The card just taken, shown for a moment before the scavenge window closes.
   const [took, setTook] = useState<TookCard | null>(null);
+  // A map tool's tile, waiting for the player to say yes.
+  const [toolTile, setToolTile] = useState<TileId | null>(null);
+  // Scouting just done: the map plays its sweep and numbers for a few seconds.
+  const [fx, setFx] = useState<ScoutFx[]>([]);
+  useEffect(() => {
+    if (!fx.length) return;
+    const t = setTimeout(() => setFx([]), FX_MS);
+    return () => clearTimeout(t);
+  }, [fx]);
   // The Craft window: whose, and on which tab.
   const [craftOpen, setCraftOpen] = useState<{ hikerId: string; tab: CraftTab } | null>(null);
   // The resource or item whose give / return menu is open.
@@ -207,6 +227,7 @@ export function GameScreen({
   const reset = () => {
     setMode({ kind: 'idle' });
     setPendingTile(null);
+    setToolTile(null);
     setStash(null);
   };
 
@@ -220,6 +241,7 @@ export function GameScreen({
   const dispatch = (action: Action): boolean => {
     // The scavenger, for a take (the selection can differ after a reload mid-draw).
     const actorId = action.type === 'scavengeTake' ? state.scavenge?.hikerId : selected?.id;
+    const before = state.nextEventId;
     const result = gameStore.dispatch(action);
     if (!result.ok) {
       setNote(result.reason);
@@ -227,6 +249,26 @@ export function GameScreen({
     }
     setNote(undefined);
     reset();
+    // Scouting tools: sweep the tiles they looked at, or float their counts.
+    const after = gameStore.getState();
+    const scouted = (after?.log ?? []).filter((e) => e.id >= before && e.kind === 'scouted');
+    if (scouted.length) {
+      setFx(
+        scouted.flatMap((e) => {
+          if (e.kind !== 'scouted') return [];
+          const tile = after?.hikers.find((h) => h.id === e.hikerId)?.tileId;
+          return [
+            e.counts
+              ? {
+                  key: e.id,
+                  sweep: [],
+                  counts: { ...e.counts, at: e.row !== undefined ? e.tileIds : tile ? [tile] : [] },
+                }
+              : { key: e.id, sweep: e.tileIds },
+          ];
+        }),
+      );
+    }
     const usedPhase =
       action.type === 'move' ||
       action.type === 'moveAll' ||
@@ -287,10 +329,40 @@ export function GameScreen({
 
   const moveMode: MoveMode =
     mode.kind === 'moveAll' ? { kind: 'moveAll', bring: mode.bring } : { kind: 'move' };
+  useEffect(() => {
+    if (mode.kind !== 'tool') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || toolTile) return;
+      setMode({ kind: 'idle' });
+      setNote(undefined);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode.kind, toolTile]);
+
+  // A map tool picks from its own tiles; otherwise the rings show where a move can go.
+  const toolItem =
+    mode.kind === 'tool' ? selected?.inventory.bag.find((i) => i.uid === mode.itemUid) : undefined;
+  const toolMap = toolItem ? ITEMS[toolItem.itemId]?.use?.map : undefined;
+  const toolAction = (tileId: TileId): Action | null =>
+    selected && toolItem
+      ? {
+          type: 'useItem',
+          hikerId: selected.id,
+          itemUid: toolItem.uid,
+          targetId: selected.id,
+          choice: tileId,
+        }
+      : null;
   const targets =
-    selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
-      ? moveTargets(state, selected, moveMode)
-      : [];
+    selected && toolMap
+      ? mapTargets(state, selected, toolMap).map((tileId) => {
+          const a = toolAction(tileId);
+          return { tileId, reason: a ? validateAction(state, a) : 'Nothing to use.' };
+        })
+      : selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
+        ? moveTargets(state, selected, moveMode)
+        : [];
   const preview =
     selected && pendingTile ? movePreview(state, selected, moveMode, pendingTile) : null;
 
@@ -417,7 +489,8 @@ export function GameScreen({
         section={section}
         hikers={hikers}
         targets={targets}
-        onTileClick={(tileId) => setPendingTile(tileId)}
+        onTileClick={(tileId) => (toolMap ? setToolTile(tileId) : setPendingTile(tileId))}
+        fx={fx}
         checkpointLabelOnHover={simple}
         marks={marks}
         onRevealedClick={setRevealedOpen}
@@ -528,6 +601,14 @@ export function GameScreen({
           pick={stash}
           onDispatch={dispatch}
           onClose={() => setStash(null)}
+          onMapTool={(itemUid) => {
+            const name =
+              ITEMS[selected.inventory.bag.find((i) => i.uid === itemUid)?.itemId ?? '']?.name;
+            setStash(null);
+            setPendingTile(null);
+            setMode({ kind: 'tool', itemUid });
+            setNote(`Click a tile with a gold ring to use the ${name ?? 'tool'}. Esc to stop.`);
+          }}
         />
       )}
 
@@ -607,6 +688,22 @@ export function GameScreen({
         <HikeOverScreen state={state} onTitle={onQuit} {...(onNewHike ? { onNewHike } : {})} />
       )}
 
+      {toolTile && toolItem && (
+        <ConfirmDialog
+          title={`Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'}?`}
+          message={`On ${
+            section.tiles[toolTile] ? tileName(section.tiles[toolTile]) : 'that tile'
+          }. ${usesAfter(toolItem, ITEMS[toolItem.itemId]?.name ?? 'tool')}`}
+          confirmLabel="Yes, use it"
+          cancelLabel="Not now"
+          onCancel={() => setToolTile(null)}
+          onConfirm={() => {
+            const a = toolAction(toolTile);
+            setToolTile(null);
+            if (a) dispatch(a);
+          }}
+        />
+      )}
       {abandoning && (
         <ConfirmDialog
           title={`Abandon the hike for ${abandoning.name}?`}

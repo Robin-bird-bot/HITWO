@@ -148,6 +148,8 @@ export function MapTile({
         </div>
       )}
 
+      {tile.scan && !tile.visited && <ScanBadge scan={tile.scan} />}
+
       {tile.shelters?.length ? (
         <div className={styles.shelter} title={shelterWords(tile)}>
           <Icon name="tent" size={13} strokeWidth={2.5} />
@@ -280,6 +282,43 @@ function CheckpointTile({
           Ranger Station · {hikerCount > 0 ? `${hikerCount} here` : 'all 4 check in'}
         </span>
       </div>
+    </div>
+  );
+}
+
+const SCAN_LOOK = {
+  challenge: { bg: '#E5624A', word: 'Challenge' },
+  opportunity: { bg: '#7FC29B', word: 'Opportunity' },
+  trial: { bg: '#CDA6EE', word: 'Trial' },
+} as const;
+
+/**
+ * What scouting found: a red ! for a card (its kind's color and tier when a
+ * Security Camera looked), or a quiet check for nothing there.
+ */
+function ScanBadge({ scan }: { scan: NonNullable<Tile['scan']> }) {
+  if (!scan.has) {
+    return (
+      <div className={styles.scan} data-has="false" title="Scouted: no challenge here">
+        <Icon name="check" size={13} strokeWidth={3} />
+      </div>
+    );
+  }
+  const look = scan.kind ? SCAN_LOOK[scan.kind] : SCAN_LOOK.challenge;
+  const tier = scan.tier ? ' ' + 'I'.repeat(scan.tier) : '';
+  return (
+    <div
+      className={styles.scan}
+      data-has="true"
+      style={{ background: look.bg }}
+      title={
+        scan.kind
+          ? `Scouted: a Tier${tier} ${look.word.toLowerCase()}`
+          : 'Scouted: a challenge here'
+      }
+    >
+      <span className={styles.scanBang}>!</span>
+      {scan.kind && <span className={styles.scanTier}>{tier.trim()}</span>}
     </div>
   );
 }

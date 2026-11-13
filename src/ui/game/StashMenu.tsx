@@ -18,6 +18,8 @@ import {
   clothesOf,
   fullDurability,
   hikersOnTile,
+  itemText,
+  mapTargets,
   negativeConditions,
   nodeChoices,
   qualityOf,
@@ -51,6 +53,8 @@ interface StashMenuProps {
   pick: StashPick;
   onDispatch(action: Action): void;
   onClose(): void;
+  /** A map tool: pick its tile on the map. */
+  onMapTool?(itemUid: string): void;
 }
 
 const WIDTH = 260;
@@ -135,7 +139,7 @@ function WornMenu({
   );
 }
 
-function PackMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
+function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashMenuProps) {
   const [confirmDrop, setConfirmDrop] = useState(false);
   const [useStep, setUseStep] = useState<UseStep | null>(null);
   // A passed-out hiker can't act: others here can only take things from them.
@@ -264,6 +268,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose }: StashMenuProps) {
           step={useStep}
           setStep={setUseStep}
           onUse={act}
+          {...(onMapTool ? { onMapTool } : {})}
         />
       )}
 
@@ -372,6 +377,7 @@ function UseSection({
   step,
   setStep,
   onUse,
+  onMapTool,
 }: {
   state: GameState;
   hiker: Hiker;
@@ -380,11 +386,44 @@ function UseSection({
   step: UseStep | null;
   setStep(step: UseStep | null): void;
   onUse(action: Action): void;
+  onMapTool?(itemUid: string): void;
 }) {
   const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
   const use = item && ITEMS[item.itemId]?.use;
   if (!item || !use) return null;
   const kind = choiceOfUse(use);
+  // A map tool: the tile is picked on the map, with its own confirm there.
+  if (kind === 'tile' && use.map) {
+    const tiles = mapTargets(state, hiker, use.map);
+    const reasons = tiles.map((tileId) =>
+      validateAction(state, {
+        type: 'useItem',
+        hikerId: hiker.id,
+        itemUid,
+        targetId: hiker.id,
+        choice: tileId,
+      }),
+    );
+    const ready = reasons.some((r) => r === null);
+    const why = ready ? null : (reasons.find(Boolean) ?? 'There’s nowhere to use it from here.');
+    return (
+      <button
+        type="button"
+        className={`${styles.option} ${styles.tall}`}
+        disabled={!ready || !onMapTool}
+        title={why ?? undefined}
+        onClick={() => onMapTool?.(itemUid)}
+      >
+        <Icon name="crosshair" size={16} />
+        <span className={styles.useText}>
+          Pick a tile on the map
+          <span className={styles.effect}>
+            {why ?? itemText(ITEMS[item.itemId]!, qualityOf(item))}
+          </span>
+        </span>
+      </button>
+    );
+  }
   const mode = targetOfUse(use);
   const icon =
     use.injuries || use.cures || use.pickCondition || use.allNegative ? 'medical' : 'sparkles';

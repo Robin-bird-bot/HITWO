@@ -333,6 +333,17 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'scavenge' });
         break;
       }
+      case 'scouted': {
+        const item = ITEMS[e.itemId]?.name ?? 'A scouting tool';
+        const n = e.tileIds.length;
+        const where =
+          e.row !== undefined ? 'along that row' : n === 1 ? 'there' : `around ${name(e.hikerId)}`;
+        const text = e.counts
+          ? `${item}: ${e.counts.challenge} challenge${e.counts.challenge === 1 ? '' : 's'}, ${e.counts.opportunity} ${e.counts.opportunity === 1 ? 'opportunity' : 'opportunities'} and ${e.counts.trial} Trial${e.counts.trial === 1 ? '' : 's'} ${where}.`
+          : `${name(e.hikerId)} scouted ${n} tile${n === 1 ? '' : 's'} with the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'challenge' });
+        break;
+      }
       case 'crafted': {
         const item = ITEMS[e.itemId]?.name ?? 'an item';
         const quality = e.quality ? ` (Quality ${e.quality})` : '';

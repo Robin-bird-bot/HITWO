@@ -35,12 +35,25 @@ interface MapViewProps {
   onRevealedClick?(tileId: string): void;
   /** A found Wonder: its tile's icon was tapped. */
   onWonderClick?(tileId: string): void;
+  /** Scouting just happened: tiles swept, and maybe counts to show where. */
+  fx?: ScoutFx[];
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
   setCamera: Dispatch<SetStateAction<Camera>>;
   bounds: Bounds;
 }
+
+/** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
+export interface ScoutFx {
+  key: number;
+  sweep: string[];
+  counts?: { challenge: number; opportunity: number; trial: number; at: string[] };
+}
+
+const COUNT_COLOR = { challenge: '#E5624A', opportunity: '#7FC29B', trial: '#CDA6EE' } as const;
+/** The counts float this far above the tiles they're about, clear of the hiker tokens. */
+const COUNT_LIFT = 84;
 
 const DRAG_THRESHOLD = 5;
 
@@ -53,6 +66,7 @@ export function MapView({
   marks,
   onRevealedClick,
   onWonderClick,
+  fx = [],
   selectedId,
   onSelectHiker,
   camera,
@@ -166,7 +180,48 @@ export function MapView({
           selectedId={selectedId}
           onSelect={onSelectHiker}
         />
+        {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
+        {fx.map((f) => (
+          <ScoutLayer key={f.key} fx={f} section={section} lastRow={lastRow} />
+        ))}
       </div>
     </div>
+  );
+}
+
+/** The sweep on each scanned tile, and the counts floating over where they were taken. */
+function ScoutLayer({ fx, section, lastRow }: { fx: ScoutFx; section: Section; lastRow: number }) {
+  const centers = (ids: readonly string[]) =>
+    ids.flatMap((id) => {
+      const t = section.tiles[id];
+      return t ? [tileCenter(t, lastRow)] : [];
+    });
+  const at = fx.counts ? centers(fx.counts.at) : [];
+  const mid = at.length
+    ? {
+        x: at.reduce((n, p) => n + p.x, 0) / at.length,
+        y: at.reduce((n, p) => n + p.y, 0) / at.length,
+      }
+    : null;
+  return (
+    <>
+      {centers(fx.sweep).map((p, i) => (
+        <div key={i} className={styles.sweep} style={{ left: p.x, top: p.y }} />
+      ))}
+      {fx.counts && mid && (
+        <div
+          className={styles.counts}
+          style={{ left: mid.x, top: mid.y - COUNT_LIFT }}
+          role="status"
+          aria-label={`${fx.counts.challenge} challenges, ${fx.counts.opportunity} opportunities, ${fx.counts.trial} Trials`}
+        >
+          {(['challenge', 'opportunity', 'trial'] as const).map((k) => (
+            <span key={k} className={styles.count} style={{ color: COUNT_COLOR[k] }}>
+              {fx.counts?.[k]}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

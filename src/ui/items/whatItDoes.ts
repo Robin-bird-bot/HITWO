@@ -92,6 +92,7 @@ export function whatItDoes(
     out.push(`${v(use.resources.value)} random ${node ? `${NODE_NAME[node]} ` : ''}resources`);
   }
   if (use.lampTonight) out.push('keeps watch here and next door tonight');
+  if (use.map) out.push(itemText(def, quality).replace(/\.$/, ''));
   if (use.capsBonus) out.push(`+${BALANCE.items.walletCaps} to every caps gain, for good`);
   if (use.maxStat) {
     const max = statMax(state, target, use.maxStat);

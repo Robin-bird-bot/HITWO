@@ -124,3 +124,4 @@ export {
 } from './items/craft';
 export { craftOpenReason, teachCost } from './actions/craft';
 export type { CraftModifier } from './effects';
+export { mapTargets } from './items/scout';
