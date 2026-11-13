@@ -169,6 +169,11 @@ export const BALANCE = {
       } as Record<number, { key: number; broad: number; trinket: number }>,
       /** TODO(wyatt): Dogs craft with this Luck for Quality (first guess). */
       dogLuck: -1,
+      /**
+       * Abandoned Ranger Station: "a random tool, clothing item or blueprint".
+       * TODO(wyatt): a blueprint a third of the time (first guess).
+       */
+      blueprintFind: 1 / 3,
       /** Teaching a blueprint costs the teacher this much Morale, by its tier (Wyatt, Nov 13). */
       teachMorale: { 1: 4, 2: 6, 3: 8 } as Record<number, number>,
     },
@@ -196,7 +201,7 @@ export const BALANCE = {
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
    * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
-   * TODO(phase 8): the Carrier Pack makes it free.
+   * TODO(wyatt): the Carrier Pack (an item still to place) could make it free.
    */
   carry: {
     /** The carrier's extra Appetite on each move. */

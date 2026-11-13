@@ -12,10 +12,12 @@ import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { nextFloat, roll as rollChance, shuffle } from '../rng';
 import { moraleLuck } from '../scavenge/rarity';
-import type { CardRolls, Hiker, RngState } from '../types';
+import { ITEMS } from '../../content/items';
+import { durabilityLeft } from '../items/make';
+import type { CardRolls, Hiker, ItemInstance, RngState } from '../types';
 
 export type { CardRolls };
-import type { Amount, CardDef, Chance, Requirement, RollDef } from './types';
+import type { Amount, CardDef, Chance, RollDef } from './types';
 
 /** A hiker's Luck for challenges: Morale's base Luck, for now. */
 export function challengeLuck(hiker: Hiker): number {
@@ -133,6 +135,12 @@ function perCount(per: Exclude<Amount, number | string>['per'], ctx: AmountConte
       return ctx.hiker && ctx.foodCarried ? ctx.foodCarried(ctx.hiker) : 0;
     case 'injury':
       return ctx.hiker?.injuries ?? 0;
+    case 'halfWornDurability': {
+      const worn = Object.values(ctx.hiker?.inventory.equipped ?? {}).filter(
+        (i): i is ItemInstance => !!i && ITEMS[i.itemId]?.type === 'clothes',
+      );
+      return Math.ceil(worn.reduce((n, i) => n + durabilityLeft(i), 0) / 2);
+    }
   }
 }
 
@@ -140,9 +148,4 @@ function perCount(per: Exclude<Amount, number | string>['per'], ctx: AmountConte
 export function chanceOf(c: Chance, ctx: AmountContext): number {
   if (typeof c === 'number') return c;
   return amount(c, ctx) / 100;
-}
-
-/** Whether a requirement is one the game can't take yet. TODO(phase 8). */
-export function notBuiltYet(req: Requirement): boolean {
-  return req.kind === 'durability' || req.kind === 'toolUse';
 }

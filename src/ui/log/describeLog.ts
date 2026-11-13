@@ -94,6 +94,8 @@ export function describePaid(paid: ChallengePaid): string {
   for (const [stat, n] of Object.entries(paid.stats) as [StatName, number][]) {
     parts.push(`${n} ${STAT_LABEL[stat]}`);
   }
+  if (paid.durability) parts.push(`${paid.durability} clothing durability`);
+  if (paid.toolUses) parts.push(`${paid.toolUses} tool use${paid.toolUses === 1 ? '' : 's'}`);
   return parts.length ? listNames(parts) : 'nothing';
 }
 
@@ -352,6 +354,15 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({
           id: e.id,
           text: `${name(e.hikerId)} crafted a ${item}${quality}${how}${learned}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'blueprintFound': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} found the ${item} blueprint (${e.cause}).`,
           tone: 'scavenge',
         });
         break;

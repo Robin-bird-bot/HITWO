@@ -46,11 +46,10 @@ const DONE = (n: number) =>
   resolve(...Array.from({ length: n }, () => ({ pay: true, gifts: [] as Gift[] })));
 
 describe('the 17 opportunities', () => {
-  it('are all there, with art, and Old Trail Sign waits on tool uses', () => {
+  it('are all there, with art, and every one can be played now', () => {
     expect(OPPORTUNITIES).toHaveLength(17);
     expect(OPPORTUNITIES.every((o) => o.art && !o.placeholder)).toBe(true);
-    const off = OPPORTUNITIES.filter((o) => notPlayableYet(o)).map((o) => o.id);
-    expect(off).toEqual(['old-trail-sign']);
+    expect(OPPORTUNITIES.filter((o) => notPlayableYet(o))).toEqual([]);
   });
 });
 

@@ -9,7 +9,7 @@
  *   the tile. When all 3 are met, `accomplishWonder` gives each of those
  *   hikers the reward they picked, and the Wonder is done for good.
  */
-import { makeItem } from '../items/make';
+import { durabilityLeft, makeItem, maxDurabilityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, POSITIVE_CONDITIONS } from '../../content/conditions';
@@ -269,10 +269,36 @@ function checkGoal(
       const today = WEATHERS[state.weather.today];
       return { met: state.weather.today !== 'clear', readout: today.name.toUpperCase() };
     }
+    case 'clothesDurability':
+      return total(
+        here.reduce((s, h) => s + wornOf(h).reduce((m, i) => m + durabilityLeft(i), 0), 0),
+      );
+    case 'clothesWorn': {
+      const of = (h: Hiker) => wornOf(h).length;
+      return one(of, (h) => compare(of(h), n, how));
+    }
+    case 'craftedOfType': {
+      const of = (h: Hiker) =>
+        Math.max(0, ...Object.values(state.counters.crafted[h.id] ?? {}).map((v) => v ?? 0));
+      return one(of, (h) => compare(of(h), n, how));
+    }
     case 'waiting':
       return { met: false };
   }
 }
+
+/** The clothes a hiker has on. */
+const wornOf = (h: Hiker) =>
+  Object.values(h.inventory.equipped).filter(
+    (i): i is NonNullable<typeof i> => !!i && ITEMS[i.itemId]?.type === 'clothes',
+  );
+
+/**
+ * The worn item Fort Rock doubles: the one with the most durability left.
+ * TODO(wyatt): the hiker doesn't pick; it's their most durable worn item.
+ */
+const mostDurable = (h: Hiker) =>
+  [...wornOf(h)].sort((a, b) => durabilityLeft(b) - durabilityLeft(a))[0];
 
 /** How a revealed Wonder stands right now, against the hikers on its tile. */
 export function wonderProgress(state: GameState, tileId: TileId): WonderProgress | undefined {
@@ -332,6 +358,8 @@ export function pickProblem(
       return undefined;
     case 'abundance':
       return choice.node && NODE_TYPES.includes(choice.node) ? undefined : 'Pick a node type.';
+    case 'doubleDurability':
+      return mostDurable(h) ? undefined : `${h.name} isn’t wearing any clothes.`;
     default:
       return undefined;
   }
@@ -431,6 +459,13 @@ function giveReward(
     case 'cureInjuries':
       cureInjuries(state, h, h.injuries, cause);
       return;
+    case 'doubleDurability': {
+      const item = mostDurable(h);
+      if (!item) return;
+      item.maxDurability = maxDurabilityOf(item) * 2;
+      item.durability = durabilityLeft(item) * 2;
+      return;
+    }
     case 'revealBiome':
       for (const t of Object.values(state.section.tiles)) {
         if (t.id === tileId || t.kind !== 'normal' || t.visited || cardShown(t) || t.wonder) {

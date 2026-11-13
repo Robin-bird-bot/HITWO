@@ -33,7 +33,13 @@ export const TABLE_ITEMS: readonly ItemDef[] = [
   ...TRINKETS,
 ];
 
-export const TIER_3_ITEMS: readonly string[] = TIER_3_STAND_INS.map((i) => i.id);
+/**
+ * The Tier III items a Wonder's "pick 1 of 3" and Snake Slots' jackpot draw
+ * from: every Tier III item in the tables (not event-only ones).
+ */
+export const TIER_3_ITEMS: readonly string[] = TABLE_ITEMS.filter(
+  (i) => i.tier === 3 && !i.notFound,
+).map((i) => i.id);
 
 /**
  * Items scavenging can find, by type, at a tier (1 for the Meadow). Never the

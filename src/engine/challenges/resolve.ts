@@ -22,6 +22,7 @@ import { changeStat } from '../stats';
 import type {
   Action,
   ChallengePaid,
+  EquipSlot,
   ChallengeSection,
   GameState,
   Gift,
@@ -36,13 +37,13 @@ import type {
 import { pick, roll } from '../rng';
 import { countChallenge } from '../counters';
 import { earnFreeMove } from '../items/freeMoves';
-import { fullDurability, qualityOf } from '../items/make';
+import { durabilityLeft, qualityOf, usesLeftOf } from '../items/make';
 import { valueAt } from '../items/quality';
-import { loseDurability } from '../items/wear';
+import { loseDurability, loseUses } from '../items/wear';
 import { applyEffects, foodCarried, immovable, type EffectResult } from './applyEffects';
 import { openNext, revealTile } from './reveal';
 import { riskReading, riskSpendFits, type RiskReading } from './risk';
-import { amount, chanceOf, notBuiltYet } from './rolls';
+import { amount, chanceOf } from './rolls';
 import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
@@ -156,10 +157,31 @@ export function giftFits(
       return gift.kind === 'caps';
     case 'stat':
       return gift.kind === 'stat' && req.stats.includes(gift.stat);
-    case 'durability':
-    case 'toolUse':
-      return false;
+    case 'durability': {
+      if (gift.kind !== 'durability') return false;
+      // A hiker's own section takes durability from the clothes they're wearing.
+      if (hikerId && gift.from !== hikerId) return false;
+      const h = here.find((x) => x.id === gift.from);
+      const slot = (Object.keys(h?.inventory.equipped ?? {}) as EquipSlot[]).find(
+        (k) => h?.inventory.equipped[k]?.uid === gift.uid,
+      );
+      const item = slot && h?.inventory.equipped[slot];
+      if (!item || ITEMS[item.itemId]?.type !== 'clothes') return false;
+      return !req.slot || slot === req.slot;
+    }
+    case 'toolUse': {
+      if (gift.kind !== 'toolUse') return false;
+      const item = here
+        .find((h) => h.id === gift.from)
+        ?.inventory.bag.find((i) => i.uid === gift.uid);
+      return !!item && ITEMS[item.itemId]?.type === 'tool';
+    }
   }
+}
+
+/** A worn clothing item, by uid. */
+function wornItem(h: Hiker | undefined, uid: string): ItemInstance | undefined {
+  return Object.values(h?.inventory.equipped ?? {}).find((i) => i?.uid === uid);
 }
 
 export const giftCount = (g: Gift): number => (g.kind === 'item' ? 1 : g.count);
@@ -174,7 +196,6 @@ export function optionShortfall(
 ): string | undefined {
   const reqs = openCardDef(open)?.cost[option];
   if (!reqs) return 'Pick a way to pay.';
-  if (reqs.some(notBuiltYet)) return 'That way to pay arrives in Phase 8.';
   if (gifts.some((g) => !reqs[g.req]))
     return 'Something was handed in that this cost doesn’t ask for.';
   for (const [i, req] of reqs.entries()) {
@@ -189,6 +210,10 @@ export function optionShortfall(
     if (req.kind === 'resources' && req.same) {
       const kinds = new Set(mine.map((g) => (g.kind === 'resource' ? g.resource : '')));
       if (kinds.size > 1) return 'Those all have to be the same resource.';
+    }
+    if (req.kind === 'durability' && req.oneItem) {
+      const items = new Set(mine.map((g) => (g.kind === 'durability' ? g.uid : '')));
+      if (items.size > 1) return 'All of it has to come from one clothing item.';
     }
     if (req.kind === 'resources' && req.fromEach) {
       const givers = mine.map((g) => (g.kind === 'resource' ? g.from : ''));
@@ -210,6 +235,10 @@ function ledgerProblem(
   const resources = new Map<string, number>();
   const stats = new Map<string, number>();
   const items = new Set<string>();
+  const points = new Map<
+    string,
+    { from: HikerId; uid: string; n: number; kind: 'durability' | 'toolUse' }
+  >();
   let caps = 0;
   for (const g of sections.flatMap((s) => s.gifts)) {
     if (g.kind !== 'item' && (!Number.isInteger(g.count) || g.count < 1)) {
@@ -236,6 +265,27 @@ function ledgerProblem(
       case 'caps':
         caps += g.count;
         break;
+      case 'durability':
+      case 'toolUse': {
+        const key = `${g.kind}|${g.uid}`;
+        const was = points.get(key);
+        points.set(key, { from: g.from, uid: g.uid, kind: g.kind, n: (was?.n ?? 0) + g.count });
+        break;
+      }
+    }
+  }
+  for (const p of points.values()) {
+    const h = here.find((x) => x.id === p.from);
+    if (!h) return 'Only hikers on this tile can hand things in.';
+    if (p.kind === 'durability') {
+      const item = wornItem(h, p.uid);
+      if (!item) return `${h.name} isn’t wearing that.`;
+      if (durabilityLeft(item) < p.n)
+        return `That clothing item doesn’t have ${p.n} durability left.`;
+    } else {
+      const item = h.inventory.bag.find((i) => i.uid === p.uid);
+      if (!item) return 'That tool isn’t in their bag.';
+      if (usesLeftOf(item) < p.n) return `That tool doesn’t have ${p.n} uses left.`;
     }
   }
   for (const [key, n] of resources) {
@@ -287,8 +337,7 @@ export function harnessFor(
     const def = item && ITEMS[item.itemId];
     if (!item || !def?.harness) continue;
     const cost = valueAt(def.values?.[def.harness], qualityOf(item));
-    const left = item.durability ?? fullDurability(def, qualityOf(item));
-    if (left >= cost) return { hiker, item, cost };
+    if (durabilityLeft(item) >= cost) return { hiker, item, cost };
   }
   return undefined;
 }
@@ -361,6 +410,7 @@ function spendAnyProblem(
       if (!here.some((h) => h.id === g.from)) return 'Only hikers on this tile can hand things in.';
       const what = spend.what;
       const fits =
+        ('toolUses' in what && g.kind === 'toolUse') ||
         ('stat' in what && g.kind === 'stat' && g.stat === what.stat) ||
         ('resources' in what && g.kind === 'resource') ||
         ('items' in what &&
@@ -404,6 +454,8 @@ function paidBy(here: readonly Hiker[], gifts: readonly Gift[]): ChallengePaid {
     if (g.kind === 'resource') for (let i = 0; i < g.count; i++) paid.resources.push(g.resource);
     if (g.kind === 'caps') paid.caps += g.count;
     if (g.kind === 'stat') paid.stats[g.stat] = (paid.stats[g.stat] ?? 0) + g.count;
+    if (g.kind === 'durability') paid.durability = (paid.durability ?? 0) + g.count;
+    if (g.kind === 'toolUse') paid.toolUses = (paid.toolUses ?? 0) + g.count;
     if (g.kind === 'item') {
       const item = here.find((h) => h.id === g.from)?.inventory.bag.find((i) => i.uid === g.uid);
       if (item) paid.items.push(item.itemId);
@@ -429,6 +481,12 @@ function spend(state: GameState, here: readonly Hiker[], gifts: readonly Gift[],
       else delete h.inventory.resources[g.resource];
     } else if (g.kind === 'item') {
       h.inventory.bag = h.inventory.bag.filter((i) => i.uid !== g.uid);
+    } else if (g.kind === 'durability') {
+      const item = wornItem(h, g.uid);
+      if (item) loseDurability(state, h, item, g.count, cause, { spent: true });
+    } else if (g.kind === 'toolUse') {
+      const item = h.inventory.bag.find((i) => i.uid === g.uid);
+      if (item) loseUses(state, h, item, g.count, cause);
     } else {
       changeStat(state, h, g.stat, -g.count, cause);
     }

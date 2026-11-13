@@ -27,6 +27,7 @@ import {
   CRAFT_TYPES,
 } from '../items/craft';
 import { earnFreeMove } from '../items/freeMoves';
+import { noteCrafted } from '../challenges/trials';
 import { makeItem } from '../items/make';
 import type { Quality } from '../items/quality';
 import { pushEvent } from '../log';
@@ -163,6 +164,7 @@ function finishCraft(
   // Engineering Vest: crafted clothes last longer.
   if (def.type === 'clothes' && how.durability > 0 && item.durability !== undefined) {
     item.durability += how.durability;
+    item.maxDurability = item.durability;
   }
   hiker.inventory.bag.push(item);
   // Only items with their own recipe have a blueprint to learn (not trinkets).
@@ -178,6 +180,8 @@ function finishCraft(
     paid: how.paid,
   });
   countCrafted(state, hiker.id, def.type);
+  // Rocco's Rebuilding Trial.
+  noteCrafted(state, hiker, def.type);
   // A new set of trinket resources after every trinket.
   if (def.type === 'trinket') state.trinketRecipe = rollTrinketRecipe(state.rng);
   fireCraft(state, hiker, itemId, def.type);

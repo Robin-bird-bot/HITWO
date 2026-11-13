@@ -20,7 +20,14 @@ export interface RollDef {
 }
 
 /** Things a cost or penalty can scale with on this tile. */
-export type Per = 'hikerOnTile' | 'twoHikersOnTile' | 'dogOnTile' | 'foodCarried' | 'injury';
+export type Per =
+  | 'hikerOnTile'
+  | 'twoHikersOnTile'
+  | 'dogOnTile'
+  | 'foodCarried'
+  | 'injury'
+  /** Half the durability left on the hiker's worn clothes, rounded up (Fashion Critic). */
+  | 'halfWornDurability';
 
 /**
  * A number on a card: a fixed number, a named roll ("X" or "Y" by name), or
@@ -51,9 +58,9 @@ export type Requirement =
   | { kind: 'caps'; count: Amount }
   /** Stat points. With several stats, any mix. */
   | { kind: 'stat'; stats: readonly StatName[]; count: Amount }
-  /** Clothing durability. TODO(phase 8): durability arrives with items, so this can't be met yet. */
+  /** Clothing durability from what the hiker wears: any of it, Gear only, or all from one item. */
   | { kind: 'durability'; count: Amount; slot?: 'gear'; oneItem?: true }
-  /** A use from a tool. TODO(phase 8). */
+  /** Uses from tools in the bag. */
   | { kind: 'toolUse'; count: Amount }
   /** Carry no more than this many resources; extras can be spent to pass (Rocky Path). */
   | { kind: 'carryLimit'; max: number };
@@ -66,10 +73,10 @@ export type CostOption = readonly Requirement[];
  * +/− chips, with a live readout.
  */
 export interface SpendAnyDef {
-  what: { stat: StatName } | { resources: 'any' } | { items: ItemType };
+  what: { stat: StatName } | { resources: 'any' } | { items: ItemType } | { toolUses: true };
   /** At most this many per section. */
   max?: number;
-  readout: 'statAfter' | 'tries' | 'swaps' | 'luck';
+  readout: 'statAfter' | 'tries' | 'swaps' | 'luck' | 'peeks';
   /** After spending: effects for a hiker whose stat ended at or below a value (Citro Tub). */
   thresholds?: readonly { atMost: number; effects: readonly Effect[] }[];
   /** For every N spent, a chance at these effects (Abandoned Ranger Station). */
@@ -163,17 +170,16 @@ export type EffectOp =
   | { op: 'raiseTier'; where: 'unrevealedConnected' }
   /** Start another challenge on this tile (Bear Country's failure). */
   | { op: 'trigger'; tier: Tier; node: NodeType }
-  /**
-   * Food cards give less Appetite: all of them, or one at random.
-   * TODO(phase 8): recorded on the items, used when eating arrives.
-   */
+  /** Food cards give less Appetite: all of them, or one at random (added to each bite). */
   | { op: 'foodAppetite'; delta: Amount; which?: 'all' | 'one' }
-  /** Each food card can spoil. TODO(phase 8). */
+  /** Each food card can spoil. */
   | { op: 'spoilFood'; chance: number }
-  /** Tools lose uses. TODO(phase 8). */
+  /** Tools lose uses. */
   | { op: 'toolUses'; delta: Amount }
-  /** Clothing can be lost, by durability left. TODO(phase 8). */
+  /** Each worn clothing item can be lost, more likely the more durability it has left. */
   | { op: 'loseClothes'; chancePerDurability: number }
+  /** Shows the card on a random tile nobody has reached, like Old Firewatch Tower (Old Trail Sign). */
+  | { op: 'peekCard' }
   /** A random negative condition (Rocco Raccoon), or a random one from a list (Mysterious Pill). */
   | { op: 'randomCondition'; duration: Amount; unit: 'days'; from?: readonly string[] }
   /** A random item (of these types), a particular item, or a Tier III placeholder. */
@@ -183,6 +189,8 @@ export type EffectOp =
       itemTypes?: readonly ItemType[];
       itemId?: string;
       tier3?: true;
+      /** Or, now and then, a blueprint of one of those types (Abandoned Ranger Station). */
+      orBlueprint?: true;
     }
   | { op: 'cureInjury'; count: number }
   /** Cures conditions: all of them, or only negative ones. */
@@ -199,10 +207,7 @@ export type EffectOp =
   | { op: 'swapResources'; count: Amount }
   /** Takes caps from the party purse, as many as it has. */
   | { op: 'loseCaps'; count: Amount }
-  /**
-   * Equipped clothes lose durability: one item at random, or all of them.
-   * TODO(phase 8): recorded as wear on the item until durability arrives.
-   */
+  /** Equipped clothes lose durability: one item at random, or all of them. */
   | { op: 'wearClothes'; which: 'one' | 'all'; amount: Amount }
   /** Swaps a random bag item with a random one from a hiker on another tile. */
   | { op: 'swapItemFar' }
@@ -227,7 +232,7 @@ export interface RiskDef {
   spend: readonly (
     | { resources: ResourceFilter | 'any' }
     | { items: ItemType | 'any' }
-    /** TODO(phase 8): clothing durability. */
+    /** Clothing durability from what they wear (Hypothermia). */
     | { durability: true }
   )[];
   measure:
@@ -238,7 +243,10 @@ export interface RiskDef {
         /** Points added for each thing still carried. */
         perCarried?: readonly { what: ResourceFilter | 'anyResource' | ItemType; points: Chance }[];
         /** Points taken off for each thing spent. */
-        perSpent?: readonly { what: ResourceFilter | 'anyResource' | 'anyItem'; points: Chance }[];
+        perSpent?: readonly {
+          what: ResourceFilter | 'anyResource' | 'anyItem' | 'durability';
+          points: Chance;
+        }[];
       }
     | { kind: 'threshold'; readout: string; carriedAtLeast: Amount }
     | {
@@ -273,6 +281,15 @@ export type TrialGoal =
   | { kind: 'abundance'; node: NodeType; atLeast: Amount }
   | { kind: 'energyTogether'; atLeast: number }
   | { kind: 'noSleepNear' }
+  /** Mold Invasion: whoever eats on its tile before it ends gets the penalty. */
+  | { kind: 'noEatHere' }
+  /** Rocco's Rebuilding Trial: rewards for crafting an item of a type picked at random. */
+  | { kind: 'roccoCraft' }
+  /**
+   * Bear Country: nobody on its tile crafts until it ends. Sitting by the fire
+   * counts too, once Phase 6's fire exists (TODO(wyatt): Sit by the Fire is held).
+   */
+  | { kind: 'noCraftHere' }
   | { kind: 'roccoReach' }
   | { kind: 'roccoScavenge' }
   | { kind: 'rangerRequest'; pay: Amount }

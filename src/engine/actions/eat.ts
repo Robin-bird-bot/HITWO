@@ -29,6 +29,7 @@ import { changeStat } from '../stats';
 import type { Action, GameState, Hiker, ItemInstance } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
 import { negativeConditions } from './useItem';
+import { noteEat } from '../challenges/trials';
 
 type EatAction = Extract<Action, { type: 'eat' }>;
 
@@ -135,6 +136,8 @@ export function applyEat(state: GameState, action: EatAction): void {
   for (const source of effectSourcesFor(state, hiker))
     source.hooks.onEat?.({ itemId: item.itemId }, ctx);
   fireTileEat(state, hiker, item.itemId);
+  // Mold Invasion: eating on its tile brings its penalty.
+  noteEat(state, hiker);
 
   if (keep) {
     pushEvent(state, { kind: 'biteKept', hikerId: hiker.id, itemId: item.itemId });

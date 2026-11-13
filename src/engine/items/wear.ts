@@ -37,21 +37,25 @@ export function loseDurability(
   item: ItemInstance,
   n: number,
   cause: string,
+  /** Spent on purpose (a challenge's cost): it comes off this item, with no Umbrella or saves. */
+  { spent = false }: { spent?: boolean } = {},
 ): number {
   if (n <= 0 || ITEMS[item.itemId]?.type !== 'clothes') return 0;
   // An Umbrella takes what the hiker's other clothes would lose.
-  const umbrella = wornClothes(hiker).find((i) => i !== item && ITEMS[i.itemId]?.takesWear);
+  const umbrella = spent
+    ? undefined
+    : wornClothes(hiker).find((i) => i !== item && ITEMS[i.itemId]?.takesWear);
   if (umbrella) item = umbrella;
   const def = ITEMS[item.itemId];
   if (!def) return 0;
   // A chance not to lose any (Heavy Jacket; Birkenstocks on their node).
-  const save = def.wearSave;
+  const save = spent ? undefined : def.wearSave;
   if (save && (!save.onNode || (item.node && tileHasNode(state, hiker, item.node)))) {
     const pct = valueAt(def.values?.[save.value], qualityOf(item));
     if (roll(state.rng, pct / 100)) return 0;
   }
   // An item with no count yet (an old save, a test) starts full.
-  const before = item.durability ?? fullDurability(def, qualityOf(item));
+  const before = item.durability ?? item.maxDurability ?? fullDurability(def, qualityOf(item));
   item.durability = Math.max(0, before - n);
   if (item.durability === 0) {
     removeItem(hiker, item.uid);

@@ -1,8 +1,8 @@
 /**
  * Free actions with resources and items (they don't use the phase):
  * - give one resource or bag item to a hiker on the same tile (an active
- *   hiker can also take things from a passed-out one: Wyatt, Nov 7. TODO(phase 8):
- *   their worn clothes too, once equipping exists);
+ *   hiker can also take things from a passed-out one: Wyatt, Nov 7; their worn
+ *   clothes come off with takeOff, src/engine/actions/dress.ts);
  * - return a resource to nature, +1 Abundance to its node.
  */
 import { BALANCE } from '../../config/balance';

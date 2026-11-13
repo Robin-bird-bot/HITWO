@@ -54,8 +54,8 @@ export const TO_PLACE: readonly ItemDef[] = [
 ];
 
 /**
- * Tier III stand-ins for a Wonder's "pick 1 of 3" and Snake Slots' jackpot.
- * TODO(phase 8): the real Tier III items (step 9).
+ * The old Tier III stand-ins. Rewards give real Tier III items now; these stay
+ * so a save that already holds one still loads and shows it.
  */
 export const TIER_3_STAND_INS: readonly ItemDef[] = [
   toPlace('tier3Tool', 'Tier III Tool', 'tool', 'A top-tier tool (placeholder).'),

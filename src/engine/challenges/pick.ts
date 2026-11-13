@@ -13,7 +13,6 @@ import { CHALLENGES, OPPORTUNITIES, TRIALS } from '../../content/challenges';
 import { weightedPick } from '../rng';
 import { nodeCounts } from '../weather';
 import type { GameState, Hiker, RngState, Tile } from '../types';
-import { notBuiltYet } from './rolls';
 import type { CardDef, ChallengeKind, Gate, Tier } from './types';
 
 export interface Picked {
@@ -31,14 +30,7 @@ const MAX_TIER: Tier = 3;
 /** Why a card can't be played at all yet, if anything (a system that isn't built). */
 export function notPlayableYet(card: CardDef): string | undefined {
   if (card.kind === 'trial') return card.goal.kind === 'off' ? card.goal.waitingOn : undefined;
-  if (card.waitingOn) return card.waitingOn;
-  if (card.risk) {
-    const canSpend = card.risk.spend.some((s) => !('durability' in s));
-    return canSpend ? undefined : 'phase 8 (clothing durability)';
-  }
-  if (card.cost.length === 0) return undefined;
-  const payable = card.cost.some((option) => !option.some(notBuiltYet));
-  return payable ? undefined : 'phase 8 (clothing durability or tool uses)';
+  return card.waitingOn;
 }
 
 export function gatePasses(gate: Gate, state: GameState, onTile: readonly Hiker[]): boolean {

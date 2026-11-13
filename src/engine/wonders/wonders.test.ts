@@ -93,10 +93,10 @@ describe('revealing a Wonder', () => {
       expect(after.challenge).toBeUndefined();
       const w = after.section.tiles.M!.wonder!;
       expect(w.goals).toHaveLength(3);
-      // Fort Rock's clothing durability goal (index 4) waits on Phase 8.
-      expect(w.goals!.map((g) => g.index)).not.toContain(4);
       expect(new Set(w.goals!.map((g) => g.index)).size).toBe(3);
-      expect([...w.tier3!].sort()).toEqual([...TIER_3_ITEMS].sort());
+      // 3 different real Tier III items.
+      expect(new Set(w.tier3).size).toBe(3);
+      expect(w.tier3!.every((id) => TIER_3_ITEMS.includes(id))).toBe(true);
       expect(after.log.at(-1)).toMatchObject({ kind: 'wonderRevealed', tileId: 'M' });
     }
   });
@@ -371,7 +371,7 @@ describe('accomplishing a Wonder', () => {
     );
   });
 
-  it('Fort Rock’s shelters: at most 2 takers, and the durability reward waits', () => {
+  it('Fort Rock’s shelters: at most 2 takers, and doubling needs worn clothes', () => {
     const s = fixtureGame();
     for (const id of ['ash', 'birch', 'cedar']) place(s, id, 'M');
     s.counters.sheltersPlaced[0] = 3;
@@ -387,7 +387,7 @@ describe('accomplishing a Wonder', () => {
         s,
         accomplish({ ash: { reward: 0 }, birch: { reward: 1 }, cedar: { reward: 2 } }),
       ),
-    ).toMatch(/comes later/);
+    ).toBe('Birch isn’t wearing any clothes.');
     const after = run(
       s,
       accomplish({ ash: { reward: 0 }, birch: { reward: 0 }, cedar: { reward: 2 } }),

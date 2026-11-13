@@ -54,6 +54,9 @@ export {
 export { itemText } from './items/text';
 export { recipeSize, type Recipe, type RecipePart } from './items/recipe';
 export {
+  durabilityLeft,
+  maxDurabilityOf,
+  usesLeftOf,
   fullCounters,
   fullDurability,
   makeItem,
@@ -70,7 +73,7 @@ export { bonusTaken, cardGains, pickOptions, rerollAbility, rerollsLeft } from '
 export { isLow } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
-export { amount, rollCard, scaledRange, notBuiltYet, type CardRolls } from './challenges/rolls';
+export { amount, rollCard, scaledRange, type CardRolls } from './challenges/rolls';
 export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
 export { hasCondition } from './conditions';
 export type * from './challenges/types';

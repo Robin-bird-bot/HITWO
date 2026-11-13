@@ -60,16 +60,16 @@ describe('which cards fit a tile', () => {
   });
 
   it('leaves out cards whose systems aren’t built yet', () => {
-    expect(notPlayableYet(card('thorn-thicket'))).toMatch(/phase 8/); // durability only
-    expect(notPlayableYet(card('fashion-critic'))).toMatch(/phase 8/);
-    expect(notPlayableYet(card('sticky-sap'))).toBeUndefined(); // 2 Energy works now
-    expect(notPlayableYet(card('mold-invasion'))).toMatch(/phase 8/);
+    // Durability, tool uses, eating and crafting all work now (Phase 8).
+    expect(notPlayableYet(card('thorn-thicket'))).toBeUndefined();
+    expect(notPlayableYet(card('fashion-critic'))).toBeUndefined();
+    expect(notPlayableYet(card('sticky-sap'))).toBeUndefined();
+    expect(notPlayableYet(card('mold-invasion'))).toBeUndefined();
+    expect(notPlayableYet(card('bear-country'))).toBeUndefined();
     expect(notPlayableYet(card('frozen-fingers'))).toMatch(/phase 6/);
     expect(notPlayableYet(card('train'))).toBeUndefined();
     const off = TRIALS.filter((t) => notPlayableYet(t)).map((t) => t.id);
-    expect(off.sort()).toEqual(
-      ['bear-country', 'frozen-fingers', 'mold-invasion', 'rocco-raccoons-rebuilding-trial'].sort(),
-    );
+    expect(off.sort()).toEqual(['frozen-fingers']);
   });
 });
 

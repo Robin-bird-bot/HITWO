@@ -259,6 +259,8 @@ export interface ItemInstance {
   appetiteMod?: number;
   /** Made with a node, which its effect needs (Birkenstocks). */
   node?: NodeType;
+  /** Clothes: a full durability above the usual (Fort Rock's reward, an Engineering Vest). */
+  maxDurability?: number;
 }
 
 export interface Inventory {
@@ -492,7 +494,7 @@ export interface OpenChallenge {
   /** A Choice space: the other challenge, with its own rolls, until the party picks one. */
   alternative?: { cardId: string; rolls: CardRolls };
   /** A Trial's targets, picked when it's revealed so the pop-up can show them. */
-  trial?: { targetTile?: TileId; resource?: ResourceId };
+  trial?: { targetTile?: TileId; resource?: ResourceId; itemType?: ItemTypeName };
   /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
   presses?: Record<string, number>;
 }
@@ -529,7 +531,11 @@ export type Gift =
   | { kind: 'resource'; req: number; from: HikerId; resource: ResourceId; count: number }
   | { kind: 'item'; req: number; from: HikerId; uid: string }
   | { kind: 'caps'; req: number; count: number }
-  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number };
+  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number }
+  /** Clothing durability, from an item the giver is wearing. */
+  | { kind: 'durability'; req: number; from: HikerId; uid: string; count: number }
+  /** Uses from a tool in the giver's bag. */
+  | { kind: 'toolUse'; req: number; from: HikerId; uid: string; count: number };
 
 /** What the party decided for one section of the pop-up. */
 export interface ChallengeSection {
@@ -550,6 +556,9 @@ export interface ChallengePaid {
   items: ItemId[];
   caps: number;
   stats: Partial<Record<StatName, number>>;
+  /** Clothing durability and tool uses spent. */
+  durability?: number;
+  toolUses?: number;
 }
 
 /**
@@ -580,6 +589,8 @@ export interface ActiveTrial {
   penalized: HikerId[];
   /** Ranger's Request: how much of the resource each hiker has scavenged since it started. */
   gathered?: Record<HikerId, number>;
+  /** Rocco's Rebuilding Trial: the item type to craft. */
+  itemType?: ItemTypeName;
 }
 
 // ── Randomness ─────────────────────────────────────────────────────────────
@@ -824,6 +835,8 @@ export type GameEventBody =
       counts?: { challenge: number; opportunity: number; trial: number };
       row?: number;
     }
+  /** A hiker found a blueprint (Abandoned Ranger Station). */
+  | { kind: 'blueprintFound'; hikerId: HikerId; itemId: ItemId; cause: string }
   /** A hiker taught another a blueprint, for Morale. */
   | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */

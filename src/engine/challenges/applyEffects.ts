@@ -10,10 +10,12 @@
  * - Effects that wait on a later phase still record their data on the
  *   hiker or item (TODO(phase N) notes say where).
  */
-import { makeItem } from '../items/make';
-import { loseDurability, loseUses } from '../items/wear';
+import { durabilityLeft, makeItem } from '../items/make';
+import { loseDurability, loseUses, removeItem } from '../items/wear';
 import { placeShelterOn } from '../items/shelters';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
+import { craftableItems } from '../../content/items';
+import { BALANCE } from '../../config/balance';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
@@ -26,6 +28,7 @@ import { pick, roll, shuffle } from '../rng';
 import { addInjury, changeStat, cureInjuries, statMax } from '../stats';
 import { endCarry } from '../health';
 import { enterTile } from '../actions/common';
+import { cardShown, revealCardOn, triggers } from './reveal';
 import type {
   CardRolls,
   GameState,
@@ -416,9 +419,33 @@ function applyToHiker(
       for (const item of [...h.inventory.bag]) loseUses(state, h, item, n, cause);
       return;
     }
-    case 'loseClothes':
-      // TODO(phase 8): clothing durability. Fashion Critic waits until then.
+    case 'loseClothes': {
+      // Fashion Critic: each worn item, more likely gone the more durability it has left.
+      const lost = equippedClothes(h).filter((i) =>
+        roll(state.rng, Math.min(1, e.chancePerDurability * durabilityLeft(i))),
+      );
+      for (const i of lost) removeItem(h, i.uid);
+      if (lost.length) {
+        logLost(
+          state,
+          h,
+          [],
+          lost.map((i) => i.itemId),
+          cause,
+        );
+        result.touched.items.push(...lost.map((i) => i.itemId));
+      }
       return;
+    }
+    case 'peekCard': {
+      // Old Trail Sign: a random tile nobody has reached shows its card.
+      const tiles = Object.values(state.section.tiles).filter(
+        (t) => !t.visited && t.kind === 'normal' && !cardShown(t) && triggers(state, t.id),
+      );
+      if (!tiles.length) return;
+      revealCardOn(state, pick(state.rng, tiles).id, cause);
+      return;
+    }
     case 'gainResources': {
       const room = resourceLimit(state, h) - resourceCount(h);
       const options = RESOURCES.filter((r) => matches(e.filter, r.id)).map((r) => r.id);
@@ -583,6 +610,20 @@ function applyOnce(
         : e.tier3
           ? TIER_3_ITEMS.flatMap((id) => (ITEMS[id] ? [ITEMS[id]] : []))
           : types.flatMap((t) => findableItems(t));
+      // Abandoned Ranger Station: now and then a blueprint instead of an item.
+      if (e.orBlueprint && roll(state.rng, BALANCE.items.craft.blueprintFind)) {
+        const learner = targets[0];
+        const known = learner?.blueprints ?? [];
+        const plans = types
+          .flatMap((t) => craftableItems(t, state.section.tier))
+          .filter((d) => d.recipe && !known.includes(d.id));
+        if (learner && plans.length) {
+          const plan = pick(state.rng, plans);
+          learner.blueprints = [...known, plan.id];
+          pushEvent(state, { kind: 'blueprintFound', hikerId: learner.id, itemId: plan.id, cause });
+          return;
+        }
+      }
       const to = targets.find((h) => h.inventory.bag.length < bagSlots(state, h).total);
       if (!options.length || !to) return;
       const item = pick(state.rng, options);

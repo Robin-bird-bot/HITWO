@@ -105,3 +105,20 @@ export function makeItem(
 }
 
 const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];
+
+/** A clothing item's full durability: its own raise (Fort Rock), or its tier's at its Quality. */
+export function maxDurabilityOf(item: ItemInstance): number {
+  const def = ITEMS[item.itemId];
+  if (item.maxDurability !== undefined) return item.maxDurability;
+  return def ? fullDurability(def, qualityOf(item)) : 0;
+}
+
+/** Durability left on a clothing item (full when it has no count yet). */
+export const durabilityLeft = (item: ItemInstance): number =>
+  item.durability ?? maxDurabilityOf(item);
+
+/** Uses left on a tool (full when it has no count yet). */
+export function usesLeftOf(item: ItemInstance): number {
+  const def = ITEMS[item.itemId];
+  return item.usesLeft ?? (def ? (fullCounters(def, qualityOf(item)).usesLeft ?? 1) : 0);
+}

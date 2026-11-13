@@ -348,8 +348,8 @@ export interface TraitDef {
 export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
 
 /**
- * What using an item does to its target (Phase 7: the medical items). A use
- * that would do nothing is refused. TODO(phase 8): every item's use (step 3).
+ * What using an item does: to its target, the tile, or the map. A use that
+ * would do nothing is refused (src/engine/actions/useItem.ts).
  */
 export interface ItemUse {
   /** Cures this many injuries (waking a passed-out hiker who drops below 3). */
