@@ -348,7 +348,7 @@ function pickOptions(state: GameState, user: Hiker, target: Hiker, kind: UseChoi
         image: NODE_IMAGE[n],
       }));
     case 'tile':
-      // Map tools pick on the map itself. TODO(phase 8): the map-pick mode (step 8).
+      // Map tools pick their tile on the map itself (the game screen's tool mode).
       return [];
     case 'resource':
       return resourceChoices(state, user).map((r) => ({
