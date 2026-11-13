@@ -9,13 +9,16 @@
  */
 import { countSleep } from './counters';
 import { countdownAtCamp } from './health';
+import { wearAtCamp } from './items/wear';
+import { tickBoosts } from './items/boosts';
+import { sheltersAtCamp } from './items/shelters';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
-import { computeCost, fireHook, firePhaseEnd } from './effects';
+import { computeCost, fireHook, firePhaseEnd, firePhaseStart } from './effects';
 import { pushEvent } from './log';
 import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
@@ -35,15 +38,19 @@ export function endPhase(state: GameState): void {
   weatherPhaseEnd(state);
   for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
   tickConditions(state, 'phases');
+  // Items used "this phase" stop working.
+  tickBoosts(state, 'phases');
 
   if (state.phase === 'morning') {
     state.phase = 'afternoon';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
     weatherPhaseStart(state);
+    firePhaseStart(state);
   } else if (state.phase === 'afternoon') {
     state.phase = 'night';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
     weatherPhaseStart(state);
+    firePhaseStart(state);
   } else {
     campStep(state);
     startNewDay(state);
@@ -80,6 +87,9 @@ function endOfDayDrain(state: GameState, h: Hiker): void {
 
 function campStep(state: GameState): void {
   runNightEvent(state);
+  // Bear Spray counts the night it guarded; Camping Lamps go out.
+  tickBoosts(state, 'nights');
+  for (const t of Object.values(state.section.tiles)) delete t.lampTonight;
   for (const h of state.hikers) {
     if (BALANCE.rules.noSleepDrainFirst) {
       noSleepDrain(state, h);
@@ -93,6 +103,9 @@ function campStep(state: GameState): void {
   countSleep(state);
   recoverOvernight(state);
   tickConditions(state, 'days');
+  // Worn clothes lose a day of durability, and shelters count a night.
+  wearAtCamp(state);
+  sheltersAtCamp(state);
   // Passed-out hikers left alone count down, last.
   countdownAtCamp(state);
 }
@@ -109,6 +122,7 @@ function startNewDay(state: GameState): void {
   advanceWeather(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
   weatherPhaseStart(state);
+  firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);
 }

@@ -13,9 +13,11 @@
  *   weather ends, and at a set count give an injury and reset.
  * - Effects plug into the hooks through effectSourcesFor (src/content/conditions.ts).
  */
-import { CONDITIONS } from '../content/conditions';
-import { tally } from './effects';
+import { CONDITIONS, NEGATIVE_CONDITIONS, POSITIVE_CONDITIONS } from '../content/conditions';
+import { blocksCondition, tally } from './effects';
 import { pushEvent } from './log';
+import { tileNodeTypes } from './map';
+import { pick, shuffle } from './rng';
 import { addInjury, changeStat, clampToCaps, shiftStat } from './stats';
 import type { ConditionInstance, ConditionUnit, GameState, Hiker, NodeType } from './types';
 
@@ -33,10 +35,19 @@ export function addCondition(
   remaining: number,
   unit: ConditionUnit,
   cause: string,
-  extra: { node?: NodeType; then?: ConditionInstance['then'] } = {},
+  extra: {
+    node?: NodeType;
+    then?: ConditionInstance['then'];
+    /** Several stacks of a stat bonus ("3 stacks of Sated": +3 Appetite). */
+    stacks?: number;
+    /** Ends with this phase ("Lucky for this phase"), not the next. */
+    thisPhase?: true;
+  } = {},
 ): void {
   if (hiker.status === 'abandoned') return;
   const def = CONDITIONS[id];
+  // Something blocks negative conditions (a Star, a Puffer Jacket).
+  if (def?.kind === 'negative' && blocksCondition(state, hiker, id)) return;
   // Stacking conditions are added in stacks; "remaining" is how many.
   if (def?.stacking) {
     addStacks(state, hiker, id, remaining, cause);
@@ -56,11 +67,18 @@ export function addCondition(
     return;
   }
 
+  const stacks = Math.max(1, extra.stacks ?? 1);
   if (existing) {
     if (remaining * PHASES_PER[unit] > existing.remaining * PHASES_PER[existing.unit]) {
       existing.remaining = remaining;
       existing.unit = unit;
-      if (unit === 'phases') existing.fresh = true;
+      if (unit === 'phases' && !extra.thisPhase) existing.fresh = true;
+    }
+    // More stacks of a stat bonus than it has: the extra ones apply now.
+    const had = existing.stacks ?? 1;
+    if (!def?.stacking && stacks > had) {
+      existing.stacks = stacks;
+      applyShift(state, hiker, existing, stacks - had);
     }
   } else {
     const c: ConditionInstance = {
@@ -69,7 +87,8 @@ export function addCondition(
       unit,
       ...(extra.node ? { node: extra.node } : {}),
       ...(extra.then ? { then: extra.then } : {}),
-      ...(unit === 'phases' ? { fresh: true as const } : {}),
+      ...(unit === 'phases' && !extra.thisPhase ? { fresh: true as const } : {}),
+      ...(stacks > 1 ? { stacks } : {}),
     };
     hiker.conditions.push(c);
     pushEvent(state, {
@@ -80,7 +99,7 @@ export function addCondition(
       unit,
       cause,
     });
-    applyShift(state, hiker, c);
+    applyShift(state, hiker, c, stacks);
     clampToCaps(state, hiker);
     return;
   }
@@ -93,17 +112,18 @@ export function addCondition(
  * gives an injury; and while a cap holds a stat (Burning), Energized can't
  * push past it.
  */
-function applyShift(state: GameState, hiker: Hiker, c: ConditionInstance): void {
+function applyShift(state: GameState, hiker: Hiker, c: ConditionInstance, times = 1): void {
   const def = CONDITIONS[c.id];
   if (!def?.shift) return;
-  for (const [stat, amount] of Object.entries(def.shift) as [keyof Hiker['stats'], number][]) {
+  for (const [stat, each] of Object.entries(def.shift) as [keyof Hiker['stats'], number][]) {
+    const amount = each * times;
     const from = hiker.stats[stat];
     // A positive condition can push a stat above its maximum.
     changeStat(state, hiker, stat, amount, def.name, { pastMax: amount > 0 });
     const moved = hiker.stats[stat] - from;
     // Never give back more than the condition itself took (Strained may have taken more).
     const counted = amount < 0 ? Math.max(amount, moved) : Math.min(amount, moved);
-    if (counted !== 0) c.applied = { ...c.applied, [stat]: counted };
+    if (counted !== 0) c.applied = { ...c.applied, [stat]: (c.applied?.[stat] ?? 0) + counted };
   }
 }
 
@@ -195,5 +215,41 @@ export function tickConditions(state: GameState, which: 'phases' | 'days'): void
       if (def?.onRunOut === 'injury') addInjury(state, hiker, `${def.name} ran out`);
       if (c.then) addCondition(state, hiker, c.then.id, c.then.remaining, c.then.unit, 'follow-on');
     }
+  }
+}
+
+/**
+ * Random conditions from food (Chocolate Rose, Mystery Meat): good or bad,
+ * different ones, picked first from those the hiker doesn't have. A
+ * condition about a node (Allergies) takes one from the hiker's tile.
+ */
+export function addRandomConditions(
+  state: GameState,
+  hiker: Hiker,
+  kind: 'positive' | 'negative',
+  count: number,
+  remaining: number,
+  unit: 'phases' | 'days',
+  cause: string,
+): void {
+  if (count <= 0 || remaining <= 0) return;
+  const all = kind === 'positive' ? POSITIVE_CONDITIONS : NEGATIVE_CONDITIONS;
+  const fresh = all.filter((id) => !hasCondition(hiker, id));
+  const order = [
+    ...shuffle(state.rng, fresh),
+    ...shuffle(
+      state.rng,
+      all.filter((id) => !fresh.includes(id)),
+    ),
+  ];
+  const nodes = tileNodeTypes(state, hiker.tileId);
+  let given = 0;
+  for (const id of order) {
+    if (given >= count) break;
+    const needsNode = CONDITIONS[id]?.takesNode;
+    if (needsNode && !nodes.length) continue;
+    const node = needsNode ? pick(state.rng, nodes) : undefined;
+    addCondition(state, hiker, id, remaining, unit, cause, node ? { node } : {});
+    given += 1;
   }
 }

@@ -1,0 +1,150 @@
+/* An item card's front (docs/mockups/ItemCard.dc.html). Sizes are set inline from the card's width. */
+
+.card {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.32);
+  font-family: var(--font-body);
+  color: #f1eadb;
+  background: #2b1d12;
+}
+
+.front {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* The cloud window: the type's rays, faded out at the edges. */
+.window {
+  position: absolute;
+  overflow: hidden;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%);
+}
+
+.rays {
+  position: absolute;
+  opacity: 0.4;
+  display: block;
+  animation: spin 90s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.art {
+  position: absolute;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+  -webkit-user-drag: none;
+}
+
+.tier {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 0 rgba(20, 16, 12, 0.85)) drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+  pointer-events: none;
+}
+
+.text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.name {
+  font-family: var(--font-pixel);
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  color: #fff3e3;
+}
+
+.type {
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.effect {
+  line-height: 1.35;
+  color: #e9dfcc;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.bottom {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.meter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.right {
+  align-items: flex-end;
+}
+
+.tiny {
+  letter-spacing: 0.08em;
+  color: #c9b9a0;
+}
+
+.diamonds,
+.pips {
+  display: flex;
+  align-items: center;
+}
+
+.diamond {
+  transform: rotate(45deg);
+}
+
+.pip {
+  flex: none;
+}
+
+.noQuality {
+  color: #a8977d;
+}
+
+.meta {
+  font-family: var(--font-pixel);
+  color: #f1eadb;
+}
+
+.compactPips {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}

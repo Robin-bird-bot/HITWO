@@ -35,7 +35,7 @@ export interface SectionOptions {
   tier: number;
   /**
    * Wonders already used this run, so each biome gets a new one.
-   * TODO(phase 8): pass these when the next section is made at a checkpoint.
+   * TODO(phase 9): pass these when the next section is made at a checkpoint.
    */
   usedWonders?: readonly string[];
 }
@@ -220,6 +220,18 @@ function placeWonder(rng: RngState, middle: Tile[], used: readonly string[]): vo
 
 // ── Section ────────────────────────────────────────────────────────────────
 
+/**
+ * CHALLENGE_SHARE: below 1, only that share of the plain tiles holds a card;
+ * the rest are quiet. Special spaces and the Wonder keep theirs. At 1 nothing
+ * changes, and the random numbers aren't touched, so seeds give the same trail.
+ */
+function markQuiet(rng: RngState, middle: Tile[], share: number): void {
+  if (share >= 1) return;
+  const plain = middle.filter((t) => !t.special && !t.wonder);
+  const quiet = Math.round(plain.length * (1 - Math.max(0, share)));
+  for (const t of shuffle(rng, plain).slice(0, quiet)) t.quiet = true;
+}
+
 export function generateSection(
   rng: RngState,
   { biome, tier, usedWonders = [] }: SectionOptions,
@@ -242,6 +254,7 @@ export function generateSection(
   for (const tile of middle) decorate(rng, tile, biome);
   addSideFeatures(rng, middle);
   placeWonder(rng, middle, usedWonders);
+  markQuiet(rng, middle, BALANCE.challenges.share[biome] ?? 1);
 
   return {
     biome,

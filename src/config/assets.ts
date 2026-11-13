@@ -80,7 +80,11 @@ export const ASSETS = {
     /** White type icons, already placed on a full 5:7 card canvas. */
     typeIcons: byItemType((t) => asset(`item-cards/type-icons/${t}.png`)),
     rays: byItemType((t) => asset(`item-cards/rays/${t}.png`)),
+    /** The card front (Nov 7): the cloud window for the art above, the text below. Opaque. */
+    front: asset('item-cards/front.jpg'),
   },
+  /** Item art (Nov 7), 384 px copies of assets/items, by the item's `art` name. */
+  itemArt: (art: string) => asset(`items/${art}.png`),
   /** Scavenge card layers (docs/ASSETS.md, "Scavenge card layers"). */
   scavenge: {
     /** Blank card backgrounds, no rays. */

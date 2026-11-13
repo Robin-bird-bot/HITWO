@@ -50,14 +50,20 @@ describe('Simple mode actions', () => {
 
   it('show only what the hiker can do right now', () => {
     const s = fixtureGame();
-    expect(ids(s, 'ash')).toEqual(['move', 'moveAll']);
-    expect(ids(toNight(fixtureGame()), 'ash')).toEqual(['move', 'moveAll', 'sleep', 'watch']);
+    expect(ids(s, 'ash')).toEqual(['move', 'moveAll', 'craft']);
+    expect(ids(toNight(fixtureGame()), 'ash')).toEqual([
+      'move',
+      'moveAll',
+      'craft',
+      'sleep',
+      'watch',
+    ]);
   });
 
   it('drop Move All when the hiker is alone', () => {
     const game = createGame({ seed: 1, hikers: STARTING_PARTY });
     for (const h of game.hikers.slice(1)) h.acted = true;
-    expect(readyActions(game, hiker(game, 'hiker-1')).map((a) => a.id)).toEqual(['move']);
+    expect(readyActions(game, hiker(game, 'hiker-1')).map((a) => a.id)).toEqual(['move', 'craft']);
   });
 
   it('say why when there’s nothing to do', () => {

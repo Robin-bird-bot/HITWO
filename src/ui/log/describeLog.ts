@@ -94,6 +94,8 @@ export function describePaid(paid: ChallengePaid): string {
   for (const [stat, n] of Object.entries(paid.stats) as [StatName, number][]) {
     parts.push(`${n} ${STAT_LABEL[stat]}`);
   }
+  if (paid.durability) parts.push(`${paid.durability} clothing durability`);
+  if (paid.toolUses) parts.push(`${paid.toolUses} tool use${paid.toolUses === 1 ? '' : 's'}`);
   return parts.length ? listNames(parts) : 'nothing';
 }
 
@@ -312,10 +314,111 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'itemGone': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const text = {
+          worn: `${name(e.hikerId)}’s ${item} wore out (${e.cause}).`,
+          used: `${name(e.hikerId)} used up the ${item}${e.cause ? ` (${e.cause})` : ''}.`,
+          eaten: `${name(e.hikerId)} finished the ${item}.`,
+          broke: `${name(e.hikerId)}’s ${item} broke (${e.cause}).`,
+        }[e.why];
+        lines.push({ id: e.id, text, tone: 'drain' });
+        break;
+      }
+      case 'dressed': {
+        const item = ITEMS[e.itemId]?.name ?? 'clothes';
+        const text = e.by
+          ? `${name(e.by)} took the ${item} off ${name(e.hikerId)}.`
+          : e.on
+            ? `${name(e.hikerId)} put on the ${item}.`
+            : `${name(e.hikerId)} took off the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'scavenge' });
+        break;
+      }
+      case 'scouted': {
+        const item = ITEMS[e.itemId]?.name ?? 'A scouting tool';
+        const n = e.tileIds.length;
+        const where =
+          e.row !== undefined ? 'along that row' : n === 1 ? 'there' : `around ${name(e.hikerId)}`;
+        const text = e.counts
+          ? `${item}: ${e.counts.challenge} challenge${e.counts.challenge === 1 ? '' : 's'}, ${e.counts.opportunity} ${e.counts.opportunity === 1 ? 'opportunity' : 'opportunities'} and ${e.counts.trial} Trial${e.counts.trial === 1 ? '' : 's'} ${where}.`
+          : `${name(e.hikerId)} scouted ${n} tile${n === 1 ? '' : 's'} with the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'challenge' });
+        break;
+      }
+      case 'crafted': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        const quality = e.quality ? ` (Quality ${e.quality})` : '';
+        const how = e.blueprint ? ' from its blueprint' : '';
+        const learned = e.learned ? ', and learned its blueprint' : '';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} crafted a ${item}${quality}${how}${learned}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'blueprintFound': {
+        const item = ITEMS[e.itemId]?.name ?? 'an item';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} found the ${item} blueprint (${e.cause}).`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'taught': {
+        const item = ITEMS[e.itemId]?.name ?? 'a';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} taught ${name(e.toId)} the ${item} blueprint (−${e.morale} Morale).`,
+          tone: 'rest',
+        });
+        break;
+      }
+      case 'shelterPlaced': {
+        const item = ITEMS[e.itemId]?.name ?? 'A shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? tileName(tile) : 'the tile';
+        const nights = `${e.nights} night${e.nights === 1 ? '' : 's'}`;
+        const text = e.hikerId
+          ? `${name(e.hikerId)} put up a ${item} on ${where} (${nights}).`
+          : `A ${item} now stands on ${where} (${nights}).`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterGone': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? ` on ${tileName(tile)}` : '';
+        lines.push({
+          id: e.id,
+          text: `The ${item}${where} has had its last night.`,
+          tone: 'drain',
+        });
+        break;
+      }
+      case 'ate': {
+        const item = ITEMS[e.itemId]?.name ?? 'some food';
+        const left =
+          e.bitesLeft > 0 ? ` (${e.bitesLeft} bite${e.bitesLeft === 1 ? '' : 's'} left)` : '';
+        lines.push({ id: e.id, text: `${name(e.hikerId)} ate the ${item}${left}.`, tone: 'rest' });
+        break;
+      }
+      case 'biteKept': {
+        const item = ITEMS[e.itemId]?.name ?? 'food';
+        lines.push({ id: e.id, text: `Lucky: the ${item} bite wasn’t used up.`, tone: 'scavenge' });
+        break;
+      }
       case 'used': {
         const item = ITEMS[e.itemId]?.name ?? 'an item';
-        const on = e.targetId === e.hikerId ? '' : ` on ${name(e.targetId)}`;
-        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}.`, tone: 'rest' });
+        const on = e.everyone
+          ? ' for everyone here'
+          : e.targetId === e.hikerId
+            ? ''
+            : ` on ${name(e.targetId)}`;
+        const did = e.detail ? `: ${e.detail}` : '';
+        lines.push({ id: e.id, text: `${name(e.hikerId)} used ${item}${on}${did}.`, tone: 'rest' });
         break;
       }
       case 'carry': {
@@ -380,6 +483,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           if (deal) return r.passed ? `${who} took the deal` : `${who} skipped it`;
           if (!r.passed) return r.hikerId ? `${who} failed` : `${who} didn’t pay`;
           const reward = r.reward ? `, and won ${REWARD_WORDS[r.reward]}` : '';
+          if (r.harness) return `${who} passed with the Harness${reward}`;
           return `${paid === 'nothing' ? `${who} passed` : `${who} paid ${paid}`}${reward}`;
         });
         lines.push({

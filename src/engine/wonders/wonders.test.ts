@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { TIER_3_ITEMS } from '../../content';
+import { ITEMS, TIER_3_ITEMS } from '../../content';
 import { WONDER_BY_ID, WONDERS } from '../../content/wonders';
 import { validateAction } from '../applyAction';
 import { revealableFrom, unrevealedTiles } from '../challenges/buttons';
@@ -93,10 +93,10 @@ describe('revealing a Wonder', () => {
       expect(after.challenge).toBeUndefined();
       const w = after.section.tiles.M!.wonder!;
       expect(w.goals).toHaveLength(3);
-      // Fort Rock's clothing durability goal (index 4) waits on Phase 9.
-      expect(w.goals!.map((g) => g.index)).not.toContain(4);
       expect(new Set(w.goals!.map((g) => g.index)).size).toBe(3);
-      expect([...w.tier3!].sort()).toEqual([...TIER_3_ITEMS].sort());
+      // 3 different real Tier III items.
+      expect(new Set(w.tier3).size).toBe(3);
+      expect(w.tier3!.every((id) => TIER_3_ITEMS.includes(id))).toBe(true);
       expect(after.log.at(-1)).toMatchObject({ kind: 'wonderRevealed', tileId: 'M' });
     }
   });
@@ -192,7 +192,7 @@ describe('Wonder goals, against only the hikers on the tile', () => {
     bag.push({ uid: 'c', itemId: 'medicTent' });
     expect(met(s, 'pittock-mansion', 4, 3)).toBe(true);
     expect(met(s, 'crater-lake', 4, 1)).toBe(true);
-    bag.push({ uid: 'd', itemId: 'medicine' }, { uid: 'e', itemId: 'medkit' });
+    bag.push({ uid: 'd', itemId: 'bandaid' }, { uid: 'e', itemId: 'medkit' });
     expect(met(s, 'crater-lake', 4, 1)).toBe(false);
   });
 
@@ -337,7 +337,7 @@ describe('accomplishing a Wonder', () => {
     const s = ready();
     hiker(s, 'ash').inventory.bag = ['a', 'b', 'c', 'd'].map((uid) => ({
       uid,
-      itemId: 'medicine',
+      itemId: 'bandaid',
     }));
     expect(
       validateAction(
@@ -371,7 +371,7 @@ describe('accomplishing a Wonder', () => {
     );
   });
 
-  it('Fort Rock’s shelters: at most 2 takers, and the durability reward waits', () => {
+  it('Fort Rock’s shelters: at most 2 takers, and doubling needs worn clothes', () => {
     const s = fixtureGame();
     for (const id of ['ash', 'birch', 'cedar']) place(s, id, 'M');
     s.counters.sheltersPlaced[0] = 3;
@@ -387,15 +387,15 @@ describe('accomplishing a Wonder', () => {
         s,
         accomplish({ ash: { reward: 0 }, birch: { reward: 1 }, cedar: { reward: 2 } }),
       ),
-    ).toMatch(/comes later/);
+    ).toBe('Birch isn’t wearing any clothes.');
     const after = run(
       s,
       accomplish({ ash: { reward: 0 }, birch: { reward: 0 }, cedar: { reward: 2 } }),
     );
-    expect(hiker(after, 'ash').inventory.bag.map((i) => i.itemId)).toEqual([
-      'medicTent',
-      'medicTent',
-    ]);
+    // Two shelters from the Meadow's tier (Tier 1: Hammock or Tent).
+    const got = hiker(after, 'ash').inventory.bag.map((i) => ITEMS[i.itemId]);
+    expect(got).toHaveLength(2);
+    expect(got.every((d) => d?.type === 'shelter' && d.tier === 1)).toBe(true);
   });
 
   it('the other rewards: caps, healing, revealing the biome, Energy, conditions turned good', () => {

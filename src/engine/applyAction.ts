@@ -32,7 +32,18 @@ import { applySleep, validateSleep } from './actions/sleep';
 import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
 import { applyUse, validateUse } from './actions/useItem';
+import { applyEat, validateEat } from './actions/eat';
+import { applyPlaceShelter, validatePlaceShelter } from './actions/shelter';
+import {
+  applyCraft,
+  applyCraftTake,
+  applyTeach,
+  validateCraft,
+  validateCraftTake,
+  validateTeach,
+} from './actions/craft';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
@@ -77,6 +88,10 @@ export function validateAction(state: GameState, action: Action): string | null 
   if (state.challenge && !challengeSteps.includes(action.type)) {
     return 'Finish the challenge first.';
   }
+  // A basic craft waits for its pick.
+  if (state.crafting && action.type !== 'craftTake' && action.type !== 'debug') {
+    return 'Finish crafting first: pick one of the cards.';
+  }
   switch (action.type) {
     case 'move':
       return validateMove(state, action) ?? null;
@@ -108,10 +123,24 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateDrop(state, action) ?? null;
     case 'useItem':
       return validateUse(state, action) ?? null;
+    case 'eat':
+      return validateEat(state, action) ?? null;
+    case 'placeShelter':
+      return validatePlaceShelter(state, action) ?? null;
+    case 'craft':
+      return validateCraft(state, action) ?? null;
+    case 'craftTake':
+      return validateCraftTake(state, action) ?? null;
+    case 'teach':
+      return validateTeach(state, action) ?? null;
     case 'pickUp':
       return validatePickUp(state, action) ?? null;
     case 'abandon':
       return validateAbandon(state, action) ?? null;
+    case 'putOn':
+      return validatePutOn(state, action) ?? null;
+    case 'takeOff':
+      return validateTakeOff(state, action) ?? null;
     case 'putDown':
       return validatePutDown(state, action) ?? null;
     case 'resolveChallenge':
@@ -182,11 +211,32 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'useItem':
       applyUse(draft, action);
       break;
+    case 'eat':
+      applyEat(draft, action);
+      break;
+    case 'placeShelter':
+      applyPlaceShelter(draft, action);
+      break;
+    case 'craft':
+      applyCraft(draft, action);
+      break;
+    case 'craftTake':
+      applyCraftTake(draft, action);
+      break;
+    case 'teach':
+      applyTeach(draft, action);
+      break;
     case 'pickUp':
       applyPickUp(draft, action);
       break;
     case 'abandon':
       applyAbandon(draft, action);
+      break;
+    case 'putOn':
+      applyPutOn(draft, action);
+      break;
+    case 'takeOff':
+      applyTakeOff(draft, action);
       break;
     case 'putDown':
       applyPutDown(draft, action);

@@ -14,7 +14,6 @@ import { STARTING_PARTY } from '../../content/characters';
 import { WONDERS } from '../../content/wonders';
 import {
   createGame,
-  notBuiltYet,
   notPlayableYet,
   rollCard,
   scaledNumber,
@@ -59,9 +58,9 @@ const WHO_NAME: Record<Who, string> = {
 
 /** Effects the engine records now, for a later phase to use. */
 const LATER: Partial<Record<Effect['op'], string>> = {
-  foodAppetite: 'Phase 9: food giving less Appetite is recorded on the food cards.',
-  toolUses: 'Phase 9: lost tool uses are recorded on the tools.',
-  loseClothes: 'Phase 9: losing clothing by durability does nothing yet.',
+  foodAppetite: 'Phase 8: food giving less Appetite is recorded on the food cards.',
+  toolUses: 'Phase 8: lost tool uses are recorded on the tools.',
+  loseClothes: 'Phase 8: losing clothing by durability does nothing yet.',
 };
 
 const RESOURCE_NAME = Object.fromEntries(RESOURCES.map((r) => [r.id, r.name]));
@@ -86,16 +85,6 @@ function waiting(card: CardDef): string[] {
   const out: string[] = [];
   const off = notPlayableYet(card);
   if (off) out.push(`Never picked until ${off}.`);
-  if (card.kind !== 'trial' && !off) {
-    card.cost.forEach((option, i) => {
-      if (option.some(notBuiltYet)) {
-        out.push(`Cost option ${i + 1} needs clothing durability or tool uses (phase 9).`);
-      }
-    });
-    if (card.risk?.spend.some((s) => 'durability' in s)) {
-      out.push('Spending clothing durability waits on phase 9.');
-    }
-  }
   for (const e of effectsOf(card)) {
     const later = LATER[e.op];
     if (later && !out.includes(later)) out.push(later);

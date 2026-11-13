@@ -99,9 +99,8 @@ export const WONDERS: readonly WonderDef[] = [
       },
       {
         text: 'The hikers here have {x} clothing durability between them.',
-        check: { kind: 'waiting' },
+        check: { kind: 'clothesDurability' },
         x: X(10),
-        waitingOn: 'Phase 9 (clothing durability)',
       },
     ],
     rewards: [
@@ -114,8 +113,7 @@ export const WONDERS: readonly WonderDef[] = [
       {
         title: 'Double durability',
         text: 'Double the current and maximum durability of one equipped clothing item.',
-        reward: { kind: 'waiting' },
-        waitingOn: 'Phase 9 (durability)',
+        reward: { kind: 'doubleDurability' },
       },
       XP,
     ],
@@ -125,9 +123,10 @@ export const WONDERS: readonly WonderDef[] = [
     name: 'Pittock Mansion',
     goals: [
       {
-        text: 'One hiker has 3 clothing items equipped.',
-        check: { kind: 'waiting' },
-        waitingOn: 'Phase 9 (equipping clothes)',
+        text: 'One hiker has {x} clothing items equipped.',
+        check: { kind: 'clothesWorn' },
+        // Every slot: the doc writes it without an X, so it never grows.
+        x: fixed(3),
       },
       {
         text: 'The party has {x} caps.',
@@ -237,9 +236,8 @@ export const WONDERS: readonly WonderDef[] = [
     goals: [
       {
         text: 'One hiker has crafted {x} items of one type.',
-        check: { kind: 'waiting' },
+        check: { kind: 'craftedOfType' },
         x: X(3),
-        waitingOn: 'Phase 9 (crafting)',
       },
       {
         text: 'One hiker here has 2 or less Morale and another has 8 or more.',

@@ -49,7 +49,19 @@ export function bagSlots(state: GameState, hiker: Hiker): BagSlots {
   return { base, fromItems, total: base + fromItems.reduce((sum, i) => sum + i.count, 0) };
 }
 
-/** How many resources a hiker holds, out of BALANCE.inventory.resourceLimit. */
+/** How many resources a hiker can hold: the limit, plus what items add (a Fanny Pack). */
+export function resourceLimit(state: GameState, hiker: Hiker): number {
+  const ctx = queryContext(state, hiker);
+  let limit = BALANCE.inventory.resourceLimit;
+  for (const source of effectSourcesFor(state, hiker)) {
+    for (const m of asList(source.hooks.modifyCapacity?.({ key: 'resources' }, ctx))) {
+      limit += m.flat ?? 0;
+    }
+  }
+  return Math.max(0, limit);
+}
+
+/** How many resources a hiker holds, out of resourceLimit(). */
 export function resourceCount(hiker: Hiker): number {
   return Object.values(hiker.inventory.resources).reduce((sum: number, n) => sum + (n ?? 0), 0);
 }

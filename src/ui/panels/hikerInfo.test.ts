@@ -9,11 +9,22 @@ const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
   Object.fromEntries(actionStates(s, hiker(s, id)).map((a) => [a.id, a]));
 
 describe('action grid', () => {
-  it('marks unbuilt actions with the phase they arrive in', () => {
+  it('marks unbuilt actions as not built yet', () => {
     const a = byId(fixtureGame(), 'ash');
-    expect(a.craft?.status).toBe('soon');
-    expect(a.fire?.reason).toBe('Sitting by the fire isn’t built yet.');
-    expect(a.craft?.sub).toBe('Phase 9');
+    expect(a.fire).toMatchObject({
+      status: 'soon',
+      reason: 'Sitting by the fire isn’t built yet.',
+    });
+  });
+
+  it('makes Craft ready while the hiker has their action, and says why not', () => {
+    const s = fixtureGame();
+    expect(byId(s, 'ash').craft).toMatchObject({ status: 'ready', sub: 'Recipes' });
+    s.hikers[0]!.acted = true;
+    expect(byId(s, 'ash').craft).toMatchObject({
+      status: 'blocked',
+      reason: 'Ash has already acted this morning.',
+    });
   });
 
   it('makes Watch ready at night only', () => {

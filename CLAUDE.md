@@ -11,7 +11,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/BUILD_PLAN.md` | The phased plan. Work through it in order, one phase at a time. |
 | `docs/design/01-design-doc.md` | Rules and systems. **Source of truth for how the game works.** |
 | `docs/design/02-traits-and-conditions.md` | Every trait and condition with exact wording, plus the term glossary. |
-| `docs/design/03-items.md` | Items named so far. |
+| `docs/design/03-items.md` | Every item with its tier, uses, bites or durability, Quality values, effect, recipe and art. **Source of truth for items.** |
 | `docs/design/04-challenges.md` | Every challenge and Trial: tier, nodes, who pays, cost, penalty and art. **Source of truth for challenge content.** |
 | `docs/design/05-nights-and-weather.md` | Night events, weather, and the nodes and conditions they add. **Source of truth for nights and weather.** |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |

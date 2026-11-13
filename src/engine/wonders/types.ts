@@ -64,6 +64,12 @@ export type GoalCheck =
   | { kind: 'oneHasCondition'; conditions: readonly ConditionId[] }
   /** There's a weather right now (not Clear). */
   | { kind: 'weatherActive' }
+  /** The hikers here have X clothing durability between them (Fort Rock). */
+  | { kind: 'clothesDurability' }
+  /** One hiker here has X clothing items equipped (Pittock Mansion). */
+  | { kind: 'clothesWorn' }
+  /** One hiker here has crafted X items of one type (Multnomah Falls). */
+  | { kind: 'craftedOfType' }
   /** Needs a system that isn't built yet; never picked until then. */
   | { kind: 'waiting' };
 
@@ -92,6 +98,8 @@ export type WonderReward =
   | { kind: 'maxStat'; stat: StatName; amount: number }
   /** Every negative condition becomes a random positive one. */
   | { kind: 'flipConditions'; days: number }
+  /** Double the current and full durability of one equipped clothing item (Fort Rock). */
+  | { kind: 'doubleDurability' }
   /** Needs a system that isn't built yet: shown greyed out. */
   | { kind: 'waiting' };
 

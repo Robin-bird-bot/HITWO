@@ -6,6 +6,9 @@
  *
  * "Not now" closes it for free until a card has been flipped. After that a
  * card has to be taken. Enter takes the picked card; Esc is "Not now".
+ *
+ * A Sack keeps more cards: after the first take the window comes back with
+ * that card marked Taken, for another take or Done.
  */
 import { useEffect, useState } from 'react';
 import { SCAVENGE_CARDS } from '../../content';
@@ -16,12 +19,13 @@ import {
   bonusTaken,
   cardGains,
   pickOptions,
-  rerollAbility,
+  rerollsLeft,
   scavengeCost,
   validateAction,
   type Action,
   type GameState,
   type ItemId,
+  type ItemInstance,
   type NodeType,
   type ResourceId,
   type ScavengeBonus,
@@ -32,7 +36,7 @@ import type { IconName } from '../icons/paths';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { useDraggable } from '../windows/useDraggable';
 import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from './cardLook';
-import { ItemBack } from './ItemBack';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard } from './ScavCard';
 import styles from './ScavengeWindow.module.css';
 
@@ -45,6 +49,8 @@ export interface TookCard {
   resources: ResourceId[];
   caps: number;
   items: ItemId[];
+  /** The items as they landed in the bag, with their Quality. */
+  found?: ItemInstance[];
 }
 
 interface ScavengeWindowProps {
@@ -54,7 +60,7 @@ interface ScavengeWindowProps {
   took: TookCard | null;
   onFlip(cards: number[]): void;
   onCancel(): void;
-  /** Gambler: reroll one flipped card. */
+  /** Glasses or Gambler: reroll one flipped card. */
   onReroll(card: number): void;
   onTake(action: TakeAction): void;
   onClose(): void;
@@ -73,7 +79,12 @@ export function ScavengeWindow({
   onClose,
 }: ScavengeWindowProps) {
   const open = state.scavenge;
-  const [selected, setSelected] = useState<number | null>(null);
+  const [picked, setSelected] = useState<number | null>(null);
+  // A card already taken (with a Sack) isn't the picked one any more.
+  const selected =
+    picked !== null && open?.cards[picked] && !open.cards[picked].taken ? picked : null;
+  // With a Sack, after the first take: how many more can be kept.
+  const keepMore = open?.took ? (open.keeps ?? 0) - open.took + 1 : 0;
   const [picks, setPicks] = useState<ResourceId[]>([]);
   const [item, setItem] = useState<ItemId | null>(null);
   const [bonusesOpen, setBonusesOpen] = useState(false);
@@ -86,7 +97,7 @@ export function ScavengeWindow({
   const paidCount = offers.filter((o) => o.appetiteEach > 0).reduce((n, o) => n + o.count, 0);
   const hasResources = !!card && cardGains(card, picks, item ?? undefined).resources.length > 0;
   const bonus = bonusTaken(offers, paidBonus ? paidCount : 0, hasResources);
-  const reroll = rerollAbility(state);
+  const reroll = rerollsLeft(state);
   const take: TakeAction | null =
     open && selected !== null
       ? {
@@ -98,7 +109,8 @@ export function ScavengeWindow({
         }
       : null;
   const takeReason = take ? validateAction(state, take) : null;
-  const canCancel = !!open && open.cards.every((c) => !c.flipped);
+  const canCancel = !!open && !open.took && open.cards.every((c) => !c.flipped);
+  const canFinish = !!open?.took;
 
   // Enter takes the picked card; Esc is "Not now" while it's allowed.
   useEffect(() => {
@@ -107,7 +119,7 @@ export function ScavengeWindow({
         if (e.key === 'Enter' || e.key === 'Escape') onClose();
         return;
       }
-      if (e.key === 'Escape' && canCancel) onCancel();
+      if (e.key === 'Escape' && (canCancel || canFinish)) onCancel();
       if (e.key === 'Enter' && take && !takeReason) {
         e.preventDefault();
         onTake(take);
@@ -191,7 +203,12 @@ export function ScavengeWindow({
               <span className={styles.change}>
                 {hiker.stats.appetite} →{' '}
                 <b>
-                  {Math.max(0, hiker.stats.appetite - scavengeCost(state, hiker) - bonus.appetite)}
+                  {Math.max(
+                    0,
+                    hiker.stats.appetite -
+                      (open.took ? BALANCE.items.sackAppetite : scavengeCost(state, hiker)) -
+                      bonus.appetite,
+                  )}
                 </b>
               </span>
             </span>
@@ -203,17 +220,31 @@ export function ScavengeWindow({
         ) : open ? (
           <>
             <div className={styles.cards} data-count={open.cards.length}>
-              {open.cards.map((c, i) => (
-                <ScavCard
-                  key={i}
-                  card={c}
-                  size={cardSize(open.cards.length)}
-                  faceUp={c.flipped}
-                  caption={simple ? 'simple' : 'full'}
-                  selected={selected === i}
-                  onClick={() => (c.flipped ? choose(i) : flip(i))}
-                />
-              ))}
+              {open.cards.map((c, i) =>
+                c.taken ? (
+                  <div key={i} className={styles.taken} aria-label="Taken">
+                    <ScavCard
+                      card={c}
+                      size={cardSize(open.cards.length)}
+                      faceUp
+                      caption={simple ? 'simple' : 'full'}
+                      selected={false}
+                      onClick={() => undefined}
+                    />
+                    <span className={styles.takenLabel}>TAKEN</span>
+                  </div>
+                ) : (
+                  <ScavCard
+                    key={i}
+                    card={c}
+                    size={cardSize(open.cards.length)}
+                    faceUp={c.flipped}
+                    caption={simple ? 'simple' : 'full'}
+                    selected={selected === i}
+                    onClick={() => (c.flipped ? choose(i) : flip(i))}
+                  />
+                ),
+              )}
             </div>
 
             {card?.pick && (
@@ -248,20 +279,30 @@ export function ScavengeWindow({
                 {!simple && card && <Drain state={state} card={card} />}
               </span>
               {take && takeReason && <span className={styles.reason}>{takeReason}</span>}
+              {canFinish && !takeReason && (
+                <span className={styles.reason}>
+                  Sack: keep {keepMore} more card{keepMore === 1 ? '' : 's'}, or Done.
+                </span>
+              )}
               {reroll && (
                 <button
                   type="button"
                   className={styles.secondary}
-                  disabled={!card?.flipped || reroll.usesLeft <= 0}
+                  disabled={!card?.flipped || reroll.left <= 0}
                   onClick={() => selected !== null && onReroll(selected)}
-                  title={`${reroll.ability.label}: reroll the picked card`}
+                  title={`${reroll.label}: reroll the picked card`}
                 >
-                  <Icon name="dice" size={16} /> Reroll · {reroll.usesLeft}
+                  <Icon name="dice" size={16} /> Reroll · {reroll.left}
                 </button>
               )}
               {canCancel && (
                 <button type="button" className={styles.secondary} onClick={onCancel}>
                   Not now
+                </button>
+              )}
+              {canFinish && (
+                <button type="button" className={styles.secondary} onClick={onCancel}>
+                  Done
                 </button>
               )}
               {open.cards.some((c) => !c.flipped) && (
@@ -452,7 +493,7 @@ function ItemChips({
             aria-pressed={item === id}
             onClick={() => onItem(id)}
           >
-            {type && <ItemBack type={type} width={18} />}
+            {type ? <CardFace itemId={id} width={26} compact /> : null}
             {itemName(id)}
           </button>
         ))}
@@ -470,6 +511,9 @@ function Result({ took, simple, onClose }: { took: TookCard; simple: boolean; on
   return (
     <button type="button" className={styles.result} onClick={onClose} aria-label="Close">
       <ScavCard card={took.card} size={196} faceUp reveal caption={simple ? 'simple' : 'full'} />
+      {took.found?.map((item) => (
+        <CardFace key={item.uid} itemId={item.itemId} item={item} width={196} />
+      ))}
       <span className={styles.got}>
         <span className={styles.gotLabel}>{took.hikerName.toUpperCase()} GOT</span>
         <span className={styles.gotWhat}>

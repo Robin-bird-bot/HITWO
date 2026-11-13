@@ -22,11 +22,13 @@ import { changeStat } from '../stats';
 import type {
   Action,
   ChallengePaid,
+  EquipSlot,
   ChallengeSection,
   GameState,
   Gift,
   Hiker,
   HikerId,
+  ItemInstance,
   OpenChallenge,
   ResourceId,
   SpaceReward,
@@ -34,10 +36,14 @@ import type {
 } from '../types';
 import { pick, roll } from '../rng';
 import { countChallenge } from '../counters';
+import { earnFreeMove } from '../items/freeMoves';
+import { durabilityLeft, qualityOf, usesLeftOf } from '../items/make';
+import { valueAt } from '../items/quality';
+import { loseDurability, loseUses } from '../items/wear';
 import { applyEffects, foodCarried, immovable, type EffectResult } from './applyEffects';
 import { openNext, revealTile } from './reveal';
 import { riskReading, riskSpendFits, type RiskReading } from './risk';
-import { amount, chanceOf, notBuiltYet } from './rolls';
+import { amount, chanceOf } from './rolls';
 import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
@@ -151,10 +157,31 @@ export function giftFits(
       return gift.kind === 'caps';
     case 'stat':
       return gift.kind === 'stat' && req.stats.includes(gift.stat);
-    case 'durability':
-    case 'toolUse':
-      return false;
+    case 'durability': {
+      if (gift.kind !== 'durability') return false;
+      // A hiker's own section takes durability from the clothes they're wearing.
+      if (hikerId && gift.from !== hikerId) return false;
+      const h = here.find((x) => x.id === gift.from);
+      const slot = (Object.keys(h?.inventory.equipped ?? {}) as EquipSlot[]).find(
+        (k) => h?.inventory.equipped[k]?.uid === gift.uid,
+      );
+      const item = slot && h?.inventory.equipped[slot];
+      if (!item || ITEMS[item.itemId]?.type !== 'clothes') return false;
+      return !req.slot || slot === req.slot;
+    }
+    case 'toolUse': {
+      if (gift.kind !== 'toolUse') return false;
+      const item = here
+        .find((h) => h.id === gift.from)
+        ?.inventory.bag.find((i) => i.uid === gift.uid);
+      return !!item && ITEMS[item.itemId]?.type === 'tool';
+    }
   }
+}
+
+/** A worn clothing item, by uid. */
+function wornItem(h: Hiker | undefined, uid: string): ItemInstance | undefined {
+  return Object.values(h?.inventory.equipped ?? {}).find((i) => i?.uid === uid);
 }
 
 export const giftCount = (g: Gift): number => (g.kind === 'item' ? 1 : g.count);
@@ -169,7 +196,6 @@ export function optionShortfall(
 ): string | undefined {
   const reqs = openCardDef(open)?.cost[option];
   if (!reqs) return 'Pick a way to pay.';
-  if (reqs.some(notBuiltYet)) return 'That way to pay arrives in Phase 9.';
   if (gifts.some((g) => !reqs[g.req]))
     return 'Something was handed in that this cost doesn’t ask for.';
   for (const [i, req] of reqs.entries()) {
@@ -184,6 +210,10 @@ export function optionShortfall(
     if (req.kind === 'resources' && req.same) {
       const kinds = new Set(mine.map((g) => (g.kind === 'resource' ? g.resource : '')));
       if (kinds.size > 1) return 'Those all have to be the same resource.';
+    }
+    if (req.kind === 'durability' && req.oneItem) {
+      const items = new Set(mine.map((g) => (g.kind === 'durability' ? g.uid : '')));
+      if (items.size > 1) return 'All of it has to come from one clothing item.';
     }
     if (req.kind === 'resources' && req.fromEach) {
       const givers = mine.map((g) => (g.kind === 'resource' ? g.from : ''));
@@ -205,6 +235,10 @@ function ledgerProblem(
   const resources = new Map<string, number>();
   const stats = new Map<string, number>();
   const items = new Set<string>();
+  const points = new Map<
+    string,
+    { from: HikerId; uid: string; n: number; kind: 'durability' | 'toolUse' }
+  >();
   let caps = 0;
   for (const g of sections.flatMap((s) => s.gifts)) {
     if (g.kind !== 'item' && (!Number.isInteger(g.count) || g.count < 1)) {
@@ -231,6 +265,27 @@ function ledgerProblem(
       case 'caps':
         caps += g.count;
         break;
+      case 'durability':
+      case 'toolUse': {
+        const key = `${g.kind}|${g.uid}`;
+        const was = points.get(key);
+        points.set(key, { from: g.from, uid: g.uid, kind: g.kind, n: (was?.n ?? 0) + g.count });
+        break;
+      }
+    }
+  }
+  for (const p of points.values()) {
+    const h = here.find((x) => x.id === p.from);
+    if (!h) return 'Only hikers on this tile can hand things in.';
+    if (p.kind === 'durability') {
+      const item = wornItem(h, p.uid);
+      if (!item) return `${h.name} isn’t wearing that.`;
+      if (durabilityLeft(item) < p.n)
+        return `That clothing item doesn’t have ${p.n} durability left.`;
+    } else {
+      const item = h.inventory.bag.find((i) => i.uid === p.uid);
+      if (!item) return 'That tool isn’t in their bag.';
+      if (usesLeftOf(item) < p.n) return `That tool doesn’t have ${p.n} uses left.`;
     }
   }
   for (const [key, n] of resources) {
@@ -250,6 +305,40 @@ function ledgerProblem(
     if (h.stats[stat] < n) return `${h.name} doesn’t have ${n} ${STAT_WORD[stat]}.`;
   }
   if (caps > state.caps) return 'The party purse doesn’t have that many caps.';
+  return undefined;
+}
+
+/** Cards a Harness can save: plain challenges that pass or fail. */
+function harnessWorks(card: ChallengeDef): boolean {
+  return (
+    card.kind === 'challenge' &&
+    !card.risk &&
+    !card.spendAny &&
+    !card.buttons &&
+    card.scope !== 'select' &&
+    card.scope !== 'one'
+  );
+}
+
+/**
+ * The Harness that could turn this section's fail into a pass: the section's
+ * hiker's, or (a party section) anyone's here, with enough durability left.
+ */
+export function harnessFor(
+  state: GameState,
+  open: OpenChallenge,
+  hikerId?: HikerId,
+): { hiker: Hiker; item: ItemInstance; cost: number } | undefined {
+  const card = openCardDef(open);
+  if (!card || !harnessWorks(card)) return undefined;
+  const who = challengeHikers(state, open).filter((h) => !hikerId || h.id === hikerId);
+  for (const hiker of who) {
+    const item = hiker.inventory.equipped.body;
+    const def = item && ITEMS[item.itemId];
+    if (!item || !def?.harness) continue;
+    const cost = valueAt(def.values?.[def.harness], qualityOf(item));
+    if (durabilityLeft(item) >= cost) return { hiker, item, cost };
+  }
   return undefined;
 }
 
@@ -278,7 +367,17 @@ export function validateResolve(state: GameState, action: ResolveAction): string
       if (h && immovable(h)) return `${h.name} can’t be moved right now.`;
     }
   }
+  const harnesses = new Set<string>();
   for (const s of action.sections) {
+    if (s.harness) {
+      if (s.pay || s.gifts.length) return 'A Harness passes without paying anything.';
+      const h = harnessFor(state, open, s.hikerId);
+      if (!h) return 'No Harness here can do that.';
+      // One Harness saves one fail.
+      if (harnesses.has(h.item.uid)) return `${h.hiker.name}’s Harness can only save one fail.`;
+      harnesses.add(h.item.uid);
+      continue;
+    }
     if (!s.pay) {
       if (s.gifts.length) return 'Nothing is spent when taking the penalty.';
       continue;
@@ -311,6 +410,7 @@ function spendAnyProblem(
       if (!here.some((h) => h.id === g.from)) return 'Only hikers on this tile can hand things in.';
       const what = spend.what;
       const fits =
+        ('toolUses' in what && g.kind === 'toolUse') ||
         ('stat' in what && g.kind === 'stat' && g.stat === what.stat) ||
         ('resources' in what && g.kind === 'resource') ||
         ('items' in what &&
@@ -354,6 +454,8 @@ function paidBy(here: readonly Hiker[], gifts: readonly Gift[]): ChallengePaid {
     if (g.kind === 'resource') for (let i = 0; i < g.count; i++) paid.resources.push(g.resource);
     if (g.kind === 'caps') paid.caps += g.count;
     if (g.kind === 'stat') paid.stats[g.stat] = (paid.stats[g.stat] ?? 0) + g.count;
+    if (g.kind === 'durability') paid.durability = (paid.durability ?? 0) + g.count;
+    if (g.kind === 'toolUse') paid.toolUses = (paid.toolUses ?? 0) + g.count;
     if (g.kind === 'item') {
       const item = here.find((h) => h.id === g.from)?.inventory.bag.find((i) => i.uid === g.uid);
       if (item) paid.items.push(item.itemId);
@@ -379,6 +481,12 @@ function spend(state: GameState, here: readonly Hiker[], gifts: readonly Gift[],
       else delete h.inventory.resources[g.resource];
     } else if (g.kind === 'item') {
       h.inventory.bag = h.inventory.bag.filter((i) => i.uid !== g.uid);
+    } else if (g.kind === 'durability') {
+      const item = wornItem(h, g.uid);
+      if (item) loseDurability(state, h, item, g.count, cause, { spent: true });
+    } else if (g.kind === 'toolUse') {
+      const item = h.inventory.bag.find((i) => i.uid === g.uid);
+      if (item) loseUses(state, h, item, g.count, cause);
     } else {
       changeStat(state, h, g.stat, -g.count, cause);
     }
@@ -390,6 +498,8 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
   const card = open && openCardDef(open);
   if (!open || !card) throw new Error('applyResolve: no challenge open');
   const here = challengeHikers(state, open);
+  // A Harness turns a fail into a pass.
+  const passes = (s: ChallengeSection) => s.pay || !!s.harness;
   // Opportunities and Risk challenges have no pass or fail, so no XP.
   const xp =
     card.kind === 'challenge' && !card.risk ? BALANCE.challenges.passXpPerTier * open.tier : 0;
@@ -413,7 +523,7 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     : [];
   const outcomes = readings.map((r) => (r ? rollRisk(state, r) : undefined));
   const rewards = action.sections.map((s) =>
-    open.special === 'challenge' && s.pay && !card.risk
+    open.special === 'challenge' && passes(s) && !card.risk
       ? targetsOf(s).map(() => pickReward(state))
       : [],
   );
@@ -430,9 +540,10 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
       const reward = rewards[i]?.[0];
       return {
         ...(s.hikerId ? { hikerId: s.hikerId } : {}),
-        passed: card.risk ? !outcome?.hit : s.pay,
+        passed: card.risk ? !outcome?.hit : passes(s),
+        ...(s.harness ? { harness: true as const } : {}),
         ...((s.pay || card.risk) && s.gifts.length ? { paid: paidBy(here, s.gifts) } : {}),
-        ...(s.pay && xp ? { xp } : {}),
+        ...(passes(s) && xp ? { xp } : {}),
         ...(reading && outcome
           ? { risk: { kind: reading.kind, value: outcome.value, hit: outcome.hit } }
           : {}),
@@ -443,6 +554,9 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
 
   for (const s of action.sections) {
     if (s.pay || card.risk) spend(state, here, s.gifts, paidCause(card.name));
+    // The Harness pays with its durability.
+    const h = s.harness ? harnessFor(state, open, s.hikerId) : undefined;
+    if (h) loseDurability(state, h.hiker, h.item, h.cost, 'Harness');
   }
 
   const entered: EffectResult['entered'] = [];
@@ -453,8 +567,13 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
   };
   // Passes and fails, for Wonder goals (not Risk challenges or opportunities).
   if (card.kind === 'challenge' && !card.risk) {
-    for (const s of action.sections)
-      for (const h of targetsOf(s)) countChallenge(state, h.id, s.pay);
+    for (const s of action.sections) {
+      for (const h of targetsOf(s)) {
+        countChallenge(state, h.id, passes(s));
+        // Hiking Crocs: a free move after passing a challenge.
+        if (passes(s)) earnFreeMove(state, h, 'afterChallenge');
+      }
+    }
   }
   // A Select card's chosen hikers act together (Secret Tunnel moves them to the same tile).
   const chosen = card.scope === 'select' ? action.sections.filter((s) => s.pay) : [];
@@ -473,7 +592,7 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
       if (outcome?.hit) take(applyEffects(state, run(targets, outcome.amount), card.risk.outcome));
       return;
     }
-    if (s.pay) {
+    if (passes(s)) {
       for (const h of targets) h.xp += xp;
       if (card.reward?.length) take(applyEffects(state, run(targets), card.reward));
       targets.forEach((h, j) => {

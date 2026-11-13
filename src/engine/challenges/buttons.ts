@@ -13,8 +13,7 @@
  *
  * Kinds are data (ButtonDef); nothing here names a card.
  */
-import { BALANCE } from '../../config/balance';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick, roll, weightedPick } from '../rng';
@@ -24,7 +23,7 @@ import { applyEffects } from './applyEffects';
 import { challengeHikers, openCardDef, paidCause } from './resolve';
 import { tileTier } from './pick';
 import { isRevealed } from '../wonders/wonders';
-import { revealCardOn } from './reveal';
+import { cardShown, revealCardOn } from './reveal';
 import { chanceOf, rollValue } from './rolls';
 import type { ButtonDef, ChallengeDef } from './types';
 
@@ -46,7 +45,7 @@ export function pressesLeft(
 /** Tiles in this section nobody has landed on, whose cards are still unknown (not the Wonder's). */
 export function unrevealedTiles(state: GameState): Tile[] {
   return Object.values(state.section.tiles).filter(
-    (t) => t.kind === 'normal' && !t.visited && !t.revealedCard && !t.wonder,
+    (t) => t.kind === 'normal' && !t.visited && !cardShown(t) && !t.wonder,
   );
 }
 
@@ -69,7 +68,7 @@ export function revealableFrom(state: GameState, hiker: Hiker): Tile[] {
         !!t &&
         t.kind === 'normal' &&
         !t.visited &&
-        !t.revealedCard &&
+        !cardShown(t) &&
         !(t.wonder && isRevealed(t.wonder)),
     );
 }
@@ -152,7 +151,7 @@ export function applyPress(state: GameState, action: PressAction): void {
       state.caps -= price;
       log(`paid ${price} cap${price === 1 ? '' : 's'}`);
       // The first hiker here with room in their pack takes it.
-      const to = here.find((h) => resourceCount(h) < BALANCE.inventory.resourceLimit) ?? here[0];
+      const to = here.find((h) => resourceCount(h) < resourceLimit(state, h)) ?? here[0];
       if (to) give([to], button.gives);
       return;
     }

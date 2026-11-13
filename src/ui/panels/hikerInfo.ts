@@ -24,6 +24,7 @@ import {
   type Hiker,
   type StatName,
   type Tile,
+  craftOpenReason,
 } from '../../engine';
 import type { IconName } from '../icons/paths';
 import { NODE_NAME, SPECIAL_LOOK } from '../map/looks';
@@ -256,9 +257,8 @@ export interface ActionState {
  * Actions that aren't built yet, and the phase that builds them.
  * TODO(wyatt): no phase in BUILD_PLAN builds Sit by the Fire yet, so it says "Soon".
  */
-const SOON: Record<'craft' | 'fire', { phase?: number; what: string }> = {
+const SOON: Record<'fire', { phase?: number; what: string }> = {
   fire: { what: 'Sitting by the fire' },
-  craft: { phase: 9, what: 'Crafting' },
 };
 
 function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState {
@@ -293,6 +293,26 @@ function judge(state: GameState, candidates: Action[], fallback: string): Judgem
   }
   if (red) return { status: 'status', reason: red };
   return { status: 'blocked', reason: first ?? fallback };
+}
+
+/**
+ * Craft opens the Craft window. It's ready when the hiker could use their
+ * action to craft; the window says what each recipe still needs.
+ */
+function craftAction(state: GameState, h: Hiker): ActionState {
+  const probe: Action = { type: 'craft', hikerId: h.id, itemType: 'tool' };
+  const reason = craftOpenReason(state, h);
+  if (!reason)
+    return { id: 'craft', label: 'Craft', icon: 'hammer', sub: 'Recipes', status: 'ready' };
+  const red = blockedByStatus(state, probe);
+  return {
+    id: 'craft',
+    label: 'Craft',
+    icon: 'hammer',
+    sub: 'Recipes',
+    status: red ? 'status' : 'blocked',
+    reason: red ?? reason,
+  };
 }
 
 /** The action grid for the selected hiker: what's ready, what's not and why. */
@@ -374,7 +394,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     move,
     moveAll,
     scavenge,
-    soon('craft', 'Craft', 'hammer'),
+    craftAction(state, h),
     soon('fire', 'Fire', 'flame'),
     tend,
     sleep,

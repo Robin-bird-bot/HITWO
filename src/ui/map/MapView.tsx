@@ -26,6 +26,8 @@ interface MapViewProps {
   hikers: Hiker[];
   /** Connected tiles for the selected hiker: reason null = can move there. */
   targets: { tileId: string; reason: string | null }[];
+  /** What clicking a target does, for screen readers: "Move here" unless a tool is picking. */
+  reachLabel?: string;
   onTileClick(tileId: string): void;
   /** Simple mode shows the checkpoint's label only on hover. */
   checkpointLabelOnHover?: boolean;
@@ -35,6 +37,8 @@ interface MapViewProps {
   onRevealedClick?(tileId: string): void;
   /** A found Wonder: its tile's icon was tapped. */
   onWonderClick?(tileId: string): void;
+  /** Scouting just happened: tiles swept, and maybe counts to show where. */
+  fx?: ScoutFx[];
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -42,17 +46,30 @@ interface MapViewProps {
   bounds: Bounds;
 }
 
+/** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
+export interface ScoutFx {
+  key: number;
+  sweep: string[];
+  counts?: { challenge: number; opportunity: number; trial: number; at: string[] };
+}
+
+const COUNT_COLOR = { challenge: '#E5624A', opportunity: '#7FC29B', trial: '#CDA6EE' } as const;
+/** The counts float this far above the tiles they're about, clear of the hiker tokens. */
+const COUNT_LIFT = 84;
+
 const DRAG_THRESHOLD = 5;
 
 export function MapView({
   section,
   hikers,
   targets,
+  reachLabel,
   onTileClick,
   checkpointLabelOnHover,
   marks,
   onRevealedClick,
   onWonderClick,
+  fx = [],
   selectedId,
   onSelectHiker,
   camera,
@@ -152,6 +169,7 @@ export function MapView({
             currentColor={selected ? characterFor(selected.id).color : undefined}
             hikerCount={hikers.filter((h) => h.tileId === t.id && h.status === 'active').length}
             reach={reachOf(t.id)}
+            reachLabel={reachLabel}
             mark={marks?.[t.id]}
             onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
             onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
@@ -166,7 +184,48 @@ export function MapView({
           selectedId={selectedId}
           onSelect={onSelectHiker}
         />
+        {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
+        {fx.map((f) => (
+          <ScoutLayer key={f.key} fx={f} section={section} lastRow={lastRow} />
+        ))}
       </div>
     </div>
+  );
+}
+
+/** The sweep on each scanned tile, and the counts floating over where they were taken. */
+function ScoutLayer({ fx, section, lastRow }: { fx: ScoutFx; section: Section; lastRow: number }) {
+  const centers = (ids: readonly string[]) =>
+    ids.flatMap((id) => {
+      const t = section.tiles[id];
+      return t ? [tileCenter(t, lastRow)] : [];
+    });
+  const at = fx.counts ? centers(fx.counts.at) : [];
+  const mid = at.length
+    ? {
+        x: at.reduce((n, p) => n + p.x, 0) / at.length,
+        y: at.reduce((n, p) => n + p.y, 0) / at.length,
+      }
+    : null;
+  return (
+    <>
+      {centers(fx.sweep).map((p, i) => (
+        <div key={i} className={styles.sweep} style={{ left: p.x, top: p.y }} />
+      ))}
+      {fx.counts && mid && (
+        <div
+          className={styles.counts}
+          style={{ left: mid.x, top: mid.y - COUNT_LIFT }}
+          role="status"
+          aria-label={`${fx.counts.challenge} challenges, ${fx.counts.opportunity} opportunities, ${fx.counts.trial} Trials`}
+        >
+          {(['challenge', 'opportunity', 'trial'] as const).map((k) => (
+            <span key={k} className={styles.count} style={{ color: COUNT_COLOR[k] }}>
+              {fx.counts?.[k]}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
   );
 }

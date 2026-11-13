@@ -18,14 +18,17 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `ScavengeMods.dc.html` | The same pop-up with the bonuses pop-over open |
 | `Backdrops.dc.html` / `Backdrop.dc.html` | Land layers for each biome with the phase skies (morning, afternoon, night), and the backdrop component used by `Main` |
 | `NightLandscape.dc.html` | A full-size night landscape: stars, moon, dimmed land |
-| `ItemCards.dc.html` / `ItemCard.dc.html` | Item card backs and fronts built from layers, and the card component |
+| `ItemCard.dc.html` | The item card component, with the final front layout (Nov 7) |
+| `ItemCardAnatomy.dc.html` / `ItemCardAnatomy.png` | The labeled reference for tool, clothes and food cards: art, title, type, effect, tier numeral, Quality diamonds and the uses, durability or bites counter |
+| `ItemCardsArt.dc.html` / `ItemCardArt.png` | 12 real item cards with their art |
+| `ItemCards.dc.html` | Item card backs built from layers |
 | `ScavTypes.dc.html` | Gallery of every scavenge card type and rarity |
 | `ScavCard.dc.html` | The reusable square scavenge card |
 | `Challenge.dc.html` / `ChallengeParty.dc.html` / `ChallengeOpportunity.dc.html` | Challenge pop-up: each-hiker and whole-party versions (red), and an opportunity (blue) |
 | `Wonder.dc.html` / `WonderRewards.dc.html` / `Wonder.png` | The Wonder pop-up (purple, 1400×956): goals and rewards before the goals are met, and the reward picking after |
 | `NightEvent.dc.html` | The night event side window (Phase 6): midnight-blue ribbon, creature art, one line per hiker hit |
 | `Weather.dc.html` / `WeatherIcons.dc.html` | The weather change screen (Phase 6, Snow shown), and the 5 animated weather icons plus the 3 new nodes. Copy the icons' SVG and keyframes from `WeatherIcons.dc.html` |
-| `Station.dc.html` / `StationAhead.dc.html` | The ranger station (Phase 8): the room, the shopkeeper, the counter and the hikers' packs; and the same screen with "What's ahead?" open |
+| `Station.dc.html` / `StationAhead.dc.html` | The ranger station (Phase 9): the room, the shopkeeper, the counter and the hikers' packs; and the same screen with "What's ahead?" open |
 | `Kit.dc.html` | Visual kit: tile states, tokens, special icons, bars, condition icons, palette |
 | `Ic.dc.html` | Stroke icon set (SVG paths), including binoculars, chat, trendUp and trendDown for the station |
 | `Px.dc.html` | Old pixel icon component (unused) |

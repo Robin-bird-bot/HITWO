@@ -20,12 +20,14 @@ import { ASSETS, cardArt } from '../../config/assets';
 import {
   bagSlots,
   challengeHikers,
+  harnessFor,
   openCardDef,
   pressesLeft,
   revealableFrom,
   validateAction,
   immovable,
   resourceCount,
+  resourceLimit,
   STAT_NAMES,
   type Action,
   type ChallengeDef,
@@ -34,16 +36,17 @@ import {
   type Gift,
   type Hiker,
   type HikerId,
+  type ItemInstance,
   type OpenChallenge,
   type Requirement,
   type RiskReading,
   type StatName,
 } from '../../engine';
-import { BALANCE } from '../../config/balance';
 import { Icon } from '../icons/Icon';
 import { NODE_IMAGE } from '../map/looks';
 import { STAT_META } from '../panels/hikerInfo';
-import { ITEM_TYPE_COLORS, itemName, resourceName } from '../scavenge/cardLook';
+import { itemName, resourceName } from '../scavenge/cardLook';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { useDraggable } from '../windows/useDraggable';
 import { describeLog } from '../log/describeLog';
 import { tileName } from '../panels/hikerInfo';
@@ -70,6 +73,7 @@ import {
   startDraft,
   takeBack,
   toAction,
+  toggleHarness,
   unskip,
   type Draft,
   type SectionStatus,
@@ -533,6 +537,17 @@ function Section({
 
   const tag = penaltyTag(card, open.rolls, hiker);
   const deal = card.kind === 'opportunity';
+  // A Harness here can turn a fail into a pass; each one saves one section.
+  const harness = harnessFor(state, open, s.hikerId);
+  const harnessTaken =
+    !!harness &&
+    !s.harness &&
+    draft.sections.some(
+      (o, i) =>
+        i !== index &&
+        o.harness &&
+        harnessFor(state, open, o.hikerId)?.item.uid === harness.item.uid,
+    );
   const pickCard = isPick(card);
   // A card that moves who it picks can't pick someone who can't be moved.
   const stuck = pickCard && card.moves && hiker ? immovable(hiker) : false;
@@ -557,14 +572,16 @@ function Section({
         : status.decision === 'fail'
           ? { tone: 'fail', text: 'SKIPS IT' }
           : { tone: 'needs', text: `NEEDS ${status.missing} MORE` }
-      : status.decision === 'pay'
-        ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
-        : status.decision === 'fail'
-          ? {
-              tone: 'fail',
-              text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
-            }
-          : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
+      : s.harness && harness
+        ? { tone: 'pass', text: `PASSES · HARNESS −${harness.cost} DURABILITY` }
+        : status.decision === 'pay'
+          ? { tone: 'pass', text: `PASSES · ${paidLabel(s.gifts, state, open)}` }
+          : status.decision === 'fail'
+            ? {
+                tone: 'fail',
+                text: `${status.impossible && !s.skipped ? 'NOTHING FITS' : 'FAILS'} · ${tag}`,
+              }
+            : { tone: 'needs', text: `NEEDS ${status.missing} MORE` };
 
   return (
     <div className={styles.section} data-decision={status.decision ?? 'open'}>
@@ -612,7 +629,7 @@ function Section({
         <button
           type="button"
           className={styles.check}
-          data-on={status.decision === 'pay'}
+          data-on={status.decision === 'pay' && !s.harness}
           disabled={stuck || (status.decision !== 'pay' && !s.skipped)}
           aria-label={
             pickCard && hiker
@@ -652,6 +669,24 @@ function Section({
         >
           <Icon name="x" size={22} strokeWidth={2.75} />
         </button>
+        {harness && (
+          <button
+            type="button"
+            className={styles.harness}
+            data-on={!!s.harness}
+            disabled={harnessTaken}
+            aria-label={`${harness.hiker.name}’s Harness passes it, for ${harness.cost} durability`}
+            title={
+              harnessTaken
+                ? 'This Harness is already saving another fail'
+                : `Pass with ${harness.hiker.name}’s Harness: −${harness.cost} durability`
+            }
+            onClick={() => onDraft(toggleHarness(draft, index))}
+          >
+            <Icon name="shirt" size={18} strokeWidth={2.25} />
+            HARNESS
+          </button>
+        )}
       </div>
     </div>
   );
@@ -682,26 +717,22 @@ function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek
   const gifts =
     section?.option === target.option ? section.gifts.filter((g) => g.req === target.req) : [];
   const selected = !!draft.target && sameTarget(draft.target, target);
-  const off = req.kind === 'durability' || req.kind === 'toolUse';
   const other =
     !!section?.skipped ||
     (section?.option !== undefined && section.option !== target.option && section.gifts.length > 0);
-  const look = off
-    ? 'off'
-    : section?.skipped
-      ? 'other'
-      : got >= need
-        ? 'full'
-        : selected
-          ? 'target'
-          : other
-            ? 'other'
-            : 'idle';
+  const look = section?.skipped
+    ? 'other'
+    : got >= need
+      ? 'full'
+      : selected
+        ? 'target'
+        : other
+          ? 'other'
+          : 'idle';
   const k = size / 150;
   const label = reqLabel(req, open);
 
   const onClick = () => {
-    if (off) return;
     if (req.kind === 'caps') {
       // Caps: one tap pays the whole amount from the purse, a second takes it back.
       if (got > 0) {
@@ -725,26 +756,17 @@ function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek
         type="button"
         className={styles.space}
         data-look={look}
-        {...(dnd && !off ? dnd.targetProps(target) : {})}
+        {...(dnd ? dnd.targetProps(target) : {})}
         style={{ width: size, height: size }}
         onClick={onClick}
-        disabled={off}
-        aria-label={`${label} space: ${need === 0 ? 'nothing needed' : `${got} of ${need}`}${off ? ' (arrives in Phase 9)' : ''}`}
+        aria-label={`${label} space: ${need === 0 ? 'nothing needed' : `${got} of ${need}`}`}
       >
         {gifts.length === 0 ? (
-          <EmptySpace
-            req={req}
-            open={open}
-            label={label}
-            off={off}
-            state={state}
-            need={need}
-            k={k}
-          />
+          <EmptySpace req={req} open={open} label={label} state={state} need={need} k={k} />
         ) : (
           <FilledSpace gifts={gifts} state={state} open={open} k={k} />
         )}
-        {need > 0 && !off && (
+        {need > 0 && (
           <span className={styles.count}>
             {got > 0 ? `${got}/${need}` : need > 1 ? `×${need}` : ''}
           </span>
@@ -788,7 +810,6 @@ function EmptySpace({
   req,
   open,
   label,
-  off,
   state,
   need,
   k,
@@ -796,7 +817,6 @@ function EmptySpace({
   req: Requirement;
   open: OpenChallenge;
   label: string;
-  off: boolean;
   state: GameState;
   need: number;
   k: number;
@@ -827,6 +847,25 @@ function EmptySpace({
           </span>
           <span className={styles.emptyLabel}>{label}</span>
         </>
+      ) : req.kind === 'durability' || req.kind === 'toolUse' ? (
+        <>
+          <Icon
+            name={req.kind === 'durability' ? 'shirt' : 'hammer'}
+            size={34 * k}
+            color="rgba(241,234,219,0.75)"
+            strokeWidth={2.25}
+          />
+          <span className={styles.emptyLabel}>{label}</span>
+          <span className={styles.emptySub}>
+            {req.kind === 'toolUse'
+              ? 'FROM A TOOL IN A BAG'
+              : req.slot === 'gear'
+                ? 'FROM WORN GEAR'
+                : req.oneItem
+                  ? 'ALL FROM ONE WORN ITEM'
+                  : 'FROM WORN CLOTHES'}
+          </span>
+        </>
       ) : req.kind === 'carryLimit' ? (
         <>
           <Icon name="backpack" size={34 * k} color="rgba(241,234,219,0.75)" strokeWidth={2.25} />
@@ -836,7 +875,7 @@ function EmptySpace({
       ) : (
         <>
           <Icon name="plus" size={38 * k} color="rgba(241,234,219,0.75)" strokeWidth={2.5} />
-          <span className={styles.emptyLabel}>{off ? `${label} · PHASE 9` : label}</span>
+          <span className={styles.emptyLabel}>{label}</span>
           {icons.length > 0 && (
             <span className={styles.emptyIcons}>
               {icons.map((id) => (
@@ -881,6 +920,13 @@ function FilledSpace({
     g.kind === 'resource' ? Array.from({ length: g.count }, () => g.resource) : [],
   );
   const stats = gifts.filter((g) => g.kind === 'stat');
+  // Durability and tool uses: one row per item, with how much it gives.
+  const points = new Map<string, { gift: ItemGift; n: number }>();
+  for (const g of gifts) {
+    if (g.kind !== 'durability' && g.kind !== 'toolUse') continue;
+    const was = points.get(g.uid);
+    points.set(g.uid, { gift: g, n: (was?.n ?? 0) + g.count });
+  }
   const caps = gifts.reduce((n, g) => n + (g.kind === 'caps' ? g.count : 0), 0);
   const givers = [...new Set(gifts.flatMap((g) => (g.kind === 'caps' ? [] : [g.from])))];
 
@@ -926,6 +972,15 @@ function FilledSpace({
           )}
         </span>
       )}
+      {points.size > 0 && (
+        <span className={styles.filledStat}>
+          {[...points.values()].map(({ gift, n }) => (
+            <span key={gift.uid} className={styles.filledStatRow}>
+              <MiniItem gift={gift} state={state} open={open} width={34 * k} />−{n}
+            </span>
+          ))}
+        </span>
+      )}
       {caps > 0 && (
         <span className={styles.filledStat}>
           <img src={ASSETS.icons.acornCaps} alt="" style={{ width: 48 * k, height: 48 * k }} />
@@ -957,13 +1012,22 @@ function giftName(g: Gift, state: GameState, open: OpenChallenge): string {
       return `${g.count} CAP${g.count === 1 ? '' : 'S'}`;
     case 'stat':
       return `${STAT_META[g.stat].label.toUpperCase()} ×${g.count}`;
+    case 'durability':
+      return `${itemName(itemOf(g, state, open)?.itemId ?? '').toUpperCase()} · ${g.count} DURABILITY`;
+    case 'toolUse':
+      return `${itemName(itemOf(g, state, open)?.itemId ?? '').toUpperCase()} · ${g.count} USE${g.count === 1 ? '' : 'S'}`;
   }
 }
 
-function itemOf(g: Extract<Gift, { kind: 'item' }>, state: GameState, open: OpenChallenge) {
-  return challengeHikers(state, open)
-    .find((h) => h.id === g.from)
-    ?.inventory.bag.find((i) => i.uid === g.uid);
+type ItemGift = Extract<Gift, { kind: 'item' | 'durability' | 'toolUse' }>;
+
+/** The item a gift comes from: in the giver's bag, or worn (durability). */
+function itemOf(g: ItemGift, state: GameState, open: OpenChallenge) {
+  const h = challengeHikers(state, open).find((x) => x.id === g.from);
+  return (
+    h?.inventory.bag.find((i) => i.uid === g.uid) ??
+    Object.values(h?.inventory.equipped ?? {}).find((i) => i?.uid === g.uid)
+  );
 }
 
 function GiftIcon({ gift, state, open }: { gift: Gift; state: GameState; open: OpenChallenge }) {
@@ -984,7 +1048,7 @@ function MiniItem({
   open,
   width,
 }: {
-  gift: Extract<Gift, { kind: 'item' }>;
+  gift: ItemGift;
   state: GameState;
   open: OpenChallenge;
   width: number;
@@ -993,36 +1057,27 @@ function MiniItem({
   return <ItemFace itemId={item?.itemId ?? ''} width={width} />;
 }
 
-/** A stand-in item card face (Phase 9 builds the real layered cards). */
+/** A small item card (the compact real card): in packs, spaces and handed-in slots. */
 export function ItemFace({
   itemId,
+  item,
   width,
   style,
 }: {
   itemId: string;
+  /** The instance, for its Quality and what's left. */
+  item?: ItemInstance;
   width: number;
   style?: CSSProperties;
 }) {
-  const def = ITEMS[itemId];
-  const type = def?.type ?? 'clothes';
   return (
-    <span
-      className={styles.itemFace}
-      title={def ? `${def.name}: ${def.text}` : itemId}
-      style={{
-        width,
-        height: Math.round((width * 7) / 5),
-        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[type].join(', ')})`,
-        ...style,
-      }}
-    >
-      <img src={ASSETS.itemCards.typeIcons[type]} alt="" />
-      {width >= 40 && (
-        <span style={{ fontSize: Math.max(7, width / 7) }}>
-          {(def?.name ?? itemId).toUpperCase()}
-        </span>
-      )}
-    </span>
+    <CardFace
+      itemId={itemId}
+      width={width}
+      compact
+      {...(item ? { item } : {})}
+      {...(style ? { style } : {})}
+    />
   );
 }
 
@@ -1059,6 +1114,7 @@ function Pack({
   const t = draft.target;
   const req = t && card.cost[t.option]?.[t.req];
   const statReq = req?.kind === 'stat' ? req : undefined;
+  const pointReq = req?.kind === 'durability' || req?.kind === 'toolUse' ? req : undefined;
   const tryGive = (source: Source) => onDraft(give(state, open, draft, source));
   const resources = Object.entries(hiker.inventory.resources).filter(([, n]) => (n ?? 0) > 0);
   const dnd = useDragGive();
@@ -1084,7 +1140,16 @@ function Pack({
         </span>
       </div>
 
-      {statReq && t ? (
+      {pointReq && t ? (
+        <PointRows
+          state={state}
+          open={open}
+          hiker={hiker}
+          draft={draft}
+          kind={pointReq.kind}
+          onDraft={onDraft}
+        />
+      ) : statReq && t ? (
         <div className={styles.statRows}>
           {statReq.stats.map((stat) => (
             <StatRow
@@ -1124,9 +1189,9 @@ function Pack({
                   aria-disabled={!fits}
                   aria-label={`${itemName(item.itemId)}${used ? ' (handed in)' : fits ? ': put it in the selected space' : ''}`}
                   onClick={() => fits && tryGive(source)}
-                  {...drag(source, <ItemFace itemId={item.itemId} width={50} />)}
+                  {...drag(source, <ItemFace itemId={item.itemId} item={item} width={50} />)}
                 >
-                  <ItemFace itemId={item.itemId} width={50} />
+                  <ItemFace itemId={item.itemId} item={item} width={50} />
                   {used && (
                     <span className={styles.usedMark}>
                       <Icon name="check" size={16} color="#1D2220" strokeWidth={3} />
@@ -1139,7 +1204,7 @@ function Pack({
 
           <div className={styles.resRow}>
             <span className={styles.resCount}>
-              RES {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit}
+              RES {resourceCount(hiker)}/{resourceLimit(state, hiker)}
             </span>
             {resources.length === 0 && <span className={styles.resNone}>None</span>}
             {resources.map(([id]) => {
@@ -1184,6 +1249,88 @@ function givenStat(draft: Draft, t: Target, from: HikerId, stat: StatName): numb
       n +
       (g.req === t.req && g.kind === 'stat' && g.from === from && g.stat === stat ? g.count : 0),
     0,
+  );
+}
+
+/**
+ * Worn clothes (durability) or bag tools (uses) to hand in a point at a time,
+ * when the selected space asks for them.
+ */
+function PointRows({
+  state,
+  open,
+  hiker,
+  draft,
+  kind,
+  onDraft,
+}: {
+  state: GameState;
+  open: OpenChallenge;
+  hiker: Hiker;
+  draft: Draft;
+  kind: 'durability' | 'toolUse';
+  onDraft(d: Draft): void;
+}) {
+  const t = draft.target;
+  const items =
+    kind === 'durability'
+      ? Object.values(hiker.inventory.equipped).filter(
+          (i): i is ItemInstance => !!i && ITEMS[i.itemId]?.type === 'clothes',
+        )
+      : hiker.inventory.bag.filter((i) => ITEMS[i.itemId]?.type === 'tool');
+  if (!items.length) {
+    return (
+      <span className={styles.resNone}>
+        {kind === 'durability' ? 'Not wearing any clothes.' : 'No tools in the bag.'}
+      </span>
+    );
+  }
+  return (
+    <div className={styles.statRows}>
+      {items.map((item) => {
+        const source: Source = { kind, from: hiker.id, uid: item.uid };
+        const given = t
+          ? (draft.sections[t.section]?.gifts ?? [])
+              .filter((g) => g.req === t.req && g.kind === kind && g.uid === item.uid)
+              .reduce((n, g) => n + giftCountOf(g), 0)
+          : 0;
+        const can = canGive(state, open, draft, source);
+        const word = kind === 'durability' ? 'durability' : 'use';
+        return (
+          <div key={item.uid} className={styles.statRow} data-active={can || given > 0}>
+            <ItemFace itemId={item.itemId} item={item} width={26} />
+            <span className={styles.statName}>{itemName(item.itemId).toUpperCase()}</span>
+            <span className={styles.statValue}>{left(state, open, draft, source)}</span>
+            <button
+              type="button"
+              className={styles.stepper}
+              disabled={given < 1 || !t}
+              aria-label={`Give 1 less ${word} from the ${itemName(item.itemId)}`}
+              onClick={() => {
+                const g = t
+                  ? draft.sections[t.section]?.gifts.find(
+                      (x) => x.req === t.req && x.kind === kind && x.uid === item.uid,
+                    )
+                  : undefined;
+                if (g && t) onDraft({ ...takeBack(draft, t.section, g), target: t });
+              }}
+            >
+              <Icon name="minus" size={16} strokeWidth={2.75} />
+            </button>
+            <span className={styles.statGiven}>{given}</span>
+            <button
+              type="button"
+              className={styles.stepper}
+              disabled={!can}
+              aria-label={`Give 1 ${word} from the ${itemName(item.itemId)}`}
+              onClick={() => onDraft(give(state, open, draft, source))}
+            >
+              <Icon name="plus" size={16} strokeWidth={2.75} />
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -1412,7 +1559,7 @@ function spendWords(
       return {
         label: 'SEARCHES',
         big: String(r.tries ?? 0),
-        sub: `${pct} EACH · 2 ENERGY A SEARCH`,
+        sub: `${pct} EACH · ${spend.every?.n ?? 1} ${unitWord(spend)} A SEARCH`,
         pill: r.tries ? `${r.tries} ${r.tries === 1 ? 'TRY' : 'TRIES'} AT ${pct}` : 'NO SEARCH YET',
         safe: !!r.tries,
       };
@@ -1422,6 +1569,14 @@ function spendWords(
         big: String(r.units),
         sub: 'EACH FOR A RANDOM ONE',
         pill: r.units ? `SWAPS ${r.units}` : 'NOTHING YET',
+        safe: r.units > 0,
+      };
+    case 'peeks':
+      return {
+        label: 'PEEKS',
+        big: String(r.units),
+        sub: `1 TOOL USE EACH${spend.max ? ` · UP TO ${spend.max}` : ''}`,
+        pill: r.units ? `PEEKS AT ${r.units} ${r.units === 1 ? 'TILE' : 'TILES'}` : 'NOTHING YET',
         safe: r.units > 0,
       };
     case 'luck': {
@@ -1437,6 +1592,15 @@ function spendWords(
       };
     }
   }
+}
+
+/** What a spend-any section spends, for readouts: "ENERGY", "RESOURCES". */
+function unitWord(spend: NonNullable<ChallengeDef['spendAny']>): string {
+  const what = spend.what;
+  if ('stat' in what) return STAT_META[what.stat].label.toUpperCase();
+  if ('resources' in what) return 'RESOURCES';
+  if ('items' in what) return 'ITEMS';
+  return 'TOOL USES';
 }
 
 const chanceText = (c: number | string, open: OpenChallenge) =>
@@ -1609,23 +1773,49 @@ function RiskPack({
     const can = canGive(state, open, draft, source);
     if (can || spent) chips.push({ source, spent, left: 1 - spent, can });
   }
+  // Clothing durability (Hypothermia) and tool uses (Old Trail Sign), a point at a time.
+  const points: [Source['kind'], ItemInstance][] = [
+    ...Object.values(hiker.inventory.equipped).flatMap((i): [Source['kind'], ItemInstance][] =>
+      i && ITEMS[i.itemId]?.type === 'clothes' ? [['durability', i]] : [],
+    ),
+    ...hiker.inventory.bag.flatMap((i): [Source['kind'], ItemInstance][] =>
+      ITEMS[i.itemId]?.type === 'tool' ? [['toolUse', i]] : [],
+    ),
+  ];
+  for (const [kind, item] of statSpend ? [] : points) {
+    if (kind !== 'durability' && kind !== 'toolUse') continue;
+    const source: Source = { kind, from: hiker.id, uid: item.uid };
+    const spent = gifts.reduce(
+      (k, g) => k + (g.kind === kind && g.uid === item.uid ? g.count : 0),
+      0,
+    );
+    const can = canGive(state, open, draft, source);
+    if (can || spent) chips.push({ source, spent, left: left(state, open, draft, source), can });
+  }
   const back = (source: Source) => {
     const g = gifts.find(
       (x) =>
         (source.kind === 'resource' && x.kind === 'resource' && x.resource === source.resource) ||
         (source.kind === 'item' && x.kind === 'item' && x.uid === source.uid) ||
-        (source.kind === 'stat' && x.kind === 'stat' && x.stat === source.stat),
+        (source.kind === 'stat' && x.kind === 'stat' && x.stat === source.stat) ||
+        ((source.kind === 'durability' || source.kind === 'toolUse') &&
+          x.kind === source.kind &&
+          x.uid === source.uid),
     );
     if (g && section >= 0) onDraft(takeBack(draft, section, g));
   };
-  const itemOfUid = (uid: string) => hiker.inventory.bag.find((i) => i.uid === uid)?.itemId ?? '';
+  const itemOfUid = (uid: string) =>
+    (
+      hiker.inventory.bag.find((i) => i.uid === uid) ??
+      Object.values(hiker.inventory.equipped).find((i) => i?.uid === uid)
+    )?.itemId ?? '';
   return (
     <div className={styles.pack}>
       <div className={styles.packHead}>
         <Face hikerId={hiker.id} size={30} />
         <span className={styles.packName}>{hiker.name.toUpperCase()}</span>
         <span className={styles.packCount}>
-          RES {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit} · BAG{' '}
+          RES {resourceCount(hiker)}/{resourceLimit(state, hiker)} · BAG{' '}
           {hiker.inventory.bag.length}
         </span>
       </div>
@@ -1641,26 +1831,40 @@ function RiskPack({
                 ? resourceName(source.resource)
                 : source.kind === 'item'
                   ? itemName(itemOfUid(source.uid))
-                  : source.kind === 'stat'
-                    ? STAT_META[source.stat].label
-                    : 'caps';
+                  : source.kind === 'durability'
+                    ? `durability from the ${itemName(itemOfUid(source.uid))}`
+                    : source.kind === 'toolUse'
+                      ? `use of the ${itemName(itemOfUid(source.uid))}`
+                      : source.kind === 'stat'
+                        ? STAT_META[source.stat].label
+                        : 'caps';
             const key =
               source.kind === 'resource'
                 ? source.resource
-                : source.kind === 'item'
-                  ? source.uid
+                : source.kind === 'item' ||
+                    source.kind === 'durability' ||
+                    source.kind === 'toolUse'
+                  ? `${source.kind}:${source.uid}`
                   : 'stat';
             return (
               <div key={key} className={styles.chip} data-spent={spent > 0}>
                 {source.kind === 'resource' ? (
                   <img className={styles.chipIcon} src={ASSETS.resources[source.resource]} alt="" />
-                ) : source.kind === 'item' ? (
+                ) : source.kind === 'item' ||
+                  source.kind === 'durability' ||
+                  source.kind === 'toolUse' ? (
                   <ItemFace itemId={itemOfUid(source.uid)} width={24} />
                 ) : source.kind === 'stat' ? (
                   <Icon name={STAT_META[source.stat].icon} size={22} strokeWidth={2.25} />
                 ) : null}
                 <span className={styles.chipCount}>
-                  {source.kind === 'item' ? '' : source.kind === 'stat' ? `${n} LEFT` : `×${n}`}
+                  {source.kind === 'item'
+                    ? ''
+                    : source.kind === 'stat' ||
+                        source.kind === 'durability' ||
+                        source.kind === 'toolUse'
+                      ? `${n} LEFT`
+                      : `×${n}`}
                 </span>
                 <button
                   type="button"

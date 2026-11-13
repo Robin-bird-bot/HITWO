@@ -13,6 +13,7 @@ import {
   hikersOnTile,
   hikersWhoHaventActed,
   resourceCount,
+  resourceLimit,
   validateAction,
   type Action,
   type EquipSlot,
@@ -23,12 +24,14 @@ import {
   type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { ITEM_TYPE_COLORS } from '../scavenge/cardLook';
+import { ItemCard as CardFace } from '../items/ItemCard';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
 import { Panel } from './Panel';
 import panel from './Panel.module.css';
+import { BoostChips } from '../items/BoostChips';
+import { itemVerbs } from '../items/whatItDoes';
 import styles from './TurnPanel.module.css';
 
 const PHASE_NAME = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -51,6 +54,8 @@ interface TurnPanelProps {
   onFree?(action: Action): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
+  /** Opens the hiker's blueprints (the Craft window's Teach tab). */
+  onBlueprints?(): void;
 }
 
 export function TurnPanel({
@@ -64,6 +69,7 @@ export function TurnPanel({
   onPick,
   onFree,
   onAbandon,
+  onBlueprints,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -86,11 +92,16 @@ export function TurnPanel({
         )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
         <TileCard state={state} hiker={hiker} />
-        <Equipped hiker={hiker} />
+        <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
-        <Resources hiker={hiker} onPick={onPick} />
+        <Resources state={state} hiker={hiker} onPick={onPick} />
       </div>
-      <Footer state={state} onEndPhase={onEndPhase} />
+      <Footer
+        state={state}
+        hiker={hiker}
+        onEndPhase={onEndPhase}
+        {...(onBlueprints ? { onBlueprints } : {})}
+      />
     </Panel>
   );
 }
@@ -368,43 +379,50 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
     : 'Alone here';
   const special = tile.special ? SPECIAL_LOOK[tile.special].name : null;
   return (
-    <div className={styles.tile}>
-      <div className={styles.tileNodes}>
-        {tile.nodes.length === 0 && <Icon name="footprints" size={22} color="#C9C2B2" />}
-        {tile.nodes.map((n, i) =>
-          n.revealed && n.type !== 'caps' ? (
-            <img
-              key={i}
-              src={NODE_IMAGE[n.type]}
-              alt={`${NODE_NAME[n.type]} node`}
-              width={24}
-              height={28}
-            />
-          ) : (
-            <span key={i} className={styles.nodeQ} title={n.revealed ? 'Cap node' : 'Unknown node'}>
-              {n.revealed ? 'C' : '?'}
-            </span>
-          ),
+    <>
+      <div className={styles.tile}>
+        <div className={styles.tileNodes}>
+          {tile.nodes.length === 0 && <Icon name="footprints" size={22} color="#C9C2B2" />}
+          {tile.nodes.map((n, i) =>
+            n.revealed && n.type !== 'caps' ? (
+              <img
+                key={i}
+                src={NODE_IMAGE[n.type]}
+                alt={`${NODE_NAME[n.type]} node`}
+                width={24}
+                height={28}
+              />
+            ) : (
+              <span
+                key={i}
+                className={styles.nodeQ}
+                title={n.revealed ? 'Cap node' : 'Unknown node'}
+              >
+                {n.revealed ? 'C' : '?'}
+              </span>
+            ),
+          )}
+        </div>
+        <div className={styles.tileText}>
+          <span className={styles.tileName}>{tileName(tile).toUpperCase()}</span>
+          <span className={styles.small}>
+            {special && tileName(tile) !== special ? `${special} · ${company}` : company}
+          </span>
+        </div>
+        {tile.feature && (
+          <button
+            type="button"
+            className={styles.feature}
+            aria-disabled="true"
+            title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
+          >
+            <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
+            {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
+          </button>
         )}
       </div>
-      <div className={styles.tileText}>
-        <span className={styles.tileName}>{tileName(tile).toUpperCase()}</span>
-        <span className={styles.small}>
-          {special && tileName(tile) !== special ? `${special} · ${company}` : company}
-        </span>
-      </div>
-      {tile.feature && (
-        <button
-          type="button"
-          className={styles.feature}
-          aria-disabled="true"
-          title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 8`}
-        >
-          <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
-          {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
-        </button>
-      )}
-    </div>
+      <BoostChips state={state} hiker={hiker} />
+    </>
   );
 }
 
@@ -421,8 +439,9 @@ interface InventoryProps {
   onPick?(pick: StashPick): void;
 }
 
-export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) {
+export function Equipped({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
   const worn = EQUIP.filter(({ slot }) => hiker.inventory.equipped[slot]).length;
+  const stageTop = useStageTop();
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -437,7 +456,18 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
         {EQUIP.map(({ slot, label, icon }) => {
           const item = hiker.inventory.equipped[slot];
           return item ? (
-            <ItemCard key={slot} item={item} size="large" />
+            <ItemCard
+              key={slot}
+              item={item}
+              size="large"
+              worn
+              {...(onPick
+                ? {
+                    onClick: (e: React.MouseEvent<HTMLElement>) =>
+                      onPick({ kind: 'equipped', slot, top: stageTop(e.currentTarget) }),
+                  }
+                : {})}
+            />
           ) : (
             <div key={slot} className={styles.empty} data-size="large" title={`${label}: empty`}>
               <Icon name={icon} size={18} color="#6F6A60" />
@@ -450,44 +480,50 @@ export function Equipped({ hiker, compact }: { hiker: Hiker } & InventoryProps) 
   );
 }
 
-/** A stand-in item card (Phase 9 builds the real layered cards). */
+/** A card in the bag or an equipment slot: the compact real card, a button when it opens a menu. */
 function ItemCard({
   item,
   size,
+  worn = false,
   onClick,
 }: {
   item: ItemInstance;
   size: 'large' | 'small';
+  /** Clothes being worn: the menu takes them off. */
+  worn?: boolean;
   onClick?(e: React.MouseEvent<HTMLElement>): void;
 }) {
   const def = ITEMS[item.itemId];
   const name = def?.name ?? item.itemId;
-  const Tag = onClick ? 'button' : 'div';
+  const what = worn ? 'take off' : itemVerbs(item.itemId);
+  const face = (
+    <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
+  );
+  if (!onClick) {
+    return (
+      <div className={styles.itemCard} data-size={size}>
+        {face}
+      </div>
+    );
+  }
   return (
-    <Tag
-      {...(onClick
-        ? {
-            type: 'button' as const,
-            onClick,
-            'aria-label': `${name}: ${def?.use ? 'use, give or drop' : 'give or drop'}`,
-          }
-        : {})}
+    <button
+      type="button"
       className={styles.itemCard}
       data-size={size}
-      title={def ? `${def.name}: ${def.text}` : item.itemId}
-      style={{
-        background: `linear-gradient(155deg, ${ITEM_TYPE_COLORS[def?.type ?? 'clothes'].join(', ')})`,
-      }}
+      onClick={onClick}
+      aria-label={`${name}: ${what}`}
     >
-      <img src={ASSETS.itemCards.typeIcons[def?.type ?? 'clothes']} alt="" />
-      <span>{name.toUpperCase()}</span>
-    </Tag>
+      {face}
+    </button>
   );
 }
 
 /** A resource or bag item the player clicked, and where (stage pixels) to open its menu. */
 export type StashPick =
-  { kind: 'resource'; id: ResourceId; top: number } | { kind: 'item'; uid: string; top: number };
+  | { kind: 'resource'; id: ResourceId; top: number }
+  | { kind: 'item'; uid: string; top: number }
+  | { kind: 'equipped'; slot: EquipSlot; top: number };
 
 /** The clicked element's top, in stage pixels. */
 function useStageTop() {
@@ -560,7 +596,12 @@ export function Bag({
   );
 }
 
-export function Resources({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
+export function Resources({
+  state,
+  hiker,
+  compact,
+  onPick,
+}: { state: GameState; hiker: Hiker } & InventoryProps) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
   const stageTop = useStageTop();
   return (
@@ -568,7 +609,7 @@ export function Resources({ hiker, compact, onPick }: { hiker: Hiker } & Invento
       <div className={styles.blockHead}>
         <span className={panel.label}>RESOURCES</span>
         <span className={styles.count}>
-          {resourceCount(hiker)}/{BALANCE.inventory.resourceLimit}
+          {resourceCount(hiker)}/{resourceLimit(state, hiker)}
         </span>
       </div>
       {held.length === 0 ? (
@@ -640,17 +681,29 @@ export function EndButton({ state, onEndPhase }: { state: GameState; onEndPhase(
   );
 }
 
-function Footer({ state, onEndPhase }: { state: GameState; onEndPhase(): void }) {
+function Footer({
+  state,
+  hiker,
+  onEndPhase,
+  onBlueprints,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onEndPhase(): void;
+  onBlueprints?(): void;
+}) {
+  const n = hiker.blueprints?.length ?? 0;
   return (
     <div className={styles.footer}>
       <button
         type="button"
         className={styles.blueprints}
-        aria-disabled="true"
-        title="Blueprints arrive in Phase 9"
+        data-ready={!!onBlueprints}
+        onClick={onBlueprints}
+        title={`${hiker.name}’s blueprints: teach one to a hiker on this tile`}
       >
         <Icon name="book" size={18} />
-        Blueprints
+        Blueprints{n ? ` · ${n}` : ''}
       </button>
       <EndButton state={state} onEndPhase={onEndPhase} />
     </div>

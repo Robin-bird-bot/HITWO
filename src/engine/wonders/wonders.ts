@@ -9,6 +9,7 @@
  *   the tile. When all 3 are met, `accomplishWonder` gives each of those
  *   hikers the reward they picked, and the Wonder is done for good.
  */
+import { durabilityLeft, makeItem, maxDurabilityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { CONDITIONS, POSITIVE_CONDITIONS } from '../../content/conditions';
@@ -16,9 +17,10 @@ import { RESOURCE_BY_ID } from '../../content/resources';
 import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { changeAbundance } from '../abundance';
-import { revealCardOn } from '../challenges/reveal';
+import { cardShown, revealCardOn } from '../challenges/reveal';
 import { addCondition, removeCondition } from '../conditions';
 import { bagSlots, resourceCount } from '../inventory';
+import { gainCaps } from '../effects';
 import { pushEvent } from '../log';
 import { hikersOnTile } from '../map';
 import { pick, shuffle } from '../rng';
@@ -267,10 +269,36 @@ function checkGoal(
       const today = WEATHERS[state.weather.today];
       return { met: state.weather.today !== 'clear', readout: today.name.toUpperCase() };
     }
+    case 'clothesDurability':
+      return total(
+        here.reduce((s, h) => s + wornOf(h).reduce((m, i) => m + durabilityLeft(i), 0), 0),
+      );
+    case 'clothesWorn': {
+      const of = (h: Hiker) => wornOf(h).length;
+      return one(of, (h) => compare(of(h), n, how));
+    }
+    case 'craftedOfType': {
+      const of = (h: Hiker) =>
+        Math.max(0, ...Object.values(state.counters.crafted[h.id] ?? {}).map((v) => v ?? 0));
+      return one(of, (h) => compare(of(h), n, how));
+    }
     case 'waiting':
       return { met: false };
   }
 }
+
+/** The clothes a hiker has on. */
+const wornOf = (h: Hiker) =>
+  Object.values(h.inventory.equipped).filter(
+    (i): i is NonNullable<typeof i> => !!i && ITEMS[i.itemId]?.type === 'clothes',
+  );
+
+/**
+ * The worn item Fort Rock doubles: the one with the most durability left.
+ * TODO(wyatt): the hiker doesn't pick; it's their most durable worn item.
+ */
+const mostDurable = (h: Hiker) =>
+  [...wornOf(h)].sort((a, b) => durabilityLeft(b) - durabilityLeft(a))[0];
 
 /** How a revealed Wonder stands right now, against the hikers on its tile. */
 export function wonderProgress(state: GameState, tileId: TileId): WonderProgress | undefined {
@@ -330,6 +358,8 @@ export function pickProblem(
       return undefined;
     case 'abundance':
       return choice.node && NODE_TYPES.includes(choice.node) ? undefined : 'Pick a node type.';
+    case 'doubleDurability':
+      return mostDurable(h) ? undefined : `${h.name} isn’t wearing any clothes.`;
     default:
       return undefined;
   }
@@ -389,7 +419,7 @@ export function applyAccomplish(state: GameState, action: AccomplishAction): voi
 
 function giveItems(state: GameState, h: Hiker, itemIds: string[], cause: string): void {
   for (const itemId of itemIds) {
-    h.inventory.bag.push({ uid: `wonder-${state.nextEventId}-${itemId}`, itemId });
+    h.inventory.bag.push(makeItem(state, itemId, { prefix: 'wonder' }));
   }
   if (itemIds.length) {
     pushEvent(state, { kind: 'gained', hikerId: h.id, resources: [], items: itemIds, cause });
@@ -409,8 +439,7 @@ function giveReward(
       h.xp += BALANCE.wonders.lotOfXp;
       return;
     case 'caps': {
-      const n = BALANCE.wonders.lotOfCaps;
-      state.caps += n;
+      const n = gainCaps(state, BALANCE.wonders.lotOfCaps);
       pushEvent(state, { kind: 'gained', resources: [], items: [], caps: n, cause });
       return;
     }
@@ -430,9 +459,16 @@ function giveReward(
     case 'cureInjuries':
       cureInjuries(state, h, h.injuries, cause);
       return;
+    case 'doubleDurability': {
+      const item = mostDurable(h);
+      if (!item) return;
+      item.maxDurability = maxDurabilityOf(item) * 2;
+      item.durability = durabilityLeft(item) * 2;
+      return;
+    }
     case 'revealBiome':
       for (const t of Object.values(state.section.tiles)) {
-        if (t.id === tileId || t.kind !== 'normal' || t.visited || t.revealedCard || t.wonder) {
+        if (t.id === tileId || t.kind !== 'normal' || t.visited || cardShown(t) || t.wonder) {
           continue;
         }
         revealCardOn(state, t.id, cause);

@@ -1,3 +1,4 @@
+import { withDefaults } from './items/make';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -71,8 +72,13 @@ export function createGame({
       slots: setup.slots.map((s) => ({ ...s })),
       conditions: [],
       inventory: {
-        bag: structuredClone(setup.inventory?.bag ?? []),
-        equipped: structuredClone(setup.inventory?.equipped ?? {}),
+        bag: (setup.inventory?.bag ?? []).map(withDefaults),
+        equipped: Object.fromEntries(
+          Object.entries(setup.inventory?.equipped ?? {}).map(([slot, item]) => [
+            slot,
+            item && withDefaults(item),
+          ]),
+        ),
         resources: structuredClone(setup.inventory?.resources ?? {}),
       },
       acted: false,

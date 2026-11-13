@@ -11,11 +11,12 @@
  *   of each phase or day).
  *
  * Waiting on later phases: Food Poisoning (eating), Inept (crafting) and
- * Clumsy (tools) in Phase 9; Bleeding's injury in Phase 7.
+ * Clumsy (tools) in Phase 8; Bleeding's injury in Phase 7.
  */
 import { BALANCE } from '../config/balance';
 import type { CostKey, EffectContext, Hooks } from '../engine/effects';
 import type { Action, StatName, TraitType } from '../engine/types';
+import { ITEMS } from './items';
 import { RESOURCES } from './resources';
 
 export interface ConditionDef {
@@ -143,8 +144,11 @@ const LIST: ConditionDef[] = [
     id: 'foodPoisoning',
     name: 'Food Poisoning',
     kind: 'negative',
-    // TODO(phase 9): food gives 2 less Appetite, when eating arrives.
     text: 'Food gives 2 less Appetite.',
+    hooks: {
+      modifyGain: (q) =>
+        q.key === 'eat.appetite' ? { source: 'Food Poisoning', flat: -C.foodPoisoning } : undefined,
+    },
   },
   {
     id: 'blind',
@@ -221,8 +225,13 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '−1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
       modifyScavenge: () => ({
+        source: 'Unlucky',
+        label: `Unlucky: −${C.luck} Luck`,
+        tone: 'warning',
+        luck: -C.luck,
+      }),
+      modifyCraft: () => ({
         source: 'Unlucky',
         label: `Unlucky: −${C.luck} Luck`,
         tone: 'warning',
@@ -253,9 +262,32 @@ const LIST: ConditionDef[] = [
       },
     },
   },
-  // TODO(phase 9): Inept and Clumsy stop crafting and using tools.
-  { id: 'inept', name: 'Inept', kind: 'negative', text: 'Can’t craft.' },
-  { id: 'clumsy', name: 'Clumsy', kind: 'negative', text: 'Can’t use tools.' },
+  {
+    id: 'inept',
+    name: 'Inept',
+    kind: 'negative',
+    text: 'Can’t craft.',
+    hooks: {
+      canAct: (q, ctx) =>
+        q.action.type === 'craft' ? `${ctx.self.name} is Inept and can’t craft.` : undefined,
+    },
+  },
+  {
+    id: 'clumsy',
+    name: 'Clumsy',
+    kind: 'negative',
+    text: 'Can’t use tools.',
+    hooks: {
+      canAct: (q, ctx) => {
+        if (q.action.type !== 'useItem') return undefined;
+        const uid = q.action.itemUid;
+        const item = ctx.self.inventory.bag.find((i) => i.uid === uid);
+        return item && ITEMS[item.itemId]?.type === 'tool'
+          ? `${ctx.self.name} is Clumsy and can’t use tools.`
+          : undefined;
+      },
+    },
+  },
   {
     id: 'weak',
     name: 'Weak',
@@ -286,8 +318,13 @@ const LIST: ConditionDef[] = [
     kind: 'negative',
     text: '1 fewer card to choose from when scavenging or crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
       modifyScavenge: () => ({
+        source: 'Tunnel Vision',
+        label: `Tunnel Vision: ${C.tunnelVisionCards} fewer card`,
+        tone: 'warning',
+        cards: -C.tunnelVisionCards,
+      }),
+      modifyCraft: () => ({
         source: 'Tunnel Vision',
         label: `Tunnel Vision: ${C.tunnelVisionCards} fewer card`,
         tone: 'warning',
@@ -407,8 +444,13 @@ const LIST: ConditionDef[] = [
     kind: 'positive',
     text: '+1 Luck when scavenging and crafting.',
     hooks: {
-      // TODO(phase 9): crafting too.
       modifyScavenge: () => ({
+        source: 'Lucky',
+        label: `Lucky: +${C.luck} Luck`,
+        tone: 'luck',
+        luck: C.luck,
+      }),
+      modifyCraft: () => ({
         source: 'Lucky',
         label: `Lucky: +${C.luck} Luck`,
         tone: 'luck',
@@ -435,11 +477,11 @@ const LIST: ConditionDef[] = [
   },
   // Medical items (Phase 7).
   {
-    // TODO(wyatt): the Splint's "−1 injury for 3 days, then it returns", shown as a condition.
+    // TODO(wyatt): Crutches' "remove 1 injury for N days; then it comes back", shown as a condition.
     id: 'splinted',
-    name: 'Splinted',
+    name: 'On Crutches',
     kind: 'positive',
-    text: 'A Splint holds off 1 injury. When it runs out, the injury comes back.',
+    text: 'Crutches hold off 1 injury. When they run out, the injury comes back.',
     onRunOut: 'injury',
     fromItemOnly: true,
   },

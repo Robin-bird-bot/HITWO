@@ -38,6 +38,8 @@ interface TrialView {
   tier: 1 | 2 | 3;
   targetTile?: TileId;
   resource?: string;
+  /** Rocco's Rebuilding Trial: the item type to craft. */
+  itemType?: string;
   /** Read-only: who has met their part so far. */
   done?: HikerId[];
 }
@@ -68,6 +70,7 @@ export function NewTrial({
         tier: open.tier,
         ...(open.trial?.targetTile ? { targetTile: open.trial.targetTile } : {}),
         ...(open.trial?.resource ? { resource: open.trial.resource } : {}),
+        ...(open.trial?.itemType ? { itemType: open.trial.itemType } : {}),
       }}
       time={time}
       button="GOT IT"
@@ -104,6 +107,7 @@ export function TrialDetails({
         done: trial.done,
         ...(trial.targetTile ? { targetTile: trial.targetTile } : {}),
         ...(trial.resource ? { resource: trial.resource } : {}),
+        ...(trial.itemType ? { itemType: trial.itemType } : {}),
       }}
       time={timeLeft(state, trial)}
       button="CLOSE"
@@ -193,6 +197,12 @@ function TrialWindow({
                   <p className={trialStyles.target} data-tone="red">
                     <span className={trialStyles.swatch} />
                     Rocco’s tile ({tileName(target)}) is marked in red on the map.
+                  </p>
+                )}
+                {view.itemType && (
+                  <p className={trialStyles.target}>
+                    Rocco wants a crafted{' '}
+                    {view.itemType === 'clothes' ? 'clothing item' : view.itemType}.
                   </p>
                 )}
                 {view.resource && (

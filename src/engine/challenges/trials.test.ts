@@ -170,8 +170,6 @@ describe('Trial content', () => {
     const off = Object.values(CARDS).filter(
       (c): c is TrialDef => c.kind === 'trial' && c.goal.kind === 'off',
     );
-    expect(off.map((c) => c.id).sort()).toEqual(
-      ['bear-country', 'frozen-fingers', 'mold-invasion', 'rocco-raccoons-rebuilding-trial'].sort(),
-    );
+    expect(off.map((c) => c.id).sort()).toEqual(['frozen-fingers']);
   });
 });

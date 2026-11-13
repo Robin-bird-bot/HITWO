@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { ITEMS } from '../../content';
 import { NIGHT_CREATURES, NIGHT_OUTCOMES, type NightOutcome } from '../../content/nightEvents';
+import { fullDurability } from '../items/make';
 import { validateAction } from '../applyAction';
 import { addCondition, hasCondition } from '../conditions';
 import { deserialize, serialize } from '../save';
@@ -190,7 +192,7 @@ describe('picking an outcome', () => {
     ash.inventory.resources = { wood: 2 };
     ash.xp = 3;
     ash.inventory.bag = [{ uid: 'f1', itemId: 'energyDrink' }];
-    hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'medicine' }];
+    hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'bandaid' }];
     expect(NIGHT_OUTCOMES[1].filter((o) => canApply(s, ash, o)).map((o) => o.id)).toEqual([
       'swapResources',
       'stealCaps',
@@ -335,14 +337,14 @@ describe('the lines', () => {
         const s = night(seed);
         place(s, 'ash', 'L');
         hiker(s, 'ash').inventory.bag = [{ uid: 'f1', itemId: 'energyDrink' }];
-        hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'medicine' }];
+        hiker(s, 'birch').inventory.bag = [{ uid: 't1', itemId: 'bandaid' }];
         return s;
       },
       { creatureId: 'raccoons', hit: 'ash' },
       'swapItemFar',
     );
-    expect(hit.text).toBe('The raccoons swapped Ash’s Energy Drink for Birch’s Medicine.');
-    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['medicine']);
+    expect(hit.text).toBe('The raccoons swapped Ash’s Energy Drink for Birch’s Bandaid.');
+    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['bandaid']);
     expect(hiker(s, 'birch').inventory.bag.map((i) => i.itemId)).toEqual(['energyDrink']);
   });
 });
@@ -367,7 +369,7 @@ describe('the new effects', () => {
     expect(hit.chip).toMatch(/^\d resources? swapped$/);
   });
 
-  it('wear on clothes is recorded on the item until Phase 9', () => {
+  it('wear on clothes takes durability off the item', () => {
     const { s, hit } = findHit(
       (seed) => {
         const s = run(night(seed), { type: 'debug', op: { kind: 'wearClothes', hikerId: 'ash' } });
@@ -377,8 +379,9 @@ describe('the new effects', () => {
       { creatureId: 'bats', hit: 'ash' },
       'wearOne',
     );
-    const worn = Object.values(hiker(s, 'ash').inventory.equipped).find((i) => i?.wear);
-    expect(worn?.wear).toBe(1);
+    const worn = Object.values(hiker(s, 'ash').inventory.equipped)[0];
+    const def = ITEMS[worn?.itemId ?? ''];
+    expect(worn?.durability).toBe(fullDurability(def!, 3) - 1);
     expect(hit.chip).toBe('−1 durability');
   });
 
@@ -388,9 +391,9 @@ describe('the new effects', () => {
         const s = night(seed);
         place(s, 'ash', 'L');
         hiker(s, 'ash').inventory.bag = [
-          { uid: 'a', itemId: 'medicine' },
+          { uid: 'a', itemId: 'bandaid' },
           { uid: 'b', itemId: 'energyDrink' },
-          { uid: 'c', itemId: 'medicine' },
+          { uid: 'c', itemId: 'bandaid' },
         ];
         return s;
       },

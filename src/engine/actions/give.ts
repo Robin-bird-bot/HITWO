@@ -1,14 +1,15 @@
 /**
  * Free actions with resources and items (they don't use the phase):
  * - give one resource or bag item to a hiker on the same tile (an active
- *   hiker can also take things from a passed-out one: Wyatt, Nov 7. TODO(phase 9):
- *   their worn clothes too, once equipping exists);
+ *   hiker can also take things from a passed-out one: Wyatt, Nov 7; their worn
+ *   clothes come off with takeOff, src/engine/actions/dress.ts);
  * - return a resource to nature, +1 Abundance to its node.
  */
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { bagSlots, resourceCount } from '../inventory';
+import { tradesAnywhere } from '../effects';
+import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import type { Action, GameState } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
@@ -24,14 +25,15 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   const reason = (takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to);
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
-  if (from.tileId !== to.tileId) return `${to.name} isn’t on this tile.`;
+  // A Walkie-Talkie lets either one trade with anyone, anywhere.
+  const anywhere = !takeFromOut && (tradesAnywhere(state, from) || tradesAnywhere(state, to));
+  if (from.tileId !== to.tileId && !anywhere) return `${to.name} isn’t on this tile.`;
   if ((action.resource ? 1 : 0) + (action.itemUid ? 1 : 0) !== 1) return 'Pick one thing to give.';
 
   if (action.resource) {
     if ((from.inventory.resources[action.resource] ?? 0) < 1)
       return `${from.name} doesn’t have that.`;
-    if (resourceCount(to) >= BALANCE.inventory.resourceLimit)
-      return `${to.name}’s resources are full.`;
+    if (resourceCount(to) >= resourceLimit(state, to)) return `${to.name}’s resources are full.`;
   }
   if (action.itemUid) {
     if (!from.inventory.bag.some((i) => i.uid === action.itemUid))

@@ -91,23 +91,117 @@ export const BALANCE = {
     raiseStatsBelowTo: 5,
   },
 
-  /**
-   * The medical items (Phase 7). Each is used up after one use.
-   * TODO(phase 9): uses and Quality.
-   */
+  /** Items (docs/design/03-items.md). */
+  items: {
+    /**
+     * Quality rolls: the odds of Quality 1–5 (Wyatt, Nov 7). Each point of the
+     * crafter's Luck moves `luckStep` points from Quality 1–2 to 4–5, half from
+     * each (Luck +2: 5/15/40/25/15).
+     */
+    quality: { odds: [10, 20, 40, 20, 10] as readonly number[], luckStep: 5 },
+    /** A found item is one tier above the biome's this often (Wyatt, Nov 7). */
+    findHigher: 0.1,
+    /** The highest tier a find can be: Tier 4 waits on Tier 4 items (Wyatt, Nov 7). */
+    maxFoundTier: 3,
+    /** Equipped clothes lose this much durability at each camp step. */
+    campWear: 1,
+    /** Clothing durability in days, by tier, at Quality 1–5. */
+    durability: {
+      1: [4, 5, 5, 5, 6],
+      2: [5, 7, 7, 7, 9],
+      3: [8, 10, 10, 10, 12],
+    } as Record<number, readonly [number, number, number, number, number]>,
+    /**
+     * Nights each shelter lasts once placed.
+     * TODO(wyatt): Tailgate, Yurt, Hostel, Tree-House, RV, Medic Tent and Lodge are the doc's first guesses.
+     */
+    shelterNights: {
+      hammock: 1,
+      tent: 3,
+      cabin: 5,
+      tailgate: 3,
+      yurt: 4,
+      hostel: 4,
+      treeHouse: 4,
+      rv: 4,
+      medicTent: 3,
+      lodge: 5,
+    } as Record<string, number>,
+    /** TODO(wyatt): the Diploma's XP, as a share of a level (first guess 60–100%). TODO(phase 10). */
+    diplomaXp: { min: 0.6, max: 1 },
+    /** TODO(wyatt): the Postcard's extra XP (first guess). TODO(phase 10). */
+    postcardXp: { checkpoint: 5, challenge: 1 },
+    /** A Planter can't add a node to a tile that already has this many. */
+    maxNodes: 3,
+    /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
+    freeMove: { discount: 1, wear: 1 },
+    /** Jeans: scavenging costs this much less Appetite. */
+    jeansAppetite: 1,
+    /** Shelters' own effects (03-items.md, "Shelters"). */
+    shelter: {
+      /** Cabin and RV: more Energy from sleeping there. */
+      sleepEnergy: 1,
+      /** Hostel: more Energy with 2 or more hikers on the tile, and again with all 4. */
+      hostel: { company: 2, companyEnergy: 1, everyone: 4, everyoneEnergy: 1 },
+      /** Yurt: extra cards when scavenging there. */
+      yurtCards: 1,
+      /** Medic Tent: injuries healed, once per hiker. */
+      medicInjuries: 1,
+      /** Tailgate and Lodge: Quality added to what's crafted there (up to 5). */
+      craftQuality: 1,
+    },
+    /** Crafting (03-items.md, "Crafting"; Wyatt, Nov 7 and Nov 13). */
+    craft: {
+      /** Every hiker crafts every type at this tier until a workbench raises it (Phase 9). */
+      startTier: 1,
+      maxTier: 3,
+      /** A basic recipe deals this many items to pick 1 from. */
+      choices: 3,
+      /** Each one is a tier higher this often. */
+      higher: 0.1,
+      /**
+       * Higher tiers add to the basic recipe: key and broad resources.
+       * TODO(wyatt): the doc's first guess. Trinkets add `trinket` more different resources.
+       */
+      tierExtra: {
+        2: { key: 1, broad: 1, trinket: 1 },
+        3: { key: 2, broad: 2, trinket: 2 },
+      } as Record<number, { key: number; broad: number; trinket: number }>,
+      /** TODO(wyatt): Dogs craft with this Luck for Quality (first guess). */
+      dogLuck: -1,
+      /**
+       * Abandoned Ranger Station: "a random tool, clothing item or blueprint".
+       * TODO(wyatt): a blueprint a third of the time (first guess).
+       */
+      blueprintFind: 1 / 3,
+      /** Teaching a blueprint costs the teacher this much Morale, by its tier (Wyatt, Nov 13). */
+      teachMorale: { 1: 4, 2: 6, 3: 8 } as Record<number, number>,
+    },
+    /** Wallet: added to every caps gain, for good. */
+    walletCaps: 1,
+    /** Serums: added to a stat's maximum, for good. */
+    serumMax: 1,
+    /** Sleepy Socks also work at the start of a phase with at least this much Energy. */
+    sleepySocksEnergy: 7,
+    /**
+     * TODO(wyatt): the Appetite for each extra card a Sack keeps. First guess: none;
+     * the scavenge's cost is paid once.
+     */
+    sackAppetite: 0,
+  },
+
+  /** The medical items (Phase 7). */
   medical: {
-    /** Bandages: injuries cured (and Bleeding). TODO(wyatt): Bandages and the Splint are placeholders. */
+    /** Bandages: injuries cured (and Bleeding: Wyatt, Nov 7). */
     bandagesInjuries: 1,
-    /** The Splint: injuries held off, for this many days, then they come back. */
-    splint: { injuries: 1, days: 3 },
-    /** Medkit: injuries cured, plus one condition. */
+    /** Medkit: injuries cured, plus every negative condition. */
     medkitInjuries: 1,
   },
 
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
    * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
-   * TODO(phase 9): the Carrier Pack makes it free.
+   * TODO(wyatt): the Carrier Pack (an item still to place) could make it free.
    */
   carry: {
     /** The carrier's extra Appetite on each move. */
@@ -283,6 +377,13 @@ export const BALANCE = {
      */
     noCardOn: [] as readonly SpecialSpace[],
     /**
+     * CHALLENGE_SHARE: the share of each biome's plain tiles (no special space,
+     * no Wonder) that hold a card. 1 means every one, as before. Below 1, the
+     * rest are quiet, and the scouting tools are worth more. Special spaces
+     * and Wonders always keep theirs. TODO(wyatt): try lowering it.
+     */
+    share: { meadow: 1, temperateRainforest: 1, alpine: 1 } as Record<BiomeId, number>,
+    /**
      * On a Challenge space, each passing hiker gets one of these at random: an
      * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.
      */
@@ -414,10 +515,12 @@ export const BALANCE = {
     caps: { dejected: 5, inappetent: 7, buzzed: 7 },
     /** Strained: extra Energy lost each time. Inspired: extra Morale gained each time. */
     strainedExtra: 1,
+    /** Food Poisoning: food gives this much less Appetite. */
+    foodPoisoning: 2,
     inspiredExtra: 1,
     /** Sluggish: extra Appetite to move. */
     sluggishAppetite: 1,
-    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 9). */
+    /** Lucky and Unlucky: Luck when scavenging (and crafting, Phase 8). */
     luck: 1,
     /** Weak: item slots lost. Tunnel Vision: cards lost. */
     weakSlots: 1,

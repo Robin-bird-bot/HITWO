@@ -1,7 +1,7 @@
 import { tileLabel } from '../../content/tileLabels';
 import { ASSETS } from '../../config/assets';
 import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engine';
-import { CARDS } from '../../content';
+import { CARDS, ITEMS } from '../../content';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { Icon } from '../icons/Icon';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
@@ -24,6 +24,8 @@ interface MapTileProps {
   hikerCount: number;
   /** A connected tile the selected hiker can move to ('ok', gold ring) or can't ('blocked'). */
   reach?: 'ok' | 'blocked';
+  /** What clicking a reachable tile does ("Move here", "Use the Scanner here"). */
+  reachLabel?: string;
   onClick?(): void;
   /** Simple mode: the checkpoint's label shows only on hover. */
   checkpointLabelOnHover?: boolean;
@@ -42,6 +44,7 @@ export function MapTile({
   currentColor,
   hikerCount,
   reach,
+  reachLabel = 'Move here',
   onClick,
   checkpointLabelOnHover,
   mark,
@@ -85,7 +88,7 @@ export function MapTile({
       style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
       title={describe}
       data-reach={reach}
-      {...clickable(onClick, reach === 'ok' ? `Move here: ${describe}` : describe)}
+      {...clickable(onClick, reach === 'ok' ? `${reachLabel}: ${describe}` : describe)}
     >
       {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
       {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
@@ -148,7 +151,18 @@ export function MapTile({
         </div>
       )}
 
-      {tile.revealedCard && !tile.visited && (
+      {tile.scan && !tile.visited && <ScanBadge scan={tile.scan} />}
+
+      {tile.shelters?.length ? (
+        <div className={styles.shelter} title={shelterWords(tile)}>
+          <Icon name="tent" size={13} strokeWidth={2.5} />
+          <span className={styles.shelterNights}>
+            {Math.max(...tile.shelters.map((s) => s.nightsLeft))}
+          </span>
+        </div>
+      ) : null}
+
+      {tile.revealedCard && !tile.revealedCard.hidden && !tile.visited && (
         <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
       )}
 
@@ -275,11 +289,59 @@ function CheckpointTile({
   );
 }
 
+const SCAN_LOOK = {
+  challenge: { bg: '#E5624A', word: 'Challenge' },
+  opportunity: { bg: '#7FC29B', word: 'Opportunity' },
+  trial: { bg: '#CDA6EE', word: 'Trial' },
+} as const;
+
+/**
+ * What scouting found: a red ! for a card (its kind's color and tier when a
+ * Security Camera looked), or a quiet check for nothing there.
+ */
+function ScanBadge({ scan }: { scan: NonNullable<Tile['scan']> }) {
+  if (!scan.has) {
+    return (
+      <div className={styles.scan} data-has="false" title="Scouted: no challenge here">
+        <Icon name="check" size={13} strokeWidth={3} />
+      </div>
+    );
+  }
+  const look = scan.kind ? SCAN_LOOK[scan.kind] : SCAN_LOOK.challenge;
+  const tier = scan.tier ? ' ' + 'I'.repeat(scan.tier) : '';
+  return (
+    <div
+      className={styles.scan}
+      data-has="true"
+      style={{ background: look.bg }}
+      title={
+        scan.kind
+          ? `Scouted: a Tier${tier} ${look.word.toLowerCase()}`
+          : 'Scouted: a challenge here'
+      }
+    >
+      <span className={styles.scanBang}>!</span>
+      {scan.kind && <span className={styles.scanTier}>{tier.trim()}</span>}
+    </div>
+  );
+}
+
+/** "Tent, 2 nights left · Cabin, 5 nights left". */
+function shelterWords(tile: Tile): string {
+  return (tile.shelters ?? [])
+    .map((s) => {
+      const name = ITEMS[s.itemId]?.name ?? 'Shelter';
+      return `${name}, ${s.nightsLeft} night${s.nightsLeft === 1 ? '' : 's'} left`;
+    })
+    .join(' · ');
+}
+
 function describeTile(tile: Tile, label: string | null): string {
   if (tile.kind === 'trailhead') return 'Trailhead';
   const parts = [label ?? 'Trail tile'];
   if (tile.special) parts.push(SPECIAL_LOOK[tile.special].name);
   if (tile.feature) parts.push(FEATURE_LOOK[tile.feature].name);
+  if (tile.shelters?.length) parts.push(`Shelter: ${shelterWords(tile)}`);
   const known = tile.nodes
     .filter((n) => n.revealed)
     .map((n) => (n.weather ? NODE_STATE_LABEL[n.weather.state] : NODE_NAME[n.type]));

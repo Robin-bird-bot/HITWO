@@ -1,3 +1,4 @@
+import { fullCounters, makeItem, qualityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
@@ -11,9 +12,9 @@ import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { runNightEvent } from '../night/nightEvents';
 import { enterTile } from './common';
 import { passOut, wakeUp } from '../health';
-import { resourceCount } from '../inventory';
+import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
-import type { DebugOp, GameState, NodeType } from '../types';
+import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
 export function applyDebug(state: GameState, op: DebugOp): void {
@@ -32,7 +33,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
     case 'giveResources': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       if (!hiker) return;
-      let room = BALANCE.inventory.resourceLimit - resourceCount(hiker);
+      let room = resourceLimit(state, hiker) - resourceCount(hiker);
       for (const [id, n] of Object.entries(op.resources)) {
         const add = Math.min(room, Math.max(0, n ?? 0));
         if (add <= 0) continue;
@@ -190,7 +191,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const clothes =
         findableItems('clothes').find((i) => i.slot === slot) ?? findableItems('clothes')[0];
       if (!hiker || !slot || !clothes) return;
-      hiker.inventory.equipped[slot] = { uid: `debug-${state.nextEventId}`, itemId: clothes.id };
+      hiker.inventory.equipped[slot] = makeItem(state, clothes.id, { prefix: 'debug', quality: 3 });
       pushEvent(state, { kind: 'debug', note: `${hiker.name} put on ${clothes.name}` });
       break;
     }
@@ -224,8 +225,44 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       const item = ITEMS[op.itemId];
       if (!hiker || !item) return;
-      hiker.inventory.bag.push({ uid: `debug-${state.nextEventId}-${item.id}`, itemId: item.id });
+      hiker.inventory.bag.push(
+        makeItem(state, item.id, {
+          prefix: 'debug',
+          ...(op.quality ? { quality: op.quality } : {}),
+        }),
+      );
       pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} ${item.name}` });
+      break;
+    }
+    case 'setCraftTier': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const tier = Math.max(1, Math.min(BALANCE.items.craft.maxTier, Math.round(op.tier)));
+      hiker.craftTier = { ...hiker.craftTier, [op.itemType]: tier };
+      pushEvent(state, {
+        kind: 'debug',
+        note: `${hiker.name} crafts ${op.itemType} at Tier ${tier}`,
+      });
+      break;
+    }
+    case 'learnBlueprint': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const item = ITEMS[op.itemId];
+      if (!hiker || !item || (hiker.blueprints ?? []).includes(item.id)) return;
+      hiker.blueprints = [...(hiker.blueprints ?? []), item.id];
+      pushEvent(state, { kind: 'debug', note: `${hiker.name} learned the ${item.name} blueprint` });
+      break;
+    }
+    case 'refillItems': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const refill = (i: ItemInstance) => {
+        const def = ITEMS[i.itemId];
+        if (def) Object.assign(i, fullCounters(def, qualityOf(i)));
+      };
+      hiker.inventory.bag.forEach(refill);
+      for (const i of Object.values(hiker.inventory.equipped)) if (i) refill(i);
+      pushEvent(state, { kind: 'debug', note: `Refilled ${hiker.name}’s items` });
       break;
     }
     case 'setCountdown': {

@@ -30,18 +30,50 @@ export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure
 export { generateSection, type SectionOptions } from './trail/generate';
 export { checkSection } from './trail/check';
 export { seedRng } from './rng';
-export { bagSlots, resourceCount, type BagSlots, type ItemSlots } from './inventory';
+export { bagSlots, resourceCount, resourceLimit, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
-export { negativeConditions } from './actions/useItem';
+export {
+  clothesOf,
+  negativeConditions,
+  nodeChoices,
+  resourceChoices,
+  choiceOfUse,
+  targetOfUse,
+  type UseChoice,
+} from './actions/useItem';
+export { biteAppetite } from './actions/eat';
+export { tradesAnywhere } from './effects';
+export {
+  QUALITIES,
+  hasQuality,
+  qualityScale,
+  valueAt,
+  type Quality,
+  type QualityValues,
+} from './items/quality';
+export { itemText } from './items/text';
+export { recipeSize, type Recipe, type RecipePart } from './items/recipe';
+export {
+  durabilityLeft,
+  maxDurabilityOf,
+  usesLeftOf,
+  fullCounters,
+  fullDurability,
+  makeItem,
+  qualityOdds,
+  qualityOf,
+  rollQuality,
+  withDefaults,
+} from './items/make';
 export { isHikeOver } from './health';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
-export { bonusTaken, cardGains, pickOptions, rerollAbility } from './actions/scavenge';
+export { bonusTaken, cardGains, pickOptions, rerollAbility, rerollsLeft } from './actions/scavenge';
 export { isLow } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
-export { amount, rollCard, scaledRange, notBuiltYet, type CardRolls } from './challenges/rolls';
+export { amount, rollCard, scaledRange, type CardRolls } from './challenges/rolls';
 export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
 export { hasCondition } from './conditions';
 export type * from './challenges/types';
@@ -50,6 +82,7 @@ export {
   challengeSections,
   giftCount,
   giftFits,
+  harnessFor,
   openCardDef,
   optionShortfall,
   paidCause,
@@ -78,3 +111,20 @@ export {
 } from './wonders/wonders';
 export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
 export { overBag } from './actions/give';
+export {
+  autoPay,
+  basicRecipe,
+  craftPool,
+  craftRecipe,
+  craftSetup,
+  craftTier,
+  fitsPart,
+  knowsBlueprint,
+  paymentReason,
+  spaceParts,
+  CRAFT_TYPES,
+  type CraftSetup,
+} from './items/craft';
+export { craftOpenReason, teachCost } from './actions/craft';
+export type { CraftModifier } from './effects';
+export { mapTargets } from './items/scout';

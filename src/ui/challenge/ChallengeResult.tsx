@@ -41,10 +41,11 @@ export function ChallengeResult({
         <ul className={styles.lines}>
           {lines.flatMap((l) => {
             // The challenge's own line lists every hiker: one line each here.
-            const parts = l.tone === 'challenge' ? afterName(l.text).split(' · ') : [l.text];
+            const own = l.tone === 'challenge' && !!card && l.text.startsWith(`${card.name}: `);
+            const parts = own ? afterName(l.text).split(' · ') : [l.text];
             return parts.map((part, i) => (
               <li key={`${l.id}-${i}`} data-tone={l.tone}>
-                {l.tone === 'challenge' ? `${capitalize(part.replace(/\.$/, ''))}.` : part}
+                {own ? `${capitalize(part.replace(/\.$/, ''))}.` : part}
               </li>
             ));
           })}

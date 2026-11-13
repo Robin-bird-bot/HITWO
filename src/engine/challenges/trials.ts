@@ -15,7 +15,9 @@
  */
 import { CARDS } from '../../content/challenges';
 import { RESOURCES } from '../../content/resources';
+import { CRAFT_TYPES } from '../items/craft';
 import { isSheltered } from '../actions/sleep';
+import { gainCaps } from '../effects';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import { pick } from '../rng';
@@ -29,7 +31,7 @@ import {
   type ResourceId,
   type TileId,
 } from '../types';
-import { applyEffects } from './applyEffects';
+import { applyEffects, type EffectResult } from './applyEffects';
 import { openNext } from './reveal';
 import { amount } from './rolls';
 import type { Deadline, TrialDef } from './types';
@@ -95,6 +97,7 @@ export function pickTrialTargets(
   if (goal === 'roccoScavenge' || goal === 'rangerRequest') {
     return { resource: pick(state.rng, RESOURCES).id };
   }
+  if (goal === 'roccoCraft') return { itemType: pick(state.rng, CRAFT_TYPES) };
   return undefined;
 }
 
@@ -127,6 +130,7 @@ export function applyAccept(state: GameState): void {
     penalized: [],
     ...(open.trial?.targetTile ? { targetTile: open.trial.targetTile } : {}),
     ...(open.trial?.resource ? { resource: open.trial.resource } : {}),
+    ...(open.trial?.itemType ? { itemType: open.trial.itemType } : {}),
     ...(card.goal.kind === 'rangerRequest' ? { gathered: {} } : {}),
   };
   state.trials = [...(state.trials ?? []), trial];
@@ -198,11 +202,17 @@ function metNow(state: GameState, trial: ActiveTrial, card: TrialDef, h: Hiker):
 /** Goals about the whole party (everyone together, everyone apart, a meter). */
 const PARTY_GOALS = new Set(['together', 'apart', 'abundance']);
 /** Goals judged only at the deadline, never ended early. */
-const DEADLINE_ONLY = new Set(['skipAction', 'noSleepNear', 'rangerRequest']);
+const DEADLINE_ONLY = new Set([
+  'skipAction',
+  'noSleepNear',
+  'noEatHere',
+  'noCraftHere',
+  'rangerRequest',
+]);
 /** Goals met by doing something once ("reach a tile…", "end a phase on…"); the rest are about where hikers are now. */
 const ONCE = new Set(['endOnNode', 'reachShelterOrNode']);
 /** Goals met as things happen (Rocco). */
-const BY_EVENT = new Set(['roccoReach', 'roccoScavenge']);
+const BY_EVENT = new Set(['roccoReach', 'roccoScavenge', 'roccoCraft']);
 
 /** At the end of every phase: check each Trial, end the ones that are met or out of time. */
 export function checkTrials(state: GameState): void {
@@ -254,9 +264,9 @@ function apply(
   card: TrialDef,
   targets: Hiker[],
   effects: TrialDef['penalty'],
-): void {
-  if (!targets.length) return;
-  applyEffects(
+): EffectResult | undefined {
+  if (!targets.length) return undefined;
+  return applyEffects(
     state,
     { card, tileId: trial.tileId, targets, onTile: targets, rolls: trial.rolls },
     effects,
@@ -286,8 +296,13 @@ function finish(
     );
     return;
   }
-  if (goal.kind === 'noSleepNear') {
-    // The Grim Sleeper!: sleepers were penalized as they slept.
+  if (goal.kind === 'noCraftHere') {
+    // Bear Country: still running at its end means nobody crafted there.
+    pushEvent(state, { kind: 'trial', cardId: card.id, outcome: 'passed' });
+    return;
+  }
+  if (goal.kind === 'noSleepNear' || goal.kind === 'noEatHere') {
+    // The Grim Sleeper! and Mold Invasion: sleepers and eaters were penalized as it happened.
     pushEvent(state, { kind: 'trial', cardId: card.id, outcome: 'ended' });
     return;
   }
@@ -333,7 +348,7 @@ function payRanger(state: GameState, trial: ActiveTrial, card: TrialDef, people:
     else delete h.inventory.resources[id];
     taken += n;
   }
-  state.caps += taken * pay;
+  gainCaps(state, taken * pay);
   pushEvent(state, {
     kind: 'trial',
     cardId: card.id,
@@ -369,6 +384,58 @@ export function noteScavenged(
       trial.gathered = { ...trial.gathered, [hiker.id]: (trial.gathered?.[hiker.id] ?? 0) + n };
     }
   }
+}
+
+/** A hiker ate: Mold Invasion gives whoever eats on its tile the penalty, once. */
+export function noteEat(state: GameState, hiker: Hiker): void {
+  for (const trial of state.trials ?? []) {
+    const card = trialDef(trial.cardId);
+    if (card?.goal.kind !== 'noEatHere' || trial.penalized.includes(hiker.id)) continue;
+    if (hiker.tileId !== trial.tileId) continue;
+    trial.penalized.push(hiker.id);
+    pushEvent(state, { kind: 'trial', cardId: card.id, outcome: 'failed', hikerIds: [hiker.id] });
+    apply(state, trial, card, [hiker], card.penalty);
+  }
+}
+
+/**
+ * A hiker crafted an item: Rocco's Rebuilding Trial rewards the type it picked,
+ * and Bear Country fails on its tile, starting its challenge there.
+ * TODO(wyatt): Bear Country's challenge starts the moment someone crafts, not in the morning.
+ */
+export function noteCrafted(state: GameState, hiker: Hiker, type: string): void {
+  for (const trial of [...(state.trials ?? [])]) {
+    const card = trialDef(trial.cardId);
+    if (card?.goal.kind === 'roccoCraft' && trial.itemType === type) {
+      roccoReward(state, trial, card, hiker.id);
+    }
+    if (card?.goal.kind === 'noCraftHere' && hiker.tileId === trial.tileId) {
+      endTrial(state, trial);
+      pushEvent(state, { kind: 'trial', cardId: card.id, outcome: 'failed', hikerIds: [hiker.id] });
+      const here = present(state).filter((h) => h.tileId === trial.tileId);
+      const result = apply(state, trial, card, here, card.penalty);
+      queueTriggers(state, result, here);
+    }
+  }
+}
+
+/** Takes a Trial off the list (it failed early). */
+function endTrial(state: GameState, trial: ActiveTrial): void {
+  const left = (state.trials ?? []).filter((t) => t !== trial);
+  if (left.length) state.trials = left;
+  else delete state.trials;
+}
+
+/** A penalty that starts a challenge (Bear Country's Wildlife one): it opens now, or next. */
+function queueTriggers(state: GameState, result: EffectResult | undefined, here: Hiker[]): void {
+  if (!result?.triggers.length) return;
+  for (const t of result.triggers) {
+    state.challengeQueue = [
+      ...(state.challengeQueue ?? []),
+      { tileId: t.tileId, hikerIds: here.map((h) => h.id), forced: { tier: t.tier, node: t.node } },
+    ];
+  }
+  openNext(state);
 }
 
 /** A hiker slept: The Grim Sleeper! punishes sleeping on its tile or next to it. */

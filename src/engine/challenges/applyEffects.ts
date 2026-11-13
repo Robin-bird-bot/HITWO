@@ -10,21 +10,25 @@
  * - Effects that wait on a later phase still record their data on the
  *   hiker or item (TODO(phase N) notes say where).
  */
-import { BALANCE } from '../../config/balance';
+import { durabilityLeft, makeItem } from '../items/make';
+import { loseDurability, loseUses, removeItem } from '../items/wear';
+import { placeShelterOn } from '../items/shelters';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
+import { craftableItems } from '../../content/items';
+import { BALANCE } from '../../config/balance';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
-import { countShelter } from '../counters';
-import type { ItemType } from '../effects';
-import { bagSlots, resourceCount } from '../inventory';
+import { gainCaps, type ItemType } from '../effects';
+import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
-import { adjacentTileIds } from '../map';
+import { adjacentTileIds, tileNodeTypes } from '../map';
 import { pick, roll, shuffle } from '../rng';
 import { addInjury, changeStat, cureInjuries, statMax } from '../stats';
 import { endCarry } from '../health';
 import { enterTile } from '../actions/common';
+import { cardShown, revealCardOn, triggers } from './reveal';
 import type {
   CardRolls,
   GameState,
@@ -101,7 +105,7 @@ export const immovable = (h: Hiker) =>
   });
 
 export const isFood = (itemId: ItemId) => ITEMS[itemId]?.type === 'food';
-/** Clothing items a hiker has on (Phase 9 adds the ways to put them on). */
+/** Clothing items a hiker has on (Phase 8 adds the ways to put them on). */
 export const equippedClothes = (h: Hiker): ItemInstance[] =>
   Object.values(h.inventory.equipped).filter(
     (i): i is ItemInstance => !!i && ITEMS[i.itemId]?.type === 'clothes',
@@ -146,12 +150,7 @@ function logLost(
   }
 }
 
-function tileNodeTypes(state: GameState, tileId: TileId): NodeType[] {
-  const tile = state.section.tiles[tileId];
-  return [...new Set((tile?.nodes ?? []).flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
-}
-
-/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 8). */
+/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 9). */
 function neighbours(state: GameState, tileId: TileId) {
   return adjacentTileIds(state.section, tileId)
     .map((id) => state.section.tiles[id])
@@ -340,11 +339,10 @@ function applyToHiker(
       return;
     }
     case 'wearClothes': {
-      // TODO(phase 9): durability arrives with items; the wear is kept on the item until then.
       const worn = equippedClothes(h);
       const hit = e.which === 'all' ? worn : worn.length ? [pick(state.rng, worn)] : [];
       const n = amount(e.amount, ctx);
-      for (const item of hit) item.wear = (item.wear ?? 0) + n;
+      for (const item of hit) loseDurability(state, h, item, n, cause);
       result.touched.items.push(...hit.map((i) => i.itemId));
       return;
     }
@@ -404,28 +402,52 @@ function applyToHiker(
       return;
     }
     case 'foodAppetite': {
-      // TODO(phase 9): eating uses appetiteMod.
+      // Eating adds appetiteMod to the bite. Jerky never loses Appetite value.
       const n = amount(e.delta, ctx);
       const change = typeof e.delta === 'number' ? n : -n;
-      const food = h.inventory.bag.filter((i) => isFood(i.itemId));
+      const food = h.inventory.bag.filter(
+        (i) => isFood(i.itemId) && !(change < 0 && ITEMS[i.itemId]?.keepsValue),
+      );
       const hit = e.which === 'one' ? (food.length ? [pick(state.rng, food)] : []) : food;
       for (const item of hit) item.appetiteMod = (item.appetiteMod ?? 0) + change;
       result.touched.items.push(...hit.map((i) => i.itemId));
       return;
     }
     case 'toolUses': {
-      // TODO(phase 9): tools take usesLost off their uses.
+      // Tools at 0 uses are gone.
       const n = amount(e.delta, ctx);
-      for (const item of h.inventory.bag) {
-        if (ITEMS[item.itemId]?.type === 'tool') item.usesLost = (item.usesLost ?? 0) + n;
+      for (const item of [...h.inventory.bag]) loseUses(state, h, item, n, cause);
+      return;
+    }
+    case 'loseClothes': {
+      // Fashion Critic: each worn item, more likely gone the more durability it has left.
+      const lost = equippedClothes(h).filter((i) =>
+        roll(state.rng, Math.min(1, e.chancePerDurability * durabilityLeft(i))),
+      );
+      for (const i of lost) removeItem(h, i.uid);
+      if (lost.length) {
+        logLost(
+          state,
+          h,
+          [],
+          lost.map((i) => i.itemId),
+          cause,
+        );
+        result.touched.items.push(...lost.map((i) => i.itemId));
       }
       return;
     }
-    case 'loseClothes':
-      // TODO(phase 9): clothing durability. Fashion Critic waits until then.
+    case 'peekCard': {
+      // Old Trail Sign: a random tile nobody has reached shows its card.
+      const tiles = Object.values(state.section.tiles).filter(
+        (t) => !t.visited && t.kind === 'normal' && !cardShown(t) && triggers(state, t.id),
+      );
+      if (!tiles.length) return;
+      revealCardOn(state, pick(state.rng, tiles).id, cause);
       return;
+    }
     case 'gainResources': {
-      const room = BALANCE.inventory.resourceLimit - resourceCount(h);
+      const room = resourceLimit(state, h) - resourceCount(h);
       const options = RESOURCES.filter((r) => matches(e.filter, r.id)).map((r) => r.id);
       const wanted = amount(e.count, ctx);
       const n = Math.max(0, Math.min(room, wanted));
@@ -588,20 +610,34 @@ function applyOnce(
         : e.tier3
           ? TIER_3_ITEMS.flatMap((id) => (ITEMS[id] ? [ITEMS[id]] : []))
           : types.flatMap((t) => findableItems(t));
+      // Abandoned Ranger Station: now and then a blueprint instead of an item.
+      if (e.orBlueprint && roll(state.rng, BALANCE.items.craft.blueprintFind)) {
+        const learner = targets[0];
+        const known = learner?.blueprints ?? [];
+        const plans = types
+          .flatMap((t) => craftableItems(t, state.section.tier))
+          .filter((d) => d.recipe && !known.includes(d.id));
+        if (learner && plans.length) {
+          const plan = pick(state.rng, plans);
+          learner.blueprints = [...known, plan.id];
+          pushEvent(state, { kind: 'blueprintFound', hikerId: learner.id, itemId: plan.id, cause });
+          return;
+        }
+      }
       const to = targets.find((h) => h.inventory.bag.length < bagSlots(state, h).total);
       if (!options.length || !to) return;
       const item = pick(state.rng, options);
-      to.inventory.bag.push({ uid: `gift-${state.nextEventId}-${item.id}`, itemId: item.id });
+      to.inventory.bag.push(makeItem(state, item.id, { prefix: 'gift' }));
       pushEvent(state, { kind: 'gained', hikerId: to.id, resources: [], items: [item.id], cause });
       return;
     }
     case 'placeShelter': {
-      // TODO(phase 9): a shelter that works like the real shelter cards.
+      // Ruins: a real random shelter, at the biome's tier.
       if (!tile) return;
-      const shelters = findableItems('shelter');
-      if (!shelters.length) return;
-      tile.shelters = [...(tile.shelters ?? []), pick(state.rng, shelters).id];
-      countShelter(state);
+      const shelters = findableItems('shelter', state.section.tier);
+      const pool = shelters.length ? shelters : findableItems('shelter');
+      if (!pool.length) return;
+      placeShelterOn(state, tile.id, pick(state.rng, pool).id);
       return;
     }
     case 'tileLuck': {
@@ -614,8 +650,7 @@ function applyOnce(
       return;
     }
     case 'gainCaps': {
-      const n = amount(e.count, ctx);
-      state.caps += n;
+      const n = gainCaps(state, amount(e.count, ctx));
       if (n) pushEvent(state, { kind: 'gained', resources: [], items: [], caps: n, cause });
       return;
     }

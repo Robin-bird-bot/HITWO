@@ -51,10 +51,11 @@ function packAfter(h: Hiker, spent: readonly Gift[]): Pack {
   return { resources, itemTypes };
 }
 
-type What = ResourceFilter | 'anyResource' | 'anyItem' | ItemType;
+type What = ResourceFilter | 'anyResource' | 'anyItem' | 'durability' | ItemType;
 
 /** How many of a kind of thing are in a pack. */
 function countIn(pack: Pack, what: What, rolls: CardRolls): number {
+  if (what === 'durability') return 0;
   if (what === 'anyItem') return pack.itemTypes.length;
   if (typeof what === 'string' && ITEM_TYPES.includes(what)) {
     return pack.itemTypes.filter((t) => t === what).length;
@@ -70,7 +71,13 @@ function countIn(pack: Pack, what: What, rolls: CardRolls): number {
 function countSpent(h: Hiker, spent: readonly Gift[], what: What, rolls: CardRolls): number {
   let n = 0;
   for (const g of spent) {
-    if (g.kind === 'resource' && what !== 'anyItem' && !ITEM_TYPES.includes(what as string)) {
+    if (g.kind === 'durability' && what === 'durability') n += g.count;
+    if (
+      g.kind === 'resource' &&
+      what !== 'anyItem' &&
+      what !== 'durability' &&
+      !ITEM_TYPES.includes(what as string)
+    ) {
       const filter = what === 'anyResource' ? undefined : (what as ResourceFilter);
       if (resourceFits(filter, g.resource, { rolls })) n += g.count;
     }
@@ -95,6 +102,10 @@ export function riskSpendFits(card: ChallengeDef, h: Hiker, gift: Gift, rolls: C
   if (gift.kind === 'item') {
     const type = ITEMS[h.inventory.bag.find((i) => i.uid === gift.uid)?.itemId ?? '']?.type;
     return card.risk.spend.some((s) => 'items' in s && (s.items === 'any' || s.items === type));
+  }
+  if (gift.kind === 'durability') {
+    const worn = Object.values(h.inventory.equipped).find((i) => i?.uid === gift.uid);
+    return !!worn && card.risk.spend.some((s) => 'durability' in s);
   }
   return false;
 }

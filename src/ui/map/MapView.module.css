@@ -167,6 +167,131 @@
   justify-content: center;
 }
 
+/* What scouting found: a red ! (or the kind's color and tier), or a quiet check. */
+.scan {
+  position: absolute;
+  left: -6px;
+  top: 58px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  border: 2px solid #f7f1e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: #1d2220;
+}
+
+.scan[data-has='false'] {
+  background: #3a403d;
+  color: #c9c2b2;
+}
+
+.scanBang {
+  font-family: var(--font-callout);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.scanTier {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+}
+
+/* A scouting tool at work: a red hexagon sweeping out from a tile's centre. */
+.sweep {
+  position: absolute;
+  width: 112px;
+  height: 128px;
+  margin: -64px 0 0 -56px;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  background: radial-gradient(
+    circle,
+    rgba(229, 98, 74, 0) 40%,
+    rgba(229, 98, 74, 0.55) 70%,
+    rgba(229, 98, 74, 0) 72%
+  );
+  pointer-events: none;
+  animation: sweep 1.4s ease-out forwards;
+}
+
+@keyframes sweep {
+  from {
+    transform: scale(0.1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Minesweeper and Linescan: colored numbers that fade away. */
+.counts {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: rgba(29, 34, 32, 0.9);
+  pointer-events: none;
+  animation: fadeAway 5s ease-in forwards;
+}
+
+.count {
+  font-family: var(--font-pixel);
+  font-size: 22px;
+}
+
+@keyframes fadeAway {
+  0%,
+  60% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .counts {
+    animation: none;
+  }
+}
+
+/* A shelter standing on the tile: a tent and its nights left, above the top point. */
+.shelter {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 24px;
+  padding: 0 8px 0 6px;
+  border-radius: 12px;
+  border: 2px solid #f7f1e4;
+  background: #1d2220;
+  color: #f1eadb;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shelterNights {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
 .cornerNumber {
   font-family: var(--font-pixel);
   font-size: 13px;

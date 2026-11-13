@@ -100,13 +100,28 @@ export interface Tile {
    * Its card, picked early and shown on the map (Old Firewatch Tower). It opens
    * as usual when someone lands here, with its numbers rolled then.
    */
-  revealedCard?: { cardId: string; tier: 1 | 2 | 3; scale: number; alternative?: string };
-  /** Shelters built on this tile (Ruins). TODO(phase 9): hikers placing shelter cards. */
-  shelters?: ItemId[];
+  revealedCard?: {
+    cardId: string;
+    tier: 1 | 2 | 3;
+    scale: number;
+    alternative?: string;
+    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
+    hidden?: true;
+  };
+  /** No card here: CHALLENGE_SHARE left it empty, or a Fire Flower burned it away. */
+  quiet?: true;
+  /** What scouting found out, shown on the map: a card or not, and maybe its kind and tier. */
+  scan?: { has: boolean; kind?: 'challenge' | 'opportunity' | 'trial'; tier?: number };
+  /** Shelters placed on this tile, by a hiker or Ruins. */
+  shelters?: PlacedShelter[];
   /** Scavenging here gets extra Luck until a phase number (Hungry Animals). */
   luckBonus?: { amount: number; until: number; cause: string };
   /** This biome's Wonder (one per section). Its tile has no nodes and never draws a card. */
   wonder?: WonderState;
+  /** Items working for everyone on this tile this phase (a Wheelbarrow). */
+  boosts?: ItemBoost[];
+  /** A Camping Lamp keeps watch here tonight. */
+  lampTonight?: true;
   nodes: TileNode[];
 }
 
@@ -196,19 +211,56 @@ export interface ConditionInstance {
 
 export type EquipSlot = 'body' | 'feet' | 'gear';
 
-/** One item a hiker carries (Phase 9 fills in the details). */
+/** An item's effect that lasts a while after it's used (docs/design/03-items.md). */
+export interface ItemBoost {
+  itemId: ItemId;
+  quality?: 1 | 2 | 3 | 4 | 5;
+  /** Phases or nights left, counting this one. */
+  remaining: number;
+  unit: 'phases' | 'nights';
+  /** What was picked when it was used (the Swiss Army Knife's resource). */
+  choice?: string;
+  /** Only works on this tile (a Supply Map). */
+  tileId?: TileId;
+  /** Gone after one scavenge on its tile (a Supply Map). */
+  once?: true;
+}
+
+/** One item a hiker carries (docs/design/03-items.md). */
+/**
+ * A shelter standing on a tile (03-items.md, "Shelters"). It counts down its
+ * nights at each camp step and is gone when they run out.
+ */
+export interface PlacedShelter {
+  uid: string;
+  itemId: ItemId;
+  /** Nights left, counting tonight. */
+  nightsLeft: number;
+  /** Who placed it; none when Ruins built it. */
+  by?: HikerId;
+  /** Medic Tent: hikers it has already healed. */
+  healed?: HikerId[];
+}
+
 export interface ItemInstance {
   uid: string;
   itemId: ItemId;
-  quality?: number;
+  /** Quality 1–5 for tools, food and clothes (3 when missing); none for shelters and trinkets. */
+  quality?: 1 | 2 | 3 | 4 | 5;
+  /** Tools: uses left. */
   usesLeft?: number;
-  daysLeft?: number;
-  /** Food: gives this much more (or less) Appetite. TODO(phase 9): used when eating arrives. */
+  /** Food: bites left. */
+  bitesLeft?: number;
+  /** Clothes: days of durability left. */
+  durability?: number;
+  /** Food eaten one bite a day (Advent Calendar): the day of the last bite. */
+  lastBiteDay?: number;
+  /** Food: gives this much more (or less) Appetite (a challenge's −1, Meatball Soup's +1). */
   appetiteMod?: number;
-  /** Tools: uses lost to challenges. TODO(phase 9): taken off its uses when tools arrive. */
-  usesLost?: number;
-  /** Clothes: durability lost to weather and night events. TODO(phase 9): taken off its durability. */
-  wear?: number;
+  /** Made with a node, which its effect needs (Birkenstocks). */
+  node?: NodeType;
+  /** Clothes: a full durability above the usual (Fort Rock's reward, an Engineering Vest). */
+  maxDurability?: number;
 }
 
 export interface Inventory {
@@ -231,6 +283,12 @@ export interface Hiker {
   status: HikerStatus;
   tileId: TileId;
   stats: Stats;
+  /** A move their shoes gave them that doesn't use their action (Hiking Crocs, Work Boots). */
+  freeMove?: { itemId: ItemId; day: number };
+  /** Blueprints this hiker knows: crafted, taught or found. They leave if the hiker abandons. */
+  blueprints?: ItemId[];
+  /** The tier they craft each type at, when above BALANCE.items.craft.startTier (a workbench). */
+  craftTier?: Partial<Record<ItemTypeName, number>>;
   /** Strikes toward passing out. */
   injuries: number;
   slots: TraitSlot[];
@@ -249,6 +307,8 @@ export interface Hiker {
   countdown?: number;
   /** The passed-out hiker this hiker is carrying: they travel along on every move. */
   carrying?: HikerId;
+  /** Items used for an effect that lasts a while (a Shovel this phase, Bear Spray for nights). */
+  boosts?: ItemBoost[];
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
@@ -301,6 +361,17 @@ export type ScavengeCardType =
   | 'choiceShelter'
   | 'choiceTrinket';
 
+/**
+ * Why a hiker was safe from a night event: someone kept watch, a shelter, a
+ * Camping Lamp on or next to their tile, or an item of their own (Bear Spray).
+ */
+export interface NightSafe {
+  hikerId: HikerId;
+  why: 'watch' | 'shelter' | 'lamp' | 'item';
+  by?: HikerId;
+  item?: ItemId;
+}
+
 /** One dealt card. Its contents are rolled when it's dealt; a Wild's stay hidden until taken. */
 export interface ScavengeCard {
   type: ScavengeCardType;
@@ -322,6 +393,8 @@ export interface ScavengeCard {
   /** Item finds: the item. Choice items: the items to pick 1 from. */
   items?: ItemId[];
   flipped: boolean;
+  /** Already taken, on a scavenge that keeps more than one card (a Sack). */
+  taken?: true;
 }
 
 /** A line in the scavenge window's bonuses pop-over: what's changing this draw, and why. */
@@ -341,6 +414,26 @@ export interface ScavengeBonusOffer {
   appetiteEach: number;
 }
 
+/** Item types (the same as ItemType in effects.ts, here for the state's shape). */
+export type ItemTypeName = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
+
+/** One resource in one space of a recipe, and who gives it. */
+export interface PaidSlot {
+  from: HikerId;
+  resource: ResourceId;
+}
+
+/** A basic craft, paid for and dealt, waiting for the crafter to pick 1. */
+export interface PendingCraft {
+  hikerId: HikerId;
+  type: ItemTypeName;
+  options: { itemId: ItemId; quality?: 1 | 2 | 3 | 4 | 5 }[];
+  /** Extra durability for clothes (Engineering Vest). */
+  durability?: number;
+  /** What was paid, for the log. */
+  paid: PaidSlot[];
+}
+
 /** An open scavenge: dealt, waiting for the hiker to take a card. */
 export interface PendingScavenge {
   hikerId: HikerId;
@@ -353,6 +446,12 @@ export interface PendingScavenge {
   bonusOffers?: ScavengeBonusOffer[];
   /** Butterfingers: the chance the card taken slips away. */
   dropChance?: number;
+  /** A Sack: how many more cards can be kept after the first. */
+  keeps?: number;
+  /** Glasses: cards left to reroll in this scavenge. */
+  rerolls?: number;
+  /** Cards taken so far (with a Sack, the window stays open for the next). */
+  took?: number;
 }
 
 /** Who scavenged where today (Copier, Copydog, and the night's Abundance recovery). */
@@ -395,7 +494,7 @@ export interface OpenChallenge {
   /** A Choice space: the other challenge, with its own rolls, until the party picks one. */
   alternative?: { cardId: string; rolls: CardRolls };
   /** A Trial's targets, picked when it's revealed so the pop-up can show them. */
-  trial?: { targetTile?: TileId; resource?: ResourceId };
+  trial?: { targetTile?: TileId; resource?: ResourceId; itemType?: ItemTypeName };
   /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
   presses?: Record<string, number>;
 }
@@ -408,7 +507,7 @@ export interface RunCounters {
   /** Challenges each hiker passed and failed (not Risk challenges). */
   passed: Record<HikerId, number>;
   failed: Record<HikerId, number>;
-  /** Items each hiker crafted, by type. Stays empty until Phase 9. */
+  /** Items each hiker crafted, by type. Stays empty until Phase 8. */
   crafted: Record<HikerId, Partial<Record<string, number>>>;
   /** Nights in a row each hiker hasn't slept, counted at camp. */
   daysSinceSleep: Record<HikerId, number>;
@@ -432,7 +531,11 @@ export type Gift =
   | { kind: 'resource'; req: number; from: HikerId; resource: ResourceId; count: number }
   | { kind: 'item'; req: number; from: HikerId; uid: string }
   | { kind: 'caps'; req: number; count: number }
-  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number };
+  | { kind: 'stat'; req: number; from: HikerId; stat: StatName; count: number }
+  /** Clothing durability, from an item the giver is wearing. */
+  | { kind: 'durability'; req: number; from: HikerId; uid: string; count: number }
+  /** Uses from a tool in the giver's bag. */
+  | { kind: 'toolUse'; req: number; from: HikerId; uid: string; count: number };
 
 /** What the party decided for one section of the pop-up. */
 export interface ChallengeSection {
@@ -440,6 +543,8 @@ export interface ChallengeSection {
   hikerId?: HikerId;
   /** Pay the cost, or take the penalty. */
   pay: boolean;
+  /** A Harness turns the fail into a pass, for its durability (with `pay: false`). */
+  harness?: true;
   /** Which cost option ("or" alternative) was paid. */
   option?: number;
   gifts: Gift[];
@@ -451,6 +556,9 @@ export interface ChallengePaid {
   items: ItemId[];
   caps: number;
   stats: Partial<Record<StatName, number>>;
+  /** Clothing durability and tool uses spent. */
+  durability?: number;
+  toolUses?: number;
 }
 
 /**
@@ -481,6 +589,8 @@ export interface ActiveTrial {
   penalized: HikerId[];
   /** Ranger's Request: how much of the resource each hiker has scavenged since it started. */
   gathered?: Record<HikerId, number>;
+  /** Rocco's Rebuilding Trial: the item type to craft. */
+  itemType?: ItemTypeName;
 }
 
 // ── Randomness ─────────────────────────────────────────────────────────────
@@ -528,8 +638,50 @@ export type Action =
   | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
   /** A free action: puts down the hiker being carried. */
   | { type: 'putDown'; carrierId: HikerId }
+  /** A free action: puts on clothes from the bag (swapping out whatever is in that slot). */
+  | { type: 'putOn'; hikerId: HikerId; itemUid: string }
+  /**
+   * A free action: takes clothes off into the bag. For a passed-out wearer,
+   * `toId` is the active hiker on their tile who takes them.
+   */
+  | { type: 'takeOff'; hikerId: HikerId; slot: EquipSlot; toId?: HikerId }
   /** A free action: uses a bag item on a hiker on the same tile (the medical items). */
-  | { type: 'useItem'; hikerId: HikerId; itemUid: string; targetId: HikerId; conditionId?: string }
+  /**
+   * Use a bag item. `conditionId` is the condition to cure (Bandaid); `choice`
+   * is whatever else the item asks for: a stat, a node, a resource or a
+   * clothing item's uid.
+   */
+  | {
+      type: 'useItem';
+      hikerId: HikerId;
+      itemUid: string;
+      targetId: HikerId;
+      conditionId?: string;
+      choice?: string;
+    }
+  /** Eat one bite of a food in the bag (a free action). */
+  | { type: 'eat'; hikerId: HikerId; itemUid: string }
+  /** Place a shelter from the bag on the hiker's tile (a free action). */
+  | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
+  /**
+   * Craft (uses the action): a basic recipe for a type (then pick 1 of the
+   * cards dealt), or a known blueprint for exactly that item. `slots` says
+   * who gives what for each space, in the recipe's order; left out, the game
+   * fills them (the crafter's own first). `node` is for an item made with one
+   * (Birkenstocks).
+   */
+  | {
+      type: 'craft';
+      hikerId: HikerId;
+      itemType: ItemTypeName;
+      blueprint?: ItemId;
+      slots?: PaidSlot[];
+      node?: NodeType;
+    }
+  /** Take one of the cards a basic craft dealt. */
+  | { type: 'craftTake'; index: number; node?: NodeType }
+  /** Teach a blueprint to a hiker on the same tile (a free action; the teacher pays Morale). */
+  | { type: 'teach'; hikerId: HikerId; toId: HikerId; itemId: ItemId }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
   | { type: 'endPhase' }
@@ -596,16 +748,22 @@ export type DebugOp =
   | { kind: 'skipGraceDay' }
   /** Turns a tile's first fitting node flooded, frozen or on fire. */
   | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
-  /** Puts a clothing item on a hiker (equipping arrives in Phase 9). */
+  /** Puts a clothing item on a hiker (equipping arrives in Phase 8). */
   | { kind: 'wearClothes'; hikerId: HikerId }
   /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
   | { kind: 'forceNight'; tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId }
   /** Runs tonight's night event now, as if it were camp. */
   | { kind: 'runNight' }
-  /** Puts any item in a hiker's bag, even past the limit. */
-  | { kind: 'giveItem'; hikerId: HikerId; itemId: ItemId }
+  /** Puts any item in a hiker's bag, even past the limit, at a Quality (or rolled). */
+  | { kind: 'giveItem'; hikerId: HikerId; itemId: ItemId; quality?: 1 | 2 | 3 | 4 | 5 }
+  /** Fills every item a hiker has back up: uses, bites and durability. */
+  | { kind: 'refillItems'; hikerId: HikerId }
   /** Sets a passed-out hiker's countdown (nights before they abandon if left alone). */
-  | { kind: 'setCountdown'; hikerId: HikerId; nights: number };
+  | { kind: 'setCountdown'; hikerId: HikerId; nights: number }
+  /** Sets the tier a hiker crafts one type at (the workbench does this in Phase 9). */
+  | { kind: 'setCraftTier'; hikerId: HikerId; itemType: ItemTypeName; tier: number }
+  /** Teaches a hiker a blueprint, for free. */
+  | { kind: 'learnBlueprint'; hikerId: HikerId; itemId: ItemId };
 
 export type ActionType = Action['type'];
 
@@ -629,8 +787,62 @@ export type GameEventBody =
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
   /** The 3rd injury: the hiker passed out, with this many nights before they abandon if left alone. */
   | { kind: 'passedOut'; hikerId: HikerId; countdown: number }
+  /** An item is gone: clothes worn out, a tool used up, food eaten. */
+  | {
+      kind: 'itemGone';
+      hikerId: HikerId;
+      itemId: ItemId;
+      why: 'worn' | 'used' | 'eaten' | 'broke';
+      cause: string;
+    }
+  /** A hiker put clothes on or took them off (`by`: someone took them off a passed-out hiker). */
+  | { kind: 'dressed'; hikerId: HikerId; itemId: ItemId; on: boolean; by?: HikerId }
   /** A hiker used an item on someone on their tile (or themselves); it's used up. */
-  | { kind: 'used'; hikerId: HikerId; targetId: HikerId; itemId: ItemId }
+  | {
+      kind: 'used';
+      hikerId: HikerId;
+      targetId: HikerId;
+      itemId: ItemId;
+      /** Used for everyone on the tile (Ukulele, Healing Spray). */
+      everyone?: true;
+      /** What it did, when the stats and conditions don't say (Fertilizer: "Forest Abundance +2"). */
+      detail?: string;
+    }
+  /** A shelter went up on a tile: placed by a hiker, or built by Ruins. */
+  | { kind: 'shelterPlaced'; tileId: TileId; itemId: ItemId; nights: number; hikerId?: HikerId }
+  /** A shelter's last night is over. */
+  | { kind: 'shelterGone'; tileId: TileId; itemId: ItemId }
+  /** A hiker crafted an item, from a basic recipe or a blueprint. */
+  | {
+      kind: 'crafted';
+      hikerId: HikerId;
+      itemId: ItemId;
+      quality?: number;
+      blueprint: boolean;
+      /** They learned its blueprint just now. */
+      learned?: true;
+      paid: PaidSlot[];
+    }
+  /**
+   * A scouting tool counted the cards on tiles (Minesweeper around the hiker,
+   * Linescan along a row), or swept tiles (Scanner, Radar Scanner).
+   */
+  | {
+      kind: 'scouted';
+      hikerId: HikerId;
+      itemId: ItemId;
+      tileIds: TileId[];
+      counts?: { challenge: number; opportunity: number; trial: number };
+      row?: number;
+    }
+  /** A hiker found a blueprint (Abandoned Ranger Station). */
+  | { kind: 'blueprintFound'; hikerId: HikerId; itemId: ItemId; cause: string }
+  /** A hiker taught another a blueprint, for Morale. */
+  | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
+  /** A hiker ate a bite of food; bitesLeft is what's left after it. */
+  | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
+  /** Costco Sample: the bite wasn't used up. */
+  | { kind: 'biteKept'; hikerId: HikerId; itemId: ItemId }
   /**
    * Carrying: picked up, put down, or dropped (the carrier passed out or a
    * card moved one of them).
@@ -699,7 +911,7 @@ export type GameEventBody =
       creatureId: string;
       hits: NightHit[];
       /** Hikers who were safe: someone kept watch on their tile (`by`), or a shelter. */
-      safe: { hikerId: HikerId; why: 'watch' | 'shelter'; by?: HikerId }[];
+      safe: NightSafe[];
       /** The events from this id up to this one are what it did (the log folds them in). */
       from: number;
     }
@@ -716,6 +928,8 @@ export type GameEventBody =
       results: {
         hikerId?: HikerId;
         passed: boolean;
+        /** Passed thanks to a Harness. */
+        harness?: true;
         paid?: ChallengePaid;
         xp?: number;
         /** A Risk challenge: the odds or amount, and whether it hit. */
@@ -806,12 +1020,18 @@ export interface GameState {
   hikers: Hiker[];
   /** The party purse of acorn caps. */
   caps: number;
+  /** Added to every caps gain for good (each Wallet used: +1). */
+  capsBonus?: number;
   /** Each node type's Abundance meter, 0 to BALANCE.abundance.max. */
   abundance: Record<NodeType, number>;
   /** Who scavenged where today. Cleared each morning. */
   scavengedToday: ScavengeRecord[];
   /** An open scavenge, waiting for a card to be taken. */
   scavenge?: PendingScavenge;
+  /** A basic craft waiting for its pick. Everything else waits for it too. */
+  crafting?: PendingCraft;
+  /** The trinket recipe's random different resources, longest first; a new set after each trinket. */
+  trinketRecipe?: ResourceId[];
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
   /** Challenges, Trials and opportunities already seen in this section (no repeats). */
@@ -822,6 +1042,8 @@ export interface GameState {
   challengeQueue?: QueuedReveal[];
   /** Debug only: show the rolled numbers in the challenge pop-up. */
   debugRolls?: true;
+  /** Counts items made, so every item's uid is unique. */
+  itemSerial?: number;
   /** Debug only: what tonight's night event will be. */
   debugNight?: { tier?: 1 | 2 | 3; creatureId?: string; hit?: HikerId };
   /** Tests only: no night event at camp (unless the debug panel forces one). */

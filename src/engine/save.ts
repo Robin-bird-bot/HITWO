@@ -7,10 +7,20 @@ import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
-import { NODE_TYPES, PHASES, type GameState, type Tile, type WeatherState } from './types';
+import { RENAMED_ITEMS } from '../content/items';
+import { withDefaults } from './items/make';
+import { shelterNights } from './items/shelters';
+import {
+  NODE_TYPES,
+  PHASES,
+  type GameState,
+  type ItemInstance,
+  type Tile,
+  type WeatherState,
+} from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 10;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -34,7 +44,80 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
     ...save,
     hikers: Array.isArray(save.hikers) ? save.hikers.map(addCountdown) : [],
   }),
+  // Phase 8: the Nov 7 item list. Old items become their replacements, and every
+  // item gets a Quality (3) and full uses, bites or durability.
+  7: (save) => upgradeItems(save),
+  // Phase 8 step 5: a shelter on a tile is an object with its nights left (Ruins built ids).
+  8: (save) => upgradeShelters(save),
+  // Phase 8 step 7: crafting. Blueprints, craft tiers, an open craft and the trinket set are
+  // all optional, so an older save needs nothing new.
+  9: (save) => save,
 };
+
+/** Shelters stored as item ids become placed shelters with their full nights. */
+function upgradeShelters(save: SaveData): SaveData {
+  const section = save.section;
+  if (!isRecord(section) || !isRecord(section.tiles)) return save;
+  for (const [id, tile] of Object.entries(section.tiles)) {
+    if (!isRecord(tile) || !Array.isArray(tile.shelters)) continue;
+    tile.shelters = tile.shelters.map((s, i) =>
+      isString(s) ? { uid: `shelter-${id}-${i}-${s}`, itemId: s, nightsLeft: shelterNights(s) } : s,
+    );
+  }
+  return save;
+}
+
+/** An old item id's replacement (03-items.md, "Older items, merged or replaced"). */
+const renamed = (id: unknown) => (isString(id) ? (RENAMED_ITEMS[id] ?? id) : id);
+
+function upgradeItem(item: unknown): unknown {
+  if (!isRecord(item) || !isString(item.itemId)) return item;
+  // Wear and lost uses were recorded on items until they had durability and uses.
+  const { wear, usesLost, ...rest } = item;
+  const out = withDefaults({
+    ...(rest as unknown as ItemInstance),
+    itemId: String(renamed(item.itemId)),
+  });
+  if (isNumber(wear) && out.durability !== undefined)
+    out.durability = Math.max(1, out.durability - wear);
+  if (isNumber(usesLost) && out.usesLeft !== undefined)
+    out.usesLeft = Math.max(1, out.usesLeft - usesLost);
+  return out;
+}
+
+/** Ids shown in the trail log and on an open scavenge deal, renamed. */
+function renameIds(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(renameIds);
+  if (!isRecord(v)) return v;
+  const out: SaveData = {};
+  for (const [k, x] of Object.entries(v)) {
+    if (k === 'itemId') out[k] = renamed(x);
+    else if (k === 'items' && Array.isArray(x)) out[k] = x.map(renamed);
+    else out[k] = renameIds(x);
+  }
+  return out;
+}
+
+/** Every item a save holds, renamed and filled in. */
+function upgradeItems(save: SaveData): SaveData {
+  const hikers = Array.isArray(save.hikers)
+    ? save.hikers.map((h) => {
+        if (!isRecord(h) || !isRecord(h.inventory)) return h;
+        const inv = h.inventory;
+        const equipped = isRecord(inv.equipped)
+          ? Object.fromEntries(Object.entries(inv.equipped).map(([k, v]) => [k, upgradeItem(v)]))
+          : {};
+        const bag = Array.isArray(inv.bag) ? inv.bag.map(upgradeItem) : [];
+        return { ...h, inventory: { ...inv, bag, equipped } };
+      })
+    : save.hikers;
+  return {
+    ...save,
+    hikers,
+    ...(Array.isArray(save.log) ? { log: renameIds(save.log) } : {}),
+    ...(isRecord(save.scavenge) ? { scavenge: renameIds(save.scavenge) } : {}),
+  };
+}
 
 /** A passed-out hiker gets a full countdown, and injuries past the line come down to it. */
 function addCountdown(h: unknown): unknown {

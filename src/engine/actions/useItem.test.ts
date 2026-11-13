@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { BALANCE } from '../../config/balance';
 import { validateAction } from '../applyAction';
 import { addCondition, hasCondition } from '../conditions';
 import { addInjury } from '../stats';
@@ -34,7 +33,7 @@ describe('Bandages', () => {
     expect(hiker(s, 'birch')).toMatchObject({ status: 'active', injuries: 2 });
     expect(hiker(s, 'ash').inventory.bag).toEqual([]);
     expect(hiker(s, 'ash').acted).toBe(false); // a free action
-    expect(s.log.slice(-3).map((e) => e.kind)).toEqual(['used', 'healed', 'woke']);
+    expect(s.log.slice(-4).map((e) => e.kind)).toEqual(['used', 'healed', 'woke', 'itemGone']);
   });
 
   it('cure Bleeding, so it never turns into an injury', () => {
@@ -54,18 +53,18 @@ describe('Bandages', () => {
   });
 });
 
-describe('the Splint', () => {
+describe('Crutches', () => {
   it('holds off an injury for 3 days, then it comes back', () => {
     let s = fixtureGame();
     addInjury(s, hiker(s, 'ash'), 'test');
     addInjury(s, hiker(s, 'ash'), 'test');
-    s = run(s, use('birch', give(s, 'birch', 'splint'), 'ash'));
+    s = run(s, use('birch', give(s, 'birch', 'crutches'), 'ash'));
     expect(hiker(s, 'ash').injuries).toBe(1);
     expect(hiker(s, 'ash').conditions.find((c) => c.id === 'splinted')).toMatchObject({
-      remaining: BALANCE.medical.splint.days,
+      remaining: 3,
       unit: 'days',
     });
-    for (let day = 0; day < BALANCE.medical.splint.days; day++) s = run(s, END, END, END);
+    for (let day = 0; day < 3; day++) s = run(s, END, END, END);
     expect(hiker(s, 'ash').injuries).toBe(2);
     expect(hasCondition(hiker(s, 'ash'), 'splinted')).toBe(false);
   });
@@ -74,14 +73,14 @@ describe('the Splint', () => {
     let s = fixtureGame();
     addInjury(s, hiker(s, 'ash'), 'test');
     addInjury(s, hiker(s, 'ash'), 'test');
-    s = run(s, use('ash', give(s, 'ash', 'splint'), 'ash'));
-    expect(validateAction(s, use('ash', give(s, 'ash', 'splint'), 'ash'))).toBe(
-      'Ash already has a Splint.',
+    s = run(s, use('ash', give(s, 'ash', 'crutches'), 'ash'));
+    expect(validateAction(s, use('ash', give(s, 'ash', 'crutches'), 'ash'))).toBe(
+      'Ash is already On Crutches.',
     );
   });
 });
 
-describe('Medkit and Medicine', () => {
+describe('Medkit and Bandaid', () => {
   it('a Medkit cures the one condition there is, and an injury', () => {
     let s = fixtureGame();
     addInjury(s, hiker(s, 'ash'), 'test');
@@ -96,7 +95,7 @@ describe('Medkit and Medicine', () => {
     addCondition(s, hiker(s, 'ash'), 'sluggish', 2, 'days', 'test');
     addCondition(s, hiker(s, 'ash'), 'strained', 2, 'days', 'test');
     addCondition(s, hiker(s, 'ash'), 'lucky', 2, 'days', 'test');
-    const uid = give(s, 'ash', 'medicine');
+    const uid = give(s, 'ash', 'bandaid');
     expect(validateAction(s, use('ash', uid, 'ash'))).toBe('Pick which condition to cure.');
     expect(validateAction(s, use('ash', uid, 'ash', 'lucky'))).toBe(
       'Ash doesn’t have that condition.',
@@ -109,12 +108,12 @@ describe('Medkit and Medicine', () => {
     ).toEqual(['lucky', 'sluggish']);
   });
 
-  it('Medicine cures a condition but doesn’t wake anyone', () => {
+  it('Bandaid cures a condition but doesn’t wake anyone', () => {
     let s = fixtureGame();
     knockOut(s, 'birch');
-    const uid = give(s, 'ash', 'medicine');
+    const uid = give(s, 'ash', 'bandaid');
     expect(validateAction(s, use('ash', uid, 'birch'))).toBe(
-      'Medicine wouldn’t help Birch right now.',
+      'Bandaid wouldn’t help Birch right now.',
     );
     addCondition(s, hiker(s, 'birch'), 'sluggish', 2, 'days', 'test');
     s = run(s, use('ash', uid, 'birch'));
@@ -146,18 +145,18 @@ describe('who can use what', () => {
     );
   });
 
-  it('items without a use wait for Phase 9', () => {
+  it('items without a use can’t be used yet', () => {
     const s = fixtureGame();
     expect(validateAction(s, use('ash', give(s, 'ash', 'phone'), 'ash'))).toBe(
-      'Phone can’t be used yet (Phase 9).',
+      'Phone can’t be used yet.',
     );
   });
 
   it('the debug panel can give any item', () => {
     const s = run(fixtureGame(), {
       type: 'debug',
-      op: { kind: 'giveItem', hikerId: 'ash', itemId: 'splint' },
+      op: { kind: 'giveItem', hikerId: 'ash', itemId: 'crutches' },
     });
-    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['splint']);
+    expect(hiker(s, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['crutches']);
   });
 });

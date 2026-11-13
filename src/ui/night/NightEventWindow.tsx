@@ -16,6 +16,8 @@ import { useDraggable } from '../windows/useDraggable';
 import { safeLines } from './nightLines';
 import styles from './NightEventWindow.module.css';
 
+const SAFE_ICON = { watch: 'eye', shelter: 'tent', lamp: 'flame', item: 'shield' } as const;
+
 export type NightEventShown = Extract<GameEvent, { kind: 'nightEvent' }>;
 
 export function NightEventWindow({
@@ -92,7 +94,7 @@ export function NightEventWindow({
             ))}
             {safeLines(event.safe, hikerName).map((s) => (
               <p key={s.text} className={styles.safe}>
-                <Icon name={s.why === 'watch' ? 'eye' : 'tent'} size={13} strokeWidth={2} />
+                <Icon name={SAFE_ICON[s.why]} size={13} strokeWidth={2} />
                 {s.text}
               </p>
             ))}

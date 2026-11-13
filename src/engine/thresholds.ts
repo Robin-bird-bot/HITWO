@@ -27,7 +27,9 @@ export function thresholdStates(h: Hiker): ThresholdState[] {
 }
 
 const isMove = (a: Action) => a.type === 'move' || a.type === 'moveAll';
-const usesAction = (q: ActQuery) => q.role === 'brought' || q.action.type !== 'useAbility';
+/** Free actions (abilities, eating, using a tool) don't count: Exhausted only stops the phase's action. */
+const FREE: readonly ActQuery['action']['type'][] = ['useAbility', 'eat', 'useItem'];
+const usesAction = (q: ActQuery) => q.role === 'brought' || !FREE.includes(q.action.type);
 const isSleep = (q: ActQuery) => q.role === 'actor' && q.action.type === 'sleep';
 const canBeBrought = BALANCE.rules.exhaustedOrFatiguedCanBeBrought;
 
@@ -108,6 +110,13 @@ export function thresholdSources(h: Hiker): EffectSource[] {
       name: high ? 'High Morale' : 'Low Morale',
       hooks: {
         modifyScavenge: () => ({
+          source: high ? 'High Morale' : 'Low Morale',
+          label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from Morale (${h.stats.morale})`,
+          tone: high ? 'luck' : 'warning',
+          luck,
+        }),
+        // The same Luck shifts a crafted item's Quality.
+        modifyCraft: () => ({
           source: high ? 'High Morale' : 'Low Morale',
           label: `Luck ${high ? '+' : '−'}${Math.abs(luck)} from Morale (${h.stats.morale})`,
           tone: high ? 'luck' : 'warning',

@@ -18,7 +18,6 @@ import {
   challengeSections,
   giftCount,
   giftFits,
-  notBuiltYet,
   openCardDef,
   optionShortfall,
   requirementNeed,
@@ -39,6 +38,9 @@ import {
   type Requirement,
   type ResourceId,
   type StatName,
+  durabilityLeft,
+  usesLeftOf,
+  type ItemInstance,
 } from '../../engine';
 import { CONDITIONS } from '../../content/conditions';
 import { NODE_NAME } from '../map/looks';
@@ -52,6 +54,8 @@ export interface SectionDraft {
   gifts: Gift[];
   /** ✗ was pressed: take the penalty. */
   skipped?: true;
+  /** A Harness turns this fail into a pass (for its durability). */
+  harness?: true;
 }
 
 /** The selected space: section, option and requirement. */
@@ -71,7 +75,11 @@ export type Source =
   | { kind: 'resource'; from: HikerId; resource: ResourceId }
   | { kind: 'item'; from: HikerId; uid: string }
   | { kind: 'stat'; from: HikerId; stat: StatName }
-  | { kind: 'caps' };
+  | { kind: 'caps' }
+  /** 1 durability from a clothing item the hiker is wearing. */
+  | { kind: 'durability'; from: HikerId; uid: string }
+  /** 1 use from a tool in the hiker's bag. */
+  | { kind: 'toolUse'; from: HikerId; uid: string };
 
 const STAT_WORD: Record<StatName, string> = {
   energy: 'ENERGY',
@@ -79,8 +87,7 @@ const STAT_WORD: Record<StatName, string> = {
   morale: 'MORALE',
 };
 
-const payable = (card: ChallengeDef, option: number) =>
-  !!card.cost[option] && !card.cost[option]?.some(notBuiltYet);
+const payable = (card: ChallengeDef, option: number) => !!card.cost[option];
 
 /** The draft a fresh pop-up starts with: every section empty, the first space selected. */
 export function startDraft(state: GameState, open: OpenChallenge): Draft {
@@ -161,6 +168,18 @@ export function left(state: GameState, open: OpenChallenge, draft: Draft, source
     );
     return (h.inventory.resources[source.resource] ?? 0) - used;
   }
+  if (source.kind === 'durability' || source.kind === 'toolUse') {
+    const used = gifts.reduce(
+      (n, g) => n + (g.kind === source.kind && g.uid === source.uid ? g.count : 0),
+      0,
+    );
+    if (source.kind === 'durability') {
+      const worn = Object.values(h.inventory.equipped).find((i) => i?.uid === source.uid);
+      return worn ? durabilityLeft(worn) - used : 0;
+    }
+    const tool = h.inventory.bag.find((i) => i.uid === source.uid);
+    return tool ? usesLeftOf(tool) - used : 0;
+  }
   const used = gifts.reduce(
     (n, g) => n + (g.kind === 'stat' && g.from === h.id && g.stat === source.stat ? g.count : 0),
     0,
@@ -168,14 +187,21 @@ export function left(state: GameState, open: OpenChallenge, draft: Draft, source
   return h.stats[source.stat] - used;
 }
 
-const asGift = (source: Source, req: number): Gift =>
-  source.kind === 'caps'
-    ? { kind: 'caps', req, count: 1 }
-    : source.kind === 'item'
-      ? { kind: 'item', req, from: source.from, uid: source.uid }
-      : source.kind === 'resource'
-        ? { kind: 'resource', req, from: source.from, resource: source.resource, count: 1 }
-        : { kind: 'stat', req, from: source.from, stat: source.stat, count: 1 };
+function asGift(source: Source, req: number): Gift {
+  switch (source.kind) {
+    case 'caps':
+      return { kind: 'caps', req, count: 1 };
+    case 'item':
+      return { kind: 'item', req, from: source.from, uid: source.uid };
+    case 'resource':
+      return { kind: 'resource', req, from: source.from, resource: source.resource, count: 1 };
+    case 'stat':
+      return { kind: 'stat', req, from: source.from, stat: source.stat, count: 1 };
+    case 'durability':
+    case 'toolUse':
+      return { kind: source.kind, req, from: source.from, uid: source.uid, count: 1 };
+  }
+}
 
 /** What a section has spent so far (a Risk challenge). */
 const spentBy = (draft: Draft, section: number) => draft.sections[section]?.gifts ?? [];
@@ -183,7 +209,9 @@ const spentBy = (draft: Draft, section: number) => draft.sections[section]?.gift
 /** A Risk challenge: can this hiker spend this, and would it lower their danger? */
 function canSpend(state: GameState, open: OpenChallenge, draft: Draft, source: Source): boolean {
   const card = openCardDef(open);
-  if (!card?.risk || (source.kind !== 'resource' && source.kind !== 'item')) return false;
+  const spendable =
+    source.kind === 'resource' || source.kind === 'item' || source.kind === 'durability';
+  if (!card?.risk || !spendable) return false;
   const section = draft.sections.findIndex((s) => s.hikerId === source.from);
   const h = challengeHikers(state, open).find((x) => x.id === source.from);
   if (section < 0 || !h || left(state, open, draft, source) < 1) return false;
@@ -260,6 +288,8 @@ function canSpendAny(state: GameState, open: OpenChallenge, draft: Draft, source
     if (source.kind !== 'stat' || source.stat !== what.stat) return false;
   } else if ('resources' in what) {
     if (source.kind !== 'resource') return false;
+  } else if ('toolUses' in what) {
+    if (source.kind !== 'toolUse') return false;
   } else {
     if (source.kind !== 'item') return false;
     const h = challengeHikers(state, open).find((x) => x.id === source.from);
@@ -402,6 +432,16 @@ function stripUndefined(s: SectionDraft): SectionDraft {
   return out;
 }
 
+/** The Harness button: pass with the Harness instead (again: back to choosing). */
+export function toggleHarness(draft: Draft, section: number): Draft {
+  const sections = draft.sections.map((s, i) => {
+    if (i !== section) return s;
+    const who = s.hikerId ? { hikerId: s.hikerId } : {};
+    return s.harness ? { ...who, gifts: [] } : { ...who, gifts: [], harness: true as const };
+  });
+  return { ...draft, sections };
+}
+
 /** ✗: take the penalty. Whatever was handed in goes back. */
 export function skip(draft: Draft, section: number): Draft {
   const sections = draft.sections.map((s, i) =>
@@ -459,7 +499,7 @@ export function couldPay(
 ): boolean {
   const card = openCardDef(open);
   const reqs = card?.cost[option];
-  if (!card || !reqs || reqs.some(notBuiltYet)) return false;
+  if (!card || !reqs) return false;
   const here = challengeHikers(state, open);
   return reqs.every((req) => {
     const need = requirementNeed(state, open, req, hikerId);
@@ -517,8 +557,28 @@ function supply(
         0,
       );
     case 'durability':
+      return here
+        .filter((h) => !hikerId || h.id === hikerId)
+        .reduce(
+          (n, h) =>
+            n +
+            (Object.entries(h.inventory.equipped) as [string, ItemInstance | undefined][])
+              .filter(
+                ([slot, i]) =>
+                  i && ITEMS[i.itemId]?.type === 'clothes' && (!req.slot || slot === req.slot),
+              )
+              .reduce((m, [, i]) => m + (i ? durabilityLeft(i) : 0), 0),
+          0,
+        );
     case 'toolUse':
-      return 0;
+      return here.reduce(
+        (n, h) =>
+          n +
+          h.inventory.bag
+            .filter((i) => ITEMS[i.itemId]?.type === 'tool')
+            .reduce((m, i) => m + usesLeftOf(i), 0),
+        0,
+      );
   }
 }
 
@@ -547,6 +607,8 @@ export function sectionStatus(
   if (card.risk || card.spendAny || card.buttons) {
     return { decision: 'pay', impossible: false, missing: 0 };
   }
+  // A Harness passes it.
+  if (s.harness) return { decision: 'pay', impossible: false, missing: 0 };
   // Select and One cards: ✗ means sitting out.
   if (isPick(card) && s.skipped) return { decision: 'fail', impossible: false, missing: 0 };
   // Free cards: take it, or ✗ to skip.
@@ -586,7 +648,8 @@ export function toAction(
     if (!status.decision) return undefined;
     const who = s.hikerId ? { hikerId: s.hikerId } : {};
     const card = openCardDef(open);
-    if (card?.risk || card?.spendAny || card?.buttons)
+    if (s.harness) sections.push({ ...who, pay: false, harness: true as const, gifts: [] });
+    else if (card?.risk || card?.spendAny || card?.buttons)
       sections.push({ ...who, pay: true, gifts: s.gifts });
     else if (status.decision === 'fail') sections.push({ ...who, pay: false, gifts: [] });
     else if (card?.cost.length === 0) sections.push({ ...who, pay: true, gifts: [] });

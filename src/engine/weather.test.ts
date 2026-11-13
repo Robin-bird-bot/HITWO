@@ -133,7 +133,7 @@ describe('hiker effects (after the grace day)', () => {
     expect(conditionsOf(two, 'ash')).toContain('soaked');
   });
 
-  it('Drizzle: clothes keep a hiker dry, and wear them (kept for Phase 9)', () => {
+  it('Drizzle: clothes keep a hiker dry, and wear them', () => {
     let worn = 0;
     for (let seed = 1; seed <= 40; seed++) {
       const s = weathered(
@@ -146,7 +146,8 @@ describe('hiker effects (after the grace day)', () => {
       );
       const after = run(s, END);
       expect(conditionsOf(after, 'ash')).toEqual([]);
-      worn += ash(after).inventory.equipped.body?.wear ?? 0;
+      // Tier III stand-in clothes: 10 days of durability at Quality 3.
+      worn += 10 - (ash(after).inventory.equipped.body?.durability ?? 10);
     }
     expect(Math.abs(worn / 40 - BALANCE.weather.drizzleWear)).toBeLessThan(0.2);
   });
