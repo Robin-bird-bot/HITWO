@@ -68,7 +68,7 @@ All item cards are 5:7 (Wyatt's files are 1500×2100). The game builds every car
 1. The same animated gradient.
 2. `front-background.png`: the brown card with the cloud. Its transparent margin (about 2.4% at the sides and 2.7% at the top and bottom) lets the gradient show through as the border.
 3. The type's rays, masked to the cloud area at about 40%, rotating slowly.
-4. The item icon. These are to come from Wyatt; use the type icon as a stand-in.
+4. The item's art from `items/` (141 of them). The Pumpkin Pie, Energy Drink and Ring have none yet, so they show their type icon.
 5. Text below the cloud, in the game fonts:
    - name (Edit Undo) and tier;
    - type and slot;
@@ -113,10 +113,9 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 - **Bigger icon:** a hi-res mushroom.
 - **Character art:** real portraits, once characters are final.
-- **Item card art:** most items.
+- **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
 - **Biome layers:** a rainforest foreground, and alpine snow and rock layers in the flat style.
-- **Item icons:** one per item, a transparent white or colored icon on a 1500×2100 canvas, sized to sit in the cloud area of the front background.
 - **Challenge art:** for everything except the bear and the fallen tree.
 
 Until real art arrives, use clearly marked placeholders.

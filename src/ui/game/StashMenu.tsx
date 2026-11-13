@@ -99,6 +99,7 @@ function WornMenu({
     <Popout
       label={`${name}: take off`}
       dragId="inventory"
+      focusFirst
       className={styles.menu}
       style={{
         left: 1240 - WIDTH - 12,
@@ -173,6 +174,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
     <Popout
       label={`${name}: ${out ? 'take it' : `give${resource ? ' or return' : ' or drop'}`}`}
       dragId="inventory"
+      focusFirst
       className={styles.menu}
       style={{
         left: 1240 - WIDTH - 12,
@@ -286,7 +288,12 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
               <Icon name="x" size={16} />
               Yes, drop it
             </button>
-            <button type="button" className={styles.option} onClick={() => setConfirmDrop(false)}>
+            <button
+              type="button"
+              className={styles.option}
+              data-autofocus
+              onClick={() => setConfirmDrop(false)}
+            >
               Keep it
             </button>
           </div>
@@ -463,14 +470,16 @@ function UseSection({
     return (
       <div className={styles.confirm}>
         <span className={styles.none}>{PICK_QUESTION[step.picking]}</span>
-        {pickOptions(state, hiker, target, step.picking).map((o) => {
+        {pickOptions(state, hiker, target, step.picking).map((o, i, all) => {
           const reason = validateAction(state, action(target.id, o.value));
+          const first = all.findIndex((x) => !validateAction(state, action(target.id, x.value)));
           return (
             <button
               key={o.value}
               type="button"
               className={styles.option}
               disabled={!!reason}
+              data-autofocus={i === first || undefined}
               title={reason ?? undefined}
               onClick={() => setStep({ targetId: target.id, value: o.value })}
             >
@@ -510,7 +519,12 @@ function UseSection({
           <Icon name={icon} size={16} />
           Yes, use it
         </button>
-        <button type="button" className={styles.option} onClick={() => setStep(null)}>
+        <button
+          type="button"
+          className={styles.option}
+          data-autofocus
+          onClick={() => setStep(null)}
+        >
           Keep it
         </button>
       </div>
@@ -624,7 +638,12 @@ function EatSection({
           <Icon name="utensils" size={16} />
           Yes, eat it
         </button>
-        <button type="button" className={styles.option} onClick={() => setAsking(false)}>
+        <button
+          type="button"
+          className={styles.option}
+          data-autofocus
+          onClick={() => setAsking(false)}
+        >
           Not now
         </button>
       </div>
@@ -686,7 +705,12 @@ function PlaceSection({
           <Icon name="tent" size={16} />
           Yes, place it
         </button>
-        <button type="button" className={styles.option} onClick={() => setAsking(false)}>
+        <button
+          type="button"
+          className={styles.option}
+          data-autofocus
+          onClick={() => setAsking(false)}
+        >
           Not now
         </button>
       </div>

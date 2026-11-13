@@ -509,6 +509,42 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 - Anything marked [first guess]: shelter nights, Diploma XP, Postcard XP, and the higher-tier recipe costs.
 - The Quality roll odds (10/20/40/20/10%) and how much Luck shifts them.
 
+**Phase 8 notes (built Nov 7–13)**
+- **Wyatt's answers:**
+  - Nov 7: skip the Suggested items. Use the first-guess numbers as written. Quality odds 10/20/40/20/10%, and each point of the crafter's Luck moves 5 points from Quality 1–2 to 4–5. Generic craft shows 3 choices, each with a 10% chance of one tier higher. Everyone crafts Tier 1 and has a craft tier per item type. Finds are the biome's tier with a 10% chance of one higher. No Tier 4 items until they're named.
+  - Nov 13: the crafting mockup (`#mockup-crafting`) is approved as shown. A basic recipe's key part takes 2 of the same resource. Resource packs need their blueprint. Teaching costs the teacher the Morale (4/6/8 by tier).
+- **Where things are:**
+  - Items as data: `src/content/items/` (one file per type, plus `basicRecipes.ts`). `others.ts` keeps the old stand-ins so old saves load.
+  - Item instances, Quality and text: `src/engine/items/` (`make.ts`, `quality.ts`, `text.ts`). Wear and durability: `wear.ts`. Short-lived effects ("this phase", "for N nights"): `boosts.ts`. Free moves: `freeMoves.ts`. Shelters: `shelters.ts`. Crafting: `craft.ts`. Map tools: `scout.ts`.
+  - Actions: `src/engine/actions/` `dress.ts` (put on, take off), `eat.ts`, `useItem.ts`, `shelter.ts` (place) and `craft.ts` (craft, take, teach).
+  - Item effects plug into the hooks in `src/engine/effects.ts`: equipped clothes through `hooksAt`, boosts through `boostHooks`, placed shelters through `placedHooks`.
+  - Numbers: `BALANCE.items` (Quality, finds, shelter nights, crafting, free moves) and `BALANCE.challenges.share` (hidden challenges).
+  - On screen: the item card (`src/ui/items/ItemCard.tsx`), the stash menu's Put on, Eat, Use and Place (`src/ui/game/StashMenu.tsx`), the Craft window (`src/ui/craft/`), map-tool picks and effects (`GameScreen`, `MapView`), and item payments in the challenge window.
+  - Debug: `#debug-items` shows every card at any tier and Quality. The backtick panel gives any item at any tier and Quality, refills items, sets craft tiers and teaches blueprints.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Free actions:** using a tool, eating, putting clothes on or taking them off, and placing a shelter (on any tile). Equipped clothes take no bag slot, so taking them off needs room in the bag.
+  - **Timing:** "this phase" lasts the rest of the current phase. Nauseous, Sated, and the random positive conditions some foods give, last 1 day.
+  - **Numbers:** shelter nights for the Tailgate, Yurt, Hostel, Tree-House, RV, Medic Tent and Lodge; Diploma and Postcard XP; the higher-tier recipe extras (and a trinket's extra resources); Dogs craft at −1 Luck; the Abandoned Ranger Station finds a blueprint 1 time in 3; a Sack's extra cards cost no Appetite.
+  - **Readings of the item text:**
+    - The Bandaid cures the negative condition the player picks.
+    - Crutches remove 1 injury for N days, shown as an "On Crutches" condition, then it comes back.
+    - The Star blocks negative conditions only; good ones still land.
+    - The Clothing Patch can't raise clothes past their full durability.
+    - The Hiking Stick's "moving alone" and the free moves (Jogging Shoes, Hiking Crocs, Work Boots) are the Move action, not Move All. An earned free move lasts the rest of the day.
+    - The Puffer Jacket blocks every negative condition by itself, without asking.
+    - Lifted Boots: the one hiker brought along doesn't use their action.
+    - Soup Socks: the wearer gains the Morale.
+    - Medic Tent: a hiker with no injury to remove keeps their turn for a later night.
+    - "Around you" (Minesweeper, Radar Scanner) and the Trampoline's "next to you" mean every tile touching the hiker's on the grid.
+    - Fort Rock's reward doubles the most durable item the hiker wears; they don't pick.
+    - Bear Country's challenge starts the moment someone crafts on its tile.
+  - **Waiting on Wyatt:** the Ring (which family, and for how many days); whether the Carrier Pack makes carrying free; trying a lower `CHALLENGE_SHARE`.
+- **Waiting on later phases:**
+  - Phase 9 (`TODO(phase 9)`): dropping unused Supply Map boosts when a new section starts; the workbench (higher craft tiers), the shop and blueprint bundles.
+  - Phase 10 (`TODO(phase 10)`): the Diploma, the three Photos, Instruction Manual, Postcard, Textbook, Thinking Cap and VR Headset (traits, slots and XP), and the traits that change crafting Quality.
+  - Sit by the Fire is still held, so Frozen Fingers stays off and Bear Country only watches crafting.
+- **Saves:** version 10. Version 8 adds item Quality, uses, bites and durability, and turns old items into their replacements (Medicine → Bandaid, Splint → Crutches, Safety Vest and Helmet → Hardhat, the clothing Camera → VR Headset, Bundle → Resource Pack). Version 9 gives placed shelters their own nights. Version 10 adds crafting (optional fields, so nothing to migrate).
+
 ---
 
 ## Phase 9: Checkpoints and ranger stations

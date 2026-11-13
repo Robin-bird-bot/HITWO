@@ -401,6 +401,7 @@ export function noteEat(state: GameState, hiker: Hiker): void {
 /**
  * A hiker crafted an item: Rocco's Rebuilding Trial rewards the type it picked,
  * and Bear Country fails on its tile, starting its challenge there.
+ * TODO(wyatt): Bear Country's challenge starts the moment someone crafts, not in the morning.
  */
 export function noteCrafted(state: GameState, hiker: Hiker, type: string): void {
   for (const trial of [...(state.trials ?? [])]) {
