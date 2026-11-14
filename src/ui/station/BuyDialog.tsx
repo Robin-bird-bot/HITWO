@@ -29,8 +29,6 @@ export function BuyDialog({
   const rejoin = offerId === 'rejoin';
   const offer = station && !rejoin ? findOffer(station, offerId) : undefined;
   const price = rejoin ? BALANCE.station.rejoin.price : (offer?.price ?? 0);
-  // Specials pick their line or tiles on Preview Next Trail (coming in step 5).
-  const needsPreview = offer?.kind === 'special';
 
   const candidates = state.hikers.filter((h) =>
     rejoin ? h.status === 'abandoned' : h.status === 'checkedIn',
@@ -122,11 +120,7 @@ export function BuyDialog({
                 empty pack.
               </p>
             )}
-            {needsPreview ? (
-              <p className={styles.note}>
-                Its pick happens on Preview Next Trail, which opens in a later update.
-              </p>
-            ) : choices.length === 0 ? (
+            {choices.length === 0 ? (
               <p className={styles.note}>
                 {rejoin ? 'Nobody has left the hike.' : 'Nobody here can take it.'}
               </p>
@@ -153,18 +147,16 @@ export function BuyDialog({
         </div>
         <div className={styles.buttons}>
           <button type="button" className={styles.cancel} onClick={onClose}>
-            {needsPreview ? 'OK' : 'Cancel'}
+            Cancel
           </button>
-          {!needsPreview && (
-            <button
-              type="button"
-              className={styles.buy}
-              disabled={!pick || short}
-              onClick={() => pick && onBuy(pick.action)}
-            >
-              {short ? `Needs ${price} caps` : `Buy for ${price} caps`}
-            </button>
-          )}
+          <button
+            type="button"
+            className={styles.buy}
+            disabled={!pick || short}
+            onClick={() => pick && onBuy(pick.action)}
+          >
+            {short ? `Needs ${price} caps` : `Buy for ${price} caps`}
+          </button>
         </div>
       </div>
     </div>

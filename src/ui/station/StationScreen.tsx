@@ -7,9 +7,10 @@
  *   (the next biome) and "Just looking".
  * - The Shop tab: the counter (see Counter.tsx) and every hiker's pack.
  *   Buying and selling both confirm with the price; giving between packs is
- *   free. The Workbench tab arrives with step 5.
- * - Rest & Go (with a confirm) leaves for the next biome. Preview Next Trail
- *   arrives with step 5.
+ *   free. A special (Cement Mixer, Scout Report) picks its line or tiles on
+ *   Preview Next Trail, which is where it's bought.
+ * - The Workbench tab (see Workbench.tsx): crafting one tier higher, free.
+ * - Preview Next Trail (see PreviewTrail.tsx) and Rest & Go (with a confirm).
  * - Simple mode keeps the same room; Preview Next Trail sits in the talk.
  */
 import { useState } from 'react';
@@ -28,10 +29,13 @@ import { Icon } from '../icons/Icon';
 import { resourceName } from '../scavenge/cardLook';
 import { BuyDialog } from './BuyDialog';
 import { Counter } from './Counter';
+import { PreviewTrail, type PreviewMode } from './PreviewTrail';
+import { Workbench } from './Workbench';
 import type { DragSale } from './stationLook';
 import { Packs, type SaleRequest } from './Packs';
 import { KeeperArm, StationRoom } from './StationRoom';
 import { aheadChips, marketChips, talkLine, type Talk, type TalkChip } from './stationTalk';
+import counterStyles from './Counter.module.css';
 import styles from './StationScreen.module.css';
 
 const BIOME_NAME: Record<BiomeId, string> = {
@@ -55,11 +59,22 @@ export function StationScreen({
   const [selling, setSelling] = useState<SaleRequest | null>(null);
   const [resting, setResting] = useState(false);
   const [flipped, setFlipped] = useState<string | null>(null);
+  const [tab, setTab] = useState<'shop' | 'workbench'>('shop');
+  const [preview, setPreview] = useState<PreviewMode | null>(null);
 
   const station = state.station;
   if (!station) return null;
   const theme = STATION_THEME_BY_ID[station.themeId];
   const nextBiome = BIOME_NAME[station.next.biome];
+  // A craft waiting for its pick keeps the Workbench open.
+  const shown = state.crafting ? 'workbench' : tab;
+
+  // A counter card: a special picks on the map; the rest buy here.
+  const pick = (offerId: string) => {
+    const special = offerId === 'special' ? station.special : undefined;
+    if (special && !special.sold) setPreview(special.special);
+    else setBuying(offerId);
+  };
 
   const buy = (action: Action) => {
     if (action.type !== 'buy') return;
@@ -97,6 +112,7 @@ export function StationScreen({
           name={theme.shopkeeper.name}
           simple={simple}
           onTalk={setTalk}
+          onPreview={() => setPreview('look')}
         />
       ) : (
         <button
@@ -121,8 +137,7 @@ export function StationScreen({
         <button
           type="button"
           className={`${styles.preview} ${styles.wood}`}
-          disabled
-          title="Preview Next Trail opens in a later update"
+          onClick={() => setPreview('look')}
         >
           <Icon name="eye" size={18} color="#F0C76A" />
           PREVIEW NEXT TRAIL
@@ -130,24 +145,36 @@ export function StationScreen({
       )}
 
       <div className={styles.tabs} role="tablist" aria-label="Station">
-        <button type="button" role="tab" aria-selected="true" className={styles.tab}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={shown === 'shop'}
+          className={styles.tab}
+          disabled={!!state.crafting}
+          onClick={() => setTab('shop')}
+        >
           <Icon name="bag" size={16} />
           SHOP
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected="false"
+          aria-selected={shown === 'workbench'}
           className={styles.tab}
-          disabled
-          title="The Workbench opens in a later update"
+          onClick={() => setTab('workbench')}
         >
           <Icon name="hammer" size={16} />
           WORKBENCH
         </button>
       </div>
 
-      <Counter state={state} flipped={flipped} onPick={setBuying} onSell={fromDrag} />
+      {shown === 'shop' ? (
+        <Counter state={state} flipped={flipped} onPick={pick} onSell={fromDrag} />
+      ) : (
+        <div className={counterStyles.counter}>
+          <Workbench state={state} simple={simple} onDispatch={onDispatch} />
+        </div>
+      )}
       <KeeperArm theme={theme} />
       <Packs state={state} onSell={setSelling} onDispatch={onDispatch} />
 
@@ -163,6 +190,14 @@ export function StationScreen({
             setSelling(null);
           }}
           onCancel={() => setSelling(null)}
+        />
+      )}
+      {preview && (
+        <PreviewTrail
+          state={state}
+          mode={preview}
+          onBuy={onDispatch}
+          onClose={() => setPreview(null)}
         />
       )}
       {resting && (
@@ -189,12 +224,14 @@ function TalkBubble({
   name,
   simple,
   onTalk,
+  onPreview,
 }: {
   state: GameState;
   talk: Talk;
   name: string;
   simple: boolean;
   onTalk(talk: Talk | null): void;
+  onPreview(): void;
 }) {
   const chips: TalkChip[] =
     talk === 'selling' ? marketChips(state) : talk === 'ahead' ? aheadChips(state) : [];
@@ -242,12 +279,7 @@ function TalkBubble({
           JUST LOOKING
         </button>
         {simple && talk === 'ahead' && (
-          <button
-            type="button"
-            className={styles.option}
-            disabled
-            title="Preview Next Trail opens in a later update"
-          >
+          <button type="button" className={styles.option} onClick={onPreview}>
             <Icon name="eye" size={14} />
             PREVIEW THE TRAIL
           </button>

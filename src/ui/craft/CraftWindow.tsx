@@ -14,7 +14,6 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
-import { RESOURCES } from '../../content/resources';
 import {
   autoPay,
   craftPool,
@@ -45,6 +44,7 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { ItemBack } from '../scavenge/ItemBack';
 import { useDraggable } from '../windows/useDraggable';
 import styles from './CraftWindow.module.css';
+import { partLabel, payWords, recipeWords, resName } from './craftWords';
 
 export type CraftTab = 'craft' | 'teach';
 
@@ -68,7 +68,6 @@ const TYPE_ICON: Record<ItemType, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sp
 };
 const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];
 const NUMERAL = ['', 'I', 'II', 'III', 'IV'];
-const resName = (id: ResourceId) => RESOURCES.find((r) => r.id === id)?.name ?? id;
 const plural = (type: ItemType) =>
   type === 'clothes'
     ? 'clothes'
@@ -202,7 +201,7 @@ export function CraftWindow(props: CraftWindowProps) {
   );
 }
 
-function Face({ id, size }: { id: string; size: number }) {
+export function Face({ id, size }: { id: string; size: number }) {
   return (
     <img
       className={styles.face}
@@ -448,44 +447,6 @@ function basicWords(type: ItemType, recipe: Recipe): string {
   return `${recipeWords(recipe)}. The key resource is ${recipe[0]?.n ?? 2} of the same one.`;
 }
 
-/** "Metal or Wood 2, Mountain or Forest 3", "Metal 2, Wood 2, any 2". */
-function recipeWords(recipe: Recipe): string {
-  return recipe
-    .map((p) =>
-      p.ids
-        ? `${p.ids.map(resName).join(' or ')} ${p.n}`
-        : p.any
-          ? `any ${p.n}`
-          : `${(p.nodes ?? []).map((n) => NODE_NAME[n]).join(' or ')} ${p.n}`,
-    )
-    .join(', ');
-}
-
-/** "2 METAL OR WOOD", "3 MOUNTAIN · FOREST", "2 ANY". */
-function partLabel(part: RecipePart): string {
-  if (part.ids) return `${part.n} ${part.ids.map(resName).join(' or ')}`.toUpperCase();
-  if (part.any) return `${part.n} ANY`;
-  return `${part.n} ${(part.nodes ?? []).map((n) => NODE_NAME[n]).join(' · ')}`.toUpperCase();
-}
-
-/** "Ash pays 2 Wood, 1 Moss · Birch adds 2 Stone". */
-function payWords(state: GameState, slots: readonly (PaidSlot | null)[]): string {
-  const by = new Map<string, Map<ResourceId, number>>();
-  for (const s of slots) {
-    if (!s) continue;
-    const mine = by.get(s.from) ?? new Map<ResourceId, number>();
-    mine.set(s.resource, (mine.get(s.resource) ?? 0) + 1);
-    by.set(s.from, mine);
-  }
-  return [...by.entries()]
-    .map(([id, res], i) => {
-      const who = state.hikers.find((h) => h.id === id)?.name ?? 'Someone';
-      const what = [...res.entries()].map(([r, n]) => `${n} ${resName(r)}`).join(', ');
-      return `${who} ${i === 0 ? 'pays' : 'adds'} ${what}`;
-    })
-    .join(' · ');
-}
-
 function TierChips({ tier }: { tier: number }) {
   return (
     <span className={styles.tiers}>
@@ -510,7 +471,7 @@ function TierChips({ tier }: { tier: number }) {
   );
 }
 
-function PartIcons({ part }: { part: RecipePart }) {
+export function PartIcons({ part }: { part: RecipePart }) {
   if (part.ids) {
     return (
       <>
@@ -530,7 +491,7 @@ function PartIcons({ part }: { part: RecipePart }) {
   );
 }
 
-function Slot({
+export function Slot({
   filled,
   open,
   onClick,
@@ -566,7 +527,7 @@ function Slot({
  * What can go in one space: every resource on the tile that fits, by who has
  * it. A key part changes all its spaces at once, since they must match.
  */
-function Swap({
+export function Swap({
   state,
   hiker,
   recipe,
@@ -788,16 +749,19 @@ function Pool({
 
 // ── Pick ────────────────────────────────────────────────────────────────────
 
-function PickBody({
+export function PickBody({
   state,
   hiker,
   simple,
   onTake,
+  cardWidth = 220,
 }: {
   state: GameState;
   hiker: Hiker;
   simple: boolean;
   onTake(index: number, node?: NodeType): void;
+  /** The cards' width (the station's Workbench uses smaller ones). */
+  cardWidth?: number;
 }) {
   const open = state.crafting;
   const cards = open?.options ?? [];
@@ -837,6 +801,7 @@ function PickBody({
                 key={`${c.itemId}-${i}`}
                 type="button"
                 className={styles.card}
+                style={{ width: cardWidth, height: Math.round((cardWidth * 7) / 5) }}
                 data-up={up}
                 aria-pressed={chosen === i}
                 aria-label={
@@ -854,13 +819,13 @@ function PickBody({
               >
                 <span className={styles.flip}>
                   <span className={styles.back}>
-                    <ItemBack type={open.type} width={220} />
+                    <ItemBack type={open.type} width={cardWidth} />
                   </span>
                   <span className={styles.front}>
                     <ItemCard
                       itemId={c.itemId}
                       {...(c.quality ? { item: { quality: c.quality } } : {})}
-                      width={220}
+                      width={cardWidth}
                     />
                   </span>
                 </span>
@@ -919,18 +884,20 @@ function PickBody({
 }
 
 /** Just after crafting: the item, and whether a blueprint was learned. */
-function Made({
+export function Made({
   itemId,
   quality,
   learned,
   hiker,
   onDone,
+  cardWidth = 240,
 }: {
   itemId: ItemId;
   quality?: number;
   learned: boolean;
   hiker: Hiker;
   onDone(): void;
+  cardWidth?: number;
 }) {
   const def = ITEMS[itemId];
   const done = useRef<HTMLButtonElement>(null);
@@ -943,7 +910,7 @@ function Made({
         <ItemCard
           itemId={itemId}
           {...(quality ? { item: { quality: quality as 1 | 2 | 3 | 4 | 5 } } : {})}
-          width={240}
+          width={cardWidth}
         />
         <p className={styles.madeWords}>
           {hiker.name} crafted a {def?.name ?? 'thing'}

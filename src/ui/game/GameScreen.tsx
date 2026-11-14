@@ -631,7 +631,8 @@ export function GameScreen({
         />
       )}
 
-      {crafter && !state.challenge && (
+      {/* At a station, its Workbench crafts instead. */}
+      {crafter && !state.challenge && !state.station && (
         <CraftWindow
           key={crafter}
           state={state}
