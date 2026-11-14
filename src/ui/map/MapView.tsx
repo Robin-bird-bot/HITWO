@@ -2,7 +2,7 @@
  * The trail map: tiles, lines, cost badges and hiker tokens on a camera you
  * can scroll (wheel or drag) and zoom (ctrl/pinch + wheel, or the buttons).
  */
-import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import type { Hiker, HikerId, Section } from '../../engine';
 import { characterFor } from '../../content/characters';
 import { useStage } from '../stage/StageContext';
@@ -41,6 +41,8 @@ interface MapViewProps {
   onWonderClick?(tileId: string): void;
   /** Scouting just happened: tiles swept, and maybe counts to show where. */
   fx?: ScoutFx[];
+  /** Extra things in map space, over the tokens (Preview Next Trail's line picks). */
+  overlay?: ReactNode;
   selectedId: HikerId | null;
   onSelectHiker(id: HikerId): void;
   camera: Camera;
@@ -73,6 +75,7 @@ export function MapView({
   onRevealedClick,
   onWonderClick,
   fx = [],
+  overlay,
   selectedId,
   onSelectHiker,
   camera,
@@ -197,6 +200,7 @@ export function MapView({
             onPick: onTileClick,
           }}
         />
+        {overlay}
         {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
         {fx.map((f) => (
           <ScoutLayer key={f.key} fx={f} section={section} lastRow={lastRow} />
