@@ -1235,6 +1235,13 @@ function StationDebug({ state, run }: { state: GameState; run(action: Action): v
         >
           Reroll stock
         </button>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => run({ type: 'debug', op: { kind: 'giveCaps', caps: 20 } })}
+        >
+          +20 caps
+        </button>
       </div>
       <div className={styles.row}>
         <select

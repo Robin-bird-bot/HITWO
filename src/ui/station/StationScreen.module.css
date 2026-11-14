@@ -1,0 +1,605 @@
+/*
+ * The ranger station (docs/mockups/Station.dc.html, StationAhead.dc.html):
+ * a cozy wood-and-parchment room on the 1600×1000 stage. Wooden pieces (the
+ * sign, counter, tabs, price tags and buttons) and the main game's dark
+ * translucent panels (the shopkeeper's talk, the sell slot, the packs).
+ */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: #f1eadb;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0 2px, transparent 2px 44px),
+    repeating-linear-gradient(90deg, rgba(255, 220, 170, 0.025) 0 1px, transparent 1px 9px),
+    linear-gradient(#3e2618, #2a1810);
+}
+
+/* ── Wood and brass ── */
+
+.wood {
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) 6px 6px / 12px 12px
+      no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) calc(100% - 6px) 6px /
+      12px 12px no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) 6px calc(100% - 6px) /
+      12px 12px no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) calc(100% - 6px)
+      calc(100% - 6px) / 12px 12px no-repeat,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 2px, transparent 2px 140px),
+    repeating-linear-gradient(0deg, rgba(255, 235, 200, 0.035) 0 1px, transparent 1px 6px),
+    linear-gradient(#7a4c2a, #5e3820);
+}
+
+.brass {
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) 6px 6px / 12px 12px
+      no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) calc(100% - 6px) 6px /
+      12px 12px no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) 6px calc(100% - 6px) /
+      12px 12px no-repeat,
+    radial-gradient(circle, #f0c76a 0 2.5px, #6e4a1c 3px, transparent 4px) calc(100% - 6px)
+      calc(100% - 6px) / 12px 12px no-repeat,
+    linear-gradient(#f4cf72, #d9a441);
+}
+
+/* ── The window wall ── */
+
+.window {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 400px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #263536, #55634f);
+}
+
+.forest {
+  position: absolute;
+  left: 0;
+  top: -400px;
+  width: 1600px;
+  height: 1000px;
+}
+
+.forest img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.glass {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(16, 22, 20, 0.45),
+      rgba(16, 22, 20, 0.12) 45%,
+      rgba(40, 24, 12, 0.35)
+    ),
+    linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.07) 0 18%,
+      transparent 18% 30%,
+      rgba(255, 255, 255, 0.05) 30% 34%,
+      transparent 34%
+    );
+}
+
+.beamTop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 22px;
+  background: linear-gradient(#2e1a0e, #4a2c18);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.beamMid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 132px;
+  height: 12px;
+  background: linear-gradient(#5a3720, #3e2414);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
+}
+
+.mullions {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, #3e2414 0 16px, transparent 16px 320px);
+  background-position: -8px 0;
+}
+
+/* ── The fireplace ── */
+
+.chimney {
+  position: absolute;
+  left: 40px;
+  top: 0;
+  width: 300px;
+  height: 400px;
+  overflow: hidden;
+  box-shadow:
+    10px 0 24px rgba(0, 0, 0, 0.5),
+    -6px 0 18px rgba(0, 0, 0, 0.4);
+}
+
+.stones {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 400px;
+}
+
+.hearth {
+  position: absolute;
+  left: 50px;
+  top: 232px;
+  width: 200px;
+  height: 168px;
+  border-radius: 100px 100px 0 0;
+  background: radial-gradient(ellipse at 50% 85%, #6a2a10 0%, #2a120a 55%, #140a06 100%);
+  box-shadow:
+    inset 0 0 0 6px #4a423c,
+    inset 0 0 30px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.embers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120px;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 150, 60, 0.75), transparent 70%);
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+.flames {
+  position: absolute;
+  left: 20px;
+  bottom: 34px;
+  overflow: visible;
+}
+
+.flameA {
+  transform-origin: 85px 128px;
+  animation: flameA 1.3s ease-in-out infinite alternate;
+}
+
+.flameB {
+  transform-origin: 85px 128px;
+  animation: flameB 0.9s ease-in-out infinite alternate;
+}
+
+.flameC {
+  transform-origin: 86px 128px;
+  animation: flameA 0.7s ease-in-out infinite alternate-reverse;
+}
+
+.log {
+  position: absolute;
+  height: 22px;
+  border-radius: 11px;
+}
+
+.coals {
+  position: absolute;
+  left: 60px;
+  bottom: 26px;
+  width: 80px;
+  height: 10px;
+  border-radius: 5px;
+  background: #ff9a4a;
+  filter: blur(4px);
+  animation: glow 1.7s ease-in-out infinite;
+}
+
+.mantel {
+  position: absolute;
+  left: 20px;
+  top: 196px;
+  width: 340px;
+  height: 26px;
+  border-radius: 4px;
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.5);
+}
+
+.mantelThing {
+  position: absolute;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
+}
+
+.firelight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 760px 560px at 190px 360px,
+    rgba(255, 140, 60, 0.26),
+    transparent 70%
+  );
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes flameA {
+  0% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  50% {
+    transform: scale(0.94, 1.08) skewX(-3deg);
+  }
+  100% {
+    transform: scale(1.04, 0.93) skewX(3deg);
+  }
+}
+
+@keyframes flameB {
+  0% {
+    transform: scale(1, 1);
+  }
+  100% {
+    transform: scale(0.9, 1.12) skewX(4deg);
+  }
+}
+
+@keyframes glow {
+  0% {
+    opacity: 0.75;
+  }
+  30% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.82;
+  }
+  80% {
+    opacity: 0.97;
+  }
+  100% {
+    opacity: 0.78;
+  }
+}
+
+/* ── The hanging sign ── */
+
+.rope {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 34px;
+  background: #2a1a10;
+}
+
+.sign {
+  position: absolute;
+  left: 470px;
+  top: 26px;
+  width: 540px;
+  min-height: 92px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 4px solid #3e2414;
+  box-shadow:
+    inset 0 0 0 2px #a8743f,
+    0 12px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.signName {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: 0.05em;
+  color: #fce9c4;
+  text-shadow: 0 3px 0 #3a2212;
+}
+
+.signName[data-long] {
+  font-size: 23px;
+}
+
+.signSub {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: #e4be84;
+}
+
+/* ── The shopkeeper and their talk ── */
+
+.keeper {
+  position: absolute;
+  left: 1092px;
+  top: -14px;
+  width: 268px;
+  height: 461px;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.55));
+}
+
+.keeper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* The Businessman's resting arm: in front of the counter. */
+.arm {
+  z-index: 3;
+  filter: none;
+}
+
+.talk {
+  position: absolute;
+  left: 420px;
+  top: 134px;
+  width: 650px;
+  box-sizing: border-box;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: rgba(24, 30, 27, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2;
+}
+
+.talk::after {
+  content: '';
+  position: absolute;
+  right: -9px;
+  top: 40px;
+  width: 18px;
+  height: 18px;
+  background: rgba(24, 30, 27, 0.86);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  transform: rotate(45deg);
+}
+
+.talkWho {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+}
+
+.talkLine {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 10px 0 6px;
+  border-radius: 10px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f1eadb;
+}
+
+.chip[data-tone='good'] {
+  background: rgba(127, 194, 155, 0.14);
+  border-color: rgba(127, 194, 155, 0.45);
+  color: #a6ddbc;
+}
+
+.chip[data-tone='bad'] {
+  background: rgba(229, 98, 74, 0.12);
+  border-color: rgba(229, 98, 74, 0.45);
+  color: #f39a86;
+}
+
+.chip img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+}
+
+.options {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #c9c2b2;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.option[aria-pressed='true'] {
+  border-color: rgba(233, 180, 76, 0.6);
+  background: rgba(233, 180, 76, 0.2);
+  color: #f2c978;
+}
+
+.option:hover:not(:disabled) {
+  color: #f1eadb;
+}
+
+.option:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.talkAgain {
+  position: absolute;
+  left: 960px;
+  top: 300px;
+  z-index: 2;
+}
+
+/* ── Top-right buttons ── */
+
+.restGo,
+.preview {
+  position: absolute;
+  left: 1388px;
+  width: 192px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  cursor: pointer;
+  z-index: 4;
+}
+
+.restGo {
+  top: 24px;
+  height: 70px;
+  flex-direction: column;
+  gap: 3px;
+  border: 3px solid #7a5420;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    0 6px 0 #6e4a1c,
+    0 12px 20px rgba(0, 0, 0, 0.4);
+  color: #3a2414;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.restGo small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.preview {
+  top: 112px;
+  height: 54px;
+  gap: 8px;
+  border: 3px solid #3e2414;
+  box-shadow:
+    inset 0 0 0 1.5px #a8743f,
+    0 5px 0 #2e1a0e,
+    0 10px 18px rgba(0, 0, 0, 0.4);
+  color: #fce9c4;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.preview:disabled {
+  cursor: default;
+  filter: saturate(0.5) brightness(0.8);
+}
+
+.restGo:focus-visible,
+.preview:focus-visible,
+.option:focus-visible,
+.tab:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}
+
+/* ── Tabs ── */
+
+.tabs {
+  position: absolute;
+  left: 380px;
+  top: 352px;
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.tab {
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 12px 12px 0 0;
+  border: 3px solid #3e2414;
+  border-bottom: none;
+  background: linear-gradient(#6b4426, #4e2e1a);
+  color: #e4be84;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  background: #f1e2bf;
+  color: #3a2414;
+}
+
+.tab:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .embers,
+  .flameA,
+  .flameB,
+  .flameC,
+  .coals,
+  .firelight {
+    animation: none;
+  }
+}

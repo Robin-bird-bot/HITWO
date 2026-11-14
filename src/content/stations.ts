@@ -5,6 +5,7 @@
  * Every line is a placeholder in the shopkeeper's voice; the first greeting is
  * the doc's quote.
  */
+import type { BiomeId } from '../engine/types';
 import type { StationTheme, StationThemeId } from '../engine/station/types';
 
 const SOCKS = ['dogSocks', 'catSocks', 'soupSocks', 'sleepySocks', 'speedySocks'] as const;
@@ -294,3 +295,43 @@ export const STATION_THEMES: readonly StationTheme[] = [
 
 export const STATION_THEME_BY_ID: Readonly<Record<StationThemeId, StationTheme>> =
   Object.fromEntries(STATION_THEMES.map((t) => [t.id, t])) as Record<StationThemeId, StationTheme>;
+
+/** A chip in the shopkeeper's "What's ahead?" talk. */
+export interface AheadChip {
+  icon: 'rain' | 'snowflake' | 'sun' | 'droplet' | 'road' | 'cloud';
+  text: string;
+  tone: 'info' | 'good' | 'bad';
+}
+
+/**
+ * "What's ahead?" for each biome, beside the tier and common nodes the game
+ * reads from the next section. Placeholders until the biomes are final
+ * (Phase 11).
+ */
+export const BIOME_AHEAD: Readonly<
+  Record<BiomeId, { chips: readonly AheadChip[]; placeholder: true }>
+> = {
+  meadow: {
+    chips: [
+      { icon: 'sun', text: 'MILD WEATHER', tone: 'info' },
+      { icon: 'rain', text: 'LIGHT RAIN NOW AND THEN', tone: 'info' },
+    ],
+    placeholder: true,
+  },
+  temperateRainforest: {
+    chips: [
+      { icon: 'rain', text: 'RAIN MOST DAYS', tone: 'info' },
+      { icon: 'droplet', text: 'WET MORE LIKELY', tone: 'bad' },
+      { icon: 'road', text: 'MORE MUDDY LINES', tone: 'bad' },
+    ],
+    placeholder: true,
+  },
+  alpine: {
+    chips: [
+      { icon: 'snowflake', text: 'SNOW AND WHITEOUTS', tone: 'info' },
+      { icon: 'snowflake', text: 'COLD MORE LIKELY', tone: 'bad' },
+      { icon: 'road', text: 'MORE STEEP LINES', tone: 'bad' },
+    ],
+    placeholder: true,
+  },
+};

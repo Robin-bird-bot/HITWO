@@ -1,0 +1,165 @@
+/* Buying at the station: the game's dark panel over a blur. Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(16, 20, 18, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dialog {
+  width: 640px;
+  box-sizing: border-box;
+  padding: 24px 28px;
+  border-radius: 18px;
+  background: rgba(29, 34, 32, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 24px;
+  letter-spacing: 0.04em;
+}
+
+.body {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+}
+
+.picture {
+  flex: none;
+}
+
+.side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.price {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  color: #f2c978;
+}
+
+.price span {
+  font-size: 14px;
+  color: #c9c2b2;
+}
+
+.note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #c9c2b2;
+}
+
+.who {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.who legend {
+  margin-bottom: 8px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.hiker {
+  min-width: 128px;
+  min-height: 48px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+
+.hiker small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #9c9585;
+}
+
+.hiker[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: rgba(233, 180, 76, 0.22);
+  color: #f2c978;
+}
+
+.hiker:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.cancel,
+.buy {
+  min-width: 170px;
+  min-height: 52px;
+  border-radius: 12px;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.cancel {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1eadb;
+}
+
+.buy {
+  border: none;
+  background: var(--gold);
+  color: #1d2220;
+}
+
+.buy:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.hiker:focus-visible,
+.cancel:focus-visible,
+.buy:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}

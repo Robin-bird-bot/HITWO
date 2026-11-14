@@ -184,6 +184,10 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: 'Rerolled the station' });
       break;
     }
+    case 'giveCaps':
+      state.caps = Math.max(0, state.caps + op.caps);
+      pushEvent(state, { kind: 'debug', note: `Gave the party ${op.caps} caps` });
+      break;
     case 'noteGone': {
       if (!ITEMS[op.itemId]) return;
       for (let i = 0; i < (op.times ?? 1); i++) noteGone(state, op.itemId);

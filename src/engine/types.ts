@@ -758,6 +758,8 @@ export type DebugOp =
   | { kind: 'openStation'; themeId?: StationThemeId }
   /** Roll the open station's stock, market and blueprints again. */
   | { kind: 'rerollStation' }
+  /** Add caps to the party purse. */
+  | { kind: 'giveCaps'; caps: number }
   /** Add an item to Rocco's used-or-lost log. */
   | { kind: 'noteGone'; itemId: ItemId; times?: number }
   /** Picks and opens a card as if the tile were this special space. */

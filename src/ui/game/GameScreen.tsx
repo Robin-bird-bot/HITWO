@@ -66,7 +66,7 @@ import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
-import { StationPlaceholder } from '../station/StationPlaceholder';
+import { StationScreen } from '../station/StationScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
 import type { ScoutFx } from '../map/MapView';
@@ -691,7 +691,7 @@ export function GameScreen({
       )}
 
       {state.station && !isHikeOver(state) && (
-        <StationPlaceholder state={state} onDispatch={dispatch} onTitle={onQuit} />
+        <StationScreen state={state} simple={simple} onDispatch={dispatch} />
       )}
 
       {isHikeOver(state) && (
