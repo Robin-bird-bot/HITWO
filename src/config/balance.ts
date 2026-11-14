@@ -461,6 +461,11 @@ export const BALANCE = {
     equipSlots: 3,
     /** Resources per hiker. */
     resourceLimit: 10,
+    /**
+     * A new run gives each hiker this many random resources (Nov 13 update).
+     * It stands in for the start-of-hike rules coming later.
+     */
+    startingResources: 4,
   },
 
   xp: {
