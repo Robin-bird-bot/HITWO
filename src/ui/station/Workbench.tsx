@@ -35,18 +35,10 @@ import {
 import { Face, Made, PartIcons, PickBody, Slot, Swap } from '../craft/CraftWindow';
 import { partLabel, payWords, recipeWords, resName } from '../craft/craftWords';
 import { Icon } from '../icons/Icon';
-import type { IconName } from '../icons/paths';
-import { TYPE_LOOK } from '../items/itemLook';
+import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import styles from './Workbench.module.css';
 
-const TYPE_ICON: Record<ItemType, IconName> = {
-  tool: 'hammer',
-  clothes: 'shirt',
-  food: 'utensils',
-  shelter: 'tent',
-  trinket: 'sparkles',
-};
 const NUMERAL = ['', 'I', 'II', 'III', 'IV'];
 const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];
 

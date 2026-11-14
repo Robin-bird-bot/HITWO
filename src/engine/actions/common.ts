@@ -1,3 +1,4 @@
+import { rollTrailShop } from '../station/trail';
 import { CONDITIONS } from '../../content/conditions';
 import { removeCondition } from '../conditions';
 import { canActReason } from '../effects';
@@ -80,6 +81,8 @@ export function enterTile(state: GameState, tileId: TileId): NodeKind[] {
   const tile = state.section.tiles[tileId];
   if (!tile) return [];
   tile.visited = true;
+  // A Merchant's or Trader's wares are rolled the first time someone stands here.
+  rollTrailShop(state, tile);
   const revealed: NodeKind[] = [];
   for (const node of tile.nodes) {
     if (!node.revealed) {

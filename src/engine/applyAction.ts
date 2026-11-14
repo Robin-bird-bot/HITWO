@@ -48,6 +48,7 @@ import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './ac
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
+import { applyMerchantBuy, applyTrade, validateMerchantBuy, validateTrade } from './station/trail';
 import {
   applyBuy,
   applyRestAndGo,
@@ -164,6 +165,10 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateSell(state, action) ?? null;
     case 'restAndGo':
       return validateRestAndGo(state) ?? null;
+    case 'merchantBuy':
+      return validateMerchantBuy(state, action) ?? null;
+    case 'trade':
+      return validateTrade(state, action) ?? null;
     case 'pickUp':
       return validatePickUp(state, action) ?? null;
     case 'abandon':
@@ -265,6 +270,12 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'restAndGo':
       applyRestAndGo(draft);
+      break;
+    case 'merchantBuy':
+      applyMerchantBuy(draft, action);
+      break;
+    case 'trade':
+      applyTrade(draft, action);
       break;
     case 'pickUp':
       applyPickUp(draft, action);

@@ -69,6 +69,7 @@ import { HikeOverScreen } from '../hike/HikeOverScreen';
 import { StationScreen } from '../station/StationScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
+import { TrailShopWindow } from '../trail/TrailShopWindow';
 import type { ScoutFx } from '../map/MapView';
 import { usesAfter } from '../items/whatItDoes';
 import { tileName } from '../panels/hikerInfo';
@@ -170,6 +171,8 @@ export function GameScreen({
   }, [fx]);
   // The Craft window: whose, and on which tab.
   const [craftOpen, setCraftOpen] = useState<{ hikerId: string; tab: CraftTab } | null>(null);
+  /** The tile whose Merchant or Traveling Trader is open. */
+  const [shopTile, setShopTile] = useState<TileId | null>(null);
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
@@ -555,6 +558,7 @@ export function GameScreen({
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
               onBlueprints={openBlueprints}
+              onFeature={() => setShopTile(selected.tileId)}
             />
           )}
         </>
@@ -584,6 +588,7 @@ export function GameScreen({
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
               onBlueprints={openBlueprints}
+              onFeature={() => setShopTile(selected.tileId)}
             />
           )}
         </>
@@ -642,6 +647,15 @@ export function GameScreen({
           onTab={(tab) => setCraftOpen({ hikerId: crafter, tab })}
           onDispatch={dispatch}
           onClose={() => setCraftOpen(null)}
+        />
+      )}
+
+      {shopTile && !state.challenge && !state.station && (
+        <TrailShopWindow
+          state={state}
+          tileId={shopTile}
+          onDispatch={dispatch}
+          onClose={() => setShopTile(null)}
         />
       )}
 

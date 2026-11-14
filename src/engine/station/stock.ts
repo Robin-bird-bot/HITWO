@@ -83,7 +83,7 @@ const tierWeights = (state: GameState) =>
  * other tiers, then any), featured or favored items more likely, no repeats
  * while others are left.
  */
-function pickFrom(
+export function pickFrom(
   state: GameState,
   pool: readonly ItemDef[],
   favored: readonly ItemId[],
@@ -124,10 +124,15 @@ function shopQuality(state: GameState): Quality {
   );
 }
 
-function stockItem(state: GameState, theme: StationTheme, itemId: ItemId, i: number): ItemOffer {
+/** A fresh shop copy: the plain Quality curve, full uses, bites or durability. */
+export function makeShopItem(state: GameState, itemId: ItemId) {
   const def = ITEMS[itemId];
   const quality = def && hasQuality(def) ? shopQuality(state) : undefined;
-  const item = makeItem(state, itemId, { prefix: 'shop', ...(quality ? { quality } : {}) });
+  return makeItem(state, itemId, { prefix: 'shop', ...(quality ? { quality } : {}) });
+}
+
+function stockItem(state: GameState, theme: StationTheme, itemId: ItemId, i: number): ItemOffer {
+  const item = makeShopItem(state, itemId);
   // A Mystery Item costs its tier's Quality 3 price, whatever is inside.
   const price = theme.mystery ? itemPrice(itemId, 3) : itemPrice(itemId, qualityOf(item));
   return { kind: 'item', id: `item-${i}`, item, price, ...(theme.mystery ? { hidden: true } : {}) };

@@ -14,11 +14,10 @@ import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
-import type { GameState, ItemOffer, ItemType, StationSpecialId } from '../../engine';
+import type { GameState, ItemOffer, StationSpecialId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import type { IconName } from '../icons/paths';
 import { ItemCard } from '../items/ItemCard';
-import { TYPE_LOOK } from '../items/itemLook';
+import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import styles from './Counter.module.css';
 import { DRAG_TYPE, SPECIAL_LOOK, bundleName, type DragSale } from './stationLook';
 import room from './StationScreen.module.css';
@@ -237,14 +236,6 @@ export function Counter({
   );
 }
 
-const TYPE_ICON: Record<ItemType, IconName> = {
-  tool: 'hammer',
-  clothes: 'shirt',
-  food: 'utensils',
-  shelter: 'tent',
-  trinket: 'sparkles',
-};
-
 function offerLabel(o: ItemOffer): string {
   const def = ITEMS[o.item.itemId];
   const tier = NUMERAL[def?.tier ?? 1];
@@ -253,7 +244,8 @@ function offerLabel(o: ItemOffer): string {
   return `${def?.name}${q}, ${o.sold ? 'sold' : `${o.price} caps`}`;
 }
 
-function PriceTag({ price, sold, short }: { price: number; sold: boolean; short?: true }) {
+/** A parchment price tag (the Merchant's cards use it too). */
+export function PriceTag({ price, sold, short }: { price: number; sold: boolean; short?: true }) {
   return (
     <span className={styles.tag} data-short={sold ? true : short}>
       {sold ? (

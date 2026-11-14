@@ -91,6 +91,8 @@ export interface Tile {
   /** Narrow Path only: how many hikers it holds at once. */
   narrowCapacity?: number;
   feature?: SideFeature;
+  /** A side feature's wares, rolled the first time someone stands here (Phase 9). */
+  shop?: TrailShop;
   /** A hiker has landed here. The special icon moves to the corner once true. */
   visited?: true;
   /** Its challenge will be this many tiers higher, or lower (Warning Bird, Predator Bait). */
@@ -699,6 +701,10 @@ export type Action =
     }
   /** At a ranger station (free): sell a bag item, or some of one resource, to the shop. */
   | { type: 'sell'; hikerId: HikerId; itemUid?: string; resource?: ResourceId; count?: number }
+  /** A trail Merchant (free): buy one of their cards for the purse; `hikerId` takes it. */
+  | { type: 'merchantBuy'; hikerId: HikerId; offerId: string }
+  /** A Traveling Trader (free): give them an item of the type they want for theirs. */
+  | { type: 'trade'; hikerId: HikerId; itemUid: string }
   /** Leave the ranger station: the free night, then the next biome's Trailhead. */
   | { type: 'restAndGo' }
   | { type: 'endPhase' }
@@ -758,6 +764,8 @@ export type DebugOp =
   | { kind: 'openStation'; themeId?: StationThemeId }
   /** Roll the open station's stock, market and blueprints again. */
   | { kind: 'rerollStation' }
+  /** Put a side feature on a tile (rolling its wares if someone is there). */
+  | { kind: 'setFeature'; tileId: TileId; feature: SideFeature }
   /** Add caps to the party purse. */
   | { kind: 'giveCaps'; caps: number }
   /** Add an item to Rocco's used-or-lost log. */
@@ -915,6 +923,8 @@ export type GameEventBody =
       resource?: ResourceId;
       count?: number;
     }
+  /** Traded with a Traveling Trader. */
+  | { kind: 'traded'; hikerId: HikerId; gave: ItemId; got: ItemId }
   /** An abandoned hiker came back (the station's rejoin). */
   | { kind: 'rejoined'; hikerId: HikerId; price: number }
   /** The free night at the station, and the next section starts. */
@@ -1079,6 +1089,22 @@ export interface Arrival {
   injuries: number;
   carried: boolean;
 }
+
+/**
+ * A trail tile's side feature (01-design-doc.md, "Side features"; Phase 9):
+ * - a Merchant's 3 cards, each bought once (Wyatt, Nov 14);
+ * - a Traveling Trader's item, one tier above the biome's, for any 1 item of
+ *   another type (Wyatt, Nov 14), once.
+ */
+export type TrailShop =
+  | { kind: 'merchant'; offers: (ItemOffer | BlueprintOffer | BundleOffer)[] }
+  | {
+      kind: 'trader';
+      item: ItemInstance;
+      wants: 'tool' | 'clothes' | 'food';
+      /** Who traded, and what the Trader got. */
+      traded?: { hikerId: HikerId; itemId: ItemId };
+    };
 
 /** Something on a station's counter. */
 interface Offer {

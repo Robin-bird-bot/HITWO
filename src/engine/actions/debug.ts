@@ -1,3 +1,4 @@
+import { rollTrailShop } from '../station/trail';
 import { STATION_THEME_BY_ID } from '../../content/stations';
 import { noteGone } from '../items/gone';
 import { checkInArrivals } from '../station/checkIn';
@@ -182,6 +183,17 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       delete state.station.special;
       Object.assign(state.station, fresh);
       pushEvent(state, { kind: 'debug', note: 'Rerolled the station' });
+      break;
+    }
+    case 'setFeature': {
+      const tile = state.section.tiles[op.tileId];
+      if (!tile || tile.kind !== 'normal') return;
+      tile.feature = op.feature;
+      delete tile.shop;
+      if (state.hikers.some((h) => h.tileId === tile.id && h.status === 'active')) {
+        rollTrailShop(state, tile);
+      }
+      pushEvent(state, { kind: 'debug', note: `A ${op.feature} on ${op.tileId}` });
       break;
     }
     case 'giveCaps':

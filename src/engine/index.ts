@@ -82,6 +82,7 @@ export {
 } from './station/prices';
 export { stationItemCount, stationTheme } from './station/stock';
 export { findOffer, rejoinReason } from './actions/station';
+export { tradeable } from './station/trail';
 export type { StationFocus, StationTheme, StationThemeId } from './station/types';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';

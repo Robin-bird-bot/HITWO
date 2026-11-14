@@ -517,6 +517,13 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'traded':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} traded the ${ITEMS[e.gave]?.name ?? 'item'} to a Traveling Trader for the ${ITEMS[e.got]?.name ?? 'item'}.`,
+          tone: 'scavenge',
+        });
+        break;
       case 'rejoined':
         lines.push({
           id: e.id,

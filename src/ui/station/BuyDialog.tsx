@@ -3,6 +3,9 @@
  * party, and who takes it (asked only when more than one hiker could). A
  * blueprint asks who learns it; the Taxi Service asks who comes back.
  * Spending caps can't be undone, so this is the confirm. Esc or Cancel closes.
+ *
+ * With `tileId`, it's a trail Merchant's card instead (Phase 9 step 6): any
+ * active hiker on that tile can take it.
  */
 import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
@@ -17,24 +20,40 @@ import styles from './BuyDialog.module.css';
 export function BuyDialog({
   state,
   offerId,
+  tileId,
   onBuy,
   onClose,
 }: {
   state: GameState;
   offerId: string;
+  /** A Merchant's card on this trail tile, not the station's. */
+  tileId?: string;
   onBuy(action: Action): void;
   onClose(): void;
 }) {
   const station = state.station;
-  const rejoin = offerId === 'rejoin';
-  const offer = station && !rejoin ? findOffer(station, offerId) : undefined;
+  const shop = tileId ? state.section.tiles[tileId]?.shop : undefined;
+  const rejoin = !tileId && offerId === 'rejoin';
+  const offer = tileId
+    ? shop?.kind === 'merchant'
+      ? shop.offers.find((o) => o.id === offerId)
+      : undefined
+    : station && !rejoin
+      ? findOffer(station, offerId)
+      : undefined;
   const price = rejoin ? BALANCE.station.rejoin.price : (offer?.price ?? 0);
 
   const candidates = state.hikers.filter((h) =>
-    rejoin ? h.status === 'abandoned' : h.status === 'checkedIn',
+    tileId
+      ? h.status === 'active' && h.tileId === tileId
+      : rejoin
+        ? h.status === 'abandoned'
+        : h.status === 'checkedIn',
   );
   const choices = candidates.map((h) => {
-    const action: Action = { type: 'buy', offerId, hikerId: h.id };
+    const action: Action = tileId
+      ? { type: 'merchantBuy', offerId, hikerId: h.id }
+      : { type: 'buy', offerId, hikerId: h.id };
     return { hiker: h, action, reason: validateAction(state, action) };
   });
   const able = choices.filter((c) => !c.reason);
@@ -53,7 +72,7 @@ export function BuyDialog({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  if (!station || (!rejoin && !offer)) return null;
+  if ((!station && !tileId) || (!rejoin && !offer)) return null;
 
   const what = rejoin
     ? 'the Taxi Service'

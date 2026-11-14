@@ -1,0 +1,322 @@
+/* The trail's Merchant and Traveling Trader (approved in #mockup-station-extras). Stage pixels. */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(16, 20, 18, 0.55);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window {
+  width: 900px;
+  max-height: 900px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(29, 34, 32, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 4px solid #3e2414;
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.head h2 {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: #fce9c4;
+  text-shadow: 0 3px 0 #3a2212;
+}
+
+.head small {
+  font-size: 13px;
+  color: #e4be84;
+}
+
+.keeperIcon {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #a8743f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fce9c4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.close:focus-visible,
+.pickCard:focus-visible,
+.gold:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}
+
+.kicker {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #e4be84;
+}
+
+.small {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #c9c2b2;
+}
+
+.gold {
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gold);
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.gold:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ── The Merchant ── */
+
+.merchant {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.line {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+}
+
+.offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+
+.bigBp {
+  width: 170px;
+  height: 238px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 4px solid var(--type);
+  background-color: #dce8f2;
+  background-image:
+    linear-gradient(rgba(84, 120, 160, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(84, 120, 160, 0.18) 1px, transparent 1px);
+  background-size: 12px 12px;
+  color: #2f4f73;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  text-align: center;
+  font-family: var(--font-pixel);
+}
+
+.bigBp span {
+  font-size: 16px;
+}
+
+.bigBp em {
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6b7d90;
+}
+
+.bigBundle {
+  position: relative;
+  width: 170px;
+  height: 238px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: rgba(24, 30, 27, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bigBundle img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.miniCaps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 3px solid #7a5420;
+  color: #3a2414;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+}
+
+/* ── The Traveling Trader ── */
+
+.trader {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 330px;
+  box-sizing: border-box;
+}
+
+.theirs,
+.yours {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.yours {
+  flex: 1;
+  min-width: 0;
+}
+
+.swap {
+  font-family: var(--font-callout);
+  font-size: 54px;
+  color: var(--gold);
+}
+
+.mine {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pickCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: none;
+  color: #f1eadb;
+  cursor: pointer;
+}
+
+.pickCard[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: rgba(233, 180, 76, 0.12);
+}
+
+.owner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.owner em {
+  font-style: normal;
+  color: #c9c2b2;
+}
+
+.face {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.none,
+.done {
+  margin: 0;
+  max-width: 440px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.done {
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  color: #f2c978;
+}
+
+.reason {
+  margin: 0;
+  font-size: 14px;
+  color: #f39a86;
+}
+
+.stamped {
+  position: relative;
+}
+
+.faded {
+  opacity: 0.45;
+}

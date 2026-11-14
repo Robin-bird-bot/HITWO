@@ -275,6 +275,13 @@ export const BALANCE = {
     rejoin: { price: 15, perRun: 2, injuries: 2, stat: 3 },
     /** At the station everyone crafts this many tiers above their own (Wyatt, Nov 13). */
     workbenchTiers: 1,
+    /**
+     * A trail Merchant: 3 cards, each an item, a resource bundle or a
+     * blueprint, at station prices and Quality. TODO(wyatt): how likely each.
+     */
+    merchant: { cards: 3, kinds: { item: 2, bundle: 1, blueprint: 1 } },
+    /** A Traveling Trader's item is this many tiers above the biome's (Wyatt, Nov 14), at most 3. */
+    traderTierAbove: 1,
   },
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).

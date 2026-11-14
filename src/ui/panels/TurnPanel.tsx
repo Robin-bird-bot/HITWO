@@ -57,6 +57,8 @@ interface TurnPanelProps {
   onAbandon?(id: HikerId): void;
   /** Opens the hiker's blueprints (the Craft window's Teach tab). */
   onBlueprints?(): void;
+  /** Opens the Merchant or Traveling Trader on the hiker's tile. */
+  onFeature?(): void;
 }
 
 export function TurnPanel({
@@ -71,6 +73,7 @@ export function TurnPanel({
   onFree,
   onAbandon,
   onBlueprints,
+  onFeature,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -92,7 +95,7 @@ export function TurnPanel({
           <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
         )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
-        <TileCard state={state} hiker={hiker} />
+        <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />
         <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
         <Resources state={state} hiker={hiker} onPick={onPick} />
@@ -391,7 +394,16 @@ export function CarryCard({
 const CARRY_COLOR = '#E9B44C';
 const CARRY_LOOK = { borderColor: `${CARRY_COLOR}59`, background: `${CARRY_COLOR}1A` };
 
-export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
+export function TileCard({
+  state,
+  hiker,
+  onFeature,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  /** Opens the tile's Merchant or Traveling Trader. */
+  onFeature?(): void;
+}) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
   const others = hikersOnTile(state, tile.id).filter((h) => h.id !== hiker.id);
@@ -440,8 +452,13 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
           <button
             type="button"
             className={styles.feature}
-            aria-disabled="true"
-            title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
+            disabled={!onFeature || !tile.shop || hiker.status !== 'active'}
+            title={
+              hiker.status === 'active'
+                ? `Visit the ${FEATURE_LOOK[tile.feature].name} (free)`
+                : `Only an active hiker can visit the ${FEATURE_LOOK[tile.feature].name}`
+            }
+            onClick={onFeature}
           >
             <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
             {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}

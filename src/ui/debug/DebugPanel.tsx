@@ -175,6 +175,27 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
             ))}
           </select>
         </div>
+        <div className={styles.row}>
+          {(['merchant', 'trader'] as const).map((feature) => {
+            const at = state.hikers.find((h) => h.status === 'active');
+            const tile = at ? state.section.tiles[at.tileId] : undefined;
+            return (
+              <button
+                key={feature}
+                type="button"
+                className={styles.button}
+                disabled={!at || tile?.kind !== 'normal'}
+                title="On the first active hiker’s tile (a plain tile), with fresh wares"
+                onClick={() =>
+                  at &&
+                  run({ type: 'debug', op: { kind: 'setFeature', tileId: at.tileId, feature } })
+                }
+              >
+                {feature === 'merchant' ? 'Merchant here' : 'Trader here'}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       <StationDebug state={state} run={run} />
