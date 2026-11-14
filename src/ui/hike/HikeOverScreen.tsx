@@ -3,7 +3,7 @@
  * everyone has passed out or left, or the party reached the summit (Phase 9).
  * Like the weather change screen, the whole screen blurs and the words sit on
  * top: the day reached, where each hiker ended up, and New hike or back to the
- * title. Scoring arrives in Phase 12.
+ * title. Scoring arrives in Phase 13.
  */
 import { useEffect, useRef } from 'react';
 import { ASSETS } from '../../config/assets';

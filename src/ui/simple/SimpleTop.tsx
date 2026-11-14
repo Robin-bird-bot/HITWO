@@ -150,7 +150,7 @@ export function GoalPill() {
           </span>
           <span className={styles.info}>
             Each section you’ll pick one party goal, shown here with its progress. Objectives arrive
-            in Phase 12.
+            in a later update.
           </span>
         </Popout>
       )}

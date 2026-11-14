@@ -1081,7 +1081,7 @@ export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase 
 
 // ── The game ───────────────────────────────────────────────────────────────
 
-/** A hiker reaching a checkpoint (Phase 12 scores healthy, injured and carried arrivals). */
+/** A hiker reaching a checkpoint (Phase 13 scores healthy, injured and carried arrivals). */
 export interface Arrival {
   /** The section it ended (0 is the first). */
   section: number;
@@ -1177,7 +1177,7 @@ export interface GameState {
   hikers: Hiker[];
   /** The ranger station visit, once everyone has checked in. */
   station?: StationVisit;
-  /** Every check-in so far, for the score (Phase 12). */
+  /** Every check-in so far, for the score (Phase 13). */
   arrivals?: Arrival[];
   /** The party reached the summit: the hike is over. */
   summit?: true;

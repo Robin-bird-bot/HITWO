@@ -623,9 +623,39 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 - **Waiting on later phases:**
   - Phase 10 (`TODO(phase 10)`): the trinkets that touch traits, slots and XP (unchanged from Phase 8).
   - Phase 11 (`TODO(phase 11)`): each biome's own weather odds.
-  - Phase 12: scoring. `state.arrivals` records each hiker's arrival (section, injuries, carried) for it.
+  - Phase 13: scoring. `state.arrivals` records each hiker's arrival (section, injuries, carried) for it.
   - Still held: Sit by the Fire, so Frozen Fingers stays off and Bear Country only watches crafting.
 - **Saves:** version 13. Version 11 adds checking in and the station (optional fields, so nothing to migrate). Version 12 stocks a station opened by a version 11 save. Version 13 rolls the wares of a Merchant or Trader the party already reached.
+
+---
+
+## Phase 9.5: Smoother play
+
+(New in the Nov 14 update, `docs/UPDATE-2026-11-14-phase-9.5.md`, which has the details.) Build it before Phase 10, and use its drag patterns in every later phase.
+
+**Goal:** the same game, faster and lighter to play, with simpler Appetite and Abundance rules.
+
+**Build**
+- **Writing style:** the player-facing text rules are in `CLAUDE.md`. Follow them from Phase 10 on.
+- **Appetite:** hikers no longer lose Appetite overnight. It only goes down from actions: moving, scavenging, Tend, and the extra costs of night moves and Move All. Tend costs 1 Appetite instead of 1 Energy. Food stays as it is for now. Never Hungry and Rabbit Diet wait for Phase 10.
+- **Abundance: one bar for the whole biome**, in place of the four node meters:
+  - 0 to 20, starting at 15 in each biome and recovering +1 each night;
+  - every scavenge lowers it, and ×2, ×3, Pair and Trio cards and bonus resources a hiker chooses to take lower it more;
+  - Tend (day only, +2), returning a resource, Fertilizer and some rewards raise it;
+  - its one effect: each resource card dealt may come up **Empty** (5% at full, rising evenly to 40% at 0). Caps and item cards are never empty. The old low-Abundance effects go;
+  - one meter at the top, green → yellow → red, with the empty-card chance in its tooltip;
+  - old saves average their four meters into the bar;
+  - the content that named a node's Abundance (Fertilizer, challenges, the opportunity, Crater Lake, the Thumbs, Conservationist) uses the one bar.
+- **The station forest drifts:** the layers outside the windows slide slowly left and loop, far ones slower than near ones. They hold still under reduced motion.
+- **Drag to do things:** one shared drag system (pointer events, so mouse and touch). Valid drop places glow and the rest dims; dropping anywhere else or Esc cancels; the click buttons stay.
+  - **Moving:** drag a hiker's token. An arrow follows, reachable tiles glow with the line's cost, and dropping opens a pop-up with **Move** and **Move all** (a checklist of the hikers on the tile who can come, then **Go**).
+  - **Items:** drag clothes onto a slot to equip; drag an item or resource onto another hiker's portrait to give it; drag a tool onto its target tile (or onto the map); drag food onto a portrait to eat it; drag a shelter onto its tile.
+  - **Station:** drag to the sell slot to sell; drag a shop card onto a pack to buy it (with a confirm); drag resources and items into the Workbench.
+- **Scavenging without the pop-up:** the kept card slides into the hiker's pack with a small "+1 Fur" that floats up. A new **item card** result shows the real item, Quality rolled, as rare as a random item find of the same type.
+- **Card previews:** click (long-press on a phone, or hover a moment on a desktop) any card or item name to see the full card. Unrolled Quality shows as ranges ("2–4 bites"). One shared preview, used everywhere.
+- **Multi-select:** Shift- or Ctrl-click hikers (a Select toggle on a phone). The order picked is the turn order, shown as numbered badges. Then one action, and each selected hiker does it on their own in turn: moving separately (the first faces the tile's challenge alone), scavenging one window after another, Tend, Sleep, Keep Watch. A hiker who can't is skipped with a short note; hikers who can't reach the tile pick their own. Esc or tapping empty map clears it.
+
+**Done when:** the update's tests pass: Appetite, the Abundance bar and empty cards, drag targets, Move all from the pop-up, multi-select order, item cards keeping their Quality, and preview ranges.
 
 ---
 
@@ -655,6 +685,8 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ## Phase 11: Biomes, tiers and weather
 
+Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
+
 **Build**
 - Meadow → Temperate Rainforest → Alpine, at Tier 1 → 3.
 - Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker).
@@ -663,7 +695,24 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 12: Objectives and scoring
+## Phase 12: UI overhaul
+
+(New in the Nov 14 update.) Wyatt sends mockups first.
+
+**Build**
+- The trail map's look: the background, the trail art and each biome's art.
+- The hiker portrait panel.
+- **The crafting window:**
+  - switch between hikers without closing it;
+  - every blueprint shown, with the unlearned ones grayed out;
+  - favorite recipes, and their resources shown at the bottom of the scavenge window.
+- Scavenging windows for several hikers on screen at once, side by side, so they can plan together.
+
+**Ask Wyatt first:** the mockups.
+
+---
+
+## Phase 13: Objectives and scoring
 
 **Build**
 - **Objectives:** at each biome, draw 3 (one each of Tier 1, 2 and 3) and pick 1. Rerolls: 2 for Tier 1, 1 for Tier 2, none for Tier 3. Track success or failure with point and Morale penalties.
@@ -674,7 +723,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 13: Setup flow
+## Phase 14: Setup flow
 
 **Build**
 - Title → party pick (4 hikers, filter by class label) → starting kit draft → objective draw → hike.
@@ -683,18 +732,19 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 14: Content, balancing and polish
+## Phase 15: Content, balancing and polish
 
 - Bring in Wyatt's full content.
+- Rewrite all player-facing text to the writing style in `CLAUDE.md`, including the Wonder cards, and add the challenge descriptions.
 - A balancing pass using the debug panel and seeded replays.
-- Sound is its own phase now (Phase 15).
+- Sound is its own phase now (Phase 16).
 - Animation polish.
 - Animated gradients on item cards (see "Cards are built in-game" above), once Wyatt's frame and icon layers arrive.
 - Accessibility: text size option, colorblind-safe icons alongside colors.
 
 ---
 
-## Phase 15: Audio
+## Phase 16: Audio
 
 Start this once the game is fully playable.
 
@@ -708,7 +758,7 @@ Start this once the game is fully playable.
 
 ---
 
-## Phase 16: Phone
+## Phase 17: Phone
 
 - Make it a PWA: installable, works offline, and asks to rotate to landscape.
 - Touch: tap to select, long-press for details, pinch to zoom the map.

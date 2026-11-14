@@ -130,7 +130,7 @@ export function ObjectiveCard() {
     >
       <span className={styles.objectiveName}>PARTY GOAL</span>
       <span className={styles.objectiveText}>
-        Each section you’ll pick one party goal here. Objectives arrive in Phase 12.
+        Each section you’ll pick one party goal here. Objectives arrive in a later update.
       </span>
     </Panel>
   );
