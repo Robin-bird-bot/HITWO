@@ -1,8 +1,9 @@
 /**
  * The hike is over (Wyatt, Nov 7): no hiker can act any more, because
- * everyone has passed out or left. Like the weather change screen, the whole
- * screen blurs and the words sit on top: the day reached, where each hiker
- * ended up, and New hike or back to the title. Scoring arrives in Phase 12.
+ * everyone has passed out or left, or the party reached the summit (Phase 9).
+ * Like the weather change screen, the whole screen blurs and the words sit on
+ * top: the day reached, where each hiker ended up, and New hike or back to the
+ * title. Scoring arrives in Phase 12.
  */
 import { useEffect, useRef } from 'react';
 import { ASSETS } from '../../config/assets';
@@ -28,13 +29,24 @@ export function HikeOverScreen({
 }) {
   const first = useRef<HTMLButtonElement>(null);
   useEffect(() => first.current?.focus(), []);
+  const summit = !!state.summit;
+  const madeIt = state.hikers.filter((h) => h.status === 'checkedIn').length;
   return (
-    <div className={styles.screen} role="dialog" aria-modal="true" aria-label="The hike is over">
+    <div
+      className={styles.screen}
+      role="dialog"
+      aria-modal="true"
+      aria-label={summit ? 'The party reached the summit' : 'The hike is over'}
+    >
       <div className={styles.blur} aria-hidden="true" />
       <div className={styles.content}>
         <span className={styles.kicker}>DAY {state.day}</span>
-        <h2 className={styles.title}>THE HIKE IS OVER</h2>
-        <p className={styles.text}>No one is left who can keep hiking.</p>
+        <h2 className={styles.title}>{summit ? 'YOU REACHED THE SUMMIT' : 'THE HIKE IS OVER'}</h2>
+        <p className={styles.text}>
+          {summit
+            ? `${madeIt} of ${state.hikers.length} hikers made it to the top. Scoring arrives in a later update.`
+            : 'No one is left who can keep hiking.'}
+        </p>
         <ul className={styles.party}>
           {state.hikers.map((h) => (
             <li key={h.id} className={styles.hiker}>
@@ -46,7 +58,7 @@ export function HikeOverScreen({
               />
               <span className={styles.name}>{h.name.toUpperCase()}</span>
               <span className={styles.ended} data-status={h.status}>
-                {ENDED[h.status]}
+                {summit && h.status === 'checkedIn' ? 'Reached the summit' : ENDED[h.status]}
               </span>
             </li>
           ))}

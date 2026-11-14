@@ -16,7 +16,7 @@ export function countChallenge(state: GameState, hikerId: HikerId, passed: boole
 /** At camp: a hiker who slept starts over; one who didn't adds a night. */
 export function countSleep(state: GameState): void {
   for (const h of state.hikers) {
-    if (h.status === 'abandoned') continue;
+    if (h.status === 'abandoned' || h.status === 'checkedIn') continue;
     state.counters.daysSinceSleep[h.id] = h.slept
       ? 0
       : (state.counters.daysSinceSleep[h.id] ?? 0) + 1;

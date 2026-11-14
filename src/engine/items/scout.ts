@@ -22,6 +22,7 @@ import { peekTile, revealCardOn, revealTile, triggers } from '../challenges/reve
 import { tileTier } from '../challenges/pick';
 import type { ItemUse } from '../effects';
 import { pushEvent } from '../log';
+import { checkInArrivals } from '../station/checkIn';
 import { adjacentTileIds, besideTileIds, lineBetween } from '../map';
 import type { GameState, Hiker, ItemId, LineKind, Tile, TileId } from '../types';
 
@@ -228,6 +229,7 @@ export function applyMapUse(
         ...(revealed.length ? { revealed } : {}),
       });
       noteArrival(state, [hiker.id, ...carried], tile.id);
+      checkInArrivals(state, [hiker.id, ...carried], tile.id);
       if (firstHere) revealTile(state, tile.id, [hiker.id, ...carried]);
       return undefined;
     }

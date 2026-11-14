@@ -66,6 +66,12 @@ export {
   withDefaults,
 } from './items/make';
 export { isHikeOver } from './health';
+export {
+  atLastSection,
+  checkInPreview,
+  isCheckpoint,
+  type CheckInPreview,
+} from './station/checkIn';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';

@@ -196,6 +196,8 @@ export function endWeatherConditions(state: GameState): void {
 /** Ticks phase conditions (end of every phase) or day and night ones (camp). */
 export function tickConditions(state: GameState, which: 'phases' | 'days'): void {
   for (const hiker of state.hikers) {
+    // Checked in at the checkpoint: their conditions wait too.
+    if (hiker.status === 'checkedIn') continue;
     const ended: ConditionInstance[] = [];
     for (const c of hiker.conditions) {
       if (c.unit === 'weather') continue;

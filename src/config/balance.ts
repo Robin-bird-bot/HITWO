@@ -198,6 +198,15 @@ export const BALANCE = {
     medkitInjuries: 1,
   },
 
+  /** The run: one section per biome, in this order. The last checkpoint is the summit. */
+  run: {
+    biomes: ['meadow', 'temperateRainforest', 'alpine'] as BiomeId[],
+  },
+  /** Checkpoints and ranger stations (Phase 9). */
+  station: {
+    /** XP for each hiker reaching a checkpoint (the XP table). */
+    checkInXp: 10,
+  },
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
    * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.

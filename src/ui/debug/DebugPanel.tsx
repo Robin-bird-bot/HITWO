@@ -149,6 +149,30 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
             Back to title
           </button>
         </div>
+        <div className={styles.row}>
+          <button
+            type="button"
+            className={styles.button}
+            onClick={() => run({ type: 'debug', op: { kind: 'nearCheckpoint' } })}
+          >
+            Everyone near the checkpoint
+          </button>
+          <select
+            className={styles.button}
+            aria-label="Section"
+            value={state.sectionIndex}
+            onChange={(e) =>
+              run({ type: 'debug', op: { kind: 'sectionIndex', index: Number(e.target.value) } })
+            }
+          >
+            {BALANCE.run.biomes.map((b, i) => (
+              <option key={b} value={i}>
+                Section {i + 1}
+                {i === BALANCE.run.biomes.length - 1 ? ' (summit)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
       </section>
 
       <section className={styles.group}>

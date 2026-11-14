@@ -46,9 +46,15 @@ interface HikerTokensProps {
   hikers: Hiker[];
   selectedId: HikerId | null;
   onSelect(id: HikerId): void;
+  /**
+   * A tile the selected hiker can move to (or a tool can pick): a click on a
+   * token there picks the tile, so hikers standing on it (checked in at the
+   * checkpoint, say) don't get in the way.
+   */
+  pickTile?: { tileIds: ReadonlySet<string>; onPick(tileId: string): void };
 }
 
-export function HikerTokens({ section, hikers, selectedId, onSelect }: HikerTokensProps) {
+export function HikerTokens({ section, hikers, selectedId, onSelect, pickTile }: HikerTokensProps) {
   const lastRow = lastRowOf(section);
   const onMap = hikers.filter((h) => h.status !== 'abandoned');
   // A carried hiker rides on their carrier's token instead of taking a spot.
@@ -95,7 +101,8 @@ export function HikerTokens({ section, hikers, selectedId, onSelect }: HikerToke
           title={h.name}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(h.id);
+            if (pickTile?.tileIds.has(h.tileId)) pickTile.onPick(h.tileId);
+            else onSelect(h.id);
           }}
           style={{
             left,

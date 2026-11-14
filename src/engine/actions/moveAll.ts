@@ -3,6 +3,7 @@ import { noteArrival } from '../challenges/trials';
 import { moveAllCost } from '../costs';
 import { canActReason, effectSourcesFor, fireMove, queryContext } from '../effects';
 import { pushEvent } from '../log';
+import { checkInArrivals } from '../station/checkIn';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
 import { bringCarried, carryMoveReason } from './carry';
@@ -109,6 +110,7 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   }
   const arrived = [...group.map((h) => h.id), ...carried];
   noteArrival(state, arrived, action.toTileId);
+  checkInArrivals(state, arrived, action.toTileId);
   // The first hikers to land on a tile trigger its card.
   if (firstHere) revealTile(state, action.toTileId, arrived);
 }

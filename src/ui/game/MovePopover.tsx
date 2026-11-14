@@ -17,13 +17,18 @@ interface MovePopoverProps {
   onCancel(): void;
 }
 
-/** The cost preview by a tile, with Confirm and Cancel. Enter confirms, Esc cancels. */
+/**
+ * The cost preview by a tile, with Confirm and Cancel. Enter confirms, Esc
+ * cancels. A check-in that leaves someone behind starts on Cancel instead.
+ */
 export function MovePopover({ preview, above, below, onConfirm, onCancel }: MovePopoverProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const allowed = preview.reason === null;
+  const leavesSomeone = (preview.checkIn?.leftBehind.length ?? 0) > 0;
 
   useEffect(() => {
-    confirmRef.current?.focus();
+    (leavesSomeone ? cancelRef : confirmRef).current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
       else if (e.key === 'Enter' && allowed && document.activeElement === document.body)
@@ -31,7 +36,7 @@ export function MovePopover({ preview, above, below, onConfirm, onCancel }: Move
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [allowed, onCancel, onConfirm]);
+  }, [allowed, leavesSomeone, onCancel, onConfirm]);
 
   // Above the tile if there's room, otherwise below; never off the map area.
   const flip = above.y < 300;
@@ -94,6 +99,24 @@ export function MovePopover({ preview, above, below, onConfirm, onCancel }: Move
               Reveals {preview.reveals} hidden node{preview.reveals === 1 ? '' : 's'}.
             </span>
           )}
+          {preview.checkIn && (
+            <span className={styles.note}>
+              {group ? 'They check' : 'Checks'} in at the{' '}
+              {preview.checkIn.summit ? 'summit' : 'checkpoint'}
+              {preview.checkIn.last
+                ? preview.checkIn.summit
+                  ? '. Everyone’s in: the party reaches the summit and the hike ends.'
+                  : '. Everyone’s in: the ranger station opens.'
+                : ` and ${group ? 'wait' : 'waits'} there for the others, losing nothing.`}
+            </span>
+          )}
+          {preview.checkIn && preview.checkIn.leftBehind.length > 0 && (
+            <span className={styles.warning}>
+              {preview.checkIn.leftBehind.join(' and ')}{' '}
+              {preview.checkIn.leftBehind.length === 1 ? 'is' : 'are'} passed out on the trail and
+              will be left behind: they abandon the hike.
+            </span>
+          )}
           {injured.length > 0 && (
             <span className={styles.warning}>
               {injured.map((r) => r.name).join(' and ')} will hit 0 and take an injury.
@@ -105,12 +128,12 @@ export function MovePopover({ preview, above, below, onConfirm, onCancel }: Move
       )}
 
       <div className={styles.buttons}>
-        <button type="button" className={styles.cancel} onClick={onCancel}>
+        <button ref={cancelRef} type="button" className={styles.cancel} onClick={onCancel}>
           {allowed ? 'Cancel' : 'OK'}
         </button>
         {allowed && (
           <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
-            {group ? 'Lead the group' : 'Move'}
+            {preview.checkIn ? 'Check in' : group ? 'Lead the group' : 'Move'}
           </button>
         )}
       </div>

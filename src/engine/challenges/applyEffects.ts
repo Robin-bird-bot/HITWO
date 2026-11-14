@@ -150,7 +150,7 @@ function logLost(
   }
 }
 
-/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 9). */
+/** Connected tiles a card can move a hiker onto (never the checkpoint: checking in is the hiker's own move). */
 function neighbours(state: GameState, tileId: TileId) {
   return adjacentTileIds(state.section, tileId)
     .map((id) => state.section.tiles[id])

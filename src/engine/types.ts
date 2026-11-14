@@ -731,6 +731,10 @@ export type DebugOp =
   | { kind: 'revealWonder' }
   /** Puts every hiker who's still hiking on one tile (to test Wonder goals). */
   | { kind: 'gatherAt'; tileId: TileId }
+  /** Everyone still hiking onto a tile one move from the checkpoint. */
+  | { kind: 'nearCheckpoint' }
+  /** Pretend this is section N (0 is the first; the last checkpoint is the summit). */
+  | { kind: 'sectionIndex'; index: number }
   /** Picks and opens a card as if the tile were this special space. */
   | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
   /** Shows the rolled X and Y numbers in the challenge pop-up. */
@@ -853,9 +857,15 @@ export type GameEventBody =
   /** A passed-out hiker spent a night with no active hiker beside them. */
   | { kind: 'countdown'; hikerId: HikerId; left: number }
   /** A hiker left the party: their countdown ran out, or the player chose it. */
-  | { kind: 'abandoned'; hikerId: HikerId; why: 'countdown' | 'choice' }
+  | { kind: 'abandoned'; hikerId: HikerId; why: 'countdown' | 'choice' | 'leftBehind' }
   /** No hiker can act any more. */
   | { kind: 'hikeOver'; day: number }
+  /** Hikers checked in at the checkpoint (a carried one too), and the XP each gained. */
+  | { kind: 'checkedIn'; hikerIds: HikerId[]; xp: number }
+  /** Everyone is in: the ranger station at this checkpoint (1, 2…) opens. */
+  | { kind: 'stationOpened'; checkpoint: number }
+  /** The last checkpoint: the party reached the summit. */
+  | { kind: 'summit' }
   | { kind: 'sleep'; hikerId: HikerId }
   | {
       kind: 'scavenge';
@@ -1008,6 +1018,21 @@ export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase 
 
 // ── The game ───────────────────────────────────────────────────────────────
 
+/** A hiker reaching a checkpoint (Phase 12 scores healthy, injured and carried arrivals). */
+export interface Arrival {
+  /** The section it ended (0 is the first). */
+  section: number;
+  hikerId: HikerId;
+  injuries: number;
+  carried: boolean;
+}
+
+/** The ranger station at a checkpoint (Phase 9). */
+export interface StationVisit {
+  /** 1 at the first checkpoint. */
+  checkpoint: number;
+}
+
 export interface GameState {
   saveVersion: number;
   seed: number;
@@ -1018,6 +1043,12 @@ export interface GameState {
   sectionIndex: number;
   section: Section;
   hikers: Hiker[];
+  /** The ranger station visit, once everyone has checked in. */
+  station?: StationVisit;
+  /** Every check-in so far, for the score (Phase 12). */
+  arrivals?: Arrival[];
+  /** The party reached the summit: the hike is over. */
+  summit?: true;
   /** The party purse of acorn caps. */
   caps: number;
   /** Added to every caps gain for good (each Wallet used: +1). */

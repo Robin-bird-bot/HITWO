@@ -21,7 +21,6 @@ interface MapTileProps {
   look: TileLookName;
   /** Edge color for the current tile (the selected hiker's color). */
   currentColor?: string;
-  hikerCount: number;
   /** A connected tile the selected hiker can move to ('ok', gold ring) or can't ('blocked'). */
   reach?: 'ok' | 'blocked';
   /** What clicking a reachable tile does ("Move here", "Use the Scanner here"). */
@@ -35,6 +34,16 @@ interface MapTileProps {
   onRevealed?(): void;
   /** A Wonder found here: its icon opens the Wonder. */
   onWonder?(): void;
+  /** The checkpoint: its number (1, 2…), whether it's the summit, and who has checked in. */
+  checkpoint?: CheckpointInfo;
+}
+
+export interface CheckpointInfo {
+  number: number;
+  summit: boolean;
+  checkedIn: number;
+  /** Everyone still on the hike. */
+  total: number;
 }
 
 export function MapTile({
@@ -42,7 +51,6 @@ export function MapTile({
   at,
   look,
   currentColor,
-  hikerCount,
   reach,
   reachLabel = 'Move here',
   onClick,
@@ -50,13 +58,15 @@ export function MapTile({
   mark,
   onRevealed,
   onWonder,
+  checkpoint = { number: 1, summit: false, checkedIn: 0, total: 4 },
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
       <CheckpointTile
         at={at}
-        hikerCount={hikerCount}
+        info={checkpoint}
         reach={reach}
+        reachLabel={reachLabel}
         onClick={onClick}
         labelOnHover={checkpointLabelOnHover}
       />
@@ -253,36 +263,50 @@ function clickable(onClick: (() => void) | undefined, label: string) {
 
 function CheckpointTile({
   at,
-  hikerCount,
+  info,
   reach,
+  reachLabel,
   onClick,
   labelOnHover,
 }: {
   at: Point;
-  hikerCount: number;
+  info: CheckpointInfo;
   reach?: 'ok' | 'blocked';
+  reachLabel: string;
   onClick?(): void;
   labelOnHover?: boolean;
 }) {
   const { w, h } = CHECKPOINT_HEX;
+  const name = info.summit ? 'The summit' : `Checkpoint ${info.number}: the ranger station`;
+  const describe = `${name} · ${info.checkedIn} of ${info.total} checked in`;
   return (
     <div className={styles.checkpointGroup} data-label={labelOnHover ? 'hover' : 'always'}>
       <div
         className={styles.tile}
         style={{ left: at.x - w / 2, top: at.y - h / 2, width: w, height: h }}
-        title="Checkpoint: the ranger station"
+        title={name}
         data-reach={reach}
-        {...clickable(onClick, 'Checkpoint: the ranger station')}
+        {...clickable(
+          onClick,
+          reach === 'ok'
+            ? `${reachLabel === 'Move here' ? 'Check in here' : reachLabel}: ${describe}`
+            : describe,
+        )}
       >
+        {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
         <div className={styles.hex} style={{ inset: 0, background: '#F7F1E4' }} />
         <div className={`${styles.hex} ${styles.checkpointFill}`} style={{ inset: 6 }}>
           <Icon name="tower" size={46} color="#F7F1E4" />
         </div>
       </div>
       <div className={styles.checkpointCard} style={{ left: at.x - w / 2 - 184, top: at.y - 34 }}>
-        <span className={styles.cardTitle}>CHECKPOINT 1</span>
+        <span className={styles.cardTitle}>
+          {info.summit ? 'THE SUMMIT' : `CHECKPOINT ${info.number}`}
+        </span>
         <span className={styles.cardText}>
-          Ranger Station · {hikerCount > 0 ? `${hikerCount} here` : 'all 4 check in'}
+          {info.checkedIn > 0
+            ? `${info.checkedIn} of ${info.total} checked in`
+            : `${info.summit ? 'Summit' : 'Ranger Station'} · all ${info.total} check in`}
         </span>
       </div>
     </div>

@@ -14,6 +14,7 @@ import { enterTile } from './common';
 import { passOut, wakeUp } from '../health';
 import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
+import { adjacentTileIds } from '../map';
 import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
@@ -127,6 +128,25 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       enterTile(state, op.tileId);
       if (tile.wonder) revealWonder(state, op.tileId, 'the debug panel');
       pushEvent(state, { kind: 'debug', note: `Put everyone on ${op.tileId}` });
+      break;
+    }
+    case 'nearCheckpoint': {
+      const near = adjacentTileIds(state.section, state.section.checkpointId).find(
+        (id) => state.section.tiles[id]?.kind === 'normal',
+      );
+      if (!near) return;
+      for (const h of state.hikers) {
+        if (h.status === 'active' || h.status === 'passedOut') h.tileId = near;
+      }
+      enterTile(state, near);
+      pushEvent(state, { kind: 'debug', note: 'Put everyone one move from the checkpoint' });
+      break;
+    }
+    case 'sectionIndex': {
+      const biomes = BALANCE.run.biomes;
+      state.sectionIndex = Math.max(0, Math.min(biomes.length - 1, op.index));
+      state.section.biome = biomes[state.sectionIndex] ?? state.section.biome;
+      pushEvent(state, { kind: 'debug', note: `Section ${state.sectionIndex + 1}` });
       break;
     }
     case 'openSpace': {

@@ -449,12 +449,33 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           text:
             e.why === 'countdown'
               ? `${name(e.hikerId)} was left alone too long and abandoned the hike.`
-              : `${name(e.hikerId)} abandoned the hike.`,
+              : e.why === 'leftBehind'
+                ? `${name(e.hikerId)} was left behind on the trail and abandoned the hike.`
+                : `${name(e.hikerId)} abandoned the hike.`,
           tone: 'injury',
         });
         break;
       case 'hikeOver':
         lines.push({ id: e.id, text: `The hike is over (Day ${e.day}).`, tone: 'phase' });
+        break;
+      case 'checkedIn': {
+        const who = listNames(e.hikerIds.map(name));
+        lines.push({
+          id: e.id,
+          text: `${who} checked in at the checkpoint (+${e.xp} XP${e.hikerIds.length > 1 ? ' each' : ''}).`,
+          tone: 'move',
+        });
+        break;
+      }
+      case 'stationOpened':
+        lines.push({
+          id: e.id,
+          text: `Everyone is in. The ranger station at checkpoint ${e.checkpoint} is open.`,
+          tone: 'phase',
+        });
+        break;
+      case 'summit':
+        lines.push({ id: e.id, text: 'The party reached the summit!', tone: 'phase' });
         break;
       case 'phase':
         lines.push({ id: e.id, text: `Day ${e.day} · ${PHASE_LABEL[e.phase]}`, tone: 'phase' });

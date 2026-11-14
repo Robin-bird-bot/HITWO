@@ -10,6 +10,7 @@ import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
   hikersWhoHaventActed,
+  atLastSection,
   isHikeOver,
   resourceCount,
   isAccomplished,
@@ -65,6 +66,7 @@ import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
+import { StationPlaceholder } from '../station/StationPlaceholder';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
 import type { ScoutFx } from '../map/MapView';
@@ -489,6 +491,7 @@ export function GameScreen({
         section={section}
         hikers={hikers}
         targets={targets}
+        checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
         reachLabel={
           toolMap && toolItem ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here` : undefined
         }
@@ -686,6 +689,8 @@ export function GameScreen({
           onAccomplish={(action) => dispatch(action)}
         />
       )}
+
+      {state.station && !isHikeOver(state) && <StationPlaceholder state={state} onTitle={onQuit} />}
 
       {isHikeOver(state) && (
         <HikeOverScreen state={state} onTitle={onQuit} {...(onNewHike ? { onNewHike } : {})} />

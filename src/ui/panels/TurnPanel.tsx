@@ -9,6 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import {
   abilitiesFor,
+  atLastSection,
   bagSlots,
   hikersOnTile,
   hikersWhoHaventActed,
@@ -243,7 +244,7 @@ export function Abilities({
 
 /**
  * A hiker who can't act: passed out (the countdown, how to help, and
- * Abandon), or gone from the hike.
+ * Abandon), checked in at the checkpoint, or gone from the hike.
  */
 export function OutCard({
   state,
@@ -258,6 +259,26 @@ export function OutCard({
     return (
       <div className={styles.block}>
         <p className={styles.outText}>{hiker.name} left the hike.</p>
+      </div>
+    );
+  }
+  if (hiker.status === 'checkedIn') {
+    const out = state.hikers.filter((h) => h.status === 'active' || h.status === 'passedOut');
+    return (
+      <div className={styles.block}>
+        <div className={styles.out} data-tone="in">
+          <span className={styles.outKicker}>
+            <Icon name="tower" size={14} />
+            CHECKED IN
+          </span>
+          <span className={styles.outText}>
+            {hiker.name} waits at the {atLastSection(state) ? 'summit' : 'checkpoint'}, losing
+            nothing.{' '}
+            {out.length
+              ? `Still on the trail: ${out.map((h) => h.name).join(', ')}.`
+              : 'Everyone is in.'}
+          </span>
+        </div>
       </div>
     );
   }
@@ -374,9 +395,15 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
   const others = hikersOnTile(state, tile.id).filter((h) => h.id !== hiker.id);
+  // At the checkpoint, the company is whoever has checked in.
+  const waiting = state.hikers.filter(
+    (h) => h.id !== hiker.id && h.tileId === tile.id && h.status === 'checkedIn',
+  );
   const company = others.length
     ? `With ${others.map((h) => h.name).join(', ')} · resources pooled`
-    : 'Alone here';
+    : waiting.length
+      ? `${waiting.map((h) => h.name).join(', ')} checked in here`
+      : 'Alone here';
   const special = tile.special ? SPECIAL_LOOK[tile.special].name : null;
   return (
     <>

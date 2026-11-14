@@ -48,6 +48,7 @@ import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './ac
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
+import { finishSection, readyToLeave } from './station/checkIn';
 import { pushEvent } from './log';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
@@ -263,7 +264,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       applyDebug(draft, action.op);
       break;
   }
-  // The last active hiker passed out or abandoned: the hike is over.
+  // Nobody left on the trail and someone checked in: the station opens (or the summit).
+  if (readyToLeave(draft)) finishSection(draft);
+  // The last active hiker passed out or abandoned, or the summit: the hike is over.
   if (!isHikeOver(state) && isHikeOver(draft))
     pushEvent(draft, { kind: 'hikeOver', day: draft.day });
   return draft;

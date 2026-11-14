@@ -49,7 +49,11 @@ export function wakeUp(state: GameState, hiker: Hiker, cause: string): void {
 }
 
 /** The hiker leaves the party for good. What they carry leaves with them. */
-export function abandonHike(state: GameState, hiker: Hiker, why: 'countdown' | 'choice'): void {
+export function abandonHike(
+  state: GameState,
+  hiker: Hiker,
+  why: 'countdown' | 'choice' | 'leftBehind',
+): void {
   if (hiker.status === 'abandoned' || hiker.status === 'checkedIn') return;
   endCarry(state, hiker);
   hiker.status = 'abandoned';
@@ -70,7 +74,9 @@ export function countdownAtCamp(state: GameState): void {
   }
 }
 
-/** No hiker can act any more: everyone has passed out or abandoned. */
+/** The hike is over: the party reached the summit, or nobody is left to go on (passed out or abandoned). */
 export function isHikeOver(state: GameState): boolean {
-  return !state.hikers.some((h) => h.status === 'active');
+  // Everyone checked in is a station visit, not a game over; the summit ends it.
+  if (state.summit) return true;
+  return !state.hikers.some((h) => h.status === 'active' || h.status === 'checkedIn');
 }

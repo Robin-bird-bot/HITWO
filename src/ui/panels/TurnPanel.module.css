@@ -465,6 +465,15 @@ button.itemCard:hover {
   background: rgba(229, 98, 74, 0.12);
 }
 
+.out[data-tone='in'] {
+  border-color: rgba(233, 180, 76, 0.5);
+  background: rgba(233, 180, 76, 0.1);
+}
+
+.out[data-tone='in'] .outKicker {
+  color: var(--gold);
+}
+
 .outKicker {
   display: flex;
   align-items: center;

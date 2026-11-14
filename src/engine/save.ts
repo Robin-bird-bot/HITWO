@@ -20,7 +20,7 @@ import {
 } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -52,6 +52,8 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 8 step 7: crafting. Blueprints, craft tiers, an open craft and the trinket set are
   // all optional, so an older save needs nothing new.
   9: (save) => save,
+  // Phase 9: check-ins, the station visit and the summit (all optional).
+  10: (save) => save,
 };
 
 /** Shelters stored as item ids become placed shelters with their full nights. */

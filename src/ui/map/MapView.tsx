@@ -28,6 +28,8 @@ interface MapViewProps {
   targets: { tileId: string; reason: string | null }[];
   /** What clicking a target does, for screen readers: "Move here" unless a tool is picking. */
   reachLabel?: string;
+  /** This section's checkpoint: its number, and whether it's the summit. */
+  checkpoint?: { number: number; summit: boolean };
   onTileClick(tileId: string): void;
   /** Simple mode shows the checkpoint's label only on hover. */
   checkpointLabelOnHover?: boolean;
@@ -64,6 +66,7 @@ export function MapView({
   hikers,
   targets,
   reachLabel,
+  checkpoint,
   onTileClick,
   checkpointLabelOnHover,
   marks,
@@ -134,6 +137,12 @@ export function MapView({
   const selected = hikers.find((h) => h.id === selectedId);
   const currentTileId = selected?.tileId ?? null;
   const tiles = Object.values(section.tiles);
+  const checkpointInfo = {
+    number: checkpoint?.number ?? 1,
+    summit: checkpoint?.summit ?? false,
+    checkedIn: hikers.filter((h) => h.status === 'checkedIn').length,
+    total: hikers.filter((h) => h.status !== 'abandoned').length,
+  };
   const reachOf = (tileId: string) => {
     const target = targets.find((t) => t.tileId === tileId);
     return target ? (target.reason === null ? 'ok' : 'blocked') : undefined;
@@ -167,9 +176,9 @@ export function MapView({
             at={tileCenter(t, lastRow)}
             look={tileLook(section, t, currentTileId)}
             currentColor={selected ? characterFor(selected.id).color : undefined}
-            hikerCount={hikers.filter((h) => h.tileId === t.id && h.status === 'active').length}
             reach={reachOf(t.id)}
             reachLabel={reachLabel}
+            checkpoint={checkpointInfo}
             mark={marks?.[t.id]}
             onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
             onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
@@ -183,6 +192,10 @@ export function MapView({
           hikers={hikers}
           selectedId={selectedId}
           onSelect={onSelectHiker}
+          pickTile={{
+            tileIds: new Set(targets.filter((t) => t.reason === null).map((t) => t.tileId)),
+            onPick: onTileClick,
+          }}
         />
         {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
         {fx.map((f) => (
