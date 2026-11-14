@@ -241,8 +241,10 @@ describe('Wonder goals, against only the hikers on the tile', () => {
     expect(met(s, 'pittock-mansion', 1, 10)).toBe(false);
     s.caps = 10;
     expect(met(s, 'pittock-mansion', 1, 10)).toBe(true);
-    s.abundance.river = BALANCE.abundance.max;
-    expect(met(s, 'crater-lake', 1, 10)).toBe(true);
+    s.abundance = 14;
+    expect(met(s, 'crater-lake', 1, 15)).toBe(false);
+    s.abundance = 15;
+    expect(met(s, 'crater-lake', 1, 15)).toBe(true);
 
     s.counters.failed.ash = 3;
     expect(met(s, 'fort-rock', 3, 3)).toBe(true);
@@ -281,12 +283,12 @@ describe('accomplishing a Wonder', () => {
     const s = fixtureGame();
     place(s, 'ash', 'M');
     place(s, 'birch', 'M');
-    s.abundance.river = BALANCE.abundance.max;
+    s.abundance = BALANCE.abundance.max;
     hiker(s, 'ash').inventory.resources = { fish: 3 };
     hiker(s, 'birch').inventory.resources = { fish: 3 };
     showing(s, 'crater-lake', [
       { index: 0, x: 6 },
-      { index: 1, x: 10 },
+      { index: 1, x: 15 },
       { index: 2, x: 2 },
     ]);
     return s;
@@ -311,9 +313,8 @@ describe('accomplishing a Wonder', () => {
         accomplish({ ash: { reward: 2 }, birch: { reward: 2 }, dot: { reward: 2 } }),
       ),
     ).toBe('Only hikers at the Wonder pick rewards.');
-    expect(validateAction(s, accomplish({ ash: { reward: 0 }, birch: { reward: 2 } }))).toBe(
-      'Pick a node type.',
-    );
+    // The Abundance reward needs no node any more (one bar, Nov 14 update).
+    expect(validateAction(s, accomplish({ ash: { reward: 0 }, birch: { reward: 2 } }))).toBeNull();
   });
 
   it('two hikers can’t take the same Tier III item', () => {
@@ -350,18 +351,19 @@ describe('accomplishing a Wonder', () => {
   it('gives each hiker their reward, and then it’s done for good', () => {
     const s = ready();
     const xp = hiker(s, 'birch').xp;
-    s.abundance.forest = 3;
+    // The goal wants Abundance 15 or more; the reward raises it by 5.
+    s.abundance = 15;
     const after = run(
       s,
       accomplish({
-        ash: { reward: 0, node: 'forest' },
+        ash: { reward: 0 },
         birch: { reward: 2 },
       }),
     );
-    expect(after.abundance.forest).toBe(8);
+    expect(after.abundance).toBe(20);
     expect(hiker(after, 'birch').xp).toBe(xp + BALANCE.wonders.lotOfXp);
     expect(after.section.tiles.M!.wonder!.claimed).toEqual({
-      ash: { reward: 0, node: 'forest' },
+      ash: { reward: 0 },
       birch: { reward: 2 },
     });
     expect(after.log.at(-1)).toMatchObject({ kind: 'wonderAccomplished', wonderId: 'crater-lake' });

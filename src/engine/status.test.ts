@@ -11,9 +11,7 @@ describe('blocked by status (Nov 5, 2b)', () => {
     );
     expect(blockedByStatus(s, { type: 'scavenge', hikerId: 'ash' })).toMatch(/^Famished/);
     place(s, 'birch', 'L', { energy: 3 });
-    expect(blockedByStatus(s, { type: 'tend', hikerId: 'birch', node: 'forest' })).toMatch(
-      /^Exhausted/,
-    );
+    expect(blockedByStatus(s, { type: 'tend', hikerId: 'birch' })).toMatch(/^Exhausted/);
   });
 
   it('counts Morale at 0 on a line that costs Morale', () => {
@@ -49,9 +47,7 @@ describe('blocked by status (Nov 5, 2b)', () => {
     // Tend at night is normal even for a Fatigued hiker.
     place(s, 'ash', 'L', { energy: 5 });
     const night = toNight(s);
-    expect(
-      blockedByStatus(night, { type: 'tend', hikerId: 'ash', node: 'forest' }),
-    ).toBeUndefined();
+    expect(blockedByStatus(night, { type: 'tend', hikerId: 'ash' })).toBeUndefined();
     expect(blockedByStatus(night, { type: 'move', hikerId: 'ash', toTileId: 'M' })).toMatch(
       /^Fatigued/,
     );

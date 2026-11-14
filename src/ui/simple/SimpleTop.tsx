@@ -3,12 +3,10 @@
  * (weather, the goal) open when clicked and close on click-away.
  */
 import { useRef, useState } from 'react';
-import { ASSETS } from '../../config/assets';
-import { BALANCE } from '../../config/balance';
-import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
+import { PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
+import { AbundanceBar } from '../panels/AbundanceBar';
 import type { IconName } from '../icons/paths';
-import { NODE_NAME } from '../map/looks';
 import { Popout } from '../panels/Popout';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote } from '../weather/weatherLook';
 import { WEATHERS } from '../../content/weather';
@@ -158,28 +156,15 @@ export function GoalPill() {
   );
 }
 
-/** Caps, plus a warning on any node whose Abundance is running low. */
+/** The Abundance bar (just the bar in Simple mode), then the party's caps. */
 export function CapsPill({ state }: { state: GameState }) {
-  const low = NODE_TYPES.filter((n) => state.abundance[n] <= BALANCE.abundance.lowAt);
   return (
-    <div className={styles.pill} style={{ right: 80, top: 16 }} title="Acorn caps: the party purse">
-      {low.map((n) => (
-        <span
-          key={n}
-          className={styles.lowNode}
-          title={`${NODE_NAME[n]} Abundance is low (${state.abundance[n]}/${BALANCE.abundance.max})`}
-        >
-          <img
-            src={ASSETS.nodes[n]}
-            alt={`${NODE_NAME[n]} Abundance is low`}
-            width={20}
-            height={23}
-          />
-          <span aria-hidden="true">!</span>
-        </span>
-      ))}
-      <Icon name="acorn" size={18} color="#D9A86A" />
-      <span className={styles.capsCount}>{state.caps}</span>
+    <div className={styles.pill} style={{ right: 80, top: 16 }}>
+      <AbundanceBar level={state.abundance} showNumber={false} width={110} />
+      <span className={styles.capsPart} title="Acorn caps: the party purse">
+        <Icon name="acorn" size={18} color="#D9A86A" />
+        <span className={styles.capsCount}>{state.caps}</span>
+      </span>
     </div>
   );
 }

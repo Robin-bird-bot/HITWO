@@ -150,7 +150,8 @@ export type EffectOp =
   | { op: 'loseBagItems'; chance: Chance }
   /** Food cards: all of them, a number of them, or each with a chance. */
   | { op: 'loseFood'; mode: 'all' | 'count' | 'each'; count?: Amount; chance?: Chance }
-  | { op: 'abundance'; nodes: readonly NodeType[]; delta?: Amount; repeatChance?: number }
+  /** The biome's Abundance drops (a fixed amount, or 1 more each time a chance passes). */
+  | { op: 'abundance'; delta?: Amount; repeatChance?: number }
   | { op: 'nodesVanish'; chance: number; where: 'tile' | 'trail'; node?: NodeType }
   | { op: 'nodesBecome'; node: NodeType; chance: number; where: 'connected' }
   | { op: 'hideNodes'; where: 'around' }
@@ -278,7 +279,8 @@ export type TrialGoal =
   | { kind: 'underShelter' }
   | { kind: 'skipAction' }
   | { kind: 'rowForward' }
-  | { kind: 'abundance'; node: NodeType; atLeast: Amount }
+  /** The biome's Abundance rises this much from when the Trial starts. */
+  | { kind: 'abundanceRise'; by: Amount }
   | { kind: 'energyTogether'; atLeast: number }
   | { kind: 'noSleepNear' }
   /** Mold Invasion: whoever eats on its tile before it ends gets the penalty. */

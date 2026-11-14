@@ -239,24 +239,10 @@
   font-size: 18px;
 }
 
-.lowNode {
-  position: relative;
-  display: flex;
-}
-
-.lowNode span {
-  position: absolute;
-  right: -5px;
-  top: -5px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #e5624a;
-  color: #1d2220;
-  font-size: 10px;
+.capsPart {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
 }
 
 /* ── Turn panel ── */

@@ -91,7 +91,7 @@ Utility traits (green) cover crafting, scavenging and actions. Traits written as
 | I | \[Node\] Finder | Higher chance of drawing that node's resources when scavenging. |
 | I | Charismatic | +2 caps for each sale. |
 | I | Frugal | Pays 1 cap less for each purchase. |
-| I | Green / Blue / Gray / Yellow Thumb | For one node (Forest / River / Mountain / Wildlife): +1 card to choose from when scavenging it, and Tending it restores 1 extra Abundance. |
+| I | Green / Blue / Gray / Yellow Thumb | For one node (Forest / River / Mountain / Wildlife): +1 card when scavenging their node, and Tend on a tile with that node restores 1 extra Abundance. |
 | I | Day Napper | Can Sleep in the Morning or Afternoon, not just at night. |
 | I | Singer | When this hiker Sits by the Fire, every hiker on the tile gains 1 Morale. |
 | I | Chef | Food this hiker crafts has a chance of +1 Appetite. |
@@ -143,7 +143,7 @@ Morale traits (purple) about where a hiker is are checked at the start of each d
 | Exhibitionist | No clothes equipped | 2 or more clothes equipped | Start of day |
 | Action | Each time doing \[X\] | Each time doing \[Y\] | Immediately |
 | Traveler | Each move | Each time doing \[X\] | Immediately |
-| Conservationist | Each time Tending an \[X\] node | Each time scavenging an \[X\] node | Immediately |
+| Conservationist | Each time Tending on a tile with an \[X\] node | Each time scavenging an \[X\] node | Immediately |
 | Thrill-Seeker | Each challenge passed | Facing no challenge the day before | Immediately / start of day |
 | Chatty | Sitting by the fire with others (they each gain 1 too) | Alone | Immediately / start of day |
 | Zen | Alone (+2) | Sharing a tile with 2 or more others (−2) | Start of day |

@@ -4,13 +4,13 @@
  * deals 1,000 seeded cards and compares the rarities with balance.ts.
  */
 import { useMemo, useState } from 'react';
+import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER } from '../../content';
 import {
   RARITIES,
   dealCards,
   rarityOdds,
   seedRng,
-  type NodeType,
   type ScavengeCard,
   type ScavengeCardType,
   type TileNode,
@@ -124,7 +124,8 @@ const TILES: { label: string; nodes: TileNode[] }[] = [
   },
 ];
 
-const FULL: Record<NodeType, number> = { forest: 10, river: 10, wildlife: 10, mountain: 10 };
+/** A full Abundance bar: the card odds without Empty cards mattering much. */
+const FULL = BALANCE.abundance.max;
 const DEALS = 1000;
 
 export function DebugCards() {

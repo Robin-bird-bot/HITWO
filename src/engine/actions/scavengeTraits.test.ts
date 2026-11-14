@@ -66,7 +66,7 @@ describe('scavenging traits', () => {
       'Copydog: +1 bonus resource (Birch scavenged here today)',
     );
 
-    const forestBefore = s.abundance.forest;
+    const before = s.abundance;
     const after = run(openWith(s, { type: 'resource', resources: ['wood'] }), {
       type: 'scavengeTake',
       card: 0,
@@ -74,7 +74,7 @@ describe('scavenging traits', () => {
     expect(hiker(after, 'ash').inventory.resources.wood).toBe(2);
     expect(hiker(after, 'ash').stats.appetite).toBe(9);
     // The card's drain plus 1 for the bonus resource.
-    expect(after.abundance.forest).toBe(forestBefore - 2);
+    expect(after.abundance).toBe(before - 2);
     expect(after.log.find((e) => e.kind === 'scavenge' && e.hikerId === 'ash')).toMatchObject({
       bonus: 1,
     });

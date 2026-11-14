@@ -192,7 +192,9 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           id: e.id,
           text: e.dropped
             ? `${name(e.hikerId)} scavenged, but it slipped away (Butterfingers${cost ? `, ${cost}` : ''}).`
-            : `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
+            : e.empty
+              ? `${name(e.hikerId)} kept an Empty card: nothing${cost ? ` (${cost})` : ''}.`
+              : `${name(e.hikerId)} scavenged ${what}${cost ? ` (${cost})` : ''}.${left}`,
           tone: e.dropped ? 'drain' : 'scavenge',
         });
         break;
@@ -203,7 +205,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const cost = costsOf(taken, e.hikerId);
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} tended the ${NODE_NAME[e.node]} (${NODE_NAME[e.node]} Abundance ${e.from} → ${e.to}${cost ? `, ${cost}` : ''}).`,
+          text: `${name(e.hikerId)} tended the land (Abundance ${e.from} → ${e.to}${cost ? `, ${cost}` : ''}).`,
           tone: 'scavenge',
         });
         break;
@@ -224,14 +226,17 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
       case 'returned':
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)} returned ${resourceName(e.resource)} to nature (+1 ${NODE_NAME[e.node]}).`,
+          text: `${name(e.hikerId)} returned ${resourceName(e.resource)} to nature (+1 Abundance).`,
           tone: 'scavenge',
         });
         break;
       case 'recovered':
         lines.push({
           id: e.id,
-          text: `Overnight, ${listNames(e.nodes.map((n) => NODE_NAME[n]))} Abundance recovered (+1).`,
+          text:
+            e.to !== undefined && e.from !== undefined
+              ? `Overnight, Abundance recovered (${e.from} → ${e.to}).`
+              : `Overnight, ${listNames((e.nodes ?? []).map((n) => NODE_NAME[n]))} Abundance recovered (+1).`,
           tone: 'rest',
         });
         break;

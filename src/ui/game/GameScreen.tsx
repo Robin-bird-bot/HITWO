@@ -22,7 +22,6 @@ import {
   wonderTile,
   tendAmount,
   tendCost,
-  tendableNodes,
   type Action,
   type GameState,
   type Hiker,
@@ -81,7 +80,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { MovePopover } from './MovePopover';
 import { StashMenu } from './StashMenu';
 import { bringOptions, movePreview, moveTargets, nextReadyHiker, type MoveMode } from './movePlan';
-import { MoveAllPicker, SleepConfirm, TendPicker, WatchConfirm } from './TurnExtras';
+import { MoveAllPicker, SleepConfirm, TendConfirm, WatchConfirm } from './TurnExtras';
 import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
@@ -472,18 +471,15 @@ export function GameScreen({
   }
 
   if (selected && mode.kind === 'tend') {
-    const gain = tendAmount(state, selected);
-    const max = BALANCE.abundance.max;
+    const from = state.abundance;
     slot = (
-      <TendPicker
-        gain={gain}
-        energy={tendCost(state, selected)}
-        nodes={tendableNodes(state, selected).map((node) => {
-          const from = state.abundance[node];
-          return { node, from, to: Math.min(max, from + gain), full: from >= max };
-        })}
+      <TendConfirm
+        name={selected.name}
+        from={from}
+        to={Math.min(BALANCE.abundance.max, from + tendAmount(state, selected))}
+        appetite={tendCost(state, selected)}
         onCancel={reset}
-        onTend={(node) => dispatch({ type: 'tend', hikerId: selected.id, node })}
+        onConfirm={() => dispatch({ type: 'tend', hikerId: selected.id })}
       />
     );
   }

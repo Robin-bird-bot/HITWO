@@ -136,15 +136,22 @@ describe('using tools', () => {
     ).toBe('That clothing item is already like new.');
   });
 
-  it('Fertilizer raises the Abundance of a node here; refused when it’s full', () => {
+  it('Fertilizer raises Abundance; refused when it’s full', () => {
     let s = onM();
-    s.abundance.forest = 5;
+    s.abundance = 5;
     s = run(s, use('ash', tool(s, 'ash', 'fertilizer'))); // +2 at Quality 3
-    expect(s.abundance.forest).toBe(7);
-    s.abundance.forest = 10;
+    expect(s.abundance).toBe(7);
+    s.abundance = 20;
     expect(validateAction(s, use('ash', tool(s, 'ash', 'fertilizer')))).toBe(
-      'Every node here is already at full Abundance.',
+      'Abundance is already full.',
     );
+  });
+
+  it('Industrial Fertilizer raises it more: 3/4/4/4/6 (Nov 14 update)', () => {
+    let s = onM();
+    s.abundance = 5;
+    s = run(s, use('ash', tool(s, 'ash', 'industrialFertilizer'))); // +4 at Quality 3
+    expect(s.abundance).toBe(9);
   });
 
   it('Planter adds the picked node, up to 3 on a tile', () => {

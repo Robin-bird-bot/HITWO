@@ -60,11 +60,10 @@ export type CostKey =
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */
   | 'moveAll.perHiker'
   | 'night.noSleepEnergy'
-  | 'endOfDay.appetite'
   /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
   | 'scavenge.appetite'
-  /** Tend's Energy cost. */
-  | 'tend.energy';
+  /** Tend's Appetite cost (Nov 14 update; it was Energy). */
+  | 'tend.appetite';
 
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey =
@@ -376,8 +375,8 @@ export interface ItemUse {
   averageStats?: true;
   /** Clothes gain durability: one item the player picks, or every item worn. */
   repair?: { value: string; which: 'one' | 'worn' };
-  /** Nodes on the tile gain Abundance: one at random, or every one. */
-  abundance?: { value: string; which: 'random' | 'all' };
+  /** The biome's Abundance rises by this value (Fertilizer). */
+  abundance?: { value: string };
   /** Adds a node the player picks to the tile (Planter). */
   addNode?: true;
   /** Gives random resources from a node, or any (the resource packs). */

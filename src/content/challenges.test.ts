@@ -117,7 +117,7 @@ describe('every card is wired up', () => {
       for (const r of card.stagedRewards ?? []) effects.push(...r.effects);
       if ('phases' in card.deadline) effects.push({ op: 'xp', delta: card.deadline.phases });
       if ('days' in card.deadline) effects.push({ op: 'xp', delta: card.deadline.days });
-      if (card.goal.kind === 'abundance') effects.push({ op: 'xp', delta: card.goal.atLeast });
+      if (card.goal.kind === 'abundanceRise') effects.push({ op: 'xp', delta: card.goal.by });
       if (card.goal.kind === 'rangerRequest') effects.push({ op: 'xp', delta: card.goal.pay });
     } else {
       for (const option of card.cost) {

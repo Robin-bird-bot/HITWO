@@ -80,11 +80,7 @@ export function whatItDoes(
   }
   if (use.abundance) {
     const add = v(use.abundance.value);
-    out.push(
-      use.abundance.which === 'all'
-        ? `every node here +${add} Abundance`
-        : `a random node here +${add} Abundance`,
-    );
+    out.push(`Abundance +${add}`);
   }
   if (use.addNode && choice) out.push(`a ${NODE_NAME[choice as NodeType]} node added here`);
   if (use.resources) {

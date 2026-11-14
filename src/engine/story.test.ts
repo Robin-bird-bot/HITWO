@@ -21,8 +21,8 @@ const stoic = (id: string, choice: 'energy' | 'appetite'): Action => ({
   choice,
 });
 
-const start = () =>
-  fixtureGame({
+const start = () => {
+  const s = fixtureGame({
     seed: 2026,
     hikers: [
       fixtureHiker('ash', ['leader', 'extrinsic']),
@@ -31,6 +31,11 @@ const start = () =>
       fixtureHiker('dot', ['extrinsic']),
     ],
   });
+  // No Appetite is lost overnight since the Nov 14 update, so Ash starts 1 lower
+  // to be Hungry by Day 2's afternoon, as this walkthrough was written.
+  s.hikers[0]!.stats.appetite = 9;
+  return s;
+};
 
 const DAY_1: Action[] = [
   // Morning. Ash leads Birch and Cedar up the steep line: Ash pays 1 + 2 − 1 (Leader) = 2
@@ -80,9 +85,9 @@ describe('a three-day hike', () => {
     expect(stats(s)).toEqual({
       // Extrinsic: Ash shares the campsite with Dot at dawn, so Morale 9 → 10.
       ash: { energy: 10, appetite: 6, morale: 10, at: 'R', injuries: 0 },
-      birch: { energy: 7, appetite: 5, morale: 10, at: 'T', injuries: 0 },
-      cedar: { energy: 7, appetite: 9, morale: 10, at: 'M', injuries: 0 },
-      dot: { energy: 10, appetite: 9, morale: 10, at: 'R', injuries: 0 },
+      birch: { energy: 7, appetite: 6, morale: 10, at: 'T', injuries: 0 },
+      cedar: { energy: 7, appetite: 10, morale: 10, at: 'M', injuries: 0 },
+      dot: { energy: 10, appetite: 10, morale: 10, at: 'R', injuries: 0 },
     });
   });
 
@@ -101,10 +106,11 @@ describe('a three-day hike', () => {
       // Extrinsic: Ash wakes beside Birch on L (Morale stays 10); Dot has woken
       // alone on M two days running (9 → 8 → 7).
       // Ash's Day 3 sleep in the open gives +1 Energy (Wyatt, Nov 5).
-      ash: { energy: 8, appetite: 1, morale: 10, at: 'L', injuries: 0 },
-      birch: { energy: 4, appetite: 3, morale: 6, at: 'L', injuries: 0 },
-      cedar: { energy: 2, appetite: 6, morale: 10, at: 'T', injuries: 0 },
-      dot: { energy: 6, appetite: 7, morale: 7, at: 'M', injuries: 0 },
+      // No Appetite lost overnight (Nov 14 update): only moves cost it.
+      ash: { energy: 8, appetite: 3, morale: 10, at: 'L', injuries: 0 },
+      birch: { energy: 4, appetite: 6, morale: 6, at: 'L', injuries: 0 },
+      cedar: { energy: 2, appetite: 9, morale: 10, at: 'T', injuries: 0 },
+      dot: { energy: 6, appetite: 10, morale: 7, at: 'M', injuries: 0 },
     });
   });
 

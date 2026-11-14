@@ -15,7 +15,6 @@ import {
   moveCost,
   scavengeCost,
   tendCost,
-  tendableNodes,
   thresholdStates,
   validateAction,
   type Action,
@@ -350,18 +349,13 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     ),
   };
 
-  // Tend: ready if some node on this tile can be restored.
-  const nodes = tendableNodes(state, h);
-  const tends = (nodes.length ? nodes : (['forest'] as const)).map((node): Action => ({
-    type: 'tend',
-    hikerId: h.id,
-    node,
-  }));
+  // Tend: ready if this tile has a resource node and Abundance isn't full.
+  const tends: Action[] = [{ type: 'tend', hikerId: h.id }];
   const tend: ActionState = {
     id: 'tend',
     label: 'Tend',
     icon: 'sprout',
-    sub: `−${tendCost(state, h)} Energy`,
+    sub: `−${tendCost(state, h)} Appetite`,
     ...judge(state, tends, 'There’s nothing to tend on this tile.'),
   };
 

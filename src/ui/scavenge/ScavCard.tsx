@@ -67,7 +67,9 @@ export function ScavCard({
   const title = revealed ? resourcesTitle(card.resources ?? []) : cardTitle(card);
   const rarity = RARITY_LOOK[card.rarity];
   const label = faceUp
-    ? `${title}: ${cardText(card)}. ${rarity.name}.`
+    ? card.empty
+      ? `${title}: ${cardText(card)}.`
+      : `${title}: ${cardText(card)}. ${rarity.name}.`
     : `Face-down card from ${backName(card)}. Flip it.`;
 
   const Tag = onClick ? 'button' : 'div';
@@ -96,7 +98,7 @@ export function ScavCard({
             {faceUp ? title : backCaption}
           </span>
           {faceUp && caption === 'full' && <span className={styles.text}>{cardText(card)}</span>}
-          {faceUp && (
+          {faceUp && !card.empty && (
             <span className={styles.rarity} title={rarity.name}>
               {Array.from({ length: 6 }, (_, i) => (
                 <span
@@ -150,6 +152,22 @@ function Front({
 }) {
   const def = SCAVENGE_CARDS[card.type];
   const layers = faceLayers(card);
+  if (card.empty) {
+    // Placeholder art (Nov 14 update): the node's backdrop, faded, and "EMPTY".
+    return (
+      <>
+        <img
+          className={`${styles.fill} ${styles.emptyBg}`}
+          src={layers.bg}
+          alt=""
+          draggable={false}
+        />
+        <div className={styles.empty} style={{ fontSize: Math.round(S * 0.17) }}>
+          EMPTY
+        </div>
+      </>
+    );
+  }
   const resources = card.resources ?? [];
   const icons = revealed
     ? (def.mult ? resources.slice(0, 1) : resources).map((id) => ASSETS.resources[id] ?? '')

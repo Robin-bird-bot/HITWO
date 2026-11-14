@@ -65,8 +65,8 @@ Counted in days, ticking down at camp, by tier: **Tier 1 (X 4/5/5/5/6), Tier 2 (
 | Shears | 178 | 1 | (X 2/3/3/3/4) | The same for Wildlife resources (needs a Wildlife node). | Metal 2, Flint 1, Wood 1, Fur 1, any 1 |
 | Pickaxe | 179 | 1 | (X 2/3/3/3/4) | The same for Mountain resources (needs a Mountain node). | Metal 2, Wood 2, Stone 1, any 1 |
 | Swiss Army Knife | 180 | 3 | (X 2/2/3/3/3) | Pick a resource: this phase it's (X ×2/×3/×3/×3/×4) as likely when scavenging (the tile needs its node). | Metal 3, Flint 1, Bones 1, Oil 1, Wood 1, any 2 |
-| Fertilizer | 181 | 1 | (X 1/1/1/2/2) | A random node on this tile gains (X 1/2/2/2/3) Abundance. | Moss 2, Bones 1, Mushroom 1, any 2 |
-| Industrial Fertilizer | 182 | 2 | (X 1/1/1/1/2) | Every node on this tile gains (X 1/2/2/2/3) Abundance. | Moss 2, Bones 2, Oil 1, Mushroom 1, any 1 |
+| Fertilizer | 181 | 1 | (X 1/1/1/2/2) | Gain (X 1/2/2/2/3) Abundance. | Moss 2, Bones 1, Mushroom 1, any 2 |
+| Industrial Fertilizer | 182 | 2 | (X 1/1/1/1/2) | Gain (X 3/4/4/4/6) Abundance. | Moss 2, Bones 2, Oil 1, Mushroom 1, any 1 |
 | Planter | 183 | 3 | 1 | Add a node of your choice (Forest, River, Wildlife or Mountain) to this tile. \[At most 3 nodes per tile.\] | Clay 3, Moss 2, Stone 1, any 3 |
 | Forest Pack | 184 | 1 | 1 | Gives (X 3/3/4/4/5) random Forest resources. Swaps Forest resources the party doesn't want for others. | 5 Forest resources (any mix) |
 | Wildlife Pack | 185 | 1 | 1 | The same for Wildlife resources. | 5 Wildlife resources (any mix) |

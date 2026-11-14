@@ -26,7 +26,6 @@ import {
   type GameState,
   type ItemId,
   type ItemInstance,
-  type NodeType,
   type ResourceId,
   type ScavengeBonus,
   type ScavengeCard,
@@ -103,7 +102,7 @@ export function ScavengeWindow({
       ? {
           type: 'scavengeTake',
           card: selected,
-          ...(card?.pick ? { picks } : {}),
+          ...(card?.pick && !card.empty ? { picks } : {}),
           ...(item ? { item } : {}),
           ...(paidBonus && paidCount ? { bonus: paidCount } : {}),
         }
@@ -247,10 +246,10 @@ export function ScavengeWindow({
               )}
             </div>
 
-            {card?.pick && (
+            {card?.pick && !card.empty && (
               <PickChips card={card} picks={picks} simple={simple} onPicks={setPicks} />
             )}
-            {card?.items && SCAVENGE_CARDS[card.type].choiceItem && (
+            {card?.items && !card.empty && SCAVENGE_CARDS[card.type].choiceItem && (
               <ItemChips card={card} item={item} onItem={setItem} />
             )}
             {paidCount > 0 && hasResources && (
@@ -345,6 +344,7 @@ function cardSize(count: number): number {
 
 function takeLabel(card: ScavengeCard, picks: ResourceId[], item: ItemId | null): string {
   const gains = cardGains(card, picks, item ?? undefined);
+  if (card.empty) return 'TAKE EMPTY';
   if (card.pick) return gains.resources.length ? `TAKE ${resourcesTitle(gains.resources)}` : 'TAKE';
   if (card.caps) return `TAKE ${card.caps} CAP${card.caps === 1 ? '' : 'S'}`;
   if (card.items) {
@@ -390,28 +390,18 @@ function Bonuses({
   );
 }
 
-/** Informative mode: what taking the picked card does to its node's meter. */
+/** Informative mode: what taking the picked card does to the Abundance bar. */
 function Drain({ state, card }: { state: GameState; card: ScavengeCard }) {
+  if (!card.node) return null;
   const def = SCAVENGE_CARDS[card.type];
-  const rows: { node: NodeType; amount: number }[] = [];
-  if (card.node) {
-    rows.push({
-      node: card.node,
-      amount: def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0),
-    });
-  }
-  if (card.node2) rows.push({ node: card.node2, amount: def.drain });
+  const amount = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0);
+  const from = state.abundance;
   return (
     <>
-      {rows.map(({ node, amount }) => {
-        const from = state.abundance[node];
-        return (
-          <span key={node} className={styles.drainRow}>
-            <img src={NODE_IMAGE[node]} alt="" width={16} height={18} />
-            {NODE_NAME[node]} Abundance {from} → <b>{Math.max(0, from - amount)}</b>
-          </span>
-        );
-      })}
+      <span className={styles.drainRow}>
+        <img src={NODE_IMAGE[card.node]} alt="" width={16} height={18} />
+        Abundance {from} → <b>{Math.max(0, from - amount)}</b>
+      </span>
     </>
   );
 }

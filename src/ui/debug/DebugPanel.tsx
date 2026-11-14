@@ -23,7 +23,6 @@ import { STATION_THEMES } from '../../content/stations';
 import { NIGHT_CREATURES, NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { BALANCE } from '../../config/balance';
 import {
-  NODE_TYPES,
   PHASES,
   adjacentTileIds,
   isRevealed,
@@ -36,10 +35,10 @@ import {
   type StationThemeId,
   type Hiker,
   type ItemTypeName,
-  type NodeType,
   type ScavengeCardType,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
+import { emptyPercent } from '../panels/abundanceLook';
 import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import styles from './DebugPanel.module.css';
 
@@ -262,11 +261,7 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Abundance</h3>
-        <AbundanceEditor
-          key={JSON.stringify(state.abundance)}
-          abundance={state.abundance}
-          onApply={run}
-        />
+        <AbundanceEditor key={state.abundance} abundance={state.abundance} onApply={run} />
         <div className={styles.row}>
           <a className={styles.button} href="#debug-cards">
             Card gallery and odds
@@ -306,12 +301,6 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 }
 
 const STAT_LABEL = { energy: 'Energy', appetite: 'Appetite', morale: 'Morale' } as const;
-const NODE_LABEL = {
-  forest: 'Forest',
-  river: 'River',
-  wildlife: 'Wildlife',
-  mountain: 'Mountain',
-} as const;
 
 /** Put any trait (or nothing) in any of a hiker's slots, to try the traits out. */
 function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
@@ -1092,26 +1081,24 @@ function AbundanceEditor({
   abundance,
   onApply,
 }: {
-  abundance: Record<NodeType, number>;
+  abundance: number;
   onApply(action: Action): void;
 }) {
   const [values, setValues] = useState(abundance);
   return (
     <>
       <div className={styles.row}>
-        {NODE_TYPES.map((n) => (
-          <label key={n} className={styles.note}>
-            {NODE_LABEL[n]}{' '}
-            <input
-              className={styles.number}
-              type="number"
-              min={0}
-              max={BALANCE.abundance.max}
-              value={values[n]}
-              onChange={(e) => setValues({ ...values, [n]: Number(e.target.value) })}
-            />
-          </label>
-        ))}
+        <label className={styles.note}>
+          Abundance (0–{BALANCE.abundance.max}, {emptyPercent(values)}% Empty){' '}
+          <input
+            className={styles.number}
+            type="number"
+            min={0}
+            max={BALANCE.abundance.max}
+            value={values}
+            onChange={(e) => setValues(Number(e.target.value))}
+          />
+        </label>
       </div>
       <div className={styles.row}>
         <button

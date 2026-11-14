@@ -168,9 +168,9 @@ export const WONDERS: readonly WonderDef[] = [
         x: X(6),
       },
       {
-        text: 'River Abundance is {x}.',
-        check: { kind: 'abundance', node: 'river' },
-        x: fixed(10),
+        text: 'Abundance is {x} or more.',
+        check: { kind: 'abundance' },
+        x: fixed(15),
       },
       {
         text: 'Each hiker here carries {x} Fish.',
@@ -190,7 +190,7 @@ export const WONDERS: readonly WonderDef[] = [
     rewards: [
       {
         title: '+5 Abundance',
-        text: 'Raise one node type’s Abundance by 5 (your choice).',
+        text: 'Raise Abundance by 5.',
         reward: { kind: 'abundance', amount: 5 },
       },
       TIER_3,

@@ -1,37 +1,42 @@
 /**
- * Abundance: one meter per node type, 0 to BALANCE.abundance.max
- * (docs/design/01-design-doc.md, "Abundance").
+ * Abundance: one bar for the whole biome, 0 to BALANCE.abundance.max (Nov 14
+ * update; it was a meter per node). Scavenging any node lowers it, and its
+ * level sets one thing: the chance a resource card comes up Empty.
  */
 import { BALANCE } from '../config/balance';
 import { pushEvent } from './log';
-import { NODE_TYPES, type GameState, type NodeType } from './types';
+import type { GameState } from './types';
 
-/** Every meter at the start value, as at the start of each biome. */
-export function freshAbundance(): Record<NodeType, number> {
-  return Object.fromEntries(NODE_TYPES.map((n) => [n, BALANCE.abundance.start])) as Record<
-    NodeType,
-    number
-  >;
+const A = BALANCE.abundance;
+
+/** The bar at the start of each biome. */
+export function freshAbundance(): number {
+  return A.start;
 }
 
-/** Changes one meter, keeping it between 0 and the maximum. */
-export function changeAbundance(state: GameState, node: NodeType, delta: number): void {
-  const next = state.abundance[node] + delta;
-  state.abundance[node] = Math.max(0, Math.min(BALANCE.abundance.max, next));
+/** Keeps a level between 0 and the maximum. */
+export function clampAbundance(level: number): number {
+  return Math.max(0, Math.min(A.max, level));
 }
 
-export function isLow(state: GameState, node: NodeType): boolean {
-  return state.abundance[node] <= BALANCE.abundance.lowAt;
+/** Changes the bar, keeping it between 0 and the maximum. */
+export function changeAbundance(state: GameState, delta: number): void {
+  state.abundance = clampAbundance(state.abundance + delta);
 }
 
-/** At camp: every node nobody scavenged today recovers a little. */
+/**
+ * The chance each resource card dealt comes up Empty at this level: the
+ * full-bar chance at the maximum, rising evenly to the empty-bar chance at 0.
+ */
+export function emptyChance(level: number): number {
+  const { atFull, atZero } = A.emptyChance;
+  const share = clampAbundance(level) / A.max;
+  return atZero + (atFull - atZero) * share;
+}
+
+/** At camp: the bar recovers a little. */
 export function recoverOvernight(state: GameState): void {
-  const scavenged = new Set(state.scavengedToday.flatMap((r) => r.nodes));
-  const nodes: NodeType[] = [];
-  for (const node of NODE_TYPES) {
-    if (scavenged.has(node) || state.abundance[node] >= BALANCE.abundance.max) continue;
-    changeAbundance(state, node, BALANCE.abundance.nightRecovery);
-    nodes.push(node);
-  }
-  if (nodes.length) pushEvent(state, { kind: 'recovered', nodes });
+  const from = state.abundance;
+  changeAbundance(state, A.nightRecovery);
+  if (state.abundance !== from) pushEvent(state, { kind: 'recovered', from, to: state.abundance });
 }

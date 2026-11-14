@@ -173,3 +173,30 @@ describe('Trial content', () => {
     expect(off.map((c) => c.id).sort()).toEqual(['frozen-fingers']);
   });
 });
+
+describe('Overfished (Abundance rises by X within 2 days, Nov 14 update)', () => {
+  it('counts the rise from when it started, and ends early once it’s reached', () => {
+    const s = started('overfished', (g) => {
+      g.abundance = 8;
+    });
+    const trial = s.trials?.[0];
+    expect(trial?.startAbundance).toBe(8);
+    const gain = trial?.rolls.x.gain ?? 0;
+    expect([3, 4]).toContain(gain);
+    // Two Tends: +2 each, so the bar rises by 4.
+    const after = run(s, { type: 'tend', hikerId: 'ash' }, { type: 'tend', hikerId: 'birch' }, END);
+    expect(after.abundance).toBe(12);
+    expect(after.trials).toBeUndefined();
+    expect(after.log.some((e) => e.kind === 'trial' && e.outcome === 'passed')).toBe(true);
+  });
+
+  it('a rise wiped out by scavenging doesn’t count', () => {
+    const s = started('overfished', (g) => {
+      g.abundance = 8;
+    });
+    s.abundance = 6;
+    const after = run(s, { type: 'tend', hikerId: 'ash' }, END);
+    expect(after.abundance).toBe(8);
+    expect(after.trials).toHaveLength(1);
+  });
+});

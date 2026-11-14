@@ -60,14 +60,14 @@ const capOn = (stat: StatName, cap: number): Hooks => ({
   modifyStatMax: (s) => (s === stat ? { cap } : undefined),
 });
 
-/** Costs this hiker pays in a stat (their own move, Tend, the night and end-of-day drains). */
+/** Costs this hiker pays in a stat (their own move, Tend, scavenging and the no-sleep drain). */
 const OWN_COSTS: Record<'energy' | 'appetite', readonly CostKey[]> = {
-  energy: ['move.energy', 'tend.energy', 'night.noSleepEnergy'],
+  energy: ['move.energy', 'night.noSleepEnergy'],
   appetite: [
     'move.appetite',
     'move.carry',
     'moveAll.appetite',
-    'endOfDay.appetite',
+    'tend.appetite',
     'scavenge.appetite',
   ],
 };

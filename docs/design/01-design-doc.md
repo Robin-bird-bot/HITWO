@@ -49,7 +49,7 @@ Each day has three phases — Morning, Afternoon and Night — and every hiker t
 | Scavenge | ✓ | ✓ | Costs 1 Appetite. Draw 3, pick 1 (see Scavenging) |
 | Craft | ✓ | ✓ | Generic or from a known blueprint |
 | Sit by the Fire | ✓ | ✓ | +1 Morale per other hiker at the fire (max +3), +1 XP |
-| Tend | ✓ |  | Costs 1 Energy. Restore Abundance for a node on this tile |
+| Tend | ✓ |  | Costs 1 Appetite. Raises the biome's Abundance (+2) from a tile with a resource node |
 | Sleep |  | ✓ | +1 Energy, or +2 in a shelter. A night without sleep costs 2 Energy |
 | Keep Watch |  | ✓ | Protects hikers on this tile from night events |
 
@@ -63,8 +63,8 @@ Every hiker has three stats on a 0–10 scale that start full and drop, plus up 
 
 | Stat | Drains from | Restored by | Threshold states | At 0 |
 | --- | --- | --- | --- | --- |
-| Energy | A night without sleep (−2), Tend (−1), challenges, some trait costs | Sleeping (+1, or +2 in a shelter), some food | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
-| Appetite | Each move (−1), each scavenge (−1), each night (−1); extra for night moves and moving the group | Food | Hungry at 5 or less; Famished at 2 or less | Take an injury |
+| Energy | A night without sleep (−2), challenges, some trait costs | Sleeping (+1, or +2 in a shelter), some food | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
+| Appetite | Each move (−1), each scavenge (−1), Tend (−1); extra for night moves and moving the group. Nothing overnight (Nov 14 update) | Food | Hungry at 5 or less; Famished at 2 or less | Take an injury |
 
 Energy works as a sleep meter and Appetite as the fuel for actions. What each threshold state does, and every condition, is in Traits and Conditions.
 
@@ -226,7 +226,7 @@ Example: "Sacrifice {amount} {resource}." Each card lists the tiers, nodes and b
 
 ## Scavenging, Abundance and inventory
 
-Scavenging draws 3 random cards weighted by the tile's nodes, Abundance and the hiker's luck; the hiker keeps 1.
+Scavenging draws 3 random cards weighted by the tile's nodes and the hiker's luck; the hiker keeps 1. Low Abundance makes resource cards come up Empty.
 
 **Scavenge cards.** Cards are square, drawn on the node's backdrop art. They're dealt face down to build suspense, each back showing where the card came from (its node, or the caps back or item back). The hiker clicks each card to flip it, then keeps 1.
 
@@ -246,19 +246,22 @@ Scavenging draws 3 random cards weighted by the tile's nodes, Abundance and the 
 | Bundle of the Wild (!!!) | Pick 3 resources from all 16, the same or different | Legendary |
 | Acorn caps | 1–3 caps | Uncommon |
 | Item find | A random item of one type, on the item backdrop | Tools and food: Rare. Clothes: Very rare. Shelters and trinkets: Legendary |
+| Empty | Nothing. Any resource card can come up Empty when Abundance is low (see Abundance); caps and item cards never do | — |
 | Choice item (!) | Pick 1 of 5 random cards of one item type (Choice Tool, Choice Shelter and so on) | One step rarer than that type's find: tools and food Very rare, clothes Legendary, shelters and trinkets Mythic |
 
 Rarity runs Common, Uncommon, Rare, Very rare, Legendary, Mythic. Luck shifts the odds toward rarer cards. Starting odds: at Luck 0, 75 / 15 / 6 / 2.5 / 1 / 0.5%; at Luck +5, 50 / 25 / 14 / 7 / 3 / 1%. Each point of Luck moves a fifth of the way between the two, and negative Luck pushes Common toward 85%. Acorn caps also get their own backdrop.
 
-Modifiers: luck (from Morale and traits) shifts the odds toward rarer cards; Dogs see 1 extra card; Forager sees 4 cards; Gambler and Glasses reroll; the Metal Detector raises item finds; a choice-finding tool (name to come) raises Choice cards; low Abundance means fewer cards from that node.
+Modifiers: luck (from Morale and traits) shifts the odds toward rarer cards; Dogs see 1 extra card; Forager sees 4 cards; Gambler and Glasses reroll; the Metal Detector raises item finds; a choice-finding tool (name to come) raises Choice cards.
 
 The 16 resources stay: Forest (wood, moss, mushroom, grass), River (fish, clay, shell, seaweed), Wildlife (meat, fur, oil, bones), Mountain (stone, metal, flint, salt).
 
-**Abundance** is a meter for each node type, shown at the top of the screen.
+**Abundance** is one bar for the whole biome (Nov 14 update; it was a meter per node), shown at the top of the screen. Think of it as a pollution bar in reverse: scavenging any node lowers it, and its level affects every node.
 
-- Every scavenge lowers that node's meter by 1 (×2, ×3, Pair and Trio cards lower it by 2), and so do bonus resources a hiker chooses to take (Copier, Copydog, Generous); random or refunded ones (Pockets, German Efficiency, Fluffy) don't. A low meter means fewer cards to choose from, rarer good results, harsher related events, and higher shop prices for that node. A node at 0 gives no cards, so a tile whose nodes are all at 0 can't be scavenged until it's tended or recovers.
-- It resets to about 75% at each new biome and recovers +1 per node per night it wasn't scavenged.
-- Restored by Tend (day only; the Maintenance trait doubles it), returning a resource to nature (+1 to its node), items (Seed Pouch, Fish Ladder, Salt Lick) and station services.
+- **Range:** 0 to 20. It starts at 15 in each new biome and recovers +1 each night.
+- **Lowered by:** each scavenge (−1; ×2, ×3, Pair and Trio cards −2), and bonus resources a hiker chooses to take (Copier, Copydog, Generous). Random or refunded ones (Pockets, German Efficiency, Fluffy) don't count.
+- **Raised by:** Tend (+2, day only, costs 1 Appetite; the Maintenance trait doubles it, and a Thumb gets +1 more on a tile with their node), returning a resource to nature (+1), Fertilizer and Industrial Fertilizer, and some challenge and Wonder rewards.
+- **Its one effect, Empty cards:** each resource card dealt has a chance to be Empty: 5% at full, rising evenly to 40% at 0. It flips to show nothing, and keeping it gives nothing. Caps cards and item cards are never Empty.
+- **On screen:** one bar going green → yellow → red as it drops. Its tooltip shows the Empty-card chance; Simple mode shows just the bar, and Informative mode adds the number.
 
 **Inventory**
 

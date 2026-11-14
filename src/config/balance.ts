@@ -506,29 +506,28 @@ export const BALANCE = {
     fromMorale: { atZero: -2, atTen: 2 },
   },
 
+  /** One Abundance bar for the whole biome (Nov 14 update; it was a meter per node). */
   abundance: {
-    /** Each node type's meter runs 0 to max (Main.dc.html shows 0–10). */
-    max: 10,
-    /** Every meter starts each biome here ("about 75%"). TODO(wyatt): first guess. */
-    start: 8,
-    /** At or below this a node is low (Main.dc.html colours 4 and under red). */
-    lowAt: 4,
+    /** The bar runs 0 to max. TODO(wyatt): [20]. */
+    max: 20,
+    /** It starts each biome here. TODO(wyatt): [15]. */
+    start: 15,
+    /** Each night it recovers this much. TODO(wyatt): [+1]. */
+    nightRecovery: 1,
     /** Cards from a Bounty node drain this much extra. TODO(wyatt): first guess. */
     bountyExtraDrain: 1,
-    /** Tend restores this much to one node on the tile (day only). TODO(wyatt): first guess. */
+    /** Tend raises it this much (day only). TODO(wyatt): [+2]. */
     tend: 2,
-    /** Tend costs this much Energy (Wyatt, Nov 5). */
-    tendEnergy: 1,
-    /** Each night, every node nobody scavenged that day recovers this much. */
-    nightRecovery: 1,
-    /** Returning a resource to nature restores this much to its node. */
+    /** Tend costs this much Appetite (Nov 14 update; it was 1 Energy). */
+    tendAppetite: 1,
+    /** Returning a resource to nature raises it this much. */
     returnToNature: 1,
     /**
-     * When every resource node on the tile is low: fewer cards and less Luck
-     * ("a low meter means fewer cards to choose from, rarer good results").
-     * TODO(wyatt): first guess.
+     * Each resource card dealt comes up Empty with this chance: `atFull` with
+     * the bar full, rising evenly to `atZero` with it empty. Caps and item
+     * cards are never Empty. TODO(wyatt): [5%] and [40%].
      */
-    lowTile: { cards: -1, luck: -1 },
+    emptyChance: { atFull: 0.05, atZero: 0.4 },
   },
 
   inventory: {
@@ -550,10 +549,6 @@ export const BALANCE = {
      * TODO(wyatt): placeholder until Phase 10 sets XP and leveling.
      */
     levelAt: [0, 50, 150, 300, 500, 750],
-  },
-
-  endOfDay: {
-    appetite: 1,
   },
 
   /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
@@ -653,8 +648,6 @@ export const BALANCE = {
   },
 
   rules: {
-    /** TODO(wyatt): at camp, the no-sleep Energy drain happens before the end-of-day Appetite drain. */
-    noSleepDrainFirst: true,
     /** Passed-out hikers skip the camp-step drains: they're out cold (Wyatt, Nov 7). */
     passedOutHikersDrainAtCamp: false,
     /** TODO(wyatt): two percentage modifiers multiply in turn (−50% twice = 25%) rather than add. */

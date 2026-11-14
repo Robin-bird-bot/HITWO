@@ -17,7 +17,6 @@ import { ITEMS } from '../../content';
 import { ASSETS, wonderArt } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import {
-  NODE_TYPES,
   pickProblem,
   validateAction,
   wonderProgress,
@@ -26,7 +25,6 @@ import {
   type GoalProgress,
   type Hiker,
   type HikerId,
-  type NodeType,
   type TileId,
   type WonderPick,
   type WonderProgress,
@@ -35,7 +33,7 @@ import {
 import { Drift, Face, ItemFace } from '../challenge/ChallengeWindow';
 import { Icon } from '../icons/Icon';
 import type { IconName } from '../icons/paths';
-import { NODE_IMAGE, NODE_NAME } from '../map/looks';
+import { NODE_NAME } from '../map/looks';
 import { useDraggable } from '../windows/useDraggable';
 import styles from './WonderWindow.module.css';
 
@@ -379,8 +377,7 @@ function RewardCard({
         : bagProblem(state, p, picker, index)
     : undefined;
   const mine = picker && picks[picker.id]?.reward === index;
-  const wholeCard =
-    !!picker && !blocked && r.reward.kind !== 'tier3' && r.reward.kind !== 'abundance';
+  const wholeCard = !!picker && !blocked && r.reward.kind !== 'tier3';
   const kind = r.reward.kind;
 
   let picture: ReactNode;
@@ -417,28 +414,15 @@ function RewardCard({
       </div>
     );
   } else if (kind === 'abundance') {
+    // One bar for the biome (Nov 14 update): nothing to pick, just how much.
+    const amount = r.reward.kind === 'abundance' ? r.reward.amount : 0;
     picture = (
-      <div className={styles.nodes}>
-        {NODE_TYPES.map((node: NodeType) => {
-          const chosenBy = takers.filter(([, c]) => c.node === node).map(([id]) => id);
-          return (
-            <button
-              key={node}
-              type="button"
-              className={styles.nodeButton}
-              data-mine={!!picker && picks[picker.id]?.node === node && mine}
-              disabled={!picker || !!blocked}
-              title={`${NODE_NAME[node]}: Abundance ${state.abundance[node]}/${BALANCE.abundance.max}`}
-              aria-label={`Raise ${NODE_NAME[node]} Abundance`}
-              onClick={() => onPick({ reward: index, node })}
-            >
-              <img src={NODE_IMAGE[node]} alt="" />
-              <span className={styles.nodeValue}>{state.abundance[node]}</span>
-              {chosenBy.length > 0 && <span className={styles.nodeMark}>+</span>}
-            </button>
-          );
-        })}
-      </div>
+      <span
+        className={styles.bigText}
+        title={`Abundance ${state.abundance} → ${Math.min(BALANCE.abundance.max, state.abundance + amount)}`}
+      >
+        +{amount}
+      </span>
     );
   } else if (kind === 'xp') {
     picture = <span className={styles.bigText}>+XP</span>;
