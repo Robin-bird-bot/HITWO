@@ -48,6 +48,14 @@ import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './ac
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
+import {
+  applyBuy,
+  applyRestAndGo,
+  applySell,
+  validateBuy,
+  validateRestAndGo,
+  validateSell,
+} from './actions/station';
 import { finishSection, readyToLeave } from './station/checkIn';
 import { pushEvent } from './log';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
@@ -59,6 +67,18 @@ const SCAVENGE_STEPS = new Set<Action['type']>([
   'scavengeCancel',
   'scavengeTake',
   'scavengeReroll',
+  'debug',
+]);
+
+/** What can happen at a ranger station (plus the debug tools). */
+const STATION_STEPS = new Set<Action['type']>([
+  'buy',
+  'sell',
+  'give',
+  'craft',
+  'craftTake',
+  'teach',
+  'restAndGo',
   'debug',
 ]);
 
@@ -78,6 +98,10 @@ export function validateAction(state: GameState, action: Action): string | null 
   if (action.type !== 'debug' && isHikeOver(state)) return 'The hike is over.';
   // An open scavenge waits for a card before anything else happens.
   if (state.scavenge && !SCAVENGE_STEPS.has(action.type)) return 'Finish scavenging first.';
+  // At a ranger station: shopping, the Workbench, and Rest & Go to leave.
+  if (state.station && !STATION_STEPS.has(action.type)) {
+    return 'The party is at the ranger station: Rest & Go to move on.';
+  }
   // So does an open challenge.
   const challengeSteps: Action['type'][] = [
     'resolveChallenge',
@@ -134,6 +158,12 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateCraftTake(state, action) ?? null;
     case 'teach':
       return validateTeach(state, action) ?? null;
+    case 'buy':
+      return validateBuy(state, action) ?? null;
+    case 'sell':
+      return validateSell(state, action) ?? null;
+    case 'restAndGo':
+      return validateRestAndGo(state) ?? null;
     case 'pickUp':
       return validatePickUp(state, action) ?? null;
     case 'abandon':
@@ -226,6 +256,15 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'teach':
       applyTeach(draft, action);
+      break;
+    case 'buy':
+      applyBuy(draft, action);
+      break;
+    case 'sell':
+      applySell(draft, action);
+      break;
+    case 'restAndGo':
+      applyRestAndGo(draft);
       break;
     case 'pickUp':
       applyPickUp(draft, action);

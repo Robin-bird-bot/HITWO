@@ -71,7 +71,7 @@ describe('everyone in', () => {
     let s = run(nearby(), move('ash', 'C'), move('birch', 'C'), move('cedar', 'C'));
     expect(s.station).toBeUndefined();
     s = run(s, move('dot', 'C'));
-    expect(s.station).toEqual({ checkpoint: 1 });
+    expect(s.station).toMatchObject({ checkpoint: 1 });
     expect(isHikeOver(s)).toBe(false);
     expect(s.log.findLast((e) => e.kind === 'stationOpened')).toBeTruthy();
   });

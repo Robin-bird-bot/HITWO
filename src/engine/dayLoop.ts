@@ -110,7 +110,8 @@ function campStep(state: GameState): void {
   countdownAtCamp(state);
 }
 
-function startNewDay(state: GameState): void {
+/** Morning of a new day (after camp, or the station's free night). */
+export function startNewDay(state: GameState): void {
   state.day += 1;
   state.phase = 'morning';
   for (const h of state.hikers) {

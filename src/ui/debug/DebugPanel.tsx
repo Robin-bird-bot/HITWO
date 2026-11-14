@@ -19,6 +19,7 @@ import {
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
+import { STATION_THEMES } from '../../content/stations';
 import { NIGHT_CREATURES, NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { BALANCE } from '../../config/balance';
 import {
@@ -32,6 +33,7 @@ import {
   type Action,
   type CardDef,
   type GameState,
+  type StationThemeId,
   type Hiker,
   type ItemTypeName,
   type NodeType,
@@ -174,6 +176,8 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
           </select>
         </div>
       </section>
+
+      <StationDebug state={state} run={run} />
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Stats</h3>
@@ -1181,4 +1185,85 @@ function StatsForm({
 }) {
   const [values, setValues] = useState<StatValues>({ ...hiker.stats, injuries: hiker.injuries });
   return <>{children(values, (key, value) => setValues((v) => ({ ...v, [key]: value })))}</>;
+}
+
+/**
+ * Ranger stations (Phase 9): force the next theme, open a station now, roll
+ * the open one's stock again, and add items to Rocco's used-or-lost log.
+ */
+function StationDebug({ state, run }: { state: GameState; run(action: Action): void }) {
+  const [theme, setTheme] = useState<StationThemeId>(STATION_THEMES[0]?.id ?? 'finn');
+  const [lostId, setLostId] = useState('coffee');
+  const items = Object.values(ITEMS).sort((a, b) => a.name.localeCompare(b.name));
+  const log = Object.entries(state.usedOrLost ?? {});
+  return (
+    <section className={styles.group}>
+      <h3 className={styles.heading}>Station</h3>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          aria-label="Station theme"
+          value={theme}
+          onChange={(e) => setTheme(e.target.value as StationThemeId)}
+        >
+          {STATION_THEMES.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => run({ type: 'debug', op: { kind: 'nextStationTheme', themeId: theme } })}
+        >
+          Next station
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!!state.station}
+          onClick={() => run({ type: 'debug', op: { kind: 'openStation', themeId: theme } })}
+        >
+          Check in, open it
+        </button>
+        <button
+          type="button"
+          className={styles.button}
+          disabled={!state.station}
+          onClick={() => run({ type: 'debug', op: { kind: 'rerollStation' } })}
+        >
+          Reroll stock
+        </button>
+      </div>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          aria-label="Used or lost item"
+          value={lostId}
+          onChange={(e) => setLostId(e.target.value)}
+        >
+          {items.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.name}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => run({ type: 'debug', op: { kind: 'noteGone', itemId: lostId } })}
+        >
+          Add to Rocco’s log
+        </button>
+      </div>
+      <p className={styles.note}>
+        Caps: {state.caps}. Rocco’s log:{' '}
+        {log.length
+          ? log.map(([id, n]) => `${ITEMS[id]?.name ?? id} ×${n}`).join(', ')
+          : 'nothing yet'}
+        . Themes used: {(state.stationThemes ?? []).join(', ') || 'none'}.
+      </p>
+    </section>
+  );
 }

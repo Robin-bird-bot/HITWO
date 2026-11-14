@@ -3,6 +3,7 @@
  * of GameState changes, and add a migration from the old version. Loading
  * never throws: a save that can't be read comes back as { ok: false }.
  */
+import { openStation } from './station/stock';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
@@ -20,7 +21,7 @@ import {
 } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -54,7 +55,18 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   9: (save) => save,
   // Phase 9: check-ins, the station visit and the summit (all optional).
   10: (save) => save,
+  // Phase 9 step 2: a station opened in step 1 had only its number. Stock it now.
+  11: (save) => upgradeStation(save),
 };
+
+/** A step 1 station (just `{ checkpoint }`) gets its theme, stock and next section. */
+function upgradeStation(save: SaveData): SaveData {
+  const station = save.station;
+  if (!isRecord(station) || typeof station.themeId === 'string') return save;
+  const state = save as unknown as GameState;
+  state.station = openStation(state);
+  return save;
+}
 
 /** Shelters stored as item ids become placed shelters with their full nights. */
 function upgradeShelters(save: SaveData): SaveData {

@@ -8,6 +8,7 @@
  * plug in: an Umbrella takes the other clothes' losses, and a Heavy Jacket or
  * Birkenstocks (on their node) have a chance not to lose any.
  */
+import { noteGone } from './gone';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { pushEvent } from '../log';
@@ -59,6 +60,7 @@ export function loseDurability(
   item.durability = Math.max(0, before - n);
   if (item.durability === 0) {
     removeItem(hiker, item.uid);
+    noteGone(state, item.itemId);
     pushEvent(state, {
       kind: 'itemGone',
       hikerId: hiker.id,
@@ -84,6 +86,7 @@ export function loseUses(
   item.usesLeft = Math.max(0, before - n);
   if (item.usesLeft === 0) {
     removeItem(hiker, item.uid);
+    noteGone(state, item.itemId);
     pushEvent(state, {
       kind: 'itemGone',
       hikerId: hiker.id,

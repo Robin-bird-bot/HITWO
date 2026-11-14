@@ -85,6 +85,8 @@ export const ASSETS = {
   },
   /** Item art (Nov 7), 384 px copies of assets/items, by the item's `art` name. */
   itemArt: (art: string) => asset(`items/${art}.png`),
+  /** A ranger station shopkeeper (465×800, anchored at the bottom). */
+  shopkeeper: (name: string) => asset(`shopkeepers/${name}.png`),
   /** Scavenge card layers (docs/ASSETS.md, "Scavenge card layers"). */
   scavenge: {
     /** Blank card backgrounds, no rays. */

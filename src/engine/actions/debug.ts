@@ -1,3 +1,7 @@
+import { STATION_THEME_BY_ID } from '../../content/stations';
+import { noteGone } from '../items/gone';
+import { checkInArrivals } from '../station/checkIn';
+import { rollStock } from '../station/stock';
 import { fullCounters, makeItem, qualityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
@@ -147,6 +151,43 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       state.sectionIndex = Math.max(0, Math.min(biomes.length - 1, op.index));
       state.section.biome = biomes[state.sectionIndex] ?? state.section.biome;
       pushEvent(state, { kind: 'debug', note: `Section ${state.sectionIndex + 1}` });
+      break;
+    }
+    case 'nextStationTheme':
+      state.debugNextTheme = op.themeId;
+      pushEvent(state, { kind: 'debug', note: `Next station: ${op.themeId}` });
+      break;
+    case 'openStation': {
+      if (state.station || state.summit) return;
+      if (op.themeId) state.debugNextTheme = op.themeId;
+      const checkpoint = state.section.checkpointId;
+      const arriving = state.hikers.filter(
+        (h) => h.status === 'active' || h.status === 'passedOut',
+      );
+      for (const h of arriving) h.tileId = checkpoint;
+      enterTile(state, checkpoint);
+      checkInArrivals(
+        state,
+        arriving.map((h) => h.id),
+        checkpoint,
+      );
+      pushEvent(state, { kind: 'debug', note: 'Everyone checked in' });
+      break;
+    }
+    case 'rerollStation': {
+      const theme = state.station && STATION_THEME_BY_ID[state.station.themeId];
+      if (!state.station || !theme) return;
+      const fresh = rollStock(state, theme, state.station.checkpoint);
+      // A visit with no special this time drops the old one.
+      delete state.station.special;
+      Object.assign(state.station, fresh);
+      pushEvent(state, { kind: 'debug', note: 'Rerolled the station' });
+      break;
+    }
+    case 'noteGone': {
+      if (!ITEMS[op.itemId]) return;
+      for (let i = 0; i < (op.times ?? 1); i++) noteGone(state, op.itemId);
+      pushEvent(state, { kind: 'debug', note: `${ITEMS[op.itemId]?.name} used up or lost` });
       break;
     }
     case 'openSpace': {

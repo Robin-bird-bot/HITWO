@@ -8,6 +8,7 @@
  * an RV shelters them, a Tree-House guards them from night events.
  * Its nights count down at the end of each camp step; at 0 it's gone.
  */
+import { noteGone } from './gone';
 import { ITEMS } from '../../content/items';
 import { countShelter } from '../counters';
 import type { EffectSource } from '../effects';
@@ -85,7 +86,10 @@ export function sheltersAtCamp(state: GameState): void {
     for (const s of tile.shelters) {
       s.nightsLeft -= 1;
       if (s.nightsLeft > 0) left.push(s);
-      else pushEvent(state, { kind: 'shelterGone', tileId: tile.id, itemId: s.itemId });
+      else {
+        pushEvent(state, { kind: 'shelterGone', tileId: tile.id, itemId: s.itemId });
+        noteGone(state, s.itemId);
+      }
     }
     if (left.length) tile.shelters = left;
     else delete tile.shelters;

@@ -72,6 +72,17 @@ export {
   isCheckpoint,
   type CheckInPreview,
 } from './station/checkIn';
+export {
+  blueprintPrice,
+  itemPrice,
+  leftShare,
+  marketMult,
+  resourceSellPrice,
+  sellPrice,
+} from './station/prices';
+export { stationItemCount, stationTheme } from './station/stock';
+export { findOffer, rejoinReason } from './actions/station';
+export type { StationFocus, StationTheme, StationThemeId } from './station/types';
 export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
@@ -123,9 +134,12 @@ export {
   craftPool,
   craftRecipe,
   craftSetup,
+  atWorkbench,
+  canUseBlueprint,
   craftTier,
   fitsPart,
   knowsBlueprint,
+  ownCraftTier,
   paymentReason,
   spaceParts,
   CRAFT_TYPES,

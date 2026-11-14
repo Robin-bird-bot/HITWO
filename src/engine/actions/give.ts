@@ -22,7 +22,11 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   const to = findHiker(state, action.toId);
   // A passed-out hiker's things can be taken by an active hiker beside them.
   const takeFromOut = from?.status === 'passedOut';
-  const reason = (takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to);
+  // At a ranger station, everyone checked in shares their packs.
+  const atStation = !!state.station && from?.status === 'checkedIn' && to?.status === 'checkedIn';
+  const reason = atStation
+    ? undefined
+    : ((takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to));
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
   // A Walkie-Talkie lets either one trade with anyone, anywhere.

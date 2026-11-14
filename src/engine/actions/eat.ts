@@ -24,6 +24,7 @@ import { pushEvent } from '../log';
 import { qualityOf } from '../items/make';
 import { valueAt } from '../items/quality';
 import { removeItem } from '../items/wear';
+import { noteGone } from '../items/gone';
 import { int, pick, roll } from '../rng';
 import { changeStat } from '../stats';
 import type { Action, GameState, Hiker, ItemInstance } from '../types';
@@ -149,6 +150,7 @@ export function applyEat(state: GameState, action: EatAction): void {
 
 function finishFood(state: GameState, hiker: Hiker, item: ItemInstance): void {
   removeItem(hiker, item.uid);
+  noteGone(state, item.itemId);
   pushEvent(state, {
     kind: 'itemGone',
     hikerId: hiker.id,

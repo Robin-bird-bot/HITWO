@@ -255,7 +255,7 @@ function CraftBody({
   };
   const reason = validateAction(state, action);
   const setup = craftSetup(state, hiker, type);
-  const tier = craftTier(hiker, type);
+  const tier = craftTier(state, hiker, type);
   const known = (hiker.blueprints ?? []).filter((id) => ITEMS[id]?.type === type);
   const needsNode = !!bp?.madeWithNode;
 
@@ -278,7 +278,7 @@ function CraftBody({
             >
               <Icon name={TYPE_ICON[t]} size={20} />
               <span className={styles.typeName}>{TYPE_LOOK[t].label.toUpperCase()}</span>
-              <span className={styles.typeTier}>TIER {NUMERAL[craftTier(hiker, t)]}</span>
+              <span className={styles.typeTier}>TIER {NUMERAL[craftTier(state, hiker, t)]}</span>
             </button>
           ))}
         </nav>
@@ -682,7 +682,7 @@ function Blueprint({
 }) {
   const def = ITEMS[itemId];
   if (!def) return null;
-  const locked = !teach && def.tier > craftTier(hiker, def.type);
+  const locked = !teach && def.tier > craftTier(state, hiker, def.type);
   const recipe = def.recipe;
   const missing = recipe ? autoPay(state, hiker, recipe).filter((s) => !s).length : 0;
   const payable = recipe
@@ -813,7 +813,7 @@ function PickBody({
   const pick = chosen !== null ? cards[chosen] : undefined;
   const pickDef = pick ? ITEMS[pick.itemId] : undefined;
   const needsNode = !!pickDef?.madeWithNode && !node;
-  const tier = craftTier(hiker, open.type);
+  const tier = craftTier(state, hiker, open.type);
   const quality = (q?: number) => (q ? ` · Quality ${q}` : '');
 
   return (

@@ -25,6 +25,7 @@ import { applyMapUse, mapUseReason } from '../items/scout';
 import { fullDurability, qualityOf } from '../items/make';
 import { valueAt } from '../items/quality';
 import { loseUses, removeItem } from '../items/wear';
+import { noteGone } from '../items/gone';
 import { pushEvent } from '../log';
 import { adjacentTileIds, hikersOnTile, tileNodeTypes } from '../map';
 import { pick } from '../rng';
@@ -429,6 +430,7 @@ export function applyUse(state: GameState, action: UseAction): void {
   // A tool takes a use; a trinket is used up.
   if (def.type === 'trinket') {
     removeItem(user, item.uid);
+    noteGone(state, item.itemId);
     pushEvent(state, {
       kind: 'itemGone',
       hikerId: user.id,

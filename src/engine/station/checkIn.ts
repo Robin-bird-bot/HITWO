@@ -15,6 +15,7 @@
 import { BALANCE } from '../../config/balance';
 import { abandonHike, endCarry } from '../health';
 import { pushEvent } from '../log';
+import { openStation } from './stock';
 import type { GameState, Hiker, HikerId, TileId } from '../types';
 
 export const isCheckpoint = (state: GameState, tileId: TileId): boolean =>
@@ -72,9 +73,8 @@ export function finishSection(state: GameState): void {
     pushEvent(state, { kind: 'summit' });
     return;
   }
-  const checkpoint = state.sectionIndex + 1;
-  state.station = { checkpoint };
-  pushEvent(state, { kind: 'stationOpened', checkpoint });
+  state.station = openStation(state);
+  pushEvent(state, { kind: 'stationOpened', checkpoint: state.station.checkpoint });
 }
 
 export interface CheckInPreview {

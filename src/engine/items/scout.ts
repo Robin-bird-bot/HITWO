@@ -61,7 +61,7 @@ const inRow = (state: GameState, row: number) =>
     .map((t) => t.id);
 
 /** What a line becomes when paved: Steep, Muddy and Rough become normal, and normal becomes Paved. */
-const PAVED: Partial<Record<LineKind, LineKind>> = {
+export const PAVED: Partial<Record<LineKind, LineKind>> = {
   steep: 'normal',
   muddy: 'normal',
   rough: 'normal',

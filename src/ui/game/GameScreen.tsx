@@ -690,7 +690,9 @@ export function GameScreen({
         />
       )}
 
-      {state.station && !isHikeOver(state) && <StationPlaceholder state={state} onTitle={onQuit} />}
+      {state.station && !isHikeOver(state) && (
+        <StationPlaceholder state={state} onDispatch={dispatch} onTitle={onQuit} />
+      )}
 
       {isHikeOver(state) && (
         <HikeOverScreen state={state} onTitle={onQuit} {...(onNewHike ? { onNewHike } : {})} />
