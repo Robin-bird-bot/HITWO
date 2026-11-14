@@ -14,6 +14,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/03-items.md` | Every item with its tier, uses, bites or durability, Quality values, effect, recipe and art. **Source of truth for items.** |
 | `docs/design/04-challenges.md` | Every challenge and Trial: tier, nodes, who pays, cost, penalty and art. **Source of truth for challenge content.** |
 | `docs/design/05-nights-and-weather.md` | Night events, weather, and the nodes and conditions they add. **Source of truth for nights and weather.** |
+| `docs/design/06-ranger-stations.md` | Every station theme and shopkeeper, the stock, and the shop rules (Quality, prices, market, selling). **Source of truth for stations.** |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |

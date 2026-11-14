@@ -2,6 +2,7 @@
  * The shape of the whole game. Everything here is plain JSON data so a game
  * can be saved, loaded, replayed and compared in tests.
  */
+import type { StationThemeId } from './station/types';
 import type { WonderPick, WonderState } from './wonders/types';
 
 export type HikerId = string;
@@ -90,6 +91,8 @@ export interface Tile {
   /** Narrow Path only: how many hikers it holds at once. */
   narrowCapacity?: number;
   feature?: SideFeature;
+  /** A side feature's wares, rolled the first time someone stands here (Phase 9). */
+  shop?: TrailShop;
   /** A hiker has landed here. The special icon moves to the corner once true. */
   visited?: true;
   /** Its challenge will be this many tiers higher, or lower (Warning Bird, Predator Bait). */
@@ -684,6 +687,26 @@ export type Action =
   | { type: 'teach'; hikerId: HikerId; toId: HikerId; itemId: ItemId }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
   | { type: 'dropItem'; hikerId: HikerId; itemUid: string }
+  /**
+   * At a ranger station (free): buy something off the counter for the party
+   * purse. `hikerId` takes it (an item, a bundle), learns it (a blueprint) or,
+   * for the rejoin, comes back. Specials pick in the next section.
+   */
+  | {
+      type: 'buy';
+      offerId: string;
+      hikerId: HikerId;
+      /** Cement Mixer: the line to pave. Scout Report: the tiles to show. */
+      pick?: { lineId?: string; tileIds?: TileId[] };
+    }
+  /** At a ranger station (free): sell a bag item, or some of one resource, to the shop. */
+  | { type: 'sell'; hikerId: HikerId; itemUid?: string; resource?: ResourceId; count?: number }
+  /** A trail Merchant (free): buy one of their cards for the purse; `hikerId` takes it. */
+  | { type: 'merchantBuy'; hikerId: HikerId; offerId: string }
+  /** A Traveling Trader (free): give them an item of the type they want for theirs. */
+  | { type: 'trade'; hikerId: HikerId; itemUid: string }
+  /** Leave the ranger station: the free night, then the next biome's Trailhead. */
+  | { type: 'restAndGo' }
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
@@ -731,6 +754,22 @@ export type DebugOp =
   | { kind: 'revealWonder' }
   /** Puts every hiker who's still hiking on one tile (to test Wonder goals). */
   | { kind: 'gatherAt'; tileId: TileId }
+  /** Everyone still hiking onto a tile one move from the checkpoint. */
+  | { kind: 'nearCheckpoint' }
+  /** Pretend this is section N (0 is the first; the last checkpoint is the summit). */
+  | { kind: 'sectionIndex'; index: number }
+  /** The next station's theme. */
+  | { kind: 'nextStationTheme'; themeId: StationThemeId }
+  /** Everyone still hiking checks in now, and the station opens (with this theme, if given). */
+  | { kind: 'openStation'; themeId?: StationThemeId }
+  /** Roll the open station's stock, market and blueprints again. */
+  | { kind: 'rerollStation' }
+  /** Put a side feature on a tile (rolling its wares if someone is there). */
+  | { kind: 'setFeature'; tileId: TileId; feature: SideFeature }
+  /** Add caps to the party purse. */
+  | { kind: 'giveCaps'; caps: number }
+  /** Add an item to Rocco's used-or-lost log. */
+  | { kind: 'noteGone'; itemId: ItemId; times?: number }
   /** Picks and opens a card as if the tile were this special space. */
   | { kind: 'openSpace'; tileId: TileId; space: 'choice' | 'challenge' | 'opportunity' }
   /** Shows the rolled X and Y numbers in the challenge pop-up. */
@@ -853,9 +892,43 @@ export type GameEventBody =
   /** A passed-out hiker spent a night with no active hiker beside them. */
   | { kind: 'countdown'; hikerId: HikerId; left: number }
   /** A hiker left the party: their countdown ran out, or the player chose it. */
-  | { kind: 'abandoned'; hikerId: HikerId; why: 'countdown' | 'choice' }
+  | { kind: 'abandoned'; hikerId: HikerId; why: 'countdown' | 'choice' | 'leftBehind' }
   /** No hiker can act any more. */
   | { kind: 'hikeOver'; day: number }
+  /** Hikers checked in at the checkpoint (a carried one too), and the XP each gained. */
+  | { kind: 'checkedIn'; hikerIds: HikerId[]; xp: number }
+  /** Everyone is in: the ranger station at this checkpoint (1, 2…) opens. */
+  | { kind: 'stationOpened'; checkpoint: number }
+  /** The last checkpoint: the party reached the summit. */
+  | { kind: 'summit' }
+  /** Bought at a station: an item, bundle or blueprint (for a hiker), or a special. */
+  | {
+      kind: 'bought';
+      hikerId?: HikerId;
+      price: number;
+      itemId?: ItemId;
+      blueprint?: ItemId;
+      resource?: ResourceId;
+      count?: number;
+      special?: StationSpecialId;
+      /** A face-down card turned over (Random Resale). */
+      mystery?: true;
+    }
+  /** Sold at a station. */
+  | {
+      kind: 'sold';
+      hikerId: HikerId;
+      caps: number;
+      itemId?: ItemId;
+      resource?: ResourceId;
+      count?: number;
+    }
+  /** Traded with a Traveling Trader. */
+  | { kind: 'traded'; hikerId: HikerId; gave: ItemId; got: ItemId }
+  /** An abandoned hiker came back (the station's rejoin). */
+  | { kind: 'rejoined'; hikerId: HikerId; price: number }
+  /** The free night at the station, and the next section starts. */
+  | { kind: 'nextSection'; biome: BiomeId; section: number }
   | { kind: 'sleep'; hikerId: HikerId }
   | {
       kind: 'scavenge';
@@ -1008,6 +1081,90 @@ export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase 
 
 // ── The game ───────────────────────────────────────────────────────────────
 
+/** A hiker reaching a checkpoint (Phase 12 scores healthy, injured and carried arrivals). */
+export interface Arrival {
+  /** The section it ended (0 is the first). */
+  section: number;
+  hikerId: HikerId;
+  injuries: number;
+  carried: boolean;
+}
+
+/**
+ * A trail tile's side feature (01-design-doc.md, "Side features"; Phase 9):
+ * - a Merchant's 3 cards, each bought once (Wyatt, Nov 14);
+ * - a Traveling Trader's item, one tier above the biome's, for any 1 item of
+ *   another type (Wyatt, Nov 14), once.
+ */
+export type TrailShop =
+  | { kind: 'merchant'; offers: (ItemOffer | BlueprintOffer | BundleOffer)[] }
+  | {
+      kind: 'trader';
+      item: ItemInstance;
+      wants: 'tool' | 'clothes' | 'food';
+      /** Who traded, and what the Trader got. */
+      traded?: { hikerId: HikerId; itemId: ItemId };
+    };
+
+/** Something on a station's counter. */
+interface Offer {
+  /** 'item-0', 'blueprint-1', 'bundle-0', 'special'. */
+  id: string;
+  /** In caps, from the party purse. */
+  price: number;
+  sold?: true;
+  /** Face-down until bought (Rocco's Random Resale): the UI shows only the tier. */
+  hidden?: true;
+}
+
+export interface ItemOffer extends Offer {
+  kind: 'item';
+  /** Rolled when the shop is stocked (a fresh copy, full uses, bites or durability). */
+  item: ItemInstance;
+}
+
+export interface BlueprintOffer extends Offer {
+  kind: 'blueprint';
+  itemId: ItemId;
+}
+
+/** A resource bundle (3 of one resource), or at the Random Resale sometimes a resource pack. */
+export interface BundleOffer extends Offer {
+  kind: 'bundle';
+  resource?: ResourceId;
+  count?: number;
+  item?: ItemInstance;
+}
+
+/** The shared specials: one random per visit. */
+export type StationSpecialId = 'cementMixer' | 'scoutReport';
+
+export interface SpecialOffer extends Offer {
+  kind: 'special';
+  special: StationSpecialId;
+}
+
+/** The ranger station at a checkpoint (Phase 9; docs/design/06-ranger-stations.md). */
+export interface StationVisit {
+  /** 1 at the first checkpoint. */
+  checkpoint: number;
+  themeId: StationThemeId;
+  items: ItemOffer[];
+  blueprints: BlueprintOffer[];
+  bundles: BundleOffer[];
+  special?: SpecialOffer;
+  /** This visit's market: these sell for ×2, these for ×½. */
+  market: { high: ResourceId[]; low: ResourceId[] };
+  /** Free at the Workbench for this visit; kept only by crafting the item here. */
+  tempBlueprints: ItemId[];
+  /** This station's rejoin was used (one per station). */
+  rejoined?: true;
+  /** The next section, made now so Preview Next Trail can show it. */
+  next: Section;
+  /** Scout Report: the cards on these tiles of the next section are shown when it starts. */
+  scout?: TileId[];
+}
+
 export interface GameState {
   saveVersion: number;
   seed: number;
@@ -1018,6 +1175,25 @@ export interface GameState {
   sectionIndex: number;
   section: Section;
   hikers: Hiker[];
+  /** The ranger station visit, once everyone has checked in. */
+  station?: StationVisit;
+  /** Every check-in so far, for the score (Phase 12). */
+  arrivals?: Arrival[];
+  /** The party reached the summit: the hike is over. */
+  summit?: true;
+  /** Station themes already used this run (none repeats). */
+  stationThemes?: StationThemeId[];
+  /**
+   * Items the party used up or lost this run, and how often (Rocco's
+   * "Borrowed" Boutique). Selling doesn't count.
+   */
+  usedOrLost?: Record<ItemId, number>;
+  /** Abandoned hikers brought back so far this run. */
+  rejoinsUsed?: number;
+  /** Wonders already used this run, so each biome gets a new one. */
+  usedWonders?: string[];
+  /** Debug: the next station's theme. */
+  debugNextTheme?: StationThemeId;
   /** The party purse of acorn caps. */
   caps: number;
   /** Added to every caps gain for good (each Wallet used: +1). */

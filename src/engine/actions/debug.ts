@@ -1,3 +1,8 @@
+import { rollTrailShop } from '../station/trail';
+import { STATION_THEME_BY_ID } from '../../content/stations';
+import { noteGone } from '../items/gone';
+import { checkInArrivals } from '../station/checkIn';
+import { rollStock } from '../station/stock';
 import { fullCounters, makeItem, qualityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
@@ -14,6 +19,7 @@ import { enterTile } from './common';
 import { passOut, wakeUp } from '../health';
 import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
+import { adjacentTileIds } from '../map';
 import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
@@ -127,6 +133,77 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       enterTile(state, op.tileId);
       if (tile.wonder) revealWonder(state, op.tileId, 'the debug panel');
       pushEvent(state, { kind: 'debug', note: `Put everyone on ${op.tileId}` });
+      break;
+    }
+    case 'nearCheckpoint': {
+      const near = adjacentTileIds(state.section, state.section.checkpointId).find(
+        (id) => state.section.tiles[id]?.kind === 'normal',
+      );
+      if (!near) return;
+      for (const h of state.hikers) {
+        if (h.status === 'active' || h.status === 'passedOut') h.tileId = near;
+      }
+      enterTile(state, near);
+      pushEvent(state, { kind: 'debug', note: 'Put everyone one move from the checkpoint' });
+      break;
+    }
+    case 'sectionIndex': {
+      const biomes = BALANCE.run.biomes;
+      state.sectionIndex = Math.max(0, Math.min(biomes.length - 1, op.index));
+      state.section.biome = biomes[state.sectionIndex] ?? state.section.biome;
+      pushEvent(state, { kind: 'debug', note: `Section ${state.sectionIndex + 1}` });
+      break;
+    }
+    case 'nextStationTheme':
+      state.debugNextTheme = op.themeId;
+      pushEvent(state, { kind: 'debug', note: `Next station: ${op.themeId}` });
+      break;
+    case 'openStation': {
+      if (state.station || state.summit) return;
+      if (op.themeId) state.debugNextTheme = op.themeId;
+      const checkpoint = state.section.checkpointId;
+      const arriving = state.hikers.filter(
+        (h) => h.status === 'active' || h.status === 'passedOut',
+      );
+      for (const h of arriving) h.tileId = checkpoint;
+      enterTile(state, checkpoint);
+      checkInArrivals(
+        state,
+        arriving.map((h) => h.id),
+        checkpoint,
+      );
+      pushEvent(state, { kind: 'debug', note: 'Everyone checked in' });
+      break;
+    }
+    case 'rerollStation': {
+      const theme = state.station && STATION_THEME_BY_ID[state.station.themeId];
+      if (!state.station || !theme) return;
+      const fresh = rollStock(state, theme, state.station.checkpoint);
+      // A visit with no special this time drops the old one.
+      delete state.station.special;
+      Object.assign(state.station, fresh);
+      pushEvent(state, { kind: 'debug', note: 'Rerolled the station' });
+      break;
+    }
+    case 'setFeature': {
+      const tile = state.section.tiles[op.tileId];
+      if (!tile || tile.kind !== 'normal') return;
+      tile.feature = op.feature;
+      delete tile.shop;
+      if (state.hikers.some((h) => h.tileId === tile.id && h.status === 'active')) {
+        rollTrailShop(state, tile);
+      }
+      pushEvent(state, { kind: 'debug', note: `A ${op.feature} on ${op.tileId}` });
+      break;
+    }
+    case 'giveCaps':
+      state.caps = Math.max(0, state.caps + op.caps);
+      pushEvent(state, { kind: 'debug', note: `Gave the party ${op.caps} caps` });
+      break;
+    case 'noteGone': {
+      if (!ITEMS[op.itemId]) return;
+      for (let i = 0; i < (op.times ?? 1); i++) noteGone(state, op.itemId);
+      pushEvent(state, { kind: 'debug', note: `${ITEMS[op.itemId]?.name} used up or lost` });
       break;
     }
     case 'openSpace': {

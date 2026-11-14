@@ -3,6 +3,7 @@
  * accent color, the counter and its pip shape, and the tier numeral's colors.
  */
 import type { ItemType } from '../../engine';
+import type { IconName } from '../icons/paths';
 
 export interface TypeLook {
   label: string;
@@ -18,6 +19,15 @@ export const TYPE_LOOK: Record<ItemType, TypeLook> = {
   food: { label: 'Food', accent: '#C7DA7B', count: 'BITES', shape: 'circle' },
   shelter: { label: 'Shelter', accent: '#83C4ED', count: 'NIGHTS', shape: 'square' },
   trinket: { label: 'Trinket', accent: '#E2A9F1', count: null, shape: 'square' },
+};
+
+/** Each item type's icon (type tabs, blueprints). */
+export const TYPE_ICON: Record<ItemType, IconName> = {
+  tool: 'hammer',
+  clothes: 'shirt',
+  food: 'utensils',
+  shelter: 'tent',
+  trinket: 'sparkles',
 };
 
 /** Tier numerals: Tier I shows none; II silver, III gold, IV prismatic (Luck only). */

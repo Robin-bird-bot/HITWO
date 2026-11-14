@@ -234,12 +234,28 @@
   height: 34px;
   padding: 0 10px;
   border-radius: 8px;
-  border: 1px dashed rgba(233, 180, 76, 0.6);
-  background: transparent;
+  border: 1px solid rgba(233, 180, 76, 0.7);
+  background: rgba(233, 180, 76, 0.12);
   color: var(--gold);
   font-size: 12px;
   font-weight: 600;
-  cursor: help;
+  cursor: pointer;
+}
+
+.feature:hover:not(:disabled) {
+  background: rgba(233, 180, 76, 0.24);
+}
+
+.feature:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 2px;
+}
+
+.feature:disabled {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* ── Items and slots (BUILD_PLAN "Inventory and other slots that grow") ── */
@@ -463,6 +479,15 @@ button.itemCard:hover {
   border-radius: 12px;
   border: 1px solid rgba(229, 98, 74, 0.45);
   background: rgba(229, 98, 74, 0.12);
+}
+
+.out[data-tone='in'] {
+  border-color: rgba(233, 180, 76, 0.5);
+  background: rgba(233, 180, 76, 0.1);
+}
+
+.out[data-tone='in'] .outKicker {
+  color: var(--gold);
 }
 
 .outKicker {

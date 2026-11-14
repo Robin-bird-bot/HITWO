@@ -9,12 +9,14 @@ import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
+  type BiomeId,
   type ChallengePaid,
   type GameEvent,
   type GameState,
   type HikerId,
   type NodeKind,
   type StatName,
+  type StationSpecialId,
 } from '../../engine';
 import { NODE_NAME } from '../map/looks';
 import { cardText } from '../challenge/cardText';
@@ -84,6 +86,17 @@ function riskWords(r: RiskResult): string {
       return r.hit ? `was blown back ${r.value} tile${r.value === 1 ? '' : 's'}` : 'held on';
   }
 }
+
+const SPECIAL_NAME: Record<StationSpecialId, string> = {
+  cementMixer: 'the Cement Mixer',
+  scoutReport: 'the Scout Report',
+};
+
+const BIOME_NAME: Record<BiomeId, string> = {
+  meadow: 'the Meadow',
+  temperateRainforest: 'the Temperate Rainforest',
+  alpine: 'the Alpine',
+};
 
 /** "1 food card", "Trail Mix and 2 Wood", "2 Energy". */
 export function describePaid(paid: ChallengePaid): string {
@@ -449,12 +462,81 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           text:
             e.why === 'countdown'
               ? `${name(e.hikerId)} was left alone too long and abandoned the hike.`
-              : `${name(e.hikerId)} abandoned the hike.`,
+              : e.why === 'leftBehind'
+                ? `${name(e.hikerId)} was left behind on the trail and abandoned the hike.`
+                : `${name(e.hikerId)} abandoned the hike.`,
           tone: 'injury',
         });
         break;
       case 'hikeOver':
         lines.push({ id: e.id, text: `The hike is over (Day ${e.day}).`, tone: 'phase' });
+        break;
+      case 'checkedIn': {
+        const who = listNames(e.hikerIds.map(name));
+        lines.push({
+          id: e.id,
+          text: `${who} checked in at the checkpoint (+${e.xp} XP${e.hikerIds.length > 1 ? ' each' : ''}).`,
+          tone: 'move',
+        });
+        break;
+      }
+      case 'stationOpened':
+        lines.push({
+          id: e.id,
+          text: `Everyone is in. The ranger station at checkpoint ${e.checkpoint} is open.`,
+          tone: 'phase',
+        });
+        break;
+      case 'summit':
+        lines.push({ id: e.id, text: 'The party reached the summit!', tone: 'phase' });
+        break;
+      case 'bought': {
+        const what = e.special
+          ? SPECIAL_NAME[e.special]
+          : e.blueprint
+            ? `the ${ITEMS[e.blueprint]?.name ?? 'item'} blueprint`
+            : e.resource
+              ? `${e.count ?? 1} ${resourceName(e.resource)}`
+              : `a ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
+        const who = e.hikerId && !e.special ? ` for ${name(e.hikerId)}` : '';
+        lines.push({
+          id: e.id,
+          text: `${e.mystery ? 'A mystery card turned over: ' : 'Bought '}${what}${who} (${e.price} caps).`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'sold': {
+        const what = e.resource
+          ? `${e.count ?? 1} ${resourceName(e.resource)}`
+          : `the ${ITEMS[e.itemId ?? '']?.name ?? 'item'}`;
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} sold ${what} for ${e.caps} cap${e.caps === 1 ? '' : 's'}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'traded':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} traded the ${ITEMS[e.gave]?.name ?? 'item'} to a Traveling Trader for the ${ITEMS[e.got]?.name ?? 'item'}.`,
+          tone: 'scavenge',
+        });
+        break;
+      case 'rejoined':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} rejoined the hike by Taxi Service (${e.price} caps).`,
+          tone: 'phase',
+        });
+        break;
+      case 'nextSection':
+        lines.push({
+          id: e.id,
+          text: `A free night at the station, then on into ${BIOME_NAME[e.biome]} (section ${e.section + 1}).`,
+          tone: 'phase',
+        });
         break;
       case 'phase':
         lines.push({ id: e.id, text: `Day ${e.day} · ${PHASE_LABEL[e.phase]}`, tone: 'phase' });

@@ -18,6 +18,8 @@ import {
   craftQuality,
   craftRecipe,
   craftSetup,
+  atWorkbench,
+  canUseBlueprint,
   craftTier,
   dealCraft,
   knowsBlueprint,
@@ -61,26 +63,32 @@ function slotsFor(state: GameState, hiker: Hiker, action: CraftAction): (PaidSlo
   return recipe ? autoPay(state, hiker, recipe) : [];
 }
 
-/** Why this hiker can't craft at all right now (before any recipe): acted, Inept, Exhausted… */
+/**
+ * Why this hiker can't craft at all right now (before any recipe): acted,
+ * Inept, Exhausted… At a station's Workbench crafting is free.
+ */
 export function craftOpenReason(state: GameState, hiker: Hiker): string | undefined {
-  return phaseActionReason(state, hiker, {
-    type: 'craft',
-    hikerId: hiker.id,
-    itemType: 'tool',
-  });
+  return craftGate(state, hiker, { type: 'craft', hikerId: hiker.id, itemType: 'tool' });
+}
+
+function craftGate(state: GameState, hiker: Hiker | undefined, action: Action) {
+  if (hiker && atWorkbench(state, hiker)) return undefined;
+  return phaseActionReason(state, hiker, action);
 }
 
 export function validateCraft(state: GameState, action: CraftAction): string | undefined {
   const hiker = findHiker(state, action.hikerId);
-  const reason = phaseActionReason(state, hiker, action);
+  const reason = craftGate(state, hiker, action);
   if (reason || !hiker) return reason;
   if (!CRAFT_TYPES.includes(action.itemType)) return 'That isn’t something to craft.';
   if (action.blueprint) {
     const def = ITEMS[action.blueprint];
     if (!def || def.type !== action.itemType) return 'That blueprint isn’t that type.';
-    if (!knowsBlueprint(hiker, def.id)) return `${hiker.name} doesn’t know that blueprint.`;
+    if (!canUseBlueprint(state, hiker, def.id)) {
+      return `${hiker.name} doesn’t know that blueprint.`;
+    }
     if (!def.recipe) return `The ${def.name} has no recipe of its own.`;
-    const tier = craftTier(hiker, def.type);
+    const tier = craftTier(state, hiker, def.type);
     if (def.tier > tier) {
       return `${hiker.name} crafts ${TYPE_WORD[def.type]} at Tier ${NUMERAL[tier]}: the ${def.name} needs Tier ${NUMERAL[def.tier]}. A ranger station’s workbench raises it.`;
     }
@@ -98,7 +106,7 @@ export function applyCraft(state: GameState, action: CraftAction): void {
   const hiker = mustFindHiker(state, action.hikerId);
   const slots = slotsFor(state, hiker, action).filter((s): s is PaidSlot => !!s);
   const setup = craftSetup(state, hiker, action.itemType);
-  spendAction(state, hiker);
+  if (!atWorkbench(state, hiker)) spendAction(state, hiker);
   spend(state, slots);
 
   if (action.blueprint) {
@@ -114,7 +122,7 @@ export function applyCraft(state: GameState, action: CraftAction): void {
   state.crafting = {
     hikerId: hiker.id,
     type: action.itemType,
-    options: dealCraft(state, action.itemType, craftTier(hiker, action.itemType), setup),
+    options: dealCraft(state, action.itemType, craftTier(state, hiker, action.itemType), setup),
     ...(setup.durability ? { durability: setup.durability } : {}),
     paid: slots,
   };
@@ -197,7 +205,8 @@ export function teachCost(itemId: ItemId): number {
 
 export function validateTeach(state: GameState, action: TeachAction): string | undefined {
   const teacher = findHiker(state, action.hikerId);
-  const reason = notActiveReason(teacher);
+  // At a station, checked-in hikers can teach each other.
+  const reason = teacher && atWorkbench(state, teacher) ? undefined : notActiveReason(teacher);
   if (reason || !teacher) return reason;
   const def = ITEMS[action.itemId];
   if (!def || !knowsBlueprint(teacher, action.itemId)) {
@@ -205,7 +214,8 @@ export function validateTeach(state: GameState, action: TeachAction): string | u
   }
   const student = findHiker(state, action.toId);
   if (!student || student.id === teacher.id) return 'Pick someone else to teach.';
-  if (student.status !== 'active') return `${student.name} can’t learn right now.`;
+  const ready = student.status === 'active' || atWorkbench(state, student);
+  if (!ready) return `${student.name} can’t learn right now.`;
   if (student.tileId !== teacher.tileId) return `${student.name} isn’t on this tile.`;
   if (knowsBlueprint(student, def.id)) return `${student.name} already knows the ${def.name}.`;
   const cost = teachCost(def.id);

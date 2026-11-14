@@ -12,6 +12,7 @@
  */
 import { durabilityLeft, makeItem } from '../items/make';
 import { loseDurability, loseUses, removeItem } from '../items/wear';
+import { noteGone } from '../items/gone';
 import { placeShelterOn } from '../items/shelters';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { craftableItems } from '../../content/items';
@@ -148,9 +149,11 @@ function logLost(
   if (resources.length || items.length) {
     pushEvent(state, { kind: 'lost', hikerId: h.id, resources, items, cause });
   }
+  // Rocco's "Borrowed" Boutique remembers what the party lost.
+  for (const id of items) noteGone(state, id);
 }
 
-/** Connected tiles a hiker can be moved onto (never the checkpoint before Phase 9). */
+/** Connected tiles a card can move a hiker onto (never the checkpoint: checking in is the hiker's own move). */
 function neighbours(state: GameState, tileId: TileId) {
   return adjacentTileIds(state.section, tileId)
     .map((id) => state.section.tiles[id])

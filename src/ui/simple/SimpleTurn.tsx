@@ -42,6 +42,8 @@ interface SimpleTurnProps {
   onPick?(pick: StashPick): void;
   /** Opens the hiker's blueprints (the Craft window's Teach tab). */
   onBlueprints?(): void;
+  /** Opens the Merchant or Traveling Trader on the hiker's tile. */
+  onFeature?(): void;
 }
 
 export function SimpleTurn({
@@ -57,6 +59,7 @@ export function SimpleTurn({
   onFree,
   onAbandon,
   onBlueprints,
+  onFeature,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker);
   // Why a red action is stopped, after tapping it.
@@ -117,7 +120,7 @@ export function SimpleTurn({
             <Abilities state={state} hiker={hiker} onAbility={onAbility} />
           )}
           {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
-          <TileCard state={state} hiker={hiker} />
+          <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />
           <Equipped hiker={hiker} compact {...(onPick ? { onPick } : {})} />
           <Bag state={state} hiker={hiker} compact onPick={onPick} />
           <Resources state={state} hiker={hiker} compact onPick={onPick} />

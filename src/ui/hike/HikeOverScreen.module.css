@@ -103,6 +103,10 @@
   color: #f39a86;
 }
 
+.ended[data-status='checkedIn'] {
+  color: var(--gold);
+}
+
 .buttons {
   display: flex;
   gap: 16px;

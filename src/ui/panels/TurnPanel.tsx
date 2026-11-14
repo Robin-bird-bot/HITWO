@@ -9,6 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import {
   abilitiesFor,
+  atLastSection,
   bagSlots,
   hikersOnTile,
   hikersWhoHaventActed,
@@ -56,6 +57,8 @@ interface TurnPanelProps {
   onAbandon?(id: HikerId): void;
   /** Opens the hiker's blueprints (the Craft window's Teach tab). */
   onBlueprints?(): void;
+  /** Opens the Merchant or Traveling Trader on the hiker's tile. */
+  onFeature?(): void;
 }
 
 export function TurnPanel({
@@ -70,6 +73,7 @@ export function TurnPanel({
   onFree,
   onAbandon,
   onBlueprints,
+  onFeature,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -91,7 +95,7 @@ export function TurnPanel({
           <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
         )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
-        <TileCard state={state} hiker={hiker} />
+        <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />
         <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
         <Resources state={state} hiker={hiker} onPick={onPick} />
@@ -243,7 +247,7 @@ export function Abilities({
 
 /**
  * A hiker who can't act: passed out (the countdown, how to help, and
- * Abandon), or gone from the hike.
+ * Abandon), checked in at the checkpoint, or gone from the hike.
  */
 export function OutCard({
   state,
@@ -258,6 +262,26 @@ export function OutCard({
     return (
       <div className={styles.block}>
         <p className={styles.outText}>{hiker.name} left the hike.</p>
+      </div>
+    );
+  }
+  if (hiker.status === 'checkedIn') {
+    const out = state.hikers.filter((h) => h.status === 'active' || h.status === 'passedOut');
+    return (
+      <div className={styles.block}>
+        <div className={styles.out} data-tone="in">
+          <span className={styles.outKicker}>
+            <Icon name="tower" size={14} />
+            CHECKED IN
+          </span>
+          <span className={styles.outText}>
+            {hiker.name} waits at the {atLastSection(state) ? 'summit' : 'checkpoint'}, losing
+            nothing.{' '}
+            {out.length
+              ? `Still on the trail: ${out.map((h) => h.name).join(', ')}.`
+              : 'Everyone is in.'}
+          </span>
+        </div>
       </div>
     );
   }
@@ -370,13 +394,28 @@ export function CarryCard({
 const CARRY_COLOR = '#E9B44C';
 const CARRY_LOOK = { borderColor: `${CARRY_COLOR}59`, background: `${CARRY_COLOR}1A` };
 
-export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
+export function TileCard({
+  state,
+  hiker,
+  onFeature,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  /** Opens the tile's Merchant or Traveling Trader. */
+  onFeature?(): void;
+}) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
   const others = hikersOnTile(state, tile.id).filter((h) => h.id !== hiker.id);
+  // At the checkpoint, the company is whoever has checked in.
+  const waiting = state.hikers.filter(
+    (h) => h.id !== hiker.id && h.tileId === tile.id && h.status === 'checkedIn',
+  );
   const company = others.length
     ? `With ${others.map((h) => h.name).join(', ')} · resources pooled`
-    : 'Alone here';
+    : waiting.length
+      ? `${waiting.map((h) => h.name).join(', ')} checked in here`
+      : 'Alone here';
   const special = tile.special ? SPECIAL_LOOK[tile.special].name : null;
   return (
     <>
@@ -413,8 +452,13 @@ export function TileCard({ state, hiker }: { state: GameState; hiker: Hiker }) {
           <button
             type="button"
             className={styles.feature}
-            aria-disabled="true"
-            title={`${FEATURE_LOOK[tile.feature].name}: arrives in Phase 9`}
+            disabled={!onFeature || !tile.shop || hiker.status !== 'active'}
+            title={
+              hiker.status === 'active'
+                ? `Visit the ${FEATURE_LOOK[tile.feature].name} (free)`
+                : `Only an active hiker can visit the ${FEATURE_LOOK[tile.feature].name}`
+            }
+            onClick={onFeature}
           >
             <Icon name={FEATURE_LOOK[tile.feature].icon} size={14} strokeWidth={2.25} />
             {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}

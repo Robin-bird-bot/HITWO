@@ -20,6 +20,7 @@ import { resourceLimit } from './inventory';
 import { boostSources } from './items/boosts';
 import { shelterSources } from './items/shelters';
 import { loseDurability, removeItem } from './items/wear';
+import { noteGone } from './items/gone';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -675,6 +676,7 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
       const item = findCarried(hiker, uid);
       if (!item) return;
       removeItem(hiker, uid);
+      noteGone(state, item.itemId);
       pushEvent(state, {
         kind: 'itemGone',
         hikerId: hiker.id,

@@ -1,3 +1,4 @@
+import { rollTrailShop } from '../station/trail';
 import { CONDITIONS } from '../../content/conditions';
 import { removeCondition } from '../conditions';
 import { canActReason } from '../effects';
@@ -68,11 +69,10 @@ export function moraleCostReason(hiker: Hiker, moraleCost: number): string | und
   return `Morale 0: ${hiker.name} can’t do anything that costs Morale.`;
 }
 
-/** Why a hiker can't step onto a tile, whatever the line (the checkpoint, for now). */
+/** Why a hiker can't step onto a tile, whatever the line. */
 export function tileEntryReason(state: GameState, tileId: TileId): string | undefined {
   const tile = state.section.tiles[tileId];
   if (!tile) return 'That tile isn’t on the map.';
-  if (tile.kind === 'checkpoint') return 'Checking in at the checkpoint arrives in Phase 9.';
   return undefined;
 }
 
@@ -81,6 +81,8 @@ export function enterTile(state: GameState, tileId: TileId): NodeKind[] {
   const tile = state.section.tiles[tileId];
   if (!tile) return [];
   tile.visited = true;
+  // A Merchant's or Trader's wares are rolled the first time someone stands here.
+  rollTrailShop(state, tile);
   const revealed: NodeKind[] = [];
   for (const node of tile.nodes) {
     if (!node.revealed) {

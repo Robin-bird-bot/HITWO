@@ -1,0 +1,401 @@
+/* The station's Workbench tab, on the counter (approved in #mockup-station-extras). */
+
+.kicker {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #e4be84;
+}
+
+.small {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #c9c2b2;
+}
+
+.small[data-reason] {
+  color: #f39a86;
+}
+
+/* ── Who's crafting, and the types ── */
+
+.side {
+  position: absolute;
+  left: 24px;
+  top: 26px;
+  width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.crafters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.crafter {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  background: rgba(0, 0, 0, 0.25);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.crafter[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: rgba(233, 180, 76, 0.25);
+}
+
+.types {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.type {
+  width: 100%;
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 2px solid #3e2414;
+  background: linear-gradient(#6b4426, #4e2e1a);
+  color: #e4be84;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.type svg:first-child {
+  grid-row: span 2;
+}
+
+.type small {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #f2c978;
+}
+
+.type[aria-pressed='true'] {
+  background: #f1e2bf;
+  color: #3a2414;
+}
+
+.type[aria-pressed='true'] small {
+  color: #8a5a1c;
+}
+
+/* ── The recipe and blueprints ── */
+
+.main {
+  position: absolute;
+  left: 258px;
+  top: 26px;
+  width: 760px;
+  height: 368px;
+  box-sizing: border-box;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(24, 30, 27, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recipe {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.part {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.partIcons {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.plus {
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  color: #9c9585;
+  margin: 0 4px;
+}
+
+.words {
+  margin: 0;
+  font-size: 13px;
+  color: #f1eadb;
+}
+
+/* Swapping what goes in a space: over the lower half of the panel. */
+.swap {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 112px;
+  z-index: 2;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(16, 20, 18, 0.97);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+.nodes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.node {
+  height: 38px;
+  padding: 0 10px 0 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.node[aria-pressed='true'] {
+  border-color: var(--gold);
+  background: rgba(233, 180, 76, 0.22);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.go {
+  flex: none;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  border: none;
+  background: var(--gold);
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.go:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.blueprints {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 6px;
+  scrollbar-width: thin;
+}
+
+.bp {
+  flex: none;
+  width: 96px;
+  height: 90px;
+  box-sizing: border-box;
+  padding: 6px;
+  border-radius: 10px;
+  border: 3px solid var(--type);
+  background-color: #dce8f2;
+  background-image:
+    linear-gradient(rgba(84, 120, 160, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(84, 120, 160, 0.18) 1px, transparent 1px);
+  background-size: 9px 9px;
+  color: #2f4f73;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-family: var(--font-pixel);
+  cursor: pointer;
+}
+
+.bp span {
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.bp em {
+  font-style: normal;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: #6b7d90;
+}
+
+.bp[data-free] {
+  border-style: dashed;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.35);
+}
+
+.bp[data-free] em {
+  color: #a8701a;
+}
+
+.bp:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.bp[aria-pressed='true'] {
+  outline: 3px solid #f1eadb;
+  outline-offset: 2px;
+}
+
+/* ── Everyone's resources ── */
+
+.pool {
+  position: absolute;
+  right: 24px;
+  top: 26px;
+  width: 440px;
+  height: 368px;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(24, 30, 27, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.poolList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.poolRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.poolName {
+  flex: none;
+  width: 66px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.poolRes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.res {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.res b {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: #f1eadb;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res[data-used] {
+  outline: 2px solid var(--gold);
+}
+
+.res[data-used] b {
+  background: var(--gold);
+}
+
+/* The pick and what was made: one wide panel on the counter. */
+.panelWide {
+  position: absolute;
+  inset: 22px 24px;
+  border-radius: 12px;
+  background: rgba(24, 30, 27, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.crafter:focus-visible,
+.type:focus-visible,
+.go:focus-visible,
+.bp:focus-visible,
+.node:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}

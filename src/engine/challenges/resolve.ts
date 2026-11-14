@@ -12,6 +12,7 @@
  * - Passing earns XP (passXpPerTier × the tier it played at); failing applies
  *   the penalty to that hiker, or to every hiker on the tile for a party card.
  */
+import { noteGone } from '../items/gone';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
 import { CARDS } from '../../content/challenges';
@@ -480,7 +481,10 @@ function spend(state: GameState, here: readonly Hiker[], gifts: readonly Gift[],
       if (left > 0) h.inventory.resources[g.resource] = left;
       else delete h.inventory.resources[g.resource];
     } else if (g.kind === 'item') {
+      const paid = h.inventory.bag.find((i) => i.uid === g.uid);
       h.inventory.bag = h.inventory.bag.filter((i) => i.uid !== g.uid);
+      // TODO(wyatt): an item paid to a challenge counts as lost for Rocco's Boutique.
+      if (paid) noteGone(state, paid.itemId);
     } else if (g.kind === 'durability') {
       const item = wornItem(h, g.uid);
       if (item) loseDurability(state, h, item, g.count, cause, { spent: true });

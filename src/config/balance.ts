@@ -198,6 +198,91 @@ export const BALANCE = {
     medkitInjuries: 1,
   },
 
+  /** The run: one section per biome, in this order. The last checkpoint is the summit. */
+  run: {
+    biomes: ['meadow', 'temperateRainforest', 'alpine'] as BiomeId[],
+  },
+  /**
+   * Checkpoints and ranger stations (Phase 9; docs/design/06-ranger-stations.md).
+   * Every station follows the same rules: a theme only changes what's for sale.
+   */
+  station: {
+    /** XP for each hiker reaching a checkpoint (the XP table). */
+    checkInXp: 10,
+    /**
+     * Item cards: 6 at the first station, 1 more at each later one, at most 10
+     * (STATION_ITEMS_BASE, _STEP and _MAX in the Nov 13 update).
+     */
+    items: { base: 6, step: 1, max: 10 },
+    /** TODO(wyatt): the first item slots come from the theme's focus; the rest can be anything. */
+    focusSlots: 4,
+    /** TODO(wyatt): each item slot's chance to be a trinket instead (every shop can sell them). */
+    trinketChance: 0.08,
+    /** TODO(wyatt): featured items, and a theme's favored trinkets, are this many times as likely. */
+    featuredWeight: 3,
+    /**
+     * Item tiers by biome (the section the station ends), as weights.
+     * TODO(wyatt): "mostly Tier 1 with some Tier 2"; "mostly Tier 2"; "Tier 2 and 3".
+     */
+    tierWeights: [
+      { 1: 75, 2: 25 },
+      { 1: 15, 2: 75, 3: 10 },
+      { 2: 50, 3: 50 },
+    ] as Record<number, number>[],
+    /** TODO(wyatt): every shop item's Quality, the plain curve (Luck doesn't change it). */
+    qualityOdds: [10, 20, 40, 20, 10] as readonly number[],
+    /** Blueprints for sale, from the theme's pool; kept for good. */
+    blueprints: 3,
+    /** Free blueprints at the Workbench for this visit, kept only by crafting there (Wyatt, Nov 13). */
+    tempBlueprints: 3,
+    /** TODO(wyatt): resource bundles (3 of one resource each) and their price. */
+    bundles: 2,
+    bundleSize: 3,
+    bundlePrice: 4,
+    /** TODO(wyatt): Rocco's Random Resale: each of its bundles' chance to be a resource pack. */
+    packChance: 0.5,
+    /** An item's price: its tier's price × its Quality's multiplier, to the nearest cap. */
+    tierPrice: { 1: 4, 2: 8, 3: 14 } as Record<number, number>,
+    /** TODO(wyatt): Quality 1–5. Items with no Quality (shelters, trinkets) cost ×1. */
+    qualityPrice: [0.5, 0.75, 1, 1.25, 1.5] as readonly number[],
+    /** A blueprint costs this × its item's Quality 3 price. */
+    blueprintPrice: 1.5,
+    /**
+     * The market, rolled each visit: this many resources sell for ×2 and this
+     * many others for ×½; the rest at the normal price.
+     */
+    market: { high: 4, low: 4, highMult: 2, lowMult: 0.5 },
+    /**
+     * TODO(wyatt): a resource's normal sell price (the doc doesn't say). With
+     * ×½, two sell together for 1 cap.
+     */
+    resourcePrice: 1,
+    /** Selling an item: this share of its new price, times what's left; at least 1 cap. */
+    sellShare: 0.5,
+    /**
+     * Shared specials: 1 random per visit. TODO(wyatt): the prices; and the
+     * Taxi Service is the rejoin, which every station has, so the random one
+     * comes from the others.
+     */
+    specials: { cementMixer: 6, scoutReport: 6 } as Record<string, number>,
+    /** Scout Report: the cards on this many tiles of the next biome are shown. */
+    scoutTiles: 3,
+    /**
+     * The rejoin (Taxi Service): one per station, at most `perRun` per run.
+     * TODO(wyatt): the price, and the hiker coming back with 2 injuries, 3 in
+     * each stat and an empty pack.
+     */
+    rejoin: { price: 15, perRun: 2, injuries: 2, stat: 3 },
+    /** At the station everyone crafts this many tiers above their own (Wyatt, Nov 13). */
+    workbenchTiers: 1,
+    /**
+     * A trail Merchant: 3 cards, each an item, a resource bundle or a
+     * blueprint, at station prices and Quality. TODO(wyatt): how likely each.
+     */
+    merchant: { cards: 3, kinds: { item: 2, bundle: 1, blueprint: 1 } },
+    /** A Traveling Trader's item is this many tiers above the biome's (Wyatt, Nov 14), at most 3. */
+    traderTierAbove: 1,
+  },
   /**
    * Carrying a passed-out hiker (Wyatt, Nov 7: pick up, then carry).
    * TODO(wyatt): anyone can carry anyone; Cats pay the extra too.
@@ -452,6 +537,11 @@ export const BALANCE = {
     equipSlots: 3,
     /** Resources per hiker. */
     resourceLimit: 10,
+    /**
+     * A new run gives each hiker this many random resources (Nov 13 update).
+     * It stands in for the start-of-hike rules coming later.
+     */
+    startingResources: 4,
   },
 
   xp: {

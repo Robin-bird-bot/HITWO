@@ -3,6 +3,8 @@
  * of GameState changes, and add a migration from the old version. Loading
  * never throws: a save that can't be read comes back as { ok: false }.
  */
+import { rollTrailShop } from './station/trail';
+import { openStation } from './station/stock';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { freshCounters } from './counters';
@@ -20,7 +22,7 @@ import {
 } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 13;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -52,7 +54,31 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 8 step 7: crafting. Blueprints, craft tiers, an open craft and the trinket set are
   // all optional, so an older save needs nothing new.
   9: (save) => save,
+  // Phase 9: check-ins, the station visit and the summit (all optional).
+  10: (save) => save,
+  // Phase 9 step 2: a station opened in step 1 had only its number. Stock it now.
+  11: (save) => upgradeStation(save),
+  // Phase 9 step 6: a Merchant or Trader someone already reached gets its wares.
+  12: (save) => upgradeTrailShops(save),
 };
+
+/** Side features on tiles already reached, from before they had wares. */
+function upgradeTrailShops(save: SaveData): SaveData {
+  const state = save as unknown as GameState;
+  for (const tile of Object.values(state.section?.tiles ?? {})) {
+    if (tile.feature && tile.visited && !tile.shop) rollTrailShop(state, tile);
+  }
+  return save;
+}
+
+/** A step 1 station (just `{ checkpoint }`) gets its theme, stock and next section. */
+function upgradeStation(save: SaveData): SaveData {
+  const station = save.station;
+  if (!isRecord(station) || typeof station.themeId === 'string') return save;
+  const state = save as unknown as GameState;
+  state.station = openStation(state);
+  return save;
+}
 
 /** Shelters stored as item ids become placed shelters with their full nights. */
 function upgradeShelters(save: SaveData): SaveData {

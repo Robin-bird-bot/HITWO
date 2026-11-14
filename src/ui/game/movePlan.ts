@@ -4,6 +4,8 @@
  */
 import {
   adjacentTileIds,
+  atLastSection,
+  checkInPreview,
   hikersOnTile,
   moveAllCost,
   moveCost,
@@ -65,6 +67,8 @@ export interface MovePreview {
   night: boolean;
   /** Passed-out hikers carried along, by name (their carriers pay extra Appetite). */
   carrying: string[];
+  /** Moving onto the checkpoint checks in: whether it's the last, the summit, and who'd be left behind. */
+  checkIn?: { last: boolean; summit: boolean; leftBehind: string[] };
   /** Why it can't happen, if it can't. */
   reason: string | null;
 }
@@ -108,11 +112,17 @@ export function movePreview(
   return {
     tileId,
     action,
-    title: mode.kind === 'moveAll' ? verb : `${direction}${verb}`,
-    where: tileName(to),
+    title:
+      to.kind === 'checkpoint'
+        ? 'CHECK IN'
+        : mode.kind === 'moveAll'
+          ? verb
+          : `${direction}${verb}`,
+    where: to.kind === 'checkpoint' && atLastSection(state) ? 'the Summit' : tileName(to),
     rows,
     reveals: to.nodes.filter((n) => !n.revealed).length,
     night: state.phase === 'night',
+    ...(to.kind === 'checkpoint' ? { checkIn: checkInWords(state, hiker, mode) } : {}),
     carrying: (mode.kind === 'moveAll' ? [hiker.id, ...mode.bring] : [hiker.id]).flatMap((id) => {
       const carried = state.hikers.find((h) => h.id === id)?.carrying;
       const c = carried ? state.hikers.find((h) => h.id === carried) : undefined;
@@ -120,6 +130,12 @@ export function movePreview(
     }),
     reason,
   };
+}
+
+function checkInWords(state: GameState, hiker: Hiker, mode: MoveMode) {
+  const ids = mode.kind === 'moveAll' ? [hiker.id, ...mode.bring] : [hiker.id];
+  const p = checkInPreview(state, ids);
+  return { last: p.last, summit: p.summit, leftBehind: p.leftBehind.map((h) => h.name) };
 }
 
 export interface BringOption {

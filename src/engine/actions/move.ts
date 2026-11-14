@@ -4,6 +4,7 @@ import { moveCost } from '../costs';
 import { canActReason, fireMove } from '../effects';
 import { freeMoveFor, spendFreeMove } from '../items/freeMoves';
 import { pushEvent } from '../log';
+import { checkInArrivals } from '../station/checkIn';
 import { lineBetween } from '../map';
 import type { Action, GameState } from '../types';
 import { bringCarried, carryMoveReason } from './carry';
@@ -67,6 +68,8 @@ export function applyMove(state: GameState, action: MoveAction): void {
   payCost(state, hiker, cost, 'Move');
   fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line, via: 'move' });
   noteArrival(state, [hiker.id, ...carried], hiker.tileId);
+  // On the checkpoint, they check in (with anyone they carry).
+  checkInArrivals(state, [hiker.id, ...carried], hiker.tileId);
   // The first hiker to land on a tile triggers its card.
   if (firstHere) revealTile(state, hiker.tileId, [hiker.id, ...carried]);
 }

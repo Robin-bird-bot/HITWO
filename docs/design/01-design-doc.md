@@ -319,17 +319,7 @@ Each checkpoint has a randomly themed ranger station where the party shops, sell
 - Each station offers one rejoin service for an abandoned hiker.
 - The party gets one free night of sheltered rest before the next biome.
 
-**Each station theme has:** a stock rolled from its own item pool each visit (themes can repeat in one run), a buy table that pays more or less by category or node, and one signature service. Unique rangers with personalities are a later addition. The themes below are examples.
-
-| Station | Sells | Buys high / low |
-| --- | --- | --- |
-| Bait & Tackle | River resources, Net, Rain Jacket, Crocs | River high, Wildlife low |
-| Quarry Outpost | Mountain resources, tools | Mountain high, Forest low |
-| Outfitter | Random clothes; repairs | Fur and moss high |
-| Camp Kitchen | Food, recipe bundles | Wildlife and Forest high |
-| Field Hospital | Bandages, Splints; cheaper rejoin | Most things low |
-
-The nine existing Ranger Station cards (Rain Shop, Cold Outpost, Field Workshop, Altitude Cache, Watch Tower, Farm Outpost, Charter Shop, Souvenir Shop, Wildlife Refuge) become themes too; their specials (Rain Removal, Hotel, Paved Trail, Easier Route, Telescope, Trail Rations, Map, Train Station, Doctor's Office) become signature services.
+**Station themes, shopkeepers and the shop rules** (stock, Quality, prices, the market and selling) are in `06-ranger-stations.md`.
 
 ## Objectives and scoring
 

@@ -44,9 +44,30 @@ export const CRAFT_TYPES: readonly ItemTypeName[] = [
 ];
 
 /** The tier a hiker crafts this type at. */
-export function craftTier(hiker: Hiker, type: ItemType): number {
+export function ownCraftTier(hiker: Hiker, type: ItemType): number {
   return Math.min(C.maxTier, hiker.craftTier?.[type] ?? C.startTier);
 }
+
+/** At a ranger station, a checked-in hiker crafting at its Workbench. */
+export const atWorkbench = (state: GameState, hiker: Hiker): boolean =>
+  !!state.station && hiker.status === 'checkedIn';
+
+/**
+ * The tier a hiker crafts this type at right now: their own, or one higher at
+ * a station's Workbench (Wyatt, Nov 13). Their own tier doesn't change.
+ */
+export function craftTier(state: GameState, hiker: Hiker, type: ItemType): number {
+  const bonus = atWorkbench(state, hiker) ? BALANCE.station.workbenchTiers : 0;
+  return Math.min(C.maxTier, ownCraftTier(hiker, type) + bonus);
+}
+
+/**
+ * A blueprint the hiker can craft from now: one they know, or one of the
+ * station's free temporary blueprints while they're at its Workbench.
+ */
+export const canUseBlueprint = (state: GameState, hiker: Hiker, itemId: ItemId): boolean =>
+  knowsBlueprint(hiker, itemId) ||
+  (atWorkbench(state, hiker) && !!state.station?.tempBlueprints.includes(itemId));
 
 export const knowsBlueprint = (hiker: Hiker, itemId: ItemId) =>
   (hiker.blueprints ?? []).includes(itemId);
@@ -85,7 +106,7 @@ export function craftRecipe(
   blueprint?: ItemId,
 ): Recipe | undefined {
   if (blueprint) return ITEMS[blueprint]?.recipe;
-  return basicRecipe(state, type, craftTier(hiker, type));
+  return basicRecipe(state, type, craftTier(state, hiker, type));
 }
 
 const nodeOf = (id: ResourceId) => RESOURCES.find((r) => r.id === id)?.node;
@@ -104,10 +125,11 @@ export const spaceParts = (recipe: Recipe): number[] =>
 
 /** The hikers whose resources a craft can use: the crafter first, then the others here. */
 export function craftPool(state: GameState, crafter: Hiker): Hiker[] {
-  const others = hikersOnTile(state, crafter.tileId).filter(
-    (h) => h.id !== crafter.id && h.status === 'active',
-  );
-  return [crafter, ...others];
+  // At a station, every pack is shared: everyone checked in.
+  const here = atWorkbench(state, crafter)
+    ? state.hikers.filter((h) => h.status === 'checkedIn')
+    : hikersOnTile(state, crafter.tileId).filter((h) => h.status === 'active');
+  return [crafter, ...here.filter((h) => h.id !== crafter.id)];
 }
 
 /**

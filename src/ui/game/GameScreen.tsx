@@ -10,6 +10,7 @@ import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
   hikersWhoHaventActed,
+  atLastSection,
   isHikeOver,
   resourceCount,
   isAccomplished,
@@ -65,8 +66,10 @@ import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
+import { StationScreen } from '../station/StationScreen';
 import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
+import { TrailShopWindow } from '../trail/TrailShopWindow';
 import type { ScoutFx } from '../map/MapView';
 import { usesAfter } from '../items/whatItDoes';
 import { tileName } from '../panels/hikerInfo';
@@ -168,6 +171,8 @@ export function GameScreen({
   }, [fx]);
   // The Craft window: whose, and on which tab.
   const [craftOpen, setCraftOpen] = useState<{ hikerId: string; tab: CraftTab } | null>(null);
+  /** The tile whose Merchant or Traveling Trader is open. */
+  const [shopTile, setShopTile] = useState<TileId | null>(null);
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   const closeScavenge = useCallback(() => setTook(null), []);
@@ -204,6 +209,12 @@ export function GameScreen({
   const [rawCamera, setCamera] = useState<Camera>(() =>
     focusOn(centerOf(selected?.tileId), ZOOM.default, bounds),
   );
+  // A new section (after a station): start on the party at its Trailhead.
+  const [cameraSection, setCameraSection] = useState(state.sectionIndex);
+  if (state.sectionIndex !== cameraSection) {
+    setCameraSection(state.sectionIndex);
+    setCamera(focusOn(centerOf(selected?.tileId ?? section.trailheadId), ZOOM.default, bounds));
+  }
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
   // When the pop-up closes, bring a tile that just got easier into view if none is.
@@ -489,6 +500,7 @@ export function GameScreen({
         section={section}
         hikers={hikers}
         targets={targets}
+        checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
         reachLabel={
           toolMap && toolItem ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here` : undefined
         }
@@ -552,6 +564,7 @@ export function GameScreen({
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
               onBlueprints={openBlueprints}
+              onFeature={() => setShopTile(selected.tileId)}
             />
           )}
         </>
@@ -581,6 +594,7 @@ export function GameScreen({
               onFree={dispatch}
               onAbandon={setConfirmAbandon}
               onBlueprints={openBlueprints}
+              onFeature={() => setShopTile(selected.tileId)}
             />
           )}
         </>
@@ -628,7 +642,8 @@ export function GameScreen({
         />
       )}
 
-      {crafter && !state.challenge && (
+      {/* At a station, its Workbench crafts instead. */}
+      {crafter && !state.challenge && !state.station && (
         <CraftWindow
           key={crafter}
           state={state}
@@ -638,6 +653,15 @@ export function GameScreen({
           onTab={(tab) => setCraftOpen({ hikerId: crafter, tab })}
           onDispatch={dispatch}
           onClose={() => setCraftOpen(null)}
+        />
+      )}
+
+      {shopTile && !state.challenge && !state.scavenge && !result && !state.station && (
+        <TrailShopWindow
+          state={state}
+          tileId={shopTile}
+          onDispatch={dispatch}
+          onClose={() => setShopTile(null)}
         />
       )}
 
@@ -685,6 +709,10 @@ export function GameScreen({
           onClose={() => setWonderOpen(null)}
           onAccomplish={(action) => dispatch(action)}
         />
+      )}
+
+      {state.station && !isHikeOver(state) && (
+        <StationScreen state={state} simple={simple} onDispatch={dispatch} />
       )}
 
       {isHikeOver(state) && (

@@ -73,7 +73,7 @@ export function boostSources(state: GameState, hiker: Hiker): EffectSource[] {
 /**
  * One list's countdown. A boost for the next scavenge on a tile (a Supply
  * Map) doesn’t count down: it waits for that scavenge, or for the trail to
- * move on to a new section. TODO(phase 9): drop them when a new section starts.
+ * move on to a new section (`dropSectionBoosts`).
  */
 const tick = (state: GameState, list: ItemBoost[] | undefined, unit: ItemBoost['unit']) => {
   if (!list) return undefined;
@@ -83,6 +83,18 @@ const tick = (state: GameState, list: ItemBoost[] | undefined, unit: ItemBoost['
   );
   return left.length ? left : undefined;
 };
+
+/**
+ * A new section starts: boosts tied to a tile of the last one (a Supply Map
+ * waiting for its scavenge) are gone. Tile boosts leave with their tiles.
+ */
+export function dropSectionBoosts(state: GameState): void {
+  for (const h of state.hikers) {
+    const left = (h.boosts ?? []).filter((b) => !b.tileId);
+    if (left.length) h.boosts = left;
+    else delete h.boosts;
+  }
+}
 
 /** Boosts count down: phase ones at the end of each phase, night ones at camp. */
 export function tickBoosts(state: GameState, unit: ItemBoost['unit']): void {

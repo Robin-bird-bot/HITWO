@@ -89,6 +89,7 @@ export function fixtureGame({
     seed,
     section: fixtureSection(),
     hikers: hikers ?? ['ash', 'birch', 'cedar', 'dot'].map((id) => fixtureHiker(id)),
+    startingResources: false,
   });
   if (!challenges) state.noChallenges = true;
   if (!weather) state.weather.hold = true;

@@ -1,0 +1,208 @@
+/* Preview Next Trail: the next biome's map over the station (approved in #mockup-station-extras). */
+
+.preview {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+}
+
+.dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 20, 18, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.linePick {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(29, 34, 32, 0.85);
+  color: #9c9585;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.linePick[data-can] {
+  border-color: var(--gold);
+  background: #3a2414;
+  color: #f2c978;
+  cursor: pointer;
+}
+
+.linePick[aria-pressed='true'] {
+  background: var(--gold);
+  color: #1d2220;
+  box-shadow: 0 0 0 5px rgba(233, 180, 76, 0.35);
+}
+
+.linePick:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}
+
+.left,
+.right {
+  position: absolute;
+  top: 24px;
+  box-sizing: border-box;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(24, 30, 27, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 3;
+}
+
+.left {
+  left: 24px;
+  width: 270px;
+  bottom: 24px;
+}
+
+.right {
+  right: 24px;
+  width: 336px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+}
+
+.kicker {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #e4be84;
+}
+
+.small {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #c9c2b2;
+}
+
+.special {
+  padding: 12px;
+  border-radius: 12px;
+  border: 2px solid var(--gold);
+  background: rgba(233, 180, 76, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.special p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.specialName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  color: #f2c978;
+}
+
+.picked {
+  color: #f2c978;
+}
+
+.special .reason {
+  color: #f39a86;
+}
+
+.buttons {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gold,
+.ghost {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.gold {
+  border: none;
+  background: var(--gold);
+  color: #1d2220;
+}
+
+.gold:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ghost {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1eadb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gold:focus-visible,
+.ghost:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 3px;
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #c9c2b2;
+}
+
+.legend b {
+  display: inline-block;
+  width: 72px;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 13px;
+  color: #f1eadb;
+}
+
+.zoom {
+  display: flex;
+  gap: 10px;
+}
+
+.zoom .ghost {
+  width: 48px;
+  padding: 0;
+}
+
+/* It takes the focus when it opens; it isn't a control itself. */
+.left:focus {
+  outline: none;
+}

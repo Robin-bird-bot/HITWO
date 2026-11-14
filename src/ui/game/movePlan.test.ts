@@ -8,10 +8,18 @@ describe('move targets', () => {
     place(s, 'ash', 'L');
     const targets = moveTargets(s, hiker(s, 'ash'), { kind: 'move' });
     expect(targets.map((t) => t.tileId).sort()).toEqual(['C', 'M', 'T']);
-    expect(targets.find((t) => t.tileId === 'C')?.reason).toBe(
-      'Checking in at the checkpoint arrives in Phase 9.',
-    );
+    expect(targets.find((t) => t.tileId === 'C')?.reason).toBeNull();
     expect(targets.find((t) => t.tileId === 'M')?.reason).toBeNull();
+  });
+
+  it('a move onto the checkpoint previews the check-in and anyone left behind', () => {
+    const s = fixtureGame();
+    for (const id of ['ash', 'birch', 'cedar', 'dot']) place(s, id, 'L');
+    hiker(s, 'dot').status = 'passedOut';
+    const p = movePreview(s, hiker(s, 'ash'), { kind: 'moveAll', bring: ['birch', 'cedar'] }, 'C');
+    expect(p?.checkIn).toEqual({ last: true, summit: false, leftBehind: ['Dot'] });
+    const alone = movePreview(s, hiker(s, 'ash'), { kind: 'move' }, 'C');
+    expect(alone?.checkIn).toEqual({ last: false, summit: false, leftBehind: [] });
   });
 
   it('blocks every tile once the hiker has acted', () => {

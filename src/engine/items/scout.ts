@@ -22,6 +22,7 @@ import { peekTile, revealCardOn, revealTile, triggers } from '../challenges/reve
 import { tileTier } from '../challenges/pick';
 import type { ItemUse } from '../effects';
 import { pushEvent } from '../log';
+import { checkInArrivals } from '../station/checkIn';
 import { adjacentTileIds, besideTileIds, lineBetween } from '../map';
 import type { GameState, Hiker, ItemId, LineKind, Tile, TileId } from '../types';
 
@@ -60,7 +61,7 @@ const inRow = (state: GameState, row: number) =>
     .map((t) => t.id);
 
 /** What a line becomes when paved: Steep, Muddy and Rough become normal, and normal becomes Paved. */
-const PAVED: Partial<Record<LineKind, LineKind>> = {
+export const PAVED: Partial<Record<LineKind, LineKind>> = {
   steep: 'normal',
   muddy: 'normal',
   rough: 'normal',
@@ -228,6 +229,7 @@ export function applyMapUse(
         ...(revealed.length ? { revealed } : {}),
       });
       noteArrival(state, [hiker.id, ...carried], tile.id);
+      checkInArrivals(state, [hiker.id, ...carried], tile.id);
       if (firstHere) revealTile(state, tile.id, [hiker.id, ...carried]);
       return undefined;
     }
