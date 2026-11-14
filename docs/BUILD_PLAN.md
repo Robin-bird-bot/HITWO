@@ -579,7 +579,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
   - **Rest & Go:** the free night, then the next biome.
   - **Preview Next Trail** (binoculars icon): opens the next section's map, showing only what's visible from here. Specials that make choices about the next trail are used from this preview, for example Cement Mixer (choose a line to pave) or scouting services (choose tiles to reveal).
 - **Shopkeeper dialogue:** a dark speech bubble in Edit Undo, with three options.
-  - **"What's selling?"** shows this visit's market as chips with resource icons and flat cap changes (green +X, red −X). The station theme sets which resources pay more or less. The amounts are rolled each visit, with the ranges in `balance.ts`. Selling uses these prices.
+  - **"What's selling?"** shows this visit's market as chips with resource icons: **×2** (green) and **×½** (red). Each visit, the same way at every station, 4 random resources sell for ×2 and 4 others for ×½; the rest sell at the normal price (numbers in `balance.ts`). Selling uses these prices.
   - **"What's ahead?"** describes the next biome (tier, weather odds, common nodes, likely conditions and line types) with icon chips. Placeholder text until the biomes are finalized.
   - **"Just looking"** closes the conversation.
 - **Tabs:** Shop and Workbench. Blueprints are sold in the Shop tab.
@@ -597,7 +597,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
   - Drag from a pack to the sell slot to sell, or to the Workbench to craft.
   - **Hovering** a card in a hiker's pack (long-press on a phone) shows a larger version of the card with its sell price at this station.
 
-**Ask Wyatt first:** which station themes to build first, and their stock.
+**Themes and shop rules:** `docs/design/06-ranger-stations.md` (Nov 13 update, `docs/UPDATE-2026-11-13-stations.md`).
 
 ---
 
