@@ -116,7 +116,7 @@ Each shopkeeper's portrait, at the scale it's drawn, standing behind the counter
   - Clothes: Hardhat, Puffer Jacket, Harness.
   - Shelter: Medic Tent.
 
-### BeaR E I (hiking gear)
+### Bea-R-E-I (hiking gear)
 
 - **Hoomhen Bean:** a bear in full hiking gear and a green apron, with a nametag that says "HOOMHEN BEAN." Definitely a regular human. Very worried about bears, and always warns the hikers to watch out for them. "Be careful out there, fellow hoomhens. Lotta bears around. Big ones. Not me, though."
 - **Focus and blueprints:** hiking gear: shoes, packs, sticks and tents (anything on the featured list).
@@ -146,6 +146,7 @@ Taken out for now, kept here in case you want them back:
 
 ## Decided
 
+- The hiking gear station's sign reads **Bea-R-E-I** (Wyatt, Nov 14: "BeaR E I" doesn't work as well in all caps).
 - Both Rocco shops can show up in the same run. They count as two separate themes.
 - Items the party sold don't count as lost for Rocco's Boutique.
 - Later stations get 1 more item each, up to 10.

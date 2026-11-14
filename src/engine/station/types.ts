@@ -21,7 +21,7 @@ export type StationThemeId =
 export type StationFocus =
   /** One item type (Finn's clothes, Ellie's food…). */
   | { type: ItemType }
-  /** An explicit list: the featured items (Dr. Sckhunk, BeaR E I, Bearnes). */
+  /** An explicit list: the featured items (Dr. Sckhunk, Bea-R-E-I, Bearnes). */
   | { items: readonly ItemId[] }
   /** Items the party used up or lost this run (Rocco's "Borrowed" Boutique). */
   | { usedOrLost: true }

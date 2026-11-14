@@ -28,7 +28,7 @@ const DOCTOR = [
   'medicTent',
 ] as const;
 
-/** BeaR E I's hiking gear: shoes, packs, sticks and tents. */
+/** Bea-R-E-I's hiking gear: shoes, packs, sticks and tents. */
 const HIKING_GEAR = [
   'hikingStick',
   'backpack',
@@ -254,7 +254,7 @@ export const STATION_THEMES: readonly StationTheme[] = [
   },
   {
     id: 'bearEI',
-    name: 'BeaR E I',
+    name: 'Bea-R-E-I',
     shopkeeper: { name: 'Hoomhen Bean', portrait: 'bear-e-i' },
     focus: { items: HIKING_GEAR },
     blueprints: { items: HIKING_GEAR },

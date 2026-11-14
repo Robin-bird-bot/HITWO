@@ -2,7 +2,7 @@
  * #mockup-station-extras (dev, or the live site with ?debug): the station's
  * Workbench tab, Preview Next Trail, and the trail's Merchant and Traveling
  * Trader, for Wyatt to approve before they're built (Phase 9 step 4). Nothing
- * here changes a game: it's a sample hike at BeaR E I's station, set up by the
+ * here changes a game: it's a sample hike at Bea-R-E-I's station, set up by the
  * engine, drawn with the real room, packs, map, cards and styles.
  *
  * Views:
@@ -99,7 +99,7 @@ const NOTES: Record<View, string[]> = {
   ],
 };
 
-/** A sample hike: everyone checked in at BeaR E I's station, with some blueprints and caps. */
+/** A sample hike: everyone checked in at Bea-R-E-I's station, with some blueprints and caps. */
 function sampleState(): GameState {
   const s = applyAction(createGame({ seed: 21, hikers: STARTING_PARTY }), {
     type: 'debug',
