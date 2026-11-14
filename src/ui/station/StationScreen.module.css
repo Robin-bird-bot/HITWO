@@ -603,3 +603,8 @@
     animation: none;
   }
 }
+
+/* It takes the focus when it opens; it isn't a control itself. */
+.screen:focus {
+  outline: none;
+}

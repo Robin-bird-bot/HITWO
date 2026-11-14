@@ -163,3 +163,7 @@
   outline: 3px solid #f1eadb;
   outline-offset: 3px;
 }
+
+.dialog:focus {
+  outline: none;
+}

@@ -320,3 +320,8 @@
 .faded {
   opacity: 0.45;
 }
+
+/* It takes the focus when it opens; it isn't a control itself. */
+.window:focus {
+  outline: none;
+}

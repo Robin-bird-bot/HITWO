@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
 import { findOffer, validateAction, type Action, type GameState } from '../../engine';
+import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
 import { MysteryBack, SpecialCard } from './Counter';
@@ -62,6 +63,8 @@ export function BuyDialog({
   );
   const pick = choices.find((c) => c.hiker.id === chosen && !c.reason);
 
+  // Focus goes to the dialog, then its first hiker; it comes back on close.
+  const dialog = useFocusOnOpen<HTMLDivElement>();
   const first = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     first.current?.focus();
@@ -115,7 +118,14 @@ export function BuyDialog({
       className={styles.overlay}
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className={styles.dialog} role="dialog" aria-modal="true" aria-label={`Buy ${what}`}>
+      <div
+        ref={dialog}
+        tabIndex={-1}
+        className={styles.dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Buy ${what}`}
+      >
         <h2 className={styles.title}>BUY {what.toUpperCase()}?</h2>
         <div className={styles.body}>
           {picture && <div className={styles.picture}>{picture}</div>}

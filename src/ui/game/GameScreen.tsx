@@ -209,6 +209,12 @@ export function GameScreen({
   const [rawCamera, setCamera] = useState<Camera>(() =>
     focusOn(centerOf(selected?.tileId), ZOOM.default, bounds),
   );
+  // A new section (after a station): start on the party at its Trailhead.
+  const [cameraSection, setCameraSection] = useState(state.sectionIndex);
+  if (state.sectionIndex !== cameraSection) {
+    setCameraSection(state.sectionIndex);
+    setCamera(focusOn(centerOf(selected?.tileId ?? section.trailheadId), ZOOM.default, bounds));
+  }
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
   // When the pop-up closes, bring a tile that just got easier into view if none is.
@@ -650,7 +656,7 @@ export function GameScreen({
         />
       )}
 
-      {shopTile && !state.challenge && !state.station && (
+      {shopTile && !state.challenge && !state.scavenge && !result && !state.station && (
         <TrailShopWindow
           state={state}
           tileId={shopTile}

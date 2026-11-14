@@ -61,3 +61,7 @@
   background: var(--gold);
   color: var(--page);
 }
+
+.backdrop:focus {
+  outline: none;
+}

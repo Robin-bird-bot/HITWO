@@ -599,6 +599,34 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 **Themes and shop rules:** `docs/design/06-ranger-stations.md` (Nov 13 update, `docs/UPDATE-2026-11-13-stations.md`).
 
+**Phase 9 notes (built Nov 13–14)**
+- **Wyatt's answers:**
+  - Nov 13: at the Workbench everyone crafts one tier above their own. The free night is a sheltered sleep that loses nothing. Blueprints come in two kinds: free temporary ones at the Workbench (kept only by crafting there) and ones for sale, kept for good.
+  - Nov 13 update: 9 themes from `06-ranger-stations.md`, never repeated in a run, with the shared shop rules (no signature services). Each hiker starts a new run with 4 random resources.
+  - Nov 14: the station extras mockup (`#mockup-station-extras`) is approved; BeaR E I is now Bea-R-E-I. A Merchant's 3 cards can each be bought once. A Traveling Trader's item is one tier above the biome, and the type they want is random and not their item's.
+- **Where things are:**
+  - Themes as data: `src/content/stations.ts`.
+  - The engine: `src/engine/station/` (`checkIn.ts` checking in, left behind and the summit; `stock.ts` rolling a visit and the next section; `prices.ts`; `trail.ts` the Merchant and Traveling Trader) and `src/engine/actions/station.ts` (buy, sell, give, the Taxi Service, Rest & Go). Rocco's used-or-lost log: `src/engine/items/gone.ts`. The Workbench's tier and pooled resources: `src/engine/items/craft.ts`.
+  - Numbers: `BALANCE.station` (stock, tiers, Quality, prices, the market, specials, the rejoin, the Workbench, the Merchant and Trader) and `BALANCE.inventory.startingResources`.
+  - On screen: the station screen (`src/ui/station/`: the room, the talk, the counter, the packs, the buy dialog, the Workbench tab, Preview Next Trail), the trail's Merchant and Trader window (`src/ui/trail/`), and the summit end screen.
+  - Windows that open take the keyboard focus and give it back when they close (`src/ui/app/useFocusOnOpen.ts`).
+  - Debug: the backtick panel brings everyone near the checkpoint, picks the section, picks a theme, opens a station, rerolls its stock, gives caps, adds to Rocco's log, and puts a Merchant or Trader on Hiker 1's tile. `#mockup-station-extras` shows the approved mockup.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Checking in:** it's always the hiker's own move (Move, Move All or the Trampoline). Cards never move a hiker onto the checkpoint. Checked-in hikers lose nothing while they wait. +10 XP each.
+  - **Stock numbers** (`BALANCE.station`): 4 focus slots; an 8% trinket chance; featured items 3× as likely; the item tiers by biome (75/25, then 15/75/10, then 50/50); the plain Quality curve; 2 bundles of 3 for 4 caps; Rocco's Random Resale bundles are resource packs half the time.
+  - **Prices:** the Quality multipliers (×0.5 to ×1.5); a resource sells for 1 cap (two at ×½ make 1 cap); the Cement Mixer and Scout Report cost 6 each; the Taxi Service is always there, so the random special comes from the others.
+  - **The Taxi Service:** 15 caps, at most 2 per run; the hiker comes back with 2 injuries, 3 in each stat and an empty pack.
+  - **Rocco's Boutique:** an item paid to a challenge counts as lost. Selling, dropping, giving and trading don't.
+  - **Selling:** Fancy Attire and the Wallet don't add to sales, because selling one at a time would multiply them.
+  - **The Merchant and Trader:** a Merchant card is an item, a bundle or a blueprint at 2 : 1 : 1. A Trader wants a tool, clothes or food, and offers a tool, clothes, food or shelter. Both roll their wares the first time a hiker stands there. The Merchant's line is placeholder text.
+  - **Placeholders:** the shopkeepers' lines and the "What's ahead?" biome chips.
+- **Waiting on later phases:**
+  - Phase 10 (`TODO(phase 10)`): the trinkets that touch traits, slots and XP (unchanged from Phase 8).
+  - Phase 11 (`TODO(phase 11)`): each biome's own weather odds.
+  - Phase 12: scoring. `state.arrivals` records each hiker's arrival (section, injuries, carried) for it.
+  - Still held: Sit by the Fire, so Frozen Fingers stays off and Bear Country only watches crafting.
+- **Saves:** version 13. Version 11 adds checking in and the station (optional fields, so nothing to migrate). Version 12 stocks a station opened by a version 11 save. Version 13 rolls the wares of a Merchant or Trader the party already reached.
+
 ---
 
 ## Phase 10: Traits, slots, XP and leveling

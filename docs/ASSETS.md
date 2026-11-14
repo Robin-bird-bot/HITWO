@@ -97,6 +97,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 | Meadow | 241 mountains-blue → 240 ridge-green-with-trees → 247 grass-hills-foreground |
 | Temperate Rainforest | 242 hills-teal → 239 forest-misty → 247 grass-hills-foreground |
 | Alpine | 241 mountains-blue → 250 snowy-pines-watercolor |
+| Ranger station window wall (Phase 9) | 241 mountains-blue → 271 pine-row-navy → 266 pine-forest-dense → 265 pine-row-bright, darkened to about 42–60% brightness behind wooden window frames |
 
 **Using the backdrop in the game**
 - Behind the map, add a light cream wash (about 25–35%) by day so tiles and lines stay readable. At night, use almost none.
@@ -108,7 +109,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
   - a bushes frame: 267;
   - snow drifts and snowy pines: 268, 269;
   - navy pine rows: 270, 271.
-- Ask Wyatt which ones to use. For example, Alpine could be 263 → 261 → 269 → 268, and the Rainforest could add 266 or 264.
+- The ranger station uses 265, 266 and 271 (game copies in `public/assets/backgrounds/`). Ask Wyatt which others to use. For example, Alpine could be 263 → 261 → 269 → 268, and the Rainforest could add 266 or 264.
 
 ## Still missing
 
@@ -117,7 +118,8 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
 - **Biome layers:** a rainforest foreground, and alpine snow and rock layers in the flat style.
-- **Challenge art:** for everything except the bear and the fallen tree.
+- **Ranger station (Phase 9):** the stone fireplace (`src/ui/station/fireplace-stones.svg` and CSS flames), the hanging sign, the counter and the brass caps plaque are drawn in code. The specials (Cement Mixer, Scout Report, Taxi Service) and the shop's blueprint squares use stroke icons. Wyatt may want to paint any of them.
+- **Merchant and Traveling Trader:** no art yet. Their window and the map use the bag and backpack icons.
 
 Until real art arrives, use clearly marked placeholders.
 

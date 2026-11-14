@@ -24,6 +24,7 @@ import {
   type BiomeId,
   type GameState,
 } from '../../engine';
+import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { ConfirmDialog } from '../game/ConfirmDialog';
 import { Icon } from '../icons/Icon';
 import { resourceName } from '../scavenge/cardLook';
@@ -61,6 +62,8 @@ export function StationScreen({
   const [flipped, setFlipped] = useState<string | null>(null);
   const [tab, setTab] = useState<'shop' | 'workbench'>('shop');
   const [preview, setPreview] = useState<PreviewMode | null>(null);
+  // Arriving moves the keyboard focus into the station.
+  const screen = useFocusOnOpen<HTMLElement>();
 
   const station = state.station;
   if (!station) return null;
@@ -102,7 +105,12 @@ export function StationScreen({
     );
 
   return (
-    <section className={styles.screen} aria-label={`${theme.name}, a ranger station`}>
+    <section
+      ref={screen}
+      tabIndex={-1}
+      className={styles.screen}
+      aria-label={`${theme.name}, a ranger station`}
+    >
       <StationRoom theme={theme} checkpoint={station.checkpoint} />
 
       {talk ? (

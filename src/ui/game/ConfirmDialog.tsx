@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { useDraggable } from '../windows/useDraggable';
 import styles from './ConfirmDialog.module.css';
 
@@ -30,6 +31,8 @@ export function ConfirmDialog({
   const confirmRef = useRef<HTMLButtonElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
   const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('confirm');
+  // Focus comes back when it closes (the buttons below take it first).
+  const backdrop = useFocusOnOpen<HTMLDivElement>();
   useEffect(() => {
     (focusCancel ? cancelRef : confirmRef).current?.focus();
     const onKey = (e: KeyboardEvent) => {
@@ -40,7 +43,7 @@ export function ConfirmDialog({
   }, [onCancel, focusCancel]);
 
   return (
-    <div className={styles.backdrop} onClick={onCancel}>
+    <div ref={backdrop} tabIndex={-1} className={styles.backdrop} onClick={onCancel}>
       <div
         ref={ref}
         className={styles.dialog}

@@ -24,6 +24,7 @@ import {
   type TileId,
   type TrailShop,
 } from '../../engine';
+import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
@@ -51,6 +52,7 @@ export function TrailShopWindow({
 }) {
   const shop = state.section.tiles[tileId]?.shop;
   const [buying, setBuying] = useState<string | null>(null);
+  const windowRef = useFocusOnOpen<HTMLElement>();
 
   useEffect(() => {
     // The buy dialog closes itself on Esc first.
@@ -72,6 +74,8 @@ export function TrailShopWindow({
       onPointerDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <section
+        ref={windowRef}
+        tabIndex={-1}
         className={styles.window}
         role="dialog"
         aria-modal="true"

@@ -201,3 +201,8 @@
   width: 48px;
   padding: 0;
 }
+
+/* It takes the focus when it opens; it isn't a control itself. */
+.left:focus {
+  outline: none;
+}

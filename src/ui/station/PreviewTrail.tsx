@@ -21,6 +21,7 @@ import {
   type LineKind,
   type StationSpecialId,
 } from '../../engine';
+import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import {
   clampCamera,
@@ -83,6 +84,7 @@ export function PreviewTrail({
   });
   const [line, setLine] = useState<string | null>(null);
   const [tiles, setTiles] = useState<string[]>([]);
+  const panel = useFocusOnOpen<HTMLElement>();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -187,7 +189,7 @@ export function PreviewTrail({
         bounds={bounds}
       />
 
-      <aside className={styles.left}>
+      <aside ref={panel} tabIndex={-1} className={styles.left}>
         <h2 className={styles.title}>PREVIEW NEXT TRAIL</h2>
         <span className={styles.kicker}>
           {BIOME_NAME[next.biome]} · TIER {NUMERAL[next.tier]}
