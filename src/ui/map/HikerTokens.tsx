@@ -48,7 +48,10 @@ interface HikerTokensProps {
   section: Section;
   hikers: Hiker[];
   selectedId: HikerId | null;
-  onSelect(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click: add to (or take out of) the group (Nov 14 update). */
+  onSelect(id: HikerId, add?: boolean): void;
+  /** Multi-select: each grouped hiker's turn-order number, as a badge on the token. */
+  order?: Partial<Record<HikerId, number>>;
   /**
    * A tile the selected hiker can move to (or a tool can pick): a click on a
    * token there picks the tile, so hikers standing on it (checked in at the
@@ -66,6 +69,7 @@ export function HikerTokens({
   onSelect,
   pickTile,
   canDrag,
+  order = {},
 }: HikerTokensProps) {
   const lastRow = lastRowOf(section);
   const onMap = hikers.filter((h) => h.status !== 'abandoned');
@@ -114,7 +118,8 @@ export function HikerTokens({
           title={h.name}
           onClick={(e) => {
             e.stopPropagation();
-            if (pickTile?.tileIds.has(h.tileId)) pickTile.onPick(h.tileId);
+            if (e.shiftKey || e.ctrlKey || e.metaKey) onSelect(h.id, true);
+            else if (pickTile?.tileIds.has(h.tileId)) pickTile.onPick(h.tileId);
             else onSelect(h.id);
           }}
           style={{
@@ -142,6 +147,15 @@ export function HikerTokens({
             </span>
           )}
         </TokenButton>
+        {order[h.id] !== undefined && (
+          <span
+            className={styles.tokenTurn}
+            aria-hidden="true"
+            style={{ left: left - 8, top: top - 8, zIndex: z + 2 }}
+          >
+            {order[h.id]}
+          </span>
+        )}
         {passedOut && (
           <span
             className={styles.tokenOut}

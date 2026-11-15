@@ -44,6 +44,8 @@ interface SimpleTurnProps {
   onBlueprints?(): void;
   /** Opens the Merchant or Traveling Trader on the hiker's tile. */
   onFeature?(): void;
+  /** The hikers picked together (multi-select), in turn order. */
+  group?: readonly HikerId[];
 }
 
 export function SimpleTurn({
@@ -60,8 +62,9 @@ export function SimpleTurn({
   onAbandon,
   onBlueprints,
   onFeature,
+  group,
 }: SimpleTurnProps) {
-  const actions = simpleActions(state, hiker);
+  const actions = simpleActions(state, hiker, group);
   // Why a red action is stopped, after tapping it.
   // Shown only while that action is still red for this hiker.
   const [why, setWhy] = useState<{ hikerId: string; action: ActionId } | null>(null);

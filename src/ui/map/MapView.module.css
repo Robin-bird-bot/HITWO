@@ -762,3 +762,21 @@
 .viewport[data-drop='hover'] {
   box-shadow: inset 0 0 0 6px rgba(233, 180, 76, 0.9);
 }
+
+/* Multi-select (Nov 14 update): a grouped hiker's turn-order number on their token. */
+.tokenTurn {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #1d2220;
+  border: 2px solid #1d2220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  line-height: 1;
+  pointer-events: none;
+}

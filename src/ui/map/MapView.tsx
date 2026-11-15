@@ -48,7 +48,12 @@ interface MapViewProps {
   /** Extra things in map space, over the tokens (Preview Next Trail's line picks). */
   overlay?: ReactNode;
   selectedId: HikerId | null;
-  onSelectHiker(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click a token: add to (or take out of) the group. */
+  onSelectHiker(id: HikerId, add?: boolean): void;
+  /** Multi-select (Nov 14 update): each grouped hiker's turn-order number. */
+  order?: Partial<Record<HikerId, number>>;
+  /** A click on the map away from any tile or token (clears the group). */
+  onEmptyClick?(): void;
   camera: Camera;
   setCamera: Dispatch<SetStateAction<Camera>>;
   bounds: Bounds;
@@ -103,6 +108,8 @@ export function MapView({
   bounds,
   hikerDrag,
   itemDrag,
+  order,
+  onEmptyClick,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
@@ -201,6 +208,12 @@ export function MapView({
           draggedRef.current = false;
         }
       }}
+      onClick={(e) => {
+        // Empty map: the viewport itself, or the world layer behind the tiles.
+        if (e.target === e.currentTarget || e.target === e.currentTarget.firstElementChild) {
+          onEmptyClick?.();
+        }
+      }}
       aria-label="Trail map"
     >
       <div className={styles.world} style={{ transform: worldTransform(camera) }}>
@@ -239,6 +252,7 @@ export function MapView({
             onPick: onTileClick,
           }}
           {...(hikerDrag ? { canDrag: hikerDrag.canDrag } : {})}
+          {...(order ? { order } : {})}
         />
         {overlay}
         {dragged && (

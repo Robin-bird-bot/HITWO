@@ -726,5 +726,7 @@ export const BALANCE = {
      * spaced evenly. TODO(wyatt): [180 s] and [70 s].
      */
     stationDrift: { farSeconds: 180, nearSeconds: 70 },
+    /** Multi-select: each grouped hiker acts this long (ms) after the last. TODO(wyatt): first guess. */
+    groupStepMs: 350,
   },
 };

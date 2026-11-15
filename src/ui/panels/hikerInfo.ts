@@ -21,6 +21,7 @@ import {
   type ConditionInstance,
   type GameState,
   type Hiker,
+  type HikerId,
   type StatName,
   type Tile,
   craftOpenReason,
@@ -396,6 +397,38 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
   ];
 }
 
+/** The actions a group shares (multi-select): each of them does it on their own. */
+export const GROUP_ACTIONS: readonly ActionId[] = ['move', 'scavenge', 'tend', 'sleep', 'watch'];
+
+/**
+ * The action grid while several hikers are picked: a shared action is ready
+ * if any of them can take it ("2 of 3 hikers"), so pressing it starts the
+ * group even when the selected hiker can't; the others are skipped with a
+ * note. Everything else is the selected hiker's own.
+ */
+export function groupActionStates(
+  state: GameState,
+  h: Hiker,
+  group: readonly HikerId[] = [],
+): ActionState[] {
+  const own = actionStates(state, h);
+  const members = group
+    .map((id) => state.hikers.find((x) => x.id === id))
+    .filter((x): x is Hiker => !!x);
+  if (members.length < 2) return own;
+  const theirs = members.map((m) => (m.id === h.id ? own : actionStates(state, m)));
+  return own.map((a) => {
+    if (!GROUP_ACTIONS.includes(a.id)) return a;
+    const able = theirs.filter((list) => list.find((x) => x.id === a.id)?.status === 'ready');
+    if (!able.length) return a;
+    const sub =
+      able.length === members.length
+        ? `All ${members.length} hikers`
+        : `${able.length} of ${members.length} hikers`;
+    return { id: a.id, label: a.label, icon: a.icon, sub, status: 'ready' };
+  });
+}
+
 /** Simple mode: only the actions the hiker can take right now. */
 export function readyActions(state: GameState, h: Hiker): ActionState[] {
   return actionStates(state, h).filter((a) => a.status === 'ready');
@@ -405,8 +438,14 @@ export function readyActions(state: GameState, h: Hiker): ActionState[] {
  * Simple mode's buttons: the actions the hiker can take, plus the ones a
  * status is stopping (red), so it's clear something is wrong (Nov 5, 2b).
  */
-export function simpleActions(state: GameState, h: Hiker): ActionState[] {
-  return actionStates(state, h).filter((a) => a.status === 'ready' || a.status === 'status');
+export function simpleActions(
+  state: GameState,
+  h: Hiker,
+  group: readonly HikerId[] = [],
+): ActionState[] {
+  return groupActionStates(state, h, group).filter(
+    (a) => a.status === 'ready' || a.status === 'status',
+  );
 }
 
 /** Simple mode, when nothing is ready: why (Move's reason is the most useful). */

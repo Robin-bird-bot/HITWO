@@ -32,7 +32,7 @@ import { useDrag, useDrop, type DropProps } from '../drag/drag';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
-import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
+import { groupActionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
 import { Panel } from './Panel';
 import panel from './Panel.module.css';
 import { BoostChips } from '../items/BoostChips';
@@ -63,6 +63,8 @@ interface TurnPanelProps {
   onBlueprints?(): void;
   /** Opens the Merchant or Traveling Trader on the hiker's tile. */
   onFeature?(): void;
+  /** The hikers picked together (multi-select), in turn order. */
+  group?: readonly HikerId[];
 }
 
 export function TurnPanel({
@@ -78,6 +80,7 @@ export function TurnPanel({
   onAbandon,
   onBlueprints,
   onFeature,
+  group,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -92,7 +95,14 @@ export function TurnPanel({
       <div className={styles.scroll}>
         {hiker.status === 'active' ? (
           <>
-            <ActionGrid state={state} hiker={hiker} onAction={onAction} note={note} slot={slot} />
+            <ActionGrid
+              state={state}
+              hiker={hiker}
+              onAction={onAction}
+              note={note}
+              slot={slot}
+              {...(group ? { group } : {})}
+            />
             <Abilities state={state} hiker={hiker} onAbility={onAbility} />
           </>
         ) : (
@@ -120,14 +130,16 @@ function ActionGrid({
   onAction,
   note,
   slot,
+  group,
 }: {
   state: GameState;
   hiker: Hiker;
   onAction(id: ActionId): void;
   note?: string;
   slot?: ReactNode;
+  group?: readonly HikerId[];
 }) {
-  const actions = actionStates(state, hiker);
+  const actions = groupActionStates(state, hiker, group);
   const [explain, setExplain] = useState<ActionState | null>(null);
   const message =
     note ?? explain?.reason ?? 'Pick an action. Greyed-out ones say why when you point at them.';

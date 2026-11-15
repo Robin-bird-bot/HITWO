@@ -131,3 +131,77 @@ export function TendConfirm({ name, from, to, appetite, onConfirm, onCancel }: T
     </div>
   );
 }
+
+const GROUP_WORD = {
+  move: 'MOVE',
+  scavenge: 'SCAVENGE',
+  tend: 'TEND',
+  sleep: 'SLEEP',
+  watch: 'KEEP WATCH',
+} as const;
+
+interface GroupConfirmProps {
+  kind: keyof typeof GROUP_WORD;
+  /** The hikers' names, in turn order. */
+  names: string[];
+  /** Move: the tile, once it's picked (until then, it asks for one). */
+  where?: string;
+  onGo(): void;
+  onCancel(): void;
+}
+
+/** Multi-select (Nov 14 update): one action for the group, each hiker in turn. */
+export function GroupConfirm({ kind, names, where, onGo, onCancel }: GroupConfirmProps) {
+  const goRef = useRef<HTMLButtonElement>(null);
+  const ready = kind !== 'move' || !!where;
+  useEffect(() => {
+    goRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onCancel, ready]);
+
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>
+        {GROUP_WORD[kind]} · {names.length} HIKERS
+      </span>
+      <span className={styles.text}>
+        {kind === 'move' && !where
+          ? 'Pick a tile on the map (or drag one of them there).'
+          : `${kind === 'move' ? `To ${where}. ` : ''}One after another: ${names.join(', then ')}.${
+              kind === 'move' ? ' Each pays their own way.' : ''
+            }`}
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          Cancel
+        </button>
+        {ready && (
+          <button ref={goRef} type="button" className={styles.confirm} onClick={onGo}>
+            Go
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A grouped move: this hiker couldn't reach the tile, so they pick their own, or skip. */
+export function GroupOwnTile({ name, onSkip }: { name: string; onSkip(): void }) {
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>{name.toUpperCase()}’S TURN</span>
+      <span className={styles.text}>
+        {name} can’t reach that tile. Pick another tile for {name}, or skip.
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onSkip}>
+          Skip {name}
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -348,3 +348,14 @@
 .card[data-drop='no'] {
   opacity: 0.55;
 }
+
+/* Multi-select (Nov 14 update): the Select toggle beside the count, and a grouped card. */
+.asideRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card[data-grouped] {
+  border-color: rgba(233, 180, 76, 0.85);
+}

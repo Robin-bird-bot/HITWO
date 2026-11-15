@@ -5,7 +5,7 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
@@ -106,7 +106,17 @@ import {
   popupAction,
   type MoveMode,
 } from './movePlan';
-import { SleepConfirm, TendConfirm, WatchConfirm } from './TurnExtras';
+import { GroupConfirm, GroupOwnTile, SleepConfirm, TendConfirm, WatchConfirm } from './TurnExtras';
+import {
+  orderNumbers,
+  startGroup,
+  stepGroup,
+  toggleInGroup,
+  type GroupKind,
+  type GroupRun,
+  skipWords,
+  groupMoveTargets,
+} from './groupTurn';
 import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
@@ -203,6 +213,21 @@ export function GameScreen({
   const [drag, setDrag] = useState<DragState | null>(null);
   /** A drop that asks first (eat, feed, place, use a map tool), where it was dropped. */
   const [ask, setAsk] = useState<Omit<DropAskProps, 'onCancel'> | null>(null);
+  // ── Multi-select (Nov 14 update) ──
+  /** Hikers picked for one action each, in turn order (two or more, or none). */
+  const [group, setGroup] = useState<HikerId[]>([]);
+  /** The Select toggle (for touch): taps pick hikers for the group. */
+  const [picking, setPicking] = useState(false);
+  /** The group's action, waiting for Go (and, for a move, a tile). */
+  const [groupAsk, setGroupAsk] = useState<{ kind: GroupKind; tileId?: TileId } | null>(null);
+  /** A group action going through its hikers one by one. */
+  const [run, setRun] = useState<GroupRun | null>(null);
+  /** Who the group's action skipped, and why: stays up until the next pick. */
+  const [skipNote, setSkipNote] = useState<string | undefined>();
+  const runRef = useRef(run);
+  useEffect(() => {
+    runRef.current = run;
+  });
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
   // After a Risk roll, a Challenge space or an opportunity: what happened.
@@ -271,6 +296,32 @@ export function GameScreen({
     setStash(null);
   };
 
+  /** A portrait or token clicked: select them, or (with `add`) put them in or out of the group. */
+  const pickHiker = (id: HikerId, add = false) => {
+    setSkipNote(undefined);
+    if (!add) {
+      if (group.length) setGroup([]);
+      setGroupAsk(null);
+      select(id);
+      return;
+    }
+    const next = toggleInGroup(group, selected?.id ?? null, id);
+    setGroup(next);
+    setGroupAsk(null);
+    setPendingTile(null);
+    if (next.length && selected && !next.includes(selected.id)) setSelectedId(next[0] ?? id);
+    setNote(
+      next.length > 1
+        ? 'Pick an action: each of them does it on their own, in this order.'
+        : undefined,
+    );
+  };
+  const clearGroup = () => {
+    setGroup([]);
+    setPicking(false);
+    setGroupAsk(null);
+  };
+
   const select = (id: HikerId) => {
     setSelectedId(id);
     setNote(undefined);
@@ -280,7 +331,12 @@ export function GameScreen({
   /** Applies an action; after a hiker uses their phase, the next ready hiker is selected. */
   const dispatch = (action: Action): boolean => {
     // The scavenger, for a take (the selection can differ after a reload mid-draw).
-    const actorId = action.type === 'scavengeTake' ? state.scavenge?.hikerId : selected?.id;
+    const actorId =
+      action.type === 'scavengeTake'
+        ? state.scavenge?.hikerId
+        : 'hikerId' in action
+          ? action.hikerId
+          : selected?.id;
     const before = state.nextEventId;
     const result = gameStore.dispatch(action);
     if (!result.ok) {
@@ -369,6 +425,63 @@ export function GameScreen({
     ]);
   };
 
+  /**
+   * One step of a running group action (multi-select): the next hiker acts,
+   * or picks their own tile, or the group is done. It waits while a window is
+   * open (a challenge, a scavenge), so each hiker goes on their own.
+   */
+  const advanceRun = () => {
+    const r = runRef.current;
+    const s = gameStore.getState();
+    if (!r || !s) return;
+    const nameOfHiker = (id: HikerId) => s.hikers.find((h) => h.id === id)?.name ?? id;
+    if (r.own) {
+      // Waiting for this hiker to pick their own tile (or Skip).
+      const h = s.hikers.find((x) => x.id === r.own);
+      if (h && h.status === 'active' && !h.acted) return;
+      setRun({ ...r, own: undefined });
+      return;
+    }
+    const step = stepGroup(s, r);
+    if (step.kind === 'wait') return;
+    const skipped = skipWords(step.skipped, nameOfHiker);
+    if (skipped) setSkipNote((n) => (n ? `${n} ${skipped}` : skipped));
+    if (step.kind === 'act') {
+      setRun(step.run);
+      const who = 'hikerId' in step.action ? step.action.hikerId : undefined;
+      if (who) setSelectedId(who);
+      dispatch(step.action);
+    } else if (step.kind === 'own') {
+      setRun(step.run);
+      if (step.run.own) select(step.run.own);
+    } else {
+      setRun(null);
+    }
+  };
+  const advanceRunRef = useRef(advanceRun);
+  useEffect(() => {
+    advanceRunRef.current = advanceRun;
+  });
+  // The group's next hiker goes a moment after the last, once nothing is open.
+  const groupBusy =
+    !!result || !!nightShown || !!weatherShown || !!pendingTile || !!ask || !!stash || !!wonderOpen;
+  useEffect(() => {
+    if (!run || groupBusy) return;
+    const t = window.setTimeout(() => advanceRunRef.current(), BALANCE.ui.groupStepMs);
+    return () => window.clearTimeout(t);
+  }, [run, state, groupBusy]);
+  // Esc, with nothing else open, lets go of the group.
+  useEffect(() => {
+    if (!group.length && !picking) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || pendingTile || groupAsk) return;
+      setGroup([]);
+      setPicking(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [group.length, picking, pendingTile, groupAsk]);
+
   const moveMode: MoveMode =
     mode.kind === 'moveAll' ? { kind: 'moveAll', bring: mode.bring } : { kind: 'move' };
   useEffect(() => {
@@ -402,14 +515,27 @@ export function GameScreen({
           const a = toolAction(tileId);
           return { tileId, reason: a ? validateAction(state, a) : 'Nothing to use.' };
         })
-      : selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
-        ? moveTargets(state, selected, moveMode)
-        : [];
+      : group.length > 1 && groupAsk?.kind === 'move'
+        ? groupMoveTargets(state, group)
+        : selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
+          ? moveTargets(state, selected, moveMode)
+          : [];
   // Dragging a hiker: the tiles they can be dropped on.
   const draggedId = drag?.payload.kind === 'hiker' ? drag.payload.hikerId : null;
+  // A grouped hiker carries the group: anywhere one of them can go.
+  const groupDrag = !!draggedId && group.length > 1 && group.includes(draggedId);
   const dropTiles = useMemo(
-    () => (draggedId ? hikerDropTiles(state, draggedId) : null),
-    [state, draggedId],
+    () =>
+      !draggedId
+        ? null
+        : groupDrag
+          ? new Set(
+              groupMoveTargets(state, group)
+                .filter((t) => t.reason === null)
+                .map((t) => t.tileId),
+            )
+          : hikerDropTiles(state, draggedId),
+    [state, draggedId, groupDrag, group],
   );
   const onDragChange = (d: DragState | null) => {
     setDrag(d);
@@ -516,11 +642,17 @@ export function GameScreen({
     accepts: (hikerId: HikerId, tileId: TileId) =>
       hikerId === draggedId && !!dropTiles?.has(tileId),
     onDrop: (hikerId: HikerId, tileId: TileId) => {
+      // A grouped hiker dragged to a tile: the whole group goes there, in turn.
+      if (group.length > 1 && group.includes(hikerId)) {
+        setGroupAsk({ kind: 'move', tileId });
+        return;
+      }
       setSelectedId(hikerId);
       setMode({ kind: 'idle' });
       setPendingTile(tileId);
     },
     costOn: (hikerId: HikerId, tileId: TileId) => {
+      if (groupDrag) return `${group.length} hikers · each pays their own way`;
       const h = hikers.find((x) => x.id === hikerId);
       const row = h ? movePreview(state, h, { kind: 'move' }, tileId)?.rows[0] : undefined;
       const parts = (row?.changes ?? []).map((c) => `−${c.from - c.to} ${STAT_META[c.stat].label}`);
@@ -530,7 +662,18 @@ export function GameScreen({
 
   const onAction = (id: ActionId) => {
     setPendingTile(null);
+    setSkipNote(undefined);
     if (!selected) return;
+    // A group: one action, each hiker in turn (Move All and Craft stay one hiker's).
+    if (
+      group.length > 1 &&
+      (id === 'move' || id === 'scavenge' || id === 'tend' || id === 'sleep' || id === 'watch')
+    ) {
+      setMode({ kind: 'idle' });
+      setGroupAsk({ kind: id });
+      setNote(undefined);
+      return;
+    }
     if (id === 'move') {
       setMode({ kind: 'idle' });
       setNote('Click a tile with a gold ring to move there.');
@@ -573,9 +716,44 @@ export function GameScreen({
   const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
   const phaseWord = PHASE_WORD[state.phase];
 
+  // Who a group action skipped stays up beside any newer message.
+  const turnNote = [skipNote, note].filter(Boolean).join(' ') || undefined;
+
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
-  if (selected && mode.kind === 'sleep') {
+  const nameOfId = (id: HikerId) => hikers.find((h) => h.id === id)?.name ?? id;
+  if (groupAsk && group.length > 1) {
+    const tile = groupAsk.tileId ? section.tiles[groupAsk.tileId] : undefined;
+    slot = (
+      <GroupConfirm
+        kind={groupAsk.kind}
+        names={group.map(nameOfId)}
+        {...(tile ? { where: tileName(tile) } : {})}
+        onCancel={() => setGroupAsk(null)}
+        onGo={() => {
+          const started = startGroup(state, group, groupAsk.kind, groupAsk.tileId);
+          clearGroup();
+          setRun(started.run);
+          setNote(undefined);
+          setSkipNote(skipWords(started.skipped, nameOfId) || undefined);
+        }}
+      />
+    );
+  } else if (run?.own) {
+    const own = run.own;
+    slot = (
+      <GroupOwnTile
+        name={nameOfId(own)}
+        onSkip={() => {
+          setRun({ ...run, own: undefined });
+          setNote(undefined);
+        }}
+      />
+    );
+  }
+  if (slot) {
+    // The group's box takes the slot.
+  } else if (selected && mode.kind === 'sleep') {
     const gain = isSheltered(state, selected)
       ? BALANCE.sleep.shelteredEnergy
       : BALANCE.sleep.energy;
@@ -645,14 +823,22 @@ export function GameScreen({
                   ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
                   : undefined
               }
-              onTileClick={(tileId) => (toolMap ? setToolTile(tileId) : setPendingTile(tileId))}
+              onTileClick={(tileId) =>
+                toolMap
+                  ? setToolTile(tileId)
+                  : group.length > 1 && groupAsk?.kind === 'move'
+                    ? setGroupAsk({ kind: 'move', tileId })
+                    : setPendingTile(tileId)
+              }
+              onEmptyClick={() => group.length && clearGroup()}
+              order={orderNumbers(group)}
               fx={fx}
               checkpointLabelOnHover={simple}
               marks={marks}
               onRevealedClick={setRevealedOpen}
               onWonderClick={setWonderOpen}
               selectedId={selected?.id ?? null}
-              onSelectHiker={select}
+              onSelectHiker={pickHiker}
               camera={camera}
               setCamera={setCamera}
               bounds={bounds}
@@ -683,14 +869,20 @@ export function GameScreen({
                 <SimpleParty
                   state={state}
                   selectedId={selected?.id ?? null}
-                  onSelect={select}
+                  onSelect={pickHiker}
+                  order={orderNumbers(group)}
+                  picking={picking}
+                  onPicking={(on) => {
+                    setPicking(on);
+                    if (!on && group.length < 2) clearGroup();
+                  }}
                   onAbandon={setConfirmAbandon}
                 />
                 {selected && (
                   <SimpleTurn
                     state={state}
                     hiker={selected}
-                    note={note}
+                    note={turnNote}
                     slot={slot}
                     activeAction={
                       mode.kind === 'moveAll' ||
@@ -708,6 +900,7 @@ export function GameScreen({
                     onAbandon={setConfirmAbandon}
                     onBlueprints={openBlueprints}
                     onFeature={() => setShopTile(selected.tileId)}
+                    group={group}
                   />
                 )}
               </>
@@ -721,14 +914,20 @@ export function GameScreen({
                 <PartyPanel
                   state={state}
                   selectedId={selected?.id ?? null}
-                  onSelect={select}
+                  onSelect={pickHiker}
+                  order={orderNumbers(group)}
+                  picking={picking}
+                  onPicking={(on) => {
+                    setPicking(on);
+                    if (!on && group.length < 2) clearGroup();
+                  }}
                   onAbandon={setConfirmAbandon}
                 />
                 {selected && (
                   <TurnPanel
                     state={state}
                     hiker={selected}
-                    note={note}
+                    note={turnNote}
                     slot={slot}
                     onAction={onAction}
                     onAbility={onAbility}
@@ -738,6 +937,7 @@ export function GameScreen({
                     onAbandon={setConfirmAbandon}
                     onBlueprints={openBlueprints}
                     onFeature={() => setShopTile(selected.tileId)}
+                    group={group}
                   />
                 )}
               </>

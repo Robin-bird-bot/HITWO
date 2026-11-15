@@ -21,18 +21,33 @@ import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } fr
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import { useDrop, type DropProps } from '../drag/drag';
+import { OrderBadge, SelectToggle } from './GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
 
 interface PartyPanelProps {
   state: GameState;
   selectedId: HikerId | null;
-  onSelect(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click, or the Select toggle: add to (or take out of) the group. */
+  onSelect(id: HikerId, add?: boolean): void;
+  /** Multi-select (Nov 14 update): each grouped hiker's turn-order number. */
+  order?: Partial<Record<HikerId, number>>;
+  /** The Select toggle, for touch: taps pick hikers for the group. */
+  picking?: boolean;
+  onPicking?(on: boolean): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
 }
 
-export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPanelProps) {
+export function PartyPanel({
+  state,
+  selectedId,
+  onSelect,
+  onAbandon,
+  order = {},
+  picking = false,
+  onPicking,
+}: PartyPanelProps) {
   const active = state.hikers.filter((h) => h.status === 'active');
   const acted = active.filter((h) => h.acted).length;
   // Pack things dropped on a portrait: give, eat or feed (Nov 14 update).
@@ -46,8 +61,11 @@ export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPane
       style={{ left: 16, top: 120, width: 288, height: 864 }}
       title={<span className={styles.heading}>PARTY</span>}
       aside={
-        <span>
-          {acted} of {active.length} acted
+        <span className={styles.asideRow}>
+          {onPicking && <SelectToggle on={picking} onChange={onPicking} />}
+          <span>
+            {acted} of {active.length} acted
+          </span>
         </span>
       }
     >
@@ -58,7 +76,8 @@ export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPane
             state={state}
             hiker={h}
             selected={h.id === selectedId}
-            onSelect={onSelect}
+            onSelect={(id, add) => onSelect(id, add || picking)}
+            turn={order[h.id]}
             drop={portrait.props(h.id)}
             {...(onAbandon ? { onAbandon } : {})}
           />
@@ -81,13 +100,16 @@ function HikerCard({
   onSelect,
   onAbandon,
   drop,
+  turn,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
-  onSelect(id: HikerId): void;
+  onSelect(id: HikerId, add?: boolean): void;
   onAbandon?(id: HikerId): void;
   drop?: DropProps;
+  /** Its place in the group's turn order. */
+  turn?: number;
 }) {
   const color = characterFor(h.id).color;
   const tag = statusTag(h, selected);
@@ -103,19 +125,22 @@ function HikerCard({
       data-selected={selected}
       data-dim={dim && !selected}
       style={selected ? { borderColor: color } : undefined}
-      onClick={() => onSelect(h.id)}
+      onClick={(e) => onSelect(h.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+      data-grouped={turn !== undefined || undefined}
       {...drop}
     >
       <div className={styles.top}>
-        <img
-          className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
-          alt=""
-          style={{
-            boxShadow: `0 0 0 3px ${color}`,
-            filter: dim && !selected ? 'grayscale(1)' : 'none',
-          }}
-        />
+        <OrderBadge n={turn}>
+          <img
+            className={styles.portrait}
+            src={ASSETS.portraits.placeholder}
+            alt=""
+            style={{
+              boxShadow: `0 0 0 3px ${color}`,
+              filter: dim && !selected ? 'grayscale(1)' : 'none',
+            }}
+          />
+        </OrderBadge>
         <div className={styles.info}>
           <div className={styles.nameRow}>
             <span className={styles.name}>{h.name.toUpperCase()}</span>

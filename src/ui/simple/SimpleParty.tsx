@@ -18,20 +18,35 @@ import { Popout } from '../panels/Popout';
 import { StatBar } from '../panels/StatBar';
 import { useStage } from '../stage/StageContext';
 import { useDrop, type DropProps } from '../drag/drag';
+import { OrderBadge, SelectToggle } from '../panels/GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './Simple.module.css';
 
 interface SimplePartyProps {
   state: GameState;
   selectedId: HikerId | null;
-  onSelect(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click, or the Select toggle: add to (or take out of) the group. */
+  onSelect(id: HikerId, add?: boolean): void;
+  /** Multi-select (Nov 14 update): each grouped hiker's turn-order number. */
+  order?: Partial<Record<HikerId, number>>;
+  /** The Select toggle, for touch: taps pick hikers for the group. */
+  picking?: boolean;
+  onPicking?(on: boolean): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
 }
 
 const POPOUT_HEIGHT = 470;
 
-export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePartyProps) {
+export function SimpleParty({
+  state,
+  selectedId,
+  onSelect,
+  onAbandon,
+  order = {},
+  picking = false,
+  onPicking,
+}: SimplePartyProps) {
   const fit = useStage();
   const listRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<{ id: HikerId; top: number } | null>(null);
@@ -41,7 +56,13 @@ export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePa
   // Pack things dropped on a portrait: give, eat or feed (Nov 14 update).
   const portrait = useDrop('hiker', useItemDrops().portrait ?? NO_DROP);
 
-  const click = (h: Hiker, card: HTMLElement) => {
+  const click = (h: Hiker, card: HTMLElement, add: boolean) => {
+    // Picking for a group: no details, just in or out of the group.
+    if (add || picking) {
+      setOpen(null);
+      onSelect(h.id, true);
+      return;
+    }
     onSelect(h.id);
     if (open?.id === h.id) {
       setOpen(null);
@@ -62,8 +83,11 @@ export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePa
         style={{ left: 16, top: 72, width: 288 }}
         title={<span className={styles.heading}>PARTY</span>}
         aside={
-          <span>
-            {acted} of {active.length} acted
+          <span className={styles.asideRow}>
+            {onPicking && <SelectToggle on={picking} onChange={onPicking} />}
+            <span>
+              {acted} of {active.length} acted
+            </span>
           </span>
         }
       >
@@ -74,7 +98,8 @@ export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePa
               state={state}
               hiker={h}
               selected={h.id === selectedId}
-              onClick={(card) => click(h, card)}
+              onClick={(card, add) => click(h, card, add)}
+              turn={order[h.id]}
               drop={portrait.props(h.id)}
             />
           ))}
@@ -128,12 +153,15 @@ function HikerCard({
   selected,
   onClick,
   drop,
+  turn,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
-  onClick(card: HTMLElement): void;
+  onClick(card: HTMLElement, add: boolean): void;
   drop?: DropProps;
+  /** Its place in the group's turn order. */
+  turn?: number;
 }) {
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
@@ -164,15 +192,18 @@ function HikerCard({
           ? { boxShadow: `0 0 0 2px ${color}, 0 0 18px ${color}88`, borderColor: color }
           : undefined
       }
-      onClick={(e) => onClick(e.currentTarget)}
+      onClick={(e) => onClick(e.currentTarget, e.shiftKey || e.ctrlKey || e.metaKey)}
+      data-grouped={turn !== undefined || undefined}
       {...drop}
     >
-      <img
-        className={styles.portrait}
-        src={ASSETS.portraits.placeholder}
-        alt=""
-        style={{ boxShadow: `0 0 0 3px ${color}` }}
-      />
+      <OrderBadge n={turn}>
+        <img
+          className={styles.portrait}
+          src={ASSETS.portraits.placeholder}
+          alt=""
+          style={{ boxShadow: `0 0 0 3px ${color}` }}
+        />
+      </OrderBadge>
       <span className={styles.cardBody}>
         <span className={styles.nameRow}>
           <span className={styles.name}>{h.name.toUpperCase()}</span>
