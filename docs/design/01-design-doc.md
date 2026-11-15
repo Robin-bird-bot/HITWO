@@ -89,6 +89,7 @@ Lower-tier challenges mostly cause stat hits and short conditions; injuries beco
 - At 3 injuries a hiker passes out and can't act. A countdown starts (2 nights). It drops each camp step that no active hiker shares their tile.
 - Another hiker can wake them with a medical item, or carry them (carrier's moves cost +1 Appetite). A carried hiker counts as arrived at a checkpoint, for reduced points.
 - At 0 the hiker **abandons the hike** and leaves the party. The player can also abandon a hiker at any time.
+- **Submit to injury** (Nov 14): a hiker who is stuck (too hungry or tired to act) can take an injury on purpose. Like any injury, it raises every stat below 5 to 5, and the third one passes them out.
 - Ranger stations offer one rejoin each, at a high price, with at most 2 per run. A rejoined hiker returns with 2 injuries and low stats.
 
 ## Characters, traits and leveling

@@ -301,6 +301,17 @@
 }
 
 /* Abandoning the hike: quiet, at the bottom of the details, and always confirmed. */
+/* Submit to injury and Abandon the hike: side by side, at the bottom. */
+.lastResorts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lastResorts:empty {
+  display: none;
+}
+
 .abandon {
   align-self: flex-start;
   min-height: 32px;

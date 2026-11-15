@@ -34,6 +34,8 @@ interface SimplePartyProps {
   onPicking?(on: boolean): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
+  /** Asks to confirm taking an injury on purpose (a way out when stuck). */
+  onInjure?(id: HikerId): void;
 }
 
 const POPOUT_HEIGHT = 470;
@@ -43,6 +45,7 @@ export function SimpleParty({
   selectedId,
   onSelect,
   onAbandon,
+  onInjure,
   order = {},
   picking = false,
   onPicking,
@@ -130,6 +133,14 @@ export function SimpleParty({
                   onAbandon: (id: HikerId) => {
                     setOpen(null);
                     onAbandon(id);
+                  },
+                }
+              : {})}
+            {...(onInjure
+              ? {
+                  onInjure: (id: HikerId) => {
+                    setOpen(null);
+                    onInjure(id);
                   },
                 }
               : {})}

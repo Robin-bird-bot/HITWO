@@ -664,6 +664,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
     - Move All can bring any hiker who hasn't acted, even one too hungry or tired to move themselves.
     - Each point of the scavenger's Luck lowers the Empty chance by a tenth of itself, and low Luck raises it the same way.
     - A failed challenge whose penalty is left to chance (Freeagle) shows what was lost, or that nothing was.
+    - **Submit to injury**, next to Abandon the hike, gives a stuck hiker an injury, which raises their low stats as any injury does. First guesses: it's a free action; it waits while a challenge or scavenge is open; a Star or Hardhat doesn't stop it (`src/engine/actions/injure.ts`).
 - **Where things are:**
   - **Abundance:** `src/engine/abundance.ts` (the bar, its changes, the empty chance and the overnight recovery). Numbers in `BALANCE.abundance`. Drains in `src/engine/actions/scavenge.ts`; Empty cards rolled in `src/engine/scavenge/deal.ts`. On screen: `src/ui/panels/AbundanceBar.tsx`.
   - **Item cards:** `toolCard`, `foodCard`, `clothesCard`, `shelterCard` and `trinketCard` in `src/content/scavengeCards.ts`. The item and its Quality are rolled when the card is dealt.

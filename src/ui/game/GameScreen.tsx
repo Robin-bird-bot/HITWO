@@ -17,6 +17,7 @@ import {
   isRevealed,
   isSheltered,
   statMax,
+  STAT_NAMES,
   mapTargets,
   itemText,
   qualityOf,
@@ -155,6 +156,21 @@ function abandonMessage(state: GameState, h: Hiker): string {
   return `${h.name} leaves the party for good.${take} This can’t be undone.`;
 }
 
+/** What submitting to an injury does for this hiker: the injury, the stats it lifts, passing out. */
+function injureMessage(h: Hiker): string {
+  const { passOutAt, raiseStatsBelowTo: line } = BALANCE.injuries;
+  const n = h.injuries + 1;
+  const low = STAT_NAMES.filter((s) => h.stats[s] < line).map((s) => STAT_META[s].label);
+  const lifts = low.length
+    ? `${listNames(low)} rise${low.length === 1 ? 's' : ''} to ${line}.`
+    : '';
+  const out = n >= passOutAt ? ` It’s their ${ordinal(n)} injury: they pass out.` : '';
+  return `${h.name} takes an injury (${n} of ${passOutAt}). ${lifts}${out} This can’t be undone.`;
+}
+
+const ordinal = (n: number) =>
+  n === 1 ? 'first' : n === 2 ? 'second' : n === 3 ? 'third' : `${n}th`;
+
 function listNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? '';
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
@@ -193,6 +209,8 @@ export function GameScreen({
   const [confirmEnd, setConfirmEnd] = useState(false);
   // A hiker the player asked to abandon the hike, waiting on the confirm.
   const [confirmAbandon, setConfirmAbandon] = useState<HikerId | null>(null);
+  /** Submit to injury (Wyatt, Nov 14), waiting for a yes. */
+  const [confirmInjure, setConfirmInjure] = useState<HikerId | null>(null);
   // The card just taken, shown for a moment before the scavenge window closes.
   /** Kept scavenge cards on their way into a pack (Nov 14 update). */
   const [flies, setFlies] = useState<Fly[]>([]);
@@ -714,6 +732,7 @@ export function GameScreen({
 
   const waiting = hikersWhoHaventActed(state);
   const abandoning = confirmAbandon ? hikers.find((h) => h.id === confirmAbandon) : undefined;
+  const injuring = confirmInjure ? hikers.find((h) => h.id === confirmInjure) : undefined;
   const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
   const phaseWord = PHASE_WORD[state.phase];
 
@@ -878,6 +897,7 @@ export function GameScreen({
                     if (!on && group.length < 2) clearGroup();
                   }}
                   onAbandon={setConfirmAbandon}
+                  onInjure={setConfirmInjure}
                 />
                 {selected && (
                   <SimpleTurn
@@ -923,6 +943,7 @@ export function GameScreen({
                     if (!on && group.length < 2) clearGroup();
                   }}
                   onAbandon={setConfirmAbandon}
+                  onInjure={setConfirmInjure}
                 />
                 {selected && (
                   <TurnPanel
@@ -1105,6 +1126,20 @@ export function GameScreen({
                   const a = toolAction(toolTile);
                   setToolTile(null);
                   if (a) dispatch(a);
+                }}
+              />
+            )}
+            {injuring && (
+              <ConfirmDialog
+                title={`Submit ${injuring.name} to an injury?`}
+                message={injureMessage(injuring)}
+                confirmLabel="Take the injury"
+                cancelLabel="Not now"
+                focusCancel
+                onCancel={() => setConfirmInjure(null)}
+                onConfirm={() => {
+                  setConfirmInjure(null);
+                  dispatch({ type: 'submitToInjury', hikerId: injuring.id });
                 }}
               />
             )}

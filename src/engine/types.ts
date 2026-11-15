@@ -649,6 +649,11 @@ export type Action =
    * hiker, any time; the UI confirms it first.
    */
   | { type: 'abandon'; hikerId: HikerId }
+  /**
+   * A free action: the hiker takes an injury on purpose, raising every stat
+   * below the line back up to it (a way out when stuck). The UI confirms it.
+   */
+  | { type: 'submitToInjury'; hikerId: HikerId }
   /** A free action: picks up a passed-out hiker on the same tile, to carry them along. */
   | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
   /** A free action: puts down the hiker being carried. */

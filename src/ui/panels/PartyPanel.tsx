@@ -37,6 +37,8 @@ interface PartyPanelProps {
   onPicking?(on: boolean): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
+  /** Asks to confirm taking an injury on purpose (a way out when stuck). */
+  onInjure?(id: HikerId): void;
 }
 
 export function PartyPanel({
@@ -44,6 +46,7 @@ export function PartyPanel({
   selectedId,
   onSelect,
   onAbandon,
+  onInjure,
   order = {},
   picking = false,
   onPicking,
@@ -80,6 +83,7 @@ export function PartyPanel({
             turn={order[h.id]}
             drop={portrait.props(h.id)}
             {...(onAbandon ? { onAbandon } : {})}
+            {...(onInjure ? { onInjure } : {})}
           />
         ))}
       </div>
@@ -99,6 +103,7 @@ function HikerCard({
   selected,
   onSelect,
   onAbandon,
+  onInjure,
   drop,
   turn,
 }: {
@@ -107,6 +112,7 @@ function HikerCard({
   selected: boolean;
   onSelect(id: HikerId, add?: boolean): void;
   onAbandon?(id: HikerId): void;
+  onInjure?(id: HikerId): void;
   drop?: DropProps;
   /** Its place in the group's turn order. */
   turn?: number;
@@ -193,7 +199,14 @@ function HikerCard({
         </div>
       </div>
 
-      {selected && <Details state={state} hiker={h} {...(onAbandon ? { onAbandon } : {})} />}
+      {selected && (
+        <Details
+          state={state}
+          hiker={h}
+          {...(onAbandon ? { onAbandon } : {})}
+          {...(onInjure ? { onInjure } : {})}
+        />
+      )}
     </div>
   );
 }
@@ -237,11 +250,14 @@ export function Details({
   state,
   hiker: h,
   onAbandon,
+  onInjure,
 }: {
   state: GameState;
   hiker: Hiker;
   /** Asks to confirm abandoning the hike for this hiker (kept away from the action grid). */
   onAbandon?(id: HikerId): void;
+  /** Asks to confirm taking an injury on purpose, for a hiker who's stuck (Wyatt, Nov 14). */
+  onInjure?(id: HikerId): void;
 }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
@@ -328,11 +344,23 @@ export function Details({
         </span>
       </div>
 
-      {onAbandon && (h.status === 'active' || h.status === 'passedOut') && (
-        <button type="button" className={styles.abandon} onClick={() => onAbandon(h.id)}>
-          Abandon the hike…
-        </button>
-      )}
+      <div className={styles.lastResorts}>
+        {onInjure && h.status === 'active' && (
+          <button
+            type="button"
+            className={styles.abandon}
+            onClick={() => onInjure(h.id)}
+            title="Take an injury: every stat below 5 rises to 5."
+          >
+            Submit to injury…
+          </button>
+        )}
+        {onAbandon && (h.status === 'active' || h.status === 'passedOut') && (
+          <button type="button" className={styles.abandon} onClick={() => onAbandon(h.id)}>
+            Abandon the hike…
+          </button>
+        )}
+      </div>
     </div>
   );
 }
