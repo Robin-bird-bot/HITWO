@@ -35,6 +35,7 @@ import {
 import { Face, Made, PartIcons, PickBody, Slot, Swap } from '../craft/CraftWindow';
 import { partLabel, payWords, recipeWords, resName } from '../craft/craftWords';
 import { Icon } from '../icons/Icon';
+import { usePreview, withPreview } from '../preview/preview';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import styles from './Workbench.module.css';
@@ -361,6 +362,7 @@ function BlueprintSquare({
   selected: boolean;
   onPick(): void;
 }) {
+  const preview = usePreview({ kind: 'item', itemId, unrolled: true });
   const def = ITEMS[itemId];
   if (!def) return null;
   const tier = craftTier(state, crafter, def.type);
@@ -387,7 +389,7 @@ function BlueprintSquare({
           : `${def.name}${def.recipe ? `: ${recipeWords(def.recipe)}` : ''}`
       }
       style={{ '--type': TYPE_LOOK[def.type].accent } as CSSProperties}
-      onClick={onPick}
+      {...withPreview({ onClick: onPick }, preview)}
     >
       <Icon name={locked ? 'shield' : TYPE_ICON[def.type]} size={22} />
       <span>{def.name.toUpperCase()}</span>

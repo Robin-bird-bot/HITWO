@@ -706,4 +706,18 @@ export const BALANCE = {
   log: {
     maxEvents: 200,
   },
+
+  /** Screen timings (Nov 14 update). */
+  ui: {
+    /** Hovering a card or item this long (ms) opens its preview. TODO(wyatt): [400 ms]. */
+    previewHoverMs: 400,
+    /** A long-press on a phone: this long (ms) opens the preview instead of a tap. */
+    longPressMs: 450,
+    /**
+     * The forest outside a station's windows drifts left: seconds for the
+     * farthest layer to loop, and for the nearest; the ones between are
+     * spaced evenly. TODO(wyatt): [180 s] and [70 s].
+     */
+    stationDrift: { farSeconds: 180, nearSeconds: 70 },
+  },
 };

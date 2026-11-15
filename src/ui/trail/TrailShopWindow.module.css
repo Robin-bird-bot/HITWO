@@ -325,3 +325,8 @@
 .window:focus {
   outline: none;
 }
+
+/* A card's face, where the preview listens. */
+.cardWrap {
+  display: block;
+}

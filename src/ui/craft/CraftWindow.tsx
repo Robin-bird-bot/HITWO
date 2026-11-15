@@ -38,7 +38,9 @@ import {
   type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
+import { usePreview, withPreview } from '../preview/preview';
 import { ItemCard } from '../items/ItemCard';
+import { Previewable } from '../preview/Previewable';
 import { TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { ItemBack } from '../scavenge/ItemBack';
@@ -326,7 +328,9 @@ function CraftBody({
             {bp && (
               <div className={styles.makes}>
                 <Icon name="chevronDown" size={20} />
-                <ItemCard itemId={bp.id} width={96} />
+                <Previewable content={{ kind: 'item', itemId: bp.id, unrolled: true }}>
+                  <ItemCard itemId={bp.id} width={96} unrolled />
+                </Previewable>
               </div>
             )}
           </div>
@@ -641,6 +645,7 @@ function Blueprint({
   teach?: boolean;
   onPick(): void;
 }) {
+  const preview = usePreview({ kind: 'item', itemId, unrolled: true });
   const def = ITEMS[itemId];
   if (!def) return null;
   const locked = !teach && def.tier > craftTier(state, hiker, def.type);
@@ -669,7 +674,7 @@ function Blueprint({
           ? `${def.name}: a Tier ${NUMERAL[def.tier]} blueprint. A ranger station’s workbench raises ${hiker.name}’s tier (Phase 9).`
           : `${def.name}${recipe ? `: ${recipeWords(recipe)}` : ''}`
       }
-      onClick={onPick}
+      {...withPreview({ onClick: onPick }, preview)}
     >
       <span className={styles.bpPaper}>
         {def.art ? (
@@ -817,7 +822,18 @@ export function PickBody({
                   }
                 }}
               >
-                <span className={styles.flip}>
+                <Previewable
+                  className={styles.flip}
+                  content={
+                    up
+                      ? {
+                          kind: 'item',
+                          itemId: c.itemId,
+                          ...(c.quality ? { item: { quality: c.quality } } : {}),
+                        }
+                      : null
+                  }
+                >
                   <span className={styles.back}>
                     <ItemBack type={open.type} width={cardWidth} />
                   </span>
@@ -828,7 +844,7 @@ export function PickBody({
                       width={cardWidth}
                     />
                   </span>
-                </span>
+                </Previewable>
                 {up && higher && <span className={styles.higher}>A TIER HIGHER!</span>}
               </button>
             );
@@ -1029,7 +1045,9 @@ function TeachBody({
           )}
           {def && (
             <div className={styles.teachCard}>
-              <ItemCard itemId={def.id} width={150} />
+              <Previewable content={{ kind: 'item', itemId: def.id, unrolled: true }}>
+                <ItemCard itemId={def.id} width={150} unrolled />
+              </Previewable>
             </div>
           )}
         </div>

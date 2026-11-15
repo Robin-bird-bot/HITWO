@@ -19,6 +19,7 @@ import {
   resourcesTitle,
 } from './cardLook';
 import { ItemBack } from './ItemBack';
+import { withPreview, type PreviewHandlers } from '../preview/preview';
 import styles from './ScavCard.module.css';
 
 /** Where 1, 2 or 3 resource icons sit, as fractions of the card: left, top, width. */
@@ -49,6 +50,8 @@ export interface ScavCardProps {
   /** Show what a Wild card turned out to be. */
   reveal?: boolean;
   onClick?(): void;
+  /** Hover or long-press for the large card (usePreview). */
+  preview?: PreviewHandlers;
 }
 
 export function ScavCard({
@@ -61,6 +64,7 @@ export function ScavCard({
   dim,
   reveal,
   onClick,
+  preview,
 }: ScavCardProps) {
   const def = SCAVENGE_CARDS[card.type];
   const revealed = reveal && !!def.glyph && !!card.resources?.length;
@@ -76,7 +80,8 @@ export function ScavCard({
   return (
     <div className={styles.wrap} style={{ width: S + 20, opacity: dim ? 0.45 : 1 }}>
       <Tag
-        {...(onClick ? { type: 'button' as const, onClick } : {})}
+        {...(onClick ? { type: 'button' as const } : {})}
+        {...withPreview(onClick ? { onClick } : {}, preview ?? {})}
         className={styles.card}
         style={{ width: S, height: S }}
         data-selected={selected ? 'true' : undefined}

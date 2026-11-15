@@ -51,7 +51,7 @@ export {
   type Quality,
   type QualityValues,
 } from './items/quality';
-export { itemText } from './items/text';
+export { counterRange, itemRangeText, itemText, rangeWords, valueRange } from './items/text';
 export { recipeSize, type Recipe, type RecipePart } from './items/recipe';
 export {
   durabilityLeft,

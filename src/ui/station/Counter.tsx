@@ -17,6 +17,7 @@ import { ITEMS } from '../../content';
 import type { GameState, ItemOffer, StationSpecialId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
+import { Previewable } from '../preview/Previewable';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import styles from './Counter.module.css';
 import { DRAG_TYPE, SPECIAL_LOOK, bundleName, type DragSale } from './stationLook';
@@ -110,13 +111,18 @@ export function Counter({
                   onClick={() => onPick(o.id)}
                   aria-label={offerLabel(o)}
                 >
-                  <div className={flipped === o.id ? styles.flipIn : undefined}>
+                  <Previewable
+                    className={flipped === o.id ? styles.flipIn : styles.cardWrap}
+                    content={
+                      o.hidden ? null : { kind: 'item', itemId: o.item.itemId, item: o.item }
+                    }
+                  >
                     {o.hidden ? (
                       <MysteryBack tier={ITEMS[o.item.itemId]?.tier ?? 1} what="ITEM" />
                     ) : (
                       <ItemCard itemId={o.item.itemId} item={o.item} width={150} />
                     )}
-                  </div>
+                  </Previewable>
                   {o.sold && <span className={styles.sold}>SOLD</span>}
                 </button>
                 <PriceTag price={o.price} sold={!!o.sold} short={short(o.price)} />
@@ -165,19 +171,20 @@ export function Counter({
                       : `${def?.name} blueprint, ${b.sold ? 'sold' : `${b.price} caps`}`
                   }
                 >
-                  <div
+                  <Previewable
                     className={styles.blueprint}
                     style={
                       {
                         '--type': b.hidden ? '#A8743F' : TYPE_LOOK[type].accent,
                       } as React.CSSProperties
                     }
+                    content={b.hidden ? null : { kind: 'item', itemId: b.itemId, unrolled: true }}
                   >
                     <Icon name={b.hidden ? 'help' : TYPE_ICON[type]} size={24} />
                     <span className={styles.blueprintName}>
                       {b.hidden ? '???' : (def?.name ?? '').toUpperCase()}
                     </span>
-                  </div>
+                  </Previewable>
                   <SmallPrice price={b.price} sold={!!b.sold} short={short(b.price)} />
                 </button>
               );
@@ -194,7 +201,10 @@ export function Counter({
                 onClick={() => onPick(b.id)}
                 aria-label={`${bundleName(b)}, ${b.sold ? 'sold' : `${b.price} caps`}`}
               >
-                <div className={styles.bundle}>
+                <Previewable
+                  className={styles.bundle}
+                  content={b.item ? { kind: 'item', itemId: b.item.itemId, item: b.item } : null}
+                >
                   <img
                     src={
                       b.item
@@ -205,7 +215,7 @@ export function Counter({
                     draggable={false}
                   />
                   {!b.item && <span className={styles.count}>×{b.count}</span>}
-                </div>
+                </Previewable>
                 <SmallPrice price={b.price} sold={!!b.sold} short={short(b.price)} />
               </button>
             ))}

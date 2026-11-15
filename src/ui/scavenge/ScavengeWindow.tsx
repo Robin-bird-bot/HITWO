@@ -36,7 +36,8 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { useDraggable } from '../windows/useDraggable';
 import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from './cardLook';
 import { ItemCard as CardFace } from '../items/ItemCard';
-import { ScavCard } from './ScavCard';
+import { ScavCard, type ScavCardProps } from './ScavCard';
+import { usePreview, withPreview } from '../preview/preview';
 import styles from './ScavengeWindow.module.css';
 
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
@@ -233,7 +234,7 @@ export function ScavengeWindow({
                     <span className={styles.takenLabel}>TAKEN</span>
                   </div>
                 ) : (
-                  <ScavCard
+                  <TableCard
                     key={i}
                     card={c}
                     size={cardSize(open.cards.length)}
@@ -461,6 +462,38 @@ function PickChips({
   );
 }
 
+/** A card on the table: once it's face up, hover or long-press shows it large. */
+function TableCard(props: ScavCardProps) {
+  const preview = usePreview(props.faceUp ? { kind: 'scavenge', card: props.card } : null);
+  return <ScavCard {...props} preview={preview} />;
+}
+
+/** A Choice card's item: hover or long-press for the full card, Quality not rolled yet. */
+function ItemChip({
+  id,
+  pressed,
+  showFace,
+  onItem,
+}: {
+  id: ItemId;
+  pressed: boolean;
+  showFace: boolean;
+  onItem(id: ItemId): void;
+}) {
+  const preview = usePreview({ kind: 'item', itemId: id, unrolled: true });
+  return (
+    <button
+      type="button"
+      className={styles.chip}
+      aria-pressed={pressed}
+      {...withPreview({ onClick: () => onItem(id) }, preview)}
+    >
+      {showFace ? <CardFace itemId={id} width={26} compact /> : null}
+      {itemName(id)}
+    </button>
+  );
+}
+
 /** Choice item cards: pick 1 of the items. */
 function ItemChips({
   card,
@@ -476,16 +509,7 @@ function ItemChips({
     <div className={styles.chooser}>
       <div className={styles.chips}>
         {(card.items ?? []).map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={styles.chip}
-            aria-pressed={item === id}
-            onClick={() => onItem(id)}
-          >
-            {type ? <CardFace itemId={id} width={26} compact /> : null}
-            {itemName(id)}
-          </button>
+          <ItemChip key={id} id={id} pressed={item === id} showFace={!!type} onItem={onItem} />
         ))}
       </div>
     </div>

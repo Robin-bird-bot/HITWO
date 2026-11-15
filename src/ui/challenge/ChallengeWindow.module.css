@@ -1370,3 +1370,9 @@
   pointer-events: none;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
 }
+
+/* An item card's face, where the card preview listens (Nov 14 update). */
+.faceWrap {
+  display: inline-block;
+  line-height: 0;
+}

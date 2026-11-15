@@ -70,12 +70,33 @@
   height: 1000px;
 }
 
-.forest img {
+/* One drifting layer: the image, its mirror, then both again, sliding left by one pair. */
+.drift {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  left: 0;
+  top: 0;
+  width: 6400px;
+  height: 1000px;
+  animation: drift linear infinite;
+  will-change: transform;
+}
+
+.drift img {
+  position: absolute;
+  top: 0;
+  width: 1600px;
+  height: 1000px;
   display: block;
+}
+
+.drift img[data-mirror] {
+  transform: scaleX(-1);
+}
+
+@keyframes drift {
+  to {
+    transform: translateX(-3200px);
+  }
 }
 
 .glass {
@@ -594,6 +615,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .drift,
   .embers,
   .flameA,
   .flameB,

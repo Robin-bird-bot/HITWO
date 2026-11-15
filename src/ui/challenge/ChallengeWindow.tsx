@@ -47,6 +47,7 @@ import { NODE_IMAGE } from '../map/looks';
 import { STAT_META } from '../panels/hikerInfo';
 import { itemName, resourceName } from '../scavenge/cardLook';
 import { ItemCard as CardFace } from '../items/ItemCard';
+import { Previewable } from '../preview/Previewable';
 import { useDraggable } from '../windows/useDraggable';
 import { describeLog } from '../log/describeLog';
 import { tileName } from '../panels/hikerInfo';
@@ -1057,7 +1058,11 @@ function MiniItem({
   return <ItemFace itemId={item?.itemId ?? ''} width={width} />;
 }
 
-/** A small item card (the compact real card): in packs, spaces and handed-in slots. */
+/**
+ * A small item card (the compact real card): in packs, spaces and handed-in
+ * slots. Hover or long-press for the full card; without an instance its
+ * Quality isn't rolled yet, so it shows ranges.
+ */
 export function ItemFace({
   itemId,
   item,
@@ -1071,13 +1076,18 @@ export function ItemFace({
   style?: CSSProperties;
 }) {
   return (
-    <CardFace
-      itemId={itemId}
-      width={width}
-      compact
-      {...(item ? { item } : {})}
-      {...(style ? { style } : {})}
-    />
+    <Previewable
+      className={styles.faceWrap}
+      content={itemId ? { kind: 'item', itemId, ...(item ? { item } : { unrolled: true }) } : null}
+    >
+      <CardFace
+        itemId={itemId}
+        width={width}
+        compact
+        {...(item ? { item } : {})}
+        {...(style ? { style } : {})}
+      />
+    </Previewable>
   );
 }
 

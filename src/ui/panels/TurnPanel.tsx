@@ -26,6 +26,7 @@ import {
 } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ItemCard as CardFace } from '../items/ItemCard';
+import { usePreview, withPreview } from '../preview/preview';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
@@ -540,12 +541,14 @@ function ItemCard({
   const def = ITEMS[item.itemId];
   const name = def?.name ?? item.itemId;
   const what = worn ? 'take off' : itemVerbs(item.itemId);
+  // Hover or long-press: the full card (Nov 14 update).
+  const preview = usePreview({ kind: 'item', itemId: item.itemId, item });
   const face = (
     <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
   );
   if (!onClick) {
     return (
-      <div className={styles.itemCard} data-size={size}>
+      <div className={styles.itemCard} data-size={size} {...preview}>
         {face}
       </div>
     );
@@ -555,7 +558,7 @@ function ItemCard({
       type="button"
       className={styles.itemCard}
       data-size={size}
-      onClick={onClick}
+      {...withPreview({ onClick }, preview)}
       aria-label={`${name}: ${what}`}
     >
       {face}

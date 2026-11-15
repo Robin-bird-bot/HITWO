@@ -27,6 +27,7 @@ import {
 import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { ConfirmDialog } from '../game/ConfirmDialog';
 import { Icon } from '../icons/Icon';
+import { ItemText } from '../preview/ItemText';
 import { resourceName } from '../scavenge/cardLook';
 import { BuyDialog } from './BuyDialog';
 import { Counter } from './Counter';
@@ -247,7 +248,7 @@ function TalkBubble({
     <div className={styles.talk} role="group" aria-label={`${name} says`}>
       <span className={styles.talkWho}>{name.toUpperCase()}</span>
       <p className={styles.talkLine} aria-live="polite">
-        {talkLine(state, talk)}
+        <ItemText text={talkLine(state, talk)} />
       </p>
       {chips.length > 0 && (
         <ul className={styles.chips}>

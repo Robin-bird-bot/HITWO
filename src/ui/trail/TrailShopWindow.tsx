@@ -27,6 +27,7 @@ import {
 import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
+import { Previewable } from '../preview/Previewable';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import { BuyDialog } from '../station/BuyDialog';
 import { PriceTag } from '../station/Counter';
@@ -152,16 +153,22 @@ function MerchantBody({
                 aria-label={`${name}, ${o.sold ? 'sold' : `${o.price} caps`}`}
               >
                 {o.kind === 'item' ? (
-                  <ItemCard itemId={o.item.itemId} item={o.item} width={170} />
+                  <Previewable
+                    className={styles.cardWrap}
+                    content={{ kind: 'item', itemId: o.item.itemId, item: o.item }}
+                  >
+                    <ItemCard itemId={o.item.itemId} item={o.item} width={170} />
+                  </Previewable>
                 ) : o.kind === 'blueprint' && def ? (
-                  <div
+                  <Previewable
                     className={styles.bigBp}
                     style={{ '--type': TYPE_LOOK[def.type].accent } as CSSProperties}
+                    content={{ kind: 'item', itemId: def.id, unrolled: true }}
                   >
                     <Icon name={TYPE_ICON[def.type]} size={44} />
                     <span>{def.name.toUpperCase()}</span>
                     <em>BLUEPRINT</em>
-                  </div>
+                  </Previewable>
                 ) : o.kind === 'bundle' ? (
                   <div className={styles.bigBundle}>
                     <img src={ASSETS.resources[o.resource ?? '']} alt="" draggable={false} />
@@ -247,7 +254,12 @@ function TraderBody({
     <div className={styles.trader}>
       <div className={styles.theirs}>
         <span className={styles.kicker}>THEIR ITEM</span>
-        <ItemCard itemId={shop.item.itemId} item={shop.item} width={190} />
+        <Previewable
+          className={styles.cardWrap}
+          content={{ kind: 'item', itemId: shop.item.itemId, item: shop.item }}
+        >
+          <ItemCard itemId={shop.item.itemId} item={shop.item} width={190} />
+        </Previewable>
       </div>
       <span className={styles.swap} aria-hidden="true">
         ⇄
@@ -270,7 +282,12 @@ function TraderBody({
                   aria-label={`${m.hiker.name}’s ${ITEMS[m.item.itemId]?.name}${m.worn ? ', worn' : ''}`}
                   onClick={() => setChosen(m.item.uid)}
                 >
-                  <ItemCard itemId={m.item.itemId} item={m.item} width={small ? 118 : 150} />
+                  <Previewable
+                    className={styles.cardWrap}
+                    content={{ kind: 'item', itemId: m.item.itemId, item: m.item }}
+                  >
+                    <ItemCard itemId={m.item.itemId} item={m.item} width={small ? 118 : 150} />
+                  </Previewable>
                   <Owner hiker={m.hiker} worn={m.worn} />
                 </button>
               </li>
