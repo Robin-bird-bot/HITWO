@@ -437,7 +437,7 @@ describe('the camp step', () => {
     s.debugNight = { tier: 1, hit: 'ash' };
     const after = run(s, END);
     const nightAt = after.log.findIndex((e) => e.kind === 'nightEvent');
-    const drainAt = after.log.findIndex((e) => e.kind === 'stat' && e.cause === 'End of day');
+    const drainAt = after.log.findIndex((e) => e.kind === 'stat' && e.cause === 'No sleep');
     expect(nightAt).toBeGreaterThan(-1);
     expect(nightAt).toBeLessThan(drainAt);
     expect(after.debugNight).toBeUndefined();

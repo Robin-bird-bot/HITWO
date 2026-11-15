@@ -355,9 +355,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, { kind: 'debug', note: `Challenges ${op.on ? 'on' : 'off'}` });
       break;
     case 'setAbundance': {
-      for (const [node, value] of Object.entries(op.abundance) as [NodeType, number][]) {
-        state.abundance[node] = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(value)));
-      }
+      state.abundance = Math.min(BALANCE.abundance.max, Math.max(0, Math.round(op.abundance)));
       pushEvent(state, { kind: 'debug', note: 'Set Abundance' });
       break;
     }

@@ -51,7 +51,7 @@ export {
   type Quality,
   type QualityValues,
 } from './items/quality';
-export { itemText } from './items/text';
+export { counterRange, itemRangeText, itemText, rangeWords, valueRange } from './items/text';
 export { recipeSize, type Recipe, type RecipePart } from './items/recipe';
 export {
   durabilityLeft,
@@ -84,11 +84,11 @@ export { stationItemCount, stationTheme } from './station/stock';
 export { findOffer, rejoinReason } from './actions/station';
 export { tradeable } from './station/trail';
 export type { StationFocus, StationTheme, StationThemeId } from './station/types';
-export { canDeal, dealCard, dealCards, type DealInput } from './scavenge/deal';
+export { canDeal, dealCard, dealCards, isResourceCard, type DealInput } from './scavenge/deal';
 export { clampLuck, moraleLuck, rarityOdds } from './scavenge/rarity';
 export { scavengeCost, scavengeSetup } from './scavenge/setup';
 export { bonusTaken, cardGains, pickOptions, rerollAbility, rerollsLeft } from './actions/scavenge';
-export { isLow } from './abundance';
+export { emptyChance } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
 export { amount, rollCard, scaledRange, type CardRolls } from './challenges/rolls';

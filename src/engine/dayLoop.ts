@@ -74,31 +74,13 @@ function noSleepDrain(state: GameState, h: Hiker): void {
   changeStat(state, h, 'energy', -cost, 'No sleep');
 }
 
-function endOfDayDrain(state: GameState, h: Hiker): void {
-  if (!takesCampDrains(h)) return;
-  const cost = computeCost(
-    state,
-    [h],
-    { key: 'endOfDay.appetite', actorId: h.id, subjectId: h.id, role: 'actor', phase: 'night' },
-    BALANCE.endOfDay.appetite,
-  );
-  changeStat(state, h, 'appetite', -cost, 'End of day');
-}
-
 function campStep(state: GameState): void {
   runNightEvent(state);
   // Bear Spray counts the night it guarded; Camping Lamps go out.
   tickBoosts(state, 'nights');
   for (const t of Object.values(state.section.tiles)) delete t.lampTonight;
-  for (const h of state.hikers) {
-    if (BALANCE.rules.noSleepDrainFirst) {
-      noSleepDrain(state, h);
-      endOfDayDrain(state, h);
-    } else {
-      endOfDayDrain(state, h);
-      noSleepDrain(state, h);
-    }
-  }
+  // No Appetite is lost overnight (Nov 14 update): only actions cost it.
+  for (const h of state.hikers) noSleepDrain(state, h);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onEndOfDay');
   countSleep(state);
   recoverOvernight(state);

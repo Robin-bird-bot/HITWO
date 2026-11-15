@@ -89,6 +89,15 @@ Which font for what:
 - **Edit Undo** for short text people read at a glance: names (including item card names), labels, buttons, numbers, and all shopkeeper or ranger dialogue.
 - **DM Sans** only for longer descriptions and rules text.
 
+## Writing style
+
+Player-facing text (cards, buttons, tooltips, dialogue) is short and plain. Follow this from Phase 10 on (Nov 14 update):
+- Say what the player does or gets ("Pick an item." "Gain 2 Morale."), not how the rule works inside. Full explanations can go in a rules screen later.
+- Use one word for one thing everywhere: Appetite, Energy, Morale, Abundance, tile, node, hiker, caps.
+- No code-like wording: no "trigger", "proc", "on use", "X%" placeholders, or square brackets in player text.
+- If a line doesn't help the player decide something, cut it.
+- Keep numbers on cards; keep explanations off them.
+
 ## How to work
 
 - Do one phase at a time. Start each phase in plan mode, confirm the plan, then build.

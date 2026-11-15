@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER, findableItems } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { seedRng } from '../rng';
-import type { NodeType, ScavengeCard, ScavengeCardType, TileNode } from '../types';
+import type { ScavengeCard, ScavengeCardType, TileNode } from '../types';
 import { canDeal, dealCard, dealCards, type DealInput } from './deal';
 
-const FULL: Record<NodeType, number> = { forest: 10, river: 10, wildlife: 10, mountain: 10 };
+/** A full Abundance bar. */
+const FULL = BALANCE.abundance.max;
 const node = (type: TileNode['type'], extra: Partial<TileNode> = {}): TileNode => ({
   type,
   revealed: true,
@@ -68,24 +70,15 @@ describe('dealing scavenge cards', () => {
     }
   });
 
-  it('never picks a node at 0 Abundance (Wyatt, Nov 4)', () => {
-    const cards = deal(
-      { nodes: [node('forest'), node('river')], abundance: { ...FULL, river: 0 } },
-      2000,
-    );
-    expect(cards.every((c) => c.node === 'forest')).toBe(true);
-  });
-
-  it('gives a node fewer cards as its Abundance drops', () => {
-    const share = (river: number) =>
-      deal({ nodes: [node('forest'), node('river')], abundance: { ...FULL, river } }, 4000).filter(
-        (c) => c.node === 'river',
-      ).length / 4000;
-    expect(share(10)).toBeGreaterThan(0.45);
-    expect(share(10)).toBeLessThan(0.55);
-    // River at 2 against Forest at 10: about 1 card in 6.
-    expect(share(2)).toBeGreaterThan(0.12);
-    expect(share(2)).toBeLessThan(0.21);
+  it('picks nodes evenly whatever the Abundance (one bar, Nov 14 update)', () => {
+    for (const abundance of [0, FULL]) {
+      const river =
+        deal({ nodes: [node('forest'), node('river')], abundance }, 4000).filter(
+          (c) => c.node === 'river',
+        ).length / 4000;
+      expect(river).toBeGreaterThan(0.45);
+      expect(river).toBeLessThan(0.55);
+    }
   });
 
   it('counts a double node twice', () => {
@@ -95,11 +88,8 @@ describe('dealing scavenge cards', () => {
     expect(forest).toBeLessThan(0.71);
   });
 
-  it('deals only caps when Cap nodes are all that is left', () => {
-    const cards = deal(
-      { nodes: [node('caps'), node('river')], abundance: { ...FULL, river: 0 } },
-      50,
-    );
+  it('deals only caps when Cap nodes are all the tile has', () => {
+    const cards = deal({ nodes: [node('caps')] }, 50);
     expect(cards.every((c) => c.type === 'caps' && c.node === null)).toBe(true);
   });
 
@@ -164,9 +154,8 @@ describe('dealing scavenge cards', () => {
   });
 
   it('says when a tile has nothing to give', () => {
-    const empty = { ...FULL, forest: 0 };
-    expect(canDeal({ nodes: [node('forest')], abundance: empty })).toBe(false);
-    expect(canDeal({ nodes: [node('forest'), node('caps')], abundance: empty })).toBe(true);
-    expect(canDeal({ nodes: [], abundance: FULL })).toBe(false);
+    expect(canDeal({ nodes: [node('forest')] })).toBe(true);
+    expect(canDeal({ nodes: [node('caps')] })).toBe(true);
+    expect(canDeal({ nodes: [] })).toBe(false);
   });
 });

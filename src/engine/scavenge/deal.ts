@@ -1,15 +1,18 @@
 /**
- * Dealing scavenge cards. Each card is made in four steps:
- * 1. the node it comes from, weighted by how many of that node the tile has
- *    and that node's Abundance (a node at 0 gives nothing);
+ * Dealing scavenge cards. Each card is made in five steps:
+ * 1. the node it comes from, weighted by how many of that node the tile has;
  * 2. its rarity, from Luck;
  * 3. its type, among the types of that rarity that can happen here (stepping
  *    down a rarity when none can);
- * 4. what's inside.
- * Every card has a node, so taking it always drains a known meter.
+ * 4. what's inside;
+ * 5. for a resource card, whether it comes up Empty, from the biome's
+ *    Abundance (Nov 14 update). Caps and item cards never do.
  */
 import { BALANCE } from '../../config/balance';
-import { SCAVENGE_CARDS, findableItems, type ScavengeCardDef } from '../../content';
+import { emptyChance } from '../abundance';
+import { ITEMS, SCAVENGE_CARDS, findableItems, type ScavengeCardDef } from '../../content';
+import { rollQuality } from '../items/make';
+import { hasQuality } from '../items/quality';
 import { RESOURCES } from '../../content/resources';
 import { int, pick, roll, shuffle, weightedPick } from '../rng';
 import type { ItemType } from '../effects';
@@ -27,7 +30,8 @@ import { rollRarity, stepDown } from './rarity';
 export interface DealInput {
   /** The tile's node spots (a double node is two spots). */
   nodes: readonly TileNode[];
-  abundance: Readonly<Record<NodeType, number>>;
+  /** The biome's Abundance: it sets the chance a resource card is Empty. */
+  abundance: number;
   luck: number;
   count: number;
   /** Multipliers on how likely each node is (Finder, Hound). */
@@ -53,21 +57,18 @@ interface Spot {
 }
 
 /** The resource node spots that can give a card, with how likely each is. */
-export function scavengeSpots(
-  input: Pick<DealInput, 'nodes' | 'abundance' | 'nodeWeight'>,
-): Spot[] {
+export function scavengeSpots(input: Pick<DealInput, 'nodes' | 'nodeWeight'>): Spot[] {
   const spots: Spot[] = [];
   for (const n of input.nodes) {
     if (n.type === 'caps') continue;
-    const meter = Math.max(0, input.abundance[n.type]);
-    const weight = (meter / BALANCE.abundance.max) * (input.nodeWeight?.[n.type] ?? 1);
+    const weight = input.nodeWeight?.[n.type] ?? 1;
     if (weight > 0) spots.push({ node: n.type, bounty: !!n.bounty, weight });
   }
   return spots;
 }
 
 /** Whether this tile can give any card at all. */
-export function canDeal(input: Pick<DealInput, 'nodes' | 'abundance' | 'nodeWeight'>): boolean {
+export function canDeal(input: Pick<DealInput, 'nodes' | 'nodeWeight'>): boolean {
   return scavengeSpots(input).length > 0 || input.nodes.some((n) => n.type === 'caps');
 }
 
@@ -79,25 +80,49 @@ export function dealCards(rng: RngState, input: DealInput): ScavengeCard[] {
     const others = [...new Set(scavengeSpots(input).map((s) => s.node))].filter(
       (n) => n !== extra.node,
     );
-    cards.push(
-      contents(
-        rng,
-        SCAVENGE_CARDS[extra.type],
-        extra.node,
-        spots.some((s) => s.bounty),
-        others,
-        input.itemTier,
-        input.resourceWeight,
-      ),
+    const card = contents(
+      rng,
+      SCAVENGE_CARDS[extra.type],
+      extra.node,
+      spots.some((s) => s.bounty),
+      others,
+      input.itemTier,
+      input.resourceWeight,
     );
+    cards.push(maybeEmpty(rng, card, input));
   }
   return cards;
+}
+
+/** Caps cards and item cards are never Empty; every other card is a resource card. */
+export function isResourceCard(type: ScavengeCardType): boolean {
+  const def = SCAVENGE_CARDS[type];
+  return def.id !== 'caps' && !def.itemType;
+}
+
+/**
+ * A resource card may come up Empty: it shows nothing and gives nothing.
+ * Low Abundance makes it likelier; the scavenger's Luck, less likely.
+ */
+function maybeEmpty(
+  rng: RngState,
+  card: ScavengeCard,
+  { abundance, luck }: Pick<DealInput, 'abundance' | 'luck'>,
+): ScavengeCard {
+  if (isResourceCard(card.type) && roll(rng, emptyChance(abundance, luck))) card.empty = true;
+  return card;
 }
 
 const resourcesOf = (node: NodeType) => RESOURCES.filter((r) => r.node === node).map((r) => r.id);
 const ALL = RESOURCES.map((r) => r.id);
 
 export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {
+  const card = dealContents(rng, input, forced);
+  // A card the debug panel asked for is never Empty, so it can be tried.
+  return forced && card.type === forced ? card : maybeEmpty(rng, card, input);
+}
+
+function dealContents(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {
   const spots = scavengeSpots(input);
   const hasCapNode = input.nodes.some((n) => n.type === 'caps');
   if (spots.length === 0) {
@@ -277,6 +302,9 @@ function contents(
         if (options.length) items.push(pick(rng, options).id);
       }
       card.items = items;
+      // An item card shows the real item: its Quality is rolled now (the plain curve).
+      const shown = def.itemCard && items[0] ? ITEMS[items[0]] : undefined;
+      if (shown && hasQuality(shown)) card.itemQuality = rollQuality(rng);
     }
   }
   return card;

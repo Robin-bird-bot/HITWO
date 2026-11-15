@@ -1,0 +1,53 @@
+/* The one card preview (Nov 14 update). Stage pixels. */
+
+.preview {
+  position: absolute;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 30px rgba(8, 10, 9, 0.55));
+  animation: rise 140ms ease-out;
+}
+
+.preview[data-pinned] {
+  pointer-events: auto;
+}
+
+.note,
+.hint {
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(29, 34, 32, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.hint {
+  color: #c9c2b2;
+  font-size: 12px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview {
+    animation: none;
+  }
+}

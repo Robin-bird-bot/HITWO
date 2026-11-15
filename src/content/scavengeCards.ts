@@ -33,6 +33,11 @@ export interface ScavengeCardDef {
   itemType?: ItemType;
   /** Choice items: pick 1 of several. */
   choiceItem?: true;
+  /**
+   * Item cards (Nov 14 update): the real item, its Quality rolled when dealt,
+   * shown face up when flipped, so the hiker knows exactly what they take.
+   */
+  itemCard?: true;
 }
 
 const CARDS: ScavengeCardDef[] = [
@@ -293,6 +298,25 @@ const CARDS: ScavengeCardDef[] = [
     itemType: 'trinket',
     choiceItem: true,
   },
+  // Item cards (Nov 14 update): each as rare as the random find of its type.
+  ...(
+    [
+      ['tool', 'rare'],
+      ['food', 'rare'],
+      ['clothes', 'veryRare'],
+      ['shelter', 'legendary'],
+      ['trinket', 'legendary'],
+    ] as const
+  ).map(([type, rarity]): ScavengeCardDef => ({
+    id: `${type}Card`,
+    rarity,
+    name: `${type.charAt(0).toUpperCase()}${type.slice(1)} card`,
+    text: 'This item, as you see it',
+    backdrop: 'items',
+    drain: 1,
+    itemType: type,
+    itemCard: true,
+  })),
 ];
 
 export const SCAVENGE_CARDS: Readonly<Record<ScavengeCardType, ScavengeCardDef>> =

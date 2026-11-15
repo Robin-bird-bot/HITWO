@@ -6,8 +6,10 @@
  *   faded, with a red medical badge. Left alone, a pill counts the nights
  *   until they abandon the hike.
  * - Carried: a small token riding on their carrier's, not a spot of its own.
+ * - A hiker who can move can be dragged by their token (Nov 14 update): the
+ *   press doesn't pan the map, and a tap still selects.
  */
-import { Fragment } from 'react';
+import { Fragment, type ComponentProps, type ReactNode } from 'react';
 import { characterFor } from '../../content/characters';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
@@ -15,6 +17,7 @@ import { immovable, type Hiker, type HikerId, type Section } from '../../engine'
 import { conditionCounts } from '../conditions/hikerConditions';
 import { TONE_LOOK } from '../conditions/conditionLook';
 import { Icon } from '../icons/Icon';
+import { useDrag } from '../drag/drag';
 import { lastRowOf, tileCenter } from './mapLayout';
 import styles from './MapView.module.css';
 
@@ -45,16 +48,29 @@ interface HikerTokensProps {
   section: Section;
   hikers: Hiker[];
   selectedId: HikerId | null;
-  onSelect(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click: add to (or take out of) the group (Nov 14 update). */
+  onSelect(id: HikerId, add?: boolean): void;
+  /** Multi-select: each grouped hiker's turn-order number, as a badge on the token. */
+  order?: Partial<Record<HikerId, number>>;
   /**
    * A tile the selected hiker can move to (or a tool can pick): a click on a
    * token there picks the tile, so hikers standing on it (checked in at the
    * checkpoint, say) don't get in the way.
    */
   pickTile?: { tileIds: ReadonlySet<string>; onPick(tileId: string): void };
+  /** Which hikers can be picked up and dragged to another tile. */
+  canDrag?(hiker: Hiker): boolean;
 }
 
-export function HikerTokens({ section, hikers, selectedId, onSelect, pickTile }: HikerTokensProps) {
+export function HikerTokens({
+  section,
+  hikers,
+  selectedId,
+  onSelect,
+  pickTile,
+  canDrag,
+  order = {},
+}: HikerTokensProps) {
   const lastRow = lastRowOf(section);
   const onMap = hikers.filter((h) => h.status !== 'abandoned');
   // A carried hiker rides on their carrier's token instead of taking a spot.
@@ -93,15 +109,17 @@ export function HikerTokens({ section, hikers, selectedId, onSelect, pickTile }:
     const small = size < 36;
     return (
       <Fragment key={h.id}>
-        <button
-          type="button"
+        <TokenButton
+          hiker={h}
+          draggable={!riding && !!canDrag?.(h)}
           className={styles.token}
           aria-label={`${h.name}${selected ? ' (selected)' : ''}${marks.length ? `: ${marks.join(', ')}` : ''}`}
           aria-pressed={selected}
           title={h.name}
           onClick={(e) => {
             e.stopPropagation();
-            if (pickTile?.tileIds.has(h.tileId)) pickTile.onPick(h.tileId);
+            if (e.shiftKey || e.ctrlKey || e.metaKey) onSelect(h.id, true);
+            else if (pickTile?.tileIds.has(h.tileId)) pickTile.onPick(h.tileId);
             else onSelect(h.id);
           }}
           style={{
@@ -128,7 +146,16 @@ export function HikerTokens({ section, hikers, selectedId, onSelect, pickTile }:
               <Icon name="snowflake" size={Math.round(size * 0.6)} strokeWidth={2.5} />
             </span>
           )}
-        </button>
+        </TokenButton>
+        {order[h.id] !== undefined && (
+          <span
+            className={styles.tokenTurn}
+            aria-hidden="true"
+            style={{ left: left - 8, top: top - 8, zIndex: z + 2 }}
+          >
+            {order[h.id]}
+          </span>
+        )}
         {passedOut && (
           <span
             className={styles.tokenOut}
@@ -201,5 +228,36 @@ export function HikerTokens({ section, hikers, selectedId, onSelect, pickTile }:
         });
       })}
     </>
+  );
+}
+
+/** A token's button: a drag source when its hiker can move. */
+function TokenButton({
+  hiker,
+  draggable,
+  children,
+  ...rest
+}: { hiker: Hiker; draggable: boolean; children: ReactNode } & ComponentProps<'button'>) {
+  const drag = useDrag(
+    draggable ? { kind: 'hiker', hikerId: hiker.id } : null,
+    <TokenGhost hiker={hiker} />,
+    { stop: true },
+  );
+  return (
+    <button type="button" {...rest} {...drag}>
+      {children}
+    </button>
+  );
+}
+
+/** What follows the pointer while a hiker is dragged: their portrait. */
+function TokenGhost({ hiker }: { hiker: Hiker }) {
+  return (
+    <img
+      className={styles.tokenGhost}
+      src={ASSETS.portraits.placeholder}
+      alt=""
+      style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
+    />
   );
 }

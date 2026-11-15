@@ -3,7 +3,7 @@
  * - give one resource or bag item to a hiker on the same tile (an active
  *   hiker can also take things from a passed-out one: Wyatt, Nov 7; their worn
  *   clothes come off with takeOff, src/engine/actions/dress.ts);
- * - return a resource to nature, +1 Abundance to its node.
+ * - return a resource to nature, +1 Abundance.
  */
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
@@ -83,7 +83,7 @@ export function applyReturn(state: GameState, action: ReturnAction): void {
   if (!node) return;
   hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) - 1;
   if (!hiker.inventory.resources[r]) delete hiker.inventory.resources[r];
-  changeAbundance(state, node, BALANCE.abundance.returnToNature);
+  changeAbundance(state, BALANCE.abundance.returnToNature);
   pushEvent(state, { kind: 'returned', hikerId: hiker.id, resource: r, node });
 }
 

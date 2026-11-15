@@ -3,8 +3,13 @@
  * darkened forest (layers 241, 271, 266 and 265), the stone fireplace with its
  * flickering fire and warm light (still under reduced motion), the hanging
  * sign with the theme's name, and the shopkeeper behind the counter.
+ *
+ * The forest drifts slowly left (Nov 14 update), far layers slower than near
+ * ones. Each layer repeats as the image and its mirror, which always meet
+ * without a seam. It holds still under reduced motion.
  */
 import { ASSETS, asset } from '../../config/assets';
+import { BALANCE } from '../../config/balance';
 import type { StationTheme } from '../../engine';
 import stones from './fireplace-stones.svg';
 import styles from './StationScreen.module.css';
@@ -20,6 +25,12 @@ const FOREST = [
   { src: asset('backgrounds/265-pine-row-bright.webp'), filter: 'brightness(0.6) saturate(0.85)' },
 ];
 
+/** How long each layer takes to loop, back to front. */
+const { farSeconds, nearSeconds } = BALANCE.ui.stationDrift;
+const LOOP_SECONDS = FOREST.map(
+  (_, i) => farSeconds + ((nearSeconds - farSeconds) * i) / Math.max(1, FOREST.length - 1),
+);
+
 /** What sits on the mantel. */
 const MANTEL = [
   { id: 'fish', left: 52, top: 152, size: 48 },
@@ -33,8 +44,23 @@ export function StationRoom({ theme, checkpoint }: { theme: StationTheme; checkp
     <>
       <div className={styles.window} aria-hidden="true">
         <div className={styles.forest}>
-          {FOREST.map((l) => (
-            <img key={l.src} src={l.src} alt="" style={{ filter: l.filter }} draggable={false} />
+          {FOREST.map((l, i) => (
+            <div
+              key={l.src}
+              className={styles.drift}
+              style={{ animationDuration: `${LOOP_SECONDS[i]}s` }}
+            >
+              {[0, 1, 2, 3].map((k) => (
+                <img
+                  key={k}
+                  src={l.src}
+                  alt=""
+                  draggable={false}
+                  data-mirror={k % 2 === 1 || undefined}
+                  style={{ filter: l.filter, left: k * 1600 }}
+                />
+              ))}
+            </div>
           ))}
         </div>
         <div className={styles.glass} />

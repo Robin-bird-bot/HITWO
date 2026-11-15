@@ -107,12 +107,10 @@ describe('scavenging: who can and where', () => {
     );
   });
 
-  it('is blocked when every node on the tile is empty (Wyatt, Nov 4)', () => {
+  it('still deals at Abundance 0: the cards may just come up Empty (Nov 14 update)', () => {
     const s = onForest();
-    s.abundance.forest = 0;
-    expect(validateAction(s, { type: 'scavenge', hikerId: 'ash' })).toBe(
-      'Nothing left to find here. Tend it or move on.',
-    );
+    s.abundance = 0;
+    expect(validateAction(s, { type: 'scavenge', hikerId: 'ash' })).toBeNull();
   });
 
   it('is blocked when the hiker’s resources are full', () => {
@@ -141,7 +139,7 @@ describe('scavenging: taking a card', () => {
     expect(ash.stats.appetite).toBe(9);
     expect(ash.acted).toBe(true);
     expect(ash.inventory.resources.wood).toBe(2);
-    expect(after.abundance.forest).toBe(BALANCE.abundance.start - 2);
+    expect(after.abundance).toBe(BALANCE.abundance.start - 2);
     expect(after.scavenge).toBeUndefined();
     expect(after.scavengedToday).toEqual([{ hikerId: 'ash', tileId: 'L', nodes: ['forest'] }]);
     expect(after.log.find((e) => e.kind === 'scavenge')).toMatchObject({
@@ -170,7 +168,7 @@ describe('scavenging: taking a card', () => {
     );
     const after = run(s, { type: 'scavengeTake', card: 0, picks: ['grass'] });
     expect(hiker(after, 'ash').inventory.resources.grass).toBe(2);
-    expect(after.abundance.forest).toBe(BALANCE.abundance.start - 2);
+    expect(after.abundance).toBe(BALANCE.abundance.start - 2);
   });
 
   it('lets Pair of the Wild pick any two of all 16, the same or different', () => {
@@ -228,13 +226,12 @@ describe('scavenging: taking a card', () => {
     expect(hiker(after, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['dogFood']);
   });
 
-  it('drains both nodes for Mixed, and 1 extra from a Bounty node', () => {
+  it('drains once for Mixed, and 1 extra from a Bounty node', () => {
     const mixed = run(
       withCard(onForest(), { type: 'mixed', node2: 'river', resources: ['wood', 'fish'] }),
       { type: 'scavengeTake', card: 0 },
     );
-    expect(mixed.abundance.forest).toBe(BALANCE.abundance.start - 1);
-    expect(mixed.abundance.river).toBe(BALANCE.abundance.start - 1);
+    expect(mixed.abundance).toBe(BALANCE.abundance.start - 1);
 
     const bounty = run(
       withCard(onForest(), { type: 'resource', bounty: true, resources: ['wood'] }),
@@ -243,17 +240,17 @@ describe('scavenging: taking a card', () => {
         card: 0,
       },
     );
-    expect(bounty.abundance.forest).toBe(BALANCE.abundance.start - 2);
+    expect(bounty.abundance).toBe(BALANCE.abundance.start - 2);
   });
 
-  it('never drains a meter below 0', () => {
+  it('never drains the bar below 0', () => {
     const s = onForest();
-    s.abundance.forest = 1;
+    s.abundance = 1;
     const after = run(withCard(s, { type: 'x3', resources: ['wood', 'wood', 'wood'] }), {
       type: 'scavengeTake',
       card: 0,
     });
-    expect(after.abundance.forest).toBe(0);
+    expect(after.abundance).toBe(0);
   });
 
   it('forgets today’s scavenges the next morning', () => {
@@ -286,7 +283,8 @@ describe('save version 2', () => {
     const loaded = deserialize(JSON.stringify({ ...v1, saveVersion: 1 }));
     expect(loaded.ok).toBe(true);
     if (loaded.ok) {
-      expect(loaded.state.abundance).toEqual({ forest: 8, river: 8, wildlife: 8, mountain: 8 });
+      // Four meters at 8 of 10 then, one bar at 16 of 20 now (v14).
+      expect(loaded.state.abundance).toBe(16);
       expect(loaded.state.scavengedToday).toEqual([]);
     }
   });

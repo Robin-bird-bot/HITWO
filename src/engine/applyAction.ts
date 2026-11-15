@@ -43,6 +43,7 @@ import {
   validateTeach,
 } from './actions/craft';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applySubmitToInjury, validateSubmitToInjury } from './actions/injure';
 import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
@@ -173,6 +174,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validatePickUp(state, action) ?? null;
     case 'abandon':
       return validateAbandon(state, action) ?? null;
+    case 'submitToInjury':
+      return validateSubmitToInjury(state, action) ?? null;
     case 'putOn':
       return validatePutOn(state, action) ?? null;
     case 'takeOff':
@@ -282,6 +285,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'abandon':
       applyAbandon(draft, action);
+      break;
+    case 'submitToInjury':
+      applySubmitToInjury(draft, action);
       break;
     case 'putOn':
       applyPutOn(draft, action);

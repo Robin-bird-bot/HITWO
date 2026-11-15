@@ -239,24 +239,10 @@
   font-size: 18px;
 }
 
-.lowNode {
-  position: relative;
-  display: flex;
-}
-
-.lowNode span {
-  position: absolute;
-  right: -5px;
-  top: -5px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #e5624a;
-  color: #1d2220;
-  font-size: 10px;
+.capsPart {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
 }
 
 /* ── Turn panel ── */
@@ -393,4 +379,30 @@
 
 .carryNote[data-tone='carry'] {
   color: var(--gold);
+}
+
+/* A portrait while a pack thing is dragged: it glows if they can take it (Nov 14 update). */
+.card[data-drop='ok'] {
+  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.8);
+}
+
+.card[data-drop='hover'] {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 18px rgba(233, 180, 76, 0.5);
+}
+
+.card[data-drop='no'] {
+  opacity: 0.55;
+}
+
+/* Multi-select (Nov 14 update): the Select toggle beside the count, and a grouped card. */
+.asideRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card[data-grouped] {
+  border-color: rgba(233, 180, 76, 0.85);
 }

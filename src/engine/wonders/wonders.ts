@@ -239,7 +239,7 @@ function checkGoal(
     case 'caps':
       return { met: compare(state.caps, n, how), readout: `${state.caps}/${n}` };
     case 'abundance': {
-      const value = state.abundance[c.node];
+      const value = state.abundance;
       return { met: compare(value, n, how), readout: `${value}/${n}` };
     }
     case 'itemsOfType':
@@ -356,8 +356,6 @@ export function pickProblem(
         return `${h.name} needs ${r.reward.count} free bag slots for this.`;
       }
       return undefined;
-    case 'abundance':
-      return choice.node && NODE_TYPES.includes(choice.node) ? undefined : 'Pick a node type.';
     case 'doubleDurability':
       return mostDurable(h) ? undefined : `${h.name} isn’t wearing any clothes.`;
     default:
@@ -454,7 +452,7 @@ function giveReward(
       return;
     }
     case 'abundance':
-      if (choice.node) changeAbundance(state, choice.node, reward.amount);
+      changeAbundance(state, reward.amount);
       return;
     case 'cureInjuries':
       cureInjuries(state, h, h.injuries, cause);

@@ -1,0 +1,45 @@
+/* The one Abundance bar (Nov 14 update). Stage pixels. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  border-radius: 6px;
+}
+
+.bar:focus-visible {
+  outline: 2px solid #f1eadb;
+  outline-offset: 3px;
+}
+
+.track {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  transition:
+    width 0.4s ease,
+    background-color 0.4s ease;
+}
+
+.value {
+  min-width: 22px;
+  text-align: right;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}

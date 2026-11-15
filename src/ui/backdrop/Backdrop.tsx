@@ -48,7 +48,7 @@ const LAND: Record<BiomeId, { src: string; parallax: number }[]> = {
     { src: ASSETS.land.greenRidge, parallax: 0.3 },
     { src: ASSETS.land.grassHills, parallax: 0.5 },
   ],
-  // Phase 11 adds the Rainforest and Alpine layers.
+  // The UI overhaul (Phase 12) adds the Rainforest and Alpine art.
   temperateRainforest: [],
   alpine: [],
 };

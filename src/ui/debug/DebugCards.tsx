@@ -4,13 +4,13 @@
  * deals 1,000 seeded cards and compares the rarities with balance.ts.
  */
 import { useMemo, useState } from 'react';
+import { BALANCE } from '../../config/balance';
 import { SCAVENGE_CARDS, SCAVENGE_CARD_ORDER } from '../../content';
 import {
   RARITIES,
   dealCards,
   rarityOdds,
   seedRng,
-  type NodeType,
   type ScavengeCard,
   type ScavengeCardType,
   type TileNode,
@@ -96,6 +96,25 @@ const SECTIONS: { title: string; note: string; cards: { card: ScavengeCard; back
         ['choiceTool', 'choiceFood', 'choiceClothes', 'choiceShelter', 'choiceTrinket'] as const
       ).map((t) => ({ card: card(t, { items: [] }) })),
     },
+    {
+      title: 'Item cards',
+      note: 'Nov 14 update · the real item, its Quality rolled when dealt · as rare as the find of its type',
+      cards: [
+        { card: card('toolCard', { items: ['shovel'], itemQuality: 4 }) },
+        { card: card('foodCard', { items: ['trailMix'], itemQuality: 2 }) },
+        { card: card('clothesCard', { items: ['plainShirt'], itemQuality: 3 }) },
+        { card: card('shelterCard', { items: ['tent'] }) },
+        { card: card('trinketCard', { items: ['ring'] }) },
+      ],
+    },
+    {
+      title: 'Empty',
+      note: 'Nov 14 update · any resource card can come up Empty when Abundance is low (placeholder art)',
+      cards: [
+        { card: card('resource', { node: 'forest', resources: ['wood'], empty: true }) },
+        { card: card('x2', { node: 'river', resources: ['fish', 'fish'], empty: true }) },
+      ],
+    },
   ];
 
 const TILES: { label: string; nodes: TileNode[] }[] = [
@@ -124,7 +143,8 @@ const TILES: { label: string; nodes: TileNode[] }[] = [
   },
 ];
 
-const FULL: Record<NodeType, number> = { forest: 10, river: 10, wildlife: 10, mountain: 10 };
+/** A full Abundance bar: the card odds without Empty cards mattering much. */
+const FULL = BALANCE.abundance.max;
 const DEALS = 1000;
 
 export function DebugCards() {

@@ -555,14 +555,12 @@ function applyOnce(
       return;
     }
     case 'abundance': {
-      for (const node of e.nodes) {
-        let drop = e.delta !== undefined ? amount(e.delta, ctx) : 0;
-        if (e.repeatChance !== undefined) {
-          // "75% chance to drop 1; repeat until it fails."
-          while (roll(state.rng, e.repeatChance)) drop += 1;
-        }
-        changeAbundance(state, node, -drop);
+      let drop = e.delta !== undefined ? amount(e.delta, ctx) : 0;
+      if (e.repeatChance !== undefined) {
+        // "75% chance to drop 1; repeat until it fails."
+        while (roll(state.rng, e.repeatChance)) drop += 1;
       }
+      changeAbundance(state, -drop);
       return;
     }
     case 'nodesVanish': {

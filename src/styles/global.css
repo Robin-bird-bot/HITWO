@@ -53,6 +53,21 @@ button {
   }
 }
 
+/*
+ * On a phone a long-press opens a preview and a press-and-move starts a drag:
+ * neither should select text or bring up the browser's image menu.
+ */
+img {
+  -webkit-touch-callout: none;
+}
+
+[data-previewable],
+[data-draggable] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Movable windows (src/ui/windows): grab them by the title bar. */
 [data-drag-handle] {
   cursor: grab;

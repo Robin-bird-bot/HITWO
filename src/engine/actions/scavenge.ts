@@ -3,7 +3,9 @@
  * - Dealing costs nothing. "Not now" is allowed until a card is flipped, and
  *   puts the RNG back, so dealing again gives the same cards.
  * - Taking a card pays the Appetite, uses the hiker's phase, gives what the
- *   card shows, and drains the card's node.
+ *   card shows, and drains the biome's Abundance (Nov 14 update: one bar).
+ * - An Empty card (low Abundance) gives nothing, but still costs the scavenge
+ *   and drains as usual. TODO(wyatt): first guess.
  * - A Sack keeps more cards: after the first, the window stays open for
  *   another take (no more Appetite or action), or Done.
  * While a scavenge is open, every other action waits (see applyAction).
@@ -182,7 +184,7 @@ export function validateTake(state: GameState, action: TakeAction): string | und
   const reason = notActiveReason(hiker);
   if (reason || !hiker) return reason;
 
-  if (card.pick) {
+  if (card.pick && !card.empty) {
     const picks = action.picks ?? [];
     if (picks.length !== card.pick.count) {
       return card.pick.count === 1
@@ -192,7 +194,7 @@ export function validateTake(state: GameState, action: TakeAction): string | und
     const allowed = pickOptions(card.pick.from);
     if (picks.some((r) => !allowed.includes(r))) return 'That resource isn’t on this card.';
   }
-  if (card.items) {
+  if (card.items && !card.empty) {
     if (SCAVENGE_CARDS[card.type].choiceItem) {
       if (!action.item) return 'Pick an item first.';
       if (!card.items.includes(action.item)) return 'That item isn’t on this card.';
@@ -211,6 +213,7 @@ export function cardGains(
   item?: ItemId,
 ): { resources: ResourceId[]; caps: number; items: ItemId[] } {
   const def = SCAVENGE_CARDS[card.type];
+  if (card.empty) return { resources: [], caps: 0, items: [] };
   const resources = card.pick
     ? picks.flatMap((r) => Array.from({ length: card.pick?.each ?? 1 }, () => r))
     : (card.resources ?? []);
@@ -277,20 +280,22 @@ export function applyTake(state: GameState, action: TakeAction): void {
   for (const r of kept) hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) + 1;
   const caps = gainCaps(state, gains.caps);
   for (const itemId of gains.items) {
-    hiker.inventory.bag.push(makeItem(state, itemId, { prefix: 'found' }));
+    // An item card keeps the Quality it was dealt with.
+    const quality = card.itemQuality;
+    hiker.inventory.bag.push(
+      makeItem(state, itemId, { prefix: 'found', ...(quality ? { quality } : {}) }),
+    );
   }
 
   const nodes: NodeType[] = [];
   if (card.node) {
-    // Bonus resources a hiker chooses to take drain Abundance too.
+    // One bar: the card's drain, a Bounty's extra, and bonus resources a hiker
+    // chooses to take. A Mixed card drains once. TODO(wyatt): first guess.
     const drain = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0) + bonusKept;
-    changeAbundance(state, card.node, -drain);
+    changeAbundance(state, -drain);
     nodes.push(card.node);
   }
-  if (card.node2) {
-    changeAbundance(state, card.node2, -def.drain);
-    nodes.push(card.node2);
-  }
+  if (card.node2) nodes.push(card.node2);
   state.scavengedToday.push({ hikerId: hiker.id, tileId: open.tileId, nodes });
 
   pushEvent(state, {
@@ -303,6 +308,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     ...(gains.items.length ? { items: gains.items } : {}),
     ...(kept.length < all.length ? { left: all.length - kept.length } : {}),
     ...(bonusKept ? { bonus: bonusKept } : {}),
+    ...(card.empty ? { empty: true as const } : {}),
   });
   close();
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');

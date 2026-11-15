@@ -43,8 +43,8 @@ describe('stat changes while a condition lasts (given back when it ends)', () =>
     expect(ash(s).stats.appetite).toBe(8);
     const next = run(toNight(s), END);
     expect(ash(next).conditions.some((c) => c.id === 'nauseous')).toBe(false);
-    // Back +2, less the end-of-day Appetite.
-    expect(ash(next).stats.appetite).toBe(10 - BALANCE.endOfDay.appetite);
+    // Back +2, and no Appetite is lost overnight (Nov 14 update).
+    expect(ash(next).stats.appetite).toBe(10);
   });
 
   it('Energized can push past 10, and takes its +1 back when it ends, never below 0', () => {

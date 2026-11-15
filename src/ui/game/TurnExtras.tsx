@@ -1,50 +1,9 @@
 /**
- * Small boxes shown under the action grid: who's coming along for Move All,
- * the Sleep and Keep Watch confirms, and which node to Tend.
+ * Small boxes shown under the action grid: the Sleep, Keep Watch and Tend
+ * confirms. (Who comes along for Move All is picked in the move pop-up.)
  */
 import { useEffect, useRef } from 'react';
-import type { HikerId, NodeType } from '../../engine';
-import { NODE_IMAGE, NODE_NAME } from '../map/looks';
-import type { BringOption } from './movePlan';
 import styles from './TurnExtras.module.css';
-
-interface MoveAllPickerProps {
-  options: BringOption[];
-  bring: HikerId[];
-  onToggle(id: HikerId): void;
-  onCancel(): void;
-}
-
-export function MoveAllPicker({ options, bring, onToggle, onCancel }: MoveAllPickerProps) {
-  const count = bring.length;
-  return (
-    <div className={styles.box}>
-      <span className={styles.kicker}>MOVE ALL · WHO’S COMING?</span>
-      <div className={styles.list}>
-        {options.map(({ hiker, reason }) => (
-          <label key={hiker.id} className={styles.option} data-disabled={reason !== null}>
-            <input
-              type="checkbox"
-              checked={bring.includes(hiker.id)}
-              disabled={reason !== null}
-              onChange={() => onToggle(hiker.id)}
-            />
-            <span className={styles.name}>{hiker.name}</span>
-            {reason && <span className={styles.why}>{reason}</span>}
-          </label>
-        ))}
-      </div>
-      <span className={styles.hint}>
-        {count === 0
-          ? 'Tick at least one hiker to bring along.'
-          : `Each hiker you bring costs you 1 more Appetite. Now click a gold tile.`}
-      </span>
-      <button type="button" className={styles.cancel} onClick={onCancel}>
-        Cancel
-      </button>
-    </div>
-  );
-}
 
 interface SleepConfirmProps {
   name: string;
@@ -130,21 +89,22 @@ export function WatchConfirm({ name, others, noSleep, onConfirm, onCancel }: Wat
   );
 }
 
-interface TendPickerProps {
-  /** The tile's nodes with their meters. */
-  nodes: { node: NodeType; from: number; to: number; full: boolean }[];
-  gain: number;
-  /** Tend's Energy cost. */
-  energy: number;
-  onTend(node: NodeType): void;
+interface TendConfirmProps {
+  name: string;
+  /** Abundance now, and after Tend. */
+  from: number;
+  to: number;
+  /** Tend's Appetite cost. */
+  appetite: number;
+  onConfirm(): void;
   onCancel(): void;
 }
 
-/** Tend: pick which node on this tile to restore. */
-export function TendPicker({ nodes, gain, energy, onTend, onCancel }: TendPickerProps) {
-  const firstRef = useRef<HTMLButtonElement>(null);
+/** Tend: raise the biome's Abundance, for 1 Appetite (Nov 14 update). */
+export function TendConfirm({ name, from, to, appetite, onConfirm, onCancel }: TendConfirmProps) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    firstRef.current?.focus();
+    confirmRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
     };
@@ -152,41 +112,103 @@ export function TendPicker({ nodes, gain, energy, onTend, onCancel }: TendPicker
     return () => window.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  const firstOpen = nodes.findIndex((n) => !n.full);
   return (
     <div className={styles.box}>
       <span className={styles.kicker}>
-        TEND · +{gain} ABUNDANCE · −{energy} ENERGY
+        TEND · +{to - from} ABUNDANCE · −{appetite} APPETITE
       </span>
-      <div className={styles.list}>
-        {nodes.map(({ node, from, to, full }, i) => {
-          return (
-            <button
-              key={node}
-              ref={i === firstOpen ? firstRef : undefined}
-              type="button"
-              className={styles.node}
-              disabled={full}
-              onClick={() => onTend(node)}
-            >
-              <img src={NODE_IMAGE[node]} alt="" width={22} height={25} />
-              <span className={styles.name}>{NODE_NAME[node]}</span>
-              <span className={styles.meter}>
-                {full ? (
-                  'Full'
-                ) : (
-                  <>
-                    {from} → <b>{to}</b>
-                  </>
-                )}
-              </span>
-            </button>
-          );
-        })}
+      <span className={styles.text}>
+        {name} tends the land: Abundance {from} → <b>{to}</b>.
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          Cancel
+        </button>
+        <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
+          Tend
+        </button>
       </div>
-      <button type="button" className={styles.cancel} onClick={onCancel}>
-        Cancel
-      </button>
+    </div>
+  );
+}
+
+const GROUP_WORD = {
+  move: 'MOVE',
+  scavenge: 'SCAVENGE',
+  tend: 'TEND',
+  sleep: 'SLEEP',
+  watch: 'KEEP WATCH',
+} as const;
+
+interface GroupConfirmProps {
+  kind: keyof typeof GROUP_WORD;
+  /** The hikers' names, in turn order. */
+  names: string[];
+  /** Move: the tile, once it's picked (until then, it asks for one). */
+  where?: string;
+  onGo(): void;
+  onCancel(): void;
+}
+
+/** Multi-select (Nov 14 update): one action for the group, each hiker in turn. */
+export function GroupConfirm({ kind, names, where, onGo, onCancel }: GroupConfirmProps) {
+  const goRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef(onCancel);
+  const ready = kind !== 'move' || !!where;
+  useEffect(() => {
+    cancelRef.current = onCancel;
+  });
+  // Go takes the focus once it shows, not again on every redraw.
+  useEffect(() => {
+    if (ready) goRef.current?.focus();
+  }, [ready]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cancelRef.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>
+        {GROUP_WORD[kind]} · {names.length} HIKERS
+      </span>
+      <span className={styles.text}>
+        {kind === 'move' && !where
+          ? 'Pick a tile on the map (or drag one of them there).'
+          : `${kind === 'move' ? `To ${where}. ` : ''}One after another: ${names.join(', then ')}.${
+              kind === 'move' ? ' Each pays their own way.' : ''
+            }`}
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          Cancel
+        </button>
+        {ready && (
+          <button ref={goRef} type="button" className={styles.confirm} onClick={onGo}>
+            Go
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A grouped move: this hiker couldn't reach the tile, so they pick their own, or skip. */
+export function GroupOwnTile({ name, onSkip }: { name: string; onSkip(): void }) {
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>{name.toUpperCase()}’S TURN</span>
+      <span className={styles.text}>
+        {name} can’t reach that tile. Pick another tile for {name}, or skip.
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onSkip}>
+          Skip {name}
+        </button>
+      </div>
     </div>
   );
 }

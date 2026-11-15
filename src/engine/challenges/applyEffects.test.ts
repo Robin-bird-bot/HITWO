@@ -91,9 +91,9 @@ describe('the effect engine', () => {
     let total = 0;
     for (let seed = 0; seed < 300; seed++) {
       const s = fixtureGame({ seed });
-      s.abundance.forest = 10;
-      run(s, [{ op: 'abundance', nodes: ['forest'], repeatChance: 0.75 }]);
-      total += 10 - s.abundance.forest;
+      s.abundance = 10;
+      run(s, [{ op: 'abundance', repeatChance: 0.75 }]);
+      total += 10 - s.abundance;
     }
     // Expected drops: 0.75 / 0.25 = 3 (capped at the meter).
     expect(total / 300).toBeGreaterThan(2.4);

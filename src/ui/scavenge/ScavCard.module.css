@@ -102,6 +102,24 @@ button.card:hover {
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
 }
 
+/* An Empty card (placeholder art): the node's backdrop, faded, and the word. */
+.emptyBg {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  letter-spacing: 0.08em;
+  color: #f1eadb;
+  text-shadow: 0 3px 0 rgba(20, 28, 25, 0.45);
+}
+
 .glyph {
   position: absolute;
   inset: 0;

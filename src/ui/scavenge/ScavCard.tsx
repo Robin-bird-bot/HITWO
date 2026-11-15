@@ -19,6 +19,8 @@ import {
   resourcesTitle,
 } from './cardLook';
 import { ItemBack } from './ItemBack';
+import { ItemCard } from '../items/ItemCard';
+import { withPreview, type PreviewHandlers } from '../preview/preview';
 import styles from './ScavCard.module.css';
 
 /** Where 1, 2 or 3 resource icons sit, as fractions of the card: left, top, width. */
@@ -49,6 +51,10 @@ export interface ScavCardProps {
   /** Show what a Wild card turned out to be. */
   reveal?: boolean;
   onClick?(): void;
+  /** Hover or long-press for the large card (usePreview). */
+  preview?: PreviewHandlers;
+  /** Its place on the table, so a kept card can slide from there into the pack. */
+  index?: number;
 }
 
 export function ScavCard({
@@ -61,20 +67,26 @@ export function ScavCard({
   dim,
   reveal,
   onClick,
+  preview,
+  index,
 }: ScavCardProps) {
   const def = SCAVENGE_CARDS[card.type];
   const revealed = reveal && !!def.glyph && !!card.resources?.length;
   const title = revealed ? resourcesTitle(card.resources ?? []) : cardTitle(card);
   const rarity = RARITY_LOOK[card.rarity];
   const label = faceUp
-    ? `${title}: ${cardText(card)}. ${rarity.name}.`
+    ? card.empty
+      ? `${title}: ${cardText(card)}.`
+      : `${title}: ${cardText(card)}. ${rarity.name}.`
     : `Face-down card from ${backName(card)}. Flip it.`;
 
   const Tag = onClick ? 'button' : 'div';
   return (
     <div className={styles.wrap} style={{ width: S + 20, opacity: dim ? 0.45 : 1 }}>
       <Tag
-        {...(onClick ? { type: 'button' as const, onClick } : {})}
+        {...(onClick ? { type: 'button' as const } : {})}
+        {...(index !== undefined ? { 'data-scav-card': index } : {})}
+        {...withPreview(onClick ? { onClick } : {}, preview ?? {})}
         className={styles.card}
         style={{ width: S, height: S }}
         data-selected={selected ? 'true' : undefined}
@@ -96,7 +108,7 @@ export function ScavCard({
             {faceUp ? title : backCaption}
           </span>
           {faceUp && caption === 'full' && <span className={styles.text}>{cardText(card)}</span>}
-          {faceUp && (
+          {faceUp && !card.empty && (
             <span className={styles.rarity} title={rarity.name}>
               {Array.from({ length: 6 }, (_, i) => (
                 <span
@@ -150,6 +162,22 @@ function Front({
 }) {
   const def = SCAVENGE_CARDS[card.type];
   const layers = faceLayers(card);
+  if (card.empty) {
+    // Placeholder art (Nov 14 update): the node's backdrop, faded, and "EMPTY".
+    return (
+      <>
+        <img
+          className={`${styles.fill} ${styles.emptyBg}`}
+          src={layers.bg}
+          alt=""
+          draggable={false}
+        />
+        <div className={styles.empty} style={{ fontSize: Math.round(S * 0.17) }}>
+          EMPTY
+        </div>
+      </>
+    );
+  }
   const resources = card.resources ?? [];
   const icons = revealed
     ? (def.mult ? resources.slice(0, 1) : resources).map((id) => ASSETS.resources[id] ?? '')
@@ -218,7 +246,20 @@ function Front({
         />
       )}
 
-      {itemType && !def.choiceItem && (
+      {def.itemCard && card.items?.[0] ? (
+        // An item card (Nov 14 update): the real card, with the Quality it was dealt.
+        <ItemCard
+          itemId={card.items[0]}
+          {...(card.itemQuality ? { item: { quality: card.itemQuality } } : {})}
+          width={Math.round(S * 0.62)}
+          style={{
+            position: 'absolute',
+            left: Math.round(S * 0.19),
+            top: Math.round(S * 0.066),
+          }}
+        />
+      ) : null}
+      {itemType && !def.choiceItem && !def.itemCard && (
         <ItemBack
           type={itemType}
           width={Math.round(S * 0.5)}

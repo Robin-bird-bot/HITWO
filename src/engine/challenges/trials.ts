@@ -132,6 +132,7 @@ export function applyAccept(state: GameState): void {
     ...(open.trial?.resource ? { resource: open.trial.resource } : {}),
     ...(open.trial?.itemType ? { itemType: open.trial.itemType } : {}),
     ...(card.goal.kind === 'rangerRequest' ? { gathered: {} } : {}),
+    ...(card.goal.kind === 'abundanceRise' ? { startAbundance: state.abundance } : {}),
   };
   state.trials = [...(state.trials ?? []), trial];
   pushEvent(state, {
@@ -191,8 +192,10 @@ function metNow(state: GameState, trial: ActiveTrial, card: TrialDef, h: Hiker):
     }
     case 'apart':
       return present(state).filter((x) => x.tileId === h.tileId).length === 1;
-    case 'abundance':
-      return state.abundance[goal.node] >= amount(goal.atLeast, { rolls: trial.rolls, onTile: [] });
+    case 'abundanceRise': {
+      const by = amount(goal.by, { rolls: trial.rolls, onTile: [] });
+      return state.abundance - (trial.startAbundance ?? state.abundance) >= by;
+    }
     default:
       // Judged as things happen (Rocco, sleeping, acting) or at the deadline.
       return trial.done.includes(h.id);
@@ -200,7 +203,7 @@ function metNow(state: GameState, trial: ActiveTrial, card: TrialDef, h: Hiker):
 }
 
 /** Goals about the whole party (everyone together, everyone apart, a meter). */
-const PARTY_GOALS = new Set(['together', 'apart', 'abundance']);
+const PARTY_GOALS = new Set(['together', 'apart', 'abundanceRise']);
 /** Goals judged only at the deadline, never ended early. */
 const DEADLINE_ONLY = new Set([
   'skipAction',

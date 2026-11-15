@@ -420,9 +420,16 @@ export const BALANCE = {
     ] as { luck: number; odds: Record<Rarity, number> }[],
     /**
      * How likely each card type is within its rarity (1 when not listed).
-     * TODO(wyatt): all equally likely to start.
+     * TODO(wyatt): all equally likely to start. The item cards (Nov 14 update)
+     * share their rarity with the random finds of the same type: [1] each.
      */
-    typeWeights: {} as Partial<Record<ScavengeCardType, number>>,
+    typeWeights: {
+      toolCard: 1,
+      foodCard: 1,
+      clothesCard: 1,
+      shelterCard: 1,
+      trinketCard: 1,
+    } as Partial<Record<ScavengeCardType, number>>,
     /** A Cap node on the tile makes Acorn caps cards this many times likelier. TODO(wyatt): first guess. */
     capNodeCapsWeight: 4,
     /** From a Bounty node, cards that give 2 or more resources are this many times likelier. TODO(wyatt): first guess. */
@@ -506,29 +513,32 @@ export const BALANCE = {
     fromMorale: { atZero: -2, atTen: 2 },
   },
 
+  /** One Abundance bar for the whole biome (Nov 14 update; it was a meter per node). */
   abundance: {
-    /** Each node type's meter runs 0 to max (Main.dc.html shows 0–10). */
-    max: 10,
-    /** Every meter starts each biome here ("about 75%"). TODO(wyatt): first guess. */
-    start: 8,
-    /** At or below this a node is low (Main.dc.html colours 4 and under red). */
-    lowAt: 4,
+    /** The bar runs 0 to max. TODO(wyatt): [20]. */
+    max: 20,
+    /** It starts each biome here. TODO(wyatt): [15]. */
+    start: 15,
+    /** Each night it recovers this much. TODO(wyatt): [+1]. */
+    nightRecovery: 1,
     /** Cards from a Bounty node drain this much extra. TODO(wyatt): first guess. */
     bountyExtraDrain: 1,
-    /** Tend restores this much to one node on the tile (day only). TODO(wyatt): first guess. */
+    /** Tend raises it this much (day only). TODO(wyatt): [+2]. */
     tend: 2,
-    /** Tend costs this much Energy (Wyatt, Nov 5). */
-    tendEnergy: 1,
-    /** Each night, every node nobody scavenged that day recovers this much. */
-    nightRecovery: 1,
-    /** Returning a resource to nature restores this much to its node. */
+    /** Tend costs this much Appetite (Nov 14 update; it was 1 Energy). */
+    tendAppetite: 1,
+    /** Returning a resource to nature raises it this much. */
     returnToNature: 1,
     /**
-     * When every resource node on the tile is low: fewer cards and less Luck
-     * ("a low meter means fewer cards to choose from, rarer good results").
-     * TODO(wyatt): first guess.
+     * Each resource card dealt comes up Empty with this chance: `atFull` with
+     * the bar full, rising evenly to `atZero` with it empty. Caps and item
+     * cards are never Empty. TODO(wyatt): [5%] and [40%].
+     *
+     * The scavenger's Luck changes it by `perLuck` of itself for each point,
+     * both ways (Wyatt, Nov 14): Luck +5 halves it, Luck −5 makes it half as
+     * much again.
      */
-    lowTile: { cards: -1, luck: -1 },
+    emptyChance: { atFull: 0.05, atZero: 0.4, perLuck: 0.1 },
   },
 
   inventory: {
@@ -550,10 +560,6 @@ export const BALANCE = {
      * TODO(wyatt): placeholder until Phase 10 sets XP and leveling.
      */
     levelAt: [0, 50, 150, 300, 500, 750],
-  },
-
-  endOfDay: {
-    appetite: 1,
   },
 
   /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
@@ -653,18 +659,16 @@ export const BALANCE = {
   },
 
   rules: {
-    /** TODO(wyatt): at camp, the no-sleep Energy drain happens before the end-of-day Appetite drain. */
-    noSleepDrainFirst: true,
     /** Passed-out hikers skip the camp-step drains: they're out cold (Wyatt, Nov 7). */
     passedOutHikersDrainAtCamp: false,
     /** TODO(wyatt): two percentage modifiers multiply in turn (−50% twice = 25%) rather than add. */
     percentModifiersMultiply: true,
     /**
-     * TODO(wyatt): who can be brought along by Move All. Being brought uses the
-     * hiker's action, so an Exhausted hiker can't be brought in the day and a
-     * Fatigued one can't be brought at night. Hungry and Famished hikers can.
+     * Who can be brought along by Move All (Wyatt, Nov 14): anyone who hasn't
+     * acted, however tired or hungry, since another hiker moves them. Being
+     * brought still uses their action.
      */
-    exhaustedOrFatiguedCanBeBrought: false,
+    exhaustedOrFatiguedCanBeBrought: true,
   },
 
   /** One section's trail: a tree from the trailhead to the checkpoint (Phase 2). */
@@ -712,5 +716,21 @@ export const BALANCE = {
 
   log: {
     maxEvents: 200,
+  },
+
+  /** Screen timings (Nov 14 update). */
+  ui: {
+    /** Hovering a card or item this long (ms) opens its preview. TODO(wyatt): [400 ms]. */
+    previewHoverMs: 400,
+    /** A long-press on a phone: this long (ms) opens the preview instead of a tap. */
+    longPressMs: 450,
+    /**
+     * The forest outside a station's windows drifts left: seconds for the
+     * farthest layer to loop, and for the nearest; the ones between are
+     * spaced evenly. TODO(wyatt): [180 s] and [70 s].
+     */
+    stationDrift: { farSeconds: 180, nearSeconds: 70 },
+    /** Multi-select: each grouped hiker acts this long (ms) after the last. TODO(wyatt): first guess. */
+    groupStepMs: 350,
   },
 };

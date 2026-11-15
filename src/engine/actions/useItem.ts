@@ -231,11 +231,7 @@ function uselessReason(
       : undefined;
   }
   if (use.abundance) {
-    const nodes = tileNodeTypes(state, user.tileId);
-    if (!nodes.length) return 'This tile has no nodes.';
-    return nodes.some((n) => state.abundance[n] < BALANCE.abundance.max)
-      ? undefined
-      : 'Every node here is already at full Abundance.';
+    return state.abundance < BALANCE.abundance.max ? undefined : 'Abundance is already full.';
   }
   if (use.addNode) {
     return nodeChoices(state, user).length ? undefined : `This tile can’t take another node.`;
@@ -377,13 +373,8 @@ export function applyUse(state: GameState, action: UseAction): void {
   }
   if (use.abundance) {
     const n = v(use.abundance.value);
-    const nodes = tileNodeTypes(state, user.tileId);
-    const which =
-      use.abundance.which === 'all' ? nodes : nodes.length ? [pick(state.rng, nodes)] : [];
-    for (const node of which) {
-      changeAbundance(state, node, n);
-      details.push(`${NODE_NAME[node]} Abundance +${n}`);
-    }
+    changeAbundance(state, n);
+    details.push(`Abundance +${n}`);
   }
   if (use.addNode && tile) {
     const node = action.choice as NodeType;

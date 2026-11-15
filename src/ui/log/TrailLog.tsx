@@ -3,6 +3,7 @@ import type { GameState } from '../../engine';
 import { Panel } from '../panels/Panel';
 import { usePanelCollapsed } from '../panels/panelState';
 import panel from '../panels/Panel.module.css';
+import { ItemText } from '../preview/ItemText';
 import { describeLog } from './describeLog';
 import styles from './TrailLog.module.css';
 
@@ -34,7 +35,7 @@ export function TrailLog({ state }: { state: GameState }) {
         {lines.length === 0 && <li className={styles.empty}>Nothing yet. The hike begins!</li>}
         {lines.map((l) => (
           <li key={`${l.id}-${l.part ?? 0}`} className={styles.line} data-tone={l.tone}>
-            {l.text}
+            <ItemText text={l.text} />
           </li>
         ))}
       </ol>

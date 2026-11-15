@@ -122,11 +122,16 @@ export function shiftStat(
   pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
 }
 
-export function addInjury(state: GameState, hiker: Hiker, cause: string): void {
+export function addInjury(
+  state: GameState,
+  hiker: Hiker,
+  cause: string,
+  { chosen = false }: { chosen?: boolean } = {},
+): void {
   // Injuries stop at the one that passes a hiker out.
   if (hiker.status === 'abandoned' || hiker.injuries >= BALANCE.injuries.passOutAt) return;
-  // Something blocks it (a Star; the Hardhat).
-  if (blocksInjury(state, hiker, cause)) return;
+  // Something blocks it (a Star; the Hardhat), unless the hiker chose it.
+  if (!chosen && blocksInjury(state, hiker, cause)) return;
   hiker.injuries += 1;
   pushEvent(state, { kind: 'injury', hikerId: hiker.id, injuries: hiker.injuries, cause });
 

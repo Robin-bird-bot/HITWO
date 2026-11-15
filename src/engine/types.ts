@@ -362,7 +362,13 @@ export type ScavengeCardType =
   | 'choiceFood'
   | 'choiceClothes'
   | 'choiceShelter'
-  | 'choiceTrinket';
+  | 'choiceTrinket'
+  /** Item cards (Nov 14 update): the real item, Quality rolled, face up when flipped. */
+  | 'toolCard'
+  | 'foodCard'
+  | 'clothesCard'
+  | 'shelterCard'
+  | 'trinketCard';
 
 /**
  * Why a hiker was safe from a night event: someone kept watch, a shelter, a
@@ -380,10 +386,12 @@ export interface ScavengeCard {
   type: ScavengeCardType;
   rarity: Rarity;
   /**
-   * The node the card came from; taking it drains this node's Abundance.
-   * Null only on a tile with nothing but Cap nodes.
+   * The node the card came from (its art and resources); taking it drains the
+   * biome's Abundance. Null only on a tile with nothing but Cap nodes.
    */
   node: NodeType | null;
+  /** A resource card that came up Empty (low Abundance): it gives nothing. */
+  empty?: true;
   /** Mixed cards: the second node. */
   node2?: NodeType;
   /** Came from a Bounty node (extra Abundance cost). */
@@ -395,6 +403,8 @@ export interface ScavengeCard {
   caps?: number;
   /** Item finds: the item. Choice items: the items to pick 1 from. */
   items?: ItemId[];
+  /** An item card's Quality, rolled when it was dealt (the plain curve); kept as it is. */
+  itemQuality?: 1 | 2 | 3 | 4 | 5;
   flipped: boolean;
   /** Already taken, on a scavenge that keeps more than one card (a Sack). */
   taken?: true;
@@ -594,6 +604,8 @@ export interface ActiveTrial {
   gathered?: Record<HikerId, number>;
   /** Rocco's Rebuilding Trial: the item type to craft. */
   itemType?: ItemTypeName;
+  /** Overfished: the biome's Abundance when it started (it has to rise from here). */
+  startAbundance?: number;
 }
 
 // ── Randomness ─────────────────────────────────────────────────────────────
@@ -626,17 +638,22 @@ export type Action =
     }
   /** Rerolls one flipped card (Gambler's ability). */
   | { type: 'scavengeReroll'; card: number }
-  /** Restores Abundance for a node on the hiker's tile (day only). */
-  | { type: 'tend'; hikerId: HikerId; node: NodeType }
+  /** Raises the biome's Abundance from a tile with a resource node (day only). */
+  | { type: 'tend'; hikerId: HikerId }
   /** A free action: hands one resource or bag item to a hiker on the same tile. */
   | { type: 'give'; fromId: HikerId; toId: HikerId; resource?: ResourceId; itemUid?: string }
-  /** A free action: puts a resource back, +1 Abundance to its node. */
+  /** A free action: puts a resource back, +1 Abundance. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   /**
    * The hiker leaves the party for good, taking everything they carry. Any
    * hiker, any time; the UI confirms it first.
    */
   | { type: 'abandon'; hikerId: HikerId }
+  /**
+   * A free action: the hiker takes an injury on purpose, raising every stat
+   * below the line back up to it (a way out when stuck). The UI confirms it.
+   */
+  | { type: 'submitToInjury'; hikerId: HikerId }
   /** A free action: picks up a passed-out hiker on the same tile, to carry them along. */
   | { type: 'pickUp'; carrierId: HikerId; hikerId: HikerId }
   /** A free action: puts down the hiker being carried. */
@@ -730,8 +747,8 @@ export type DebugOp =
   | { kind: 'giveResources'; hikerId: HikerId; resources: Partial<Record<ResourceId, number>> }
   /** Sets a hiker's stats and injuries directly, without the usual injury rules. */
   | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number }
-  /** Sets Abundance meters directly. */
-  | { kind: 'setAbundance'; abundance: Partial<Record<NodeType, number>> }
+  /** Sets the Abundance bar directly. */
+  | { kind: 'setAbundance'; abundance: number }
   /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
   | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
   /** The next scavenge deals these card types first, where they can happen. */
@@ -944,9 +961,12 @@ export type GameEventBody =
       bonus?: number;
       /** Butterfingers: the card slipped away and the hiker got nothing. */
       dropped?: true;
+      /** The card was Empty: it gave nothing. */
+      empty?: true;
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
-  | { kind: 'tend'; hikerId: HikerId; node: NodeType; from: number; to: number }
+  /** `node` only in logs from before the one bar (save v13 and older). */
+  | { kind: 'tend'; hikerId: HikerId; node?: NodeType; from: number; to: number }
   | {
       kind: 'give';
       fromId: HikerId;
@@ -958,7 +978,8 @@ export type GameEventBody =
     }
   | { kind: 'returned'; hikerId: HikerId; resource: ResourceId; node: NodeType }
   /** Overnight, nodes nobody scavenged recover. */
-  | { kind: 'recovered'; nodes: NodeType[] }
+  /** The bar's overnight recovery. `nodes` only in logs from before the one bar. */
+  | { kind: 'recovered'; from?: number; to?: number; nodes?: NodeType[] }
   | { kind: 'phase'; day: number; phase: Phase }
   | {
       kind: 'condition';
@@ -1081,7 +1102,7 @@ export type GameEvent = GameEventBody & { id: number; day: number; phase: Phase 
 
 // ── The game ───────────────────────────────────────────────────────────────
 
-/** A hiker reaching a checkpoint (Phase 12 scores healthy, injured and carried arrivals). */
+/** A hiker reaching a checkpoint (Phase 13 scores healthy, injured and carried arrivals). */
 export interface Arrival {
   /** The section it ended (0 is the first). */
   section: number;
@@ -1177,7 +1198,7 @@ export interface GameState {
   hikers: Hiker[];
   /** The ranger station visit, once everyone has checked in. */
   station?: StationVisit;
-  /** Every check-in so far, for the score (Phase 12). */
+  /** Every check-in so far, for the score (Phase 13). */
   arrivals?: Arrival[];
   /** The party reached the summit: the hike is over. */
   summit?: true;
@@ -1198,8 +1219,8 @@ export interface GameState {
   caps: number;
   /** Added to every caps gain for good (each Wallet used: +1). */
   capsBonus?: number;
-  /** Each node type's Abundance meter, 0 to BALANCE.abundance.max. */
-  abundance: Record<NodeType, number>;
+  /** The biome's Abundance bar, 0 to BALANCE.abundance.max (save v14; a meter per node before). */
+  abundance: number;
   /** Who scavenged where today. Cleared each morning. */
   scavengedToday: ScavengeRecord[];
   /** An open scavenge, waiting for a card to be taken. */

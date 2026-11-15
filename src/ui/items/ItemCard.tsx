@@ -12,15 +12,22 @@
  *
  * Every size comes from the card's width, like the mockup (k = width / 300).
  * A compact card (the bag's small slots) keeps the art, tier and counter.
+ *
+ * Unrolled (Nov 14 update): an item whose Quality isn't rolled yet (a
+ * blueprint, a Choice pick, an item named in text) reads its values as
+ * ranges across Qualities 1–5 ("2–4 bites"), with Quality "?".
  */
 import type { CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
 import {
+  counterRange,
   fullCounters,
   hasQuality,
+  itemRangeText,
   itemText,
   qualityOf,
+  rangeWords,
   type ItemInstance,
   type Quality,
 } from '../../engine';
@@ -38,9 +45,19 @@ export interface ItemCardProps {
   width: number;
   /** The bag's small slots: art, tier and counter only. */
   compact?: boolean;
+  /** Quality not rolled yet: values as ranges across Qualities 1–5. */
+  unrolled?: boolean;
   className?: string;
   style?: CSSProperties;
 }
+
+/**
+ * Long effect text (a range preview, say) shrinks a little so the Quality and
+ * counter row stays on the card: full size up to FIT_CHARS characters.
+ */
+const FIT_CHARS = 120;
+const textFit = (text: string) =>
+  text.length <= FIT_CHARS ? 1 : Math.max(0.7, Math.sqrt(FIT_CHARS / text.length));
 
 /** What's left and the most there can be, for the counter. */
 function counter(itemId: string, item: Counters | undefined, quality: Quality | undefined) {
@@ -59,17 +76,28 @@ export function ItemCard({
   quality: shown,
   width: W,
   compact = false,
+  unrolled: unrolledProp = false,
   className,
   style,
 }: ItemCardProps) {
   const def = ITEMS[itemId];
   if (!def) return null;
   const look = TYPE_LOOK[def.type];
-  const quality = hasQuality(def) ? (shown ?? qualityOf({ itemId, ...(item ?? {}) })) : undefined;
+  // An item with a fixed Quality (or none) has nothing left to roll.
+  const unrolled = unrolledProp && hasQuality(def) && !def.fixedQuality;
+  const quality = hasQuality(def)
+    ? unrolled
+      ? undefined
+      : (shown ?? qualityOf({ itemId, ...(item ?? {}) }))
+    : undefined;
   const H = Math.round(W * 1.4);
   const k = W / 300;
   const tier = TIER_LOOK[def.tier];
-  const { left, max } = counter(itemId, item, quality);
+  const range = unrolled ? counterRange(def) : undefined;
+  const { left, max } = range
+    ? { left: range.min, max: range.max }
+    : counter(itemId, item, quality);
+  const effect = unrolled ? itemRangeText(def, item?.node) : itemText(def, quality, item?.node);
 
   // The art window: the cloud area of the front background (upper ~55%).
   const art = compact
@@ -95,15 +123,25 @@ export function ItemCard({
           height: h,
           borderRadius: shape === 'circle' ? '50%' : shape === 'bar' ? 2 : 3,
           background: on ? look.accent : 'transparent',
-          boxShadow: on ? 'none' : `inset 0 0 0 ${Math.max(1, 1.5 * k)}px rgba(255,255,255,0.35)`,
+          // Unrolled: the pips a better Quality might add are dashed.
+          boxShadow: on
+            ? 'none'
+            : `inset 0 0 0 ${Math.max(1, 1.5 * k)}px rgba(255,255,255,${range ? 0.6 : 0.35})`,
+          ...(range && !on ? { opacity: 0.7 } : {}),
         }}
       />
     );
   });
 
   const label = `${def.name}${def.tier > 1 ? `, Tier ${def.tier}` : ''}${
-    quality ? `, Quality ${quality}` : ''
-  }${look.count && max ? `, ${look.count.toLowerCase()} ${left} of ${max}` : ''}`;
+    unrolled ? ', Quality not rolled yet' : quality ? `, Quality ${quality}` : ''
+  }${
+    look.count && max
+      ? range
+        ? `, ${look.count.toLowerCase()} ${rangeWords(range)}`
+        : `, ${look.count.toLowerCase()} ${left} of ${max}`
+      : ''
+  }`;
 
   return (
     <div
@@ -111,7 +149,7 @@ export function ItemCard({
       style={{ width: W, height: H, borderRadius: Math.round(W * 0.075), ...style }}
       role="img"
       aria-label={label}
-      title={compact ? `${def.name}: ${itemText(def, quality, item?.node)}` : undefined}
+      title={compact ? `${def.name}: ${effect}` : undefined}
     >
       <img className={styles.front} src={ASSETS.itemCards.front} alt="" draggable={false} />
       <div
@@ -200,12 +238,37 @@ export function ItemCard({
             {look.label}
             {def.slot ? ` · ${SLOT_NAME[def.slot]}` : ''}
           </span>
-          <span className={styles.effect} style={{ fontSize: Math.max(8, Math.round(14.5 * k)) }}>
-            {itemText(def, quality, item?.node)}
+          <span
+            className={styles.effect}
+            style={{ fontSize: Math.max(8, Math.round(14.5 * k * textFit(effect))) }}
+          >
+            {effect}
           </span>
           <span className={styles.spacer} />
           <div className={styles.bottom}>
-            {quality ? (
+            {unrolled ? (
+              <div className={styles.meter} style={{ gap: Math.max(1, Math.round(3 * k)) }}>
+                <span className={styles.tiny} style={{ fontSize: Math.max(6, Math.round(10 * k)) }}>
+                  QUALITY ?
+                </span>
+                <span
+                  className={styles.diamonds}
+                  style={{ gap: Math.max(3, Math.round(7 * k)), height: pipRow }}
+                >
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <span
+                      key={n}
+                      className={styles.diamond}
+                      style={{
+                        width: Math.max(4, Math.round(9 * k)),
+                        height: Math.max(4, Math.round(9 * k)),
+                        background: 'rgba(233,180,76,0.35)',
+                      }}
+                    />
+                  ))}
+                </span>
+              </div>
+            ) : quality ? (
               <div className={styles.meter} style={{ gap: Math.max(1, Math.round(3 * k)) }}>
                 <span className={styles.tiny} style={{ fontSize: Math.max(6, Math.round(10 * k)) }}>
                   QUALITY
@@ -241,7 +304,7 @@ export function ItemCard({
                 style={{ gap: Math.max(1, Math.round(3 * k)) }}
               >
                 <span className={styles.tiny} style={{ fontSize: Math.max(6, Math.round(10 * k)) }}>
-                  {look.count} {left}/{max}
+                  {look.count} {range ? rangeWords(range) : `${left}/${max}`}
                 </span>
                 <span
                   className={styles.pips}

@@ -22,12 +22,12 @@ describe('the day loop', () => {
     expect(hikersWhoHaventActed(s)).toHaveLength(4);
   });
 
-  it('drains 1 Appetite at the end of the day and 2 Energy for a night without sleep', () => {
+  it('drains 2 Energy for a night without sleep, and no Appetite (Nov 14 update)', () => {
     const s = run(toNight(fixtureGame()), { type: 'sleep', hikerId: 'ash' }, END);
-    // Ash slept (+2 capped at 10), so only the end-of-day drain applies.
-    expect(hiker(s, 'ash').stats).toEqual({ energy: 10, appetite: 9, morale: 10 });
+    // Ash slept (+2 capped at 10), so nothing is lost.
+    expect(hiker(s, 'ash').stats).toEqual({ energy: 10, appetite: 10, morale: 10 });
     // Birch didn't sleep.
-    expect(hiker(s, 'birch').stats).toEqual({ energy: 8, appetite: 9, morale: 10 });
+    expect(hiker(s, 'birch').stats).toEqual({ energy: 8, appetite: 10, morale: 10 });
   });
 
   it('sleep gives +1 Energy, or +2 in a shelter (Wyatt, Nov 5)', () => {
@@ -54,10 +54,10 @@ describe('the day loop', () => {
     place(s, 'ash', 'T', { energy: 2, appetite: 1 });
     const next = run(toNight(s), END);
     const h = hiker(next, 'ash');
-    // No sleep: Energy 2 → 0, injury, Energy and Appetite raised to 5; then end of day: Appetite 5 → 4.
+    // No sleep: Energy 2 → 0, injury, Energy and Appetite raised to 5. No Appetite drain after.
     expect(h.injuries).toBe(1);
     expect(h.stats.energy).toBe(5);
-    expect(h.stats.appetite).toBe(4);
+    expect(h.stats.appetite).toBe(5);
   });
 
   it('skips camp drains for passed-out hikers (TODO(wyatt) in balance.ts)', () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { addCondition } from '../../engine/conditions';
 import { fixtureGame, fixtureHiker, hiker, place, toNight } from '../../engine/test/fixtures';
-import { bringOptions, movePreview, moveTargets, nextReadyHiker } from './movePlan';
+import { bringOptions, movePreview, moveTargets, nextReadyHiker, shortWhy } from './movePlan';
 
 describe('move targets', () => {
   it('lists every connected tile with whether the hiker can go there', () => {
@@ -84,7 +85,8 @@ describe('move preview', () => {
 describe('bringing hikers along', () => {
   it('offers everyone on the tile, saying why someone can’t come', () => {
     const s = fixtureGame();
-    place(s, 'cedar', 'T', { energy: 3 });
+    place(s, 'cedar', 'T');
+    addCondition(s, hiker(s, 'cedar'), 'frozen', 1, 'phases', 'test');
     hiker(s, 'dot').acted = true;
     const options = bringOptions(s, hiker(s, 'ash'));
     expect(options.map((o) => [o.hiker.id, o.reason?.split('.')[0] ?? null])).toEqual([
@@ -106,5 +108,26 @@ describe('after a hiker acts', () => {
     expect(nextReadyHiker(s, 'a')?.id).toBe('a');
     hiker(s, 'a').acted = true;
     expect(nextReadyHiker(s, 'a')).toBeUndefined();
+  });
+});
+
+describe('Move all: who can come along', () => {
+  it('lists a hiker too tired or hungry to move themselves as able to come', () => {
+    const s = fixtureGame();
+    place(s, 'birch', 'T', { energy: 3, appetite: 3 });
+    const birch = bringOptions(s, hiker(s, 'ash')).find((o) => o.hiker.id === 'birch');
+    expect(birch?.reason).toBeNull();
+  });
+
+  it('says why someone can’t come in a few words', () => {
+    expect(shortWhy('Birch has already acted this morning.')).toBe('Already acted');
+    expect(shortWhy('Birch can’t come along. Hungry: can’t move the group.')).toBe('Too hungry');
+    expect(shortWhy('Birch can’t come along. Exhausted: can only sleep.')).toBe('Too tired');
+    expect(shortWhy('Birch can’t come along. Frozen: can’t be moved for 1 more phase.')).toBe(
+      'Frozen',
+    );
+    expect(shortWhy('Birch can’t come along. Shivering ×3: Frozen, can’t be moved.')).toBe(
+      'Shivering ×3',
+    );
   });
 });

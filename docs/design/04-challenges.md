@@ -41,15 +41,15 @@ Nodes and tiers are proposed; change anything that's off. **Description** is the
 | Winding Trail | 297 |  | Mountain, Forest | Party | Spend 3 Energy across the party. | If not: each hiker has a 50% chance to become Sluggish for X\[2–4\] phases. |
 | Steep Trail | 298 |  | Mountain | Each hiker | Spend 2 Energy. | If failed: 60% chance to become Strained for Y\[1–3\] days. |
 | Strong Breeze | 299 |  | Mountain, River | Each hiker with no clothing on | Spend 3 Morale. | If failed: Frozen for X\[1–2\] phases. |
-| Withered Forest | 301 |  | Forest | Party | Spend 4 Forest resources. | If not: Forest Abundance drops by a random amount. \[75% chance to drop 1; repeat until it fails.\] |
-| Low Water Levels | 302 |  | River | Party | Spend 4 River resources. | If not: River Abundance drops by a random amount. \[Same rule as Withered Forest.\] |
+| Withered Forest | 301 |  | Forest | Party | Spend 4 Forest resources. | If not: Abundance drops by a random amount. \[75% chance to drop 1; repeat until it fails.\] |
+| Low Water Levels | 302 |  | River | Party | Spend 4 River resources. | If not: Abundance drops by a random amount. \[Same rule as Withered Forest.\] |
 | Rocky Path | 303 |  | Mountain | Each hiker | Carry no more than 5 resources. Extras can be spent to pass. | If failed: Sluggish for X\[3–6\] phases. |
 | Annoying Squirrel | 304 |  | Forest | Party | Spend X\[3–6\] Morale or X\[2–4\] caps across the party. | If not: every hiker becomes Dejected for X\[1–2\] days. |
 | Fox with a Specific Taste | 305 |  | Wildlife, Forest | Party | Spend 1 of any of the X\[3–6\] resources shown. \[Picked at random from all 16; fewer options at higher tiers.\] | If not: lose 3 random resources across the party. |
 | Split Path | 306 |  | Forest, Mountain | Party | Spend X\[3–5\] Morale or X\[1–3\] Energy across the party. | If not: every hiker gains Brain Fog for Y\[1–2\] days. |
 | Majestic Eagle | 311 |  | Mountain, Wildlife | Party | Spend X\[2–4\] Fish, Meat or Mushroom (any mix). | If not: lose X\[2–4\] random resources across the party. |
 | Spooky Ghost! | 313 |  | Forest, Mountain | Each hiker | Spend 2 of the same resource. | If failed: Nightmares for Y\[1–3\] nights. |
-| Beaver Dam | 314 |  | River, Forest | Party | Spend X\[2–4\] Wood, Fish or Grass (any mix). | If not: River and Forest Abundance each drop by X\[1–2\]. |
+| Beaver Dam | 314 |  | River, Forest | Party | Spend X\[2–4\] Wood, Fish or Grass (any mix). | If not: Abundance drops by X\[2–4\]. |
 | Fungal Colony | 315 |  | Forest | Each hiker | Spend 2 Energy for each food card they carry. | If failed: lose Y\[1–3\] food cards from that hiker's pack. |
 | Dog Waste Zone | 317 |  | Forest, Wildlife \[only if a Dog is on the tile\] | Party | Spend 2 Energy or 3 Morale for every Dog on this tile. | If not: every hiker becomes Nauseous for X\[1–2\] days. |
 | Warning Bird | 318 |  | Forest, River | Party | Spend X\[2–3\] Shell, Grass or Flint (any mix). | If not: one unrevealed tile connected to this one gets a challenge 1 tier higher. |
@@ -150,7 +150,7 @@ New costs beyond resources, items, caps, stats and durability:
 - **XP:** spend X XP.
 - **Luck:** accept being Unlucky for a few days as the price.
 - **Quality:** an item drops 1 Quality.
-- **Abundance:** spend X of a node's Abundance on this tile (nature pays the cost).
+- **Abundance:** spend X Abundance (nature pays the cost).
 - **One brave hiker:** a single hiker pays the whole party's cost, or takes 1 injury so everyone passes.
 - **Leave something behind:** drop an item on this tile. Any hiker can pick it up later.
 - **Skip sleep:** a hiker can't sleep tonight.
@@ -197,7 +197,7 @@ Trials ask hikers to **do** something within a deadline instead of paying.
 | Ranger's Request | 383 |  | I | Any | Picks a resource type. After 4 phases, takes all resources of that type gathered since the trial started and pays X\[0–4\] caps for each one. | No failure, but a 0 roll means giving them up for nothing. |
 | Storm Coming | Storm Incoming |  | II | Any \[afternoon only\] | Before night, every hiker on this tile is under a shelter. | Soaked for 2 phases, then Wet for Y\[1–2\] days. |
 | Smoke on the Wind | Smoke on the Wind |  | II | Forest | Within 1 day, every hiker moves at least 1 row forward. | Sleepy and Brain Fog for Y\[1–2\] days. |
-| Overfished | Overfished |  | II | River | Within 2 days, River Abundance reaches X\[5–6\] or more (Tend helps). | Each River node on this trail has a 25% chance to disappear. |
+| Overfished | Overfished |  | II | River | Within 2 days, Abundance rises by X\[3–4\] (Tend helps). The rise counts from when it starts. | Each River node on this trail has a 25% chance to disappear. |
 | Thirsty Trail | Thirsty Trail |  | II | Mountain | Within 3 phases, every hiker ends a phase on a tile with a River node. | Lose Y\[2–3\] Appetite and become Inappetent for 1 day. |
 | Cold Snap | Coldsnap |  | II | Mountain | By night, each hiker is on a tile where the hikers there have 15 or more Energy combined. | Frozen for 1 phase. |
 | Bear Country | Bear Country |  | II | Wildlife | Until morning, no one on this tile crafts or sits by the fire. | A Tier II Wildlife challenge triggers on this tile. |
@@ -236,7 +236,7 @@ Wonders are famous landmarks with a big group goal and a big reward.
 | Witch's Castle | Witches Castle |  | 1. The hikers here have X\[3+\] negative conditions between them. 2. The hikers here have X\[1+\] positive conditions between them. 3. The hikers here carry X\[6+\] Bones, Mushroom, Shell or Salt (any mix). 4. One hiker carries X\[3+\] of one of Bones, Mushroom, Shell or Salt. 5. The hikers here have less than 5 Morale combined. | Every negative condition becomes a random positive one for 2 days. / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
 | Fort Rock | Fort Rock |  | 1. The hikers here carry X\[6+\] Stone, Clay, Meat or Wood (any mix). 2. X\[3+\] shelters have been placed in this biome. 3. One hiker carries X\[5+\] Stone. 4. One hiker here has failed X\[3+\] challenges. 5. The hikers here have X\[10+\] clothing durability between them. | Gain 2 random shelter cards \[at most 2 hikers can pick this\]. / Double the current and maximum durability of one equipped clothing item. / Gain a lot of XP. |
 | Pittock Mansion | Pittock Mansion |  | 1. One hiker has 3 clothing items equipped. 2. The party has X\[?+\] caps. 3. The hikers here carry X\[20+\] resources between them. 4. One hiker has full Appetite, Energy and Morale. 5. The hikers here carry X\[3+\] shelter cards between them. | Gain a lot of caps. / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
-| Crater Lake | Crater lake |  | 1. The hikers here carry X\[6+\] Grass, Fish, Oil or Flint (any mix). 2. River Abundance is 10 or more. 3. Each hiker here carries 2 or more Fish. 4. There's a weather condition right now. 5. The hikers here carry no more than X\[5−\] tools between them. | Raise one node type's Abundance by 5 (your choice). / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
+| Crater Lake | Crater lake |  | 1. The hikers here carry X\[6+\] Grass, Fish, Oil or Flint (any mix). 2. Abundance is 15 or more. 3. Each hiker here carries 2 or more Fish. 4. There's a weather condition right now. 5. The hikers here carry no more than X\[5−\] tools between them. | Raise Abundance by 5. / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
 | Swiss Alps | Multnomah falls (2) |  | 1. One hiker here has passed X\[5+\] challenges. 2. No hiker here has an injury. 3. Every hiker here has 9 or more Morale. 4. X\[3+\] hikers are on this tile. 5. One hiker here is level X\[2+\]. | Cure all injuries. / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
 | Multnomah Falls | Multnomah falls |  | 1. One hiker has crafted X\[3+\] items of one type \[food, tools or clothes, picked at reveal\]. 2. One hiker here has 2 or less Morale and another has 8 or more. 3. Every hiker here has the same Appetite. 4. One hiker carries X\[5+\] of the same resource. 5. One hiker carries X\[2+\] of every resource type. | Reveal every challenge in this biome. / Pick 1 of 3 Tier III items or traits. / Gain a lot of XP. |
 | Sleeping Giant | Sleeping Giant |  | 1. The hikers here have more than X\[10+\] Energy combined. 2. Every hiker here is Fatigued or Exhausted. 3. The hikers here carry X\[6+\] Metal, Moss, Seaweed or Fur (any mix). 4. One hiker here has Brain Fog, Nightmares or Sleepy. 5. One hiker here has gone 3 or more days without sleeping. | Become Energized and gain 5 Energy. / Pick 1 of 3 Tier III items or traits. / Permanently gain +2 maximum Energy. |
@@ -247,7 +247,7 @@ Wonders are famous landmarks with a big group goal and a big reward.
 - **Some goals need more than one hiker** (Multnomah Falls 2, Swiss Alps 4, Sleeping Giant 1 and 2). That's fine, since bringing the group together is part of the point.
 - **Goals that pull against each other** make good puzzles. Sleeping Giant 1 and 2 (lots of Energy combined, but everyone tired) need 2 or more hikers. None of the 5-goal lists has two goals that can never be met together.
 - **Numbers still needed:** Pittock Mansion's caps, and how much "a lot of XP" and "a lot of caps" is. A first guess: XP worth about one level, and caps worth about one good shop item.
-- **Crater Lake 2:** if Abundance tops out at 10, this means River Abundance is full.
+- **Crater Lake 2:** Abundance is one bar for the biome (0–20, starting at 15), so this asks the party not to have drained it.
 
 ## Opportunities (blue)
 

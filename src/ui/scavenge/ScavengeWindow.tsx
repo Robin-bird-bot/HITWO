@@ -25,8 +25,6 @@ import {
   type Action,
   type GameState,
   type ItemId,
-  type ItemInstance,
-  type NodeType,
   type ResourceId,
   type ScavengeBonus,
   type ScavengeCard,
@@ -37,46 +35,29 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { useDraggable } from '../windows/useDraggable';
 import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from './cardLook';
 import { ItemCard as CardFace } from '../items/ItemCard';
-import { ScavCard } from './ScavCard';
+import { ScavCard, type ScavCardProps } from './ScavCard';
+import { usePreview, withPreview } from '../preview/preview';
 import styles from './ScavengeWindow.module.css';
 
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
 
-/** What a hiker just took, shown for a moment before the window closes. */
-export interface TookCard {
-  card: ScavengeCard;
-  hikerName: string;
-  resources: ResourceId[];
-  caps: number;
-  items: ItemId[];
-  /** The items as they landed in the bag, with their Quality. */
-  found?: ItemInstance[];
-}
-
 interface ScavengeWindowProps {
   state: GameState;
   simple: boolean;
-  /** Set right after a card is taken: the window shows it, then closes. */
-  took: TookCard | null;
   onFlip(cards: number[]): void;
   onCancel(): void;
   /** Glasses or Gambler: reroll one flipped card. */
   onReroll(card: number): void;
   onTake(action: TakeAction): void;
-  onClose(): void;
 }
-
-const CLOSE_AFTER_MS = 1600;
 
 export function ScavengeWindow({
   state,
   simple,
-  took,
   onFlip,
   onCancel,
   onReroll,
   onTake,
-  onClose,
 }: ScavengeWindowProps) {
   const open = state.scavenge;
   const [picked, setSelected] = useState<number | null>(null);
@@ -103,7 +84,7 @@ export function ScavengeWindow({
       ? {
           type: 'scavengeTake',
           card: selected,
-          ...(card?.pick ? { picks } : {}),
+          ...(card?.pick && !card.empty ? { picks } : {}),
           ...(item ? { item } : {}),
           ...(paidBonus && paidCount ? { bonus: paidCount } : {}),
         }
@@ -115,10 +96,6 @@ export function ScavengeWindow({
   // Enter takes the picked card; Esc is "Not now" while it's allowed.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (took) {
-        if (e.key === 'Enter' || e.key === 'Escape') onClose();
-        return;
-      }
       if (e.key === 'Escape' && (canCancel || canFinish)) onCancel();
       if (e.key === 'Enter' && take && !takeReason) {
         e.preventDefault();
@@ -128,13 +105,6 @@ export function ScavengeWindow({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }); // Rebound each render, so it always sees the current card and picks.
-
-  // After a card is taken, close on its own after a moment.
-  useEffect(() => {
-    if (!took) return;
-    const t = setTimeout(onClose, CLOSE_AFTER_MS);
-    return () => clearTimeout(t);
-  }, [took, onClose]);
 
   useEffect(() => {
     windowRef.current?.focus();
@@ -215,9 +185,7 @@ export function ScavengeWindow({
           )}
         </header>
 
-        {took ? (
-          <Result took={took} simple={simple} onClose={onClose} />
-        ) : open ? (
+        {open ? (
           <>
             <div className={styles.cards} data-count={open.cards.length}>
               {open.cards.map((c, i) =>
@@ -234,8 +202,9 @@ export function ScavengeWindow({
                     <span className={styles.takenLabel}>TAKEN</span>
                   </div>
                 ) : (
-                  <ScavCard
+                  <TableCard
                     key={i}
+                    index={i}
                     card={c}
                     size={cardSize(open.cards.length)}
                     faceUp={c.flipped}
@@ -247,10 +216,10 @@ export function ScavengeWindow({
               )}
             </div>
 
-            {card?.pick && (
+            {card?.pick && !card.empty && (
               <PickChips card={card} picks={picks} simple={simple} onPicks={setPicks} />
             )}
-            {card?.items && SCAVENGE_CARDS[card.type].choiceItem && (
+            {card?.items && !card.empty && SCAVENGE_CARDS[card.type].choiceItem && (
               <ItemChips card={card} item={item} onItem={setItem} />
             )}
             {paidCount > 0 && hasResources && (
@@ -345,6 +314,7 @@ function cardSize(count: number): number {
 
 function takeLabel(card: ScavengeCard, picks: ResourceId[], item: ItemId | null): string {
   const gains = cardGains(card, picks, item ?? undefined);
+  if (card.empty) return 'TAKE EMPTY';
   if (card.pick) return gains.resources.length ? `TAKE ${resourcesTitle(gains.resources)}` : 'TAKE';
   if (card.caps) return `TAKE ${card.caps} CAP${card.caps === 1 ? '' : 'S'}`;
   if (card.items) {
@@ -390,28 +360,18 @@ function Bonuses({
   );
 }
 
-/** Informative mode: what taking the picked card does to its node's meter. */
+/** Informative mode: what taking the picked card does to the Abundance bar. */
 function Drain({ state, card }: { state: GameState; card: ScavengeCard }) {
+  if (!card.node) return null;
   const def = SCAVENGE_CARDS[card.type];
-  const rows: { node: NodeType; amount: number }[] = [];
-  if (card.node) {
-    rows.push({
-      node: card.node,
-      amount: def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0),
-    });
-  }
-  if (card.node2) rows.push({ node: card.node2, amount: def.drain });
+  const amount = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0);
+  const from = state.abundance;
   return (
     <>
-      {rows.map(({ node, amount }) => {
-        const from = state.abundance[node];
-        return (
-          <span key={node} className={styles.drainRow}>
-            <img src={NODE_IMAGE[node]} alt="" width={16} height={18} />
-            {NODE_NAME[node]} Abundance {from} → <b>{Math.max(0, from - amount)}</b>
-          </span>
-        );
-      })}
+      <span className={styles.drainRow}>
+        <img src={NODE_IMAGE[card.node]} alt="" width={16} height={18} />
+        Abundance {from} → <b>{Math.max(0, from - amount)}</b>
+      </span>
     </>
   );
 }
@@ -471,6 +431,46 @@ function PickChips({
   );
 }
 
+/** A card on the table: once it's face up, hover or long-press shows it large. */
+function TableCard(props: ScavCardProps) {
+  const item = SCAVENGE_CARDS[props.card.type].itemCard ? props.card.items?.[0] : undefined;
+  const q = props.card.itemQuality;
+  const preview = usePreview(
+    !props.faceUp
+      ? null
+      : item
+        ? { kind: 'item', itemId: item, ...(q ? { item: { quality: q } } : {}) }
+        : { kind: 'scavenge', card: props.card },
+  );
+  return <ScavCard {...props} preview={preview} />;
+}
+
+/** A Choice card's item: hover or long-press for the full card, Quality not rolled yet. */
+function ItemChip({
+  id,
+  pressed,
+  showFace,
+  onItem,
+}: {
+  id: ItemId;
+  pressed: boolean;
+  showFace: boolean;
+  onItem(id: ItemId): void;
+}) {
+  const preview = usePreview({ kind: 'item', itemId: id, unrolled: true });
+  return (
+    <button
+      type="button"
+      className={styles.chip}
+      aria-pressed={pressed}
+      {...withPreview({ onClick: () => onItem(id) }, preview)}
+    >
+      {showFace ? <CardFace itemId={id} width={26} compact /> : null}
+      {itemName(id)}
+    </button>
+  );
+}
+
 /** Choice item cards: pick 1 of the items. */
 function ItemChips({
   card,
@@ -486,40 +486,9 @@ function ItemChips({
     <div className={styles.chooser}>
       <div className={styles.chips}>
         {(card.items ?? []).map((id) => (
-          <button
-            key={id}
-            type="button"
-            className={styles.chip}
-            aria-pressed={item === id}
-            onClick={() => onItem(id)}
-          >
-            {type ? <CardFace itemId={id} width={26} compact /> : null}
-            {itemName(id)}
-          </button>
+          <ItemChip key={id} id={id} pressed={item === id} showFace={!!type} onItem={onItem} />
         ))}
       </div>
     </div>
-  );
-}
-
-/** Just after taking: the card (a Wild shows what it was) and what it gave. */
-function Result({ took, simple, onClose }: { took: TookCard; simple: boolean; onClose(): void }) {
-  const parts: string[] = [];
-  if (took.resources.length) parts.push(resourcesTitle(took.resources));
-  if (took.caps) parts.push(`${took.caps} CAP${took.caps === 1 ? '' : 'S'}`);
-  for (const id of took.items) parts.push(itemName(id).toUpperCase());
-  return (
-    <button type="button" className={styles.result} onClick={onClose} aria-label="Close">
-      <ScavCard card={took.card} size={196} faceUp reveal caption={simple ? 'simple' : 'full'} />
-      {took.found?.map((item) => (
-        <CardFace key={item.uid} itemId={item.itemId} item={item} width={196} />
-      ))}
-      <span className={styles.got}>
-        <span className={styles.gotLabel}>{took.hikerName.toUpperCase()} GOT</span>
-        <span className={styles.gotWhat}>
-          {parts.length ? parts.join(' + ') : 'NOTHING (NO ROOM)'}
-        </span>
-      </span>
-    </button>
   );
 }

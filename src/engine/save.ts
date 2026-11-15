@@ -6,7 +6,7 @@
 import { rollTrailShop } from './station/trail';
 import { openStation } from './station/stock';
 import { BALANCE } from '../config/balance';
-import { freshAbundance } from './abundance';
+import { clampAbundance, freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
 import { RENAMED_ITEMS } from '../content/items';
@@ -15,6 +15,7 @@ import { shelterNights } from './items/shelters';
 import {
   NODE_TYPES,
   PHASES,
+  type ActiveTrial,
   type GameState,
   type ItemInstance,
   type Tile,
@@ -22,7 +23,7 @@ import {
 } from './types';
 import { freshWeather } from './weather';
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -31,8 +32,8 @@ type SaveData = Record<string, unknown>;
 
 /** Upgrades a save from version N (the key) to N + 1. */
 const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
-  // Phase 4: Abundance meters (at the start value) and today's scavenges.
-  1: (save) => ({ ...save, abundance: freshAbundance(), scavengedToday: [] }),
+  // Phase 4: Abundance meters (a meter per node then, at its start value) and today's scavenges.
+  1: (save) => ({ ...save, abundance: oldMeters(), scavengedToday: [] }),
   // Phase 5: which challenges this section has used.
   2: (save) => ({ ...save, usedCards: [] }),
   // Phase 5 (Nov 6 update): run counters for Wonder goals, starting from zero.
@@ -60,7 +61,40 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   11: (save) => upgradeStation(save),
   // Phase 9 step 6: a Merchant or Trader someone already reached gets its wares.
   12: (save) => upgradeTrailShops(save),
+  // Phase 9.5 (Nov 14 update): one Abundance bar, the average of the four meters.
+  13: (save) => upgradeAbundance(save),
 };
+
+/** Phase 4's meters: one per node, each 0–10, starting at 8. */
+const OLD_METER = { max: 10, start: 8 };
+function oldMeters(): Record<string, number> {
+  return Object.fromEntries(NODE_TYPES.map((n) => [n, OLD_METER.start]));
+}
+
+/**
+ * The four node meters (0–10) become one bar: their average, scaled to the
+ * bar's range. An Overfished Trial already running starts counting from here.
+ */
+function upgradeAbundance(save: SaveData): SaveData {
+  const old = save.abundance;
+  let level = freshAbundance();
+  if (typeof old === 'number') level = old;
+  else if (isRecord(old)) {
+    const values = NODE_TYPES.map((n) => old[n]).filter(isNumber);
+    if (values.length) {
+      const average = values.reduce((a, b) => a + b, 0) / values.length;
+      level = clampAbundance(Math.round((average / OLD_METER.max) * BALANCE.abundance.max));
+    }
+  }
+  const trials = Array.isArray(save.trials)
+    ? (save.trials as ActiveTrial[]).map((t) => {
+        if (t.cardId !== 'overfished' || t.startAbundance !== undefined) return t;
+        const x = { ...t.rolls.x, gain: t.rolls.x.gain ?? 3 };
+        return { ...t, rolls: { ...t.rolls, x }, startAbundance: level };
+      })
+    : save.trials;
+  return { ...save, abundance: level, ...(trials ? { trials } : {}) };
+}
 
 /** Side features on tiles already reached, from before they had wares. */
 function upgradeTrailShops(save: SaveData): SaveData {
@@ -263,8 +297,7 @@ function looksLikeGameState(v: SaveData): v is SaveData & GameState {
     Array.isArray(v.hikers) &&
     v.hikers.every(looksLikeHiker) &&
     isNumber(v.caps) &&
-    isRecord(v.abundance) &&
-    NODE_TYPES.every((n) => isNumber((v.abundance as SaveData)[n])) &&
+    isNumber(v.abundance) &&
     Array.isArray(v.scavengedToday) &&
     Array.isArray(v.usedCards) &&
     isRecord(v.counters) &&

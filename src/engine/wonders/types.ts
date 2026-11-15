@@ -46,8 +46,8 @@ export type GoalCheck =
   | { kind: 'noInjuries' }
   /** The party purse holds X caps. */
   | { kind: 'caps' }
-  /** A node type's Abundance is X. */
-  | { kind: 'abundance'; node: NodeType }
+  /** The biome's Abundance is X. */
+  | { kind: 'abundance' }
   /** They carry X items of a type between them. */
   | { kind: 'itemsOfType'; type: ItemType }
   /** One hiker here has a run counter of X (challenges passed or failed, nights without sleep). */
@@ -89,7 +89,7 @@ export type WonderReward =
   /** One of the 3 Tier III items rolled at reveal; no two hikers take the same one. */
   | { kind: 'tier3' }
   | { kind: 'shelters'; count: number }
-  /** Raise one node type's Abundance (the hiker's choice). */
+  /** Raise the biome's Abundance. */
   | { kind: 'abundance'; amount: number }
   | { kind: 'cureInjuries' }
   /** Reveal every challenge in this biome. */

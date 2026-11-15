@@ -10,16 +10,27 @@
  * Mystery cards (Rocco's Random Resale) show only their tier until bought,
  * then turn over.
  */
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
 import type { GameState, ItemOffer, StationSpecialId } from '../../engine';
+import { mergeHandlers } from '../app/mergeHandlers';
+import { useDrag, useDrop, type DropTarget } from '../drag/drag';
+import { canPickUpOffer } from '../drag/dropRules';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
+import { Previewable } from '../preview/Previewable';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import styles from './Counter.module.css';
-import { DRAG_TYPE, SPECIAL_LOOK, bundleName, type DragSale } from './stationLook';
+import { SPECIAL_LOOK, bundleName } from './stationLook';
 import room from './StationScreen.module.css';
 
 const NUMERAL = ['', 'I', 'II', 'III', 'IV'];
@@ -28,13 +39,14 @@ export function Counter({
   state,
   flipped,
   onPick,
-  onSell,
+  sellDrop,
 }: {
   state: GameState;
   /** The offer that was just bought face-down: it turns over. */
   flipped: string | null;
   onPick(offerId: string): void;
-  onSell(sale: DragSale): void;
+  /** The sell slot: a pack card dragged onto it (Nov 14 update). */
+  sellDrop: DropTarget;
 }) {
   const station = state.station;
   const scroller = useRef<HTMLDivElement>(null);
@@ -99,26 +111,39 @@ export function Counter({
         <div className={styles.rows}>
           <ul className={styles.row1} aria-label="For sale">
             <li className={styles.offer}>
-              <SellSlot onSell={onSell} />
+              <SellSlot target={sellDrop} />
             </li>
             {station.items.map((o) => (
               <li key={o.id} className={styles.offer} data-sold={o.sold || undefined}>
-                <button
-                  type="button"
+                <OfferButton
+                  state={state}
+                  offerId={o.id}
+                  ghost={
+                    o.hidden ? (
+                      <MysteryBack tier={ITEMS[o.item.itemId]?.tier ?? 1} what="ITEM" />
+                    ) : (
+                      <ItemCard itemId={o.item.itemId} item={o.item} width={110} />
+                    )
+                  }
                   className={styles.cardButton}
                   disabled={!!o.sold}
-                  onClick={() => onPick(o.id)}
+                  onPick={() => onPick(o.id)}
                   aria-label={offerLabel(o)}
                 >
-                  <div className={flipped === o.id ? styles.flipIn : undefined}>
+                  <Previewable
+                    className={flipped === o.id ? styles.flipIn : styles.cardWrap}
+                    content={
+                      o.hidden ? null : { kind: 'item', itemId: o.item.itemId, item: o.item }
+                    }
+                  >
                     {o.hidden ? (
                       <MysteryBack tier={ITEMS[o.item.itemId]?.tier ?? 1} what="ITEM" />
                     ) : (
                       <ItemCard itemId={o.item.itemId} item={o.item} width={150} />
                     )}
-                  </div>
+                  </Previewable>
                   {o.sold && <span className={styles.sold}>SOLD</span>}
-                </button>
+                </OfferButton>
                 <PriceTag price={o.price} sold={!!o.sold} short={short(o.price)} />
               </li>
             ))}
@@ -152,49 +177,67 @@ export function Counter({
               const def = ITEMS[b.itemId];
               const type = def?.type ?? 'tool';
               return (
-                <button
+                <OfferButton
                   key={b.id}
-                  type="button"
+                  state={state}
+                  offerId={b.id}
+                  ghost={<BlueprintGhost name={b.hidden ? '???' : (def?.name ?? '')} />}
                   className={styles.small}
                   data-sold={b.sold || undefined}
                   disabled={!!b.sold}
-                  onClick={() => onPick(b.id)}
+                  onPick={() => onPick(b.id)}
                   aria-label={
                     b.hidden
                       ? `Mystery blueprint, ${b.price} caps`
                       : `${def?.name} blueprint, ${b.sold ? 'sold' : `${b.price} caps`}`
                   }
                 >
-                  <div
+                  <Previewable
                     className={styles.blueprint}
                     style={
                       {
                         '--type': b.hidden ? '#A8743F' : TYPE_LOOK[type].accent,
                       } as React.CSSProperties
                     }
+                    content={b.hidden ? null : { kind: 'item', itemId: b.itemId, unrolled: true }}
                   >
                     <Icon name={b.hidden ? 'help' : TYPE_ICON[type]} size={24} />
                     <span className={styles.blueprintName}>
                       {b.hidden ? '???' : (def?.name ?? '').toUpperCase()}
                     </span>
-                  </div>
+                  </Previewable>
                   <SmallPrice price={b.price} sold={!!b.sold} short={short(b.price)} />
-                </button>
+                </OfferButton>
               );
             })}
             <span className={styles.divider} aria-hidden="true" />
             <span className={styles.shelfLabel}>RESOURCES</span>
             {station.bundles.map((b) => (
-              <button
+              <OfferButton
                 key={b.id}
-                type="button"
+                state={state}
+                offerId={b.id}
+                ghost={
+                  <img
+                    className={styles.bundleGhost}
+                    src={
+                      b.item
+                        ? ASSETS.itemArt(ITEMS[b.item.itemId]?.art ?? '')
+                        : ASSETS.resources[b.resource ?? '']
+                    }
+                    alt=""
+                  />
+                }
                 className={styles.small}
                 data-sold={b.sold || undefined}
                 disabled={!!b.sold}
-                onClick={() => onPick(b.id)}
+                onPick={() => onPick(b.id)}
                 aria-label={`${bundleName(b)}, ${b.sold ? 'sold' : `${b.price} caps`}`}
               >
-                <div className={styles.bundle}>
+                <Previewable
+                  className={styles.bundle}
+                  content={b.item ? { kind: 'item', itemId: b.item.itemId, item: b.item } : null}
+                >
                   <img
                     src={
                       b.item
@@ -205,9 +248,9 @@ export function Counter({
                     draggable={false}
                   />
                   {!b.item && <span className={styles.count}>×{b.count}</span>}
-                </div>
+                </Previewable>
                 <SmallPrice price={b.price} sold={!!b.sold} short={short(b.price)} />
-              </button>
+              </OfferButton>
             ))}
           </div>
         </div>
@@ -332,29 +375,63 @@ export function SpecialCard({
 }
 
 /** The sell slot: drop a pack card or resource here to see what it sells for. */
-function SellSlot({ onSell }: { onSell(sale: DragSale): void }) {
-  const [over, setOver] = useState(false);
+/** Drop a pack card or resource here to sell it (with a confirm). */
+function SellSlot({ target }: { target: DropTarget }) {
+  const drop = useDrop('sell', target);
   return (
-    <div
-      className={styles.sellSlot}
-      data-over={over || undefined}
-      onDragOver={(e) => {
-        if (!e.dataTransfer.types.includes(DRAG_TYPE)) return;
-        e.preventDefault();
-        setOver(true);
-      }}
-      onDragLeave={() => setOver(false)}
-      onDrop={(e) => {
-        setOver(false);
-        const raw = e.dataTransfer.getData(DRAG_TYPE);
-        if (!raw) return;
-        e.preventDefault();
-        onSell(JSON.parse(raw) as DragSale);
-      }}
-    >
+    <div className={styles.sellSlot} {...drop.props()}>
       <Icon name="acorn" size={34} color="#E9B44C" />
       <span className={styles.sellTitle}>DRAG HERE TO SELL</span>
       <span className={styles.sellHint}>You’ll see the price before it sells</span>
+    </div>
+  );
+}
+
+/**
+ * A counter card, a button that's also a drag source (Nov 14 update): drag
+ * it onto a hiker's pack to buy it. One the party can't afford won't lift,
+ * and shakes a little instead.
+ */
+function OfferButton({
+  state,
+  offerId,
+  ghost,
+  onPick,
+  children,
+  ...rest
+}: {
+  state: GameState;
+  offerId: string;
+  ghost: ReactNode;
+  onPick(): void;
+  children: ReactNode;
+} & ComponentProps<'button'>) {
+  const [shake, setShake] = useState(false);
+  const can = canPickUpOffer(state, offerId);
+  const drag = useDrag(can ? { kind: 'offer', offerId } : null, ghost);
+  const nudge = () => {
+    if (can || rest.disabled) return;
+    setShake(true);
+    window.setTimeout(() => setShake(false), 450);
+  };
+  return (
+    <button
+      type="button"
+      {...rest}
+      data-shake={shake || undefined}
+      {...mergeHandlers({ onClick: onPick, onPointerDown: nudge }, drag)}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** What follows the pointer while a blueprint is dragged. */
+function BlueprintGhost({ name }: { name: string }) {
+  return (
+    <div className={styles.blueprint} style={{ '--type': '#A8743F' } as React.CSSProperties}>
+      <Icon name="hammer" size={24} />
+      <span className={styles.blueprintName}>{name.toUpperCase()}</span>
     </div>
   );
 }

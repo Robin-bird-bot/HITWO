@@ -3,13 +3,11 @@
  * biome, day and phase with weather, the objective, and Abundance with caps.
  */
 import { useRef, useState } from 'react';
-import { ASSETS } from '../../config/assets';
-import { BALANCE } from '../../config/balance';
 import { WEATHERS } from '../../content/weather';
-import { NODE_TYPES, PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
+import { PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
+import { AbundanceBar } from './AbundanceBar';
 import type { IconName } from '../icons/paths';
-import { NODE_NAME } from '../map/looks';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { resetWindowLayout } from '../windows/windowLayout';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weather/weatherLook';
@@ -130,12 +128,13 @@ export function ObjectiveCard() {
     >
       <span className={styles.objectiveName}>PARTY GOAL</span>
       <span className={styles.objectiveText}>
-        Each section you’ll pick one party goal here. Objectives arrive in Phase 12.
+        Each section you’ll pick one party goal here. Objectives arrive in a later update.
       </span>
     </Panel>
   );
 }
 
+/** Informative mode: the one Abundance bar with its number, and the party's caps. */
 export function AbundanceCard({ state }: { state: GameState }) {
   return (
     <Panel
@@ -152,25 +151,7 @@ export function AbundanceCard({ state }: { state: GameState }) {
       }
     >
       <div className={styles.meters}>
-        {NODE_TYPES.map((n) => {
-          const value = state.abundance[n];
-          const low = value <= BALANCE.abundance.lowAt;
-          const label = `${NODE_NAME[n]} Abundance ${value}/${BALANCE.abundance.max}${low ? ': low' : ''}`;
-          return (
-            <div key={n} className={styles.meter} title={label} aria-label={label}>
-              <img src={ASSETS.nodes[n]} alt="" width={20} height={23} />
-              <div className={styles.track}>
-                <div
-                  data-low={low}
-                  style={{ width: `${(value / BALANCE.abundance.max) * 100}%` }}
-                />
-              </div>
-              <span className={styles.meterValue} data-low={low}>
-                {value}
-              </span>
-            </div>
-          );
-        })}
+        <AbundanceBar level={state.abundance} showNumber />
       </div>
     </Panel>
   );

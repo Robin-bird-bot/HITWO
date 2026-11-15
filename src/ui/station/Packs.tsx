@@ -2,13 +2,15 @@
  * Every hiker's pack below the counter (docs/mockups/Station.dc.html): their
  * bag and resources, shared while at the station.
  *
- * - Hover (or long-press on a phone) a bag card: a bigger card and what it
- *   sells for here.
+ * - Hover (or long-press on a phone) a bag card: the shared card preview,
+ *   with what it sells for here.
  * - Click a bag card or resource: sell it (with a confirm) or give it to
  *   someone else here (free, and easy to give back).
- * - Drag one onto the counter's sell slot to sell it, with the same confirm.
+ * - Drag one onto the counter's sell slot to sell it, with the same confirm,
+ *   or a resource onto a Workbench space (the shared drag, Nov 14 update).
+ * - Drag a counter card onto a pack to buy it for that hiker.
  */
-import { useRef, useState, type PointerEvent } from 'react';
+import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ASSETS } from '../../config/assets';
 import { characterFor } from '../../content/characters';
 import { ITEMS } from '../../content';
@@ -21,13 +23,17 @@ import {
   type Action,
   type GameState,
   type Hiker,
+  type ItemInstance,
   type ResourceId,
 } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
 import { Popout } from '../panels/Popout';
+import { usePreview } from '../preview/preview';
+import { mergeHandlers } from '../app/mergeHandlers';
+import { useDrag, useDrop, type DropTarget } from '../drag/drag';
+import { NO_DROP } from '../drag/itemDrops';
 import { resourceName } from '../scavenge/cardLook';
-import { startSaleDrag, type DragSale } from './stationLook';
 import styles from './Counter.module.css';
 
 /** What a sale would be, for the confirm. */
@@ -40,44 +46,24 @@ export interface SaleRequest {
 
 type Open = { hikerId: string; itemUid?: string; resource?: ResourceId };
 
-const LONG_PRESS_MS = 450;
-
 export function Packs({
   state,
   onSell,
   onDispatch,
+  buyDrop,
 }: {
   state: GameState;
   onSell(sale: SaleRequest): void;
   onDispatch(action: Action): void;
+  /** A counter card dropped on a pack (its arg is the hiker's id). */
+  buyDrop?: DropTarget;
 }) {
-  const [peek, setPeek] = useState<Open | null>(null);
   const [menu, setMenu] = useState<Open | null>(null);
-  const pressed = useRef<{ timer: number; long: boolean } | null>(null);
+  const pack = useDrop('pack', buyDrop ?? NO_DROP);
 
   const same = (a: Open | null, b: Open) =>
     !!a && a.hikerId === b.hikerId && a.itemUid === b.itemUid && a.resource === b.resource;
-
-  // A long press on a phone shows the bigger card; its click doesn't open the menu.
-  const pressStart = (e: PointerEvent, open: Open) => {
-    if (e.pointerType !== 'touch') return;
-    const timer = window.setTimeout(() => {
-      if (pressed.current) pressed.current.long = true;
-      setPeek(open);
-    }, LONG_PRESS_MS);
-    pressed.current = { timer, long: false };
-  };
-  const pressEnd = () => {
-    if (pressed.current) window.clearTimeout(pressed.current.timer);
-    if (pressed.current?.long) setPeek(null);
-  };
-  const click = (open: Open) => {
-    const long = pressed.current?.long;
-    pressed.current = null;
-    if (long) return;
-    setPeek(null);
-    setMenu(same(menu, open) ? null : open);
-  };
+  const click = (open: Open) => setMenu(same(menu, open) ? null : open);
 
   return (
     <ul className={styles.packs} aria-label="Packs" style={{ zIndex: 5 }}>
@@ -85,7 +71,7 @@ export function Packs({
         const slots = bagSlots(state, h).total;
         const gone = h.status === 'abandoned';
         return (
-          <li key={h.id} className={styles.pack}>
+          <li key={h.id} className={styles.pack} {...(gone ? {} : pack.props(h.id))}>
             <div className={styles.packHead}>
               <img
                 src={ASSETS.portraits.placeholder}
@@ -110,42 +96,14 @@ export function Packs({
                     const item = h.inventory.bag[i];
                     if (!item) return <span key={`empty-${i}`} className={styles.slot} />;
                     const open = { hikerId: h.id, itemUid: item.uid };
-                    const name = ITEMS[item.itemId]?.name ?? 'Item';
                     return (
                       <span key={item.uid} style={{ position: 'relative' }}>
-                        <button
-                          type="button"
-                          className={styles.packItem}
-                          data-open={same(menu, open) || undefined}
-                          aria-label={`${name}: sell for ${sellPrice(item)} cap${sellPrice(item) === 1 ? '' : 's'}, or give`}
-                          draggable
-                          onDragStart={(e) => {
-                            setPeek(null);
-                            startSaleDrag(e, open);
-                          }}
-                          onMouseEnter={() => setPeek(open)}
-                          onMouseLeave={() => setPeek(null)}
-                          onFocus={() => setPeek(open)}
-                          onBlur={() => setPeek(null)}
-                          onPointerDown={(e) => pressStart(e, open)}
-                          onPointerUp={pressEnd}
-                          onPointerCancel={pressEnd}
+                        <PackItem
+                          item={item}
+                          menuOpen={same(menu, open)}
                           onClick={() => click(open)}
-                        >
-                          <ItemCard itemId={item.itemId} item={item} width={46} compact />
-                        </button>
-                        {same(peek, open) && !same(menu, open) && (
-                          <div className={styles.peek} style={{ left: -72, bottom: 76 }}>
-                            <ItemCard itemId={item.itemId} item={item} width={170} />
-                            <span className={styles.peekPrice}>
-                              SELLS FOR
-                              <b>
-                                <Icon name="acorn" size={15} color="#E9B44C" />
-                                {sellPrice(item)}
-                              </b>
-                            </span>
-                          </div>
-                        )}
+                          hikerId={h.id}
+                        />
                         {same(menu, open) && (
                           <ItemMenu
                             state={state}
@@ -166,18 +124,16 @@ export function Packs({
                     const open = { hikerId: h.id, resource: id };
                     return (
                       <span key={id} style={{ position: 'relative' }}>
-                        <button
-                          type="button"
-                          className={styles.packRes}
-                          data-open={same(menu, open) || undefined}
+                        <PackResource
+                          hikerId={h.id}
+                          resource={id}
+                          open={same(menu, open)}
                           aria-label={`${n} ${resourceName(id)}: sell or give`}
-                          draggable
-                          onDragStart={(e) => startSaleDrag(e, open satisfies DragSale)}
                           onClick={() => click(open)}
                         >
                           <img src={ASSETS.resources[id]} alt="" draggable={false} />
                           <span className={styles.count}>{n}</span>
-                        </button>
+                        </PackResource>
                         {same(menu, open) && (
                           <ResourceMenu
                             state={state}
@@ -363,5 +319,71 @@ function ResourceMenu({
         </button>
       ))}
     </Popout>
+  );
+}
+
+/** A bag card in a pack: hover or long-press for the full card and its price here. */
+function PackItem({
+  item,
+  hikerId,
+  menuOpen,
+  onClick,
+}: {
+  item: ItemInstance;
+  hikerId: string;
+  menuOpen: boolean;
+  onClick(): void;
+}) {
+  const price = sellPrice(item);
+  const caps = `${price} cap${price === 1 ? '' : 's'}`;
+  const preview = usePreview({
+    kind: 'item',
+    itemId: item.itemId,
+    item,
+    note: `Sells for ${caps} here`,
+  });
+  const drag = useDrag(
+    { kind: 'item', hikerId, itemUid: item.uid },
+    <ItemCard itemId={item.itemId} item={item} width={64} compact />,
+  );
+  return (
+    <button
+      type="button"
+      className={styles.packItem}
+      data-open={menuOpen || undefined}
+      aria-label={`${ITEMS[item.itemId]?.name ?? 'Item'}: sell for ${caps}, or give`}
+      {...mergeHandlers({ onClick }, preview, drag)}
+    >
+      <ItemCard itemId={item.itemId} item={item} width={46} compact />
+    </button>
+  );
+}
+
+/** A resource in a pack: a menu on click, and a drag source (to sell, or for the Workbench). */
+function PackResource({
+  hikerId,
+  resource,
+  open,
+  children,
+  ...rest
+}: {
+  hikerId: string;
+  resource: ResourceId;
+  open: boolean;
+  children: ReactNode;
+} & ComponentProps<'button'>) {
+  const drag = useDrag(
+    { kind: 'resource', hikerId, resource },
+    <img src={ASSETS.resources[resource]} alt="" width={46} height={46} />,
+  );
+  return (
+    <button
+      type="button"
+      className={styles.packRes}
+      data-open={open || undefined}
+      {...mergeHandlers(rest, drag)}
+    >
+      {children}
+    </button>
   );
 }

@@ -20,19 +20,41 @@ import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerCondi
 import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
+import { useDrop, type DropProps } from '../drag/drag';
+import { OrderBadge, SelectToggle } from './GroupBits';
+import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
 
 interface PartyPanelProps {
   state: GameState;
   selectedId: HikerId | null;
-  onSelect(id: HikerId): void;
+  /** `add`: Shift- or Ctrl-click, or the Select toggle: add to (or take out of) the group. */
+  onSelect(id: HikerId, add?: boolean): void;
+  /** Multi-select (Nov 14 update): each grouped hiker's turn-order number. */
+  order?: Partial<Record<HikerId, number>>;
+  /** The Select toggle, for touch: taps pick hikers for the group. */
+  picking?: boolean;
+  onPicking?(on: boolean): void;
   /** Asks to confirm abandoning the hike for this hiker. */
   onAbandon?(id: HikerId): void;
+  /** Asks to confirm taking an injury on purpose (a way out when stuck). */
+  onInjure?(id: HikerId): void;
 }
 
-export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPanelProps) {
+export function PartyPanel({
+  state,
+  selectedId,
+  onSelect,
+  onAbandon,
+  onInjure,
+  order = {},
+  picking = false,
+  onPicking,
+}: PartyPanelProps) {
   const active = state.hikers.filter((h) => h.status === 'active');
   const acted = active.filter((h) => h.acted).length;
+  // Pack things dropped on a portrait: give, eat or feed (Nov 14 update).
+  const portrait = useDrop('hiker', useItemDrops().portrait ?? NO_DROP);
   return (
     <Panel
       id="party"
@@ -42,8 +64,11 @@ export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPane
       style={{ left: 16, top: 120, width: 288, height: 864 }}
       title={<span className={styles.heading}>PARTY</span>}
       aside={
-        <span>
-          {acted} of {active.length} acted
+        <span className={styles.asideRow}>
+          {onPicking && <SelectToggle on={picking} onChange={onPicking} />}
+          <span>
+            {acted} of {active.length} acted
+          </span>
         </span>
       }
     >
@@ -54,8 +79,11 @@ export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPane
             state={state}
             hiker={h}
             selected={h.id === selectedId}
-            onSelect={onSelect}
+            onSelect={(id, add) => onSelect(id, add || picking)}
+            turn={order[h.id]}
+            drop={portrait.props(h.id)}
             {...(onAbandon ? { onAbandon } : {})}
+            {...(onInjure ? { onInjure } : {})}
           />
         ))}
       </div>
@@ -75,12 +103,19 @@ function HikerCard({
   selected,
   onSelect,
   onAbandon,
+  onInjure,
+  drop,
+  turn,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
-  onSelect(id: HikerId): void;
+  onSelect(id: HikerId, add?: boolean): void;
   onAbandon?(id: HikerId): void;
+  onInjure?(id: HikerId): void;
+  drop?: DropProps;
+  /** Its place in the group's turn order. */
+  turn?: number;
 }) {
   const color = characterFor(h.id).color;
   const tag = statusTag(h, selected);
@@ -96,18 +131,22 @@ function HikerCard({
       data-selected={selected}
       data-dim={dim && !selected}
       style={selected ? { borderColor: color } : undefined}
-      onClick={() => onSelect(h.id)}
+      onClick={(e) => onSelect(h.id, e.shiftKey || e.ctrlKey || e.metaKey)}
+      data-grouped={turn !== undefined || undefined}
+      {...drop}
     >
       <div className={styles.top}>
-        <img
-          className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
-          alt=""
-          style={{
-            boxShadow: `0 0 0 3px ${color}`,
-            filter: dim && !selected ? 'grayscale(1)' : 'none',
-          }}
-        />
+        <OrderBadge n={turn}>
+          <img
+            className={styles.portrait}
+            src={ASSETS.portraits.placeholder}
+            alt=""
+            style={{
+              boxShadow: `0 0 0 3px ${color}`,
+              filter: dim && !selected ? 'grayscale(1)' : 'none',
+            }}
+          />
+        </OrderBadge>
         <div className={styles.info}>
           <div className={styles.nameRow}>
             <span className={styles.name}>{h.name.toUpperCase()}</span>
@@ -160,7 +199,14 @@ function HikerCard({
         </div>
       </div>
 
-      {selected && <Details state={state} hiker={h} {...(onAbandon ? { onAbandon } : {})} />}
+      {selected && (
+        <Details
+          state={state}
+          hiker={h}
+          {...(onAbandon ? { onAbandon } : {})}
+          {...(onInjure ? { onInjure } : {})}
+        />
+      )}
     </div>
   );
 }
@@ -204,11 +250,14 @@ export function Details({
   state,
   hiker: h,
   onAbandon,
+  onInjure,
 }: {
   state: GameState;
   hiker: Hiker;
   /** Asks to confirm abandoning the hike for this hiker (kept away from the action grid). */
   onAbandon?(id: HikerId): void;
+  /** Asks to confirm taking an injury on purpose, for a hiker who's stuck (Wyatt, Nov 14). */
+  onInjure?(id: HikerId): void;
 }) {
   const filled = h.slots.filter((s) => s.traitId).length;
   const xp = xpProgress(h);
@@ -295,11 +344,23 @@ export function Details({
         </span>
       </div>
 
-      {onAbandon && (h.status === 'active' || h.status === 'passedOut') && (
-        <button type="button" className={styles.abandon} onClick={() => onAbandon(h.id)}>
-          Abandon the hike…
-        </button>
-      )}
+      <div className={styles.lastResorts}>
+        {onInjure && h.status === 'active' && (
+          <button
+            type="button"
+            className={styles.abandon}
+            onClick={() => onInjure(h.id)}
+            title="Take an injury: every stat below 5 rises to 5."
+          >
+            Submit to injury…
+          </button>
+        )}
+        {onAbandon && (h.status === 'active' || h.status === 'passedOut') && (
+          <button type="button" className={styles.abandon} onClick={() => onAbandon(h.id)}>
+            Abandon the hike…
+          </button>
+        )}
+      </div>
     </div>
   );
 }

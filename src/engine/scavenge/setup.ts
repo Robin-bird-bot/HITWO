@@ -20,13 +20,6 @@ import { canDeal, scavengeSpots, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 import { nodeGives } from '../weather';
 
-const NODE_LABEL: Record<NodeType, string> = {
-  forest: 'Forest',
-  river: 'River',
-  wildlife: 'Wildlife',
-  mountain: 'Mountain',
-};
-
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   bonuses: ScavengeBonus[];
   bonusOffers: ScavengeBonusOffer[];
@@ -82,8 +75,6 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     }
   }
 
-  // Low Abundance: a warning for each low node here, and when every node is low, fewer
-  // cards and less Luck.
   const bonuses: ScavengeBonus[] = mods.map(({ source, label, tone }) => ({ source, label, tone }));
   // A Luck bonus left on this tile (Hungry Animals), until it runs out.
   const tileLuck = tile?.luckBonus;
@@ -103,29 +94,7 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     luck += fireLuck;
     bonuses.push({ source: 'Fire', label: `Fire nearby: +${fireLuck} Luck`, tone: 'luck' });
   }
-  const kinds = [...new Set(giving.flatMap((n) => (n.type === 'caps' ? [] : [n.type])))];
-  const low = kinds.filter((n) => state.abundance[n] <= BALANCE.abundance.lowAt);
-  for (const n of low) {
-    bonuses.push({
-      source: 'Abundance',
-      label: `${NODE_LABEL[n]} Abundance is low: fewer ${NODE_LABEL[n]} cards`,
-      tone: 'warning',
-    });
-  }
-  if (kinds.length > 0 && low.length === kinds.length) {
-    const { cards: fewer, luck: less } = BALANCE.abundance.lowTile;
-    cards += fewer;
-    luck += less;
-    bonuses.push({
-      source: 'Abundance',
-      label: `Everything here is running low: ${Math.abs(fewer)} fewer card, −${Math.abs(less)} Luck`,
-      tone: 'warning',
-    });
-  }
-
-  const canGive = new Set(
-    scavengeSpots({ nodes: giving, abundance: state.abundance }).map((s) => s.node),
-  );
+  const canGive = new Set(scavengeSpots({ nodes: giving }).map((s) => s.node));
   return {
     nodes: giving,
     abundance: state.abundance,
@@ -168,10 +137,8 @@ export function scavengeTileReason(state: GameState, hiker: Hiker): string | und
   const tile = state.section.tiles[hiker.tileId];
   if (tile?.wonder) return 'Nobody can scavenge at a Wonder: it has no nodes.';
   if (!tile || tile.nodes.length === 0) return 'There’s nothing to scavenge on this tile.';
-  if (!canDeal({ nodes: tile.nodes.filter(nodeGives), abundance: state.abundance })) {
-    return tile.nodes.some((n) => !nodeGives(n))
-      ? 'Nothing to find here: the weather has frozen or burned the nodes.'
-      : 'Nothing left to find here. Tend it or move on.';
+  if (!canDeal({ nodes: tile.nodes.filter(nodeGives) })) {
+    return 'Nothing to find here: the weather has frozen or burned the nodes.';
   }
   if (resourceCount(hiker) >= resourceLimit(state, hiker)) {
     return `${hiker.name}’s resources are full (${resourceLimit(state, hiker)}/${resourceLimit(state, hiker)}). Give some away or return them to nature first.`;

@@ -33,18 +33,18 @@ describe('trail log sentences', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L');
     place(s, 'birch', 'L');
-    s.abundance.forest = 3;
+    s.abundance = 3;
     s.hikers[0]!.inventory.resources = { wood: 2 };
     const after = run(
       s,
-      { type: 'tend', hikerId: 'ash', node: 'forest' },
+      { type: 'tend', hikerId: 'ash' },
       { type: 'give', fromId: 'ash', toId: 'birch', resource: 'wood' },
       { type: 'returnToNature', hikerId: 'ash', resource: 'wood' },
     );
     expect(texts(after)).toEqual([
-      'Ash tended the Forest (Forest Abundance 3 → 5, −1 Energy).',
+      'Ash tended the land (Abundance 3 → 5, −1 Appetite).',
       'Ash gave Wood to Birch.',
-      'Ash returned Wood to nature (+1 Forest).',
+      'Ash returned Wood to nature (+1 Abundance).',
     ]);
   });
 
@@ -75,8 +75,9 @@ describe('trail log sentences', () => {
     }
     const lines = texts(s);
     expect(lines).toContain('Ash slept.');
-    expect(lines).toContain('Birch: −2 Energy (no sleep), −1 Appetite (end of day).');
-    expect(lines).toContain('Ash: −1 Appetite (end of day).');
+    // No Appetite is lost overnight (Nov 14 update): only Birch's no-sleep drain.
+    expect(lines).toContain('Birch: −2 Energy (no sleep).');
+    expect(lines.some((l) => l.includes('end of day'))).toBe(false);
     expect(lines.at(-1)).toBe('Day 2 · Morning');
   });
 
