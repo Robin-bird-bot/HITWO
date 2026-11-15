@@ -53,8 +53,11 @@ export function DragLayer({
   const dropped = useRef(false);
   const stop = useRef<(() => void) | null>(null);
   const change = useRef(onDragChange);
+  const fit = useStage();
+  const fitRef = useRef(fit);
   useEffect(() => {
     change.current = onDragChange;
+    fitRef.current = fit;
   });
   useEffect(() => () => stop.current?.(), []);
 
@@ -106,7 +109,12 @@ export function DragLayer({
           setGhost(null);
           if (!drop || !ev) return;
           const spot = spotAt(ev.clientX, ev.clientY, payload, targets.current);
-          if (spot) targets.current.get(spot.id)?.onDrop(payload, spot.arg);
+          if (spot) {
+            targets.current.get(spot.id)?.onDrop(payload, spot.arg, {
+              x: (ev.clientX - fitRef.current.left) / fitRef.current.scale,
+              y: (ev.clientY - fitRef.current.top) / fitRef.current.scale,
+            });
+          }
         };
         const up = (ev: PointerEvent) => finish(true, ev);
         const cancel = () => finish(false);

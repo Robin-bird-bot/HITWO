@@ -26,7 +26,10 @@ import {
 } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ItemCard as CardFace } from '../items/ItemCard';
-import { usePreview, withPreview } from '../preview/preview';
+import { usePreview } from '../preview/preview';
+import { mergeHandlers } from '../app/mergeHandlers';
+import { useDrag, useDrop, type DropProps } from '../drag/drag';
+import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import { useStage } from '../stage/StageContext';
 import { FEATURE_LOOK, NODE_IMAGE, NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 import { actionStates, tileName, type ActionId, type ActionState } from './hikerInfo';
@@ -487,6 +490,9 @@ interface InventoryProps {
 export function Equipped({ hiker, compact, onPick }: { hiker: Hiker } & InventoryProps) {
   const worn = EQUIP.filter(({ slot }) => hiker.inventory.equipped[slot]).length;
   const stageTop = useStageTop();
+  // Clothes dragged from the bag go on their own slot (Nov 14 update).
+  const drops = useItemDrops();
+  const slotDrop = useDrop('slot', drops.slot ?? NO_DROP);
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -505,6 +511,7 @@ export function Equipped({ hiker, compact, onPick }: { hiker: Hiker } & Inventor
               key={slot}
               item={item}
               size="large"
+              drop={slotDrop.props(slot)}
               worn
               {...(onPick
                 ? {
@@ -514,7 +521,13 @@ export function Equipped({ hiker, compact, onPick }: { hiker: Hiker } & Inventor
                 : {})}
             />
           ) : (
-            <div key={slot} className={styles.empty} data-size="large" title={`${label}: empty`}>
+            <div
+              key={slot}
+              className={styles.empty}
+              data-size="large"
+              title={`${label}: empty`}
+              {...slotDrop.props(slot)}
+            >
               <Icon name={icon} size={18} color="#6F6A60" />
               <span>{label.toUpperCase()}</span>
             </div>
@@ -530,12 +543,18 @@ function ItemCard({
   item,
   size,
   worn = false,
+  dragFrom,
+  drop,
   onClick,
 }: {
   item: ItemInstance;
   size: 'large' | 'small';
   /** Clothes being worn: the menu takes them off. */
   worn?: boolean;
+  /** Whose bag it's in, when it can be dragged (Nov 14 update). */
+  dragFrom?: HikerId;
+  /** A worn slot: a drop spot for clothes. */
+  drop?: DropProps;
   onClick?(e: React.MouseEvent<HTMLElement>): void;
 }) {
   const def = ITEMS[item.itemId];
@@ -546,9 +565,13 @@ function ItemCard({
   const face = (
     <CardFace itemId={item.itemId} item={item} width={size === 'large' ? 64 : 46} compact />
   );
+  const drag = useDrag(
+    dragFrom ? { kind: 'item', hikerId: dragFrom, itemUid: item.uid } : null,
+    <CardFace itemId={item.itemId} item={item} width={64} compact />,
+  );
   if (!onClick) {
     return (
-      <div className={styles.itemCard} data-size={size} {...preview}>
+      <div className={styles.itemCard} data-size={size} {...preview} {...drop}>
         {face}
       </div>
     );
@@ -558,7 +581,8 @@ function ItemCard({
       type="button"
       className={styles.itemCard}
       data-size={size}
-      {...withPreview({ onClick }, preview)}
+      {...mergeHandlers({ onClick }, preview, drag)}
+      {...drop}
       aria-label={`${name}: ${what}`}
     >
       {face}
@@ -587,6 +611,7 @@ export function Bag({
   const stageTop = useStageTop();
   const slots = bagSlots(state, hiker);
   const size = slots.total <= 4 ? 'large' : 'small';
+  const dragFrom = useItemDrops().packs && hiker.status === 'active' ? hiker.id : undefined;
   const items = hiker.inventory.bag;
   const extra = slots.fromItems.map((i) => `${i.count} from ${i.name}`).join(', ');
   const cells: { kind: 'base' | 'item'; from?: string }[] = [
@@ -613,6 +638,7 @@ export function Bag({
                 key={i}
                 item={item}
                 size={size}
+                {...(dragFrom ? { dragFrom } : {})}
                 {...(onPick
                   ? {
                       onClick: (e: React.MouseEvent<HTMLElement>) =>
@@ -651,6 +677,7 @@ export function Resources({
 }: { state: GameState; hiker: Hiker } & InventoryProps) {
   const held = RESOURCES.filter((r) => (hiker.inventory.resources[r.id] ?? 0) > 0);
   const stageTop = useStageTop();
+  const dragFrom = useItemDrops().packs && hiker.status === 'active' ? hiker.id : undefined;
   return (
     <div className={styles.block}>
       <div className={styles.blockHead}>
@@ -679,10 +706,10 @@ export function Resources({
               </>
             );
             return onPick ? (
-              <button
+              <ResourceButton
                 key={r.id}
-                type="button"
-                className={styles.resource}
+                hikerId={dragFrom}
+                resource={r.id}
                 title={`${r.name} ×${n}`}
                 aria-label={`${r.name} ×${n}: give or return`}
                 onClick={(e) =>
@@ -690,7 +717,7 @@ export function Resources({
                 }
               >
                 {content}
-              </button>
+              </ResourceButton>
             ) : (
               <div key={r.id} className={styles.resource} title={`${r.name} ×${n}`}>
                 {content}
@@ -700,6 +727,28 @@ export function Resources({
         </div>
       )}
     </div>
+  );
+}
+
+/** A resource in the pack: a menu on click, and a drag source (Nov 14 update). */
+function ResourceButton({
+  hikerId,
+  resource,
+  children,
+  ...rest
+}: {
+  hikerId: HikerId | undefined;
+  resource: ResourceId;
+  children: ReactNode;
+} & React.ComponentProps<'button'>) {
+  const drag = useDrag(
+    hikerId ? { kind: 'resource', hikerId, resource } : null,
+    <img src={ASSETS.resources[resource]} alt="" width={44} height={44} />,
+  );
+  return (
+    <button type="button" className={styles.resource} {...rest} {...drag}>
+      {children}
+    </button>
   );
 }
 

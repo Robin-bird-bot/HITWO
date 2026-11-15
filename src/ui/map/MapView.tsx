@@ -6,7 +6,8 @@ import { useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction }
 import type { Hiker, HikerId, Section, Tile } from '../../engine';
 import { characterFor } from '../../content/characters';
 import { useStage } from '../stage/StageContext';
-import { useDragPointer, useDragState, useDrop } from '../drag/drag';
+import { useDragPointer, useDragState, useDrop, type DropTarget } from '../drag/drag';
+import { NO_DROP } from '../drag/itemDrops';
 import { HikerTokens } from './HikerTokens';
 import { MapTile } from './MapTile';
 import {
@@ -62,6 +63,11 @@ interface MapViewProps {
     onDrop(hikerId: HikerId, tileId: string): void;
     costOn?(hikerId: HikerId, tileId: string): string;
   };
+  /**
+   * Dragging pack things onto the map (Nov 14 update): a tile (a map tool's
+   * target, or a shelter's own tile), or anywhere (a tool with no tile).
+   */
+  itemDrag?: { tile: DropTarget; map: DropTarget };
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -96,17 +102,23 @@ export function MapView({
   setCamera,
   bounds,
   hikerDrag,
+  itemDrag,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
   const dragged = drag?.payload.kind === 'hiker' ? drag.payload.hikerId : null;
   const tileDrop = useDrop('tile', {
     accepts: (p, arg) =>
-      !!hikerDrag && p.kind === 'hiker' && !!arg && hikerDrag.accepts(p.hikerId, arg),
-    onDrop: (p, arg) => {
-      if (hikerDrag && p.kind === 'hiker' && arg) hikerDrag.onDrop(p.hikerId, arg);
+      p.kind === 'hiker'
+        ? !!hikerDrag && !!arg && hikerDrag.accepts(p.hikerId, arg)
+        : !!itemDrag && itemDrag.tile.accepts(p, arg),
+    onDrop: (p, arg, at) => {
+      if (p.kind === 'hiker') {
+        if (hikerDrag && arg) hikerDrag.onDrop(p.hikerId, arg);
+      } else itemDrag?.tile.onDrop(p, arg, at);
     },
   });
+  const mapDrop = useDrop('map', itemDrag?.map ?? NO_DROP);
   const viewportRef = useRef<HTMLDivElement>(null);
   const draggedRef = useRef(false);
   // Latest values for the native listeners below.
@@ -180,6 +192,7 @@ export function MapView({
       ref={viewportRef}
       className={styles.viewport}
       data-dragging={dragged ? 'hiker' : undefined}
+      {...(itemDrag ? mapDrop.props() : {})}
       onPointerDown={onPointerDown}
       onClickCapture={(e) => {
         // A drag shouldn't also count as a click on whatever it ended over.
@@ -212,7 +225,7 @@ export function MapView({
             onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
             checkpointLabelOnHover={checkpointLabelOnHover}
             onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
-            {...(hikerDrag ? { drop: tileDrop.props(t.id) } : {})}
+            {...(hikerDrag || itemDrag ? { drop: tileDrop.props(t.id) } : {})}
           />
         ))}
         <LineBadges section={section} />

@@ -36,6 +36,8 @@ import { Face, Made, PartIcons, PickBody, Slot, Swap } from '../craft/CraftWindo
 import { partLabel, payWords, recipeWords, resName } from '../craft/craftWords';
 import { Icon } from '../icons/Icon';
 import { usePreview, withPreview } from '../preview/preview';
+import { useDrop, type DragPayload } from '../drag/drag';
+import { swapInto } from '../craft/craftSwap';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import styles from './Workbench.module.css';
@@ -154,6 +156,22 @@ function CraftHere({
   };
   const reason = validateAction(state, action);
   const tier = craftTier(state, crafter, type);
+  // A resource dragged from a pack onto a space pays for it (Nov 14 update).
+  // TODO(wyatt): what dragging an item onto the Workbench should do (nothing yet).
+  const into = (p: DragPayload, arg: string | undefined) =>
+    p.kind === 'resource' && arg !== undefined
+      ? swapInto(state, crafter, recipe, slots, Number(arg), p.hikerId, p.resource)
+      : null;
+  const space = useDrop('space', {
+    accepts: (p, arg) => !!into(p, arg),
+    onDrop: (p, arg) => {
+      const next = into(p, arg);
+      if (next) {
+        setCustom(next);
+        setSwapAt(null);
+      }
+    },
+  });
   const temp = state.station?.tempBlueprints ?? [];
   const known = crafter.blueprints ?? [];
   const blueprints = [...temp.filter((id) => !known.includes(id)), ...known];
@@ -228,6 +246,7 @@ function CraftHere({
                     filled={s}
                     open={swapAt === k}
                     onClick={() => setSwapAt(swapAt === k ? null : k)}
+                    drop={space.props(String(k))}
                   />
                 ) : null,
               )}

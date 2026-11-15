@@ -20,6 +20,8 @@ import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerCondi
 import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
+import { useDrop, type DropProps } from '../drag/drag';
+import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
 
 interface PartyPanelProps {
@@ -33,6 +35,8 @@ interface PartyPanelProps {
 export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPanelProps) {
   const active = state.hikers.filter((h) => h.status === 'active');
   const acted = active.filter((h) => h.acted).length;
+  // Pack things dropped on a portrait: give, eat or feed (Nov 14 update).
+  const portrait = useDrop('hiker', useItemDrops().portrait ?? NO_DROP);
   return (
     <Panel
       id="party"
@@ -55,6 +59,7 @@ export function PartyPanel({ state, selectedId, onSelect, onAbandon }: PartyPane
             hiker={h}
             selected={h.id === selectedId}
             onSelect={onSelect}
+            drop={portrait.props(h.id)}
             {...(onAbandon ? { onAbandon } : {})}
           />
         ))}
@@ -75,12 +80,14 @@ function HikerCard({
   selected,
   onSelect,
   onAbandon,
+  drop,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
   onSelect(id: HikerId): void;
   onAbandon?(id: HikerId): void;
+  drop?: DropProps;
 }) {
   const color = characterFor(h.id).color;
   const tag = statusTag(h, selected);
@@ -97,6 +104,7 @@ function HikerCard({
       data-dim={dim && !selected}
       style={selected ? { borderColor: color } : undefined}
       onClick={() => onSelect(h.id)}
+      {...drop}
     >
       <div className={styles.top}>
         <img

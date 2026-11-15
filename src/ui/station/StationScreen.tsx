@@ -27,14 +27,16 @@ import {
 import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { ConfirmDialog } from '../game/ConfirmDialog';
 import { Icon } from '../icons/Icon';
+import type { DropTarget } from '../drag/drag';
+import { buyDrop, sellDrop } from '../drag/dropRules';
 import { ItemText } from '../preview/ItemText';
 import { resourceName } from '../scavenge/cardLook';
 import { BuyDialog } from './BuyDialog';
 import { Counter } from './Counter';
 import { PreviewTrail, type PreviewMode } from './PreviewTrail';
 import { Workbench } from './Workbench';
-import type { DragSale } from './stationLook';
 import { Packs, type SaleRequest } from './Packs';
+import { offerName } from './stationLook';
 import { KeeperArm, StationRoom } from './StationRoom';
 import { aheadChips, marketChips, talkLine, type Talk, type TalkChip } from './stationTalk';
 import counterStyles from './Counter.module.css';
@@ -63,6 +65,7 @@ export function StationScreen({
   const [flipped, setFlipped] = useState<string | null>(null);
   const [tab, setTab] = useState<'shop' | 'workbench'>('shop');
   const [preview, setPreview] = useState<PreviewMode | null>(null);
+  const [dropBuy, setDropBuy] = useState<Action | null>(null);
   // Arriving moves the keyboard focus into the station.
   const screen = useFocusOnOpen<HTMLElement>();
 
@@ -91,19 +94,23 @@ export function StationScreen({
     }
   };
 
-  // A drag onto the sell slot sells a whole resource stack (the menu can sell fewer).
-  const fromDrag = (sale: DragSale) =>
-    setSelling(
-      sale.resource
-        ? {
-            hikerId: sale.hikerId,
-            resource: sale.resource,
-            count:
-              state.hikers.find((h) => h.id === sale.hikerId)?.inventory.resources[sale.resource] ??
-              1,
-          }
-        : { hikerId: sale.hikerId, ...(sale.itemUid ? { itemUid: sale.itemUid } : {}) },
-    );
+  // The shared drag (Nov 14 update). A pack card or resource onto the sell slot
+  // sells it (a whole resource stack; the menu can sell fewer), with the confirm.
+  const sellTarget: DropTarget = {
+    accepts: (p) => !!sellDrop(state, p),
+    onDrop: (p) => {
+      const sale = sellDrop(state, p);
+      if (sale) setSelling(sale);
+    },
+  };
+  // A counter card onto a hiker's pack: they buy it, after a small confirm.
+  const buyTarget: DropTarget = {
+    accepts: (p, hikerId) => !!hikerId && !!buyDrop(state, p, hikerId),
+    onDrop: (p, hikerId) => {
+      const action = hikerId ? buyDrop(state, p, hikerId) : null;
+      if (action) setDropBuy(action);
+    },
+  };
 
   return (
     <section
@@ -178,15 +185,32 @@ export function StationScreen({
       </div>
 
       {shown === 'shop' ? (
-        <Counter state={state} flipped={flipped} onPick={pick} onSell={fromDrag} />
+        <Counter state={state} flipped={flipped} onPick={pick} sellDrop={sellTarget} />
       ) : (
         <div className={counterStyles.counter}>
           <Workbench state={state} simple={simple} onDispatch={onDispatch} />
         </div>
       )}
       <KeeperArm theme={theme} />
-      <Packs state={state} onSell={setSelling} onDispatch={onDispatch} />
+      <Packs state={state} onSell={setSelling} onDispatch={onDispatch} buyDrop={buyTarget} />
 
+      {dropBuy?.type === 'buy' && (
+        <ConfirmDialog
+          title={`Buy ${offerName(station, dropBuy.offerId)} for ${
+            findOffer(station, dropBuy.offerId)?.price ?? 0
+          } caps?`}
+          message={`${state.hikers.find((h) => h.id === dropBuy.hikerId)?.name ?? 'They'} ${
+            findOffer(station, dropBuy.offerId)?.kind === 'blueprint' ? 'learns it' : 'takes it'
+          }.`}
+          confirmLabel="Buy"
+          cancelLabel="Cancel"
+          onCancel={() => setDropBuy(null)}
+          onConfirm={() => {
+            setDropBuy(null);
+            buy(dropBuy);
+          }}
+        />
+      )}
       {buying && (
         <BuyDialog state={state} offerId={buying} onBuy={buy} onClose={() => setBuying(null)} />
       )}

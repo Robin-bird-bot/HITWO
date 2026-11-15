@@ -522,3 +522,29 @@ button.itemCard:hover {
 .abandon:hover {
   background: rgba(229, 98, 74, 0.16);
 }
+
+/* ── Drop spots while a pack thing is dragged (Nov 14 update) ── */
+
+.empty[data-drop='ok'],
+.itemCard[data-drop='ok'] {
+  outline: 2px solid rgba(233, 180, 76, 0.8);
+  outline-offset: 2px;
+}
+
+.empty[data-drop='hover'],
+.itemCard[data-drop='hover'] {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+  background: rgba(233, 180, 76, 0.16);
+}
+
+.empty[data-drop='no'],
+.itemCard[data-drop='no'] {
+  opacity: 0.5;
+}
+
+.itemCard[data-draggable],
+.resource[data-draggable] {
+  touch-action: none;
+  cursor: grab;
+}

@@ -185,9 +185,51 @@
   text-align: center;
 }
 
-.sellSlot[data-over] {
+/* While a pack card is dragged: it glows, and more with the card over it. */
+.sellSlot[data-drop='ok'] {
   border-color: var(--gold);
-  background: rgba(233, 180, 76, 0.18);
+  background: rgba(233, 180, 76, 0.12);
+}
+
+.sellSlot[data-drop='hover'] {
+  border-color: var(--gold);
+  background: rgba(233, 180, 76, 0.24);
+}
+
+.sellSlot[data-drop='no'] {
+  opacity: 0.6;
+}
+
+/* A card the party can't afford, pressed: a little shake (Nov 14 update). */
+.cardButton[data-shake],
+.small[data-shake] {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardButton[data-shake],
+  .small[data-shake] {
+    animation: none;
+  }
+}
+
+/* What follows the pointer while a resource bundle is dragged. */
+.bundleGhost {
+  display: block;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
 }
 
 .sellTitle {
@@ -733,4 +775,30 @@
   .cardButton {
     transition: none;
   }
+}
+
+/* A pack while a counter card is dragged: it glows if that hiker can take it (Nov 14 update). */
+.pack[data-drop='ok'] {
+  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.8);
+}
+
+.pack[data-drop='hover'] {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 18px rgba(233, 180, 76, 0.5);
+}
+
+.pack[data-drop='no'] {
+  opacity: 0.6;
+}
+
+.packItem[data-draggable],
+.packRes[data-draggable] {
+  touch-action: none;
+}
+
+/* The counter's rows scroll sideways by swiping: a card takes only an upward or downward drag. */
+.cardButton[data-draggable],
+.small[data-draggable] {
+  touch-action: pan-x;
 }

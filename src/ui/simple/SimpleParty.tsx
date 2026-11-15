@@ -17,6 +17,8 @@ import { thresholdLooks, timedLooks } from '../conditions/hikerConditions';
 import { Popout } from '../panels/Popout';
 import { StatBar } from '../panels/StatBar';
 import { useStage } from '../stage/StageContext';
+import { useDrop, type DropProps } from '../drag/drag';
+import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './Simple.module.css';
 
 interface SimplePartyProps {
@@ -36,6 +38,8 @@ export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePa
   const active = state.hikers.filter((h) => h.status === 'active');
   const acted = active.filter((h) => h.acted).length;
   const openHiker = open && state.hikers.find((h) => h.id === open.id);
+  // Pack things dropped on a portrait: give, eat or feed (Nov 14 update).
+  const portrait = useDrop('hiker', useItemDrops().portrait ?? NO_DROP);
 
   const click = (h: Hiker, card: HTMLElement) => {
     onSelect(h.id);
@@ -71,6 +75,7 @@ export function SimpleParty({ state, selectedId, onSelect, onAbandon }: SimplePa
               hiker={h}
               selected={h.id === selectedId}
               onClick={(card) => click(h, card)}
+              drop={portrait.props(h.id)}
             />
           ))}
         </div>
@@ -122,11 +127,13 @@ function HikerCard({
   hiker: h,
   selected,
   onClick,
+  drop,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
   onClick(card: HTMLElement): void;
+  drop?: DropProps;
 }) {
   const color = characterFor(h.id).color;
   const family = FAMILY_LOOK[h.family];
@@ -158,6 +165,7 @@ function HikerCard({
           : undefined
       }
       onClick={(e) => onClick(e.currentTarget)}
+      {...drop}
     >
       <img
         className={styles.portrait}

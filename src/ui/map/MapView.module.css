@@ -744,3 +744,21 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* ── Dragging pack things onto the map (Nov 14 update) ── */
+
+/* A tile a dragged item can be used on or placed on. */
+.tile[data-drop='ok'] {
+  filter: drop-shadow(0 0 9px rgba(233, 180, 76, 0.75))
+    drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));
+}
+
+/* A tool with no tile to pick: the whole map takes it. */
+.viewport[data-drop='ok'],
+.viewport[data-drop='hover'] {
+  box-shadow: inset 0 0 0 4px rgba(233, 180, 76, 0.55);
+}
+
+.viewport[data-drop='hover'] {
+  box-shadow: inset 0 0 0 6px rgba(233, 180, 76, 0.9);
+}

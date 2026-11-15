@@ -20,7 +20,6 @@ import {
   craftRecipe,
   craftSetup,
   craftTier,
-  fitsPart,
   paymentReason,
   spaceParts,
   teachCost,
@@ -47,6 +46,8 @@ import { ItemBack } from '../scavenge/ItemBack';
 import { useDraggable } from '../windows/useDraggable';
 import styles from './CraftWindow.module.css';
 import { partLabel, payWords, recipeWords, resName } from './craftWords';
+import { keyEnough, swapInto, swapOptions } from './craftSwap';
+import type { DropProps } from '../drag/drag';
 
 export type CraftTab = 'craft' | 'teach';
 
@@ -499,10 +500,13 @@ export function Slot({
   filled,
   open,
   onClick,
+  drop,
 }: {
   filled: PaidSlot | null;
   open: boolean;
   onClick(): void;
+  /** At the Workbench: a resource dragged from a pack can go here (Nov 14 update). */
+  drop?: DropProps;
 }) {
   return (
     <button
@@ -512,6 +516,7 @@ export function Slot({
       aria-pressed={open}
       aria-label={filled ? `${resName(filled.resource)}: tap to swap` : 'Empty: tap to fill'}
       onClick={onClick}
+      {...drop}
     >
       {filled && (
         <>
@@ -546,53 +551,13 @@ export function Swap({
   at: number;
   onSlots(next: (PaidSlot | null)[]): void;
 }) {
-  const parts = spaceParts(recipe);
-  const partIndex = parts[at] ?? 0;
-  const part = recipe[partIndex];
+  const part = recipe[spaceParts(recipe)[at] ?? 0];
   if (!part) return null;
   const key = !!part.ids && part.ids.length > 1;
-  const pool = craftPool(state, hiker);
-  /** How many of a hiker's resource the other spaces already use. */
-  const usedElsewhere = (from: string, r: ResourceId, skip: (k: number) => boolean) =>
-    slots.filter((s, k) => !skip(k) && s?.from === from && s.resource === r).length;
-
-  const options: { from: Hiker; resource: ResourceId; left: number }[] = [];
-  for (const h of pool) {
-    for (const [r, n] of Object.entries(h.inventory.resources) as [ResourceId, number][]) {
-      if (!fitsPart(part, r)) continue;
-      const skip = key ? (k: number) => parts[k] === partIndex : (k: number) => k === at;
-      const left = n - usedElsewhere(h.id, r, skip);
-      if (left > 0) options.push({ from: h, resource: r, left });
-    }
-  }
-
+  const options = swapOptions(state, hiker, recipe, slots, at);
   const choose = (from: string, resource: ResourceId) => {
-    const next = [...slots];
-    if (!key) {
-      next[at] = { from, resource };
-      onSlots(next);
-      return;
-    }
-    // A key part: every space takes this resource, the chosen hiker's first, then the others'.
-    const spaces = parts.flatMap((p, k) => (p === partIndex ? [k] : []));
-    const givers = [from, ...pool.map((h) => h.id).filter((id) => id !== from)];
-    const counts = new Map(
-      givers.map((id) => [
-        id,
-        (pool.find((h) => h.id === id)?.inventory.resources[resource] ?? 0) -
-          usedElsewhere(id, resource, (k) => parts[k] === partIndex),
-      ]),
-    );
-    for (const k of spaces) {
-      const giver = givers.find((id) => (counts.get(id) ?? 0) > 0);
-      if (!giver) {
-        next[k] = null;
-        continue;
-      }
-      counts.set(giver, (counts.get(giver) ?? 0) - 1);
-      next[k] = { from: giver, resource };
-    }
-    onSlots(next);
+    const next = swapInto(state, hiker, recipe, slots, at, from, resource);
+    if (next) onSlots(next);
   };
 
   return (
@@ -604,8 +569,7 @@ export function Swap({
       {options.map((o) => {
         const current = slots[at];
         const on = current?.from === o.from.id && current.resource === o.resource;
-        const enough =
-          !key || pool.reduce((n, h) => n + (h.inventory.resources[o.resource] ?? 0), 0) >= part.n;
+        const enough = keyEnough(state, hiker, recipe, at, o.resource);
         return (
           <button
             key={`${o.from.id}:${o.resource}`}

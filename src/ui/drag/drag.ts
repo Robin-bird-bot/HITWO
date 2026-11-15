@@ -21,10 +21,14 @@ import {
   type PointerEvent,
   type ReactNode,
 } from 'react';
-import type { HikerId } from '../../engine';
+import type { HikerId, ResourceId } from '../../engine';
 
-/** What's being dragged. Later steps add items, resources and shop cards. */
-export type DragPayload = { kind: 'hiker'; hikerId: HikerId };
+/** What's being dragged: a hiker, a bag item or resource from a pack, or a shop card. */
+export type DragPayload =
+  | { kind: 'hiker'; hikerId: HikerId }
+  | { kind: 'item'; hikerId: HikerId; itemUid: string }
+  | { kind: 'resource'; hikerId: HikerId; resource: ResourceId }
+  | { kind: 'offer'; offerId: string };
 
 /** A spot under the pointer: a target's id, and which of its spots. */
 export interface DropSpot {
@@ -34,7 +38,8 @@ export interface DropSpot {
 
 export interface DropTarget {
   accepts(payload: DragPayload, arg?: string): boolean;
-  onDrop(payload: DragPayload, arg?: string): void;
+  /** `at`: where it was dropped, in stage pixels (for a pop-up there). */
+  onDrop(payload: DragPayload, arg: string | undefined, at: { x: number; y: number }): void;
 }
 
 export interface DragState {
@@ -136,7 +141,7 @@ export function useDrop(id: string, target: DropTarget) {
     if (!api) return;
     return api.register(id, {
       accepts: (p, arg) => live.current.accepts(p, arg),
-      onDrop: (p, arg) => live.current.onDrop(p, arg),
+      onDrop: (p, arg, at) => live.current.onDrop(p, arg, at),
     });
   }, [api, id]);
   const state = api?.state ?? null;

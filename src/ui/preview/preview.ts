@@ -18,6 +18,7 @@ import {
   type PointerEvent,
 } from 'react';
 import { BALANCE } from '../../config/balance';
+import { mergeHandlers } from '../app/mergeHandlers';
 import type { ItemId, ItemInstance, ScavengeCard } from '../../engine';
 
 export type PreviewContent =
@@ -71,7 +72,8 @@ export function usePreview(
   const clear = () => window.clearTimeout(timer.current);
   return {
     onPointerEnter: (e) => {
-      if (e.pointerType !== 'mouse') return;
+      // Nothing pops up over the spots while something is being dragged.
+      if (e.pointerType !== 'mouse' || document.body.dataset.dragging) return;
       clear();
       const el = e.currentTarget;
       timer.current = window.setTimeout(
@@ -126,16 +128,5 @@ export function usePreview(
  * (the element's first). For cards that already react to clicks or presses.
  */
 export function withPreview<T extends object>(own: T, preview: PreviewHandlers): T {
-  const out: Record<string, unknown> = { ...preview, ...own };
-  for (const key of Object.keys(preview) as (keyof PreviewHandlers)[]) {
-    const a = (own as Record<string, unknown>)[key];
-    const b = preview[key];
-    if (typeof a === 'function' && typeof b === 'function') {
-      out[key] = (e: never) => {
-        (a as (e: never) => void)(e);
-        (b as (e: never) => void)(e);
-      };
-    }
-  }
-  return out as T;
+  return mergeHandlers<T>(own, preview);
 }

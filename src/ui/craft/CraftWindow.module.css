@@ -867,3 +867,18 @@
   margin: 0;
   font-size: 17px;
 }
+
+/* A Workbench space while a resource is dragged (Nov 14 update). */
+.slotButton[data-drop='ok'] {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(233, 180, 76, 0.35);
+}
+
+.slotButton[data-drop='hover'] {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 4px rgba(233, 180, 76, 0.75);
+}
+
+.slotButton[data-drop='no'] {
+  opacity: 0.55;
+}

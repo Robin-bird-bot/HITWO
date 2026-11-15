@@ -380,3 +380,18 @@
 .carryNote[data-tone='carry'] {
   color: var(--gold);
 }
+
+/* A portrait while a pack thing is dragged: it glows if they can take it (Nov 14 update). */
+.card[data-drop='ok'] {
+  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.8);
+}
+
+.card[data-drop='hover'] {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 18px rgba(233, 180, 76, 0.5);
+}
+
+.card[data-drop='no'] {
+  opacity: 0.55;
+}

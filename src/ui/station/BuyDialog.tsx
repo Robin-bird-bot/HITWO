@@ -15,7 +15,7 @@ import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
 import { MysteryBack, SpecialCard } from './Counter';
-import { bundleName, SPECIAL_LOOK } from './stationLook';
+import { bundleName, offerName } from './stationLook';
 import styles from './BuyDialog.module.css';
 
 export function BuyDialog({
@@ -77,21 +77,17 @@ export function BuyDialog({
 
   if ((!station && !tileId) || (!rejoin && !offer)) return null;
 
-  const what = rejoin
-    ? 'the Taxi Service'
-    : offer?.kind === 'item'
-      ? offer.hidden
-        ? 'a mystery item'
-        : `the ${ITEMS[offer.item.itemId]?.name}`
+  const what = tileId
+    ? offer?.kind === 'item'
+      ? `the ${ITEMS[offer.item.itemId]?.name}`
       : offer?.kind === 'blueprint'
-        ? offer.hidden
-          ? 'a mystery blueprint'
-          : `the ${ITEMS[offer.itemId]?.name} blueprint`
+        ? `the ${ITEMS[offer.itemId]?.name} blueprint`
         : offer?.kind === 'bundle'
           ? bundleName(offer)
-          : offer?.kind === 'special'
-            ? `the ${SPECIAL_LOOK[offer.special].title}`
-            : 'this';
+          : 'this'
+    : station
+      ? offerName(station, offerId)
+      : 'this';
   const question = rejoin
     ? 'Who comes back?'
     : offer?.kind === 'blueprint'
