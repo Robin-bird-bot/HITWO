@@ -167,6 +167,37 @@ export function bringOptions(state: GameState, mover: Hiker): BringOption[] {
     });
 }
 
+/**
+ * The move pop-up's Move all list (Nov 14 update): every other active hiker
+ * on the mover's tile, and whether they can come to this tile.
+ */
+export function bringChoices(state: GameState, mover: Hiker, tileId: TileId): BringOption[] {
+  return hikersOnTile(state, mover.tileId)
+    .filter((h) => h.id !== mover.id)
+    .map((h) => ({
+      hiker: h,
+      reason: h.acted
+        ? `${h.name} has already acted this ${state.phase}.`
+        : validateAction(state, {
+            type: 'moveAll',
+            hikerId: mover.id,
+            toTileId: tileId,
+            bring: [h.id],
+          }),
+    }));
+}
+
+/** What the pop-up's button does: Move alone (no list), or Move all with the checked hikers. */
+export function popupAction(
+  mover: Hiker,
+  tileId: TileId,
+  bring: readonly HikerId[] | null,
+): Action {
+  return bring === null
+    ? { type: 'move', hikerId: mover.id, toTileId: tileId }
+    : { type: 'moveAll', hikerId: mover.id, toTileId: tileId, bring: [...bring] };
+}
+
 /** The next hiker who still has their action this phase, after the given one. */
 export function nextReadyHiker(state: GameState, afterId: HikerId): Hiker | undefined {
   const order = state.hikers;

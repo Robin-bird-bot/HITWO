@@ -679,3 +679,68 @@
 .nodeState {
   clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 }
+
+/* ── Dragging a hiker (Nov 14 update) ── */
+
+.viewport[data-dragging] {
+  cursor: grabbing;
+}
+
+/* Tiles the hiker can't go to dim; the ones they can keep their gold ring. */
+.tile[data-drop='no'] {
+  filter: brightness(0.72) saturate(0.7) drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));
+}
+
+/* The tile under the pointer glows. */
+.tile[data-drop='hover'] {
+  filter: drop-shadow(0 0 14px rgba(233, 180, 76, 0.95))
+    drop-shadow(0 8px 10px rgba(20, 32, 28, 0.28));
+}
+
+.token[data-draggable] {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* What follows the pointer: the hiker's portrait. */
+.tokenGhost {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dragArrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.dragArrow line {
+  stroke: #f2b950;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 12 9;
+  filter: drop-shadow(0 2px 3px rgba(20, 28, 25, 0.45));
+}
+
+/* The move's cost, on the tile under a dragged hiker. */
+.costChip {
+  position: absolute;
+  z-index: 7;
+  translate: -50% 0;
+  padding: 4px 10px;
+  border-radius: 9px;
+  background: rgba(29, 34, 32, 0.94);
+  border: 1px solid rgba(233, 180, 76, 0.7);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+}

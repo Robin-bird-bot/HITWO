@@ -3,14 +3,17 @@
  * can scroll (wheel or drag) and zoom (ctrl/pinch + wheel, or the buttons).
  */
 import { useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from 'react';
-import type { Hiker, HikerId, Section } from '../../engine';
+import type { Hiker, HikerId, Section, Tile } from '../../engine';
 import { characterFor } from '../../content/characters';
 import { useStage } from '../stage/StageContext';
+import { useDragPointer, useDragState, useDrop } from '../drag/drag';
 import { HikerTokens } from './HikerTokens';
 import { MapTile } from './MapTile';
 import {
+  HEX,
   lastRowOf,
   panBy,
+  stageToWorld,
   tileCenter,
   worldTransform,
   zoomAt,
@@ -48,6 +51,17 @@ interface MapViewProps {
   camera: Camera;
   setCamera: Dispatch<SetStateAction<Camera>>;
   bounds: Bounds;
+  /**
+   * Dragging hikers to move them (Nov 14 update): who can be picked up, which
+   * tiles take them, what dropping does, and the cost to show on the tile
+   * under the pointer.
+   */
+  hikerDrag?: {
+    canDrag(hiker: Hiker): boolean;
+    accepts(hikerId: HikerId, tileId: string): boolean;
+    onDrop(hikerId: HikerId, tileId: string): void;
+    costOn?(hikerId: HikerId, tileId: string): string;
+  };
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -81,8 +95,18 @@ export function MapView({
   camera,
   setCamera,
   bounds,
+  hikerDrag,
 }: MapViewProps) {
   const fit = useStage();
+  const drag = useDragState();
+  const dragged = drag?.payload.kind === 'hiker' ? drag.payload.hikerId : null;
+  const tileDrop = useDrop('tile', {
+    accepts: (p, arg) =>
+      !!hikerDrag && p.kind === 'hiker' && !!arg && hikerDrag.accepts(p.hikerId, arg),
+    onDrop: (p, arg) => {
+      if (hikerDrag && p.kind === 'hiker' && arg) hikerDrag.onDrop(p.hikerId, arg);
+    },
+  });
   const viewportRef = useRef<HTMLDivElement>(null);
   const draggedRef = useRef(false);
   // Latest values for the native listeners below.
@@ -155,6 +179,7 @@ export function MapView({
     <div
       ref={viewportRef}
       className={styles.viewport}
+      data-dragging={dragged ? 'hiker' : undefined}
       onPointerDown={onPointerDown}
       onClickCapture={(e) => {
         // A drag shouldn't also count as a click on whatever it ended over.
@@ -187,6 +212,7 @@ export function MapView({
             onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
             checkpointLabelOnHover={checkpointLabelOnHover}
             onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
+            {...(hikerDrag ? { drop: tileDrop.props(t.id) } : {})}
           />
         ))}
         <LineBadges section={section} />
@@ -199,8 +225,23 @@ export function MapView({
             tileIds: new Set(targets.filter((t) => t.reason === null).map((t) => t.tileId)),
             onPick: onTileClick,
           }}
+          {...(hikerDrag ? { canDrag: hikerDrag.canDrag } : {})}
         />
         {overlay}
+        {dragged && (
+          <DragArrow
+            from={tileOf(section, hikers.find((h) => h.id === dragged)?.tileId)}
+            lastRow={lastRow}
+            camera={camera}
+          />
+        )}
+        {dragged && hikerDrag?.costOn && drag?.hover?.id === 'tile' && drag.hover.arg && (
+          <CostChip
+            at={tileOf(section, drag.hover.arg)}
+            lastRow={lastRow}
+            text={hikerDrag.costOn(dragged, drag.hover.arg)}
+          />
+        )}
         {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
         {fx.map((f) => (
           <ScoutLayer key={f.key} fx={f} section={section} lastRow={lastRow} />
@@ -244,5 +285,61 @@ function ScoutLayer({ fx, section, lastRow }: { fx: ScoutFx; section: Section; l
         </div>
       )}
     </>
+  );
+}
+
+const tileOf = (section: Section, id: string | undefined) => (id ? section.tiles[id] : undefined);
+
+/** While a hiker is dragged: an arrow from their tile to the pointer, in map space. */
+function DragArrow({
+  from,
+  lastRow,
+  camera,
+}: {
+  from: Tile | undefined;
+  lastRow: number;
+  camera: Camera;
+}) {
+  const fit = useStage();
+  const at = useDragPointer();
+  if (!from || !at) return null;
+  const a = tileCenter(from, lastRow);
+  const b = stageToWorld(camera, {
+    x: (at.x - fit.left) / fit.scale,
+    y: (at.y - fit.top) / fit.scale,
+  });
+  // Stop short of the pointer, so the head sits just under the ghost.
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  if (len < 30) return null;
+  const k = (len - 24) / len;
+  const end = { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k };
+  return (
+    <svg className={styles.dragArrow} width="1" height="1" aria-hidden="true">
+      <defs>
+        <marker
+          id="drag-head"
+          viewBox="0 0 10 10"
+          refX="6"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto"
+        >
+          <path d="M0 0 L10 5 L0 10 z" fill="#F2B950" />
+        </marker>
+      </defs>
+      <line x1={a.x} y1={a.y} x2={end.x} y2={end.y} markerEnd="url(#drag-head)" />
+    </svg>
+  );
+}
+
+/** The move's cost, on the tile under a dragged hiker. */
+function CostChip({ at, lastRow, text }: { at: Tile | undefined; lastRow: number; text: string }) {
+  if (!at) return null;
+  const c = tileCenter(at, lastRow);
+  return (
+    <div className={styles.costChip} style={{ left: c.x, top: c.y + HEX.h / 2 - 10 }} role="status">
+      {text}
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { CARDS, ITEMS } from '../../content';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { Icon } from '../icons/Icon';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
+import type { DropProps } from '../drag/drag';
 import styles from './MapView.module.css';
 import {
   FEATURE_LOOK,
@@ -36,6 +37,8 @@ interface MapTileProps {
   onWonder?(): void;
   /** The checkpoint: its number (1, 2…), whether it's the summit, and who has checked in. */
   checkpoint?: CheckpointInfo;
+  /** A drop spot for a dragged hiker (see ui/drag): marks whether it would take them. */
+  drop?: DropProps;
 }
 
 export interface CheckpointInfo {
@@ -59,6 +62,7 @@ export function MapTile({
   onRevealed,
   onWonder,
   checkpoint = { number: 1, summit: false, checkedIn: 0, total: 4 },
+  drop,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
@@ -69,6 +73,7 @@ export function MapTile({
         reachLabel={reachLabel}
         onClick={onClick}
         labelOnHover={checkpointLabelOnHover}
+        drop={drop}
       />
     );
   }
@@ -98,6 +103,7 @@ export function MapTile({
       style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
       title={describe}
       data-reach={reach}
+      {...drop}
       {...clickable(onClick, reach === 'ok' ? `${reachLabel}: ${describe}` : describe)}
     >
       {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
@@ -268,6 +274,7 @@ function CheckpointTile({
   reachLabel,
   onClick,
   labelOnHover,
+  drop,
 }: {
   at: Point;
   info: CheckpointInfo;
@@ -275,6 +282,7 @@ function CheckpointTile({
   reachLabel: string;
   onClick?(): void;
   labelOnHover?: boolean;
+  drop?: DropProps;
 }) {
   const { w, h } = CHECKPOINT_HEX;
   const name = info.summit ? 'The summit' : `Checkpoint ${info.number}: the ranger station`;
@@ -286,6 +294,7 @@ function CheckpointTile({
         style={{ left: at.x - w / 2, top: at.y - h / 2, width: w, height: h }}
         title={name}
         data-reach={reach}
+        {...drop}
         {...clickable(
           onClick,
           reach === 'ok'
