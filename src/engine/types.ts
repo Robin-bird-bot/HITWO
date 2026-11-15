@@ -362,7 +362,13 @@ export type ScavengeCardType =
   | 'choiceFood'
   | 'choiceClothes'
   | 'choiceShelter'
-  | 'choiceTrinket';
+  | 'choiceTrinket'
+  /** Item cards (Nov 14 update): the real item, Quality rolled, face up when flipped. */
+  | 'toolCard'
+  | 'foodCard'
+  | 'clothesCard'
+  | 'shelterCard'
+  | 'trinketCard';
 
 /**
  * Why a hiker was safe from a night event: someone kept watch, a shelter, a
@@ -397,6 +403,8 @@ export interface ScavengeCard {
   caps?: number;
   /** Item finds: the item. Choice items: the items to pick 1 from. */
   items?: ItemId[];
+  /** An item card's Quality, rolled when it was dealt (the plain curve); kept as it is. */
+  itemQuality?: 1 | 2 | 3 | 4 | 5;
   flipped: boolean;
   /** Already taken, on a scavenge that keeps more than one card (a Sack). */
   taken?: true;

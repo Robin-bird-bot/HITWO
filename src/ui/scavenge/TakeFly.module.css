@@ -1,0 +1,28 @@
+/* After a scavenge: the card sliding into the pack, and the label (screen pixels). */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+}
+
+.card {
+  position: fixed;
+  transform-origin: center;
+  filter: drop-shadow(0 12px 18px rgba(8, 10, 9, 0.45));
+}
+
+.label {
+  position: fixed;
+  transform: translate(-50%, 0);
+  padding: 4px 12px;
+  border-radius: 10px;
+  background: rgba(29, 34, 32, 0.92);
+  border: 1px solid rgba(233, 180, 76, 0.7);
+  color: #f2c978;
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(20, 28, 25, 0.5);
+}

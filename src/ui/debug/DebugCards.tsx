@@ -96,6 +96,25 @@ const SECTIONS: { title: string; note: string; cards: { card: ScavengeCard; back
         ['choiceTool', 'choiceFood', 'choiceClothes', 'choiceShelter', 'choiceTrinket'] as const
       ).map((t) => ({ card: card(t, { items: [] }) })),
     },
+    {
+      title: 'Item cards',
+      note: 'Nov 14 update · the real item, its Quality rolled when dealt · as rare as the find of its type',
+      cards: [
+        { card: card('toolCard', { items: ['shovel'], itemQuality: 4 }) },
+        { card: card('foodCard', { items: ['trailMix'], itemQuality: 2 }) },
+        { card: card('clothesCard', { items: ['plainShirt'], itemQuality: 3 }) },
+        { card: card('shelterCard', { items: ['tent'] }) },
+        { card: card('trinketCard', { items: ['ring'] }) },
+      ],
+    },
+    {
+      title: 'Empty',
+      note: 'Nov 14 update · any resource card can come up Empty when Abundance is low (placeholder art)',
+      cards: [
+        { card: card('resource', { node: 'forest', resources: ['wood'], empty: true }) },
+        { card: card('x2', { node: 'river', resources: ['fish', 'fish'], empty: true }) },
+      ],
+    },
   ];
 
 const TILES: { label: string; nodes: TileNode[] }[] = [

@@ -280,7 +280,11 @@ export function applyTake(state: GameState, action: TakeAction): void {
   for (const r of kept) hiker.inventory.resources[r] = (hiker.inventory.resources[r] ?? 0) + 1;
   const caps = gainCaps(state, gains.caps);
   for (const itemId of gains.items) {
-    hiker.inventory.bag.push(makeItem(state, itemId, { prefix: 'found' }));
+    // An item card keeps the Quality it was dealt with.
+    const quality = card.itemQuality;
+    hiker.inventory.bag.push(
+      makeItem(state, itemId, { prefix: 'found', ...(quality ? { quality } : {}) }),
+    );
   }
 
   const nodes: NodeType[] = [];

@@ -35,6 +35,8 @@ const upper = (s: string) => s.toUpperCase();
 export function cardTitle(card: ScavengeCard): string {
   if (card.empty) return 'EMPTY';
   const def = SCAVENGE_CARDS[card.type];
+  // An item card is the item itself.
+  if (def.itemCard && card.items?.[0]) return upper(itemName(card.items[0]));
   const r = card.resources ?? [];
   const first = r[0] ? resourceName(r[0]) : '';
   switch (card.type) {
@@ -64,6 +66,7 @@ export function resourcesTitle(resources: readonly ResourceId[]): string {
 export function cardText(card: ScavengeCard): string {
   if (card.empty) return 'Gives nothing';
   const def = SCAVENGE_CARDS[card.type];
+  if (def.itemCard) return card.itemQuality ? `Quality ${card.itemQuality}` : 'An item card';
   return def.text.replace('{node}', card.node ? NODE_NAME[card.node] : 'any');
 }
 

@@ -621,7 +621,7 @@ export function Bag({
     ),
   ];
   return (
-    <div className={styles.block}>
+    <div className={styles.block} data-pack-of={hiker.id} data-pack="bag">
       <div className={styles.blockHead}>
         <span className={panel.label}>BAG</span>
         <span className={styles.count}>
@@ -679,7 +679,7 @@ export function Resources({
   const stageTop = useStageTop();
   const dragFrom = useItemDrops().packs && hiker.status === 'active' ? hiker.id : undefined;
   return (
-    <div className={styles.block}>
+    <div className={styles.block} data-pack-of={hiker.id} data-pack="resources">
       <div className={styles.blockHead}>
         <span className={panel.label}>RESOURCES</span>
         <span className={styles.count}>

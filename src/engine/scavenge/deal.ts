@@ -10,7 +10,9 @@
  */
 import { BALANCE } from '../../config/balance';
 import { emptyChance } from '../abundance';
-import { SCAVENGE_CARDS, findableItems, type ScavengeCardDef } from '../../content';
+import { ITEMS, SCAVENGE_CARDS, findableItems, type ScavengeCardDef } from '../../content';
+import { rollQuality } from '../items/make';
+import { hasQuality } from '../items/quality';
 import { RESOURCES } from '../../content/resources';
 import { int, pick, roll, shuffle, weightedPick } from '../rng';
 import type { ItemType } from '../effects';
@@ -293,6 +295,9 @@ function contents(
         if (options.length) items.push(pick(rng, options).id);
       }
       card.items = items;
+      // An item card shows the real item: its Quality is rolled now (the plain curve).
+      const shown = def.itemCard && items[0] ? ITEMS[items[0]] : undefined;
+      if (shown && hasQuality(shown)) card.itemQuality = rollQuality(rng);
     }
   }
   return card;

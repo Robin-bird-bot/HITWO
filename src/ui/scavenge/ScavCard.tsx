@@ -19,6 +19,7 @@ import {
   resourcesTitle,
 } from './cardLook';
 import { ItemBack } from './ItemBack';
+import { ItemCard } from '../items/ItemCard';
 import { withPreview, type PreviewHandlers } from '../preview/preview';
 import styles from './ScavCard.module.css';
 
@@ -52,6 +53,8 @@ export interface ScavCardProps {
   onClick?(): void;
   /** Hover or long-press for the large card (usePreview). */
   preview?: PreviewHandlers;
+  /** Its place on the table, so a kept card can slide from there into the pack. */
+  index?: number;
 }
 
 export function ScavCard({
@@ -65,6 +68,7 @@ export function ScavCard({
   reveal,
   onClick,
   preview,
+  index,
 }: ScavCardProps) {
   const def = SCAVENGE_CARDS[card.type];
   const revealed = reveal && !!def.glyph && !!card.resources?.length;
@@ -81,6 +85,7 @@ export function ScavCard({
     <div className={styles.wrap} style={{ width: S + 20, opacity: dim ? 0.45 : 1 }}>
       <Tag
         {...(onClick ? { type: 'button' as const } : {})}
+        {...(index !== undefined ? { 'data-scav-card': index } : {})}
         {...withPreview(onClick ? { onClick } : {}, preview ?? {})}
         className={styles.card}
         style={{ width: S, height: S }}
@@ -241,7 +246,20 @@ function Front({
         />
       )}
 
-      {itemType && !def.choiceItem && (
+      {def.itemCard && card.items?.[0] ? (
+        // An item card (Nov 14 update): the real card, with the Quality it was dealt.
+        <ItemCard
+          itemId={card.items[0]}
+          {...(card.itemQuality ? { item: { quality: card.itemQuality } } : {})}
+          width={Math.round(S * 0.62)}
+          style={{
+            position: 'absolute',
+            left: Math.round(S * 0.19),
+            top: Math.round(S * 0.066),
+          }}
+        />
+      ) : null}
+      {itemType && !def.choiceItem && !def.itemCard && (
         <ItemBack
           type={itemType}
           width={Math.round(S * 0.5)}

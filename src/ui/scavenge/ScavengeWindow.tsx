@@ -25,7 +25,6 @@ import {
   type Action,
   type GameState,
   type ItemId,
-  type ItemInstance,
   type ResourceId,
   type ScavengeBonus,
   type ScavengeCard,
@@ -42,41 +41,23 @@ import styles from './ScavengeWindow.module.css';
 
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
 
-/** What a hiker just took, shown for a moment before the window closes. */
-export interface TookCard {
-  card: ScavengeCard;
-  hikerName: string;
-  resources: ResourceId[];
-  caps: number;
-  items: ItemId[];
-  /** The items as they landed in the bag, with their Quality. */
-  found?: ItemInstance[];
-}
-
 interface ScavengeWindowProps {
   state: GameState;
   simple: boolean;
-  /** Set right after a card is taken: the window shows it, then closes. */
-  took: TookCard | null;
   onFlip(cards: number[]): void;
   onCancel(): void;
   /** Glasses or Gambler: reroll one flipped card. */
   onReroll(card: number): void;
   onTake(action: TakeAction): void;
-  onClose(): void;
 }
-
-const CLOSE_AFTER_MS = 1600;
 
 export function ScavengeWindow({
   state,
   simple,
-  took,
   onFlip,
   onCancel,
   onReroll,
   onTake,
-  onClose,
 }: ScavengeWindowProps) {
   const open = state.scavenge;
   const [picked, setSelected] = useState<number | null>(null);
@@ -115,10 +96,6 @@ export function ScavengeWindow({
   // Enter takes the picked card; Esc is "Not now" while it's allowed.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (took) {
-        if (e.key === 'Enter' || e.key === 'Escape') onClose();
-        return;
-      }
       if (e.key === 'Escape' && (canCancel || canFinish)) onCancel();
       if (e.key === 'Enter' && take && !takeReason) {
         e.preventDefault();
@@ -128,13 +105,6 @@ export function ScavengeWindow({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }); // Rebound each render, so it always sees the current card and picks.
-
-  // After a card is taken, close on its own after a moment.
-  useEffect(() => {
-    if (!took) return;
-    const t = setTimeout(onClose, CLOSE_AFTER_MS);
-    return () => clearTimeout(t);
-  }, [took, onClose]);
 
   useEffect(() => {
     windowRef.current?.focus();
@@ -215,9 +185,7 @@ export function ScavengeWindow({
           )}
         </header>
 
-        {took ? (
-          <Result took={took} simple={simple} onClose={onClose} />
-        ) : open ? (
+        {open ? (
           <>
             <div className={styles.cards} data-count={open.cards.length}>
               {open.cards.map((c, i) =>
@@ -236,6 +204,7 @@ export function ScavengeWindow({
                 ) : (
                   <TableCard
                     key={i}
+                    index={i}
                     card={c}
                     size={cardSize(open.cards.length)}
                     faceUp={c.flipped}
@@ -464,7 +433,15 @@ function PickChips({
 
 /** A card on the table: once it's face up, hover or long-press shows it large. */
 function TableCard(props: ScavCardProps) {
-  const preview = usePreview(props.faceUp ? { kind: 'scavenge', card: props.card } : null);
+  const item = SCAVENGE_CARDS[props.card.type].itemCard ? props.card.items?.[0] : undefined;
+  const q = props.card.itemQuality;
+  const preview = usePreview(
+    !props.faceUp
+      ? null
+      : item
+        ? { kind: 'item', itemId: item, ...(q ? { item: { quality: q } } : {}) }
+        : { kind: 'scavenge', card: props.card },
+  );
   return <ScavCard {...props} preview={preview} />;
 }
 
@@ -513,27 +490,5 @@ function ItemChips({
         ))}
       </div>
     </div>
-  );
-}
-
-/** Just after taking: the card (a Wild shows what it was) and what it gave. */
-function Result({ took, simple, onClose }: { took: TookCard; simple: boolean; onClose(): void }) {
-  const parts: string[] = [];
-  if (took.resources.length) parts.push(resourcesTitle(took.resources));
-  if (took.caps) parts.push(`${took.caps} CAP${took.caps === 1 ? '' : 'S'}`);
-  for (const id of took.items) parts.push(itemName(id).toUpperCase());
-  return (
-    <button type="button" className={styles.result} onClick={onClose} aria-label="Close">
-      <ScavCard card={took.card} size={196} faceUp reveal caption={simple ? 'simple' : 'full'} />
-      {took.found?.map((item) => (
-        <CardFace key={item.uid} itemId={item.itemId} item={item} width={196} />
-      ))}
-      <span className={styles.got}>
-        <span className={styles.gotLabel}>{took.hikerName.toUpperCase()} GOT</span>
-        <span className={styles.gotWhat}>
-          {parts.length ? parts.join(' + ') : 'NOTHING (NO ROOM)'}
-        </span>
-      </span>
-    </button>
   );
 }

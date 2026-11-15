@@ -5,7 +5,7 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
   hikersOnTile,
@@ -69,7 +69,9 @@ import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
 import { StationScreen } from '../station/StationScreen';
-import { ScavengeWindow, type TookCard } from '../scavenge/ScavengeWindow';
+import { ScavengeWindow } from '../scavenge/ScavengeWindow';
+import { TakeFly, type Fly } from '../scavenge/TakeFly';
+import { tookLabel } from '../scavenge/tookWords';
 import { CraftWindow, type CraftTab } from '../craft/CraftWindow';
 import { TrailShopWindow } from '../trail/TrailShopWindow';
 import { PreviewLayer } from '../preview/PreviewLayer';
@@ -182,7 +184,8 @@ export function GameScreen({
   // A hiker the player asked to abandon the hike, waiting on the confirm.
   const [confirmAbandon, setConfirmAbandon] = useState<HikerId | null>(null);
   // The card just taken, shown for a moment before the scavenge window closes.
-  const [took, setTook] = useState<TookCard | null>(null);
+  /** Kept scavenge cards on their way into a pack (Nov 14 update). */
+  const [flies, setFlies] = useState<Fly[]>([]);
   // A map tool's tile, waiting for the player to say yes.
   const [toolTile, setToolTile] = useState<TileId | null>(null);
   // Scouting just done: the map plays its sweep and numbers for a few seconds.
@@ -202,7 +205,6 @@ export function GameScreen({
   const [ask, setAsk] = useState<Omit<DropAskProps, 'onCancel'> | null>(null);
   // The resource or item whose give / return menu is open.
   const [stash, setStash] = useState<StashPick | null>(null);
-  const closeScavenge = useCallback(() => setTook(null), []);
   // After a Risk roll, a Challenge space or an opportunity: what happened.
   const [result, setResult] = useState<ResultToShow | null>(null);
   // A Trial in progress whose details are open (from its chip).
@@ -341,28 +343,30 @@ export function GameScreen({
     return true;
   };
 
-  /** Takes a scavenge card, then shows what it gave for a moment. */
+  /**
+   * Takes a scavenge card. No result window (Nov 14 update): the card slides
+   * from where it lay into the hiker's pack, and a small label floats up there.
+   */
   const takeCard = (action: Extract<Action, { type: 'scavengeTake' }>) => {
     const open = state.scavenge;
     const card = open?.cards[action.card];
-    const hikerName = hikers.find((h) => h.id === open?.hikerId)?.name ?? '';
-    if (!dispatch(action) || !card) return;
+    // Where the card lies now, before the window closes.
+    const at = document.querySelector(`[data-scav-card="${action.card}"]`)?.getBoundingClientRect();
+    if (!dispatch(action) || !card || !open) return;
     const event = gameStore.getState()?.log.findLast((e) => e.kind === 'scavenge');
     if (event?.kind !== 'scavenge') return;
-    setTook({
-      // A Wild or Choice card shows what it turned out to be.
-      card: { ...card, resources: event.resources },
-      hikerName,
-      resources: event.resources,
-      caps: event.caps ?? 0,
-      items: event.items ?? [],
-      // The items as they landed in the bag, with their Quality.
-      found:
-        gameStore
-          .getState()
-          ?.hikers.find((h) => h.id === open?.hikerId)
-          ?.inventory.bag.filter((i) => i.uid.startsWith(`found-${event.id}-`)) ?? [],
-    });
+    setFlies((f) => [
+      ...f,
+      {
+        key: event.id,
+        hikerId: open.hikerId,
+        // A Wild or Choice card shows what it turned out to be.
+        card: { ...card, resources: event.resources },
+        label: tookLabel(event),
+        from: at ? { x: at.x, y: at.y, width: at.width, height: at.height } : null,
+        into: event.items?.length ? 'bag' : 'resources',
+      },
+    ]);
   };
 
   const moveMode: MoveMode =
@@ -782,16 +786,21 @@ export function GameScreen({
               />
             )}
 
-            {(state.scavenge || took) && (
+            {flies.map((f) => (
+              <TakeFly
+                key={f.key}
+                fly={f}
+                onDone={() => setFlies((all) => all.filter((x) => x.key !== f.key))}
+              />
+            ))}
+            {state.scavenge && (
               <ScavengeWindow
                 state={state}
                 simple={simple}
-                took={took}
                 onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
                 onCancel={() => dispatch({ type: 'scavengeCancel' })}
                 onReroll={(card) => dispatch({ type: 'scavengeReroll', card })}
                 onTake={takeCard}
-                onClose={closeScavenge}
               />
             )}
 

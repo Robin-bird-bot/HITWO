@@ -420,9 +420,16 @@ export const BALANCE = {
     ] as { luck: number; odds: Record<Rarity, number> }[],
     /**
      * How likely each card type is within its rarity (1 when not listed).
-     * TODO(wyatt): all equally likely to start.
+     * TODO(wyatt): all equally likely to start. The item cards (Nov 14 update)
+     * share their rarity with the random finds of the same type: [1] each.
      */
-    typeWeights: {} as Partial<Record<ScavengeCardType, number>>,
+    typeWeights: {
+      toolCard: 1,
+      foodCard: 1,
+      clothesCard: 1,
+      shelterCard: 1,
+      trinketCard: 1,
+    } as Partial<Record<ScavengeCardType, number>>,
     /** A Cap node on the tile makes Acorn caps cards this many times likelier. TODO(wyatt): first guess. */
     capNodeCapsWeight: 4,
     /** From a Bounty node, cards that give 2 or more resources are this many times likelier. TODO(wyatt): first guess. */
