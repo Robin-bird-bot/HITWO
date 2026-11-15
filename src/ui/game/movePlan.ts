@@ -208,3 +208,16 @@ export function nextReadyHiker(state: GameState, afterId: HikerId): Hiker | unde
   }
   return undefined;
 }
+
+/** "Birch has already acted this morning." → "Already acted", for the small line by a name. */
+export function shortWhy(reason: string): string {
+  // "Birch can’t come along. Wet: …" → "Wet: …"
+  const why = reason.replace(/^.*? can[’']t come along\. /, '');
+  if (/already acted/.test(why)) return 'Already acted';
+  if (/^Hungry|^Famished/.test(why)) return 'Too hungry';
+  if (/^Exhausted|^Fatigued/.test(why)) return 'Too tired';
+  if (why.length <= 24) return why;
+  // A status's own name says enough ("Frozen: can’t move." → "Frozen").
+  const name = /^([A-Z][\w’' ×-]{1,20}):/.exec(why)?.[1];
+  return name ?? 'Can’t come';
+}

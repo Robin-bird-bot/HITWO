@@ -658,7 +658,12 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 **Done when:** the update's tests pass: Appetite, the Abundance bar and empty cards, drag targets, Move all from the pop-up, multi-select order, item cards keeping their Quality, and preview ranges.
 
 **Phase 9.5 notes (built Nov 14)**
-- **Wyatt's answers:** none needed. Wyatt said nothing blocks the build, so the readings below are first guesses, marked `TODO(wyatt)`.
+- **Wyatt's answers:**
+  - Nothing blocked the build, so most readings below are first guesses, marked `TODO(wyatt)`.
+  - Nov 14, after playtesting:
+    - Move All can bring any hiker who hasn't acted, even one too hungry or tired to move themselves.
+    - Each point of the scavenger's Luck lowers the Empty chance by a tenth of itself, and low Luck raises it the same way.
+    - A failed challenge whose penalty is left to chance (Freeagle) shows what was lost, or that nothing was.
 - **Where things are:**
   - **Abundance:** `src/engine/abundance.ts` (the bar, its changes, the empty chance and the overnight recovery). Numbers in `BALANCE.abundance`. Drains in `src/engine/actions/scavenge.ts`; Empty cards rolled in `src/engine/scavenge/deal.ts`. On screen: `src/ui/panels/AbundanceBar.tsx`.
   - **Item cards:** `toolCard`, `foodCard`, `clothesCard`, `shelterCard` and `trinketCard` in `src/content/scavengeCards.ts`. The item and its Quality are rolled when the card is dealt.

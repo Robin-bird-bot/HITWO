@@ -6,7 +6,7 @@ import type { Hiker, HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { MAP_VIEW, type Point } from '../map/mapLayout';
 import { STAT_META } from '../panels/hikerInfo';
-import type { BringOption, MovePreview } from './movePlan';
+import { shortWhy, type BringOption, type MovePreview } from './movePlan';
 import styles from './MovePopover.module.css';
 
 const WIDTH = 300;
@@ -242,12 +242,4 @@ export function MovePopover({
 function whyNobody(choices: BringOption[]): string {
   const reasons = [...new Set(choices.map((c) => c.reason))];
   return reasons.length === 1 && reasons[0] ? reasons[0] : 'nobody here can come along right now.';
-}
-
-/** "Birch has already acted this morning." → "Already acted", for the small line by a name. */
-function shortWhy(reason: string): string {
-  if (/already acted/.test(reason)) return 'Already acted';
-  if (/^Hungry|^Famished/.test(reason)) return 'Too hungry';
-  if (/^Exhausted|^Fatigued/.test(reason)) return 'Too tired';
-  return reason.length > 24 ? 'Can’t come' : reason;
 }

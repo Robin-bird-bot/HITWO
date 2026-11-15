@@ -533,8 +533,12 @@ export const BALANCE = {
      * Each resource card dealt comes up Empty with this chance: `atFull` with
      * the bar full, rising evenly to `atZero` with it empty. Caps and item
      * cards are never Empty. TODO(wyatt): [5%] and [40%].
+     *
+     * The scavenger's Luck changes it by `perLuck` of itself for each point,
+     * both ways (Wyatt, Nov 14): Luck +5 halves it, Luck −5 makes it half as
+     * much again.
      */
-    emptyChance: { atFull: 0.05, atZero: 0.4 },
+    emptyChance: { atFull: 0.05, atZero: 0.4, perLuck: 0.1 },
   },
 
   inventory: {
@@ -660,11 +664,11 @@ export const BALANCE = {
     /** TODO(wyatt): two percentage modifiers multiply in turn (−50% twice = 25%) rather than add. */
     percentModifiersMultiply: true,
     /**
-     * TODO(wyatt): who can be brought along by Move All. Being brought uses the
-     * hiker's action, so an Exhausted hiker can't be brought in the day and a
-     * Fatigued one can't be brought at night. Hungry and Famished hikers can.
+     * Who can be brought along by Move All (Wyatt, Nov 14): anyone who hasn't
+     * acted, however tired or hungry, since another hiker moves them. Being
+     * brought still uses their action.
      */
-    exhaustedOrFatiguedCanBeBrought: false,
+    exhaustedOrFatiguedCanBeBrought: true,
   },
 
   /** One section's trail: a tree from the trailhead to the checkpoint (Phase 2). */

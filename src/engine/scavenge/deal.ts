@@ -89,7 +89,7 @@ export function dealCards(rng: RngState, input: DealInput): ScavengeCard[] {
       input.itemTier,
       input.resourceWeight,
     );
-    cards.push(maybeEmpty(rng, card, input.abundance));
+    cards.push(maybeEmpty(rng, card, input));
   }
   return cards;
 }
@@ -100,9 +100,16 @@ export function isResourceCard(type: ScavengeCardType): boolean {
   return def.id !== 'caps' && !def.itemType;
 }
 
-/** A resource card may come up Empty: it shows nothing and gives nothing. */
-function maybeEmpty(rng: RngState, card: ScavengeCard, abundance: number): ScavengeCard {
-  if (isResourceCard(card.type) && roll(rng, emptyChance(abundance))) card.empty = true;
+/**
+ * A resource card may come up Empty: it shows nothing and gives nothing.
+ * Low Abundance makes it likelier; the scavenger's Luck, less likely.
+ */
+function maybeEmpty(
+  rng: RngState,
+  card: ScavengeCard,
+  { abundance, luck }: Pick<DealInput, 'abundance' | 'luck'>,
+): ScavengeCard {
+  if (isResourceCard(card.type) && roll(rng, emptyChance(abundance, luck))) card.empty = true;
   return card;
 }
 
@@ -112,7 +119,7 @@ const ALL = RESOURCES.map((r) => r.id);
 export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {
   const card = dealContents(rng, input, forced);
   // A card the debug panel asked for is never Empty, so it can be tried.
-  return forced && card.type === forced ? card : maybeEmpty(rng, card, input.abundance);
+  return forced && card.type === forced ? card : maybeEmpty(rng, card, input);
 }
 
 function dealContents(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {

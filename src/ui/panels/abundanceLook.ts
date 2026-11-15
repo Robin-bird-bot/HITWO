@@ -28,5 +28,5 @@ export const emptyPercent = (level: number) => Math.round(emptyChance(level) * 1
 
 /** The tooltip: the level, and what it means when scavenging. */
 export function abundanceTip(level: number): string {
-  return `Abundance ${level} of ${BALANCE.abundance.max}. Each resource card has a ${emptyPercent(level)}% chance to be Empty.`;
+  return `Abundance ${level} of ${BALANCE.abundance.max}. Each resource card has a ${emptyPercent(level)}% chance to be Empty. Luck lowers it.`;
 }

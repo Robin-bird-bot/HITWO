@@ -45,7 +45,7 @@ Each day has three phases — Morning, Afternoon and Night — and every hiker t
 | Action | Morning / Afternoon | Night | Notes |
 | --- | --- | --- | --- |
 | Move | ✓ | ✓ | Costs 1 Appetite. Forward, sideways or back along a connection. Night moves cost 1 extra Appetite (traits and clothing can offset) |
-| Move All | ✓ | ✓ | Costs 1 Appetite plus 1 for each hiker brought along (bringing 3 = 4 Appetite); hikers on that tile who haven't acted this phase come along and use their action |
+| Move All | ✓ | ✓ | Costs 1 Appetite plus 1 for each hiker brought along (bringing 3 = 4 Appetite); hikers on that tile who haven't acted this phase come along and use their action, even if they're too hungry or tired to move themselves (Nov 14) |
 | Scavenge | ✓ | ✓ | Costs 1 Appetite. Draw 3, pick 1 (see Scavenging) |
 | Craft | ✓ | ✓ | Generic or from a known blueprint |
 | Sit by the Fire | ✓ | ✓ | +1 Morale per other hiker at the fire (max +3), +1 XP |
@@ -261,6 +261,7 @@ The 16 resources stay: Forest (wood, moss, mushroom, grass), River (fish, clay, 
 - **Lowered by:** each scavenge (−1; ×2, ×3, Pair and Trio cards −2), and bonus resources a hiker chooses to take (Copier, Copydog, Generous). Random or refunded ones (Pockets, German Efficiency, Fluffy) don't count.
 - **Raised by:** Tend (+2, day only, costs 1 Appetite; the Maintenance trait doubles it, and a Thumb gets +1 more on a tile with their node), returning a resource to nature (+1), Fertilizer and Industrial Fertilizer, and some challenge and Wonder rewards.
 - **Its one effect, Empty cards:** each resource card dealt has a chance to be Empty: 5% at full, rising evenly to 40% at 0. It flips to show nothing, and keeping it gives nothing. Caps cards and item cards are never Empty.
+- **Luck changes the Empty chance** (Nov 14): each point of the scavenger's Luck lowers it by a tenth of itself, and each point below 0 raises it the same way. Luck +5 halves it.
 - **On screen:** one bar going green → yellow → red as it drops. Its tooltip shows the Empty-card chance; Simple mode shows just the bar, and Informative mode adds the number.
 
 **Inventory**

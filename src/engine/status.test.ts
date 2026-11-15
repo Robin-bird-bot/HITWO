@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { addCondition } from './conditions';
 import { blockedByStatus } from './status';
 import { END, fixtureGame, hiker, place, run, toNight } from './test/fixtures';
 
@@ -24,7 +25,8 @@ describe('blocked by status (Nov 5, 2b)', () => {
 
   it('counts a brought hiker’s status', () => {
     const s = fixtureGame();
-    place(s, 'birch', 'T', { energy: 2 });
+    place(s, 'birch', 'T');
+    addCondition(s, hiker(s, 'birch'), 'frozen', 1, 'phases', 'test');
     expect(
       blockedByStatus(s, { type: 'moveAll', hikerId: 'ash', toTileId: 'L', bring: ['birch'] }),
     ).toMatch(/Birch can’t come along/);

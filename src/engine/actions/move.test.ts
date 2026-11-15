@@ -189,13 +189,19 @@ describe('Move All', () => {
     );
   });
 
-  it('can bring Hungry and Famished hikers, but not Exhausted ones in the day', () => {
+  it('can bring hikers too hungry or tired to move themselves (Wyatt, Nov 14)', () => {
     const s = fixtureGame();
     place(s, 'birch', 'T', { appetite: 2 });
     expect(validateAction(s, moveAll('ash', 'L', ['birch']))).toBeNull();
+    // Exhausted in the day: can't move, but can be moved.
     place(s, 'birch', 'T', { appetite: 10, energy: 3 });
-    expect(validateAction(s, moveAll('ash', 'L', ['birch']))).toMatch(
-      /^Birch can’t come along\. Exhausted/,
+    expect(validateAction(s, { type: 'move', hikerId: 'birch', toTileId: 'L' })).toMatch(
+      /Exhausted/,
     );
+    expect(validateAction(s, moveAll('ash', 'L', ['birch']))).toBeNull();
+    const after = run(s, moveAll('ash', 'L', ['birch']));
+    expect(hiker(after, 'birch').tileId).toBe('L');
+    // Being brought still uses their action.
+    expect(hiker(after, 'birch').acted).toBe(true);
   });
 });

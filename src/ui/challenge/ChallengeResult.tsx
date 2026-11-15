@@ -1,13 +1,14 @@
 /**
  * What just happened, after a card whose outcome is random: a Risk roll, a
- * Challenge space's rewards, or what an opportunity gave. The lines are the
+ * Challenge space's rewards, what an opportunity gave, or a failed penalty
+ * left to chance (what was lost, or that nothing was). The lines are the
  * trail log's, from the challenge's own line on. Other challenges skip this:
  * their outcome was decided in the pop-up, and they should stay quick.
  */
 import { useEffect, useRef } from 'react';
 import { CARDS } from '../../content';
 import type { GameState } from '../../engine';
-import type { ResultToShow } from './showsResult';
+import { nothingHappenedLine, type ResultToShow } from './showsResult';
 import { Icon } from '../icons/Icon';
 import { describeLog } from '../log/describeLog';
 import styles from './ChallengeResult.module.css';
@@ -25,6 +26,9 @@ export function ChallengeResult({
   const ok = useRef<HTMLButtonElement>(null);
   useEffect(() => ok.current?.focus(), []);
   const lines = describeLog(state, 80).filter((l) => l.id >= result.fromId && l.tone !== 'debug');
+  const event = state.log.find((e) => e.id === result.fromId);
+  const failed = event?.kind === 'challenge' && event.results.some((r) => !r.passed);
+  const nothing = nothingHappenedLine(state, result, failed);
   const blue = card?.kind === 'opportunity';
   return (
     <div className={styles.overlay}>
@@ -49,6 +53,7 @@ export function ChallengeResult({
               </li>
             ));
           })}
+          {nothing && <li data-tone="rest">{nothing}</li>}
         </ul>
         <button ref={ok} type="button" className={styles.ok} onClick={onClose}>
           OK

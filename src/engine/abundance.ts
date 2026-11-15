@@ -27,11 +27,15 @@ export function changeAbundance(state: GameState, delta: number): void {
 /**
  * The chance each resource card dealt comes up Empty at this level: the
  * full-bar chance at the maximum, rising evenly to the empty-bar chance at 0.
+ * The scavenger's Luck scales it (Wyatt, Nov 14): a tenth less per point of
+ * Luck, a tenth more per point below 0.
  */
-export function emptyChance(level: number): number {
-  const { atFull, atZero } = A.emptyChance;
+export function emptyChance(level: number, luck = 0): number {
+  const { atFull, atZero, perLuck } = A.emptyChance;
   const share = clampAbundance(level) / A.max;
-  return atZero + (atFull - atZero) * share;
+  const base = atZero + (atFull - atZero) * share;
+  // Luck: a tenth less for each point above 0, a tenth more for each below.
+  return Math.max(0, Math.min(1, base * (1 - perLuck * luck)));
 }
 
 /** At camp: the bar recovers a little. */

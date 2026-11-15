@@ -22,7 +22,7 @@ describe('the Abundance bar’s look', () => {
     expect(emptyPercent(0)).toBe(40);
     expect(emptyPercent(BALANCE.abundance.max)).toBe(5);
     expect(abundanceTip(10)).toBe(
-      'Abundance 10 of 20. Each resource card has a 23% chance to be Empty.',
+      'Abundance 10 of 20. Each resource card has a 23% chance to be Empty. Luck lowers it.',
     );
   });
 });

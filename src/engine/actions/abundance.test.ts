@@ -98,6 +98,27 @@ describe('Empty cards', () => {
     expect(emptyChance(level)).toBeCloseTo(chance, 10);
   });
 
+  it('Luck changes it by a tenth of itself for each point, both ways (Wyatt, Nov 14)', () => {
+    const base = emptyChance(0);
+    expect(emptyChance(0, 5)).toBeCloseTo(base / 2, 10);
+    expect(emptyChance(0, 1)).toBeCloseTo(base * 0.9, 10);
+    expect(emptyChance(0, -5)).toBeCloseTo(base * 1.5, 10);
+    expect(emptyChance(20, -2)).toBeCloseTo(A.emptyChance.atFull * 1.2, 10);
+    // Never below 0 or above 1.
+    expect(emptyChance(0, 20)).toBe(0);
+    expect(emptyChance(0, -20)).toBeLessThanOrEqual(1);
+  });
+
+  it('a lucky scavenger is dealt fewer Empty cards', () => {
+    const share = (luck: number) => {
+      const cards = dealCards(seedRng(11), { nodes, abundance: 0, luck, count: 4000 });
+      const resource = cards.filter((c) => isResourceCard(c.type));
+      return resource.filter((c) => c.empty).length / resource.length;
+    };
+    expect(share(5)).toBeLessThan(share(0) - 0.1);
+    expect(share(-5)).toBeGreaterThan(share(0) + 0.1);
+  });
+
   const nodes: TileNode[] = [
     { type: 'forest', revealed: true },
     { type: 'river', revealed: true },
@@ -110,8 +131,8 @@ describe('Empty cards', () => {
       const resource = cards.filter((c) => isResourceCard(c.type));
       const others = cards.filter((c) => !isResourceCard(c.type));
       const share = resource.filter((c) => c.empty).length / resource.length;
-      expect(share).toBeGreaterThan(emptyChance(level) - 0.03);
-      expect(share).toBeLessThan(emptyChance(level) + 0.03);
+      expect(share).toBeGreaterThan(emptyChance(level, 5) - 0.03);
+      expect(share).toBeLessThan(emptyChance(level, 5) + 0.03);
       expect(others.length).toBeGreaterThan(0);
       expect(others.some((c) => c.empty)).toBe(false);
     }
