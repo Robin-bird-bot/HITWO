@@ -623,6 +623,7 @@ export function GameScreen({
       },
     } satisfies DropTarget,
     // A tool with no tile to pick: its menu opens on its Use step.
+    // TODO(wyatt): first guess (rather than using it at once).
     map: {
       accepts: (p) => mapDrop(state, p),
       onDrop: (p, _arg, at) => {

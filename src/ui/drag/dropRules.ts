@@ -55,7 +55,10 @@ export type PortraitDrop =
   | { kind: 'give'; action: Action }
   /** Their own food: eat it. */
   | { kind: 'eat'; action: Action }
-  /** Food on someone else: give it, or they eat it now (`eat`, when they can). */
+  /**
+   * Food on someone else: give it, or they eat it now (`eat`, when they can).
+   * TODO(wyatt): first guess, since giving and eating share the portrait.
+   */
   | { kind: 'feed'; give: Action; eat: Action | null };
 
 export function portraitDrop(state: GameState, p: DragPayload, toId: HikerId): PortraitDrop | null {

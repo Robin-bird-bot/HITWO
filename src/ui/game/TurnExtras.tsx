@@ -153,15 +153,22 @@ interface GroupConfirmProps {
 /** Multi-select (Nov 14 update): one action for the group, each hiker in turn. */
 export function GroupConfirm({ kind, names, where, onGo, onCancel }: GroupConfirmProps) {
   const goRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef(onCancel);
   const ready = kind !== 'move' || !!where;
   useEffect(() => {
-    goRef.current?.focus();
+    cancelRef.current = onCancel;
+  });
+  // Go takes the focus once it shows, not again on every redraw.
+  useEffect(() => {
+    if (ready) goRef.current?.focus();
+  }, [ready]);
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') cancelRef.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onCancel, ready]);
+  }, []);
 
   return (
     <div className={styles.box}>

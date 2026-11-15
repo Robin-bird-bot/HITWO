@@ -3,7 +3,9 @@
  * the full card opens large, with its text.
  * - On a desktop: hover for a moment (or reach it with the keyboard).
  * - On a phone: long-press. The tap that follows doesn't count as a click.
- * - By clicking, where a click does nothing else (`clickOpens`).
+ * - By clicking, where a click does nothing else (`clickOpens`). Where a
+ *   click already acts (flipping or picking a card, a pack item's menu,
+ *   buying), only hover and long-press open it. TODO(wyatt): first guess.
  * One provider (PreviewLayer) draws it; `usePreview` gives any element the
  * handlers to spread on it. Without a provider (galleries, mockups) it does
  * nothing.
@@ -54,6 +56,8 @@ export interface PreviewHandlers {
   onContextMenu?(e: MouseEvent<Element>): void;
   onFocus?(e: FocusEvent<Element>): void;
   onBlur?(e: FocusEvent<Element>): void;
+  /** Marks it for the CSS that keeps a phone's long-press from selecting or saving it. */
+  'data-previewable'?: true;
 }
 
 /** How far (stage-agnostic CSS pixels) a finger can drift and still be a long-press. */
@@ -71,6 +75,7 @@ export function usePreview(
   if (!api || !content) return {};
   const clear = () => window.clearTimeout(timer.current);
   return {
+    'data-previewable': true,
     onPointerEnter: (e) => {
       // Nothing pops up over the spots while something is being dragged.
       if (e.pointerType !== 'mouse' || document.body.dataset.dragging) return;

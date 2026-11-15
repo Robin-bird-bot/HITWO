@@ -657,6 +657,37 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 **Done when:** the update's tests pass: Appetite, the Abundance bar and empty cards, drag targets, Move all from the pop-up, multi-select order, item cards keeping their Quality, and preview ranges.
 
+**Phase 9.5 notes (built Nov 14)**
+- **Wyatt's answers:** none needed. Wyatt said nothing blocks the build, so the readings below are first guesses, marked `TODO(wyatt)`.
+- **Where things are:**
+  - **Abundance:** `src/engine/abundance.ts` (the bar, its changes, the empty chance and the overnight recovery). Numbers in `BALANCE.abundance`. Drains in `src/engine/actions/scavenge.ts`; Empty cards rolled in `src/engine/scavenge/deal.ts`. On screen: `src/ui/panels/AbundanceBar.tsx`.
+  - **Item cards:** `toolCard`, `foodCard`, `clothesCard`, `shelterCard` and `trinketCard` in `src/content/scavengeCards.ts`. The item and its Quality are rolled when the card is dealt.
+  - **Previews:** `src/ui/preview/`. `usePreview` gives any element the handlers; `PreviewLayer` draws the card; `ItemText` turns item names in text into previews. Ranges for unrolled Quality: `itemRangeText` in `src/engine/items/text.ts`.
+  - **Dragging:** `src/ui/drag/`. `drag.ts` has `useDrag` and `useDrop`; `DragLayer` runs drags and draws the ghost; `dropRules.ts` decides which drops are valid (pure, tested); `itemDrops.ts` wires pack things to their targets.
+  - **Scavenging without the pop-up:** `src/ui/scavenge/TakeFly.tsx` (the slide and the floating label); `tookWords.ts` (the label's words).
+  - **Multi-select:** `src/ui/game/groupTurn.ts` (pure, tested) plans the group's turn; `GameScreen` runs it a step at a time. The badges and the Select toggle are in `src/ui/panels/GroupBits.tsx`.
+  - **The station forest:** the `.drift` layers in `src/ui/station/StationScreen.module.css`.
+  - **Debug:** the backtick panel sets the Abundance bar and can add any card type, item cards included, to the next deal.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Abundance numbers:** 0 to 20, starting at 15, +1 a night, Tend +2, and Empty cards from 5% at full to 40% at 0.
+  - **Rules:**
+    - Tend still needs a resource node on the tile.
+    - A Mixed card drains once.
+    - Keeping an Empty card still drains and still costs the scavenge.
+  - **Item cards:** each type has weight 1 in the scavenge odds, as rare as a random find of that type.
+  - **Timings:** previews open after a 400 ms hover; the forest's far layer takes 180 s per loop and the near one 70 s; a group's hikers act 350 ms apart.
+  - **Dragging:**
+    - Food on someone else's portrait asks **Give** or **Eat it**.
+    - A tool with no tile to pick, dropped on the map, opens its menu.
+    - Items dragged onto the Workbench do nothing yet.
+  - **Previews:** where a click already acts (flipping or picking a card, a pack item's menu, buying), only hover and long-press open the preview.
+  - **Multi-select:**
+    - A shared action can be pressed when any of the group can take it; the others are skipped with a note.
+    - Move All and Craft stay one hiker's.
+  - **Placeholders:** the Empty card face and the Merchant's line.
+- **Waiting on later phases:** Never Hungry and Rabbit Diet (Phase 10).
+- **Saves:** version 14. Older saves average their four node meters into the one bar (scaled from 0–10 to 0–20).
+
 ---
 
 ## Phase 10: Traits, slots, XP and leveling
