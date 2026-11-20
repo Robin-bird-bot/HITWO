@@ -273,7 +273,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         }
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)}: ${signed(e.to - e.from, e.stat)} (${e.cause}).`,
+          text: `${name(e.hikerId)}: ${signed(e.to - e.from, e.stat)} (${e.cause}${e.why ? `: ${e.why}` : ''}).`,
           tone: 'drain',
         });
         break;

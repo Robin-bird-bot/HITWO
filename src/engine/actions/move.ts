@@ -68,7 +68,14 @@ export function applyMove(state: GameState, action: MoveAction): void {
     ...(revealed.length ? { revealed } : {}),
   });
   payCost(state, hiker, cost, 'Move');
-  fireMove(state, hiker, { from, to: hiker.tileId, role: 'actor', line, via: 'move' });
+  fireMove(state, hiker, {
+    from,
+    to: hiker.tileId,
+    role: 'actor',
+    line,
+    via: 'move',
+    firstVisit: firstHere,
+  });
   noteArrival(state, [hiker.id, ...carried], hiker.tileId);
   // On the checkpoint, they check in (with anyone they carry).
   checkInArrivals(state, [hiker.id, ...carried], hiker.tileId);

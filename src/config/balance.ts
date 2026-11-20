@@ -709,6 +709,16 @@ export const BALANCE = {
     thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },
     extrinsic: { together: 1, alone: -1 },
+    // ── Morale traits (Phase 10a step 4), from 02-traits-and-conditions.md ──
+    /** The usual Morale a Morale trait gives or takes. */
+    morale: 1,
+    zen: 2,
+    foody: { high: 8, low: 5 },
+    dressed: { many: 2 },
+    slowAndSteady: { forward: -2 },
+    misophonia: { otherEats: -1, craftsFood: 2 },
+    rainLover: { extra: 1 },
+    showGirl: { extra: 1 },
     forager: { cards: 1 },
     gambler: { usesPerDay: 1 },
     /** "Higher chance of drawing that node's resources." TODO(wyatt): first guess. */

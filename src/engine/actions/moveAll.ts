@@ -116,11 +116,12 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   }
   for (const h of group) {
     fireMove(state, h, {
-      from,
+      from: h.cameFrom ?? from,
       to: action.toTileId,
       role: h === mover ? 'actor' : 'brought',
       line,
       via: 'moveAll',
+      firstVisit: firstHere,
     });
   }
   const arrived = [...group.map((h) => h.id), ...carried];

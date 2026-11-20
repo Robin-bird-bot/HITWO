@@ -17,6 +17,7 @@ import {
   effectContext,
   effectSourcesFor,
   fireTileEat,
+  fireAction,
 } from '../effects';
 import type { EatContext } from '../effects';
 import { hikersOnTile } from '../map';
@@ -137,6 +138,7 @@ export function applyEat(state: GameState, action: EatAction): void {
   for (const source of effectSourcesFor(state, hiker))
     source.hooks.onEat?.({ itemId: item.itemId }, ctx);
   fireTileEat(state, hiker, item.itemId);
+  fireAction(state, hiker, { kind: 'eat', role: 'actor', tileId: hiker.tileId });
   // Mold Invasion: eating on its tile brings its penalty.
   noteEat(state, hiker);
 

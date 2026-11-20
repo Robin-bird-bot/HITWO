@@ -5,8 +5,12 @@
  * 02-traits-and-conditions.md, then every trait marked New in
  * 07-characters.md, by character. Owners are the 07-characters.md ids.
  */
+import { BALANCE } from '../../config/balance';
 import type { TraitDef } from '../../engine/effects';
 import { morale, special, trail, unique, utility } from './build';
+import { moraleNow } from './moraleKit';
+
+const N = BALANCE.traits;
 
 const FIRE = 'Sit by the Fire';
 
@@ -36,14 +40,31 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'misophonia',
     'Misophonia',
     'Right away: −1 Morale when another hiker eats on this tile; +2 Morale when crafting food.',
-    special('gdog'),
+    {
+      ...special('gdog'),
+      hooks: {
+        onTileEat(e, ctx) {
+          if (e.eaterId !== ctx.self.id) {
+            moraleNow(ctx, 'Misophonia', N.misophonia.otherEats, 'someone ate here');
+          }
+        },
+        onCraft(e, ctx) {
+          if (e.type === 'food') moraleNow(ctx, 'Misophonia', N.misophonia.craftsFood, 'made food');
+        },
+      },
+    },
   ),
-  morale(
-    'rainLover',
-    'Rain Lover',
-    'During rain or snow, every Morale gain is 1 larger.',
-    special('wyatt', 'wywee'),
-  ),
+  morale('rainLover', 'Rain Lover', 'During rain or snow, every Morale gain is 1 larger.', {
+    ...special('wyatt', 'wywee'),
+    hooks: {
+      modifyStatChange: (q, ctx) =>
+        q.stat === 'morale' &&
+        q.delta > 0 &&
+        ['rain', 'storm', 'snow'].includes(ctx.state.weather?.today ?? 'clear')
+          ? { add: N.rainLover.extra }
+          : undefined,
+    },
+  }),
   morale(
     'moody',
     'Moody',
@@ -78,12 +99,16 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'With all 3 equipment slots filled: +1 Luck when scavenging and crafting. Clothes last 3 extra days when this hiker equips them (once per item).',
     unique('mitchell'),
   ),
-  morale(
-    'showGirl',
-    'Show Girl',
-    'Humans on this hiker’s tile get +1 from every Morale gain.',
-    unique('showgirlGdog'),
-  ),
+  morale('showGirl', 'Show Girl', 'Humans on this hiker’s tile get +1 from every Morale gain.', {
+    ...unique('showgirlGdog'),
+    // TODO(wyatt): every Human on the tile, Show Girl herself included.
+    hooks: {
+      modifyTileStatChange: (q) =>
+        q.stat === 'morale' && q.delta > 0 && q.target.family === 'human'
+          ? { add: N.showGirl.extra }
+          : undefined,
+    },
+  }),
   utility(
     null,
     'nuggetPuker',

@@ -213,7 +213,8 @@ export interface QueryContext {
 
 /** What an event handler or ability can do. */
 export interface EffectContext extends QueryContext {
-  changeStat(hiker: Hiker, stat: StatName, delta: number, cause: string): void;
+  /** `why`: a few words for the log, like a Morale trait's reason ("alone right now"). */
+  changeStat(hiker: Hiker, stat: StatName, delta: number, cause: string, why?: string): void;
   /** Gives a hiker resources, as many as fit (Raccoon Friend), and logs it. */
   gain(hiker: Hiker, resources: readonly ResourceId[], cause: string): void;
   addCondition(
@@ -268,6 +269,20 @@ export interface MoveHookEvent {
   line: Line;
   /** The Move action, or Move All. */
   via: 'move' | 'moveAll';
+  /** Nobody had landed on the tile before (Wanderlust: "an unrevealed tile"). */
+  firstVisit?: boolean;
+}
+
+/** What a hiker did, for traits that react to an action (Action, Traveler, Simple Pleasures). */
+export interface ActionHookEvent {
+  kind: 'move' | 'scavenge' | 'craft' | 'tend' | 'eat' | 'sleep' | 'watch';
+  /** Moves: their own (or leading the group), or being brought along. */
+  role: Role;
+  tileId: TileId;
+  /** Scavenging: the node the card came from. */
+  node?: NodeType;
+  /** Crafting: what was made. */
+  itemType?: ItemType;
 }
 
 /** A stat change about to happen, for sources that change it (Strained, Refreshed, Inspired). */
@@ -403,6 +418,27 @@ export interface Hooks {
   craftTier?(type: ItemType, ctx: QueryContext): number | undefined;
   /** One random item at each shop is free (Thrifty). */
   freeShopItem?(ctx: QueryContext): boolean;
+  // ── Morale traits (Phase 10a) ──
+  /** The hiker did something (Action, Traveler, Conservationist, Simple Pleasures). */
+  onAction?(e: ActionHookEvent, ctx: EffectContext): void;
+  /**
+   * A challenge on this hiker's tile was passed or failed, by these hikers
+   * (one section: a hiker, or the whole party) (Thrill-Seeker, Soccer Mom).
+   */
+  onChallengeResult?(
+    e: { passed: boolean; hikerIds: readonly HikerId[] },
+    ctx: EffectContext,
+  ): void;
+  /**
+   * A stat change for someone on this hiker's tile, this hiker included (Show
+   * Girl: Humans here get +1 from every Morale gain).
+   */
+  modifyTileStatChange?(
+    q: StatChangeQuery & { target: Hiker },
+    ctx: QueryContext,
+  ): StatChangeModifier | undefined;
+  /** A hiker on this hiker's tile levelled up (Proud Mentor). Fired from Phase 10a step 6. */
+  onTileLevelUp?(e: { hikerId: HikerId }, ctx: EffectContext): void;
   /**
    * The hiker Sits by the Fire (Singer, Storyteller, Comedian, Chatty).
    * TODO(wyatt): Sit by the Fire is still held, so nothing calls this in play yet.
@@ -906,7 +942,8 @@ export function clothesWorn(hiker: Hiker): number {
 export function effectContext(state: GameState, self: Hiker): EffectContext {
   return {
     ...queryContext(state, self),
-    changeStat: (hiker, stat, delta, cause) => changeStat(state, hiker, stat, delta, cause),
+    changeStat: (hiker, stat, delta, cause, why) =>
+      changeStat(state, hiker, stat, delta, cause, why ? { why } : {}),
     gain: (hiker, resources, cause) => gainResources(state, hiker, resources, cause),
     addCondition: (hiker, id, remaining, unit, cause) =>
       addCondition(state, hiker, id, remaining, unit, cause),
@@ -1309,8 +1346,33 @@ export function fireHook(state: GameState, hiker: Hiker, name: EventHookName): v
 }
 
 export function fireMove(state: GameState, hiker: Hiker, e: MoveHookEvent): void {
+  // Remembered for the traits about staying put or not moving (Slow and Steady, Wanderlust).
+  tally(state, hiker, 'moved', 1, 'phase');
+  hiker.lastMovedDay = state.day;
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onMove?.(e, ctx);
+  fireAction(state, hiker, { kind: 'move', role: e.role, tileId: e.to });
+}
+
+/** A hiker did something: their own sources hear of it (Action, Traveler, Simple Pleasures). */
+export function fireAction(state: GameState, hiker: Hiker, e: ActionHookEvent): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onAction?.(e, ctx);
+}
+
+/**
+ * A challenge was passed or failed by these hikers: everyone on the tile
+ * hears of it (Thrill-Seeker for their own, Soccer Mom for anyone's).
+ */
+export function fireChallengeResult(
+  state: GameState,
+  tileId: TileId,
+  e: { passed: boolean; hikerIds: readonly HikerId[] },
+): void {
+  for (const hiker of hikersOnTile(state, tileId)) {
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) source.hooks.onChallengeResult?.(e, ctx);
+  }
 }
 
 /** The total change to a stat change from the hiker's sources. A blocked loss becomes 0. */
@@ -1318,11 +1380,21 @@ export function adjustStatChange(state: GameState, hiker: Hiker, q: StatChangeQu
   const ctx = queryContext(state, hiker);
   let delta = q.delta;
   let blocked = false;
-  for (const source of effectSourcesFor(state, hiker)) {
-    const m = source.hooks.modifyStatChange?.(q, ctx);
-    if (!m) continue;
+  const take = (m: StatChangeModifier | undefined) => {
+    if (!m) return;
     delta += m.add ?? 0;
     if (m.blockLoss) blocked = true;
+  };
+  for (const source of effectSourcesFor(state, hiker))
+    take(source.hooks.modifyStatChange?.(q, ctx));
+  // Someone on the tile can change it too (Show Girl).
+  if (hiker.status === 'active') {
+    for (const other of hikersOnTile(state, hiker.tileId)) {
+      const octx = queryContext(state, other);
+      for (const source of effectSourcesFor(state, other)) {
+        take(source.hooks.modifyTileStatChange?.({ ...q, target: hiker }, octx));
+      }
+    }
   }
   // Adding can't flip a loss into a gain, or the other way.
   if (q.delta < 0) delta = Math.min(0, delta);

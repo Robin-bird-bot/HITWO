@@ -69,6 +69,8 @@ export function clampToCaps(state: GameState, hiker: Hiker): void {
 export interface StatChangeOptions {
   /** A positive condition can push a stat above its maximum (Energized). */
   pastMax?: boolean;
+  /** Why, in a few words, for the log (a Morale trait's reason: "alone right now"). */
+  why?: string;
 }
 
 /**
@@ -81,7 +83,7 @@ export function changeStat(
   stat: StatName,
   delta: number,
   cause: string,
-  { pastMax = false }: StatChangeOptions = {},
+  { pastMax = false, why }: StatChangeOptions = {},
 ): void {
   if (delta === 0 || hiker.status === 'abandoned') return;
   const change = adjustStatChange(state, hiker, { stat, delta, cause });
@@ -92,7 +94,15 @@ export function changeStat(
   if (to === from) return;
 
   hiker.stats[stat] = to;
-  pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
+  pushEvent(state, {
+    kind: 'stat',
+    hikerId: hiker.id,
+    stat,
+    from,
+    to,
+    cause,
+    ...(why ? { why } : {}),
+  });
 
   if (stat === 'morale') fireMoraleChange(state, hiker, to - from, cause);
   fireStatChange(state, hiker, { stat, from, to, cause });

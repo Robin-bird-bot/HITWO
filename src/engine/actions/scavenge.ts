@@ -26,6 +26,7 @@ import {
   fireScavenge,
   fireScavenged,
   gainCaps,
+  fireAction,
 } from '../effects';
 import { spendOnceBoosts } from '../items/boosts';
 import { dealCard, dealCards } from '../scavenge/deal';
@@ -273,7 +274,10 @@ export function applyTake(state: GameState, action: TakeAction): void {
     });
     close();
     payCost(state, hiker, { appetite: base, energy: 0, morale: 0 }, 'Scavenge');
-    if (first) fireScavenged(state, hiker, { tileId: open.tileId });
+    if (first) {
+      fireScavenged(state, hiker, { tileId: open.tileId });
+      fireAction(state, hiker, { kind: 'scavenge', role: 'actor', tileId: open.tileId });
+    }
     return;
   }
 
@@ -335,8 +339,11 @@ export function applyTake(state: GameState, action: TakeAction): void {
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
   noteScavenged(state, hiker, kept);
   // After scavenging: Pockets, Generous, and Dog Mom on the tile.
-  if (first)
-    fireScavenged(state, hiker, { tileId: open.tileId, ...(card.node ? { node: card.node } : {}) });
+  if (first) {
+    const node = card.node ? { node: card.node } : {};
+    fireScavenged(state, hiker, { tileId: open.tileId, ...node });
+    fireAction(state, hiker, { kind: 'scavenge', role: 'actor', tileId: open.tileId, ...node });
+  }
 }
 
 /** How many bonus resources a take gets, and the Appetite they cost. */

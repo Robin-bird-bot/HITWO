@@ -6,7 +6,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { changeAbundance } from '../abundance';
-import { computeCost, computeGain } from '../effects';
+import { computeCost, computeGain, fireAction } from '../effects';
 import { pushEvent } from '../log';
 import { nodeGives } from '../weather';
 import type { Action, GameState, Hiker, NodeType } from '../types';
@@ -73,4 +73,5 @@ export function applyTend(state: GameState, action: TendAction): void {
   spendAction(state, hiker);
   pushEvent(state, { kind: 'tend', hikerId: hiker.id, from, to: state.abundance });
   payCost(state, hiker, { appetite: tendCost(state, hiker), energy: 0, morale: 0 }, 'Tend');
+  fireAction(state, hiker, { kind: 'tend', role: 'actor', tileId: hiker.tileId });
 }

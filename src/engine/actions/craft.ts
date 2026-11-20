@@ -11,7 +11,7 @@
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted } from '../counters';
-import { computeCost, fireCraft } from '../effects';
+import { computeCost, fireCraft, fireAction } from '../effects';
 import { bagSlots } from '../inventory';
 import {
   autoPay,
@@ -193,6 +193,12 @@ function finishCraft(
   // A new set of trinket resources after every trinket.
   if (def.type === 'trinket') state.trinketRecipe = rollTrinketRecipe(state.rng);
   fireCraft(state, hiker, itemId, def.type, { item, paid: how.paid.map((p) => p.resource) });
+  fireAction(state, hiker, {
+    kind: 'craft',
+    role: 'actor',
+    tileId: hiker.tileId,
+    itemType: def.type,
+  });
   // Work Boots: a free move after crafting.
   earnFreeMove(state, hiker, 'afterCraft');
 }

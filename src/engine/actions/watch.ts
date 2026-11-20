@@ -5,7 +5,7 @@
  * without sleep still costs Energy at camp.
  */
 import { pushEvent } from '../log';
-import { watchReach } from '../effects';
+import { watchReach, fireAction } from '../effects';
 import { hikersOnTile, tileDistance } from '../map';
 import type { Action, GameState, Hiker, TileId } from '../types';
 import { findHiker, mustFindHiker, phaseActionReason, spendAction } from './common';
@@ -48,4 +48,5 @@ export function applyWatch(state: GameState, action: WatchAction): void {
   spendAction(state, hiker);
   hiker.watching = true;
   pushEvent(state, { kind: 'watch', hikerId: hiker.id });
+  fireAction(state, hiker, { kind: 'watch', role: 'actor', tileId: hiker.tileId });
 }

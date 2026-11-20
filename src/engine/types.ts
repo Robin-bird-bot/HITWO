@@ -374,6 +374,10 @@ export interface Hiker {
   level: number;
   /** Permanent raises to a stat's maximum (Sleeping Giant's +2 maximum Energy). */
   maxBonus?: Partial<Record<StatName, number>>;
+  /** The last day they moved (Wanderlust: "didn't move the day before"). */
+  lastMovedDay?: number;
+  /** The last day they faced a challenge (Thrill-Seeker: "facing no challenge the day before"). */
+  lastChallengeDay?: number;
 }
 
 // ── Scavenging ─────────────────────────────────────────────────────────────
@@ -913,7 +917,16 @@ export type GameEventBody =
       /** Nodes shown for the first time by entering the tile. */
       revealed?: NodeKind[];
     }
-  | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
+  | {
+      kind: 'stat';
+      hikerId: HikerId;
+      stat: StatName;
+      from: number;
+      to: number;
+      cause: string;
+      /** Why, in a few words, when a trait says ("alone right now"). */
+      why?: string;
+    }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   /** Injuries a card cured (Airlift): how many, and how many are left. */
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }

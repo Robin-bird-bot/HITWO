@@ -46,6 +46,7 @@ import { openNext, revealTile } from './reveal';
 import { riskReading, riskSpendFits, type RiskReading } from './risk';
 import { amount, chanceOf } from './rolls';
 import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
+import { fireChallengeResult } from '../effects';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
 
@@ -569,6 +570,8 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     entered.push(...r.entered);
     triggers.push(...r.triggers);
   };
+  // Everyone here faced a challenge today (Thrill-Seeker's "no challenge the day before").
+  if (card.kind === 'challenge') for (const h of here) h.lastChallengeDay = state.day;
   // Passes and fails, for Wonder goals (not Risk challenges or opportunities).
   if (card.kind === 'challenge' && !card.risk) {
     for (const s of action.sections) {
@@ -577,6 +580,11 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
         // Hiking Crocs: a free move after passing a challenge.
         if (passes(s)) earnFreeMove(state, h, 'afterChallenge');
       }
+      // Thrill-Seeker and Soccer Mom: each section's pass or fail, once.
+      fireChallengeResult(state, open.tileId, {
+        passed: passes(s),
+        hikerIds: targetsOf(s).map((h) => h.id),
+      });
     }
   }
   // A Select card's chosen hikers act together (Secret Tunnel moves them to the same tile).
