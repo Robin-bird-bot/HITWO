@@ -45,8 +45,9 @@ import { applyEffects, foodCarried, immovable, type EffectResult } from './apply
 import { openNext, revealTile } from './reveal';
 import { riskReading, riskSpendFits, type RiskReading } from './risk';
 import { amount, chanceOf } from './rolls';
-import type { ChallengeDef, Requirement, ResourceFilter, Who } from './types';
-import { fireChallengeResult } from '../effects';
+import type { ChallengeDef, Effect, Requirement, ResourceFilter, Who } from './types';
+import { fireChallengeResult, hikerHas, challengeEase } from '../effects';
+import { CONDITIONS } from '../../content/conditions';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
 
@@ -107,13 +108,16 @@ export function requirementNeed(
   const here = challengeHikers(state, open);
   const hiker = hikerId ? here.find((h) => h.id === hikerId) : undefined;
   const ctx = { rolls: open.rolls, onTile: here, foodCarried, ...(hiker ? { hiker } : {}) };
+  // Easy Mode: someone on the tile makes each thing it asks for cost less.
+  // TODO(wyatt): 1 less of each thing a cost asks for, not 1 less overall.
+  const ease = challengeEase(state, open.tileId);
   switch (req.kind) {
     case 'resources':
-      return req.fromEach ? here.length : Math.max(0, amount(req.count, ctx));
+      return Math.max(0, (req.fromEach ? here.length : amount(req.count, ctx)) - ease);
     case 'carryLimit':
       return hiker ? Math.max(0, resourceCount(hiker) - req.max) : 0;
     default:
-      return Math.max(0, amount(req.count, ctx));
+      return Math.max(0, amount(req.count, ctx) - ease);
   }
 }
 
@@ -570,6 +574,23 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     entered.push(...r.entered);
     triggers.push(...r.triggers);
   };
+  // Alpha Dog: the hiker who led the group here takes the challenge's harm (negative
+  // conditions and injuries) instead of the others. TODO(wyatt): they take it once, not once
+  // for each hiker it would have hit.
+  const leader = here.find((h) => h.id === open.leaderId && hikerHas(state, h, 'takesGroupHarm'));
+  let harmTaken = false;
+  const hurt = (targets: Hiker[], effects: readonly Effect[], risk?: number) => {
+    if (!leader) {
+      take(applyEffects(state, run(targets, risk), effects));
+      return;
+    }
+    const harm = effects.filter(isHarm);
+    const rest = effects.filter((e) => !isHarm(e));
+    if (rest.length) take(applyEffects(state, run(targets, risk), rest));
+    if (!harm.length || harmTaken) return;
+    harmTaken = true;
+    take(applyEffects(state, run([leader], risk), harm));
+  };
   // Everyone here faced a challenge today (Thrill-Seeker's "no challenge the day before").
   if (card.kind === 'challenge') for (const h of here) h.lastChallengeDay = state.day;
   // Passes and fails, for Wonder goals (not Risk challenges or opportunities).
@@ -601,7 +622,7 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     if (card.scope === 'select') return;
     if (card.risk) {
       const outcome = outcomes[i];
-      if (outcome?.hit) take(applyEffects(state, run(targets, outcome.amount), card.risk.outcome));
+      if (outcome?.hit) hurt(targets, card.risk.outcome, outcome.amount);
       return;
     }
     if (passes(s)) {
@@ -612,7 +633,7 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
         if (reward) giveReward(state, card, open, h, here, reward, xp);
       });
     } else {
-      take(applyEffects(state, run(targets), card.penalty));
+      hurt(targets, card.penalty);
     }
   });
 
@@ -745,4 +766,10 @@ export function applyChoose(state: GameState, action: ChooseAction): void {
   }
   delete open.alternative;
   pushEvent(state, { kind: 'challengeChosen', cardId: action.cardId, over });
+}
+
+/** An effect that harms a hiker: an injury or a negative condition (Alpha Dog takes these). */
+function isHarm(e: Effect): boolean {
+  if (e.op === 'injury' || e.op === 'randomCondition') return true;
+  return e.op === 'condition' && CONDITIONS[e.id]?.kind === 'negative';
 }

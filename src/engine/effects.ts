@@ -10,9 +10,19 @@ import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
 import { CONDITIONS } from '../content/conditions';
 import { WEATHERS } from '../content/weather';
-import { addCondition, addStacks, shortenCondition, takeCondition } from './conditions';
+import { tagTeamSide } from '../content/traits/special';
+import {
+  addCondition,
+  addStacks,
+  removeCondition,
+  shortenCondition,
+  takeCondition,
+} from './conditions';
+import { revealCardOn } from './challenges/reveal';
+import { makeItem } from './items/make';
+import { bagSlots } from './inventory';
 import { pushEvent } from './log';
-import { hikersOnTile, isAlone, isSheltered } from './map';
+import { hikersOnTile, isAlone, isSheltered, tileDistance } from './map';
 import { int, pick, roll } from './rng';
 import { changeStat, cureInjuries, shiftStat } from './stats';
 import { thresholdSources } from './thresholds';
@@ -209,6 +219,12 @@ export interface QueryContext {
   condition(hiker: Hiker, id: string): ConditionInstance | undefined;
   /** A running count kept by `tally`, read without changing it (a once-a-day rule's use). */
   used(hiker: Hiker, key: string, per: 'phase' | 'day' | 'biome'): number;
+  /** How many lines apart two tiles are (Infinity if they don't connect). */
+  distance(a: TileId, b: TileId): number;
+  /** What this hiker's sources add to one of their abilities (Tag Team: Fetch reaches farther). */
+  boost(abilityId: string): { reach: number; items: boolean };
+  /** Can this hiker move by themselves right now (a Plush with Shifty, alone)? */
+  canMoveAlone(): boolean;
 }
 
 /** What an event handler or ability can do. */
@@ -256,6 +272,23 @@ export interface EffectContext extends QueryContext {
   spendResources(hiker: Hiker, ids: readonly ResourceId[], cause: string): void;
   /** Evens a stat out across these hikers, rounded down (Liberal). */
   evenOut(hikers: readonly Hiker[], stat: StatName, cause: string): void;
+  /** The hiker hasn't used their action after all (Lanky). */
+  refundAction(hiker: Hiker, cause: string): void;
+  /** Takes a condition off a hiker (Forgetful, Comedian). */
+  cure(hiker: Hiker, id: string, cause: string): void;
+  /** Puts a new item in a hiker's bag, if there's room (Nugget Puker). */
+  giveItem(hiker: Hiker, itemId: ItemId, cause: string): void;
+  /** Picks a new card for a tile whose card is shown (Rule Changer). */
+  rerollCard(tileId: TileId, cause: string): void;
+  /** Uses up the hiker's action for this phase (Good Boy gives his away). */
+  useAction(hiker: Hiker): void;
+  /** Moves a resource or a bag item from one hiker to another, if it fits (Fetch). */
+  take(
+    from: Hiker,
+    to: Hiker,
+    thing: { resource: ResourceId } | { itemUid: string },
+    cause: string,
+  ): void;
 }
 
 // ── Hooks, abilities and sources ───────────────────────────────────────────
@@ -439,6 +472,48 @@ export interface Hooks {
   ): StatChangeModifier | undefined;
   /** A hiker on this hiker's tile levelled up (Proud Mentor). Fired from Phase 10a step 6. */
   onTileLevelUp?(e: { hikerId: HikerId }, ctx: EffectContext): void;
+
+  // ── Families, Plush, Duos and special traits (Phase 10a step 5) ──
+  /** Changes someone else's scavenge on this hiker's tile (Dog Whisperer, Lucky Charm). */
+  modifyTileScavenge?(
+    q: ScavengeQuery,
+    target: Hiker,
+    ctx: QueryContext,
+  ): ScavengeModifier | undefined;
+  /** Changes someone else's craft on this hiker's tile (Lucky Charm). */
+  modifyTileCraft?(q: CraftQuery, target: Hiker, ctx: QueryContext): CraftModifier | undefined;
+  /** More for one of this hiker's abilities (Tag Team: Fetch takes items, from farther). */
+  abilityBoost?(
+    abilityId: string,
+    ctx: QueryContext,
+  ): { reach?: number; items?: boolean } | undefined;
+  /** Night events that take food or resources skip hikers on this tile (Mouser). */
+  guardsSupplies?(ctx: QueryContext): boolean;
+  /** Changes a gain for someone else on this hiker's tile (Snores: their sleep). */
+  modifyTileGain?(q: GainQuery, ctx: QueryContext): ModifierResult;
+  /** Someone slept on this hiker's tile (Cuddle Buddy). */
+  onTileSleep?(e: { sleeperId: HikerId }, ctx: EffectContext): void;
+  /** Stops a condition reaching someone on this hiker's tile (Cuddle Buddy: Nightmares). */
+  blockTileCondition?(id: string, target: Hiker, ctx: QueryContext): boolean;
+  /** Can move by themselves (a Plush, normally carried: Shifty, Night Shifty). */
+  movesAlone?(ctx: QueryContext): boolean;
+  /**
+   * This hiker leads a Move All: a chance that one hiker's part of it costs
+   * no Appetite (Just Around the Next Corner). Asked once for each hiker in the group.
+   */
+  waiveForGroup?(e: { payerId: HikerId }, ctx: EffectContext): boolean;
+  /** Move All can bring hikers who've already acted (Tank Butt). */
+  bringsActed?(ctx: QueryContext): boolean;
+  /** A challenge on this hiker's tile costs this much less of each thing it asks (Easy Mode). */
+  easesChallenges?(ctx: QueryContext): number;
+  /** Leading the group onto a challenge, this hiker takes its harm instead of the others (Alpha Dog). */
+  takesGroupHarm?(ctx: QueryContext): boolean;
+  /** Quality 1 food gives this hiker no bad condition (Garbage Gut). */
+  ignoresBadFood?(ctx: QueryContext): boolean;
+  /** The hiker put on clothes (Stylish). */
+  onEquip?(e: { item: ItemInstance }, ctx: EffectContext): void;
+  /** The hiker gave something to someone this many lines away (Gracie's day). */
+  onGive?(e: { toId: HikerId; distance: number }, ctx: EffectContext): void;
   /**
    * The hiker Sits by the Fire (Singer, Storyteller, Comedian, Chatty).
    * TODO(wyatt): Sit by the Fire is still held, so nothing calls this in play yet.
@@ -525,8 +600,11 @@ export interface TraitDef {
   daily?: 'trait' | 'node' | 'condition';
   /** A daily trait that becomes another trait: the tiers it draws from (Quirky: Tier I). */
   dailyTiers?: readonly (1 | 2 | 3)[];
-  /** A Duo's Tag Team trait: only their Tag Team slot holds it. */
-  tagTeam?: true;
+  /**
+   * A Duo's Tag Team trait: only their Tag Team slot holds it. Whose days are
+   * odd and whose are even.
+   */
+  tagTeam?: readonly [odd: string, even: string];
   /** A rule the game doesn't have yet, that this trait needs (Sit by the Fire). */
   waitsOn?: string;
 }
@@ -560,6 +638,11 @@ export function workingTrait(state: GameState, slot: TraitSlot): WorkingTrait | 
       : { def, runs: def, setting: {}, name: def.name, text: def.text };
   }
   const setting = def.daily === 'node' && today ? { x: today } : (slot.setting ?? {});
+  // A Duo's Tag Team says whose day it is.
+  if (def.tagTeam) {
+    const side = tagTeamSide(state.day, def.tagTeam);
+    return { def, runs: def, setting, name: def.name, text: `${side}’s day today. ${def.text}` };
+  }
   return {
     def,
     runs: def,
@@ -929,6 +1012,22 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
     clothesWorn,
     condition: (hiker, id) => hiker.conditions.find((c) => c.id === id),
     used: (hiker, key, per) => readTally(state, hiker, key, per),
+    distance: (a, b) => tileDistance(state.section, a, b),
+    boost: (abilityId) => {
+      const out = { reach: 0, items: false };
+      const ctx = queryContext(state, self);
+      for (const s of effectSourcesFor(state, self)) {
+        const b = s.hooks.abilityBoost?.(abilityId, ctx);
+        if (!b) continue;
+        out.reach = Math.max(out.reach, b.reach ?? 0);
+        out.items ||= !!b.items;
+      }
+      return out;
+    },
+    canMoveAlone: () => {
+      const ctx = queryContext(state, self);
+      return effectSourcesFor(state, self).some((s) => s.hooks.movesAlone?.(ctx));
+    },
   };
 }
 
@@ -990,6 +1089,80 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
           cause,
         });
       }
+    },
+    useAction: (hiker) => {
+      hiker.acted = true;
+    },
+    take: (from, to, thing, cause) => {
+      if ('resource' in thing) {
+        const have = from.inventory.resources[thing.resource] ?? 0;
+        const carried = Object.values(to.inventory.resources).reduce<number>(
+          (n, c) => n + (c ?? 0),
+          0,
+        );
+        if (have < 1 || carried >= resourceLimit(state, to)) return;
+        if (have > 1) from.inventory.resources[thing.resource] = have - 1;
+        else delete from.inventory.resources[thing.resource];
+        to.inventory.resources[thing.resource] = (to.inventory.resources[thing.resource] ?? 0) + 1;
+        pushEvent(state, {
+          kind: 'give',
+          fromId: from.id,
+          toId: to.id,
+          resource: thing.resource,
+          taken: true,
+        });
+      } else {
+        const i = from.inventory.bag.findIndex((x) => x.uid === thing.itemUid);
+        const item = from.inventory.bag[i];
+        if (!item || to.inventory.bag.length >= bagSlots(state, to).total) return;
+        from.inventory.bag.splice(i, 1);
+        to.inventory.bag.push(item);
+        pushEvent(state, {
+          kind: 'give',
+          fromId: from.id,
+          toId: to.id,
+          itemId: item.itemId,
+          taken: true,
+        });
+      }
+      pushEvent(state, {
+        kind: 'trait',
+        hikerId: to.id,
+        trait: cause,
+        text: `${to.name} fetched it from ${from.name}.`,
+      });
+    },
+    refundAction: (hiker, cause) => {
+      if (!hiker.acted) return;
+      hiker.acted = false;
+      pushEvent(state, { kind: 'freeAction', hikerId: hiker.id, cause });
+    },
+    cure: (hiker, id, cause) => {
+      if (!hiker.conditions.some((c) => c.id === id)) return;
+      removeCondition(state, hiker, id);
+      pushEvent(state, {
+        kind: 'trait',
+        hikerId: hiker.id,
+        trait: cause,
+        text: `${hiker.name} is rid of ${CONDITIONS[id]?.name ?? id}.`,
+      });
+    },
+    giveItem: (hiker, itemId, cause) => {
+      if (hiker.inventory.bag.length >= bagSlots(state, hiker).total) return;
+      hiker.inventory.bag.push(makeItem(state, itemId, { prefix: 'trait' }));
+      pushEvent(state, {
+        kind: 'gained',
+        hikerId: hiker.id,
+        resources: [],
+        items: [itemId],
+        cause,
+      });
+    },
+    rerollCard: (tileId, cause) => {
+      const tile = state.section.tiles[tileId];
+      if (!tile?.revealedCard) return;
+      delete tile.revealedCard;
+      revealCardOn(state, tileId, cause);
     },
     evenOut: (hikers, stat, cause) => {
       if (!hikers.length) return;
@@ -1079,7 +1252,10 @@ export function computeCost(
   return applyModifiers(base, mods, 'cost');
 }
 
-/** A gain after every modifier from the given hikers' sources. */
+/**
+ * A gain after every modifier from the given hikers' sources, and from
+ * anyone else on the subject's tile who changes others' gains (Snores).
+ */
 export function computeGain(
   state: GameState,
   owners: readonly Hiker[],
@@ -1093,6 +1269,16 @@ export function computeGain(
       mods.push(...asList(source.hooks.modifyGain?.(q, ctx)));
     }
   }
+  const subject = state.hikers.find((h) => h.id === q.subjectId);
+  if (subject && subject.status === 'active') {
+    for (const other of hikersOnTile(state, subject.tileId)) {
+      if (other.id === subject.id) continue;
+      const ctx = queryContext(state, other);
+      for (const source of effectSourcesFor(state, other)) {
+        mods.push(...asList(source.hooks.modifyTileGain?.(q, ctx)));
+      }
+    }
+  }
   return applyModifiers(base, mods, 'gain');
 }
 
@@ -1104,7 +1290,25 @@ export function craftModifiers(state: GameState, hiker: Hiker, q: CraftQuery): C
     const result = source.hooks.modifyCraft?.(q, ctx);
     if (result) out.push(...(Array.isArray(result) ? result : [result]));
   }
+  // Others on the tile can help too (Lucky Charm).
+  for (const other of tileCompany(state, hiker)) {
+    const octx = queryContext(state, other);
+    for (const source of effectSourcesFor(state, other)) {
+      const m = source.hooks.modifyTileCraft?.(q, hiker, octx);
+      if (m) out.push(m);
+    }
+  }
   return out;
+}
+
+/** Everyone else on a hiker's tile, still hiking or checked in together at the station. */
+function tileCompany(state: GameState, hiker: Hiker): Hiker[] {
+  return state.hikers.filter(
+    (h) =>
+      h.id !== hiker.id &&
+      h.tileId === hiker.tileId &&
+      (h.status === 'active' || h.status === 'checkedIn'),
+  );
 }
 
 /** A hiker crafted an item: their own sources hear of it, then everyone on the tile's. */
@@ -1139,6 +1343,14 @@ export function scavengeModifiers(
     const result = source.hooks.modifyScavenge?.(q, ctx);
     if (result) out.push(...(Array.isArray(result) ? result : [result]));
   }
+  // Others on the tile can help too (Dog Whisperer, Lucky Charm).
+  for (const other of tileCompany(state, hiker)) {
+    const octx = queryContext(state, other);
+    for (const source of effectSourcesFor(state, other)) {
+      const m = source.hooks.modifyTileScavenge?.(q, hiker, octx);
+      if (m) out.push(m);
+    }
+  }
   return out;
 }
 
@@ -1152,10 +1364,67 @@ export function canActReason(state: GameState, hiker: Hiker, q: ActQuery): strin
   return undefined;
 }
 
-/** Does anything stop this negative condition reaching the hiker? */
+/** Does anything stop this negative condition reaching the hiker (their own, or someone on their tile)? */
 export function blocksCondition(state: GameState, hiker: Hiker, id: string): boolean {
   const ctx = effectContext(state, hiker);
-  return effectSourcesFor(state, hiker).some((s) => s.hooks.blockCondition?.(id, ctx));
+  if (effectSourcesFor(state, hiker).some((s) => s.hooks.blockCondition?.(id, ctx))) return true;
+  return hikersOnTile(state, hiker.tileId).some((other) => {
+    const octx = queryContext(state, other);
+    return effectSourcesFor(state, other).some((s) =>
+      s.hooks.blockTileCondition?.(id, hiker, octx),
+    );
+  });
+}
+
+/** Does someone on this hiker's tile keep night events off their food and resources (Mouser)? */
+export function suppliesGuarded(state: GameState, hiker: Hiker): boolean {
+  return hikersOnTile(state, hiker.tileId).some((other) => {
+    const ctx = queryContext(state, other);
+    return effectSourcesFor(state, other).some((s) => s.hooks.guardsSupplies?.(ctx));
+  });
+}
+
+/** Someone slept: everyone else on their tile hears of it (Cuddle Buddy). */
+export function fireTileSleep(state: GameState, sleeper: Hiker): void {
+  for (const other of hikersOnTile(state, sleeper.tileId)) {
+    if (other.id === sleeper.id) continue;
+    const ctx = effectContext(state, other);
+    for (const s of effectSourcesFor(state, other))
+      s.hooks.onTileSleep?.({ sleeperId: sleeper.id }, ctx);
+  }
+}
+
+/** A yes-or-no hook across a hiker's own sources. */
+export function hikerHas(
+  state: GameState,
+  hiker: Hiker,
+  hook: 'bringsActed' | 'takesGroupHarm' | 'ignoresBadFood',
+): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks[hook]?.(ctx));
+}
+
+/** How much less a challenge on this tile asks for, from someone there (Easy Mode). */
+export function challengeEase(state: GameState, tileId: TileId): number {
+  let most = 0;
+  for (const h of hikersOnTile(state, tileId)) {
+    const ctx = queryContext(state, h);
+    for (const s of effectSourcesFor(state, h))
+      most = Math.max(most, s.hooks.easesChallenges?.(ctx) ?? 0);
+  }
+  return most;
+}
+
+/** The hiker put on clothes (Stylish). */
+export function fireEquip(state: GameState, hiker: Hiker, item: ItemInstance): void {
+  const ctx = effectContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) s.hooks.onEquip?.({ item }, ctx);
+}
+
+/** The hiker gave something to someone (Gracie's day counts a far give). */
+export function fireGive(state: GameState, giver: Hiker, toId: HikerId, distance: number): void {
+  const ctx = effectContext(state, giver);
+  for (const s of effectSourcesFor(state, giver)) s.hooks.onGive?.({ toId, distance }, ctx);
 }
 
 /** Does anything stop this injury reaching the hiker? */
@@ -1205,6 +1474,20 @@ export function traitFreeMoves(
 export function waivesAppetite(state: GameState, hiker: Hiker, cause: string): string | undefined {
   const ctx = effectContext(state, hiker);
   return effectSourcesFor(state, hiker).find((s) => s.hooks.waiveAppetite?.({ cause }, ctx))?.name;
+}
+
+/**
+ * Does the hiker leading a Move All make one hiker's part of it free (Just
+ * Around the Next Corner)? Rolls now, once for each hiker in the group.
+ */
+export function waivesForGroup(
+  state: GameState,
+  leader: Hiker,
+  payerId: HikerId,
+): string | undefined {
+  const ctx = effectContext(state, leader);
+  return effectSourcesFor(state, leader).find((s) => s.hooks.waiveForGroup?.({ payerId }, ctx))
+    ?.name;
 }
 
 /** How far a hiker can hand this kind of thing over, as sender or receiver (0: same tile). */

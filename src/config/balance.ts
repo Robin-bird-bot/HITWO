@@ -719,6 +719,33 @@ export const BALANCE = {
     misophonia: { otherEats: -1, craftsFood: 2 },
     rainLover: { extra: 1 },
     showGirl: { extra: 1 },
+    // ── Family, special and unique traits (Phase 10a step 5) ──
+    /** Fetch reaches the next tile; on Boss's days (Tag Team) 2 tiles, and items too. */
+    fetch: { reach: 1 },
+    dogWhisperer: { cards: 1 },
+    /** Boss & Gracie: Boss's days are odd (TODO(wyatt)); both reach 2 tiles. */
+    tagTeam: { reach: 2 },
+    fluffy: { fur: 1 },
+    nosework: { luck: 3 },
+    yodeler: { reach: 2, morale: 1, mountain: 2 },
+    stylish: { luck: 1, days: 3 },
+    /** Loud gives Ringing Ears at night. TODO(wyatt): for a phase, to the others on the tile. */
+    loud: { reach: 1, ringingEarsPhases: 1 },
+    rabbitDiet: { appetite: 1 },
+    /** The bracketed numbers in 07-characters.md. TODO(wyatt). */
+    forgetful: { chance: 0.5 },
+    snores: { shield: 50, sleep: -1 },
+    lanky: { chance: 0.25 },
+    spoiled: { appetite: 1 },
+    fluffArmor: { chance: 0.5 },
+    hypeDog: { reach: 1, days: 1 },
+    luckyCharm: { luck: 1 },
+    cuddleBuddy: { morale: 1 },
+    justAroundTheNextCorner: { tiles: 3, alone: 0.75, group: 0.25 },
+    /** Coach's Motivated, and Good Boy's (his action, given this phase). TODO(wyatt): how long. */
+    coach: { days: 1 },
+    comedian: { morale: 1 },
+    easyMode: { less: 1 },
     forager: { cards: 1 },
     gambler: { usesPerDay: 1 },
     /** "Higher chance of drawing that node's resources." TODO(wyatt): first guess. */
@@ -734,6 +761,14 @@ export const BALANCE = {
      */
     copier: { appetiteEach: 1 },
   },
+
+  /**
+   * Plush hikers (Nov 20 update, 07-characters.md): Energy and Appetite are one
+   * bar, Stuffing. At `low` or less they can't move the group and can only
+   * sleep at night; at `veryLow` or less they can only sleep; at 0, an injury.
+   * TODO(wyatt): [12], [7] and [3].
+   */
+  plush: { stuffingMax: 12, low: 7, veryLow: 3 },
 
   rules: {
     /** Passed-out hikers skip the camp-step drains: they're out cold (Wyatt, Nov 7). */

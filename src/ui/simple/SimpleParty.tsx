@@ -6,9 +6,9 @@
 import { useRef, useState } from 'react';
 import { characterFor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
+import { type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK, THRESHOLD_STATS, carryNote } from '../panels/hikerInfo';
+import { FAMILY_LOOK, carryNote, hikerBars } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { ConditionDot } from '../conditions/ConditionBadges';
@@ -235,14 +235,14 @@ function HikerCard({
             {note.text}
           </span>
         )}
-        {STAT_NAMES.map((stat) => (
+        {hikerBars(state, h).map((b) => (
           <StatBar
-            key={stat}
-            stat={stat}
-            value={h.stats[stat]}
-            max={statMax(state, h, stat)}
+            key={b.stat}
+            stat={b.stat}
+            value={b.value}
+            max={b.max}
             showNumber
-            ticks={THRESHOLD_STATS.includes(stat)}
+            ticks={b.stat !== 'morale'}
             size="regular"
           />
         ))}

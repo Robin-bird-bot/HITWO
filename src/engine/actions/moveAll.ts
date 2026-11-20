@@ -8,6 +8,8 @@ import {
   fireMove,
   keepsActionWhenBrought,
   queryContext,
+  hikerHas,
+  waivesForGroup,
 } from '../effects';
 import { pushEvent } from '../log';
 import { checkInArrivals } from '../station/checkIn';
@@ -52,7 +54,10 @@ export function validateMoveAll(state: GameState, action: MoveAllAction): string
     ) {
       return `${b.name} isn’t on this tile.`;
     }
-    if (b.acted) return `${b.name} has already acted this ${state.phase}.`;
+    // Tank Butt: the leader can bring hikers who've already acted.
+    if (b.acted && !hikerHas(state, mover, 'bringsActed')) {
+      return `${b.name} has already acted this ${state.phase}.`;
+    }
     const blocked = canActReason(state, b, { action, role: 'brought', phase: state.phase });
     if (blocked) return `${b.name} can’t come along. ${blocked}`;
   }
@@ -106,11 +111,31 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
     ...(carried.length ? { carried } : {}),
     ...(revealed.length ? { revealed } : {}),
   });
+  // Just Around the Next Corner: each hiker's part of the move may cost no Appetite.
+  // Rolled once they've arrived, since it depends on where they are.
+  let freed = 0;
+  for (const c of costs) {
+    const part = (c.share ?? 0) + (c.hikerId === mover.id ? 0 : c.cost.appetite);
+    if (part <= 0) continue;
+    const by = waivesForGroup(state, mover, c.hikerId);
+    if (!by) continue;
+    freed += c.share ?? 0;
+    if (c.hikerId !== mover.id) c.cost = { ...c.cost, appetite: 0 };
+    const who = mustFindHiker(state, c.hikerId);
+    pushEvent(state, {
+      kind: 'trait',
+      hikerId: mover.id,
+      trait: by,
+      text: `${who.name}’s part of the move cost no Appetite.`,
+    });
+  }
   for (const { hikerId, cost } of costs) {
+    const paid =
+      hikerId === mover.id ? { ...cost, appetite: Math.max(0, cost.appetite - freed) } : cost;
     payCost(
       state,
       mustFindHiker(state, hikerId),
-      cost,
+      paid,
       hikerId === mover.id ? 'Move All' : 'Moved with the group',
     );
   }
@@ -128,5 +153,6 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   noteArrival(state, arrived, action.toTileId);
   checkInArrivals(state, arrived, action.toTileId);
   // The first hikers to land on a tile trigger its card.
-  if (firstHere) revealTile(state, action.toTileId, arrived);
+  // The leader is remembered: Alpha Dog takes the harm of a challenge they lead the group into.
+  if (firstHere) revealTile(state, action.toTileId, arrived, undefined, mover.id);
 }

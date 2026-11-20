@@ -131,3 +131,31 @@ describe('Move all: who can come along', () => {
     );
   });
 });
+
+describe('Plush and Tank Butt in the move pop-up', () => {
+  const plushParty = () =>
+    fixtureGame({
+      hikers: [
+        { ...fixtureHiker('ash'), family: 'plush' },
+        fixtureHiker('birch'),
+        fixtureHiker('cedar'),
+      ],
+    });
+
+  it('a Plush hiker’s costs show as Stuffing', () => {
+    // T–M is steep: Ash pays 2 Appetite (own crossing and Birch) and 1 Energy.
+    const s = plushParty();
+    const p = movePreview(s, hiker(s, 'ash'), { kind: 'moveAll', bring: ['birch'] }, 'M');
+    expect(p?.rows[0]?.changes).toEqual([{ stat: 'stuffing', from: 12, to: 9 }]);
+    expect(p?.rows[1]?.changes.map((c) => c.stat)).toEqual(['energy']);
+  });
+
+  it('a Tank Butt leader can bring hikers who’ve already acted', () => {
+    const s = fixtureGame({ hikers: [fixtureHiker('ash', ['tankButt']), fixtureHiker('birch')] });
+    hiker(s, 'birch').acted = true;
+    expect(bringOptions(s, hiker(s, 'ash'))).toEqual([{ hiker: hiker(s, 'birch'), reason: null }]);
+    expect(bringOptions(s, hiker(s, 'birch'))[0]?.reason).toBe(
+      'Birch has already acted this morning.',
+    );
+  });
+});

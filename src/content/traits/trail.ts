@@ -5,6 +5,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { CONDITIONS } from '../conditions';
+import { RESOURCES } from '../resources';
 import type { Hooks, QueryContext, TraitDef } from '../../engine/effects';
 import type { StatName } from '../../engine/types';
 import { special, trail, unique } from './build';
@@ -455,7 +456,34 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
     'rabbitDiet',
     'Rabbit Diet',
     'Scavenging costs no Appetite, but can’t eat food cards. Can eat 1 Forest resource for 1 Appetite.',
-    special('leah'),
+    {
+      ...special('leah'),
+      hooks: {
+        modifyCost: (q, ctx) =>
+          q.key === 'scavenge.appetite' && q.subjectId === ctx.self.id
+            ? { source: 'Rabbit Diet', percent: -100 }
+            : undefined,
+        canAct: (q) =>
+          q.role === 'actor' && q.action.type === 'eat'
+            ? 'Rabbit Diet: can’t eat food cards.'
+            : undefined,
+      },
+      ability: {
+        id: 'rabbitDiet',
+        label: 'Rabbit Diet',
+        limit: { per: 'phase', uses: Infinity },
+        choicesFor: (ctx) =>
+          RESOURCES.filter(
+            (r) => r.node === 'forest' && (ctx.self.inventory.resources[r.id] ?? 0) > 0,
+          ).map((r) => ({ id: r.id, label: `Eat 1 ${r.name}` })),
+        apply(ctx, choice) {
+          const r = RESOURCES.find((x) => x.id === choice && x.node === 'forest');
+          if (!r) return;
+          ctx.spendResources(ctx.self, [r.id], 'Rabbit Diet');
+          ctx.changeStat(ctx.self, 'appetite', N.rabbitDiet.appetite, 'Rabbit Diet');
+        },
+      },
+    },
   ),
   trail(null, 'soldiersMarch', 'Soldier’s March', 'Moving alone costs 1 less Appetite.', {
     ...unique('grandpaWink', 'grandpaSherman'),

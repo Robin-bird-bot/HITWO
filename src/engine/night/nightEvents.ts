@@ -41,7 +41,7 @@ import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { hikersOnTile, isSheltered } from '../map';
 import { nextFloat, pick, roll } from '../rng';
-import { nightSafeItem, nightShield } from '../effects';
+import { nightSafeItem, nightShield, suppliesGuarded } from '../effects';
 import { neighborShelter } from '../items/shelters';
 import type {
   CardRolls,
@@ -109,13 +109,14 @@ function meets(state: GameState, h: Hiker, need: NightNeed): boolean {
     case 'caps':
       return state.caps > 0;
     case 'resources':
-      return resourceCount(h) > 0;
+      // A Mouser on the tile keeps them safe.
+      return resourceCount(h) > 0 && !suppliesGuarded(state, h);
     case 'items':
       return h.inventory.bag.length > 0;
     case 'clothes':
       return equippedClothes(h).length > 0;
     case 'food':
-      return foodCarried(h) > 0;
+      return foodCarried(h) > 0 && !suppliesGuarded(state, h);
     case 'xp':
       return h.xp > 0;
     case 'stat':

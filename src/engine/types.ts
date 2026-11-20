@@ -311,6 +311,8 @@ export interface ItemInstance {
   node?: NodeType;
   /** Clothes: a full durability above the usual (Fort Rock's reward, an Engineering Vest). */
   maxDurability?: number;
+  /** Clothes a Stylish hiker has put on: their extra days were given (once per item). */
+  styled?: true;
 }
 
 export interface Inventory {
@@ -555,6 +557,8 @@ export interface CardRolls {
 export interface OpenChallenge {
   cardId: string;
   tileId: TileId;
+  /** The hiker who led the group onto the tile, if a Move All did (Alpha Dog). */
+  leaderId?: HikerId;
   /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
   tier: 1 | 2 | 3;
   scale: number;
@@ -593,6 +597,8 @@ export interface QueuedReveal {
   hikerIds: HikerId[];
   /** A card's effect starts a challenge of this tier and node (Bear Country). */
   forced?: { tier: 1 | 2 | 3; node: NodeType };
+  /** The hiker who led the group onto the tile (Alpha Dog). */
+  leaderId?: HikerId;
 }
 
 /** What a Challenge space gives a passing hiker (Phase 5 first guess). */

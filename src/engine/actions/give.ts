@@ -8,7 +8,7 @@
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { giveReach, tradesAnywhere } from '../effects';
+import { giveReach, tradesAnywhere, fireGive } from '../effects';
 import { tileDistance } from '../map';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
@@ -79,6 +79,7 @@ export function applyGive(state: GameState, action: GiveAction): void {
     if (!from.inventory.resources[r]) delete from.inventory.resources[r];
     to.inventory.resources[r] = (to.inventory.resources[r] ?? 0) + 1;
     pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, resource: r, ...taken });
+    fireGive(state, from, to.id, tileDistance(state.section, from.tileId, to.tileId));
     return;
   }
   const i = from.inventory.bag.findIndex((it) => it.uid === action.itemUid);
@@ -86,6 +87,7 @@ export function applyGive(state: GameState, action: GiveAction): void {
   if (!item) return;
   to.inventory.bag.push(item);
   pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, itemId: item.itemId, ...taken });
+  fireGive(state, from, to.id, tileDistance(state.section, from.tileId, to.tileId));
 }
 
 export function validateReturn(state: GameState, action: ReturnAction): string | undefined {

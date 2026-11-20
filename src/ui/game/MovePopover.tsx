@@ -166,7 +166,8 @@ export function MovePopover({
               {preview.carrying.length > 1 ? ' each' : ''}.
             </span>
           )}
-          {preview.night && (
+          {/* Only when it costs something (a free night move, Night Shifty's, has nothing extra). */}
+          {preview.night && preview.rows.some((r) => r.changes.length > 0) && (
             <span className={styles.note}>Moving at night costs 1 extra Appetite.</span>
           )}
           {preview.reveals > 0 && (

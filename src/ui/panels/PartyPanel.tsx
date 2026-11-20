@@ -5,8 +5,6 @@
 import { characterFor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import {
-  STAT_NAMES,
-  statMax,
   workingTrait,
   type GameState,
   type Hiker,
@@ -16,7 +14,15 @@ import {
 import { Icon } from '../icons/Icon';
 import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
 import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
-import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
+import {
+  FAMILY_LOOK,
+  STAT_META,
+  carryNote,
+  hikerBars,
+  statNote,
+  statusTag,
+  xpProgress,
+} from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import { useDrop, type DropProps } from '../drag/drag';
@@ -186,14 +192,8 @@ function HikerCard({
               {note.text}
             </span>
           )}
-          {STAT_NAMES.map((stat) => (
-            <StatBar
-              key={stat}
-              stat={stat}
-              value={h.stats[stat]}
-              max={statMax(state, h, stat)}
-              ticks
-            />
+          {hikerBars(state, h).map((b) => (
+            <StatBar key={b.stat} stat={b.stat} value={b.value} max={b.max} ticks />
           ))}
           <ConditionPills hiker={h} />
         </div>
@@ -276,14 +276,14 @@ export function Details({
         </div>
       )}
       <div className={styles.stats}>
-        {STAT_NAMES.map((stat) => (
-          <div key={stat} className={styles.statRow}>
-            <Icon name={STAT_META[stat].icon} size={14} />
-            <span className={styles.statName}>{STAT_META[stat].label}</span>
+        {hikerBars(state, h).map((b) => (
+          <div key={b.stat} className={styles.statRow}>
+            <Icon name={STAT_META[b.stat].icon} size={14} />
+            <span className={styles.statName}>{STAT_META[b.stat].label}</span>
             <span className={styles.statValue}>
-              {h.stats[stat]}/{statMax(state, h, stat)}
+              {b.value}/{b.max}
             </span>
-            <span className={styles.statNote}>{statNote(stat, h.stats[stat])}</span>
+            <span className={styles.statNote}>{statNote(b.stat, b.value)}</span>
           </div>
         ))}
         <div className={styles.statRow}>

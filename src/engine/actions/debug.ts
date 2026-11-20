@@ -22,6 +22,7 @@ import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
 import { canAddSlot } from '../traits/slots';
+import { setDaily } from '../traits/daily';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
 export function applyDebug(state: GameState, op: DebugOp): void {
@@ -113,7 +114,7 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       const slot = hiker?.slots[op.slot];
       if (!hiker || !slot?.traitId) return;
-      slot.daily = { day: state.day, pick: op.pick };
+      setDaily(state, hiker, slot, op.pick);
       pushEvent(state, {
         kind: 'debug',
         note: `${hiker.name}'s slot ${op.slot + 1} is ${op.pick} today`,

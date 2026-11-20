@@ -1,6 +1,7 @@
 import { withDefaults } from './items/make';
 import { fireBiomeStart } from './effects';
 import { scoutAround } from './traits/reveal';
+import { rollDailyTraits } from './traits/daily';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -87,7 +88,14 @@ export function createGame({
       ...(setup.duo ? { duo: setup.duo } : {}),
       status: 'active',
       tileId: section.trailheadId,
-      stats: { ...BALANCE.stats.start, ...setup.stats },
+      stats: {
+        ...BALANCE.stats.start,
+        // A Plush hiker starts with full Stuffing (kept in both Energy and Appetite).
+        ...(setup.family === 'plush'
+          ? { energy: BALANCE.plush.stuffingMax, appetite: BALANCE.plush.stuffingMax }
+          : {}),
+        ...setup.stats,
+      },
       injuries: 0,
       slots: setup.slots.map((s) => ({
         ...s,
@@ -119,7 +127,9 @@ export function createGame({
     log: [],
   };
   if (startingResources) giveStartingResources(state);
-  // The first biome begins (Prepared, Tactical), and Scouts see around the trailhead.
+  // The first day's daily traits, then the first biome begins (Prepared, Tactical), and
+  // Scouts see around the trailhead.
+  rollDailyTraits(state);
   fireBiomeStart(state);
   scoutAround(state);
   return state;

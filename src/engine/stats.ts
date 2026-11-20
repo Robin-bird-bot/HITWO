@@ -94,6 +94,7 @@ export function changeStat(
   if (to === from) return;
 
   hiker.stats[stat] = to;
+  mirrorStuffing(hiker, stat);
   pushEvent(state, {
     kind: 'stat',
     hikerId: hiker.id,
@@ -110,6 +111,17 @@ export function changeStat(
   if (injures && to === BALANCE.stats.min && change < 0) addInjury(state, hiker, `${stat} hit 0`);
   // Hangry's Morale cap moves with Appetite.
   clampToCaps(state, hiker);
+}
+
+/** A Plush hiker's Energy and Appetite are one bar, Stuffing: a change to either is a change to both. */
+export const isStuffing = (hiker: Hiker, stat: StatName): boolean =>
+  hiker.family === 'plush' && (stat === 'energy' || stat === 'appetite');
+
+/** After a change to a Plush hiker's Energy or Appetite, the other one matches it. */
+function mirrorStuffing(hiker: Hiker, stat: StatName): void {
+  if (!isStuffing(hiker, stat)) return;
+  const other = stat === 'energy' ? 'appetite' : 'energy';
+  hiker.stats[other] = hiker.stats[stat];
 }
 
 /**
@@ -129,6 +141,7 @@ export function shiftStat(
   const to = Math.max(BALANCE.stats.min, Math.min(from + delta, ceiling));
   if (to === from) return;
   hiker.stats[stat] = to;
+  mirrorStuffing(hiker, stat);
   pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
 }
 

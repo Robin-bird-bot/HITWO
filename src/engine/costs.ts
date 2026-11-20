@@ -23,6 +23,12 @@ import type { GameState, Hiker, HikerId, Line, StatAmounts, TileId } from './typ
 export interface HikerCost {
   hikerId: HikerId;
   cost: StatAmounts;
+  /**
+   * Move All: the Appetite the mover pays for this hiker (their own crossing
+   * for the mover, the per-hiker cost for the others), so a trait can make
+   * one hiker's part free (Just Around the Next Corner).
+   */
+  share?: number;
 }
 
 interface Crossing {
@@ -118,8 +124,9 @@ export function moveAllCost(
 
   const own = crossingCost(state, mover, mover, crossing, 'actor');
   let group = 0;
+  const shares = new Map<HikerId, number>();
   for (const b of brought) {
-    group += computeCost(
+    const share = computeCost(
       state,
       [mover, b],
       {
@@ -133,6 +140,8 @@ export function moveAllCost(
       },
       BALANCE.moveAll.perHikerAppetite,
     );
+    shares.set(b.id, share);
+    group += share;
   }
   const moverAppetite = computeCost(
     state,
@@ -156,10 +165,11 @@ export function moveAllCost(
     ? { ...own, appetite: 0, energy: own.energy + pull.energy }
     : withTrailShoes(state, mover, { ...own, appetite: moverAppetite });
   return [
-    { hikerId: mover.id, cost: moverCost },
+    { hikerId: mover.id, cost: moverCost, share: own.appetite },
     ...brought.map((b) => ({
       hikerId: b.id,
       cost: withTrailShoes(state, b, crossingCost(state, b, mover, crossing, 'brought')),
+      share: shares.get(b.id) ?? 0,
     })),
   ];
 }

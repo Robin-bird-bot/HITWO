@@ -13,6 +13,7 @@ import { bagSlots } from '../inventory';
 import { pushEvent } from '../log';
 import type { Action, EquipSlot, GameState, Hiker, Inventory } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
+import { fireEquip } from '../effects';
 
 type PutOnAction = Extract<Action, { type: 'putOn' }>;
 type TakeOffAction = Extract<Action, { type: 'takeOff' }>;
@@ -55,6 +56,8 @@ export function applyPutOn(state: GameState, action: PutOnAction): void {
     pushEvent(state, { kind: 'dressed', hikerId: hiker.id, itemId: old.itemId, on: false });
   }
   pushEvent(state, { kind: 'dressed', hikerId: hiker.id, itemId: item.itemId, on: true });
+  // Stylish: clothes put on last longer (once per item).
+  fireEquip(state, hiker, item);
 }
 
 /** Who takes the clothes into their bag: the wearer, or an active hiker beside a passed-out one. */

@@ -23,6 +23,7 @@ import { pushEvent } from './log';
 import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
+import { rollDailyTraits } from './traits/daily';
 
 /** Active hikers who still have their action this phase. The UI warns before ending the phase. */
 export function hikersWhoHaventActed(state: GameState): Hiker[] {
@@ -104,6 +105,8 @@ export function startNewDay(state: GameState): void {
   state.scavengedToday = [];
   pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
   advanceWeather(state);
+  // Quirky, Zany, Nosework and Moody change for the day, before the morning's traits.
+  rollDailyTraits(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
   weatherPhaseStart(state);
   firePhaseStart(state);
