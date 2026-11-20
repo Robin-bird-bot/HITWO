@@ -164,3 +164,17 @@
   letter-spacing: 0.06em;
   color: var(--text-faint);
 }
+
+/* Dev only: start a hike with test hikers (Phase 10a). */
+.testPicker {
+  margin-top: 12px;
+  max-width: 520px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.testPicker summary {
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  letter-spacing: 0.05em;
+}

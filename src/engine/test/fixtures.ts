@@ -56,13 +56,25 @@ export function fixtureSection(): Section {
 }
 
 /** A placeholder hiker. Each trait gets its own wild (W) slot. */
+/**
+ * A human hiker with these traits, each in a W slot. A trait with a setting
+ * is written with it: 'finder:river', 'location:river/mountain'.
+ */
 export function fixtureHiker(id: HikerId, traits: string[] = []): HikerSetup {
   return {
     id,
     name: id.charAt(0).toUpperCase() + id.slice(1),
     family: 'human',
     placeholder: true,
-    slots: traits.map((traitId) => ({ type: 'W', traitId })),
+    slots: traits.map((written) => {
+      const [traitId = '', set] = written.split(':');
+      const [x, y] = set ? set.split('/') : [];
+      return {
+        type: 'W',
+        traitId,
+        ...(x ? { setting: { x, ...(y ? { y } : {}) } } : {}),
+      };
+    }),
   };
 }
 

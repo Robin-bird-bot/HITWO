@@ -637,6 +637,8 @@ export const BALANCE = {
 
   /** Numbers used by specific traits (see src/content/traits.ts). */
   traits: {
+    /** The most trait slots a hiker can have (02-traits-and-conditions.md). */
+    maxSlots: 6,
     leader: { moveAllDiscount: 1 },
     /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
     thrillSeeker: { energyLost: 3, days: 1 },

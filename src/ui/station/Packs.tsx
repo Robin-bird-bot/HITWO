@@ -35,6 +35,7 @@ import { useDrag, useDrop, type DropTarget } from '../drag/drag';
 import { NO_DROP } from '../drag/itemDrops';
 import { resourceName } from '../scavenge/cardLook';
 import styles from './Counter.module.css';
+import { portraitSrc } from '../portrait';
 
 /** What a sale would be, for the confirm. */
 export interface SaleRequest {
@@ -74,7 +75,7 @@ export function Packs({
           <li key={h.id} className={styles.pack} {...(gone ? {} : pack.props(h.id))}>
             <div className={styles.packHead}>
               <img
-                src={ASSETS.portraits.placeholder}
+                src={portraitSrc(h.id)}
                 alt=""
                 style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
               />

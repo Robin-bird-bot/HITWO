@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
-import { ASSETS } from '../../config/assets';
 import { characterFor } from '../../content/characters';
 import type { Hiker, HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -8,6 +7,7 @@ import { MAP_VIEW, type Point } from '../map/mapLayout';
 import { STAT_META } from '../panels/hikerInfo';
 import { shortWhy, type BringOption, type MovePreview } from './movePlan';
 import styles from './MovePopover.module.css';
+import { portraitSrc } from '../portrait';
 
 const WIDTH = 300;
 
@@ -92,7 +92,7 @@ export function MovePopover({
       <div className={styles.head}>
         <img
           className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
+          src={portraitSrc(hiker.id)}
           alt=""
           style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
         />
@@ -124,7 +124,7 @@ export function MovePopover({
                   }
                 />
                 <img
-                  src={ASSETS.portraits.placeholder}
+                  src={portraitSrc(h.id)}
                   alt=""
                   style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
                 />

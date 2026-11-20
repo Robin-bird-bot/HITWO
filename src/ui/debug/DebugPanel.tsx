@@ -8,14 +8,7 @@
  * tonight's night event.
  */
 import { useEffect, useState } from 'react';
-import {
-  CARDS,
-  CONDITIONS,
-  ITEMS,
-  SCAVENGE_CARDS,
-  SCAVENGE_CARD_ORDER,
-  TRAITS,
-} from '../../content';
+import { CARDS, CONDITIONS, ITEMS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER } from '../../content';
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
@@ -40,6 +33,7 @@ import {
 import { gameStore } from '../app/gameStore';
 import { emptyPercent } from '../panels/abundanceLook';
 import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
+import { TestHikerPicker, TraitTools } from './DebugTraits';
 import styles from './DebugPanel.module.css';
 
 const PHASE_NAMES = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -49,9 +43,11 @@ interface DebugPanelProps {
   onQuit(): void;
   /** Starts a new game with this seed (the same seed always gives the same trail). */
   onNewGame(seed: number): void;
+  /** Starts a new game with these test hikers (Phase 10a). */
+  onNewTestHike(ids: string[]): void;
 }
 
-export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
+export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPanelProps) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [seed, setSeed] = useState(String(state.seed));
@@ -251,7 +247,12 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Traits</h3>
-        <TraitEditor hikers={state.hikers} onApply={run} />
+        <TraitTools state={state} onApply={run} />
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Test hikers</h3>
+        <TestHikerPicker onStart={onNewTestHike} />
       </section>
 
       <section className={styles.group}>
@@ -301,72 +302,6 @@ export function DebugPanel({ state, onQuit, onNewGame }: DebugPanelProps) {
 }
 
 const STAT_LABEL = { energy: 'Energy', appetite: 'Appetite', morale: 'Morale' } as const;
-
-/** Put any trait (or nothing) in any of a hiker's slots, to try the traits out. */
-function TraitEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
-  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
-  const [slot, setSlot] = useState(0);
-  const [traitId, setTraitId] = useState('forager');
-  const hiker = hikers.find((h) => h.id === hikerId);
-  const traits = Object.values(TRAITS).sort((a, b) => a.name.localeCompare(b.name));
-  if (!hiker) return null;
-  return (
-    <div className={styles.row}>
-      <select
-        className={styles.button}
-        value={hikerId}
-        onChange={(e) => {
-          setHikerId(e.target.value);
-          setSlot(0);
-        }}
-        aria-label="Hiker"
-      >
-        {hikers.map((h) => (
-          <option key={h.id} value={h.id}>
-            {h.name}
-          </option>
-        ))}
-      </select>
-      <select
-        className={styles.button}
-        value={slot}
-        onChange={(e) => setSlot(Number(e.target.value))}
-        aria-label="Slot"
-      >
-        {hiker.slots.map((s, i) => (
-          <option key={i} value={i}>
-            Slot {i + 1} ({s.type}): {s.traitId ? (TRAITS[s.traitId]?.name ?? s.traitId) : 'empty'}
-          </option>
-        ))}
-      </select>
-      <select
-        className={styles.button}
-        value={traitId}
-        onChange={(e) => setTraitId(e.target.value)}
-        aria-label="Trait"
-      >
-        <option value="">(empty)</option>
-        {traits.map((t) => (
-          <option key={t.id} value={t.id}>
-            {t.name}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        className={styles.button}
-        onClick={() =>
-          onApply({
-            type: 'debug',
-            op: { kind: 'setTrait', hikerId: hiker.id, slot, traitId: traitId || null },
-          })
-        }
-      >
-        Set trait
-      </button>
-    </div>
-  );
-}
 
 const ORDER = { challenge: 0, trial: 1, opportunity: 2 } as const;
 

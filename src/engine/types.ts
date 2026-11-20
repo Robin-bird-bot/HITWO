@@ -173,16 +173,63 @@ export interface WeatherState {
 
 // ── Hikers ─────────────────────────────────────────────────────────────────
 
-export type Family = 'human' | 'dog' | 'cat';
+/** Plush (Nov 20 update): stuffed animals that aren't quite real (07-characters.md). */
+export type Family = 'human' | 'dog' | 'cat' | 'plush';
+export const FAMILY_IDS: readonly Family[] = ['human', 'dog', 'cat', 'plush'];
 export type HikerStatus = 'active' | 'passedOut' | 'abandoned' | 'checkedIn';
 
 /** Trail, Utility or Morale. */
 export type TraitType = 'T' | 'U' | 'M';
-export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W';
+/**
+ * What a slot holds: one type, either of two, any (W), or a Duo's Tag Team
+ * trait (`tag`), which only a Tag Team trait fits.
+ */
+export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W' | 'tag';
+export const SLOT_TYPES: readonly SlotType[] = ['T', 'U', 'M', 'T/U', 'T/M', 'U/M', 'W', 'tag'];
+
+/** What a character is good at (07-characters.md, "Classes"). A hiker has 1 or 2. */
+export type ClassId =
+  | 'tank'
+  | 'hardy'
+  | 'scavenger'
+  | 'crafter'
+  | 'scout'
+  | 'support'
+  | 'jack'
+  | 'entertainer'
+  | 'moneymaker';
+export const CLASS_IDS: readonly ClassId[] = [
+  'tank',
+  'hardy',
+  'scavenger',
+  'crafter',
+  'scout',
+  'support',
+  'jack',
+  'entertainer',
+  'moneymaker',
+];
+
+/**
+ * A trait's setting, stored with it on the hiker: a node ([Node] Finder,
+ * Conservationist [X]), two nodes (Location [X/Y]), or one or two actions
+ * (Traveler [X], Action [X/Y]).
+ */
+export interface TraitSetting {
+  x?: string;
+  y?: string;
+}
 
 export interface TraitSlot {
   type: SlotType;
   traitId: TraitId | null;
+  /** The trait's setting, when it has one. */
+  setting?: TraitSetting;
+  /**
+   * Today's pick, for a trait that changes each morning: the trait Quirky or
+   * Zany is today, Nosework's node, Moody's condition. Only counts on `day`.
+   */
+  daily?: { day: number; pick: string };
 }
 
 /** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
@@ -283,6 +330,14 @@ export interface Hiker {
   name: string;
   family: Family;
   placeholder?: boolean;
+  /** Their classes: which Trail and Utility traits level-ups offer them. */
+  classes: ClassId[];
+  /** Who they are, for special and unique traits that belong to certain characters. */
+  characterId?: string;
+  /** A dev-only test hiker (no art). Never in the real roster. */
+  test?: true;
+  /** A Duo: the two characters sharing this hiker card (Boss & Gracie). */
+  duo?: readonly [string, string];
   status: HikerStatus;
   tileId: TileId;
   stats: Stats;
@@ -749,8 +804,24 @@ export type DebugOp =
   | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number }
   /** Sets the Abundance bar directly. */
   | { kind: 'setAbundance'; abundance: number }
-  /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
-  | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
+  /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type, with its setting. */
+  | {
+      kind: 'setTrait';
+      hikerId: HikerId;
+      slot: number;
+      traitId: TraitId | null;
+      setting?: TraitSetting;
+    }
+  /** Adds a slot of any type (up to the most a hiker can have). */
+  | { kind: 'addSlot'; hikerId: HikerId; slotType: SlotType }
+  /** Takes a slot away, with its trait. */
+  | { kind: 'removeSlot'; hikerId: HikerId; slot: number }
+  /** Every usable trait and once-a-while rule of this hiker comes back now. */
+  | { kind: 'refillUses'; hikerId: HikerId }
+  /** Moves the day number to the next odd or even day (Tag Team), keeping the phase. */
+  | { kind: 'setDayParity'; odd: boolean }
+  /** Sets what a daily trait is today (Quirky, Zany, Nosework, Moody). */
+  | { kind: 'setDaily'; hikerId: HikerId; slot: number; pick: string }
   /** The next scavenge deals these card types first, where they can happen. */
   | { kind: 'nextDeal'; types: ScavengeCardType[] }
   /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */

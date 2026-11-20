@@ -39,8 +39,8 @@ describe('scavenging traits', () => {
   });
 
   it('a Finder makes its node likelier, and a Hound much likelier with more ×2 results', () => {
-    expect(setupOf(withTraits('riverFinder')).nodeWeight).toEqual({ river: 1.5 });
-    const hound = setupOf(withTraits('rockHound'));
+    expect(setupOf(withTraits('finder:river')).nodeWeight).toEqual({ river: 1.5 });
+    const hound = setupOf(withTraits('hound:mountain'));
     expect(hound.nodeWeight).toEqual({ mountain: 3 });
     expect(hound.nodeTypeWeight).toEqual({ mountain: { x2: 2, wildX2: 2 } });
     expect(hound.bonuses[0]?.label).toBe(

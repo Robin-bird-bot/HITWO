@@ -15,7 +15,21 @@ export { applyAction, validateAction, InvalidActionError } from './applyAction';
 export { createGame, type HikerSetup, type NewGameOptions } from './newGame';
 export { hikersWhoHaventActed } from './dayLoop';
 export { moveCost, moveAllCost, type HikerCost } from './costs';
-export { abilitiesFor, type AvailableAbility, type TraitDef } from './effects';
+export {
+  abilitiesFor,
+  workingTrait,
+  type AvailableAbility,
+  type TraitDef,
+  type WorkingTrait,
+} from './effects';
+export {
+  canAddSlot,
+  familyCanHave,
+  familyVersion,
+  fitsSlot,
+  slotReason,
+  typesFor,
+} from './traits/slots';
 export {
   isExhausted,
   isFamished,

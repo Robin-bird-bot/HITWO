@@ -3,12 +3,11 @@
  * hiker, with the selected hiker's card expanded.
  */
 import { characterFor } from '../../content/characters';
-import { TRAITS } from '../../content';
-import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import {
   STAT_NAMES,
   statMax,
+  workingTrait,
   type GameState,
   type Hiker,
   type HikerId,
@@ -24,6 +23,7 @@ import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from './GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
+import { portraitSrc } from '../portrait';
 
 interface PartyPanelProps {
   state: GameState;
@@ -139,7 +139,7 @@ function HikerCard({
         <OrderBadge n={turn}>
           <img
             className={styles.portrait}
-            src={ASSETS.portraits.placeholder}
+            src={portraitSrc(h.id)}
             alt=""
             style={{
               boxShadow: `0 0 0 3px ${color}`,
@@ -233,6 +233,7 @@ const SLOT_RING: Record<SlotType, string> = {
   'T/M': `linear-gradient(90deg, ${SLOT_COLOR.T} 0 50%, ${SLOT_COLOR.M} 50% 100%)`,
   'U/M': `linear-gradient(90deg, ${SLOT_COLOR.U} 0 50%, ${SLOT_COLOR.M} 50% 100%)`,
   W: `linear-gradient(90deg, ${SLOT_COLOR.T} 0 33%, ${SLOT_COLOR.U} 33% 66%, ${SLOT_COLOR.M} 66% 100%)`,
+  tag: '#E9B44C',
 };
 const SLOT_NAME: Record<SlotType, string> = {
   T: 'Trail',
@@ -242,6 +243,7 @@ const SLOT_NAME: Record<SlotType, string> = {
   'T/M': 'Trail or Morale',
   'U/M': 'Utility or Morale',
   W: 'Wild: any trait',
+  tag: 'Tag Team',
 };
 const MAX_SLOTS = 6;
 
@@ -308,8 +310,9 @@ export function Details({
         </div>
         <div className={styles.slots}>
           {h.slots.map((slot, i) => {
-            const trait = slot.traitId ? TRAITS[slot.traitId] : undefined;
-            const desc = `${SLOT_NAME[slot.type]} slot · ${trait ? `${trait.name}: ${trait.text}` : 'empty'}`;
+            const working = workingTrait(state, slot);
+            const trait = working?.def;
+            const desc = `${SLOT_NAME[slot.type]} slot · ${working ? `${working.name}: ${working.text}` : 'empty'}`;
             return (
               <div
                 key={i}
@@ -321,7 +324,7 @@ export function Details({
                 }}
               >
                 <span style={{ color: trait ? SLOT_COLOR[trait.type] : '#6F6A60' }}>
-                  {trait ? trait.name.toUpperCase() : 'EMPTY'}
+                  {working ? working.name.toUpperCase() : 'EMPTY'}
                 </span>
               </div>
             );

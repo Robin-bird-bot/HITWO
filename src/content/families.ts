@@ -34,6 +34,9 @@ export const FAMILIES: Readonly<Record<Family, FamilyDef>> = {
   // "Moving costs no Appetite, alone or with the group. −1 item slot."
   // With the group (Wyatt, Nov 3): a Cat's own crossing is free and bringing a Cat
   // along is free, but a Cat leading a Move All still pays for the others it brings.
+  // Plush (Nov 20 update): Stuffing and Carried come in Phase 10a step 5.
+  plush: { name: 'Plush', hooks: {} },
+
   cat: {
     name: 'Cat',
     hooks: {

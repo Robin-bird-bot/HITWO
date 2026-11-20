@@ -38,6 +38,7 @@ import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard, type ScavCardProps } from './ScavCard';
 import { usePreview, withPreview } from '../preview/preview';
 import styles from './ScavengeWindow.module.css';
+import { portraitSrc } from '../portrait';
 
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
 
@@ -164,7 +165,7 @@ export function ScavengeWindow({
             <span className={styles.hiker}>
               <img
                 className={styles.portrait}
-                src={ASSETS.portraits.placeholder}
+                src={portraitSrc(hiker.id)}
                 alt=""
                 style={{ boxShadow: `0 0 0 2px ${characterFor(hiker.id).color}` }}
               />

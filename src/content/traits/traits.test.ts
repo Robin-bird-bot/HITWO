@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { validateAction } from '../engine/applyAction';
-import { moveAllCost } from '../engine/costs';
-import { abilitiesFor } from '../engine/effects';
-import { END, fixtureGame, fixtureHiker, hiker, place, run } from '../engine/test/fixtures';
-import type { Action } from '../engine/types';
+import { validateAction } from '../../engine/applyAction';
+import { moveAllCost } from '../../engine/costs';
+import { abilitiesFor } from '../../engine/effects';
+import { END, fixtureGame, fixtureHiker, hiker, place, run } from '../../engine/test/fixtures';
+import type { Action } from '../../engine/types';
 
 const party = (traitsByHiker: Record<string, string[]>) =>
   fixtureGame({

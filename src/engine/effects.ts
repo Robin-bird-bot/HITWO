@@ -28,6 +28,7 @@ import type {
   ConditionInstance,
   ConditionUnit,
   EquipSlot,
+  Family,
   GameState,
   Hiker,
   HikerId,
@@ -42,6 +43,8 @@ import type {
   ScavengeCardType,
   StatName,
   TileId,
+  TraitSetting,
+  TraitSlot,
   TraitType,
 } from './types';
 
@@ -219,7 +222,7 @@ export interface EffectContext extends QueryContext {
    * Adds to a running count for this hiker that resets each phase or day, and
    * returns the new total (Thrill Seeker's Energy lost this phase).
    */
-  tally(hiker: Hiker, key: string, add: number, per: 'phase' | 'day'): number;
+  tally(hiker: Hiker, key: string, add: number, per: 'phase' | 'day' | 'biome'): number;
   roll(chance: number): boolean;
   int(min: number, max: number): number;
   pick<T>(items: readonly T[]): T;
@@ -332,17 +335,100 @@ export interface AbilityDef {
   apply(ctx: EffectContext, choice: string | undefined): void;
 }
 
+/**
+ * normal: offered to anyone whose classes fit; family: only some families
+ * can have it; special and unique: only the characters they belong to.
+ */
+export type TraitKind = 'normal' | 'family' | 'special' | 'unique';
+
+/** What a trait's setting holds: a node, two nodes, one action or two actions. */
+export type TraitSettingKind = 'node' | 'nodes' | 'action' | 'actions';
+
 export interface TraitDef {
   id: string;
   name: string;
   type: TraitType;
-  /** Trail and Utility traits have a tier; Morale traits don't. */
+  /** Trail and Utility traits have a tier; Morale, special and unique traits don't. */
   tier: 1 | 2 | 3 | null;
-  /** The exact wording from the design doc. */
+  /** The wording from the design doc, without its [brackets]. */
   text: string;
   hooks?: Hooks;
+  /** A usable trait: a button in the Abilities panel. Every other trait is always on. */
   ability?: AbilityDef;
   placeholder?: boolean;
+  /** Normal unless it says otherwise. */
+  kind?: TraitKind;
+  /** Family traits and family versions: the families that can have it. */
+  who?: readonly Family[];
+  /** Special and unique traits: the characters it belongs to (07-characters.md). */
+  owners?: readonly string[];
+  /**
+   * One effect under family names (Puller and Leash Puller): the group they
+   * share. A hiker is only offered the version for their family.
+   */
+  group?: string;
+  /** What's set for this trait on the hiker (Finder's node, Location's two nodes). */
+  setting?: TraitSettingKind;
+  /** Hooks that read the setting. */
+  hooksWith?(setting: TraitSetting): Hooks;
+  /** The name with its setting ("River Finder"). */
+  nameWith?(setting: TraitSetting): string;
+  /** What it does, with its setting filled in. */
+  textWith?(setting: TraitSetting): string;
+  /**
+   * Changes each morning: into another trait (Quirky, Zany), a node
+   * (Nosework) or a condition (Moody). Today's pick is kept on the slot.
+   */
+  daily?: 'trait' | 'node' | 'condition';
+  /** A daily trait that becomes another trait: the tiers it draws from (Quirky: Tier I). */
+  dailyTiers?: readonly (1 | 2 | 3)[];
+  /** A Duo's Tag Team trait: only their Tag Team slot holds it. */
+  tagTeam?: true;
+  /** A rule the game doesn't have yet, that this trait needs (Sit by the Fire). */
+  waitsOn?: string;
+}
+
+/** A slot's trait as it works today: a daily trait as today's pick, with its setting. */
+export interface WorkingTrait {
+  def: TraitDef;
+  /** The trait whose rules run: today's trait for Quirky and Zany, else `def`. */
+  runs: TraitDef;
+  setting: TraitSetting;
+  name: string;
+  /** What it does, with its setting filled in (today's trait's text for Quirky and Zany). */
+  text: string;
+}
+
+/** What the trait in this slot is and does today, or nothing for an empty or unknown slot. */
+export function workingTrait(state: GameState, slot: TraitSlot): WorkingTrait | undefined {
+  const def = slot.traitId ? TRAITS[slot.traitId] : undefined;
+  if (!def) return undefined;
+  const today = slot.daily?.day === state.day ? slot.daily.pick : undefined;
+  if (def.daily === 'trait') {
+    const runs = today ? TRAITS[today] : undefined;
+    return runs
+      ? {
+          def,
+          runs,
+          setting: slot.setting ?? {},
+          name: `${def.name} (${runs.name})`,
+          text: `Today: ${runs.text}`,
+        }
+      : { def, runs: def, setting: {}, name: def.name, text: def.text };
+  }
+  const setting = def.daily === 'node' && today ? { x: today } : (slot.setting ?? {});
+  return {
+    def,
+    runs: def,
+    setting,
+    name: def.nameWith?.(setting) ?? def.name,
+    text: def.textWith?.(setting) ?? def.text,
+  };
+}
+
+/** A trait's hooks with its setting. */
+export function traitHooks(def: TraitDef, setting: TraitSetting): Hooks {
+  return def.hooksWith ? { ...def.hooks, ...def.hooksWith(setting) } : (def.hooks ?? {});
 }
 
 export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
@@ -607,16 +693,16 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
   }
   const off = suppressedTraitTypes(hiker);
   for (const slot of hiker.slots) {
-    if (!slot.traitId) continue;
-    const def = TRAITS[slot.traitId];
     // An unknown id (content removed since the save) is skipped, not fatal.
-    if (!def || off.has(def.type)) continue;
+    const trait = workingTrait(state, slot);
+    if (!trait || off.has(trait.def.type)) continue;
+    const { runs, setting } = trait;
     sources.push({
-      id: `trait:${def.id}`,
+      id: `trait:${trait.def.id}`,
       kind: 'trait',
-      name: def.name,
-      hooks: def.hooks ?? {},
-      ability: def.ability,
+      name: trait.name,
+      hooks: traitHooks(runs, setting),
+      ability: runs.ability,
     });
   }
   return sources;
@@ -697,7 +783,7 @@ export function tally(
   hiker: Hiker,
   key: string,
   add: number,
-  per: 'phase' | 'day',
+  per: 'phase' | 'day' | 'biome',
 ): number {
   const id = `tally:${key}`;
   const period = abilityPeriod(state, per);
@@ -953,7 +1039,10 @@ export function fireMoraleChange(state: GameState, hiker: Hiker, delta: number, 
 
 // ── Abilities ──────────────────────────────────────────────────────────────
 
-/** The key that resets an ability's use count each day, phase or biome. */
+/**
+ * The key that resets an ability's use count each day, phase or biome. A
+ * biome is a section of the trail, so per-biome uses come back at each new section.
+ */
 export function abilityPeriod(state: GameState, per: AbilityDef['limit']['per']): string {
   if (per === 'day') return `day ${state.day}`;
   if (per === 'phase') return `day ${state.day} ${state.phase}`;

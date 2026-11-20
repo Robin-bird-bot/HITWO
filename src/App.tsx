@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { STARTING_PARTY } from './content/characters';
-import { createGame, type LoadFailure } from './engine';
+import { TEST_HIKERS } from './content/testHikers';
+import { createGame, type HikerSetup, type LoadFailure } from './engine';
 import { gameStore, useGame } from './ui/app/gameStore';
 import { useHash } from './ui/app/useHash';
 import { DebugItems } from './ui/debug/DebugItems';
@@ -11,6 +12,7 @@ import { CraftingMockup } from './ui/mockup/CraftingMockup';
 import { StationExtrasMockup } from './ui/mockup/StationExtrasMockup';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
+import { TestHikerPicker } from './ui/debug/DebugTraits';
 import { debugEnabled } from './ui/debug/debugEnabled';
 import { ConfirmDialog } from './ui/game/ConfirmDialog';
 import { GameScreen } from './ui/game/GameScreen';
@@ -33,6 +35,8 @@ export function App() {
   const game = useGame();
   const [screen, setScreen] = useState<'title' | 'game'>('title');
   const [confirmNew, setConfirmNew] = useState(false);
+  /** Dev only: the test hikers a confirmed new hike starts with. */
+  const [testParty, setTestParty] = useState<string[] | null>(null);
 
   if (hash.startsWith('#debug-map')) return <DebugMap hash={hash} />;
   if (hash.startsWith('#debug-cards') && debugEnabled()) return <DebugCards />;
@@ -42,11 +46,15 @@ export function App() {
   if (hash.startsWith('#mockup-crafting') && debugEnabled()) return <CraftingMockup />;
   if (hash.startsWith('#mockup-station-extras') && debugEnabled()) return <StationExtrasMockup />;
 
-  const startNew = (seed = randomSeed()) => {
-    gameStore.newGame(createGame({ seed, hikers: STARTING_PARTY }));
+  const startNew = (seed = randomSeed(), hikers: readonly HikerSetup[] = STARTING_PARTY) => {
+    gameStore.newGame(createGame({ seed, hikers }));
     setConfirmNew(false);
+    setTestParty(null);
     setScreen('game');
   };
+  /** Dev only: a hike with test hikers (Phase 10a). */
+  const testHikers = (ids: string[]) =>
+    ids.flatMap((id) => TEST_HIKERS.find((h) => h.id === id) ?? []);
 
   if (screen === 'game' && game) {
     return (
@@ -58,7 +66,12 @@ export function App() {
           onNewHike={() => startNew()}
         />
         {debugEnabled() && (
-          <DebugPanel state={game} onQuit={() => setScreen('title')} onNewGame={startNew} />
+          <DebugPanel
+            state={game}
+            onQuit={() => setScreen('title')}
+            onNewGame={startNew}
+            onNewTestHike={(ids) => startNew(randomSeed(), testHikers(ids))}
+          />
         )}
       </>
     );
@@ -72,6 +85,19 @@ export function App() {
         notice={!game && problem ? NOTICES[problem] : null}
         onContinue={() => setScreen('game')}
         onNewHike={() => (game ? setConfirmNew(true) : startNew())}
+        {...(debugEnabled()
+          ? {
+              testPicker: (
+                <TestHikerPicker
+                  onStart={(ids) =>
+                    game
+                      ? (setTestParty(ids), setConfirmNew(true))
+                      : startNew(randomSeed(), testHikers(ids))
+                  }
+                />
+              ),
+            }
+          : {})}
       />
       {confirmNew && game && (
         <ConfirmDialog
@@ -79,8 +105,13 @@ export function App() {
           message={`Your saved hike (${describeSave(game)}) will be replaced. This can’t be undone.`}
           confirmLabel="Start new hike"
           cancelLabel="Keep my hike"
-          onCancel={() => setConfirmNew(false)}
-          onConfirm={() => startNew()}
+          onCancel={() => {
+            setConfirmNew(false);
+            setTestParty(null);
+          }}
+          onConfirm={() =>
+            startNew(randomSeed(), testParty ? testHikers(testParty) : STARTING_PARTY)
+          }
         />
       )}
     </Stage>

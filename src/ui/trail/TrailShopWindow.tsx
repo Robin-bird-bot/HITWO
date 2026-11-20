@@ -35,6 +35,7 @@ import counter from '../station/Counter.module.css';
 import { bundleName } from '../station/stationLook';
 import room from '../station/StationScreen.module.css';
 import styles from './TrailShopWindow.module.css';
+import { portraitSrc } from '../portrait';
 
 type Merchant = Extract<TrailShop, { kind: 'merchant' }>;
 type Trader = Extract<TrailShop, { kind: 'trader' }>;
@@ -317,7 +318,7 @@ function Owner({ hiker, worn }: { hiker: Hiker; worn: boolean }) {
     <span className={styles.owner}>
       <img
         className={styles.face}
-        src={ASSETS.portraits.placeholder}
+        src={portraitSrc(hiker.id)}
         alt=""
         style={{ boxShadow: `0 0 0 2px ${characterFor(hiker.id).color}` }}
       />

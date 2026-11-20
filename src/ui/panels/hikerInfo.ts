@@ -211,6 +211,7 @@ export const FAMILY_LOOK = {
   human: { label: 'HUMAN', icon: 'user' },
   dog: { label: 'DOG', icon: 'paw' },
   cat: { label: 'CAT', icon: 'paw' },
+  plush: { label: 'PLUSH', icon: 'paw' },
 } as const satisfies Record<Hiker['family'], { label: string; icon: IconName }>;
 
 export function xpProgress(h: Hiker): { level: number; xp: number; next: number | null } {

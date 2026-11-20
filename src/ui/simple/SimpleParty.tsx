@@ -5,7 +5,6 @@
  */
 import { useRef, useState } from 'react';
 import { characterFor } from '../../content/characters';
-import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -21,6 +20,7 @@ import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from '../panels/GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './Simple.module.css';
+import { portraitSrc } from '../portrait';
 
 interface SimplePartyProps {
   state: GameState;
@@ -210,7 +210,7 @@ function HikerCard({
       <OrderBadge n={turn}>
         <img
           className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
+          src={portraitSrc(h.id)}
           alt=""
           style={{ boxShadow: `0 0 0 3px ${color}` }}
         />

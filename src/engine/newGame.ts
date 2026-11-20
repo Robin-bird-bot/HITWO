@@ -10,6 +10,7 @@ import { generateSection } from './trail/generate';
 import { freshWeather } from './weather';
 import type {
   BiomeId,
+  ClassId,
   Family,
   GameState,
   Hiker,
@@ -26,6 +27,14 @@ export interface HikerSetup {
   family: Family;
   slots: TraitSlot[];
   placeholder?: boolean;
+  /** Their 1 or 2 classes (07-characters.md). */
+  classes?: readonly ClassId[];
+  /** Who they are, for traits that belong to certain characters. */
+  characterId?: string;
+  /** A dev-only test hiker. */
+  test?: true;
+  /** A Duo: the two characters sharing the card. */
+  duo?: readonly [string, string];
   /** Starting stats when a character doesn't start full. */
   stats?: Partial<Stats>;
   /** Items and resources the character starts with. */
@@ -70,11 +79,18 @@ export function createGame({
       name: setup.name,
       family: setup.family,
       ...(setup.placeholder ? { placeholder: true } : {}),
+      classes: [...(setup.classes ?? [])],
+      ...(setup.characterId ? { characterId: setup.characterId } : {}),
+      ...(setup.test ? { test: true } : {}),
+      ...(setup.duo ? { duo: setup.duo } : {}),
       status: 'active',
       tileId: section.trailheadId,
       stats: { ...BALANCE.stats.start, ...setup.stats },
       injuries: 0,
-      slots: setup.slots.map((s) => ({ ...s })),
+      slots: setup.slots.map((s) => ({
+        ...s,
+        ...(s.setting ? { setting: { ...s.setting } } : {}),
+      })),
       conditions: [],
       inventory: {
         bag: (setup.inventory?.bag ?? []).map(withDefaults),

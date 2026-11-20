@@ -48,6 +48,7 @@ import styles from './CraftWindow.module.css';
 import { partLabel, payWords, recipeWords, resName } from './craftWords';
 import { keyEnough, swapInto, swapOptions } from './craftSwap';
 import type { DropProps } from '../drag/drag';
+import { portraitSrc } from '../portrait';
 
 export type CraftTab = 'craft' | 'teach';
 
@@ -208,7 +209,7 @@ export function Face({ id, size }: { id: string; size: number }) {
   return (
     <img
       className={styles.face}
-      src={ASSETS.portraits.placeholder}
+      src={portraitSrc(id)}
       alt=""
       style={{ width: size, height: size, boxShadow: `0 0 0 2px ${characterFor(id).color}` }}
     />
