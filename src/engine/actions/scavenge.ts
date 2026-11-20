@@ -19,7 +19,14 @@ import { changeAbundance } from '../abundance';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { roll } from '../rng';
-import { abilitiesFor, abilityPeriod, fireScavenge, gainCaps } from '../effects';
+import {
+  abilitiesFor,
+  abilityPeriod,
+  computeCost,
+  fireScavenge,
+  fireScavenged,
+  gainCaps,
+} from '../effects';
 import { spendOnceBoosts } from '../items/boosts';
 import { dealCard, dealCards } from '../scavenge/deal';
 import { scavengeCost, scavengeSetup, scavengeTileReason } from '../scavenge/setup';
@@ -266,6 +273,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     });
     close();
     payCost(state, hiker, { appetite: base, energy: 0, morale: 0 }, 'Scavenge');
+    if (first) fireScavenged(state, hiker, { tileId: open.tileId });
     return;
   }
 
@@ -291,7 +299,20 @@ export function applyTake(state: GameState, action: TakeAction): void {
   if (card.node) {
     // One bar: the card's drain, a Bounty's extra, and bonus resources a hiker
     // chooses to take. A Mixed card drains once. TODO(wyatt): first guess.
-    const drain = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0) + bonusKept;
+    const base = def.drain + (card.bounty ? BALANCE.abundance.bountyExtraDrain : 0) + bonusKept;
+    // Eco-conscious: the first scavenge each day drains less.
+    const drain = computeCost(
+      state,
+      [hiker],
+      {
+        key: 'scavenge.drain',
+        actorId: hiker.id,
+        subjectId: hiker.id,
+        role: 'actor',
+        phase: state.phase,
+      },
+      base,
+    );
     changeAbundance(state, -drain);
     nodes.push(card.node);
   }
@@ -313,6 +334,9 @@ export function applyTake(state: GameState, action: TakeAction): void {
   close();
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
   noteScavenged(state, hiker, kept);
+  // After scavenging: Pockets, Generous, and Dog Mom on the tile.
+  if (first)
+    fireScavenged(state, hiker, { tileId: open.tileId, ...(card.node ? { node: card.node } : {}) });
 }
 
 /** How many bonus resources a take gets, and the Appetite they cost. */

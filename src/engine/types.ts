@@ -1214,6 +1214,8 @@ interface Offer {
   sold?: true;
   /** Face-down until bought (Rocco's Random Resale): the UI shows only the tier. */
   hidden?: true;
+  /** Free for this party: Thrifty's 1 item at each shop (Phase 10a). */
+  free?: true;
 }
 
 export interface ItemOffer extends Offer {

@@ -18,7 +18,7 @@ import { ITEMS } from '../../content/items';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
-import { canActReason, gainResources, type ItemDef, type ItemUse } from '../effects';
+import { canActReason, fireToolUse, gainResources, type ItemDef, type ItemUse } from '../effects';
 import { resourceCount, resourceLimit } from '../inventory';
 import { addBoost, hasBoost } from '../items/boosts';
 import { applyMapUse, mapUseReason } from '../items/scout';
@@ -431,5 +431,7 @@ export function applyUse(state: GameState, action: UseAction): void {
     });
   } else {
     loseUses(state, user, item, 1, '');
+    // German Efficiency: using a tool gives something back.
+    if (def.type === 'tool') fireToolUse(state, user, item.itemId);
   }
 }

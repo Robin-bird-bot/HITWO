@@ -19,6 +19,7 @@ import { phaseIndex } from '../challenges/trials';
 import { canDeal, scavengeSpots, type DealInput } from './deal';
 import { clampLuck } from './rarity';
 import { nodeGives } from '../weather';
+import { adjacentTileIds } from '../map';
 
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   bonuses: ScavengeBonus[];
@@ -46,7 +47,9 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   let dropChance = 0;
   let keeps = 0;
   let rerolls = 0;
+  let adjacent = false;
   for (const m of mods) {
+    if (m.adjacentNodes) adjacent = true;
     dropChance = Math.max(dropChance, m.dropChance ?? 0);
     keeps += m.keep ?? 0;
     rerolls += m.rerolls ?? 0;
@@ -87,7 +90,13 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     });
   }
   // Frozen and Fire nodes give nothing; a Fire node gives Luck to the others (Phase 6 weather).
-  const giving = (tile?.nodes ?? []).filter(nodeGives);
+  // Eagle Eye: the revealed nodes of the tiles next to this one too.
+  const near = adjacent
+    ? adjacentTileIds(state.section, hiker.tileId).flatMap(
+        (id) => state.section.tiles[id]?.nodes.filter((n) => n.revealed) ?? [],
+      )
+    : [];
+  const giving = [...(tile?.nodes ?? []), ...near].filter(nodeGives);
   const fires = (tile?.nodes ?? []).filter((n) => n.weather?.state === 'fire').length;
   if (fires > 0) {
     const fireLuck = fires * BALANCE.weather.fireLuck;

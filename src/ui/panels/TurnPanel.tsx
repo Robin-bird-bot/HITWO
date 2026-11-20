@@ -213,7 +213,10 @@ export function Abilities({
               <span className={styles.hex} style={{ background: color }} />
               <div className={styles.abilityText}>
                 <span className={styles.abilityName} style={{ color }}>
-                  {ability.label.toUpperCase()} · {ability.limit.uses}/{PER[ability.limit.per]}
+                  {ability.label.toUpperCase()} ·{' '}
+                  {Number.isFinite(ability.limit.uses)
+                    ? `${ability.limit.uses}/${PER[ability.limit.per]}`
+                    : 'ANY TIME'}
                 </span>
                 <span className={styles.small}>{trait?.text}</span>
               </div>

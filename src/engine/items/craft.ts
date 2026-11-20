@@ -14,7 +14,7 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS, craftableItems } from '../../content/items';
 import { BASIC_RECIPES, TRINKET_RESOURCES } from '../../content/items/basicRecipes';
 import { RESOURCES } from '../../content/resources';
-import { craftModifiers, type CraftModifier, type ItemType } from '../effects';
+import { craftModifiers, traitCraftTier, type CraftModifier, type ItemType } from '../effects';
 import type { Recipe, RecipePart } from './recipe';
 import { hikersOnTile } from '../map';
 import { pick, roll, seedRng, shuffle } from '../rng';
@@ -43,9 +43,11 @@ export const CRAFT_TYPES: readonly ItemTypeName[] = [
   'trinket',
 ];
 
-/** The tier a hiker crafts this type at. */
-export function ownCraftTier(hiker: Hiker, type: ItemType): number {
-  return Math.min(C.maxTier, hiker.craftTier?.[type] ?? C.startTier);
+/** The tier a hiker crafts this type at: their own, or higher with a trait (Artisan, Master). */
+export function ownCraftTier(hiker: Hiker, type: ItemType, state?: GameState): number {
+  const own = hiker.craftTier?.[type] ?? C.startTier;
+  const trait = state ? traitCraftTier(state, hiker, type) : 0;
+  return Math.min(C.maxTier, Math.max(own, trait));
 }
 
 /** At a ranger station, a checked-in hiker crafting at its Workbench. */
@@ -58,7 +60,7 @@ export const atWorkbench = (state: GameState, hiker: Hiker): boolean =>
  */
 export function craftTier(state: GameState, hiker: Hiker, type: ItemType): number {
   const bonus = atWorkbench(state, hiker) ? BALANCE.station.workbenchTiers : 0;
-  return Math.min(C.maxTier, ownCraftTier(hiker, type) + bonus);
+  return Math.min(C.maxTier, ownCraftTier(hiker, type, state) + bonus);
 }
 
 /**

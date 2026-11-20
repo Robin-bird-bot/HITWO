@@ -14,7 +14,7 @@ import { addCondition, addStacks, shortenCondition, takeCondition } from './cond
 import { pushEvent } from './log';
 import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
-import { changeStat, cureInjuries } from './stats';
+import { changeStat, cureInjuries, shiftStat } from './stats';
 import { thresholdSources } from './thresholds';
 import { resourceLimit } from './inventory';
 import { boostSources } from './items/boosts';
@@ -67,7 +67,13 @@ export type CostKey =
   /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
   | 'scavenge.appetite'
   /** Tend's Appetite cost (Nov 14 update; it was Energy). */
-  | 'tend.appetite';
+  | 'tend.appetite'
+  /** How much Abundance a scavenge drains (Eco-conscious). */
+  | 'scavenge.drain'
+  /** What a purchase costs the buyer, in caps (Frugal). */
+  | 'buy.caps'
+  /** The Morale teaching a blueprint costs (Teacher). */
+  | 'teach.morale';
 
 /** Amounts a hiker gains. Modified totals round up. */
 export type GainKey =
@@ -77,7 +83,9 @@ export type GainKey =
   /** Abundance restored by Tend (the Thumbs and Maintenance add to it). */
   | 'tend.abundance'
   /** Caps the party gains, each time (Fancy Attire: +1). */
-  | 'caps';
+  | 'caps'
+  /** Caps from one sale, before the party's own caps bonuses (Charismatic, Non-Non-Profit). */
+  | 'sale.caps';
 
 /** Whether a hiker is acting themselves or being brought along by someone's Move All. */
 export type Role = 'actor' | 'brought';
@@ -154,6 +162,8 @@ export interface ScavengeModifier {
   resourceWeight?: Partial<Record<ResourceId, number>>;
   /** Cards added to the deal (a Supply Map's Choice card for a node). */
   addCards?: { type: ScavengeCardType; node: NodeType }[];
+  /** Also draw from the revealed nodes of the tiles next to this one (Eagle Eye). */
+  adjacentNodes?: true;
 }
 
 /** A hiker about to craft an item of this type on a tile. */
@@ -241,6 +251,10 @@ export interface EffectContext extends QueryContext {
   takeCondition(from: Hiker, to: Hiker, id: string, cause: string): void;
   /** Takes time off a condition, in its own unit (Hardy, Therapist). */
   shortenCondition(hiker: Hiker, id: string, by: number, cause: string): void;
+  /** Takes resources from a hiker (one of each id listed; Lead Stomach, Alchemist) and logs it. */
+  spendResources(hiker: Hiker, ids: readonly ResourceId[], cause: string): void;
+  /** Evens a stat out across these hikers, rounded down (Liberal). */
+  evenOut(hikers: readonly Hiker[], stat: StatName, cause: string): void;
 }
 
 // ── Hooks, abilities and sources ───────────────────────────────────────────
@@ -303,8 +317,14 @@ export interface Hooks {
   ): ScavengeModifier | ScavengeModifier[] | undefined;
   /** Changes to a craft: Luck, cards, Quality and durability. */
   modifyCraft?(q: CraftQuery, ctx: QueryContext): CraftModifier | CraftModifier[] | undefined;
-  /** The hiker crafted an item. */
-  onCraft?(e: { itemId: ItemId; type: ItemType }, ctx: EffectContext): void;
+  /**
+   * The hiker crafted an item: the item itself (in their bag, to improve:
+   * Chef, Talented, Careful Hands) and the resources it took (Savvy).
+   */
+  onCraft?(
+    e: { itemId: ItemId; type: ItemType; item?: ItemInstance; paid?: readonly ResourceId[] },
+    ctx: EffectContext,
+  ): void;
   /** Someone on this hiker's tile (them included) crafted an item (Soup Socks). */
   onTileCraft?(e: { crafterId: HikerId; itemId: ItemId; type: ItemType }, ctx: EffectContext): void;
   /** The hiker ate a bite of food. */
@@ -364,6 +384,30 @@ export interface Hooks {
   borrowsPositive?(ctx: QueryContext): boolean;
   /** Everyone on the tile has this hiker's positive conditions (Transparent). */
   lendsPositive?(ctx: QueryContext): boolean;
+
+  // ── Utility traits (Phase 10a) ──
+  /** After the hiker took a scavenge card: the node it came from, if any (Pockets, Generous). */
+  onScavenged?(e: { tileId: TileId; node?: NodeType }, ctx: EffectContext): void;
+  /** Someone else on this hiker's tile took a scavenge card (Dog Mom). */
+  onTileScavenged?(
+    e: { scavengerId: HikerId; tileId: TileId; node?: NodeType },
+    ctx: EffectContext,
+  ): void;
+  /** The hiker used a tool (German Efficiency). */
+  onToolUse?(e: { itemId: ItemId }, ctx: EffectContext): void;
+  /** A night without sleep costs this stat instead of Energy (Nocturnal: Appetite). */
+  noSleepStat?(ctx: QueryContext): StatName | undefined;
+  /** Can Sleep in the Morning or Afternoon too (Day Napper). */
+  sleepsByDay?(ctx: QueryContext): boolean;
+  /** Crafts this type at this tier (Artisan: 2, Master: 3). */
+  craftTier?(type: ItemType, ctx: QueryContext): number | undefined;
+  /** One random item at each shop is free (Thrifty). */
+  freeShopItem?(ctx: QueryContext): boolean;
+  /**
+   * The hiker Sits by the Fire (Singer, Storyteller, Comedian, Chatty).
+   * TODO(wyatt): Sit by the Fire is still held, so nothing calls this in play yet.
+   */
+  onSitByFire?(ctx: EffectContext): void;
 }
 
 /** A trait's move that doesn't use the action, and what it does to the cost. */
@@ -894,6 +938,27 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
     tilesAhead: () => tilesAhead(state),
     revealAhead: (tileId, cause) => revealAhead(state, tileId, cause),
     takeCondition: (from, to, id, cause) => takeCondition(state, from, to, id, cause),
+    spendResources: (hiker, ids, cause) => {
+      for (const id of ids) {
+        const left = (hiker.inventory.resources[id] ?? 0) - 1;
+        if (left > 0) hiker.inventory.resources[id] = left;
+        else delete hiker.inventory.resources[id];
+      }
+      if (ids.length) {
+        pushEvent(state, {
+          kind: 'lost',
+          hikerId: hiker.id,
+          resources: [...ids],
+          items: [],
+          cause,
+        });
+      }
+    },
+    evenOut: (hikers, stat, cause) => {
+      if (!hikers.length) return;
+      const avg = Math.floor(hikers.reduce((n, h) => n + h.stats[stat], 0) / hikers.length);
+      for (const h of hikers) shiftStat(state, h, stat, avg - h.stats[stat], cause);
+    },
     shortenCondition: (hiker, id, by, cause) => shortenCondition(state, hiker, id, by, cause),
     askTilePick: (hiker) => {
       if (!state.tacticalPicks?.includes(hiker.id)) {
@@ -1006,10 +1071,16 @@ export function craftModifiers(state: GameState, hiker: Hiker, q: CraftQuery): C
 }
 
 /** A hiker crafted an item: their own sources hear of it, then everyone on the tile's. */
-export function fireCraft(state: GameState, crafter: Hiker, itemId: ItemId, type: ItemType): void {
+export function fireCraft(
+  state: GameState,
+  crafter: Hiker,
+  itemId: ItemId,
+  type: ItemType,
+  extra: { item?: ItemInstance; paid?: readonly ResourceId[] } = {},
+): void {
   const own = effectContext(state, crafter);
   for (const source of effectSourcesFor(state, crafter))
-    source.hooks.onCraft?.({ itemId, type }, own);
+    source.hooks.onCraft?.({ itemId, type, ...extra }, own);
   for (const hiker of hikersOnTile(state, crafter.tileId)) {
     if (hiker.status !== 'active') continue;
     const ctx = effectContext(state, hiker);
@@ -1160,6 +1231,74 @@ export function fireBiomeStart(state: GameState): void {
     const ctx = effectContext(state, hiker);
     for (const source of effectSourcesFor(state, hiker)) source.hooks.onBiomeStart?.(ctx);
   }
+}
+
+// ── Utility trait questions (Phase 10a) ────────────────────────────────────
+
+/**
+ * A hiker took a scavenge card: their own sources hear of it (Pockets,
+ * Generous), then everyone else on the tile (Dog Mom).
+ */
+export function fireScavenged(
+  state: GameState,
+  hiker: Hiker,
+  e: { tileId: TileId; node?: NodeType },
+): void {
+  const own = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onScavenged?.(e, own);
+  for (const other of hikersOnTile(state, e.tileId)) {
+    if (other.id === hiker.id) continue;
+    const ctx = effectContext(state, other);
+    for (const source of effectSourcesFor(state, other)) {
+      source.hooks.onTileScavenged?.({ scavengerId: hiker.id, ...e }, ctx);
+    }
+  }
+}
+
+/** A hiker used a tool (German Efficiency). */
+export function fireToolUse(state: GameState, hiker: Hiker, itemId: ItemId): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onToolUse?.({ itemId }, ctx);
+}
+
+/** A hiker Sits by the Fire. TODO(wyatt): the action is still held; only tests call this. */
+export function fireSitByFire(state: GameState, hiker: Hiker): void {
+  const ctx = effectContext(state, hiker);
+  for (const source of effectSourcesFor(state, hiker)) source.hooks.onSitByFire?.(ctx);
+}
+
+/** The stat a night without sleep costs this hiker (Energy, or Appetite for a Nocturnal one). */
+export function noSleepStat(state: GameState, hiker: Hiker): StatName {
+  const ctx = queryContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) {
+    const stat = s.hooks.noSleepStat?.(ctx);
+    if (stat) return stat;
+  }
+  return 'energy';
+}
+
+/** Can this hiker Sleep in the day (Day Napper)? */
+export function sleepsByDay(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.sleepsByDay?.(ctx));
+}
+
+/** The highest tier a hiker's traits let them craft this type at (0 for none). */
+export function traitCraftTier(state: GameState, hiker: Hiker, type: ItemType): number {
+  const ctx = queryContext(state, hiker);
+  let best = 0;
+  for (const s of effectSourcesFor(state, hiker))
+    best = Math.max(best, s.hooks.craftTier?.(type, ctx) ?? 0);
+  return best;
+}
+
+/** Does anyone in the party make one item at each shop free (Thrifty)? */
+export function partyGetsFreeItem(state: GameState): boolean {
+  return state.hikers.some((h) => {
+    if (h.status !== 'active' && h.status !== 'checkedIn') return false;
+    const ctx = queryContext(state, h);
+    return effectSourcesFor(state, h).some((s) => s.hooks.freeShopItem?.(ctx));
+  });
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────

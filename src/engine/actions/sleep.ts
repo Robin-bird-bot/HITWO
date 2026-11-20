@@ -1,6 +1,6 @@
 import { noteSleep } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
-import { computeGain, fireHook } from '../effects';
+import { computeGain, fireHook, sleepsByDay } from '../effects';
 import { pushEvent } from '../log';
 import { changeStat } from '../stats';
 import type { Action, GameState } from '../types';
@@ -15,7 +15,10 @@ export function validateSleep(state: GameState, action: SleepAction): string | u
   const hiker = findHiker(state, action.hikerId);
   const reason = phaseActionReason(state, hiker, action);
   if (reason) return reason;
-  if (state.phase !== 'night') return 'Hikers sleep at night.';
+  // Day Napper: any phase.
+  if (state.phase !== 'night' && !(hiker && sleepsByDay(state, hiker))) {
+    return 'Hikers sleep at night.';
+  }
   return undefined;
 }
 
@@ -35,7 +38,8 @@ export function applySleep(state: GameState, action: SleepAction): void {
     base,
   );
   spendAction(state, hiker);
-  hiker.slept = true;
+  // A nap in the day doesn't count as the night's sleep.
+  if (state.phase === 'night') hiker.slept = true;
   pushEvent(state, { kind: 'sleep', hikerId: hiker.id });
   changeStat(state, hiker, 'energy', gain, 'Sleep');
   fireHook(state, hiker, 'onSleep');

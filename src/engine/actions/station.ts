@@ -24,7 +24,7 @@ import { PAVED } from '../items/scout';
 import { removeItem } from '../items/wear';
 import { pushEvent } from '../log';
 import { changeStat } from '../stats';
-import { marketMult, resourceSellPrice, sellPrice } from '../station/prices';
+import { buyPrice, marketMult, resourceSellPrice, saleCaps, sellPrice } from '../station/prices';
 import type { Action, GameState, Hiker, StationVisit, StatName } from '../types';
 import { findHiker, mustFindHiker } from './common';
 import { fireBiomeStart } from '../effects';
@@ -74,9 +74,10 @@ export function validateBuy(state: GameState, action: BuyAction): string | undef
   const offer = findOffer(station, action.offerId);
   if (!offer) return 'That isn’t for sale here.';
   if (offer.sold) return 'That’s already sold.';
-  if (state.caps < offer.price) return `The party needs ${offer.price} caps.`;
-  if (offer.kind === 'special') return specialReason(station, offer.special, action.pick);
   const hiker = findHiker(state, action.hikerId);
+  const price = buyPrice(state, hiker, offer.price);
+  if (state.caps < price) return `The party needs ${price} caps.`;
+  if (offer.kind === 'special') return specialReason(station, offer.special, action.pick);
   const reason = shopperReason(state, hiker);
   if (reason || !hiker) return reason;
   const bagFull = hiker.inventory.bag.length >= bagSlots(state, hiker).total;
@@ -126,11 +127,12 @@ export function applyBuy(state: GameState, action: BuyAction): void {
   }
   const offer = findOffer(station, action.offerId);
   if (!offer) return;
-  state.caps -= offer.price;
+  // Frugal: the buyer pays a little less.
+  const price = buyPrice(state, findHiker(state, action.hikerId), offer.price);
+  state.caps -= price;
   offer.sold = true;
   const mystery = offer.hidden ? { mystery: true as const } : {};
   delete offer.hidden;
-  const price = offer.price;
 
   if (offer.kind === 'special') {
     if (offer.special === 'cementMixer') {
@@ -222,7 +224,7 @@ export function applySell(state: GameState, action: SellAction): void {
   if (action.itemUid) {
     const item = removeItem(hiker, action.itemUid);
     if (!item) return;
-    const caps = sellPrice(item);
+    const caps = saleCaps(state, hiker, sellPrice(item));
     state.caps += caps;
     pushEvent(state, { kind: 'sold', hikerId: hiker.id, caps, itemId: item.itemId });
     return;
@@ -230,7 +232,7 @@ export function applySell(state: GameState, action: SellAction): void {
   const r = action.resource;
   const n = action.count ?? 1;
   if (!r) return;
-  const caps = resourceSellPrice(state, r, n);
+  const caps = saleCaps(state, hiker, resourceSellPrice(state, r, n));
   const left = (hiker.inventory.resources[r] ?? 0) - n;
   if (left > 0) hiker.inventory.resources[r] = left;
   else delete hiker.inventory.resources[r];

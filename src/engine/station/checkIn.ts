@@ -17,6 +17,7 @@ import { abandonHike, endCarry } from '../health';
 import { pushEvent } from '../log';
 import { openStation } from './stock';
 import type { GameState, Hiker, HikerId, TileId } from '../types';
+import { freeItemAtShop } from './prices';
 
 export const isCheckpoint = (state: GameState, tileId: TileId): boolean =>
   state.section.tiles[tileId]?.kind === 'checkpoint';
@@ -74,6 +75,8 @@ export function finishSection(state: GameState): void {
     return;
   }
   state.station = openStation(state);
+  // Thrifty: 1 random item on the counter is free.
+  freeItemAtShop(state, state.station.items);
   pushEvent(state, { kind: 'stationOpened', checkpoint: state.station.checkpoint });
 }
 

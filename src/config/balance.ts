@@ -663,6 +663,48 @@ export const BALANCE = {
     photosynthesis: { chance: 0.25, energy: 1 },
     splitter: { appetite: 1 },
     soldiersMarch: { discount: 1 },
+    // ── Utility traits (Phase 10a step 3), from 02-traits-and-conditions.md ──
+    collaborative: { luck: 1 },
+    focused: { luck: 1 },
+    ecoConscious: { drain: 1 },
+    /** "Higher chance of acorn caps." TODO(wyatt): first guess, caps cards twice as likely. */
+    squirrely: { capsWeight: 2 },
+    /**
+     * Lead Stomach and Destroyer spend resources. TODO(wyatt): first guess, the
+     * ones the hiker has the most of go first.
+     */
+    leadStomach: { resources: 2, appetite: 1 },
+    destroyer: { resources: 3, gain: 1 },
+    charismatic: { caps: 2 },
+    frugal: { caps: 1 },
+    nonNonProfit: { percent: 50 },
+    thumb: { cards: 1, abundance: 1 },
+    /** Chances the doc doesn't number use its default (25%). */
+    chef: { chance: 0.25, appetite: 1 },
+    carefulHands: { min: 0, max: 3 },
+    teacher: { percent: -50 },
+    pockets: { chance: 0.25 },
+    savvy: { chance: 0.25 },
+    handy: { cards: 1 },
+    proficient: { cards: 2 },
+    fortunate: { luck: 1 },
+    /**
+     * Therapist: 1 Morale to shorten every negative condition on the tile by 1
+     * day. TODO(wyatt): a phase-based condition loses a day's worth (3 phases).
+     */
+    therapist: { morale: 1, days: 1 },
+    liberal: { energy: 1 },
+    /**
+     * Talented: "+1 to the numbers on items this hiker crafts". TODO(wyatt):
+     * read as each item's main number: food +1 Appetite, a tool +1 use,
+     * clothes +1 day of durability (shelters and trinkets have none).
+     */
+    talented: { bonus: 1 },
+    closer: { luck: 1 },
+    lovinglyMade: { morale: 8, luck: 1 },
+    dreamAlchemist: { chance: 0.1 },
+    alchemist: { resources: 2 },
+    singer: { morale: 1 },
     /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
     thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },

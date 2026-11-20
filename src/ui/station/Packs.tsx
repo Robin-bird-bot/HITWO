@@ -18,6 +18,7 @@ import {
   bagSlots,
   marketMult,
   resourceSellPrice,
+  saleCaps,
   sellPrice,
   validateAction,
   type Action,
@@ -101,6 +102,7 @@ export function Packs({
                       <span key={item.uid} style={{ position: 'relative' }}>
                         <PackItem
                           item={item}
+                          price={saleCaps(state, h, sellPrice(item))}
                           menuOpen={same(menu, open)}
                           onClick={() => click(open)}
                           hikerId={h.id}
@@ -190,7 +192,7 @@ function ItemMenu({
   const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
   if (!item) return null;
   const name = ITEMS[item.itemId]?.name ?? 'Item';
-  const price = sellPrice(item);
+  const price = saleCaps(state, hiker, sellPrice(item));
   return (
     <Popout
       label={`${name}: sell or give`}
@@ -253,7 +255,9 @@ function ResourceMenu({
   const [count, setCount] = useState(() =>
     Math.min(have, Math.max(1, Math.ceil(1 / marketMult(state, resource)))),
   );
-  const price = resourceSellPrice(state, resource, count);
+  const base = resourceSellPrice(state, resource, count);
+  // Under a cap can't be sold; otherwise the seller's traits add to it.
+  const price = base < 1 ? base : saleCaps(state, hiker, base);
   const mult = marketMult(state, resource);
   const name = resourceName(resource);
   return (
@@ -326,16 +330,18 @@ function ResourceMenu({
 /** A bag card in a pack: hover or long-press for the full card and its price here. */
 function PackItem({
   item,
+  price,
   hikerId,
   menuOpen,
   onClick,
 }: {
   item: ItemInstance;
+  /** What it sells for here, with the seller's traits (Charismatic, Non-Non-Profit). */
+  price: number;
   hikerId: string;
   menuOpen: boolean;
   onClick(): void;
 }) {
-  const price = sellPrice(item);
   const caps = `${price} cap${price === 1 ? '' : 's'}`;
   const preview = usePreview({
     kind: 'item',

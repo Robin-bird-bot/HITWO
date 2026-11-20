@@ -620,7 +620,7 @@ function Blueprint({
     ? !paymentReason(state, hiker, recipe, autoPay(state, hiker, recipe))
     : false;
   const status = teach
-    ? `TIER ${NUMERAL[def.tier]} · ${teachCost(def.id)} MORALE`
+    ? `TIER ${NUMERAL[def.tier]} · ${teachCost(state, hiker, def.id)} MORALE`
     : locked
       ? `TIER ${NUMERAL[def.tier]} · LOCKED`
       : missing
@@ -930,7 +930,7 @@ function TeachBody({
   const [bp, setBp] = useState<ItemId | null>(known[0] ?? null);
   const [to, setTo] = useState<string | null>(null);
   const def = bp ? ITEMS[bp] : undefined;
-  const cost = bp ? teachCost(bp) : 0;
+  const cost = bp ? teachCost(state, hiker, bp) : 0;
   const students = craftPool(state, hiker).filter((h) => h.id !== hiker.id);
   const action: Action | null =
     bp && to ? { type: 'teach', hikerId: hiker.id, toId: to, itemId: bp } : null;

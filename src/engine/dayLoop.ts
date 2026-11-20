@@ -18,7 +18,7 @@ import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
-import { computeCost, fireHook, firePhaseEnd, firePhaseStart } from './effects';
+import { computeCost, fireHook, firePhaseEnd, firePhaseStart, noSleepStat } from './effects';
 import { pushEvent } from './log';
 import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
@@ -71,7 +71,8 @@ function noSleepDrain(state: GameState, h: Hiker): void {
     { key: 'night.noSleepEnergy', actorId: h.id, subjectId: h.id, role: 'actor', phase: 'night' },
     BALANCE.night.noSleepEnergy,
   );
-  changeStat(state, h, 'energy', -cost, 'No sleep');
+  // Nocturnal: a night without sleep costs Appetite instead.
+  changeStat(state, h, noSleepStat(state, h), -cost, 'No sleep');
 }
 
 function campStep(state: GameState): void {
