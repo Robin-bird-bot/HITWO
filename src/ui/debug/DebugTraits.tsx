@@ -258,14 +258,20 @@ export function TestHikerPicker({
     'test-scavenger',
     'test-plush',
   ]);
+  // At most 4: once 4 are ticked, the rest wait until one is unticked.
   const toggle = (id: string) =>
-    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id].slice(-4)));
+    setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < 4 ? [...p, id] : p));
   return (
     <>
       <div className={styles.row}>
         {TEST_HIKERS.map((h) => (
           <label key={h.id} className={styles.note}>
-            <input type="checkbox" checked={picked.includes(h.id)} onChange={() => toggle(h.id)} />{' '}
+            <input
+              type="checkbox"
+              checked={picked.includes(h.id)}
+              disabled={!picked.includes(h.id) && picked.length >= 4}
+              onChange={() => toggle(h.id)}
+            />{' '}
             {h.name.replace('Test ', '')}
           </label>
         ))}

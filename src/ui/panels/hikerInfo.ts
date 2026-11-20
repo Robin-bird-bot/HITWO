@@ -9,7 +9,8 @@ import { BALANCE } from '../../config/balance';
 import {
   adjacentTileIds,
   blockedByStatus,
-  hikersOnTile,
+  bringReach,
+  tileDistance,
   isSheltered,
   moraleLuck,
   moveCost,
@@ -334,8 +335,15 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     ...judge(state, moves, 'No connected tiles.'),
   };
 
-  // Move All: ready if someone here can come along to some connected tile.
-  const company = hikersOnTile(state, h.tileId).filter((o) => o.id !== h.id && !o.acted);
+  // Move All: ready if someone here (or nearby, for a Sherpa) can come along to some connected tile.
+  const reach = bringReach(state, h);
+  const company = state.hikers.filter(
+    (o) =>
+      o.id !== h.id &&
+      o.status === 'active' &&
+      !o.acted &&
+      tileDistance(state.section, o.tileId, h.tileId) <= reach,
+  );
   const groupMoves = targets.flatMap((t) =>
     company.map((o): Action => ({ type: 'moveAll', hikerId: h.id, toTileId: t, bring: [o.id] })),
   );

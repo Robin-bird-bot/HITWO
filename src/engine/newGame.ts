@@ -1,4 +1,6 @@
 import { withDefaults } from './items/make';
+import { fireBiomeStart } from './effects';
+import { scoutAround } from './traits/reveal';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -117,6 +119,9 @@ export function createGame({
     log: [],
   };
   if (startingResources) giveStartingResources(state);
+  // The first biome begins (Prepared, Tactical), and Scouts see around the trailhead.
+  fireBiomeStart(state);
+  scoutAround(state);
   return state;
 }
 

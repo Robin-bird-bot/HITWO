@@ -24,7 +24,8 @@ type MoveAction = Extract<Action, { type: 'move' }>;
 export function validateMove(state: GameState, action: MoveAction): string | undefined {
   const hiker = findHiker(state, action.hikerId);
   // Shoes can give a move that doesn't use the action (Jogging Shoes, Hiking Crocs).
-  const free = hiker?.status === 'active' && hiker.acted && freeMoveFor(state, hiker);
+  const free =
+    hiker?.status === 'active' && hiker.acted && freeMoveFor(state, hiker, action.toTileId);
   const reason = free
     ? canActReason(state, hiker, { action, role: 'actor', phase: state.phase })
     : phaseActionReason(state, hiker, action);
@@ -48,11 +49,12 @@ export function applyMove(state: GameState, action: MoveAction): void {
 
   const from = hiker.tileId;
   const firstHere = !state.section.tiles[action.toTileId]?.visited;
+  // Worked out before they leave, as the cost was (Stalker looks at who's there now).
+  const free = freeMoveFor(state, hiker, action.toTileId);
   hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
   // Whoever they carry comes along.
   const carried = bringCarried(state, [hiker], from).map((c) => c.id);
-  const free = freeMoveFor(state, hiker);
   if (free) spendFreeMove(state, hiker, free);
   else spendAction(state, hiker);
   const revealed = enterTile(state, hiker.tileId);

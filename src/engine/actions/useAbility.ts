@@ -5,7 +5,7 @@ import { findHiker, mustFindHiker, notActiveReason } from './common';
 
 type UseAbilityAction = Extract<Action, { type: 'useAbility' }>;
 
-const PERIOD_WORDS = { day: 'today', phase: 'this phase', biome: 'this section' } as const;
+const PERIOD_WORDS = { day: 'today', phase: 'this phase', biome: 'this biome' } as const;
 
 /** Using an ability is a free action: it doesn't use the hiker's phase. */
 export function validateUseAbility(state: GameState, action: UseAbilityAction): string | undefined {
@@ -15,11 +15,13 @@ export function validateUseAbility(state: GameState, action: UseAbilityAction): 
 
   const found = abilitiesFor(state, hiker).find((a) => a.ability.id === action.abilityId);
   if (!found) return `${hiker.name} doesn’t have that ability.`;
-  const { ability, usesLeft } = found;
+  const { ability, usesLeft, choices } = found;
   if (ability.scavengeReroll) return `${ability.label} is used from the scavenge window.`;
   if (usesLeft <= 0) return `${ability.label} is used up ${PERIOD_WORDS[ability.limit.per]}.`;
-  if (ability.choices && !ability.choices.some((c) => c.id === action.choice)) {
-    return `Choose ${ability.choices.map((c) => c.label).join(' or ')}.`;
+  if (choices && !choices.some((c) => c.id === action.choice)) {
+    return choices.length
+      ? `Choose ${choices.map((c) => c.label).join(' or ')}.`
+      : `There’s nothing for ${ability.label} to do right now.`;
   }
   return ability.validate?.(queryContext(state, hiker), action.choice);
 }

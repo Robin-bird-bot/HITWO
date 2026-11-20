@@ -25,7 +25,7 @@ import {
   type NightOutcome,
   type NightTier,
 } from '../../content/nightEvents';
-import { isWatched } from '../actions/watch';
+import { watcherFor } from '../actions/watch';
 import {
   applyEffects,
   behindTiles,
@@ -92,10 +92,8 @@ export function hitChance(state: GameState, h: Hiker): number {
  * a Camping Lamp on or next to it, or their own Bear Spray.
  */
 export function safeFrom(state: GameState, h: Hiker): Omit<NightSafe, 'hikerId'> | undefined {
-  if (isWatched(state, h.tileId)) {
-    const by = hikersOnTile(state, h.tileId).find((o) => o.watching);
-    return { why: 'watch', ...(by ? { by: by.id } : {}) };
-  }
+  const watcher = watcherFor(state, h.tileId);
+  if (watcher) return { why: 'watch', by: watcher.id };
   if (isSheltered(state, h)) return { why: 'shelter' };
   // A Tree-House next door guards this tile too.
   const tree = neighborShelter(state, h.tileId, 'guards');

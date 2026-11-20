@@ -8,7 +8,14 @@
  * A hiker carrying a passed-out hiker pays +1 Appetite on top (Phase 7).
  */
 import { BALANCE } from '../config/balance';
-import { computeCost, effectSourcesFor, queryContext, type CostKey, type Role } from './effects';
+import {
+  computeCost,
+  effectSourcesFor,
+  pullsGroup,
+  queryContext,
+  type CostKey,
+  type Role,
+} from './effects';
 import { freeMoveFor } from './items/freeMoves';
 import { lineBetween } from './map';
 import type { GameState, Hiker, HikerId, Line, StatAmounts, TileId } from './types';
@@ -90,12 +97,10 @@ export function moveCost(
     { line, from: hiker.tileId, to: toTileId, via: 'move' },
     'actor',
   );
-  // A free move from Hiking Crocs or Work Boots costs a little less.
-  const discount = freeMoveFor(state, hiker)?.discount ?? 0;
-  return withTrailShoes(state, hiker, {
-    ...cost,
-    appetite: Math.max(0, cost.appetite - discount),
-  });
+  // A free move can cost less (Hiking Crocs, Work Boots, Stalker) or more (Fast).
+  const free = freeMoveFor(state, hiker, toTileId);
+  const appetite = Math.max(0, cost.appetite - (free?.discount ?? 0)) + (free?.extra ?? 0);
+  return withTrailShoes(state, hiker, { ...cost, appetite });
 }
 
 /** What each hiker pays for a Move All: the mover first, then each brought hiker. */
@@ -144,8 +149,14 @@ export function moveAllCost(
     own.appetite + group,
   );
 
+  // Puller: the mover pays Energy instead of their Appetite for the group move.
+  // TODO(wyatt): a flat 1 Energy in place of all of the mover's Appetite (the doc's open question).
+  const pull = pullsGroup(state, mover);
+  const moverCost = pull
+    ? { ...own, appetite: 0, energy: own.energy + pull.energy }
+    : withTrailShoes(state, mover, { ...own, appetite: moverAppetite });
   return [
-    { hikerId: mover.id, cost: withTrailShoes(state, mover, { ...own, appetite: moverAppetite }) },
+    { hikerId: mover.id, cost: moverCost },
     ...brought.map((b) => ({
       hikerId: b.id,
       cost: withTrailShoes(state, b, crossingCost(state, b, mover, crossing, 'brought')),

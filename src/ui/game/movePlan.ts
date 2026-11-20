@@ -4,6 +4,8 @@
  */
 import {
   adjacentTileIds,
+  bringReach,
+  tileDistance,
   atLastSection,
   checkInPreview,
   hikersOnTile,
@@ -147,8 +149,15 @@ export interface BringOption {
 /** Hikers on the mover's tile who could be brought along by Move All. */
 export function bringOptions(state: GameState, mover: Hiker): BringOption[] {
   const targets = adjacentTileIds(state.section, mover.tileId);
-  return hikersOnTile(state, mover.tileId)
-    .filter((h) => h.id !== mover.id)
+  // Sherpa: hikers on the tiles next to the mover's can come too.
+  const reach = bringReach(state, mover);
+  return state.hikers
+    .filter(
+      (h) =>
+        h.id !== mover.id &&
+        h.status === 'active' &&
+        tileDistance(state.section, h.tileId, mover.tileId) <= reach,
+    )
     .map((h) => {
       if (h.acted) return { hiker: h, reason: `${h.name} has already acted this ${state.phase}.` };
       let reason: string | null = 'There’s nowhere to go from here.';

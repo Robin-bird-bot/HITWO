@@ -700,6 +700,11 @@ export type Action =
   /** A free action: puts a resource back, +1 Abundance. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   /**
+   * Tactical: reveals the nodes and card of a tile the hiker picks, for the
+   * rest of the biome. No tile skips it.
+   */
+  | { type: 'tactical'; hikerId: HikerId; tileId?: TileId }
+  /**
    * The hiker leaves the party for good, taking everything they carry. Any
    * hiker, any time; the UI confirms it first.
    */
@@ -1082,6 +1087,8 @@ export type GameEventBody =
     }
   /** A condition made this action free (Motivated). */
   | { kind: 'freeAction'; hikerId: HikerId; cause: string }
+  /** A trait did something worth a line of its own ("Never Hungry: the move cost no Appetite"). */
+  | { kind: 'trait'; hikerId: HikerId; trait: string; text: string }
   /** A hiker landed on a new tile and its challenge opened. */
   | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
   /** A challenge was resolved: who passed, and what they paid. */
@@ -1302,6 +1309,8 @@ export interface GameState {
   trinketRecipe?: ResourceId[];
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
+  /** Tactical (Phase 10a): hikers who pick a tile to reveal for this biome. */
+  tacticalPicks?: HikerId[];
   /** Challenges, Trials and opportunities already seen in this section (no repeats). */
   usedCards: string[];
   /** The challenge waiting on the party, if any. Nothing else can happen until it's done. */

@@ -210,14 +210,70 @@ export function tickConditions(state: GameState, which: 'phases' | 'days'): void
       c.remaining -= 1;
       if (c.remaining <= 0) ended.push(c);
     }
-    for (const c of ended) {
-      removeCondition(state, hiker, c.id);
-      // Bleeding and a Splint give an injury when they run out (not when cured).
-      const def = CONDITIONS[c.id];
-      if (def?.onRunOut === 'injury') addInjury(state, hiker, `${def.name} ran out`);
-      if (c.then) addCondition(state, hiker, c.then.id, c.then.remaining, c.then.unit, 'follow-on');
-    }
+    for (const c of ended) runOut(state, hiker, c);
   }
+}
+
+/** A condition's time is up: it ends, with what running out does (Bleeding's injury, a follow-on). */
+function runOut(state: GameState, hiker: Hiker, c: ConditionInstance): void {
+  removeCondition(state, hiker, c.id);
+  // Bleeding and a Splint give an injury when they run out (not when cured).
+  const def = CONDITIONS[c.id];
+  if (def?.onRunOut === 'injury') addInjury(state, hiker, `${def.name} ran out`);
+  if (c.then) addCondition(state, hiker, c.then.id, c.then.remaining, c.then.unit, 'follow-on');
+}
+
+/**
+ * Takes time off a condition (Hardy, Therapist): `by` of its own unit (days,
+ * or phases for a phase-based one). Down to 0, it runs out as usual.
+ * Stacking and weather conditions have no time to shorten.
+ * TODO(wyatt): shortened to 0 counts as running out, so Bleeding still gives its injury.
+ */
+export function shortenCondition(
+  state: GameState,
+  hiker: Hiker,
+  id: string,
+  by: number,
+  cause: string,
+): void {
+  const c = hiker.conditions.find((x) => x.id === id);
+  if (!c || c.unit === 'weather') return;
+  c.remaining -= by;
+  delete c.fresh;
+  pushEvent(state, {
+    kind: 'condition',
+    hikerId: hiker.id,
+    condition: id,
+    remaining: Math.max(0, c.remaining),
+    unit: c.unit,
+    cause,
+  });
+  if (c.remaining <= 0) runOut(state, hiker, c);
+}
+
+/**
+ * Moves a condition from one hiker to another with the time (or stacks) it
+ * has left (Supportive). The new owner's blocks still apply.
+ */
+export function takeCondition(
+  state: GameState,
+  from: Hiker,
+  to: Hiker,
+  id: string,
+  cause: string,
+): void {
+  const c = from.conditions.find((x) => x.id === id);
+  if (!c) return;
+  removeCondition(state, from, id);
+  if (CONDITIONS[id]?.stacking) {
+    addStacks(state, to, id, c.stacks ?? 1, cause);
+    return;
+  }
+  addCondition(state, to, id, c.remaining, c.unit, cause, {
+    ...(c.node ? { node: c.node } : {}),
+    ...(c.then ? { then: c.then } : {}),
+    ...(c.stacks ? { stacks: c.stacks } : {}),
+  });
 }
 
 /**

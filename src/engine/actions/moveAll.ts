@@ -1,10 +1,17 @@
 import { revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveAllCost } from '../costs';
-import { canActReason, effectSourcesFor, fireMove, queryContext } from '../effects';
+import {
+  bringReach,
+  canActReason,
+  effectSourcesFor,
+  fireMove,
+  keepsActionWhenBrought,
+  queryContext,
+} from '../effects';
 import { pushEvent } from '../log';
 import { checkInArrivals } from '../station/checkIn';
-import { lineBetween } from '../map';
+import { lineBetween, tileDistance } from '../map';
 import type { Action, GameState } from '../types';
 import { bringCarried, carryMoveReason } from './carry';
 import {
@@ -38,7 +45,13 @@ export function validateMoveAll(state: GameState, action: MoveAllAction): string
     if (!b) return 'That hiker isn’t in the party.';
     if (b.id === mover.id) return `${mover.name} is already moving.`;
     if (b.status !== 'active') return `${b.name} can’t come along right now.`;
-    if (b.tileId !== mover.tileId) return `${b.name} isn’t on this tile.`;
+    // Sherpa: hikers on tiles next to the mover's can come along too.
+    if (
+      b.tileId !== mover.tileId &&
+      tileDistance(state.section, b.tileId, mover.tileId) > bringReach(state, mover)
+    ) {
+      return `${b.name} isn’t on this tile.`;
+    }
     if (b.acted) return `${b.name} has already acted this ${state.phase}.`;
     const blocked = canActReason(state, b, { action, role: 'brought', phase: state.phase });
     if (blocked) return `${b.name} can’t come along. ${blocked}`;
@@ -71,10 +84,12 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
     s.hooks.broughtKeepAction?.(action.bring.length, ctx),
   );
   for (const h of group) {
-    h.cameFrom = from;
+    h.cameFrom = h.tileId;
     h.tileId = action.toTileId;
-    if (h !== mover && keep) {
-      pushEvent(state, { kind: 'freeAction', hikerId: h.id, cause: keep.name });
+    // Their own trait can keep their action too (Follower).
+    const keeps = h === mover ? undefined : (keep ?? keepsActionWhenBrought(state, h));
+    if (keeps) {
+      pushEvent(state, { kind: 'freeAction', hikerId: h.id, cause: keeps.name });
       continue;
     }
     spendAction(state, h);

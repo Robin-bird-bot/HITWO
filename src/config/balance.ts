@@ -640,6 +640,29 @@ export const BALANCE = {
     /** The most trait slots a hiker can have (02-traits-and-conditions.md). */
     maxSlots: 6,
     leader: { moveAllDiscount: 1 },
+    // ── Trail traits (Phase 10a step 2), from 02-traits-and-conditions.md ──
+    independent: { discount: 1 },
+    glutton: { appetite: 1 },
+    strong: { slots: 1 },
+    mule: { slots: 2 },
+    short: { discount: 1, slots: -1 },
+    /** "25% chance to cost no Appetite"; "every food restores 1 less". */
+    neverHungry: { chance: 0.25, food: -1 },
+    /**
+     * "Moving the group costs 1 Energy instead of Appetite." TODO(wyatt): the
+     * doc's open question; first guess: a flat 1 Energy in place of all the
+     * mover's Appetite for the Move All.
+     */
+    puller: { energy: 1 },
+    manager: { reach: 1 },
+    fast: { extraAppetite: 1 },
+    hardy: { moraleCost: 2, shorten: 1 },
+    lookout: { reach: 1 },
+    sherpa: { reach: 1 },
+    /** "A chance to restore 1 Energy": the doc's default chance. */
+    photosynthesis: { chance: 0.25, energy: 1 },
+    splitter: { appetite: 1 },
+    soldiersMarch: { discount: 1 },
     /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
     thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },

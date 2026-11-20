@@ -309,6 +309,9 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'drain' });
         break;
       }
+      case 'trait':
+        lines.push({ id: e.id, text: `${e.trait}: ${e.text}`, tone: 'rest' });
+        break;
       case 'freeAction':
         lines.push({
           id: e.id,

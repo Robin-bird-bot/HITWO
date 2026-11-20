@@ -10,6 +10,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { CARDS, CHALLENGES } from '../../content/challenges';
+import { skipsChallenges } from '../effects';
 import { pushEvent } from '../log';
 import { pick } from '../rng';
 import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
@@ -73,7 +74,9 @@ export function revealTile(
     return;
   }
   const tile = state.section.tiles[tileId];
-  const here = hikersHere(state, tileId, hikerIds);
+  // A Trespasser's day: no card triggers for them, and they aren't part of one (Phase 10a).
+  // TODO(wyatt): a tile a Trespasser lands on alone never triggers its card.
+  const here = hikersHere(state, tileId, hikerIds).filter((h) => !skipsChallenges(state, h));
   if (!tile || !here.length) return;
 
   // A card revealed early (Old Firewatch Tower): it opens now, with its numbers rolled now.

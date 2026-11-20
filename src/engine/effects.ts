@@ -10,7 +10,7 @@ import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
 import { CONDITIONS } from '../content/conditions';
 import { WEATHERS } from '../content/weather';
-import { addCondition, addStacks } from './conditions';
+import { addCondition, addStacks, shortenCondition, takeCondition } from './conditions';
 import { pushEvent } from './log';
 import { hikersOnTile, isAlone, isSheltered } from './map';
 import { int, pick, roll } from './rng';
@@ -21,6 +21,7 @@ import { boostSources } from './items/boosts';
 import { shelterSources } from './items/shelters';
 import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
+import { revealAhead, tilesAhead } from './traits/reveal';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -196,6 +197,8 @@ export interface QueryContext {
   clothesWorn(hiker: Hiker): number;
   /** The hiker's instance of a condition, if they have it (its stacks, node, time left). */
   condition(hiker: Hiker, id: string): ConditionInstance | undefined;
+  /** A running count kept by `tally`, read without changing it (a once-a-day rule's use). */
+  used(hiker: Hiker, key: string, per: 'phase' | 'day' | 'biome'): number;
 }
 
 /** What an event handler or ability can do. */
@@ -226,6 +229,18 @@ export interface EffectContext extends QueryContext {
   roll(chance: number): boolean;
   int(min: number, max: number): number;
   pick<T>(items: readonly T[]): T;
+  /** A line in the trail log about what a trait did. */
+  note(hiker: Hiker, trait: string, text: string): void;
+  /** Tiles nobody has reached that hold a card or a Wonder. */
+  tilesAhead(): TileId[];
+  /** Shows a tile's nodes and card for the rest of the biome (Prepared). */
+  revealAhead(tileId: TileId, cause: string): void;
+  /** The player picks a tile for this hiker to reveal (Tactical). */
+  askTilePick(hiker: Hiker): void;
+  /** Moves a condition to another hiker with its time left (Supportive). */
+  takeCondition(from: Hiker, to: Hiker, id: string, cause: string): void;
+  /** Takes time off a condition, in its own unit (Hardy, Therapist). */
+  shortenCondition(hiker: Hiker, id: string, by: number, cause: string): void;
 }
 
 // ── Hooks, abilities and sources ───────────────────────────────────────────
@@ -314,6 +329,52 @@ export interface Hooks {
   moveWithEnergy?(ctx: QueryContext): boolean;
   /** Move All with this many others: they keep their action (Lifted Boots). */
   broughtKeepAction?(count: number, ctx: QueryContext): boolean;
+
+  // ── Trail traits (Phase 10a) ──
+  /** Being brought along by someone's Move All keeps this hiker's action (Follower). */
+  keepsActionWhenBrought?(ctx: QueryContext): boolean;
+  /** A move to this tile that doesn't use the action (Fast, Stalker). */
+  freeMove?(
+    q: { fromTileId: TileId; toTileId: TileId },
+    ctx: QueryContext,
+  ): TraitFreeMove | undefined;
+  /** A cost about to be paid: true waives its Appetite (Never Hungry's chance). */
+  waiveAppetite?(e: { cause: string }, ctx: EffectContext): boolean;
+  /**
+   * How many tiles away this hiker can hand things over (Manager: items, 1
+   * tile; Carrier Pigeon: sending anything, anywhere).
+   */
+  giveReach?(
+    q: { what: 'item' | 'resource'; role: 'sender' | 'receiver' },
+    ctx: QueryContext,
+  ): number;
+  /** The nodes of every tile next to this hiker's are shown (Scout). */
+  revealsAdjacent?(ctx: QueryContext): boolean;
+  /** A new biome began (a new section of the trail, and the first) (Prepared, Tactical). */
+  onBiomeStart?(ctx: EffectContext): void;
+  /** No card triggers for this hiker now (Trespasser's day). */
+  skipsChallenges?(ctx: QueryContext): boolean;
+  /** Keeping watch also guards tiles this many lines away (Lookout). */
+  watchReach?(ctx: QueryContext): number;
+  /** Move All can also bring hikers this many tiles away (Sherpa). */
+  bringReach?(ctx: QueryContext): number;
+  /** Moving the group costs this much Energy instead of the mover's Appetite (Puller). */
+  pullsGroup?(ctx: QueryContext): number | undefined;
+  /** Has the positive conditions of everyone on the tile (Susceptible). */
+  borrowsPositive?(ctx: QueryContext): boolean;
+  /** Everyone on the tile has this hiker's positive conditions (Transparent). */
+  lendsPositive?(ctx: QueryContext): boolean;
+}
+
+/** A trait's move that doesn't use the action, and what it does to the cost. */
+export interface TraitFreeMove {
+  /** The tally key that counts its uses, and how often they come back. */
+  key: string;
+  per: 'phase' | 'day';
+  /** Appetite off the move ('all' makes it free). */
+  discount?: number | 'all';
+  /** Extra Appetite the move costs (Fast). */
+  extra?: number;
 }
 
 export type EventHookName = 'onStartOfDay' | 'onEndOfDay' | 'onSleep';
@@ -329,6 +390,8 @@ export interface AbilityDef {
   label: string;
   limit: { per: 'day' | 'phase' | 'biome'; uses: number };
   choices?: readonly AbilityChoice[];
+  /** Choices that depend on the moment (Supportive: who to help, and with what). */
+  choicesFor?(ctx: QueryContext): AbilityChoice[];
   /** Used in the scavenge window to reroll a card (Gambler), not from the Abilities panel. */
   scavengeReroll?: true;
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
@@ -691,6 +754,7 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     if (!def?.hooks) continue;
     sources.push({ id: `condition:${c.id}`, kind: 'condition', name: def.name, hooks: def.hooks });
   }
+  sources.push(...borrowedConditions(state, hiker));
   const off = suppressedTraitTypes(hiker);
   for (const slot of hiker.slots) {
     // An unknown id (content removed since the save) is skipped, not fatal.
@@ -706,6 +770,56 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     });
   }
   return sources;
+}
+
+/**
+ * Does one of this hiker's own traits say yes to a flag? Read from the traits
+ * alone, so it can be asked while working out another hiker's sources.
+ */
+function traitFlag(
+  state: GameState,
+  hiker: Hiker,
+  flag: 'borrowsPositive' | 'lendsPositive',
+): boolean {
+  const off = suppressedTraitTypes(hiker);
+  const ctx = queryContext(state, hiker);
+  return hiker.slots.some((slot) => {
+    const trait = workingTrait(state, slot);
+    return (
+      !!trait && !off.has(trait.def.type) && !!traitHooks(trait.runs, trait.setting)[flag]?.(ctx)
+    );
+  });
+}
+
+/**
+ * Positive conditions shared on a tile: a Susceptible hiker has everyone's,
+ * and everyone has a Transparent hiker's, while they share it. They work
+ * through their hooks (Lucky's Luck, Refreshed); a stat change a condition
+ * made when it started (Energized's +1) stays with its owner.
+ * TODO(wyatt): shared conditions bring their effects, not their stat changes.
+ */
+function borrowedConditions(state: GameState, hiker: Hiker): EffectSource[] {
+  if (hiker.status !== 'active') return [];
+  const others = hikersOnTile(state, hiker.tileId).filter((o) => o.id !== hiker.id);
+  if (!others.length) return [];
+  const borrows = traitFlag(state, hiker, 'borrowsPositive');
+  const own = new Set(hiker.conditions.map((c) => c.id));
+  const out: EffectSource[] = [];
+  for (const other of others) {
+    if (!borrows && !traitFlag(state, other, 'lendsPositive')) continue;
+    for (const c of other.conditions) {
+      const def = CONDITIONS[c.id];
+      if (def?.kind !== 'positive' || !def.hooks || own.has(c.id)) continue;
+      own.add(c.id);
+      out.push({
+        id: `borrowed:${c.id}`,
+        kind: 'condition',
+        name: `${def.name} (from ${other.name})`,
+        hooks: def.hooks,
+      });
+    }
+  }
+  return out;
 }
 
 /** An item's hooks, reading its own values at its Quality. */
@@ -734,6 +848,7 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
     sheltered: (hiker) => isSheltered(state, hiker),
     clothesWorn,
     condition: (hiker, id) => hiker.conditions.find((c) => c.id === id),
+    used: (hiker, key, per) => readTally(state, hiker, key, per),
   };
 }
 
@@ -774,10 +889,32 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
     roll: (chance) => roll(state.rng, chance),
     int: (min, max) => int(state.rng, min, max),
     pick: (items) => pick(state.rng, items),
+    note: (hiker, trait, text) =>
+      pushEvent(state, { kind: 'trait', hikerId: hiker.id, trait, text }),
+    tilesAhead: () => tilesAhead(state),
+    revealAhead: (tileId, cause) => revealAhead(state, tileId, cause),
+    takeCondition: (from, to, id, cause) => takeCondition(state, from, to, id, cause),
+    shortenCondition: (hiker, id, by, cause) => shortenCondition(state, hiker, id, by, cause),
+    askTilePick: (hiker) => {
+      if (!state.tacticalPicks?.includes(hiker.id)) {
+        state.tacticalPicks = [...(state.tacticalPicks ?? []), hiker.id];
+      }
+    },
   };
 }
 
-/** A per-hiker count that starts over each phase or day, kept with the ability uses. */
+/** A tally's count now, without adding to it. */
+function readTally(
+  state: Readonly<GameState>,
+  hiker: Hiker,
+  key: string,
+  per: 'phase' | 'day' | 'biome',
+): number {
+  const use = hiker.abilityUses[`tally:${key}`];
+  return use && use.period === abilityPeriod(state, per) ? use.count : 0;
+}
+
+/** A per-hiker count that starts over each phase, day or biome, kept with the ability uses. */
 export function tally(
   state: GameState,
   hiker: Hiker,
@@ -932,6 +1069,99 @@ export function nightSafeItem(state: GameState, hiker: Hiker): ItemId | undefine
   return source?.itemId;
 }
 
+// ── Trail trait questions (Phase 10a) ──────────────────────────────────────
+
+/** Does being brought along by a Move All keep this hiker's action (Follower)? */
+export function keepsActionWhenBrought(state: GameState, hiker: Hiker): EffectSource | undefined {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).find((s) => s.hooks.keepsActionWhenBrought?.(ctx));
+}
+
+/** The free moves this hiker's traits give for a move between these tiles, unused so far. */
+export function traitFreeMoves(
+  state: GameState,
+  hiker: Hiker,
+  fromTileId: TileId,
+  toTileId: TileId,
+): { source: string; move: TraitFreeMove }[] {
+  const ctx = queryContext(state, hiker);
+  const out: { source: string; move: TraitFreeMove }[] = [];
+  for (const source of effectSourcesFor(state, hiker)) {
+    const move = source.hooks.freeMove?.({ fromTileId, toTileId }, ctx);
+    if (move && ctx.used(hiker, move.key, move.per) === 0) out.push({ source: source.name, move });
+  }
+  return out;
+}
+
+/** Does something waive the Appetite of this cost (Never Hungry's chance)? Rolls now. */
+export function waivesAppetite(state: GameState, hiker: Hiker, cause: string): string | undefined {
+  const ctx = effectContext(state, hiker);
+  return effectSourcesFor(state, hiker).find((s) => s.hooks.waiveAppetite?.({ cause }, ctx))?.name;
+}
+
+/** How far a hiker can hand this kind of thing over, as sender or receiver (0: same tile). */
+export function giveReach(
+  state: GameState,
+  hiker: Hiker,
+  what: 'item' | 'resource',
+  role: 'sender' | 'receiver',
+): number {
+  const ctx = queryContext(state, hiker);
+  let best = 0;
+  for (const s of effectSourcesFor(state, hiker)) {
+    best = Math.max(best, s.hooks.giveReach?.({ what, role }, ctx) ?? 0);
+  }
+  return best;
+}
+
+/** The largest of a numeric hook across a hiker's sources (0 when none). */
+function mostOf(state: GameState, hiker: Hiker, hook: 'watchReach' | 'bringReach'): number {
+  const ctx = queryContext(state, hiker);
+  let best = 0;
+  for (const s of effectSourcesFor(state, hiker)) best = Math.max(best, s.hooks[hook]?.(ctx) ?? 0);
+  return best;
+}
+
+/** How many lines away this hiker's watch reaches (0: their own tile) (Lookout). */
+export const watchReach = (state: GameState, hiker: Hiker) => mostOf(state, hiker, 'watchReach');
+
+/** How many tiles away Move All can bring hikers from (0: the same tile) (Sherpa). */
+export const bringReach = (state: GameState, hiker: Hiker) => mostOf(state, hiker, 'bringReach');
+
+/** The Energy a hiker's Move All costs instead of Appetite, if anything says so (Puller). */
+export function pullsGroup(
+  state: GameState,
+  hiker: Hiker,
+): { energy: number; source: string } | undefined {
+  const ctx = queryContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) {
+    const energy = s.hooks.pullsGroup?.(ctx);
+    if (energy !== undefined) return { energy, source: s.name };
+  }
+  return undefined;
+}
+
+/** Are the nodes around this hiker shown (Scout)? */
+export function revealsAdjacent(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.revealsAdjacent?.(ctx));
+}
+
+/** Does no card trigger for this hiker right now (Trespasser)? */
+export function skipsChallenges(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.skipsChallenges?.(ctx));
+}
+
+/** A new biome has begun: every hiker still hiking hears of it (Prepared, Tactical). */
+export function fireBiomeStart(state: GameState): void {
+  for (const hiker of state.hikers) {
+    if (hiker.status !== 'active') continue;
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) source.hooks.onBiomeStart?.(ctx);
+  }
+}
+
 // ── Events ─────────────────────────────────────────────────────────────────
 
 export function fireHook(state: GameState, hiker: Hiker, name: EventHookName): void {
@@ -1043,7 +1273,7 @@ export function fireMoraleChange(state: GameState, hiker: Hiker, delta: number, 
  * The key that resets an ability's use count each day, phase or biome. A
  * biome is a section of the trail, so per-biome uses come back at each new section.
  */
-export function abilityPeriod(state: GameState, per: AbilityDef['limit']['per']): string {
+export function abilityPeriod(state: Readonly<GameState>, per: AbilityDef['limit']['per']): string {
   if (per === 'day') return `day ${state.day}`;
   if (per === 'phase') return `day ${state.day} ${state.phase}`;
   return `section ${state.sectionIndex}`;
@@ -1053,6 +1283,8 @@ export interface AvailableAbility {
   ability: AbilityDef;
   sourceName: string;
   usesLeft: number;
+  /** Its choices now: fixed ones, or ones that depend on the moment. */
+  choices?: readonly AbilityChoice[];
 }
 
 /** The hiker's active traits with their uses left, for the Abilities panel. */
@@ -1064,10 +1296,12 @@ export function abilitiesFor(state: GameState, hiker: Hiker): AvailableAbility[]
     const use = hiker.abilityUses[ability.id];
     const period = abilityPeriod(state, ability.limit.per);
     const used = use && use.period === period ? use.count : 0;
+    const choices = ability.choicesFor?.(queryContext(state, hiker)) ?? ability.choices;
     out.push({
       ability,
       sourceName: source.name,
       usesLeft: Math.max(0, ability.limit.uses - used),
+      ...(choices ? { choices } : {}),
     });
   }
   return out;

@@ -27,7 +27,7 @@ import {
   resourceCount,
   resourceLimit,
   statMax,
-  tradesAnywhere,
+  canHandOver,
   choiceOfUse,
   targetOfUse,
   validateAction,
@@ -145,13 +145,14 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
   const [useStep, setUseStep] = useState<UseStep | null>(null);
   // A passed-out hiker can't act: others here can only take things from them.
   const out = hiker.status !== 'active';
-  // A Walkie-Talkie (either hiker's) reaches anyone on the trail.
+  // A Walkie-Talkie (either hiker's) reaches anyone on the trail; Manager and
+  // Carrier Pigeon reach farther too.
+  const what = pick.kind === 'item' ? 'item' : 'resource';
   const others = state.hikers.filter(
     (h) =>
       h.id !== hiker.id &&
       h.status === 'active' &&
-      (h.tileId === hiker.tileId ||
-        (!out && (tradesAnywhere(state, hiker) || tradesAnywhere(state, h)))),
+      (h.tileId === hiker.tileId || (!out && canHandOver(state, hiker, h, what))),
   );
   const resource = pick.kind === 'resource' ? RESOURCES.find((r) => r.id === pick.id) : undefined;
   const item =

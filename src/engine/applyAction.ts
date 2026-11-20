@@ -43,6 +43,8 @@ import {
   validateTeach,
 } from './actions/craft';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applyTactical, validateTactical } from './actions/tactical';
+import { scoutAround } from './traits/reveal';
 import { applySubmitToInjury, validateSubmitToInjury } from './actions/injure';
 import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
@@ -192,6 +194,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validatePress(state, action) ?? null;
     case 'accomplishWonder':
       return validateAccomplish(state, action) ?? null;
+    case 'tactical':
+      return validateTactical(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -313,6 +317,9 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'accomplishWonder':
       applyAccomplish(draft, action);
       break;
+    case 'tactical':
+      applyTactical(draft, action);
+      break;
     case 'endPhase':
       endPhase(draft);
       break;
@@ -320,6 +327,8 @@ export function applyAction(state: GameState, action: Action): GameState {
       applyDebug(draft, action.op);
       break;
   }
+  // Scouts see the nodes around wherever they are now.
+  scoutAround(draft);
   // Nobody left on the trail and someone checked in: the station opens (or the summit).
   if (readyToLeave(draft)) finishSection(draft);
   // The last active hiker passed out or abandoned, or the summit: the hike is over.

@@ -21,6 +21,7 @@ import {
   mapTargets,
   itemText,
   qualityOf,
+  tilesAhead,
   validateAction,
   wonderTile,
   tendAmount,
@@ -107,7 +108,14 @@ import {
   popupAction,
   type MoveMode,
 } from './movePlan';
-import { GroupConfirm, GroupOwnTile, SleepConfirm, TendConfirm, WatchConfirm } from './TurnExtras';
+import {
+  GroupConfirm,
+  GroupOwnTile,
+  SleepConfirm,
+  TacticalPick,
+  TendConfirm,
+  WatchConfirm,
+} from './TurnExtras';
 import {
   orderNumbers,
   startGroup,
@@ -527,8 +535,12 @@ export function GameScreen({
           choice: tileId,
         }
       : null;
-  const targets =
-    selected && toolMap
+  // Tactical: a hiker picks a tile ahead to see, before anything else (Phase 10a).
+  const tacticalId = state.tacticalPicks?.[0];
+  const tactical = tacticalId ? hikers.find((h) => h.id === tacticalId) : undefined;
+  const targets = tactical
+    ? tilesAhead(state).map((tileId) => ({ tileId, reason: null }))
+    : selected && toolMap
       ? mapTargets(state, selected, toolMap).map((tileId) => {
           const a = toolAction(tileId);
           return { tileId, reason: a ? validateAction(state, a) : 'Nothing to use.' };
@@ -742,7 +754,14 @@ export function GameScreen({
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
   const nameOfId = (id: HikerId) => hikers.find((h) => h.id === id)?.name ?? id;
-  if (groupAsk && group.length > 1) {
+  if (tactical) {
+    slot = (
+      <TacticalPick
+        name={tactical.name}
+        onSkip={() => dispatch({ type: 'tactical', hikerId: tactical.id })}
+      />
+    );
+  } else if (groupAsk && group.length > 1) {
     const tile = groupAsk.tileId ? section.tiles[groupAsk.tileId] : undefined;
     slot = (
       <GroupConfirm
@@ -839,16 +858,20 @@ export function GameScreen({
               targets={targets}
               checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
               reachLabel={
-                toolMap && toolItem
-                  ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
-                  : undefined
+                tactical
+                  ? 'See this tile'
+                  : toolMap && toolItem
+                    ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
+                    : undefined
               }
               onTileClick={(tileId) =>
-                toolMap
-                  ? setToolTile(tileId)
-                  : group.length > 1 && groupAsk?.kind === 'move'
-                    ? setGroupAsk({ kind: 'move', tileId })
-                    : setPendingTile(tileId)
+                tactical
+                  ? dispatch({ type: 'tactical', hikerId: tactical.id, tileId })
+                  : toolMap
+                    ? setToolTile(tileId)
+                    : group.length > 1 && groupAsk?.kind === 'move'
+                      ? setGroupAsk({ kind: 'move', tileId })
+                      : setPendingTile(tileId)
               }
               onEmptyClick={() => group.length && clearGroup()}
               order={orderNumbers(group)}

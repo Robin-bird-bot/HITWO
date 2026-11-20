@@ -27,6 +27,7 @@ import { changeStat } from '../stats';
 import { marketMult, resourceSellPrice, sellPrice } from '../station/prices';
 import type { Action, GameState, Hiker, StationVisit, StatName } from '../types';
 import { findHiker, mustFindHiker } from './common';
+import { fireBiomeStart } from '../effects';
 
 type BuyAction = Extract<Action, { type: 'buy' }>;
 type SellAction = Extract<Action, { type: 'sell' }>;
@@ -290,5 +291,8 @@ export function applyRestAndGo(state: GameState): void {
   });
   // A Scout Report shows its cards now that the section is here.
   for (const id of station.scout ?? []) revealCardOn(state, id, 'the Scout Report');
+  // A new biome: Prepared and Tactical show a tile ahead.
+  delete state.tacticalPicks;
+  fireBiomeStart(state);
   startNewDay(state);
 }

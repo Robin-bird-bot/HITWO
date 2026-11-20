@@ -181,7 +181,7 @@ function ActionGrid({
 }
 
 const TRAIT_COLOR = { T: '#F2B950', U: '#9CC3A8', M: '#CDA6EE' };
-const PER = { day: 'DAY', phase: 'PHASE', biome: 'SECTION' };
+const PER = { day: 'DAY', phase: 'PHASE', biome: 'BIOME' };
 
 export function Abilities({
   state,
@@ -198,7 +198,7 @@ export function Abilities({
     <div className={styles.block}>
       <span className={panel.label}>ABILITIES</span>
       {abilities.length === 0 && <span className={styles.muted}>No active traits.</span>}
-      {abilities.map(({ ability, usesLeft }) => {
+      {abilities.map(({ ability, usesLeft, choices }) => {
         const trait = Object.values(TRAITS).find((t) => t.ability?.id === ability.id);
         const color = trait ? TRAIT_COLOR[trait.type] : '#C9C2B2';
         const used = usesLeft <= 0;
@@ -228,7 +228,7 @@ export function Abilities({
                   style={{ background: color }}
                   aria-expanded={choosing === ability.id}
                   onClick={() =>
-                    ability.choices
+                    choices
                       ? setChoosing(choosing === ability.id ? null : ability.id)
                       : onAbility(ability.id)
                   }
@@ -237,9 +237,12 @@ export function Abilities({
                 </button>
               )}
             </div>
-            {choosing === ability.id && ability.choices && (
+            {choosing === ability.id && choices && (
               <div className={styles.choices}>
-                {ability.choices.map((c) => (
+                {choices.length === 0 && (
+                  <span className={styles.muted}>Nothing to use it on right now.</span>
+                )}
+                {choices.map((c) => (
                   <button
                     key={c.id}
                     type="button"

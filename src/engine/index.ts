@@ -142,7 +142,10 @@ export {
   type WonderProgress,
 } from './wonders/wonders';
 export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
-export { overBag } from './actions/give';
+export { canHandOver, overBag } from './actions/give';
+export { tilesAhead } from './traits/reveal';
+export { bringReach } from './effects';
+export { tileDistance } from './map';
 export {
   autoPay,
   basicRecipe,
