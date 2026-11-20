@@ -37,3 +37,4 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 - Hexes are 112×128.
 - The left party panel is 288 px wide, from y 120 to 984.
 - Map coordinates use `PX(x)=760+(x-460)*1.6` and `PY(y)=760+(y-545)*1.6`, which map a design grid onto the stage.
+| `TraitBadges.dc.html` / `TraitBadges.png` | Trait badges (Phase 10a): diamonds for always-on traits, circles for usable ones, their states, the hiker panel's badge row and hover window, the Abilities panel, and the trait warnings |

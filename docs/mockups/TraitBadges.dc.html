@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — trait badges</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+button{font-family:'EditUndo',monospace;cursor:pointer}
+@keyframes tbPulse{0%,100%{box-shadow:0 0 0 3px var(--ring),0 0 0 3px var(--glow)}50%{box-shadow:0 0 0 3px var(--ring),0 0 0 10px rgba(0,0,0,0)}}
+.tb-ready{animation:tbPulse 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: #1D2220">
+
+<div style="position: absolute; left: 40px; top: 30px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'EditUndo', monospace; font-size: 24px; letter-spacing: 0.06em">TRAITS · BADGES, PANEL AND WARNINGS</span>
+<span style="font-size: 14px; color: #C9C2B2">Diamond = always on. Circle = usable. The ring is the trait type's color, the middle a darker shade of it, and every icon is white.</span>
+</div>
+
+<!-- A: BADGES -->
+<div style="position: absolute; left: 40px; top: 104px; width: 1520px; height: 250px; box-sizing: border-box; padding: 18px 24px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: flex; gap: 24px">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">ALWAYS ON · DIAMOND</span>
+<div style="flex: 1; display: flex; align-items: center; justify-content: space-around">
+<sc-for list="{{passive}}" as="p" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 170px">
+<div style="width: 92px; height: 92px; display: flex; align-items: center; justify-content: center">
+<div style="width: 62px; height: 62px; transform: rotate(45deg); border-radius: 12px; background: {{p.fill}}; box-shadow: 0 0 0 3px {{p.ring}}, 0 6px 14px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{p.icon}}" color="#FFFFFF" size="28" sw="2.2" hint-size="28px,28px"></dc-import></div></div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 3px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.05em; color: {{p.ring}}">{{p.name}}</span><span style="font-size: 12px; color: #C9C2B2">{{p.type}}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="width: 1px; background: rgba(255,255,255,0.1)"></div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">USABLE · CIRCLE</span>
+<div style="flex: 1; display: flex; align-items: center; justify-content: space-around">
+<sc-for list="{{active}}" as="a" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 170px; opacity: {{a.op}}">
+<div style="position: relative; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center">
+<div class="{{a.cls}}" style="--ring: {{a.ring}}; --glow: {{a.glow}}; width: 76px; height: 76px; border-radius: 50%; background: {{a.fill}}; box-shadow: 0 0 0 3px {{a.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{a.icon}}" color="#FFFFFF" size="30" sw="2.2" hint-size="30px,30px"></dc-import></div>
+<div style="position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); height: 18px; box-sizing: border-box; padding: 0 8px; border-radius: 9px; background: #1D2220; box-shadow: 0 0 0 2px {{a.ring}}; display: flex; align-items: center; gap: 4px; white-space: nowrap">
+<sc-for list="{{a.pips}}" as="d" hint-placeholder-count="1"><div style="width: 7px; height: 7px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid {{a.ring}}; background: {{d.fill}}"></div></sc-for>
+<sc-if value="{{a.tag}}" hint-placeholder-val="{{false}}"><span style="font-family: 'EditUndo', monospace; font-size: 9px; letter-spacing: 0.06em; color: {{a.ring}}">{{a.tag}}</span></sc-if>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 3px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.05em; color: {{a.nameC}}">{{a.name}}</span><span style="font-size: 12px; color: #C9C2B2">{{a.state}}</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<!-- B: HIKER PANEL -->
+<div style="position: absolute; left: 40px; top: 380px; width: 740px; height: 590px; box-sizing: border-box; padding: 18px 24px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">IN THE HIKER PANEL</span><span style="font-size: 13px; color: #9C9585">Just the icons in a row. Hover (or long-press on a phone) for a small window with the name and what it does.</span></div>
+<div style="position: relative; flex: 1">
+<div style="position: absolute; left: 40px; top: 190px; width: 340px; box-sizing: border-box; padding: 14px; border-radius: 14px; background: rgba(29,34,32,0.94); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 12px 32px rgba(15,22,19,0.28); display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px">
+<div style="width: 40px; height: 40px; border-radius: 50%; background: #3A332B; box-shadow: 0 0 0 3px #E2683C; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 16px">F</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.04em">FINNEGAN</span><span style="font-size: 11px; color: #9C9585">Dog · Level 3</span></div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 4px 2px">
+<sc-for list="{{row}}" as="r" hint-placeholder-count="5">
+<div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; opacity: {{r.op}}">
+<sc-if value="{{r.dia}}" hint-placeholder-val="{{true}}"><div style="width: 22px; height: 22px; transform: rotate(45deg); border-radius: 5px; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{r.icon}}" color="#FFFFFF" size="13" sw="2.4" hint-size="13px,13px"></dc-import></div></div></sc-if>
+<sc-if value="{{r.coin}}" hint-placeholder-val="{{false}}"><div style="width: 28px; height: 28px; border-radius: 50%; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{r.icon}}" color="#FFFFFF" size="14" sw="2.4" hint-size="14px,14px"></dc-import></div></sc-if>
+<sc-if value="{{r.bubble}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: -9px; top: -9px; min-width: 18px; height: 16px; box-sizing: border-box; padding: 0 4px; border-radius: 8px; background: {{r.bubbleBg}}; border: 1.5px solid #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 10px; color: #FFFFFF">{{r.bubble}}</div></sc-if>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 6px; font-size: 11px; color: #9C9585"><span>Morale 6/10</span><span>·</span><span>Alone on this tile</span></div>
+</div>
+<!-- tooltip -->
+<div style="position: absolute; left: 182px; top: 70px; width: 300px; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; background: #262C29; border: 1px solid rgba(205,166,238,0.5); box-shadow: 0 12px 28px rgba(0,0,0,0.45); display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.05em; color: #CDA6EE">EXTRINSIC</span><span style="font-family: 'EditUndo', monospace; font-size: 10px; letter-spacing: 0.06em; padding: 2px 6px; border-radius: 5px; background: #6B4C8F; color: #FFFFFF">MORALE</span></div>
+<span style="font-size: 13px; line-height: 1.4; color: #E4DDCD">Start of day: +1 Morale with another hiker on the tile, −1 alone.</span>
+<div style="display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 8px; background: rgba(180,71,47,0.22)"><span style="font-family: 'EditUndo', monospace; font-size: 12px; color: #F39A86">−1</span><span style="font-size: 12px; color: #F3C2B6">Alone right now: loses 1 Morale tomorrow morning.</span></div>
+<div style="position: absolute; left: 92px; bottom: -8px; width: 14px; height: 14px; transform: rotate(45deg); background: #262C29; border-right: 1px solid rgba(205,166,238,0.5); border-bottom: 1px solid rgba(205,166,238,0.5)"></div>
+</div>
+<div style="position: absolute; left: 410px; top: 200px; width: 270px; display: flex; flex-direction: column; gap: 10px; font-size: 12px; line-height: 1.45; color: #C9C2B2">
+<span><b style="color: #F1EADB">Simple view:</b> icons only, as here.</span>
+<span><b style="color: #F1EADB">Informative view:</b> the same row, with each trait's name in small text under its icon.</span>
+<span><b style="color: #F1EADB">The hover window</b> has the name, the type, what it does, and its status right now (the colored line), when it has one.</span>
+<span>Usable traits open the Abilities panel when tapped.</span>
+</div>
+</div>
+</div>
+
+<!-- C: WARNINGS -->
+<div style="position: absolute; left: 820px; top: 380px; width: 740px; height: 590px; box-sizing: border-box; padding: 18px 24px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">TRAIT WARNINGS</span><span style="font-size: 13px; color: #9C9585">A setting in the ☰ menu.</span></div>
+<div style="display: flex; padding: 3px; border-radius: 10px; background: rgba(255,255,255,0.06)">
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; padding: 6px 12px; border-radius: 8px; color: #9C9585">OFF</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; padding: 6px 12px; border-radius: 8px; color: #9C9585">SIMPLE</span>
+<span style="font-family: 'EditUndo', monospace; font-size: 11px; letter-spacing: 0.06em; padding: 6px 12px; border-radius: 8px; background: #E9B44C; color: #1D2220">INFORMATIVE</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.06em; color: #F1EADB">SIMPLE · THE BADGE ITSELF</span>
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px">
+<sc-for list="{{states}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 8px; border-radius: 12px; background: rgba(255,255,255,0.04)">
+<div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; opacity: {{s.op}}; filter: {{s.filter}}">
+<div style="width: 38px; height: 38px; transform: rotate(45deg); border-radius: 8px; background: {{s.fill}}; box-shadow: 0 0 0 3px {{s.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{s.icon}}" color="#FFFFFF" size="18" sw="2.4" hint-size="18px,18px"></dc-import></div></div>
+<sc-if value="{{s.bubble}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: -4px; top: -4px; min-width: 22px; height: 18px; box-sizing: border-box; padding: 0 5px; border-radius: 9px; background: {{s.bubbleBg}}; border: 2px solid #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 11px; color: #FFFFFF">{{s.bubble}}</div></sc-if>
+</div>
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.04em; color: {{s.nameC}}">{{s.name}}</span>
+<span style="font-size: 11px; line-height: 1.35; color: #C9C2B2; text-align: center">{{s.note}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.06em; color: #F1EADB">INFORMATIVE · ALSO ON THE PORTRAIT, AND A CHECK BEFORE ACTING</span>
+<div style="display: flex; gap: 16px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 120px; padding-top: 6px">
+<div style="position: relative; width: 52px; height: 52px; border-radius: 50%; background: #3A332B; box-shadow: 0 0 0 3px #EBC04A; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 20px">E
+<div style="position: absolute; right: -14px; top: -8px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 11px; background: #B4472F; border: 2px solid #1D2220; display: flex; align-items: center; gap: 2px; font-family: 'EditUndo', monospace; font-size: 12px; color: #FFFFFF">! −1</div>
+</div>
+<span style="font-size: 11px; color: #C9C2B2; text-align: center; line-height: 1.35">Ellie will lose Morale from a trait</span>
+</div>
+<div style="flex: 1; box-sizing: border-box; padding: 14px; border-radius: 14px; background: rgba(29,34,32,0.96); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 12px 32px rgba(15,22,19,0.4); display: flex; flex-direction: column; gap: 10px">
+<span style="font-family: 'EditUndo', monospace; font-size: 14px; letter-spacing: 0.05em">MOVE CODY?</span>
+<span style="font-size: 13px; line-height: 1.45; color: #E4DDCD">Ellie will be left alone, so she loses 1 Morale tomorrow morning (Extrinsic).</span>
+<div style="display: flex; align-items: center; gap: 10px">
+<button style="height: 32px; padding: 0 14px; border-radius: 9px; border: none; background: #E9B44C; color: #1D2220; font-size: 12px; letter-spacing: 0.06em; box-shadow: 0 3px 0 rgba(0,0,0,0.3)">MOVE ANYWAY</button>
+<button style="height: 32px; padding: 0 14px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #F1EADB; font-size: 12px; letter-spacing: 0.06em">CANCEL</button>
+<span style="margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; color: #9C9585"><span style="width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid #9C9585; box-sizing: border-box"></span>Don't ask again this run</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      T: { ring: '#F2B950', fill: '#8A6320' },
+      U: { ring: '#9CC3A8', fill: '#4C7759' },
+      M: { ring: '#CDA6EE', fill: '#6B4C8F' },
+      X: { ring: '#6F6A60', fill: '#3A3833' }
+    };
+    const GAIN = '#3F8A57', LOSS = '#B4472F';
+    const dots = (left, total) => Array.from({ length: total }, (_, i) => ({ fill: i < left ? 'currentColor' : 'transparent' }));
+    const passive = [
+      { name: 'LEADER', icon: 'footprints', type: 'Trail', ...C.T },
+      { name: 'FORAGER', icon: 'search', type: 'Utility', ...C.U },
+      { name: 'EXTRINSIC', icon: 'users', type: 'Morale', ...C.M }
+    ];
+    const pip = (left, total, c) => Array.from({ length: total }, (_, i) => ({ fill: i < left ? c : 'transparent' }));
+    const active = [
+      { name: 'STOIC', icon: 'zap', ...C.T, nameC: C.T.ring, glow: 'rgba(242,185,80,0.5)', cls: 'tb-ready', pips: pip(1, 1, C.T.ring), tag: '', state: 'Ready · 1 use today', op: 1 },
+      { name: 'GAMBLER', icon: 'dice', ...C.U, nameC: C.U.ring, glow: 'rgba(0,0,0,0)', cls: '', pips: pip(1, 1, C.U.ring), tag: 'SCAVENGE', state: 'Only during a scavenge', op: 1 },
+      { name: 'SUPPORTIVE', icon: 'heart', ...C.X, nameC: '#9C9585', glow: 'rgba(0,0,0,0)', cls: '', pips: pip(0, 1, C.X.ring), tag: '', state: 'Used · back tomorrow', op: 0.65 }
+    ];
+    const r = (kind, icon, shape, extra) => Object.assign({ icon, ring: C[kind].ring, fill: C[kind].fill, dia: shape === 'd', coin: shape === 'c', op: 1, bubble: '', bubbleBg: '' }, extra || {});
+    const row = [
+      r('T', 'footprints', 'd'),
+      r('T', 'zap', 'c'),
+      r('U', 'search', 'd'),
+      r('U', 'dice', 'c'),
+      r('M', 'users', 'd', { fill: LOSS, bubble: '−1', bubbleBg: LOSS })
+    ];
+    const states = [
+      { name: 'EXTRINSIC', icon: 'users', ring: C.M.ring, fill: LOSS, nameC: C.M.ring, bubble: '−1', bubbleBg: LOSS, op: 1, filter: 'none', note: 'Red middle: will lose Morale (alone)' },
+      { name: 'FOODY', icon: 'utensils', ring: C.M.ring, fill: GAIN, nameC: C.M.ring, bubble: '+1', bubbleBg: GAIN, op: 1, filter: 'none', note: 'Green middle: will gain Morale (well fed)' },
+      { name: 'COLLABORATIVE', icon: 'users', ring: C.U.ring, fill: C.U.fill, nameC: C.U.ring, bubble: '', bubbleBg: '', op: 1, filter: 'none', note: 'Lit: working right now (others here)' },
+      { name: 'FOCUSED', icon: 'eye', ring: C.U.ring, fill: C.U.fill, nameC: '#9C9585', bubble: '', bubbleBg: '', op: 0.4, filter: 'grayscale(0.8)', note: 'Dimmed: not working right now (not alone)' }
+    ];
+    return { passive, active, row, states };
+  }
+}
+</script>
+</body>
+</html>

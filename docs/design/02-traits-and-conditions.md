@@ -27,9 +27,9 @@ Every trait and condition is written with the same terms, so each one means exac
 - Traits that add resources or items do nothing when that inventory is full.
 - **Families:** every character belongs to a Family (see Families) that traits and items can refer to. Pair characters are also marked **Duo**.
 
-**Stacking cap traits:** flat amounts apply first, then percentages, so building both pays off. Buying a 10-cap item with Frugal and Thrifty: 10 − 1 = 9, then halved = 4.5, rounded to 4. Selling a 10-cap item with Charismatic and Non-Non-Profit: 10 + 2 = 12, then +50% = 18. Fractions always round in the player's favor (costs down, earnings up).
+**Stacking cap traits:** flat amounts apply first, then percentages, so building both pays off. Selling a 10-cap item with Charismatic and Non-Non-Profit: 10 + 2 = 12, then +50% = 18. Fractions always round in the player's favor (costs down, earnings up).
 
-**Active traits** need a decision to use, so they appear as buttons in the selected hiker's Abilities panel with their uses left: Stoic, Hardy, Supportive, Lead Stomach, Destroyer, Alchemist, Gambler (during a scavenge), Fetch, Yodeler, Day Napper, Therapist, Liberal and Carrier Pigeon. All other traits apply automatically.
+**Active traits** need a decision to use, so they appear as buttons in the selected hiker's Abilities panel with their uses left: Stoic, Hardy, Supportive, Lead Stomach, Destroyer, Alchemist, Gambler (during a scavenge), Trespasser, Fetch, Yodeler, Day Napper, Therapist, Liberal and Carrier Pigeon. All other traits apply automatically.
 
 ## Trail traits
 
@@ -46,7 +46,8 @@ Trail traits (yellow) cover movement, carrying, food and managing the party's re
 | I | Manager | Can trade items with hikers on adjacent tiles. |
 | I | Prepared | At the start of each biome, the nodes and challenge of a random tile are revealed for the rest of the biome. |
 | I | Short | Moving costs 1 less Appetite, whether moving alone or being moved with the group (never below 0). −1 item slot. |
-| I | Never Hungry | 25% chance not to lose Appetite at the end of the day. Every food restores 1 less Appetite for this hiker. |
+| I | Backtracker | Sideways or backwards moves cost no Appetite. |
+| I | Never Hungry | Moves and scavenges have a 25% chance to cost no Appetite. Every food restores 1 less Appetite for this hiker. |
 | I | Thrill Seeker | Losing 3 or more Energy in a single phase makes this hiker Energized for 1 day. |
 | II | Puller | Moving the group costs 1 Energy instead of Appetite. |
 | II | Prowler | Moving alone at night costs no extra Appetite. |
@@ -61,7 +62,7 @@ Trail traits (yellow) cover movement, carrying, food and managing the party's re
 | II | Tactical | At the start of each biome, the nodes and challenge of a tile the player chooses are revealed for the rest of the biome. |
 | II | Shrug Off | Once per biome, the first injury this hiker would receive is prevented. |
 | II | Lookout | Keep Watch also protects hikers on adjacent tiles. |
-| II | Trespasser | Once per section, passes one challenge for free. |
+| II | Trespasser | May activate once per biome--does not trigger any challenges this day. [If moving with group, this hiker is not part of the challenge] |
 | III | Stalker | Once per day, moving to an adjacent tile with a hiker on it costs no Appetite and doesn't use an action. |
 | III | Sneaker | Moving at night costs no Energy, but the extra Appetite is still paid. |
 | III | Photosynthesis | Each move has a chance to restore 1 Energy. |
@@ -70,13 +71,11 @@ Trail traits (yellow) cover movement, carrying, food and managing the party's re
 | III | Second Wind | Once per biome, on becoming Exhausted, Energy refills to 10. |
 | III | Carrier Pigeon | Can send items or resources to any hiker anywhere, but can't receive them from afar. |
 
-Added during design (tiers proposed): Short, Shrug Off, Lookout, Trespasser, Sherpa, Second Wind. Supportive's once-per-day limit is also new.
-
-Added Nov 6 (type proposed): Thrill Seeker (Tier I). It's a different trait from the Morale trait Thrill-Seeker.
+Added during design (tiers confirmed Nov 20): Short, Shrug Off, Lookout, Trespasser, Sherpa, Second Wind. Supportive's once-per-day limit is also new.
 
 ## Utility traits
 
-Utility traits (green) cover crafting, scavenging and actions. Traits written as "\[Node\]" come in four versions: River, Forest, Creature (Wildlife) and Rock (Mountain).
+Utility traits (green) cover crafting, scavenging and actions. Traits written as "[Node]" come in four versions: River, Forest, Creature (Wildlife) and Rock (Mountain).
 
 | Tier | Trait | Effect |
 | --- | --- | --- |
@@ -88,18 +87,19 @@ Utility traits (green) cover crafting, scavenging and actions. Traits written as
 | I | Nocturnal | A night without sleep costs 2 Appetite instead of 2 Energy. |
 | I | Lead Stomach | As a free action, can eat 2 resources to gain 1 Appetite. |
 | I | Copier | When scavenging, can take 1 extra resource for each hiker who scavenged this tile earlier the same day, at 1 Appetite per extra resource. |
-| I | \[Node\] Finder | Higher chance of drawing that node's resources when scavenging. |
+| I | [Node] Finder | Higher chance of drawing that node's resources when scavenging. |
 | I | Charismatic | +2 caps for each sale. |
 | I | Frugal | Pays 1 cap less for each purchase. |
-| I | Green / Blue / Gray / Yellow Thumb | For one node (Forest / River / Mountain / Wildlife): +1 card when scavenging their node, and Tend on a tile with that node restores 1 extra Abundance. |
+| I | Green / Blue / Gray / Yellow Thumb | For one node (Forest / River / Mountain / Wildlife): +1 card to choose from when scavenging it, and Tend on a tile with that node restores 1 extra Abundance. |
 | I | Day Napper | Can Sleep in the Morning or Afternoon, not just at night. |
 | I | Singer | When this hiker Sits by the Fire, every hiker on the tile gains 1 Morale. |
 | I | Chef | Food this hiker crafts has a chance of +1 Appetite. |
 | I | Careful Hands | Clothes this hiker crafts get 0–3 extra days of durability. |
 | I | Archaeologist | Higher chance of Item find cards when scavenging. |
 | I | MBA | On level-up, gain caps based on the new level (starting value: 3 caps per level). |
+| I | Teacher | Teaching another hiker a blueprint costs half the Morale. |
 | II | Artisan Cook / Crafter / Architect / Tailor | Can craft Tier 2 food / tools / shelters / clothes. |
-| II | \[Node\] Hound | Much higher chance of drawing that node's resources, and of ×2 results, when scavenging. |
+| II | [Node] Hound | Much higher chance of drawing that node's resources, and of ×2 results, when scavenging. |
 | II | Wet / Sappy / Fuzzy / Rocky Pockets | After scavenging, a chance to also gain a random River / Forest / Wildlife / Mountain resource. |
 | II | Copydog | When scavenging, can take 1 extra resource for each hiker who scavenged this tile earlier the same day, at no extra cost. |
 | II | Gambler | Once per day, can reroll one card when scavenging. |
@@ -113,7 +113,7 @@ Utility traits (green) cover crafting, scavenging and actions. Traits written as
 | II | Therapist | Once per day, can spend 1 Morale to shorten every negative condition of hikers on this tile by 1 day. |
 | II | Liberal | Once per phase, can spend 1 Energy to even out the Morale of all hikers on this tile. |
 | II | Talented | +1 to the numbers on items this hiker crafts (for example, +1 Appetite on food). |
-| II | Tank Butt | +1 Luck when this hiker is the last to act in a phase. |
+| II | Closer | +1 Luck when this hiker is the last to act in a phase. |
 | II | Lovingly Made | At high Morale (8 or more), +1 extra Luck when crafting. |
 | II | Wise | When this hiker gains XP, every other hiker on the tile gains 50% as much. |
 | II | Dream Alchemist | During the night, each resource this hiker carries has a 10% chance to turn into a random resource. Resources held by other hikers aren't affected. |
@@ -121,33 +121,43 @@ Utility traits (green) cover crafting, scavenging and actions. Traits written as
 | III | German Efficiency | Using a tool also gives a random resource. |
 | III | Proficient | +2 cards to choose from when crafting. |
 | III | Generous | When scavenging, a random hiker on the tile also gets a random resource from the same node. |
-| III | Alchemist | As a free action, can turn 2 resources from one node into 1 resource from another node. |
-| III | Thrifty | All cap costs are halved. |
+| III | Alchemist | As a free action, can turn 2 of the same resource into 1 resource of the same node. |
+| III | Thrifty | 1 random item at each shop is free |
 
-Added during design (tiers proposed unless Wyatt set them): Charismatic, Frugal, the Thumbs, Day Napper, Non-Non-Profit, Alchemist, Thrifty.
+Added during design (tiers confirmed Nov 20): Charismatic, Frugal, the Thumbs, Day Napper, Non-Non-Profit, Alchemist, Thrifty.
 
-Added Nov 3 (tiers proposed): Never Hungry (Trail); Archaeologist, MBA, Lovingly Made, Wise, Dream Alchemist (Utility); Empath (Morale; the old Trail Empath is now Susceptible); Trainer (Human family trait).
+Added Nov 3 (tiers confirmed Nov 20): Never Hungry (Trail); Archaeologist, MBA, Lovingly Made, Wise, Dream Alchemist (Utility); Caring (Morale, once called Empath; the old Trail Empath is now Susceptible); Trainer (Human family trait).
 
 ## Morale traits
 
-Morale traits (purple) about where a hiker is are checked at the start of each day; traits about what a hiker does trigger immediately, every time. There's no daily limit, so a hiker can gain or lose several Morale in one day. Traits written with \[X\] or \[Y\] are set per character (a node, an action).
+Morale traits (purple) about where a hiker is are checked at the start of each day; traits about what a hiker does trigger immediately, every time. There's no daily limit, so a hiker can gain or lose several Morale in one day. Traits written with [X] or [Y] are set per character (a node, an action).
 
 | Trait | +1 Morale | −1 Morale | Checked |
 | --- | --- | --- | --- |
 | Extrinsic | Sharing a tile with another hiker | Alone | Start of day |
 | Intrinsic | Alone | Sharing a tile with 2 or more other hikers | Start of day |
 | Foody | Appetite is 8 or more | Appetite is 5 or less | Start of day |
-| Location | On a tile with an \[X\] node | On a tile with a \[Y\] node | Start of day |
+| Location | On a tile with an [X] node | On a tile with a [Y] node | Start of day |
 | Fair-Weather | No weather is active | Rain or snow is active | Start of day |
 | Dressed | 2 or more clothes equipped | No clothes equipped | Start of day |
 | Exhibitionist | No clothes equipped | 2 or more clothes equipped | Start of day |
-| Action | Each time doing \[X\] | Each time doing \[Y\] | Immediately |
-| Traveler | Each move | Each time doing \[X\] | Immediately |
-| Conservationist | Each time Tending on a tile with an \[X\] node | Each time scavenging an \[X\] node | Immediately |
+| Action | Each time doing [X] | Each time doing [Y] | Immediately |
+| Traveler | Each move | Each time doing [X] | Immediately |
+| Conservationist | Each time Tending on a tile with an [X] node | Each time scavenging an [X] node | Immediately |
 | Thrill-Seeker | Each challenge passed | Facing no challenge the day before | Immediately / start of day |
 | Chatty | Sitting by the fire with others (they each gain 1 too) | Alone | Immediately / start of day |
 | Zen | Alone (+2) | Sharing a tile with 2 or more others (−2) | Start of day |
-| Empath | Start of day: Morale is set to match the lowest Morale among the other hikers on the tile (it can go up or down) | — | Start of day |
+| Caring | Start of day: Morale is set to match the lowest Morale among the other hikers on the tile (it can go up or down) | — | Start of day |
+| Alpha | On a tile with more Humans than Dogs | On a tile with more Dogs than Humans | Start of day |
+| Extrovert | Sharing a tile with 2 or more other hikers | Alone | Start of day |
+| Close Company | Sharing a tile with exactly 1 other hiker | On a tile with 3 or more hikers in total | Start of day |
+| Center of Attention | Highest Morale on the tile | Someone on the tile has more Morale | Start of day |
+| Bossy | Each time moving the group | Each time moved with the group by someone else | Immediately |
+| Wanderlust | Each move to an unrevealed tile | Didn't move the day before | Immediately / start of day |
+| Simple Pleasures | Each time eating or sleeping | Each time crafting | Immediately |
+| Slow and Steady | Each phase staying on the same tile | Each move forward (−2) | Immediately |
+| Soccer Mom | Each time a hiker on the tile passes a challenge | Each time a hiker on the tile fails a challenge | Immediately |
+| Proud Mentor | Each time a hiker on the tile levels up | Alone | Immediately / start of day |
 
 ## Families
 
@@ -163,7 +173,7 @@ Every character is a Human, a Dog or a Cat. Traits and items can check a hiker's
 
 **Family versions.** Some traits share an effect but take the family's name, such as Copydog for Dogs and Copycat for Cats. Level-ups offer only the version that matches the hiker's family, plus traits open to everyone.
 
-**Family Trail and Utility traits** (proposed; Who = which hikers can have it)
+**Family Trail and Utility traits** (Who = which hikers can have it)
 
 | Slot | Tier | Trait | Who | Effect |
 | --- | --- | --- | --- | --- |
@@ -192,8 +202,6 @@ Every character is a Human, a Dog or a Cat. Traits and items can check a hiker's
 | --- | --- | --- |
 | Dog Food | Food | Dogs: +4 Appetite and +1 Morale. Anyone else: +2 Appetite and −1 Morale. |
 | Leash | Clothes (Gear) | Worn by a Dog: moving the group costs 1 less Appetite when it includes a Human. |
-| Harness | Clothes (Body), Dogs | Effect to come |
-| Disco Harness | Clothes (Body), Dogs | Effect to come |
 | Ring | Trinket | Changes a hiker's family for a set number of days. |
 
 ## Special and unique traits
@@ -205,8 +213,7 @@ Special traits belong to certain characters (or come through trinkets); unique t
 | Fluffy | Special | Utility | When crafting with Fur, get 1 Fur back. |
 | Quirky | Special | Utility | Each day, this trait becomes a random Tier I Utility trait. |
 | Zany | Special | Utility | Each day, this trait becomes a random Utility trait of any tier. |
-| Niche | Special | Utility | Each morning a random node type is picked and shown on the hiker's card. On a tile with that node: +3 Luck when scavenging and crafting. |
-| Just Around the Next Corner | Special | Trail | Sideways moves cost no Appetite. |
+| Nosework | Special | Utility | Each morning a random node type is picked and shown on the hiker's card. On a tile with that node: +3 Luck when scavenging and crafting. |
 | Misophonia | Special | Morale | Right away: −1 Morale when another hiker eats on this tile; +2 Morale when crafting food. |
 | Rain Lover | Special | Morale | During rain or snow, every Morale gain is 1 larger. |
 | Moody | Special | Morale | Each morning, gains 1 random condition for the day from a set of 3 positive and 3 negative conditions. |
@@ -214,11 +221,10 @@ Special traits belong to certain characters (or come through trinkets); unique t
 | Dog Mom | Unique | Utility | When a Dog on the same tile scavenges, this hiker also gains a resource from that node. |
 | Artist | Unique | Utility | When this hiker crafts an item, every hiker on the tile gains 1 Morale. |
 | Stylish | Unique | Utility | With all 3 equipment slots filled: +1 Luck when scavenging and crafting. Clothes last 3 extra days when this hiker equips them (once per item). |
-| Alpha | Unique (Cody) | Morale | Start of day: +1 Morale on a tile with more Humans than Dogs, −1 on a tile with more Dogs than Humans. |
 | Show Girl | Unique (Gma) | Morale | Humans on this hiker's tile get +1 from every Morale gain. |
 | Nugget Puker | Special | Utility | After eating food, gains a Puked Nuggets food card (+1 Appetite, 1 use). |
 | Loud | Special | Utility | Can trade and Keep Watch from 1 tile away. At night, gives Ringing Ears to every hiker on its tile. |
-| Rabbit Diet | Special | Trail | Loses no Appetite at the end of the day, but can't eat food cards. Can eat 1 Forest resource for 1 Appetite. |
+| Rabbit Diet | Special | Trail | Scavenging costs no Appetite, but can't eat food cards. Can eat 1 Forest resource for 1 Appetite. |
 | Soldier's March | Unique (Grandpa W. and Sherman Tank) | Trail | Moving alone costs 1 less Appetite. |
 
 Moody's set: Inspired, Lucky, Energized / Bored, Unlucky, Dejected.
@@ -259,9 +265,13 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Blind | Can't move alone; can still be moved with the group. |
 | Sluggish | Moving costs 1 extra Appetite. |
 | Nightmares | Can't sleep. |
+| Frozen | Can't move or be moved. Lasts a set number of phases (from challenges like Strong Breeze and Sharp Wind). |
+| Bleeding | When it runs out, the hiker gains 1 injury. If it's cured before then, no injury. Cured by specific tools, traits and clothes. (From challenges like Thorn Thicket and Bear!) |
+| Shivering | Stacks (from Snow). At 3 or more, the hiker is Frozen. At 5 or more, they gain 1 injury and Shivering resets to 0. Lasts until the snow ends or it drops to 0. |
+| Burning | Stacks (from Heatwave and Fire nodes). −1 maximum Energy for each stack. At 5, the hiker gains 1 injury and Burning resets to 0. Goes down by 1 in any Night phase where the hiker gains none. Lasts until the heatwave ends or the injury. |
 | Strained | Loses 1 extra Energy whenever Energy is lost. |
 | Brain Fog | Utility traits don't work. |
-| Allergies (phase) | −1 Morale each phase on a tile with an \[X\] node. |
+| Allergies (phase) | −1 Morale each phase on a tile with an [X] node. |
 | Unlucky | −1 Luck when scavenging and crafting. |
 | Wet | −1 Morale each day without clothes equipped or a shelter. If a Wet hiker would get Wet again, they become Soaked instead, for whichever is longer: the Wet time they had left or the new time. |
 | Soaked (phase) | −1 Morale each phase without clothes equipped or a shelter. |
@@ -270,11 +280,7 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Weak | −1 item slot; an item that no longer fits must be given away or dropped. |
 | Butterfingers | When scavenging, a chance to get nothing. |
 | Tunnel Vision | 1 fewer card to choose from when scavenging or crafting. |
-| Frozen | Can't move or be moved. |
-| Bleeding | When it runs out, the hiker gains 1 injury. If it's cured before then, there's no injury. Cured by specific tools, traits and clothes (to be named). |
 | Ringing Ears | Each phase, a chance to lose 1 Morale (75%), or 1 Energy at night (25%). |
-| Shivering (stacks) | From Snow. At 3 or more, the hiker is Frozen. At 5 or more, they gain 1 injury and Shivering resets to 0. Lasts until the snow ends or it drops to 0. |
-| Burning (stacks) | From Heatwave and Fire nodes. −1 maximum Energy for each stack. At 5, the hiker gains 1 injury and Burning resets to 0. Goes down by 1 in any Night phase where the hiker gains none. Lasts until the heatwave ends or the injury. |
 
 **Positive conditions**
 
@@ -289,7 +295,3 @@ Conditions last a number of days set by whatever caused them; the few marked **(
 | Motivated | The hiker's next action is free. |
 
 New this round: Nauseous (replaces Gorged), Soaked, Inspired, Motivated.
-
-Added Nov 5: Frozen and Bleeding, and Wet turning into Soaked.
-
-Added Nov 6: Shivering and Burning, which stack instead of counting down (see `05-nights-and-weather.md`).
