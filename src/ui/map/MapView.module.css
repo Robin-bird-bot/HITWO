@@ -832,3 +832,8 @@
   line-height: 1;
   pointer-events: none;
 }
+
+/* The illustrated map (Phase 10.5): plain paper beyond the land, so panning never finds an edge. */
+.viewport[data-style='illustrated'] {
+  background: #eee5cb;
+}

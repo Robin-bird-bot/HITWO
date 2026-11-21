@@ -48,6 +48,13 @@ import { MapControls, RouteLegend } from '../map/MapControls';
 import { useTabHeld } from '../map/useTabHeld';
 import { useMapStyle } from '../map/mapStyleSetting';
 import { mapGeometry } from '../map/illustrated/geometry';
+import { landKey, sectionLandInput } from '../map/illustrated/land/input';
+import { useLand } from '../map/illustrated/landService';
+import { landCellUnits, landScale } from '../map/illustrated/device';
+import { LandCanvas } from '../map/illustrated/LandCanvas';
+import { landGrade } from '../map/illustrated/grade';
+import { useReducedMotion } from '../app/useReducedMotion';
+import illustrated from '../map/illustrated/Illustrated.module.css';
 import { placer } from '../map/illustrated/geometryContext';
 import { hikerColor } from '../../content/characters';
 import {
@@ -242,16 +249,41 @@ export function GameScreen({
   }, [simple]);
   const bounds = useMemo(() => mapBounds(section), [section]);
   // Classic's grid, or the Illustrated map's moved tiles and winding paths (Phase 10.5).
-  const mapStyle = useMapStyle();
-  const geo = useMemo(
+  const chosenStyle = useMapStyle();
+  const illustratedGeo = useMemo(
     () =>
       mapGeometry(section, {
-        style: mapStyle,
+        style: 'illustrated',
         runSeed: state.seed,
         sectionIndex: state.sectionIndex,
       }),
-    [section, mapStyle, state.seed, state.sectionIndex],
+    [section, state.seed, state.sectionIndex],
   );
+  const classicGeo = useMemo(
+    () =>
+      mapGeometry(section, {
+        style: 'classic',
+        runSeed: state.seed,
+        sectionIndex: state.sectionIndex,
+      }),
+    [section, state.seed, state.sectionIndex],
+  );
+  // The illustrated land: made in a worker, only for the Illustrated style.
+  const landReq = useMemo(() => {
+    if (chosenStyle !== 'illustrated') return null;
+    const input = sectionLandInput(section, illustratedGeo, {
+      runSeed: state.seed,
+      sectionIndex: state.sectionIndex,
+      cellUnits: landCellUnits(),
+    });
+    return { key: landKey(input), input, scale: landScale() };
+  }, [chosenStyle, section, illustratedGeo, state.seed, state.sectionIndex]);
+  const land = useLand(landReq);
+  const reduceMotion = useReducedMotion();
+  // If the land fails (or takes over 6 s), this section uses the classic map.
+  const mapStyle =
+    chosenStyle === 'illustrated' && land.status !== 'failed' ? 'illustrated' : 'classic';
+  const geo = mapStyle === 'illustrated' ? illustratedGeo : classicGeo;
   const place = placer(section, geo);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
@@ -991,18 +1023,34 @@ export function GameScreen({
         <PreviewLayer>
           <DragLayer onDragChange={onDragChange}>
             <ItemDropsContext.Provider value={itemDrops}>
-              <Backdrop
-                phase={state.phase}
-                biome={section.biome}
-                scrollY={scrollAbove(camera, bounds)}
-                faded={routes}
-              />
+              {mapStyle === 'classic' && (
+                <Backdrop
+                  phase={state.phase}
+                  biome={section.biome}
+                  scrollY={scrollAbove(camera, bounds)}
+                  faded={routes}
+                />
+              )}
               <MapView
                 section={section}
                 hikers={hikers}
                 targets={targets}
                 routes={routes}
                 geo={geo}
+                mapStyle={mapStyle}
+                underlay={
+                  mapStyle === 'illustrated' && land.status === 'ready' ? (
+                    <LandCanvas
+                      result={land.result}
+                      section={section}
+                      geo={geo}
+                      runSeed={state.seed}
+                      sectionIndex={state.sectionIndex}
+                      grade={landGrade(state, routes, land.result, geo)}
+                      reduceMotion={reduceMotion}
+                    />
+                  ) : undefined
+                }
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
                 reachLabel={
                   tactical
@@ -1050,6 +1098,16 @@ export function GameScreen({
                 routes={routes}
                 onRoutes={() => setRoutesOn((on) => !on)}
               />
+              {chosenStyle === 'illustrated' && land.status === 'drawing' && (
+                <div className={illustrated.drawing} role="status">
+                  Drawing the map…
+                </div>
+              )}
+              {chosenStyle === 'illustrated' && land.status === 'failed' && (
+                <div key={landReq?.key} className={illustrated.toast} role="status">
+                  Using the classic map for this section.
+                </div>
+              )}
               {routes && (
                 <RouteLegend
                   hikers={hikers

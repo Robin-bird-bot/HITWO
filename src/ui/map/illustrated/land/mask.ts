@@ -19,6 +19,8 @@ import { fbm } from './grid';
 const RV = MAP_STYLE.reveal;
 /** Mask cells are this many prototype units across: it's soft, so coarse is fine. */
 export const MASK_UNITS = 4;
+/** Paint fades out over this much before the land's edge (world pixels). */
+const EDGE_FADE = u(140);
 
 export interface MaskGrid {
   x0: number;
@@ -107,6 +109,9 @@ export function paintMask(
       const wy = g.y0 + y * g.cell;
       let m = 0;
       for (const s of near) m = Math.max(m, disc(s, growth[s.id] ?? 1, wx, wy));
+      // Paint fades out before the land's edge, so it never ends in a straight line.
+      const edge = Math.min(x, y, g.w - 2 - x, g.h - 2 - y) * g.cell;
+      m *= Math.min(1, Math.max(0, edge / EDGE_FADE));
       const i = y * g.w + x;
       // The noisy edge: m + 0.22·noise, then a short ramp around 0.45–0.55.
       const v = Math.min(1, Math.max(0, (m + 0.22 * g.noise[i]! - 0.45) / 0.1));

@@ -1,0 +1,61 @@
+/* The illustrated map (Phase 10.5). World pixels unless it says otherwise. */
+
+.land {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+/* "Drawing the map…": over the map while the land is made on the main thread. */
+.drawing {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  translate: -50% -50%;
+  z-index: 5;
+  padding: 14px 22px;
+  border-radius: 12px;
+  background: rgba(29, 34, 32, 0.88);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+/* A small note at the bottom of the map: "Using the classic map for this section." */
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 84px;
+  translate: -50% 0;
+  z-index: 40;
+  padding: 10px 18px;
+  border-radius: 10px;
+  background: rgba(29, 34, 32, 0.92);
+  color: #f1eadb;
+  font-size: 15px;
+  pointer-events: none;
+  animation: toast 5s ease-out both;
+}
+
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  8%,
+  85% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

@@ -77,6 +77,10 @@ interface MapViewProps {
   routes?: boolean;
   /** Where tiles and paths are drawn: Classic's grid, or the Illustrated map's (Phase 10.5). */
   geo?: MapGeometry;
+  /** The map style being drawn (Phase 10.5): Illustrated has paper beyond its land. */
+  mapStyle?: 'classic' | 'illustrated';
+  /** Under everything in map space: the Illustrated map's land. */
+  underlay?: ReactNode;
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -116,6 +120,8 @@ export function MapView({
   onEmptyClick,
   routes = false,
   geo,
+  mapStyle = 'classic',
+  underlay,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
@@ -206,6 +212,7 @@ export function MapView({
       className={styles.viewport}
       data-dragging={dragged ? 'hiker' : undefined}
       data-routes={routes || undefined}
+      data-style={mapStyle}
       {...(itemDrag ? mapDrop.props() : {})}
       onPointerDown={onPointerDown}
       onClickCapture={(e) => {
@@ -225,6 +232,7 @@ export function MapView({
     >
       <MapGeometryContext.Provider value={geo}>
         <div className={styles.world} style={{ transform: worldTransform(camera) }}>
+          {underlay}
           <TrailLines
             section={section}
             bounds={bounds}

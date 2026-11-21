@@ -28,11 +28,14 @@ export const MAP_STYLE = {
     /** The land reaches this far past the trail tree on every side. TODO(wyatt): [300]. */
     margin: 300,
     /**
-     * World pixels per field cell. The update asks for 1 cell per prototype
-     * unit (2 on phones); see `cellFor`. Raised if a laptop misses the budget.
+     * Prototype units per field cell. The update asks for 1 (2 on phones),
+     * but at 1 a section took 2.2 s on Wyatt's laptop, over the [1.5 s]
+     * budget, so it's 2 (3 on phones). The painted details (trees, water,
+     * contours) are drawn sharp either way; only the color fields are coarser.
+     * TODO(wyatt): back to 1 if a faster laptop or a leaner generator allows.
      */
-    cell: 1,
-    phoneCell: 2,
+    cell: 2,
+    phoneCell: 3,
     /** fbm noise scales. TODO(wyatt): [260], [90], [30]. */
     noise: [260, 90, 30],
     /** Light cut into 4 flat tones at these quantiles. TODO(wyatt): [12%, 42%, 84%]. */

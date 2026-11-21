@@ -63,6 +63,27 @@ export function landInput(
   };
 }
 
+/**
+ * The land is made once per section and kept: nodes that change later (a
+ * challenge takes one away, a Planter adds one) don't redraw it. A reload
+ * draws it from the nodes as they are then.
+ */
+const pinned = new Map<string, LandInput>();
+
+export function sectionLandInput(
+  section: Section,
+  geo: MapGeometry,
+  opts: { runSeed: number; sectionIndex: number; cellUnits: number },
+): LandInput {
+  const id = `${opts.runSeed}:${opts.sectionIndex}:${opts.cellUnits}:${section.trailheadId}:${Object.keys(section.tiles).length}`;
+  const hit = pinned.get(id);
+  if (hit) return hit;
+  const input = landInput(section, geo, opts);
+  pinned.clear();
+  pinned.set(id, input);
+  return input;
+}
+
 /** A fingerprint of what the land is built from: a new one means a new land. */
 export const landKey = (input: LandInput): string =>
   JSON.stringify([
