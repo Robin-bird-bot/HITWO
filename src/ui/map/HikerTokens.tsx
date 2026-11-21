@@ -17,7 +17,7 @@ import { conditionCounts } from '../conditions/hikerConditions';
 import { TONE_LOOK } from '../conditions/conditionLook';
 import { Icon } from '../icons/Icon';
 import { useDrag } from '../drag/drag';
-import { lastRowOf, tileCenter } from './mapLayout';
+import { usePlacer } from './illustrated/geometryContext';
 import styles from './MapView.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 
@@ -71,7 +71,7 @@ export function HikerTokens({
   canDrag,
   order = {},
 }: HikerTokensProps) {
-  const lastRow = lastRowOf(section);
+  const place = usePlacer(section);
   const onMap = hikers.filter((h) => h.status !== 'abandoned');
   // A carried hiker rides on their carrier's token instead of taking a spot.
   const carrierOf = new Map<HikerId, Hiker>();
@@ -204,7 +204,7 @@ export function HikerTokens({
       {[...byTile.entries()].flatMap(([tileId, group]) => {
         const tile = section.tiles[tileId];
         if (!tile) return [];
-        const c = tileCenter(tile, lastRow);
+        const c = place.center(tile);
         const spread = SPREAD[Math.min(group.length, 4)] ?? SPREAD[4] ?? [];
         return group.flatMap((h, i) => {
           const [dx, dy] = spread[i % spread.length] ?? [0, 0];

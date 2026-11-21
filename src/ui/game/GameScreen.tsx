@@ -46,17 +46,18 @@ import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
 import { MapControls, RouteLegend } from '../map/MapControls';
 import { useTabHeld } from '../map/useTabHeld';
+import { useMapStyle } from '../map/mapStyleSetting';
+import { mapGeometry } from '../map/illustrated/geometry';
+import { placer } from '../map/illustrated/geometryContext';
 import { hikerColor } from '../../content/characters';
 import {
   clampCamera,
   CHECKPOINT_HEX,
   focusOn,
   HEX,
-  lastRowOf,
   MAP_VIEW,
   mapBounds,
   scrollAbove,
-  tileCenter,
   worldToStage,
   ZOOM,
   type Camera,
@@ -240,6 +241,18 @@ export function GameScreen({
     if (simple) setPanelCollapsed('log', true);
   }, [simple]);
   const bounds = useMemo(() => mapBounds(section), [section]);
+  // Classic's grid, or the Illustrated map's moved tiles and winding paths (Phase 10.5).
+  const mapStyle = useMapStyle();
+  const geo = useMemo(
+    () =>
+      mapGeometry(section, {
+        style: mapStyle,
+        runSeed: state.seed,
+        sectionIndex: state.sectionIndex,
+      }),
+    [section, mapStyle, state.seed, state.sectionIndex],
+  );
+  const place = placer(section, geo);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
     () =>
@@ -328,10 +341,9 @@ export function GameScreen({
   );
   for (const id of easier) marks[id] = 'easier';
 
-  const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
     const tile = tileId ? section.tiles[tileId] : undefined;
-    return tile ? tileCenter(tile, lastRow) : { x: 0, y: 0 };
+    return tile ? place.center(tile) : { x: 0, y: 0 };
   };
   const [rawCamera, setCamera] = useState<Camera>(() =>
     focusOn(centerOf(selected?.tileId), ZOOM.default, bounds),
@@ -970,7 +982,7 @@ export function GameScreen({
 
   // Where the move preview points: the top and bottom of the chosen tile.
   const pending = pendingTile ? section.tiles[pendingTile] : undefined;
-  const pendingCenter = pending ? tileCenter(pending, lastRow) : null;
+  const pendingCenter = pending ? place.center(pending) : null;
   const halfH = (pending?.kind === 'checkpoint' ? CHECKPOINT_HEX.h : HEX.h) / 2;
 
   return (
@@ -990,6 +1002,7 @@ export function GameScreen({
                 hikers={hikers}
                 targets={targets}
                 routes={routes}
+                geo={geo}
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
                 reachLabel={
                   tactical

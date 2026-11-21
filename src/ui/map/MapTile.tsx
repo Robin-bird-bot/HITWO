@@ -19,6 +19,8 @@ import {
 interface MapTileProps {
   tile: Tile;
   at: Point;
+  /** Its size on the Illustrated map (1 on the grid). */
+  scale?: number;
   look: TileLookName;
   /** Edge color for the current tile (the selected hiker's color). */
   currentColor?: string;
@@ -52,6 +54,7 @@ export interface CheckpointInfo {
 export function MapTile({
   tile,
   at,
+  scale = 1,
   look,
   currentColor,
   reach,
@@ -100,7 +103,13 @@ export function MapTile({
   return (
     <div
       className={styles.tile}
-      style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
+      style={{
+        left: at.x - HEX.w / 2,
+        top: at.y - HEX.h / 2,
+        width: HEX.w,
+        height: HEX.h,
+        ...(scale !== 1 ? { transform: `scale(${scale})` } : {}),
+      }}
       title={describe}
       data-reach={reach}
       {...drop}

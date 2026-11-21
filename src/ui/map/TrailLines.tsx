@@ -1,6 +1,8 @@
 import type { Section } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { lastRowOf, tileCenter, type Bounds } from './mapLayout';
+import type { Bounds } from './mapLayout';
+import { usePlacer } from './illustrated/geometryContext';
+import { pathD, pathMiddle } from './illustrated/geometry';
 import styles from './MapView.module.css';
 import { LINE_LOOK, VISITED_LINE, walkedStrokes, type LineLook } from './looks';
 import { MAP_STYLE } from '../../config/mapStyle';
@@ -28,7 +30,7 @@ export function TrailLines({
   /** The route view: only walked lines stay bright. */
   routes?: boolean;
 }) {
-  const lastRow = lastRowOf(section);
+  const place = usePlacer(section);
   const w = bounds.maxX - bounds.minX;
   const h = bounds.maxY - bounds.minY;
   return (
@@ -43,9 +45,7 @@ export function TrailLines({
           const a = section.tiles[line.a];
           const b = section.tiles[line.b];
           if (!a || !b) return null;
-          const p = tileCenter(a, lastRow);
-          const q = tileCenter(b, lastRow);
-          const d = `M${p.x} ${p.y} L${q.x} ${q.y}`;
+          const d = pathD(place.path(line.id, a, b));
           const walked = a.visited && b.visited && line.kind !== 'paved';
           const walker = line.walkedBy ? colors[line.walkedBy] : undefined;
           const strokes: LineLook['strokes'] = walker
@@ -91,7 +91,7 @@ export function TrailLines({
 
 /** The cost pill at the middle of each special line. */
 export function LineBadges({ section }: { section: Section }) {
-  const lastRow = lastRowOf(section);
+  const place = usePlacer(section);
   return (
     <>
       {section.lines.map((line) => {
@@ -99,16 +99,15 @@ export function LineBadges({ section }: { section: Section }) {
         const a = section.tiles[line.a];
         const b = section.tiles[line.b];
         if (!look.badge || !a || !b) return null;
-        const p = tileCenter(a, lastRow);
-        const q = tileCenter(b, lastRow);
+        const mid = pathMiddle(place.path(line.id, a, b));
         return (
           <div
             key={line.id}
             className={styles.badge}
             title={look.tooltip}
             style={{
-              left: (p.x + q.x) / 2,
-              top: (p.y + q.y) / 2,
+              left: mid.x,
+              top: mid.y,
               background: look.badge.bg,
               color: look.badge.fg,
             }}

@@ -12,10 +12,8 @@ import { HikerTokens } from './HikerTokens';
 import { MapTile } from './MapTile';
 import {
   HEX,
-  lastRowOf,
   panBy,
   stageToWorld,
-  tileCenter,
   worldTransform,
   zoomAt,
   type Bounds,
@@ -24,6 +22,8 @@ import {
 import { tileLook } from './looks';
 import styles from './MapView.module.css';
 import { LineBadges, TrailLines } from './TrailLines';
+import type { MapGeometry } from './illustrated/geometry';
+import { MapGeometryContext, placer, type Placer } from './illustrated/geometryContext';
 
 interface MapViewProps {
   section: Section;
@@ -75,6 +75,8 @@ interface MapViewProps {
   itemDrag?: { tile: DropTarget; map: DropTarget };
   /** The route view (Phase 10.5): only walked paths stay bright. */
   routes?: boolean;
+  /** Where tiles and paths are drawn: Classic's grid, or the Illustrated map's (Phase 10.5). */
+  geo?: MapGeometry;
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -113,6 +115,7 @@ export function MapView({
   order,
   onEmptyClick,
   routes = false,
+  geo,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
@@ -182,7 +185,7 @@ export function MapView({
     window.addEventListener('pointercancel', up);
   };
 
-  const lastRow = lastRowOf(section);
+  const place = placer(section, geo);
   const selected = hikers.find((h) => h.id === selectedId);
   const currentTileId = selected?.tileId ?? null;
   const tiles = Object.values(section.tiles);
@@ -220,76 +223,79 @@ export function MapView({
       }}
       aria-label="Trail map"
     >
-      <div className={styles.world} style={{ transform: worldTransform(camera) }}>
-        <TrailLines
-          section={section}
-          bounds={bounds}
-          from={currentTileId}
-          reachable={targets.filter((t) => t.reason === null).map((t) => t.tileId)}
-          colors={Object.fromEntries(hikers.map((h) => [h.id, hikerColor(h)]))}
-          routes={routes}
-        />
-        {tiles.map((t) => (
-          <MapTile
-            key={t.id}
-            tile={t}
-            at={tileCenter(t, lastRow)}
-            look={tileLook(section, t, currentTileId)}
-            currentColor={selected ? hikerColor(selected) : undefined}
-            reach={reachOf(t.id)}
-            reachLabel={reachLabel}
-            checkpoint={checkpointInfo}
-            mark={marks?.[t.id]}
-            onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
-            onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
-            checkpointLabelOnHover={checkpointLabelOnHover}
-            onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
-            {...(hikerDrag || itemDrag ? { drop: tileDrop.props(t.id) } : {})}
+      <MapGeometryContext.Provider value={geo}>
+        <div className={styles.world} style={{ transform: worldTransform(camera) }}>
+          <TrailLines
+            section={section}
+            bounds={bounds}
+            from={currentTileId}
+            reachable={targets.filter((t) => t.reason === null).map((t) => t.tileId)}
+            colors={Object.fromEntries(hikers.map((h) => [h.id, hikerColor(h)]))}
+            routes={routes}
           />
-        ))}
-        <LineBadges section={section} />
-        <HikerTokens
-          section={section}
-          hikers={hikers}
-          selectedId={selectedId}
-          onSelect={onSelectHiker}
-          pickTile={{
-            tileIds: new Set(targets.filter((t) => t.reason === null).map((t) => t.tileId)),
-            onPick: onTileClick,
-          }}
-          {...(hikerDrag ? { canDrag: hikerDrag.canDrag } : {})}
-          {...(order ? { order } : {})}
-        />
-        {overlay}
-        {dragged && (
-          <DragArrow
-            from={tileOf(section, hikers.find((h) => h.id === dragged)?.tileId)}
-            lastRow={lastRow}
-            camera={camera}
+          {tiles.map((t) => (
+            <MapTile
+              key={t.id}
+              tile={t}
+              at={place.center(t)}
+              scale={place.scale(t.id)}
+              look={tileLook(section, t, currentTileId)}
+              currentColor={selected ? hikerColor(selected) : undefined}
+              reach={reachOf(t.id)}
+              reachLabel={reachLabel}
+              checkpoint={checkpointInfo}
+              mark={marks?.[t.id]}
+              onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
+              onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
+              checkpointLabelOnHover={checkpointLabelOnHover}
+              onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
+              {...(hikerDrag || itemDrag ? { drop: tileDrop.props(t.id) } : {})}
+            />
+          ))}
+          <LineBadges section={section} />
+          <HikerTokens
+            section={section}
+            hikers={hikers}
+            selectedId={selectedId}
+            onSelect={onSelectHiker}
+            pickTile={{
+              tileIds: new Set(targets.filter((t) => t.reason === null).map((t) => t.tileId)),
+              onPick: onTileClick,
+            }}
+            {...(hikerDrag ? { canDrag: hikerDrag.canDrag } : {})}
+            {...(order ? { order } : {})}
           />
-        )}
-        {dragged && hikerDrag?.costOn && drag?.hover?.id === 'tile' && drag.hover.arg && (
-          <CostChip
-            at={tileOf(section, drag.hover.arg)}
-            lastRow={lastRow}
-            text={hikerDrag.costOn(dragged, drag.hover.arg)}
-          />
-        )}
-        {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
-        {fx.map((f) => (
-          <ScoutLayer key={f.key} fx={f} section={section} lastRow={lastRow} />
-        ))}
-      </div>
+          {overlay}
+          {dragged && (
+            <DragArrow
+              from={tileOf(section, hikers.find((h) => h.id === dragged)?.tileId)}
+              place={place}
+              camera={camera}
+            />
+          )}
+          {dragged && hikerDrag?.costOn && drag?.hover?.id === 'tile' && drag.hover.arg && (
+            <CostChip
+              at={tileOf(section, drag.hover.arg)}
+              place={place}
+              text={hikerDrag.costOn(dragged, drag.hover.arg)}
+            />
+          )}
+          {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
+          {fx.map((f) => (
+            <ScoutLayer key={f.key} fx={f} section={section} place={place} />
+          ))}
+        </div>
+      </MapGeometryContext.Provider>
     </div>
   );
 }
 
 /** The sweep on each scanned tile, and the counts floating over where they were taken. */
-function ScoutLayer({ fx, section, lastRow }: { fx: ScoutFx; section: Section; lastRow: number }) {
+function ScoutLayer({ fx, section, place }: { fx: ScoutFx; section: Section; place: Placer }) {
   const centers = (ids: readonly string[]) =>
     ids.flatMap((id) => {
       const t = section.tiles[id];
-      return t ? [tileCenter(t, lastRow)] : [];
+      return t ? [place.center(t)] : [];
     });
   const at = fx.counts ? centers(fx.counts.at) : [];
   const mid = at.length
@@ -326,17 +332,17 @@ const tileOf = (section: Section, id: string | undefined) => (id ? section.tiles
 /** While a hiker is dragged: an arrow from their tile to the pointer, in map space. */
 function DragArrow({
   from,
-  lastRow,
+  place,
   camera,
 }: {
   from: Tile | undefined;
-  lastRow: number;
+  place: Placer;
   camera: Camera;
 }) {
   const fit = useStage();
   const at = useDragPointer();
   if (!from || !at) return null;
-  const a = tileCenter(from, lastRow);
+  const a = place.center(from);
   const b = stageToWorld(camera, {
     x: (at.x - fit.left) / fit.scale,
     y: (at.y - fit.top) / fit.scale,
@@ -367,9 +373,9 @@ function DragArrow({
 }
 
 /** The move's cost, on the tile under a dragged hiker. */
-function CostChip({ at, lastRow, text }: { at: Tile | undefined; lastRow: number; text: string }) {
+function CostChip({ at, place, text }: { at: Tile | undefined; place: Placer; text: string }) {
   if (!at) return null;
-  const c = tileCenter(at, lastRow);
+  const c = place.center(at);
   return (
     <div className={styles.costChip} style={{ left: c.x, top: c.y + HEX.h / 2 - 10 }} role="status">
       {text}
