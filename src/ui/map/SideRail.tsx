@@ -1,4 +1,4 @@
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import type { Hiker, Section } from '../../engine';
 import { Icon } from '../icons/Icon';
 import {
@@ -78,7 +78,7 @@ export function SideRail({ section, hikers, camera, bounds, onJump }: SideRailPr
           style={{
             top,
             left,
-            boxShadow: `0 0 0 2px ${characterFor(h.id).color}, 0 3px 6px rgba(0,0,0,0.3)`,
+            boxShadow: `0 0 0 2px ${hikerColor(h)}, 0 3px 6px rgba(0,0,0,0.3)`,
           }}
           aria-label={`Jump to ${h.name}`}
           title={`Jump to ${h.name}`}

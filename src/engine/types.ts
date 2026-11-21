@@ -370,6 +370,8 @@ export interface Hiker {
   id: HikerId;
   name: string;
   family: Family;
+  /** Their party color, from their spot when the run started (Phase 10b). */
+  color?: string;
   placeholder?: boolean;
   /** Their classes: which Trail and Utility traits level-ups offer them. */
   classes: ClassId[];

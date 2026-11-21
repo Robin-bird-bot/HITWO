@@ -133,10 +133,10 @@ describe('what can be offered', () => {
   it('special and unique traits only for their owners', () => {
     const who: Who = { classes: ['support'], slots: [{ type: 'U' }] };
     const owner = traitsIn(offers({ ...who, characterId: 'hershal' }, 1, 300)).map((d) => d.id);
-    const other = traitsIn(offers({ ...who, characterId: 'katie' }, 1, 300)).map((d) => d.id);
+    const other = traitsIn(offers({ ...who, characterId: 'catie' }, 1, 300)).map((d) => d.id);
     expect(owner).toContain('mentor');
     expect(other).not.toContain('mentor');
-    expect(other.some((id) => TRAITS[id]?.owners && !TRAITS[id]?.owners?.includes('katie'))).toBe(
+    expect(other.some((id) => TRAITS[id]?.owners && !TRAITS[id]?.owners?.includes('catie'))).toBe(
       false,
     );
   });

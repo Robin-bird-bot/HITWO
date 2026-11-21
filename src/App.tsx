@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { STARTING_PARTY } from './content/characters';
+import { DEFAULT_PARTY } from './content/roster';
 import { TEST_HIKERS } from './content/testHikers';
 import { createGame, type HikerSetup, type LoadFailure } from './engine';
 import { gameStore, useGame } from './ui/app/gameStore';
@@ -46,7 +46,7 @@ export function App() {
   if (hash.startsWith('#mockup-crafting') && debugEnabled()) return <CraftingMockup />;
   if (hash.startsWith('#mockup-station-extras') && debugEnabled()) return <StationExtrasMockup />;
 
-  const startNew = (seed = randomSeed(), hikers: readonly HikerSetup[] = STARTING_PARTY) => {
+  const startNew = (seed = randomSeed(), hikers: readonly HikerSetup[] = DEFAULT_PARTY) => {
     gameStore.newGame(createGame({ seed, hikers }));
     setConfirmNew(false);
     setTestParty(null);
@@ -110,7 +110,7 @@ export function App() {
             setTestParty(null);
           }}
           onConfirm={() =>
-            startNew(randomSeed(), testParty ? testHikers(testParty) : STARTING_PARTY)
+            startNew(randomSeed(), testParty ? testHikers(testParty) : DEFAULT_PARTY)
           }
         />
       )}

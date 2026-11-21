@@ -10,10 +10,10 @@
  * Opened from the Craft action (or the Blueprints button, on Teach). While a
  * basic craft waits for its pick, the window stays open on the pick step.
  */
+import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
-import { characterFor } from '../../content/characters';
 import {
   autoPay,
   craftPool,
@@ -211,7 +211,7 @@ export function Face({ id, size }: { id: string; size: number }) {
       className={styles.face}
       src={portraitSrc(id)}
       alt=""
-      style={{ width: size, height: size, boxShadow: `0 0 0 2px ${characterFor(id).color}` }}
+      style={{ width: size, height: size, boxShadow: `0 0 0 2px ${colorOfHiker(id)}` }}
     />
   );
 }
@@ -524,7 +524,7 @@ export function Slot({
           <img src={ASSETS.resources[filled.resource]} alt="" width={40} height={40} />
           <span
             className={styles.slotWho}
-            style={{ background: characterFor(filled.from).color }}
+            style={{ background: colorOfHiker(filled.from) }}
             aria-hidden
           />
         </>

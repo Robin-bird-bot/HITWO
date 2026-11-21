@@ -2,7 +2,7 @@
  * The party panel on the left (docs/mockups/Main.dc.html): a compact card per
  * hiker, with the selected hiker's card expanded.
  */
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import { type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -127,7 +127,7 @@ function HikerCard({
   /** Its place in the group's turn order. */
   turn?: number;
 }) {
-  const color = characterFor(h.id).color;
+  const color = hikerColor(h);
   const traitView = useTraitView();
   const tag = statusTag(h, selected);
   const tagColors =

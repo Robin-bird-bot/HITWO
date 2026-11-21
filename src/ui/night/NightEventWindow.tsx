@@ -6,9 +6,9 @@
  * From the top: the midnight-blue ribbon, the creature's art and name, one
  * line for each hiker hit (portrait, sentence, result chip), and who was safe.
  */
+import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
-import { characterFor } from '../../content/characters';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import type { GameEvent, GameState } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -85,7 +85,7 @@ export function NightEventWindow({
                   src={portraitSrc(hit.hikerId)}
                   alt=""
                   draggable={false}
-                  style={{ boxShadow: `0 0 0 2px ${characterFor(hit.hikerId).color}` }}
+                  style={{ boxShadow: `0 0 0 2px ${colorOfHiker(hit.hikerId)}` }}
                 />
                 <div className={styles.words}>
                   <span className={styles.line}>{hit.text}</span>

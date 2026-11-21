@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import type { Action, Hiker, HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { MAP_VIEW, type Point } from '../map/mapLayout';
@@ -103,7 +103,7 @@ export function MovePopover({
           className={styles.portrait}
           src={portraitSrc(hiker.id)}
           alt=""
-          style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
+          style={{ boxShadow: `0 0 0 3px ${hikerColor(hiker)}` }}
         />
         <span className={styles.headText}>
           <span className={styles.kicker}>
@@ -135,7 +135,7 @@ export function MovePopover({
                 <img
                   src={portraitSrc(h.id)}
                   alt=""
-                  style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
+                  style={{ boxShadow: `0 0 0 2px ${hikerColor(h)}` }}
                 />
                 <span className={styles.checkName}>{h.name}</span>
                 {reason !== null && <span className={styles.checkWhy}>{shortWhy(reason)}</span>}

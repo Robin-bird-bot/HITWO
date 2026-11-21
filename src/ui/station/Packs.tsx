@@ -12,7 +12,7 @@
  */
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ASSETS } from '../../config/assets';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { ITEMS } from '../../content';
 import {
   bagSlots,
@@ -78,7 +78,7 @@ export function Packs({
               <img
                 src={portraitSrc(h.id)}
                 alt=""
-                style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
+                style={{ boxShadow: `0 0 0 2px ${hikerColor(h)}` }}
               />
               <span className={styles.packName}>{h.name.toUpperCase()}</span>
               {!gone && (

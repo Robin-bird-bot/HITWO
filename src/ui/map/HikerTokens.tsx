@@ -10,7 +10,7 @@
  *   press doesn't pan the map, and a tap still selects.
  */
 import { Fragment, type ComponentProps, type ReactNode } from 'react';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import { immovable, type Hiker, type HikerId, type Section } from '../../engine';
 import { conditionCounts } from '../conditions/hikerConditions';
@@ -90,7 +90,7 @@ export function HikerTokens({
 
   const token = (h: Hiker, left: number, top: number, size: number, riding?: Hiker) => {
     const selected = h.id === selectedId;
-    const color = characterFor(h.id).color;
+    const color = hikerColor(h);
     const passedOut = h.status === 'passedOut';
     const faded = h.acted || h.status !== 'active';
     const { bad, good } = conditionCounts(h);
@@ -257,7 +257,7 @@ function TokenGhost({ hiker }: { hiker: Hiker }) {
       className={styles.tokenGhost}
       src={portraitSrc(hiker.id)}
       alt=""
-      style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
+      style={{ boxShadow: `0 0 0 3px ${hikerColor(hiker)}` }}
     />
   );
 }

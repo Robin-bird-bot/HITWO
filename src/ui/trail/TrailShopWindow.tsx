@@ -12,7 +12,7 @@
  */
 import { useEffect, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { ITEMS } from '../../content';
 import {
   tradeable,
@@ -320,7 +320,7 @@ function Owner({ hiker, worn }: { hiker: Hiker; worn: boolean }) {
         className={styles.face}
         src={portraitSrc(hiker.id)}
         alt=""
-        style={{ boxShadow: `0 0 0 2px ${characterFor(hiker.id).color}` }}
+        style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
       />
       {hiker.name.toUpperCase()}
       {worn && <em>· WORN</em>}
