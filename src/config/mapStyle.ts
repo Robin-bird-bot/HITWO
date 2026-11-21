@@ -43,9 +43,12 @@ export const MAP_STYLE = {
     contours: 26,
     contourEvery: 5,
     contourAlpha: 0.3,
-    /** Tree crowns: conifers, and autumn ones in patches. TODO(wyatt): [42%], [16%]. */
+    /**
+     * Tree crowns: this share are conifers. TODO(wyatt): [42%]. The autumn
+     * share ([16%] for the Meadow) is each biome's `autumnShare` in
+     * public/assets/map/palettes.json.
+     */
     conifers: 0.42,
-    autumn: 0.16,
     /** The sketch's tree symbols, of all the trees. TODO(wyatt): about [28%]. */
     sketchTrees: 0.28,
   },
