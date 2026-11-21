@@ -34,6 +34,7 @@ export {
   copyChoices,
   emptySlotsFor,
   offerShape,
+  optionSource,
   readCopy,
   replaceableSlots,
 } from './traits/levelUp';

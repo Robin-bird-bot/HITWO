@@ -8,7 +8,7 @@ import { deserialize, serialize } from '../save';
 import { END, fixtureGame, fixtureHiker, hiker, place, run, toNight } from '../test/fixtures';
 import type { ClassId, Family, GameState, SlotType, TraitOption } from '../types';
 import { gainXp } from '../xp';
-import { offerShape, rollOffer, rollSetting } from './levelUp';
+import { offerShape, optionSource, rollOffer, rollSetting } from './levelUp';
 
 const L = BALANCE.levelUp;
 
@@ -268,6 +268,121 @@ describe('taking a level-up', () => {
         expect(TRAITS[o.traitId]!.tier).toBe(3);
       }
     }
+  });
+});
+
+describe('the level-up screen', () => {
+  function opened(options: TraitOption[], who: Who = {}) {
+    const s = game(who);
+    ash(s).pendingLevels = 1;
+    s.traitPick = { hikerId: 'ash', source: 'levelUp', level: 1, options };
+    return s;
+  }
+  const keep = { type: 'pickTrait' as const, option: -1, keep: true as const };
+
+  it('KEEP MY TRAITS takes nothing, but the level counts', () => {
+    const s = opened([
+      { kind: 'trait', traitId: 'leader' },
+      { kind: 'slot', slot: 'T' },
+    ]);
+    const slots = structuredClone(ash(s).slots);
+    expect(validateAction(s, keep)).toBeNull();
+    const after = run(s, keep);
+    expect(ash(after).slots).toEqual(slots);
+    expect(ash(after)).toMatchObject({ level: 1, pendingLevels: 0 });
+    expect(after.traitPick).toBeUndefined();
+    expect(after.log.at(-1)).toMatchObject({
+      kind: 'trait',
+      text: 'Ash reached level 1 and kept their traits.',
+    });
+  });
+
+  it('kept or not, the next level-up waiting opens after (MBA still pays)', () => {
+    const s = opened([{ kind: 'slot', slot: 'T' }], { slots: [{ type: 'U', traitId: 'mba' }] });
+    ash(s).pendingLevels = 2;
+    const before = s.caps;
+    const after = run(s, keep);
+    expect(after.caps).toBe(before + BALANCE.traits.mba.capsPerLevel);
+    expect(after.traitPick).toMatchObject({ hikerId: 'ash', level: 2 });
+  });
+
+  it('an Old Photo can’t be kept: one of its traits must be taken', () => {
+    const s = game({ slots: [{ type: 'T', traitId: 'leader' }] });
+    s.traitPick = {
+      hikerId: 'ash',
+      source: 'oldPhoto',
+      slot: 0,
+      options: [{ kind: 'trait', traitId: 'fast' }],
+    };
+    expect(validateAction(s, keep)).toBe('Pick a trait for the Old Photo.');
+  });
+
+  it('only a slot that fits takes a trait; dropping on a trait replaces it for good', () => {
+    const s = opened([{ kind: 'trait', traitId: 'fast' }], {
+      slots: [{ type: 'T', traitId: 'leader' }, { type: 'U' }, { type: 'T/U' }],
+    });
+    const at = (slot: number) => ({ type: 'pickTrait' as const, option: 0, replaceSlot: slot });
+    expect(validateAction(s, at(0))).toBeNull();
+    expect(validateAction(s, at(1))).toBe('Fast doesn’t fit that slot.');
+    expect(validateAction(s, at(2))).toBeNull();
+    // The open Trail-or-Utility slot, chosen over nothing else.
+    expect(ash(run(s, at(2))).slots.map((x) => x.traitId)).toEqual(['leader', null, 'fast']);
+    const replaced = run(s, at(0));
+    expect(ash(replaced).slots.map((x) => x.traitId)).toEqual(['fast', null, null]);
+    expect(ash(replaced).slots.some((x) => x.traitId === 'leader')).toBe(false);
+  });
+
+  it('a NEW SLOT option adds a slot', () => {
+    const s = run(opened([{ kind: 'slot', slot: 'U/M' }]), { type: 'pickTrait', option: 0 });
+    expect(ash(s).slots).toHaveLength(4);
+    expect(ash(s).slots.at(-1)).toEqual({ type: 'U/M', traitId: null });
+  });
+
+  it('two hikers leveling come one after another, in party order', () => {
+    let s = game({ slots: [{ type: 'W' }, { type: 'W' }] });
+    hiker(s, 'birch').slots.push({ type: 'W', traitId: null });
+    gainXp(s, ash(s), 20, 'challenge', 'test');
+    gainXp(s, hiker(s, 'birch'), 20, 'challenge', 'test');
+    s = run(toNight(s), END);
+    expect(s.traitPick?.hikerId).toBe('ash');
+    s = run(s, keep);
+    expect(s.traitPick?.hikerId).toBe('birch');
+    s = run(s, keep);
+    expect(s.traitPick).toBeUndefined();
+    expect([ash(s).level, hiker(s, 'birch').level]).toEqual([1, 1]);
+  });
+});
+
+describe('where an option comes from (its card’s tag)', () => {
+  const def = (id: string) => TRAITS[id]!;
+
+  it('the hiker’s own role, Jack, or a wild card from another class', () => {
+    const s = game({ classes: ['scout', 'tank'] });
+    const scoutTrait = Object.values(TRAITS).find(
+      (d) =>
+        d.type !== 'M' &&
+        !d.kind &&
+        classesOf(d).includes('scout') &&
+        !classesOf(d).includes('tank'),
+    );
+    const otherTrait = Object.values(TRAITS).find(
+      (d) =>
+        d.type !== 'M' &&
+        !isGeneral(d) &&
+        (d.kind === undefined || d.kind === 'normal') &&
+        classesOf(d).length > 0 &&
+        !classesOf(d).some((c) => ['scout', 'tank', 'jack'].includes(c)),
+    );
+    expect(scoutTrait && optionSource(ash(s), scoutTrait)).toBe('scout');
+    expect(otherTrait && optionSource(ash(s), otherTrait)).toBe('any');
+    expect(optionSource(ash(s), def('dayNapper'))).toBe('jack');
+  });
+
+  it('none for Morale and general traits', () => {
+    const s = game();
+    expect(optionSource(ash(s), def('strong'))).toBeUndefined();
+    const morale = Object.values(TRAITS).find((d) => d.type === 'M')!;
+    expect(optionSource(ash(s), morale)).toBeUndefined();
   });
 });
 

@@ -902,6 +902,21 @@ export const BALANCE = {
      * hiker-select-bg.frag). TODO(wyatt): swirl [1.2], pixels [150] and pull
      * [0.5] are from the plan; the drift and ease are first guesses.
      */
+    /**
+     * The level-up screen's opening (mockups/LevelUp.png), in seconds from
+     * when it opens. TODO(wyatt): the blur [10 px], the bar's fill [1.2 s]
+     * and the deal [0.15 s apart] are bracketed in the plan.
+     */
+    levelUp: {
+      blurPx: 10,
+      portraitAt: 0.1,
+      barAt: 0.6,
+      barSeconds: 1.2,
+      badgeAt: 1.8,
+      cardsAt: 2.0,
+      dealGapSeconds: 0.15,
+      traitsAt: 2.5,
+    },
     selectBackground: {
       /** How much the paint twists toward the edges. */
       swirl: 1.2,

@@ -823,7 +823,8 @@ export type Action =
    * Takes one option of the open trait pick (a level-up or an Old Photo). A
    * trait with no empty slot that fits replaces the trait in `replaceSlot`.
    */
-  | { type: 'pickTrait'; option: number; replaceSlot?: number }
+  /** `keep`: a level-up taken with no new trait (KEEP MY TRAITS); the level still counts. */
+  | { type: 'pickTrait'; option: number; replaceSlot?: number; keep?: true }
   /** Teach a blueprint to a hiker on the same tile (a free action; the teacher pays Morale). */
   | { type: 'teach'; hikerId: HikerId; toId: HikerId; itemId: ItemId }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
