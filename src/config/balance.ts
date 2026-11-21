@@ -890,5 +890,12 @@ export const BALANCE = {
     stationDrift: { farSeconds: 180, nearSeconds: 70 },
     /** Multi-select: each grouped hiker acts this long (ms) after the last. TODO(wyatt): first guess. */
     groupStepMs: 350,
+    /** A hiker card turns over in this long (ms). TODO(wyatt): [0.35 s]. */
+    cardFlipMs: 350,
+    /**
+     * Hovering a flipped hiker card lifts it to the middle of the screen at
+     * this size (times a full 300 × 420 card). TODO(wyatt): [1.2×].
+     */
+    cardLiftScale: 1.2,
   },
 };

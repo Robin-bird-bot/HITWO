@@ -1,0 +1,398 @@
+/* The hiker card (HikerCard.tsx, mockups/HikerCards.png). Sizes for a 300 × 420 card. */
+
+.card {
+  position: relative;
+  flex: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.live {
+  cursor: pointer;
+  border-radius: 14px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.live:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 3px;
+}
+
+/* The 300 × 420 card, scaled to the box from its top-left. */
+.scaler {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 420px;
+  transform-origin: 0 0;
+  perspective: 1600px;
+}
+
+.static,
+.front,
+.back {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: #2c2c2c;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Turning over: the two sides back to back. */
+.flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--flip-ms) ease-in-out;
+}
+
+.flipper[data-flipped] {
+  transform: rotateY(180deg);
+}
+
+.front,
+.back {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
+}
+
+/* The side facing away takes no pointer, so its badges don't open windows. */
+.flipper[data-flipped] .front,
+.flipper:not([data-flipped]) .back {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The sides just swap. */
+  .flipper {
+    transition: none;
+  }
+}
+
+/* ── Front ── */
+
+.window {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 250px;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+}
+
+.portrait {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.family {
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  width: 26px;
+  height: 26px;
+}
+
+.star {
+  position: absolute;
+  left: 42px;
+  top: 13px;
+  width: 22px;
+  height: 22px;
+}
+
+.nameBand,
+.nameBandBack {
+  position: absolute;
+  left: 0;
+  width: 300px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.nameBand {
+  top: 250px;
+  height: 52px;
+}
+
+.nameBandBack {
+  top: 84px;
+  height: 34px;
+}
+
+.name,
+.title,
+.nameBack {
+  display: block;
+  width: max-content;
+  font-family: var(--font-pixel);
+  white-space: nowrap;
+}
+
+.name,
+.nameBack {
+  color: #111111;
+  letter-spacing: 0.02em;
+}
+
+.name {
+  line-height: 0.9;
+}
+
+.nameBack {
+  line-height: 1;
+}
+
+.title {
+  line-height: 0.95;
+  margin-top: -1px;
+  color: #5e5e5e;
+}
+
+/* The role banner: one tab per role, main on the left. */
+.roles {
+  position: absolute;
+  left: 0;
+  width: 300px;
+  height: 17px;
+  display: flex;
+}
+
+.role {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.badges {
+  position: absolute;
+  left: 10px;
+  top: 330px;
+  width: 280px;
+  display: flex;
+  justify-content: center;
+}
+
+.badgeCol {
+  display: flex;
+  justify-content: center;
+}
+
+.badgeCol > * {
+  width: 100%;
+}
+
+/* The STARTING BAG tab, bottom center, in the main role's color. */
+.bagTab {
+  position: absolute;
+  left: 90px;
+  bottom: 0;
+  width: 120px;
+  height: 18px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.bagTip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: 200px;
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: #262c29;
+  border: 1px solid #b07a4e;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
+  text-align: left;
+  text-shadow: none;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bagTab:hover .bagTip {
+  display: flex;
+}
+
+.bagTipHead {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #d9a06e;
+}
+
+.bagTipText {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: #e4ddcd;
+}
+
+/* ── Back ── */
+
+.strip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 84px;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+}
+
+/* The trait rows from 142, then the bag bar 14 from the bottom. */
+.backBody {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 142px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rows {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  --row-text: 10.5px;
+}
+
+.rows[data-dense] {
+  gap: 6px;
+  --row-text: 9.5px;
+}
+
+.row {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* The icon square, in the ring color, the icon at 90% in the middle color. */
+.rowIcon {
+  height: 100%;
+  aspect-ratio: 1;
+  flex: none;
+  border-radius: 4px 0 0 4px;
+  background: var(--ring);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A usable trait: a round icon. */
+.rowIcon[data-usable] {
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.rowIconArt {
+  width: 90%;
+  height: 90%;
+  background: var(--fill);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.rowWords {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rowName {
+  height: 17px;
+  flex: none;
+  box-sizing: border-box;
+  padding: 0 8px;
+  background: var(--ring);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--fill);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.rowTag {
+  font-size: 8px;
+}
+
+.rowText {
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  background: var(--fill);
+  font-family: var(--font-body);
+  font-size: var(--row-text);
+  line-height: 1.25;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+/* The starting bag in a brown bar. */
+.bagBar {
+  flex: none;
+  min-height: 26px;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #895637;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  color: #ffffff;
+}

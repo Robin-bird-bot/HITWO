@@ -1,0 +1,152 @@
+/* #mockup-hiker-cards: the hiker card beside docs/mockups/HikerCards.png. Stage pixels. */
+
+.page {
+  position: absolute;
+  inset: 0;
+  background: #1d2220;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 72px;
+  box-sizing: border-box;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+}
+
+.gap {
+  flex: 1;
+}
+
+.views {
+  display: flex;
+  gap: 8px;
+}
+
+.view {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.view[aria-pressed='true'] {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1d2220;
+}
+
+.panel {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.label {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: #9c9585;
+}
+
+.pair {
+  display: flex;
+  gap: 52px;
+}
+
+.note {
+  margin: 0;
+  max-width: 600px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #c9c2b2;
+}
+
+.more {
+  display: flex;
+  justify-content: space-between;
+}
+
+.families {
+  display: flex;
+  gap: 14px;
+}
+
+.family {
+  width: 98px;
+  height: 74px;
+  border-radius: 12px;
+  background: #d6d6d2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #2c2c2c;
+}
+
+.roles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+}
+
+.role {
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+}
+
+.small {
+  display: flex;
+  gap: 14px;
+}
+
+/* Every hiker: 10 to a row. */
+.grid {
+  position: absolute;
+  left: 40px;
+  top: 84px;
+  width: 1520px;
+  display: grid;
+  grid-template-columns: repeat(10, 138px);
+  justify-content: space-between;
+  row-gap: 30px;
+}

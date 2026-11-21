@@ -48,10 +48,14 @@ export function TraitBadge({
   showTab = false,
   as = 'button',
   onUse,
+  passClick = false,
 }: {
   badge: BadgeInfo;
-  /** Small in the hiker panel's row; large in the Abilities panel. */
-  size?: 'small' | 'large';
+  /**
+   * Small in the hiker panel's row; large in the Abilities panel; `card` on a
+   * hiker card (a 50 px box, an open slot drawn as a dashed diamond).
+   */
+  size?: 'small' | 'large' | 'card';
   /** The name in small text under the icon (Informative view). */
   showName?: boolean;
   /** The tab under a usable badge: uses left as dots, or what it's only usable during. */
@@ -60,11 +64,16 @@ export function TraitBadge({
   as?: 'button' | 'span';
   /** A usable badge was tapped: open the Abilities panel at it. */
   onUse?(abilityId: string): void;
+  /** A click goes on to what it sits on (a hiker card flips); hover and long-press still open its window. */
+  passClick?: boolean;
 }) {
   const colors = badgeColors(badge);
   const usable = badge.shape === 'circle';
   // Always-on badges open their window on a click too; usable ones open the Abilities panel.
-  const preview = usePreview({ kind: 'trait', badge }, { clickOpens: !usable || !onUse });
+  const preview = usePreview(
+    { kind: 'trait', badge },
+    { clickOpens: !passClick && (!usable || !onUse) },
+  );
   // Trait warnings: a green or red middle for Morale about to change.
   const fill = badge.morale
     ? badge.morale.delta > 0
@@ -76,6 +85,7 @@ export function TraitBadge({
   const own = {
     // A tap is the badge's own: it doesn't also pick the hiker card it sits on.
     onClick: (e: MouseEvent<Element>) => {
+      if (passClick) return;
       e.stopPropagation();
       if (usable && onUse && badge.abilityId) onUse(badge.abilityId);
     },
@@ -89,7 +99,9 @@ export function TraitBadge({
         data-state={badge.state}
         data-idle={badge.working === false || undefined}
       >
-        {badge.shape === 'empty' ? (
+        {badge.shape === 'empty' && size === 'card' ? (
+          <span className={styles.open} />
+        ) : badge.shape === 'empty' ? (
           <span className={styles.outline} style={{ background: SLOT_OUTLINE[badge.slotType] }} />
         ) : (
           <span className={styles.face}>
@@ -113,7 +125,11 @@ export function TraitBadge({
       </span>
       {showName && (
         <span className={styles.name} style={{ color: badge.type ? colors.ring : '#6F6A60' }}>
-          {badge.shape === 'empty' ? 'EMPTY' : badge.name.toUpperCase()}
+          {badge.shape === 'empty'
+            ? size === 'card'
+              ? 'OPEN'
+              : 'EMPTY'
+            : badge.name.toUpperCase()}
         </span>
       )}
     </>

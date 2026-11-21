@@ -10,6 +10,7 @@ import { DebugChallenges } from './ui/debug/DebugChallenges';
 import { ConditionsMockup } from './ui/mockup/ConditionsMockup';
 import { CraftingMockup } from './ui/mockup/CraftingMockup';
 import { StationExtrasMockup } from './ui/mockup/StationExtrasMockup';
+import { HikerCardsMockup } from './ui/mockup/HikerCardsMockup';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
 import { TestHikerPicker } from './ui/debug/DebugTraits';
@@ -45,6 +46,7 @@ export function App() {
   if (hash.startsWith('#mockup-conditions') && debugEnabled()) return <ConditionsMockup />;
   if (hash.startsWith('#mockup-crafting') && debugEnabled()) return <CraftingMockup />;
   if (hash.startsWith('#mockup-station-extras') && debugEnabled()) return <StationExtrasMockup />;
+  if (hash.startsWith('#mockup-hiker-cards') && debugEnabled()) return <HikerCardsMockup />;
 
   const startNew = (seed = randomSeed(), hikers: readonly HikerSetup[] = DEFAULT_PARTY) => {
     gameStore.newGame(createGame({ seed, hikers }));

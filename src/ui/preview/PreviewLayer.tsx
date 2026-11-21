@@ -9,6 +9,8 @@ import { STAGE_HEIGHT, STAGE_WIDTH } from '../stage/fitStage';
 import { useStage } from '../stage/StageContext';
 import { ItemCard } from '../items/ItemCard';
 import { ScavCard } from '../scavenge/ScavCard';
+import { BALANCE } from '../../config/balance';
+import { CARD_H, CARD_W, HikerCard } from '../hikers/HikerCard';
 import { TraitHover } from '../traits/TraitHover';
 import { PreviewContext, type PreviewApi, type PreviewContent } from './preview';
 import styles from './PreviewLayer.module.css';
@@ -24,6 +26,8 @@ const SIZE = {
   scavenge: { w: 260, h: 240 + 96 + BELOW },
   // A trait's window: about this tall with a status line.
   trait: { w: 300, h: 190 },
+  // A hiker card's back, lifted to the middle.
+  hiker: { w: CARD_W * BALANCE.ui.cardLiftScale, h: CARD_H * BALANCE.ui.cardLiftScale },
 } as const;
 const GAP = 16;
 
@@ -101,6 +105,10 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
     const top = Math.min(STAGE_HEIGHT - GAP - size.h, Math.max(GAP, middle));
     place = { left, top };
     const c = shown.content;
+    // A hiker card lifts to the middle of the screen instead.
+    if (c.kind === 'hiker') {
+      place = { left: (STAGE_WIDTH - size.w) / 2, top: (STAGE_HEIGHT - size.h) / 2 };
+    }
     card =
       c.kind === 'item' ? (
         <>
@@ -113,6 +121,8 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
         </>
       ) : c.kind === 'scavenge' ? (
         <ScavCard card={{ ...c.card, flipped: true }} size={240} faceUp caption="full" />
+      ) : c.kind === 'hiker' ? (
+        <HikerCard hikerId={c.hikerId} side="back" scale={BALANCE.ui.cardLiftScale} />
       ) : (
         <TraitHover badge={c.badge} />
       );
@@ -127,7 +137,13 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
           data-pinned={shown.pinned || undefined}
           style={{ left: place.left, top: place.top, width: SIZE[shown.content.kind].w }}
           role="dialog"
-          aria-label={shown.content.kind === 'trait' ? 'Trait' : 'Card preview'}
+          aria-label={
+            shown.content.kind === 'trait'
+              ? 'Trait'
+              : shown.content.kind === 'hiker'
+                ? 'Hiker card'
+                : 'Card preview'
+          }
         >
           {card}
           {shown.pinned && <span className={styles.hint}>Tap anywhere to close</span>}

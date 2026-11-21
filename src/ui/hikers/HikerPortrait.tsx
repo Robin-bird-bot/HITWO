@@ -3,7 +3,8 @@
  * backdrop and pixel pattern, then Wyatt's portrait drawn at the window's
  * full size from the top-left, never cropped or moved one by one.
  *
- * - `window` shows the whole window (the hiker card's front).
+ * - `window` shows the whole window, standing on the box's bottom edge (the
+ *   hiker card's front).
  * - `strip` fills a wider box with the window at full width, shifted so the
  *   face (`faceY`) sits in the middle (the card back, the selection spots).
  * - `face` zooms in on the face for small round views (tokens, party cards).
@@ -13,7 +14,13 @@
 import type { CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import styles from './HikerPortrait.module.css';
-import { cropWindow, familyIconSrc, portraitArt, type FamilyIcon } from './portraitArt';
+import {
+  cropWindow,
+  familyIconSrc,
+  portraitArt,
+  WINDOW_ASPECT,
+  type FamilyIcon,
+} from './portraitArt';
 
 /** How far the `face` view zooms in: the window is this many times the box's width. */
 const FACE_ZOOM = 1.6;
@@ -24,14 +31,14 @@ const PATTERN_BG = { backgroundImage: `url(${ASSETS.cards.pattern})` };
 export function HikerPortrait({
   hikerId,
   view = 'face',
-  aspect = 1,
+  aspect,
   className,
   style,
 }: {
   /** A hiker in the run, or a roster id on the selection screen. */
   hikerId: string;
   view?: 'window' | 'strip' | 'face';
-  /** The box's width over its height, for `strip` and `face` (1 for a circle). */
+  /** The box's width over its height (1 for a circle; the window's own shape for `window`). */
   aspect?: number;
   className?: string | undefined;
   style?: CSSProperties | undefined;
@@ -45,11 +52,12 @@ export function HikerPortrait({
       </span>
     );
   }
+  const shape = aspect ?? (view === 'window' ? WINDOW_ASPECT : 1);
   const crop =
     view === 'window'
-      ? { left: 0, top: 0, width: 100 }
+      ? { left: 0, top: (1 - shape / WINDOW_ASPECT) * 100, width: 100 }
       : cropWindow(
-          aspect,
+          shape,
           view === 'face' ? FACE_ZOOM : 1,
           art.kind === 'portrait' ? art.faceY : 0.5,
         );

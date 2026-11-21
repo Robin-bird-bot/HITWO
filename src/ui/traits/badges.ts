@@ -61,7 +61,8 @@ export interface BadgeInfo {
 
 const TYPE_WORD = { T: 'Trail', U: 'Utility', M: 'Morale' } as const;
 const NUMERAL = { 1: 'I', 2: 'II', 3: 'III' } as const;
-const SLOT_WORD: Record<SlotType, string> = {
+/** A slot's type in words ("Trail or Utility"). */
+export const SLOT_WORD: Readonly<Record<SlotType, string>> = {
   T: 'Trail',
   U: 'Utility',
   M: 'Morale',

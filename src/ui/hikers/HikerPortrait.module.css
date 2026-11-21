@@ -69,12 +69,12 @@
   -webkit-mask-position: center;
 }
 
-/* No portrait yet: the icon in the middle, a third of the window's width, at 30%. */
+/* No portrait yet: the icon in the middle, about a third of the window's width, at 30%. */
 .standIn {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(33.3cqw, 70cqh);
+  width: min(36.7cqw, 62cqh);
   transform: translate(-50%, -50%);
   opacity: 0.3;
 }
