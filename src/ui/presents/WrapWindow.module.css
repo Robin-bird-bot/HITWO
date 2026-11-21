@@ -1,0 +1,185 @@
+/* Grammy Clause's crafting window: the four Present recipes. Stage pixels. */
+
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* At the station's Workbench: smaller rows. */
+.list[data-compact] {
+  padding: 4px 0 0;
+  gap: 8px;
+}
+
+.list[data-compact] .row {
+  grid-template-columns: 170px 1fr 120px;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.list[data-compact] .space {
+  width: 36px;
+  height: 36px;
+}
+
+.list[data-compact] .wrap {
+  height: 42px;
+}
+
+.lead {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #c9c2b2;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 230px 1fr 150px;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.row[data-ready] {
+  border-color: rgba(242, 134, 122, 0.55);
+  background: rgba(242, 134, 122, 0.08);
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+}
+
+.makes {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #2b1d12;
+  background: #c9c2b2;
+}
+
+.makes[data-grade='tier2plus'] {
+  background: linear-gradient(160deg, #f1f5f8, #9aa8b4);
+}
+
+.makes[data-grade='tier3'] {
+  background: linear-gradient(160deg, #ffe08a, #d79a1e);
+}
+
+.small {
+  font-size: 14px;
+  color: #9c9585;
+}
+
+.middle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+}
+
+.choice[aria-checked='true'] {
+  border-color: #e9b44c;
+  background: rgba(233, 180, 76, 0.18);
+  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.4);
+}
+
+.spaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.space {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* A space nobody here can fill: the icon dims, the outline dashes. */
+.space[data-empty] {
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+}
+
+.space[data-empty] img {
+  opacity: 0.4;
+}
+
+.giver {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+}
+
+.why {
+  font-size: 14px;
+  color: #e5624a;
+}
+
+.wrap {
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.wrap:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.wrap:not(:disabled):hover,
+.wrap:focus-visible {
+  outline: 3px solid #f1eadb;
+  outline-offset: 2px;
+}

@@ -26,6 +26,8 @@ export const ITEM_TYPE_COLORS: Record<ItemType, string[]> = {
   food: ['#3a7752', '#45a86c', '#c7da7b', '#dced9a'],
   shelter: ['#83c4ed', '#545c8e'],
   trinket: ['#e2a9f1', '#d675ef', '#9a3f64', '#cd1f66'],
+  // Presents are never face down; holiday red, for completeness.
+  present: ['#7a1c2c', '#a8233a', '#d14a4a', '#f2867a'],
 };
 
 export const resourceName = (id: ResourceId) => RESOURCES.find((r) => r.id === id)?.name ?? id;

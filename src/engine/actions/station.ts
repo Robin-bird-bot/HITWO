@@ -200,8 +200,11 @@ export function validateSell(state: GameState, action: SellAction): string | und
   const reason = shopperReason(state, hiker);
   if (reason || !hiker) return reason;
   if (action.itemUid) {
-    if (!hiker.inventory.bag.some((i) => i.uid === action.itemUid)) {
-      return `${hiker.name} doesn’t have that in their bag.`;
+    const item = hiker.inventory.bag.find((i) => i.uid === action.itemUid);
+    if (!item) return `${hiker.name} doesn’t have that in their bag.`;
+    // TODO(wyatt): first guess, stations won't buy Presents.
+    if (ITEMS[item.itemId]?.type === 'present' && !BALANCE.presents.sellable) {
+      return 'The station doesn’t buy Presents.';
     }
     return undefined;
   }

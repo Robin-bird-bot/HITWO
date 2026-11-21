@@ -110,7 +110,10 @@ export function pickFrom(
 
 /** Rocco's log: all of it if it fits, otherwise the least used or lost (ties at random). */
 export function fromUsedOrLost(state: GameState, slots: number): ItemId[] {
-  const log = Object.entries(state.usedOrLost ?? {}).filter(([id]) => !!ITEMS[id]);
+  // Never a Present (they're only wrapped by Gift Wrapper), even from an older log.
+  const log = Object.entries(state.usedOrLost ?? {}).filter(
+    ([id]) => !!ITEMS[id] && ITEMS[id]?.type !== 'present',
+  );
   // Shuffled first, so the stable sort breaks ties at random.
   const order = shuffle(state.rng, log).sort((a, b) => a[1] - b[1]);
   return order.slice(0, slots).map(([id]) => id);

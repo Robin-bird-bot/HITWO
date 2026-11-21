@@ -225,6 +225,10 @@ export function Abilities({
   const [choosing, setChoosing] = useState<string | null>(
     hasChoices(focused) ? (focused ?? null) : null,
   );
+  /** An ability that picks resources after its choice (Spare Parts): what's picked so far. */
+  const [picking, setPicking] = useState<{ id: string; base: string; picked: string[] } | null>(
+    null,
+  );
   const rows = useRef<Record<string, HTMLDivElement | null>>({});
   useEffect(() => {
     if (!focused) return;
@@ -285,7 +289,7 @@ export function Abilities({
                 </button>
               )}
             </div>
-            {choosing === id && choices && badge.state === 'ready' && (
+            {choosing === id && choices && badge.state === 'ready' && picking?.id !== id && (
               <div className={styles.choices}>
                 {choices.length === 0 && (
                   <span className={styles.muted}>Nothing to use it on right now.</span>
@@ -296,6 +300,10 @@ export function Abilities({
                     type="button"
                     className={styles.choice}
                     onClick={() => {
+                      if (ability.resourcePick) {
+                        setPicking({ id, base: c.id, picked: [] });
+                        return;
+                      }
                       setChoosing(null);
                       onAbility(id, c.id);
                     }}
@@ -305,6 +313,19 @@ export function Abilities({
                 ))}
               </div>
             )}
+            {picking?.id === id && ability.resourcePick && badge.state === 'ready' && (
+              <ResourcePick
+                count={ability.resourcePick}
+                picked={picking.picked}
+                onPick={(picked) => setPicking({ ...picking, picked })}
+                onBack={() => setPicking(null)}
+                onDone={() => {
+                  setPicking(null);
+                  setChoosing(null);
+                  onAbility(id, `${picking.base}|${picking.picked.join(',')}`);
+                }}
+              />
+            )}
           </div>
         );
       })}
@@ -313,6 +334,80 @@ export function Abilities({
 }
 
 const PER = { day: 'DAY', phase: 'PHASE', biome: 'BIOME' };
+
+/**
+ * Picking resources for an ability (Spare Parts): any of the 16, repeats
+ * allowed. Tap a resource to add it, tap a picked one to take it back.
+ */
+function ResourcePick({
+  count,
+  picked,
+  onPick,
+  onBack,
+  onDone,
+}: {
+  count: number;
+  picked: string[];
+  onPick(picked: string[]): void;
+  onBack(): void;
+  onDone(): void;
+}) {
+  const name = (id: string) => RESOURCES.find((r) => r.id === id)?.name ?? id;
+  return (
+    <div className={styles.resourcePick}>
+      <span className={styles.small}>
+        Pick {count} resources ({picked.length}/{count}):
+      </span>
+      <div className={styles.pickedRow}>
+        {Array.from({ length: count }, (_, i) => {
+          const id = picked[i];
+          return id ? (
+            <button
+              key={i}
+              type="button"
+              className={styles.pickedOne}
+              aria-label={`Take back ${name(id)}`}
+              title={`Take back ${name(id)}`}
+              onClick={() => onPick(picked.filter((_, k) => k !== i))}
+            >
+              <img src={ASSETS.resources[id]} alt="" width={26} height={26} />
+            </button>
+          ) : (
+            <span key={i} className={styles.pickedOne} data-empty />
+          );
+        })}
+      </div>
+      <div className={styles.resourceGrid}>
+        {RESOURCES.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            className={styles.resourceButton}
+            disabled={picked.length >= count}
+            aria-label={`Add ${r.name}`}
+            title={r.name}
+            onClick={() => onPick([...picked, r.id])}
+          >
+            <img src={ASSETS.resources[r.id]} alt="" width={26} height={26} />
+          </button>
+        ))}
+      </div>
+      <div className={styles.choices}>
+        <button type="button" className={styles.choice} onClick={onBack}>
+          Back
+        </button>
+        <button
+          type="button"
+          className={styles.choice}
+          disabled={picked.length !== count}
+          onClick={onDone}
+        >
+          Take apart
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * A hiker who can't act: passed out (the countdown, how to help, and

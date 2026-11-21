@@ -23,12 +23,13 @@ import {
   ownCraftTier,
   spaceParts,
   validateAction,
+  wrapsPresents,
   CRAFT_TYPES,
   type Action,
   type GameState,
   type Hiker,
   type ItemId,
-  type ItemType,
+  type ItemTypeName,
   type NodeType,
   type PaidSlot,
 } from '../../engine';
@@ -40,6 +41,7 @@ import { useDrop, type DragPayload } from '../drag/drag';
 import { swapInto } from '../craft/craftSwap';
 import { TYPE_ICON, TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
+import { WrapBody } from '../presents/WrapWindow';
 import styles from './Workbench.module.css';
 
 const NUMERAL = ['', 'I', 'II', 'III', 'IV'];
@@ -102,6 +104,43 @@ export function Workbench({
       </div>
     );
   }
+  // Gift Wrapper: Presents only, here too.
+  if (wrapsPresents(state, crafter)) {
+    return (
+      <>
+        <div className={styles.side}>
+          <span className={styles.kicker}>WHO’S CRAFTING?</span>
+          <div className={styles.crafters}>
+            {here.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className={styles.crafter}
+                aria-pressed={h.id === crafter.id}
+                aria-label={`${h.name} crafts`}
+                title={h.name}
+                onClick={() => setCrafterId(h.id)}
+              >
+                <Face id={h.id} size={34} />
+              </button>
+            ))}
+          </div>
+          <span className={styles.kicker}>PRESENTS ONLY</span>
+          <p className={styles.small}>{crafter.name} wraps Presents, free at the Workbench.</p>
+        </div>
+        <div className={styles.main}>
+          <WrapBody
+            key={crafter.id}
+            state={state}
+            hiker={crafter}
+            onDispatch={onDispatch}
+            onDone={() => {}}
+            compact
+          />
+        </div>
+      </>
+    );
+  }
   return (
     <CraftHere
       key={crafter.id}
@@ -130,7 +169,7 @@ function CraftHere({
   onCrafter(id: string): void;
   onCraft(action: Action): void;
 }) {
-  const [type, setType] = useState<ItemType>('tool');
+  const [type, setType] = useState<ItemTypeName>('tool');
   const [blueprint, setBlueprint] = useState<ItemId | null>(null);
   const [custom, setCustom] = useState<(PaidSlot | null)[] | null>(null);
   const [swapAt, setSwapAt] = useState<number | null>(null);
@@ -317,7 +356,7 @@ function CraftHere({
               selected={id === blueprint}
               onPick={() => {
                 const def = ITEMS[id];
-                if (!def) return;
+                if (!def || def.type === 'present') return;
                 setBlueprint(id === blueprint ? null : id);
                 setType(def.type);
                 reset();
@@ -383,7 +422,7 @@ function BlueprintSquare({
 }) {
   const preview = usePreview({ kind: 'item', itemId, unrolled: true });
   const def = ITEMS[itemId];
-  if (!def) return null;
+  if (!def || def.type === 'present') return null;
   const tier = craftTier(state, crafter, def.type);
   const locked = def.tier > tier;
   const free = !knowsBlueprint(crafter, itemId) && canUseBlueprint(state, crafter, itemId);

@@ -188,5 +188,15 @@ export {
   type CraftSetup,
 } from './items/craft';
 export { craftOpenReason, teachCost } from './actions/craft';
+export { keepsItemsReason, wrapsPresents } from './effects';
+export {
+  isPresent,
+  presentRecipe,
+  RECIPE_GRADE,
+  sameResourceChoices,
+  sameTypeChoices,
+  wishParts,
+  wrapSlots,
+} from './items/presents';
 export type { CraftModifier } from './effects';
 export { mapTargets } from './items/scout';

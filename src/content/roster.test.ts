@@ -72,7 +72,8 @@ function docHikers(): {
   const sections = DOC.split(/\n### /).slice(1);
   for (const section of sections) {
     const head = section.split('\n')[0]!;
-    const cls = /- \*\*Class:\*\* (.+)/.exec(section);
+    // "- **Class:** …", or after "**Variant of:** …" on the holiday hikers' line.
+    const cls = /\*\*Class:\*\* (.+)/.exec(section);
     const slotLine = /- \*\*Slots:\*\* (.+)/.exec(section);
     if (!cls || !slotLine) continue; // "Leveling up by class" and the like
     const [, name = '', title] =
@@ -122,8 +123,8 @@ const sameTrait = (a: string | null, b: string | null) => {
 // ── The roster against the doc ──────────────────────────────────────────────
 
 describe('the roster matches 07-characters.md', () => {
-  it('has every character and variant: 40 hikers, 10 starters', () => {
-    expect(ROSTER).toHaveLength(40);
+  it('has every character and variant: 44 hikers (the 4 holiday hikers too), 10 starters', () => {
+    expect(ROSTER).toHaveLength(44);
     expect(ROSTER.filter((h) => h.starter).map((h) => h.name)).toEqual([
       'Wyatt',
       'Mom',
@@ -136,12 +137,12 @@ describe('the roster matches 07-characters.md', () => {
       'Pearl',
       'Brutus',
     ]);
-    expect(new Set(ROSTER.map((h) => h.id)).size).toBe(40);
+    expect(new Set(ROSTER.map((h) => h.id)).size).toBe(44);
   });
 
   it('each hiker with a section: classes, slots and traits in order', () => {
     const hikers = docHikers();
-    expect(hikers.length).toBe(29);
+    expect(hikers.length).toBe(33);
     for (const d of hikers) {
       const h = hikerNamed(d.name);
       expect(h.classes, d.name).toEqual(d.classes);
@@ -206,10 +207,19 @@ describe('the roster matches 07-characters.md', () => {
         );
       }
     }
-    // Ben, Mindy and the variants have none yet.
-    for (const h of ROSTER.filter((x) => x.variantOf || x.id === 'ben' || x.id === 'mindy')) {
+    // Ben, Mindy and the variants have none yet; the holiday hikers have theirs.
+    const holiday = (x: RosterHiker) => x.households.includes('holiday');
+    for (const h of ROSTER.filter(
+      (x) => (x.variantOf && !holiday(x)) || x.id === 'ben' || x.id === 'mindy',
+    )) {
       expect(h.title, h.name).toBeUndefined();
     }
+    expect(ROSTER.filter(holiday).map((h) => h.title)).toEqual([
+      'The Festive',
+      'The Little Helper',
+      'The Grumpy',
+      'The Rednose Retriever',
+    ]);
   });
 
   it('starting bags', () => {
@@ -218,6 +228,7 @@ describe('the roster matches 07-characters.md', () => {
       const h = hikerNamed(name ?? '');
       const items: string[] = [];
       let blueprints: { count: number; type?: string } | undefined;
+      let presents = 0;
       const parts = (text ?? '')
         .replace(/\(.*?\)/g, '')
         .split(/, and |, | and /)
@@ -229,6 +240,12 @@ describe('the roster matches 07-characters.md', () => {
           blueprints = { count: Number(bp[1]), ...(bp[2] ? { type: bp[2] } : {}) };
           continue;
         }
+        // "2 Presents", "1 Present" (the holiday hikers): plain ones.
+        const gift = /^(\d+) Presents?$/.exec(part);
+        if (gift) {
+          presents = Number(gift[1]);
+          continue;
+        }
         const many = /^(\d+) (.+)$/.exec(part);
         const n = many ? Number(many[1]) : 1;
         const id = itemByName.get((many ? many[2]! : part).toLowerCase());
@@ -236,6 +253,7 @@ describe('the roster matches 07-characters.md', () => {
         for (let i = 0; i < n; i++) items.push(id!);
       }
       expect(h.startingBag.items ?? [], name).toEqual(items);
+      expect(h.startingBag.presents ?? 0, name).toBe(presents);
       if (blueprints) {
         expect(h.startingBag.blueprints, name).toEqual({ ...blueprints, tier: 1 });
       } else {
@@ -246,24 +264,33 @@ describe('the roster matches 07-characters.md', () => {
 
   it('hidden difficulty for everyone', () => {
     const rows = tableAfter('## Difficulty (hidden)');
-    expect(rows).toHaveLength(40);
+    expect(rows).toHaveLength(44);
     for (const [name, rating] of rows)
       expect(hikerNamed(name ?? '').difficulty, name).toBe(Number(rating));
   });
 
-  it('households: the Family sort’s table, variants with their base, the rest Other', () => {
+  it('households: the Family sort’s table; variants are Other unless given Holiday', () => {
     for (const [family, , members] of tableAfter('## Sorting the hiker selection screen')) {
       const group = HOUSEHOLDS.find((g) => g.name === family);
       expect(group, family).toBeDefined();
-      if (members === 'Everyone else') continue;
+      if (members?.startsWith('Everyone else')) continue;
       expect(group!.members.map((id) => ROSTER_BY_ID.get(id)?.name)).toEqual(
         (members ?? '').split(', '),
       );
     }
     expect(ROSTER_BY_ID.get('mom')?.households).toEqual(['elmers', 'brooks']);
-    expect(ROSTER_BY_ID.get('graduateMom')?.households).toEqual(['elmers', 'brooks']);
-    expect(ROSTER_BY_ID.get('plannerWink')?.households).toEqual(['brooks']);
-    expect(ROSTER_BY_ID.get('wywee')?.households).toEqual(['elmers']);
+    expect(HOUSEHOLDS.map((g) => g.name)).toEqual([
+      'Elmers',
+      'Brooks',
+      'Sherman',
+      'Leichty',
+      'Holiday',
+      'Other',
+    ]);
+    for (const h of ROSTER.filter((x) => x.variantOf)) {
+      const holiday = ['grammyClause', 'lelf', 'grinch', 'redolf'].includes(h.id);
+      expect(h.households, h.id).toEqual([holiday ? 'holiday' : 'other']);
+    }
     for (const id of ['ben', 'mindy', 'leah', 'loki', 'goldie']) {
       expect(ROSTER_BY_ID.get(id)?.households, id).toEqual(['other']);
     }
@@ -309,18 +336,8 @@ describe('the roster’s rules', () => {
     for (const h of ROSTER.filter((x) => x.portrait)) {
       expect(json[`${h.portrait}.png`], h.name).toBeDefined();
     }
-    // Ben, Mindy and the variants other than Wywee have none yet.
-    expect(ROSTER.filter((h) => !h.portrait).map((h) => h.id)).toEqual([
-      'ben',
-      'mindy',
-      'followerFinn',
-      'agilityFinn',
-      'ellieDevourer',
-      'noseworkEllie',
-      'plannerWink',
-      'graduateMom',
-      'showgirlGdog',
-    ]);
+    // Only Ben and Mindy have none yet (holiday-hikers-2 sent the variants').
+    expect(ROSTER.filter((h) => !h.portrait).map((h) => h.id)).toEqual(['ben', 'mindy']);
   });
 
   it('no cloning: a variant can’t join with its base hiker or another variant', () => {
@@ -331,6 +348,48 @@ describe('the roster’s rules', () => {
     expect(canJoin(['finn'], 'finn')).toBe(false);
     expect(blockedBy(['mom'], 'graduateMom')).toBe('mom');
   });
+
+  it('no cloning: each holiday hiker with their base hiker, and Wywee with Wyatt', () => {
+    for (const [variant, base] of [
+      ['grammyClause', 'gdog'],
+      ['lelf', 'leah'],
+      ['grinch', 'ellie'],
+      ['redolf', 'cody'],
+      ['wywee', 'wyatt'],
+    ] as const) {
+      expect(ROSTER_BY_ID.get(variant)?.variantOf, variant).toBe(base);
+      expect(canJoin([base], variant), variant).toBe(false);
+      expect(canJoin([variant], base), variant).toBe(false);
+    }
+    // Two variants of the same hiker can't join together either.
+    expect(canJoin(['grammyClause'], 'showqueenGdog')).toBe(false);
+    expect(canJoin(['grinch'], 'noseworkEllie')).toBe(false);
+    expect(canJoin(['grinch'], 'cody')).toBe(true);
+  });
+
+  it('the renames: Prepared Wink and Showqueen Gdog, with the trait names kept', () => {
+    expect(ROSTER_BY_ID.get('preparedWink')?.name).toBe('Prepared Wink');
+    expect(ROSTER_BY_ID.get('showqueenGdog')?.name).toBe('Showqueen Gdog');
+    expect(TRAITS.showGirl?.name).toBe('Show Girl');
+    expect(TRAITS.showGirl?.owners).toEqual(['showqueenGdog']);
+    const old = [['Showgirl', 'Gdog'].join(' '), ['Planner', 'Wink'].join(' ')];
+    const oldIds = ['showgirl' + 'Gdog', 'planner' + 'Wink'];
+    // Everywhere in the code and the docs, but the save upgrade (which renames them) and
+    // the dated update notes (a record of what was sent).
+    const files = {
+      ...import.meta.glob('/src/**/*.{ts,tsx}', { query: '?raw', eager: true, import: 'default' }),
+      ...import.meta.glob(['/docs/design/*.md', '/docs/*.md', '!/docs/UPDATE-*.md', '/CLAUDE.md'], {
+        query: '?raw',
+        eager: true,
+        import: 'default',
+      }),
+    } as Record<string, string>;
+    for (const [path, text] of Object.entries(files)) {
+      if (path.endsWith('/engine/save.ts')) continue;
+      for (const word of [...old, ...oldIds])
+        expect(text.includes(word), `${path}: ${word}`).toBe(false);
+    }
+  });
 });
 
 describe('starting a run with real hikers', () => {
@@ -339,7 +398,7 @@ describe('starting a run with real hikers', () => {
   it('hands out the starting bags: items roll Quality, blueprints are learned', () => {
     const s = createGame({
       seed: 3,
-      hikers: pick('mom', 'gdog', 'plannerWink', 'ellieDevourer'),
+      hikers: pick('mom', 'gdog', 'preparedWink', 'ellieDevourer'),
       startingResources: false,
     });
     const [mom, gdog, wink, devourer] = s.hikers;
@@ -353,6 +412,25 @@ describe('starting a run with real hikers', () => {
     ).toBe(true);
     expect(wink!.inventory.bag.map((i) => i.itemId)).toEqual(['tent', 'binoculars', 'scanner']);
     expect(devourer!.inventory.bag.map((i) => i.itemId)).toEqual(['dogFood', 'dogFood']);
+  });
+
+  it('holiday hikers start with their Presents: Grammy’s are hers, the Grinch’s nobody’s', () => {
+    const s = createGame({
+      seed: 5,
+      hikers: pick('grammyClause', 'lelf', 'grinch', 'redolf'),
+      startingResources: false,
+    });
+    const [grammy, lelf, grinch, redolf] = s.hikers;
+    expect(grammy!.inventory.bag.map((i) => [i.itemId, i.grade, i.wrappedBy])).toEqual([
+      ['present', 'plain', 'grammyClause'],
+      ['present', 'plain', 'grammyClause'],
+    ]);
+    expect(grammy!.wishLists?.small).toHaveLength(3);
+    expect(grinch!.inventory.bag.map((i) => [i.itemId, i.grade, i.wrappedBy])).toEqual([
+      ['present', 'plain', undefined],
+    ]);
+    expect(lelf!.blueprints?.every((id) => ITEMS[id]?.type === 'tool')).toBe(true);
+    expect(redolf!.inventory.bag.map((i) => i.itemId)).toEqual(['campingLamp']);
   });
 
   it('the 4 random starting resources stay', () => {
@@ -382,5 +460,34 @@ describe('starting a run with real hikers', () => {
     for (const h of old.hikers) delete h.color;
     const loaded = deserialize(JSON.stringify(old));
     expect(loaded.ok && loaded.state.hikers.map((h) => h.color)).toEqual(PARTY_COLORS.slice(0, 2));
+  });
+
+  it('a v17 save with the old names loads as Prepared Wink and Showqueen Gdog', () => {
+    const s = createGame({ seed: 3, hikers: pick('preparedWink', 'showqueenGdog', 'finn') });
+    // Written the way a v17 save had them: the old ids and names, everywhere.
+    const old = JSON.parse(
+      serialize(s)
+        .replaceAll('"preparedWink"', '"planner' + 'Wink"')
+        .replaceAll('"showqueenGdog"', '"showgirl' + 'Gdog"')
+        .replaceAll('"Prepared Wink"', '"Planner' + ' Wink"')
+        .replaceAll('"Showqueen Gdog"', '"Showgirl' + ' Gdog"'),
+    );
+    old.saveVersion = 17;
+    old.counters.passed = { ['planner' + 'Wink']: 2 };
+    old.hikers[2].inventory.bag.push({ uid: 'old-present', itemId: 'present', stuffed: true });
+    const loaded = deserialize(JSON.stringify(old));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const [wink, gdog, finn] = loaded.state.hikers;
+    expect([wink?.id, wink?.characterId, wink?.name]).toEqual([
+      'preparedWink',
+      'preparedWink',
+      'Prepared Wink',
+    ]);
+    expect([gdog?.id, gdog?.name]).toEqual(['showqueenGdog', 'Showqueen Gdog']);
+    expect(loaded.state.counters.passed).toEqual({ preparedWink: 2 });
+    // The first holiday zip's stuffed Present is a Tier 2+ one.
+    expect(finn?.inventory.bag.at(-1)).toMatchObject({ itemId: 'present', grade: 'tier2plus' });
+    expect(finn?.inventory.bag.at(-1)).not.toHaveProperty('stuffed');
   });
 });

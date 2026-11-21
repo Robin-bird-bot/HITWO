@@ -84,6 +84,11 @@ describe('the front', () => {
     expect(card('ben').title).toBeUndefined();
     expect(card('followerFinn').title).toBeUndefined();
     expect(card('followerFinn').variant).toBe(true);
+    // Wywee and the holiday hikers are variants too: the star shows next to the family icon.
+    for (const id of ['wywee', 'grammyClause', 'lelf', 'grinch', 'redolf']) {
+      expect(card(id).variant, id).toBe(true);
+    }
+    expect(card('grinch').title).toBe('"THE GRUMPY"');
     expect(card('bossGracie').family).toBe('duo');
   });
 
@@ -100,7 +105,10 @@ describe('the starting bag in words', () => {
     expect(card('gdog').bag).toBe('2 random Tier 1 food blueprints');
     expect(card('muffin').bag).toBe('1 random Tier 1 tool blueprint');
     expect(card('ellieDevourer').bag).toBe('2 Dog Food');
-    expect(card('plannerWink').bag).toBe('Tent + Binoculars + Scanner');
+    expect(card('preparedWink').bag).toBe('Tent + Binoculars + Scanner');
+    expect(card('grammyClause').bag).toBe('2 Presents');
+    expect(card('grinch').bag).toBe('Present');
+    expect(card('lelf').bag).toBe('1 random Tier 1 tool blueprint');
     expect(bagWords({})).toBe('');
   });
 });

@@ -14,7 +14,7 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS, craftableItems } from '../../content/items';
 import { BASIC_RECIPES, TRINKET_RESOURCES } from '../../content/items/basicRecipes';
 import { RESOURCES } from '../../content/resources';
-import { craftModifiers, traitCraftTier, type CraftModifier, type ItemType } from '../effects';
+import { craftModifiers, traitCraftTier, type CraftModifier } from '../effects';
 import type { Recipe, RecipePart } from './recipe';
 import { hikersOnTile } from '../map';
 import { pick, roll, seedRng, shuffle } from '../rng';
@@ -44,7 +44,7 @@ export const CRAFT_TYPES: readonly ItemTypeName[] = [
 ];
 
 /** The tier a hiker crafts this type at: their own, or higher with a trait (Artisan, Master). */
-export function ownCraftTier(hiker: Hiker, type: ItemType, state?: GameState): number {
+export function ownCraftTier(hiker: Hiker, type: ItemTypeName, state?: GameState): number {
   const own = hiker.craftTier?.[type] ?? C.startTier;
   const trait = state ? traitCraftTier(state, hiker, type) : 0;
   return Math.min(C.maxTier, Math.max(own, trait));
@@ -58,7 +58,7 @@ export const atWorkbench = (state: GameState, hiker: Hiker): boolean =>
  * The tier a hiker crafts this type at right now: their own, or one higher at
  * a station's Workbench (Wyatt, Nov 13). Their own tier doesn't change.
  */
-export function craftTier(state: GameState, hiker: Hiker, type: ItemType): number {
+export function craftTier(state: GameState, hiker: Hiker, type: ItemTypeName): number {
   const bonus = atWorkbench(state, hiker) ? BALANCE.station.workbenchTiers : 0;
   return Math.min(C.maxTier, ownCraftTier(hiker, type, state) + bonus);
 }
@@ -81,7 +81,7 @@ export function rollTrinketRecipe(rng: RngState): ResourceId[] {
 }
 
 /** The basic recipe for a type at a tier. */
-export function basicRecipe(state: GameState, type: ItemType, tier: number): Recipe {
+export function basicRecipe(state: GameState, type: ItemTypeName, tier: number): Recipe {
   const extra = C.tierExtra[tier] ?? { key: 0, broad: 0, trinket: 0 };
   if (type === 'trinket') {
     // Until the first trinket is made, the set comes from the hike's seed.
@@ -104,7 +104,7 @@ export function basicRecipe(state: GameState, type: ItemType, tier: number): Rec
 export function craftRecipe(
   state: GameState,
   hiker: Hiker,
-  type: ItemType,
+  type: ItemTypeName,
   blueprint?: ItemId,
 ): Recipe | undefined {
   if (blueprint) return ITEMS[blueprint]?.recipe;
@@ -235,7 +235,7 @@ export interface CraftSetup {
   mods: CraftModifier[];
 }
 
-export function craftSetup(state: GameState, hiker: Hiker, type: ItemType): CraftSetup {
+export function craftSetup(state: GameState, hiker: Hiker, type: ItemTypeName): CraftSetup {
   const mods = craftModifiers(state, hiker, { type, tileId: hiker.tileId });
   const sum = (k: 'luck' | 'cards' | 'quality' | 'durability') =>
     mods.reduce((n, m) => n + (m[k] ?? 0), 0);
@@ -267,7 +267,7 @@ export function craftQuality(
  */
 export function dealCraft(
   state: GameState,
-  type: ItemType,
+  type: ItemTypeName,
   tier: number,
   setup: CraftSetup,
 ): { itemId: ItemId; quality?: Quality }[] {

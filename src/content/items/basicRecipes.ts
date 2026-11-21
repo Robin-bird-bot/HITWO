@@ -13,7 +13,9 @@ export interface BasicRecipe {
   broad: { n: number; nodes?: readonly NodeType[]; any?: true };
 }
 
-export const BASIC_RECIPES: Readonly<Record<Exclude<ItemType, 'trinket'>, BasicRecipe>> = {
+export const BASIC_RECIPES: Readonly<
+  Record<Exclude<ItemType, 'trinket' | 'present'>, BasicRecipe>
+> = {
   tool: {
     key: { n: 2, ids: ['metal', 'wood'] },
     broad: { n: 3, nodes: ['mountain', 'forest'] },

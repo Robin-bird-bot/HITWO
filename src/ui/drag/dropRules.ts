@@ -55,6 +55,8 @@ export type PortraitDrop =
   | { kind: 'give'; action: Action }
   /** Their own food: eat it. */
   | { kind: 'eat'; action: Action }
+  /** Their own Present: open it (holiday hikers). */
+  | { kind: 'open'; action: Action }
   /**
    * Food on someone else: give it, or they eat it now (`eat`, when they can).
    * TODO(wyatt): first guess, since giving and eating share the portrait.
@@ -69,6 +71,10 @@ export function portraitDrop(state: GameState, p: DragPayload, toId: HikerId): P
   if (p.kind !== 'item') return null;
   const food = defOf(state, p)?.type === 'food';
   if (p.hikerId === toId) {
+    if (defOf(state, p)?.type === 'present') {
+      const open: Action = { type: 'openPresent', hikerId: toId, itemUid: p.itemUid };
+      return ok(state, open) ? { kind: 'open', action: open } : null;
+    }
     const eat: Action = { type: 'eat', hikerId: toId, itemUid: p.itemUid };
     return food && ok(state, eat) ? { kind: 'eat', action: eat } : null;
   }

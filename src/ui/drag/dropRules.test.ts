@@ -209,3 +209,36 @@ describe('dragging at the ranger station', () => {
     expect(sellDrop(fixtureGame(), wood)).toBeNull();
   });
 });
+
+describe('Presents on portraits (holiday hikers)', () => {
+  it('a Present dropped on its owner’s own portrait opens it', () => {
+    const { s } = trail();
+    const p = run(s, {
+      type: 'debug',
+      op: { kind: 'givePresent', hikerId: 'ash', colorway: 3, grade: 'plain' },
+    });
+    const uid = hiker(p, 'ash').inventory.bag.at(-1)!.uid;
+    expect(portraitDrop(p, itemFrom(uid), 'ash')).toEqual({
+      kind: 'open',
+      action: { type: 'openPresent', hikerId: 'ash', itemUid: uid },
+    });
+    // On someone else's portrait it's given, like any item.
+    expect(portraitDrop(p, itemFrom(uid), 'birch')?.kind).toBe('give');
+    // Without an action left, there's nothing to light up on their own portrait.
+    hiker(p, 'ash').acted = true;
+    expect(portraitDrop(p, itemFrom(uid), 'ash')).toBeNull();
+  });
+
+  it('Two Sizes Too Small: her items don’t light up other portraits', () => {
+    const { s } = trail();
+    hiker(s, 'ash').slots.push({ type: 'U', traitId: 'twoSizesTooSmall' });
+    const p = run(s, {
+      type: 'debug',
+      op: { kind: 'givePresent', hikerId: 'ash', colorway: 1, grade: 'tier3' },
+    });
+    const uid = hiker(p, 'ash').inventory.bag.at(-1)!.uid;
+    expect(portraitDrop(p, itemFrom(uid), 'birch')).toBeNull();
+    // Her resources still go.
+    expect(portraitDrop(p, wood, 'birch')?.kind).toBe('give');
+  });
+});

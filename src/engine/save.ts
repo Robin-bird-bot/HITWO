@@ -27,7 +27,7 @@ import {
 import { freshWeather } from './weather';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -74,7 +74,58 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   15: (save) => upgradeLevels(save),
   // Phase 10b: each hiker keeps a party color. Older hikers get the color they had.
   16: (save) => addPartyColors(save),
+  // Holiday hikers (Nov 20): Planner Wink is Prepared Wink and Showgirl Gdog is Showqueen
+  // Gdog, ids and names. Presents, wish lists and the rest are new and optional.
+  17: (save) => upgradePresents(renameHikers(save)),
 };
+
+/** Renamed roster ids (holiday-hikers-2), and the names that went with them. */
+const RENAMED_HIKERS: Readonly<Record<string, { id: string; name: string; was: string }>> = {
+  plannerWink: { id: 'preparedWink', name: 'Prepared Wink', was: 'Planner Wink' },
+  showgirlGdog: { id: 'showqueenGdog', name: 'Showqueen Gdog', was: 'Showgirl Gdog' },
+};
+
+/**
+ * A renamed hiker keeps everything: their id is swapped wherever it appears
+ * whole (as a value or a key: the log, counters, trials…), and their name too.
+ */
+function renameHikers(save: SaveData): SaveData {
+  const swap = (v: unknown): unknown => {
+    if (isString(v)) return RENAMED_HIKERS[v]?.id ?? v;
+    if (Array.isArray(v)) return v.map(swap);
+    if (!isRecord(v)) return v;
+    return Object.fromEntries(
+      Object.entries(v).map(([k, x]) => [RENAMED_HIKERS[k]?.id ?? k, swap(x)]),
+    );
+  };
+  const out = swap(save) as SaveData;
+  if (!Array.isArray(out.hikers)) return out;
+  const names = new Map(Object.values(RENAMED_HIKERS).map((r) => [r.was, r.name]));
+  out.hikers = out.hikers.map((raw: unknown) =>
+    isRecord(raw) && isString(raw.name) && names.has(raw.name)
+      ? { ...raw, name: names.get(raw.name) }
+      : raw,
+  );
+  return out;
+}
+
+/**
+ * The first holiday zip's Presents had a `stuffed` flag: stuffed ones are
+ * Tier 2+, the rest plain (holiday-hikers-2, "Changes"). Only a save made with
+ * that build has any.
+ */
+function upgradePresents(save: SaveData): SaveData {
+  const fix = (v: unknown): unknown => {
+    if (Array.isArray(v)) return v.map(fix);
+    if (!isRecord(v)) return v;
+    if (v.itemId === 'present' && v.grade === undefined) {
+      const { stuffed, ...rest } = v;
+      return { ...rest, grade: stuffed ? 'tier2plus' : 'plain' };
+    }
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fix(x)]));
+  };
+  return fix(save) as SaveData;
+}
 
 /** The color each older hiker already showed: their character's, else their spot's. */
 function addPartyColors(save: SaveData): SaveData {

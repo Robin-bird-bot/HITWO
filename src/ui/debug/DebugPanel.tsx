@@ -13,6 +13,7 @@ import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { STATION_THEMES } from '../../content/stations';
+import { PRESENT_WRAPPINGS, presentName } from '../../content/items/presents';
 import { NIGHT_CREATURES, NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { BALANCE } from '../../config/balance';
 import {
@@ -22,12 +23,14 @@ import {
   wonderTile,
   STAT_NAMES,
   CRAFT_TYPES,
+  PRESENT_GRADES,
   type Action,
   type CardDef,
   type GameState,
   type StationThemeId,
   type Hiker,
   type ItemTypeName,
+  type PresentGrade,
   type ScavengeCardType,
 } from '../../engine';
 import { gameStore } from '../app/gameStore';
@@ -226,6 +229,7 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
           </button>
         </div>
         <ItemGiver hikers={state.hikers} onApply={run} />
+        <PresentDebug hikers={state.hikers} onApply={run} />
         <CraftDebug hikers={state.hikers} onApply={run} />
         <div className={styles.row}>
           <a className={styles.button} href="#debug-items">
@@ -773,9 +777,10 @@ function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Actio
   const [itemId, setItemId] = useState('bandages');
   // 0 rolls the plain curve.
   const [quality, setQuality] = useState(0);
-  const items = Object.values(ITEMS).sort(
-    (a, b) => Number(!a.use) - Number(!b.use) || a.name.localeCompare(b.name),
-  );
+  // Presents have their own row (a wrapping and a grade).
+  const items = Object.values(ITEMS)
+    .filter((i) => i.type !== 'present')
+    .sort((a, b) => Number(!a.use) - Number(!b.use) || a.name.localeCompare(b.name));
   return (
     <div className={styles.row}>
       <select
@@ -843,6 +848,139 @@ function ItemGiver({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Actio
     </div>
   );
 }
+
+/**
+ * Presents (holiday hikers): give any hiker one, with a wrapping and a grade;
+ * roll a Gift Wrapper's wish lists again, or set them by hand.
+ */
+function PresentDebug({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
+  const [hikerId, setHikerId] = useState(hikers[0]?.id ?? '');
+  const [colorway, setColorway] = useState(1);
+  const [grade, setGrade] = useState<PresentGrade>('plain');
+  const wrapper = hikers.find((h) => h.wishLists) ?? hikers[0];
+  const [listsFor, setListsFor] = useState(wrapper?.id ?? '');
+  const lists = hikers.find((h) => h.id === listsFor)?.wishLists;
+  const [small, setSmall] = useState<string[]>(
+    lists?.small ?? Array.from({ length: BALANCE.presents.smallWishList }, () => 'wood'),
+  );
+  const [big, setBig] = useState<string[]>(
+    lists?.big ?? Array.from({ length: BALANCE.presents.bigWishList }, () => 'wood'),
+  );
+  const resourceSelect = (list: string[], set: (l: string[]) => void, label: string) =>
+    list.map((id, i) => (
+      <select
+        key={`${label}-${i}`}
+        className={styles.button}
+        value={id}
+        onChange={(e) => set(list.map((x, k) => (k === i ? e.target.value : x)))}
+        aria-label={`${label} ${i + 1}`}
+      >
+        {RESOURCES.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.name}
+          </option>
+        ))}
+      </select>
+    ));
+  return (
+    <>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={hikerId}
+          onChange={(e) => setHikerId(e.target.value)}
+          aria-label="Hiker to give a Present"
+        >
+          {hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={colorway}
+          onChange={(e) => setColorway(Number(e.target.value))}
+          aria-label="Wrapping"
+        >
+          {PRESENT_WRAPPINGS.map((w, i) => (
+            <option key={w.file} value={i + 1}>
+              {w.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={styles.button}
+          value={grade}
+          onChange={(e) => setGrade(e.target.value as PresentGrade)}
+          aria-label="Grade"
+        >
+          {PRESENT_GRADES.map((g) => (
+            <option key={g} value={g}>
+              {presentName(g)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'givePresent', hikerId, colorway, grade } })
+          }
+        >
+          Give Present
+        </button>
+      </div>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={listsFor}
+          onChange={(e) => setListsFor(e.target.value)}
+          aria-label="Whose wish lists"
+        >
+          {hikers.map((h) => (
+            <option key={h.id} value={h.id}>
+              {h.name}
+              {h.wishLists ? '' : ' (no lists)'}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({ type: 'debug', op: { kind: 'setWishLists', hikerId: listsFor } })
+          }
+        >
+          Roll wish lists again
+        </button>
+      </div>
+      {lists && (
+        <div className={styles.row}>
+          Now: {lists.small.map(resName).join(', ')} · {lists.big.map(resName).join(', ')}
+        </div>
+      )}
+      <div className={styles.row}>{resourceSelect(small, setSmall, 'Small wish list')}</div>
+      <div className={styles.row}>
+        {resourceSelect(big, setBig, 'Big wish list')}
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() =>
+            onApply({
+              type: 'debug',
+              op: { kind: 'setWishLists', hikerId: listsFor, lists: { small, big } },
+            })
+          }
+        >
+          Set wish lists
+        </button>
+      </div>
+    </>
+  );
+}
+
+const resName = (id: string) => RESOURCES.find((r) => r.id === id)?.name ?? id;
 
 /** Give a hiker any condition for a while, or clear them all. */
 function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action: Action): void }) {
@@ -1126,7 +1264,10 @@ function StatsForm({
 function StationDebug({ state, run }: { state: GameState; run(action: Action): void }) {
   const [theme, setTheme] = useState<StationThemeId>(STATION_THEMES[0]?.id ?? 'finn');
   const [lostId, setLostId] = useState('coffee');
-  const items = Object.values(ITEMS).sort((a, b) => a.name.localeCompare(b.name));
+  // Presents never go in Rocco's log.
+  const items = Object.values(ITEMS)
+    .filter((i) => i.type !== 'present')
+    .sort((a, b) => a.name.localeCompare(b.name));
   const log = Object.entries(state.usedOrLost ?? {});
   return (
     <section className={styles.group}>

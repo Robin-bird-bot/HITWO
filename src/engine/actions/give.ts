@@ -8,7 +8,7 @@
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { giveReach, tradesAnywhere, fireGive } from '../effects';
+import { giveReach, keepsItemsReason, tradesAnywhere, fireGive } from '../effects';
 import { tileDistance } from '../map';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
@@ -31,6 +31,11 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
   if ((action.resource ? 1 : 0) + (action.itemUid ? 1 : 0) !== 1) return 'Pick one thing to give.';
+  // Two Sizes Too Small: no giving items (taking from her while she's passed out still works).
+  if (action.itemUid && !takeFromOut) {
+    const keeps = keepsItemsReason(state, from);
+    if (keeps) return keeps;
+  }
   if (!takeFromOut && !canHandOver(state, from, to, action.itemUid ? 'item' : 'resource')) {
     return `${to.name} isn’t on this tile.`;
   }

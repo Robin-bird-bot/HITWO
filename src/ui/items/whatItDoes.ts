@@ -154,9 +154,11 @@ export function itemVerbs(itemId: string): string {
         ? 'eat'
         : def?.type === 'shelter'
           ? 'place'
-          : def?.use
-            ? 'use'
-            : '';
+          : def?.type === 'present'
+            ? 'open'
+            : def?.use
+              ? 'use'
+              : '';
   return [first, 'give or drop'].filter(Boolean).join(', ');
 }
 

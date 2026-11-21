@@ -1,4 +1,5 @@
 import { abilitiesFor, abilityPeriod, effectContext, queryContext } from '../effects';
+import { RESOURCE_BY_ID } from '../../content/resources';
 import { pushEvent } from '../log';
 import type { Action, GameState } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
@@ -18,7 +19,16 @@ export function validateUseAbility(state: GameState, action: UseAbilityAction): 
   const { ability, usesLeft, choices } = found;
   if (ability.scavengeReroll) return `${ability.label} is used from the scavenge window.`;
   if (usesLeft <= 0) return `${ability.label} is used up ${PERIOD_WORDS[ability.limit.per]}.`;
-  if (choices && !choices.some((c) => c.id === action.choice)) {
+  // A resource pick rides after the choice: "choice|wood,fish" (Spare Parts).
+  const [base, picked] = (action.choice ?? '').split('|');
+  if (ability.resourcePick) {
+    const ids = (picked ?? '').split(',').filter(Boolean);
+    if (ids.length !== ability.resourcePick || !ids.every((id) => RESOURCE_BY_ID.has(id))) {
+      return `Pick ${ability.resourcePick} resources.`;
+    }
+  }
+  const chosen = ability.resourcePick ? base : action.choice;
+  if (choices && !choices.some((c) => c.id === chosen)) {
     return choices.length
       ? `Choose ${choices.map((c) => c.label).join(' or ')}.`
       : `There’s nothing for ${ability.label} to do right now.`;

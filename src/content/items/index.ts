@@ -6,6 +6,7 @@ import type { ItemDef, ItemType } from '../../engine/effects';
 import { CLOTHES } from './clothes';
 import { FOOD } from './food';
 import { TIER_3_STAND_INS, TO_PLACE } from './others';
+import { PRESENT } from './presents';
 import { SHELTERS } from './shelters';
 import { TOOLS } from './tools';
 import { TRINKETS } from './trinkets';
@@ -18,6 +19,8 @@ const ALL: readonly ItemDef[] = [
   ...TRINKETS,
   ...TO_PLACE,
   ...TIER_3_STAND_INS,
+  // Not in TABLE_ITEMS, so never in a random pool (only Gift Wrapper makes them).
+  PRESENT,
 ];
 
 export const ITEMS: Readonly<Record<string, ItemDef>> = Object.fromEntries(

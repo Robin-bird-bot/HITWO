@@ -34,7 +34,8 @@ describe('portrait files', () => {
       expect(PORTRAIT_FILES).toContain(file);
       expect(used.has(file), file).toBe(true);
     }
-    expect(Object.keys(FACE_Y)).toHaveLength(31);
+    // 31 from Phase 10b, then 7 variants and 4 holiday hikers (holiday-hikers-2).
+    expect(Object.keys(FACE_Y)).toHaveLength(42);
   });
 
   it('every family has an icon file, the star included', () => {
@@ -55,12 +56,26 @@ describe("a hiker's picture", () => {
     expect(portraitArt('wywee')).toMatchObject({ kind: 'portrait' });
   });
 
-  it('no portrait yet: Ben and Mindy show their family icon, variants the star', () => {
+  it('no portrait yet: Ben and Mindy show their family icon', () => {
     expect(portraitArt('ben')).toEqual({ kind: 'icon', icon: 'human' });
     expect(portraitArt('mindy')).toEqual({ kind: 'icon', icon: 'human' });
-    const variants = ROSTER.filter((h) => h.variantOf && !h.portrait);
-    expect(variants.length).toBeGreaterThan(0);
-    for (const v of variants) expect(portraitArt(v.id)).toEqual({ kind: 'icon', icon: 'variant' });
+  });
+
+  it('every variant has its real portrait now, with a faceY (holiday-hikers-2)', () => {
+    const variants = ROSTER.filter((h) => h.variantOf);
+    expect(variants).toHaveLength(12);
+    for (const v of variants) {
+      const art = portraitArt(v.id);
+      expect(art.kind, v.id).toBe('portrait');
+      expect(art.kind === 'portrait' && FACE_Y[v.portrait ?? ''], v.id).toBeTruthy();
+    }
+    expect(portraitArt('preparedWink')).toMatchObject({
+      src: '/assets/portraits/prepared-wink.png',
+    });
+    expect(portraitArt('showqueenGdog')).toMatchObject({
+      src: '/assets/portraits/showqueen-gdog.png',
+    });
+    expect(PORTRAIT_FILES).not.toContain('planner-wink');
   });
 
   it('the placeholder party and the test hikers keep their old look', () => {

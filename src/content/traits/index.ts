@@ -5,6 +5,7 @@
  */
 import type { TraitDef } from '../../engine/effects';
 import { FAMILY_TRAITS } from './family';
+import { HOLIDAY_TRAITS } from './holiday';
 import { MORALE_TRAITS } from './morale';
 import { SPECIAL_TRAITS } from './special';
 import { TRAIL_TRAITS } from './trail';
@@ -16,6 +17,7 @@ export const TRAIT_LIST: readonly TraitDef[] = [
   ...MORALE_TRAITS,
   ...FAMILY_TRAITS,
   ...SPECIAL_TRAITS,
+  ...HOLIDAY_TRAITS,
 ];
 
 export const TRAITS: Readonly<Record<string, TraitDef>> = Object.fromEntries(

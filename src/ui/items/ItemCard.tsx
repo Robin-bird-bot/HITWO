@@ -16,10 +16,14 @@
  * Unrolled (Nov 14 update): an item whose Quality isn't rolled yet (a
  * blueprint, a Choice pick, an item named in text) reads its values as
  * ranges across Qualities 1–5 ("2–4 bites"), with Quality "?".
+ *
+ * A Present (holiday hikers) shows its own wrapping, no tier numeral and no
+ * Quality; a Tier 2+ or Tier 3 one has a small tag where the numeral sits.
  */
 import type { CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
+import { GRADE_TAG, presentArt } from '../../content/items/presents';
 import {
   counterRange,
   fullCounters,
@@ -34,7 +38,10 @@ import {
 import { SLOT_NAME, TIER_LOOK, TYPE_LOOK } from './itemLook';
 import styles from './ItemCard.module.css';
 
-type Counters = Pick<ItemInstance, 'quality' | 'usesLeft' | 'bitesLeft' | 'durability' | 'node'>;
+type Counters = Pick<
+  ItemInstance,
+  'quality' | 'usesLeft' | 'bitesLeft' | 'durability' | 'node' | 'colorway' | 'grade'
+>;
 
 export interface ItemCardProps {
   itemId: string;
@@ -92,7 +99,11 @@ export function ItemCard({
     : undefined;
   const H = Math.round(W * 1.4);
   const k = W / 300;
-  const tier = TIER_LOOK[def.tier];
+  const isPresent = def.type === 'present';
+  // A Present has no tier: a Tier 2+ or Tier 3 one shows a small tag there instead.
+  const tier = isPresent ? null : TIER_LOOK[def.tier];
+  const gradeTag = isPresent ? GRADE_TAG[item?.grade ?? 'plain'] : null;
+  const artName = isPresent ? presentArt(item) : def.art;
   const range = unrolled ? counterRange(def) : undefined;
   const { left, max } = range
     ? { left: range.min, max: range.max }
@@ -133,7 +144,7 @@ export function ItemCard({
     );
   });
 
-  const label = `${def.name}${def.tier > 1 ? `, Tier ${def.tier}` : ''}${
+  const label = `${def.name}${gradeTag ? `, ${gradeTag}` : !isPresent && def.tier > 1 ? `, Tier ${def.tier}` : ''}${
     unrolled ? ', Quality not rolled yet' : quality ? `, Quality ${quality}` : ''
   }${
     look.count && max
@@ -170,10 +181,10 @@ export function ItemCard({
           }}
         />
       </div>
-      {def.art ? (
+      {artName ? (
         <img
           className={styles.art}
-          src={ASSETS.itemArt(def.art)}
+          src={ASSETS.itemArt(artName)}
           alt=""
           draggable={false}
           loading="lazy"
@@ -204,6 +215,20 @@ export function ItemCard({
           }}
         >
           {tier.numeral}
+        </span>
+      )}
+      {gradeTag && (
+        <span
+          className={styles.gradeTag}
+          aria-hidden="true"
+          style={{
+            top: Math.round(H * 0.03),
+            fontSize: Math.max(compact ? 6 : 7, Math.round(W * 0.055)),
+            padding: `${Math.max(1, Math.round(2 * k))}px ${Math.max(3, Math.round(8 * k))}px`,
+            borderRadius: Math.max(3, Math.round(6 * k)),
+          }}
+        >
+          {gradeTag}
         </span>
       )}
       {compact ? (
@@ -290,6 +315,9 @@ export function ItemCard({
                   ))}
                 </span>
               </div>
+            ) : isPresent ? (
+              // No Quality pips on a Present: what's inside is rolled when it's opened.
+              <span />
             ) : (
               <span
                 className={styles.noQuality}

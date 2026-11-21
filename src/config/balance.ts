@@ -806,6 +806,60 @@ export const BALANCE = {
      * resource taken, and cards with no resources (caps, items) get none.
      */
     copier: { appetiteEach: 1 },
+    // ── Holiday hikers (Nov 20 update, holiday-hikers-2) ──
+    /** Season of Giving: +1 when someone opens a Present she wrapped; −1 after a day she wrapped none. */
+    seasonOfGiving: { opened: 1, noneWrapped: -1 },
+    /** Holiday Spirit: +1 when a hiker on the tile opens a Present; −1 after a day nobody opened one. */
+    holidaySpirit: { opened: 1, noneOpened: -1 },
+    /** Bah Humbug: +1 each time she opens a Present; −1 when another hiker on her tile Sits by the Fire. */
+    bahHumbug: { opened: 1, fire: -1 },
+    /** Toy Maker: Tools are this many times as likely in the Presents she opens. TODO(wyatt): [3×]. */
+    toyMaker: { toolWeight: 3 },
+    /** Treat Sniffer: Food is this many times as likely in the Presents he opens. TODO(wyatt): [3×]. */
+    treatSniffer: { foodWeight: 3 },
+    /** Choosy: she sees this many items and keeps 1. */
+    choosy: { choices: 3 },
+    /** Spare Parts: resources of her choice for one Present. TODO(wyatt): [2]. */
+    spareParts: { resources: 2 },
+    /** Wreck the Halls: a random whole number of Morale, all equally likely. TODO(wyatt): [3–8]. */
+    wreckTheHalls: { min: 3, max: 8 },
+    /** Present Muncher: a random whole number of Appetite, all equally likely. TODO(wyatt): [0–5]. */
+    presentMuncher: { min: 0, max: 5 },
+  },
+
+  /**
+   * Presents (Nov 20 update, holiday-hikers-2; 03-items.md, "Presents"): only
+   * Grammy Clause makes them (Gift Wrapper), and they're never in a random pool.
+   */
+  presents: {
+    /** Opening one costs the opener's action and this much Energy. */
+    openEnergy: 1,
+    /**
+     * Which tier is inside, by grade, in percent (the biome's tier doesn't
+     * limit it). TODO(wyatt): plain [50/35/15], Tier 2+ [70/30].
+     */
+    tierOdds: {
+      plain: { 1: 50, 2: 35, 3: 15 },
+      tier2plus: { 2: 70, 3: 30 },
+      tier3: { 3: 100 },
+    } as Readonly<
+      Record<'plain' | 'tier2plus' | 'tier3', Readonly<Partial<Record<1 | 2 | 3, number>>>>
+    >,
+    /** Stations buy Presents. TODO(wyatt): [first guess] they won't. */
+    sellable: false,
+    /** Wrapping colorways (1 candy cane, 2 holly, 3 lilac, 4 midnight, 5 berry). */
+    colorways: 5,
+    /** Gift Wrapper's plain recipes: this many of one resource, or of one node's resources, any mix. */
+    sameResource: 3,
+    sameType: 5,
+    /** Grammy's two wish lists: specific resources (repeats allowed), rolled from all 16. */
+    smallWishList: 3,
+    bigWishList: 5,
+    /**
+     * Crafting XP for a Present, as an item of this tier (action XP, under the
+     * row rule). TODO(wyatt): first guess; a Present has no tier of its own.
+     */
+    xpTier: 1,
   },
 
   /**
@@ -907,6 +961,12 @@ export const BALANCE = {
      * when it opens. TODO(wyatt): the blur [10 px], the bar's fill [1.2 s]
      * and the deal [0.15 s apart] are bracketed in the plan.
      */
+    /**
+     * Opening a Present (holiday hikers): the box shakes, the lid pops, then
+     * the item flips in like a Mystery Item (520 ms). Choosy's cards are dealt
+     * a little apart. Wreck the Halls' confetti burst. TODO(wyatt): first guesses.
+     */
+    presentOpen: { shakeMs: 700, popMs: 350, flipMs: 520, dealGapMs: 150, smashMs: 900 },
     levelUp: {
       blurPx: 10,
       portraitAt: 0.1,

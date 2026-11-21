@@ -33,6 +33,7 @@ import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
 import { revealAhead, tilesAhead } from './traits/reveal';
 import { gainXp } from './xp';
+import { rollWishLists } from './items/wishLists';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -228,6 +229,10 @@ export interface QueryContext {
   boost(abilityId: string): { reach: number; items: boolean };
   /** Can this hiker move by themselves right now (a Plush with Shifty, alone)? */
   canMoveAlone(): boolean;
+  /** How many more items fit in a hiker's bag. */
+  bagRoom(hiker: Hiker): number;
+  /** How many more resources a hiker can carry. */
+  resourceRoom(hiker: Hiker): number;
 }
 
 /** What an event handler or ability can do. */
@@ -291,6 +296,17 @@ export interface EffectContext extends QueryContext {
   rerollCard(tileId: TileId, cause: string): void;
   /** Uses up the hiker's action for this phase (Good Boy gives his away). */
   useAction(hiker: Hiker): void;
+  /** Sends a bag item to another hiker anywhere on the map, if it fits (Down the Chimney). */
+  sendItem(from: Hiker, to: Hiker, itemUid: string, cause: string): void;
+  /** A Present in the hiker's bag is gone: taken apart, eaten or smashed by a trait. */
+  usePresent(
+    hiker: Hiker,
+    itemUid: string,
+    how: 'parts' | 'eaten' | 'smashed',
+    trait: string,
+  ): void;
+  /** Rolls a hiker's wish lists again (Gift Wrapper, Checking It Twice). */
+  rollWishLists(hiker: Hiker): void;
   /** Moves a resource or a bag item from one hiker to another, if it fits (Fetch). */
   take(
     from: Hiker,
@@ -562,6 +578,35 @@ export interface Hooks {
    * TODO(wyatt): Sit by the Fire is still held, so nothing calls this in play yet.
    */
   onSitByFire?(ctx: EffectContext): void;
+  /** Someone else on this hiker's tile Sits by the Fire (Bah Humbug). Waits on the action too. */
+  onTileSitByFire?(e: { sitterId: HikerId }, ctx: EffectContext): void;
+
+  // ── Holiday hikers (Nov 20 update; src/engine/items/presents.ts) ──
+  /** A new run began: everyone in the party hears of it once (Gift Wrapper rolls the wish lists). */
+  onRunStart?(ctx: EffectContext): void;
+  /** Crafts only Presents, with Gift Wrapper's recipes (Gift Wrapper). */
+  wrapsPresents?(ctx: QueryContext): boolean;
+  /** How much more likely each item type is in the Presents this hiker opens (Toy Maker, Treat Sniffer). */
+  presentWeights?(ctx: QueryContext): Partial<Record<ItemType, number>> | undefined;
+  /** Opening a Present shows this many items to keep 1 of (Choosy). */
+  presentChoices?(ctx: QueryContext): number | undefined;
+  /**
+   * Someone in the party opened a Present: who, where, and who wrapped it
+   * (Holiday Spirit, Season of Giving, Bah Humbug). Every active hiker hears of it.
+   */
+  onPresentOpened?(
+    e: { openerId: HikerId; tileId: TileId; wrappedBy?: HikerId },
+    ctx: EffectContext,
+  ): void;
+  /** Why this hiker won't give or trade items to other hikers (Two Sizes Too Small). */
+  keepsItems?(ctx: QueryContext): string | undefined;
+  /** When this hiker moves the group at night, nobody pays the night's extra cost (Rednose). */
+  leadsAtNight?(ctx: QueryContext): boolean;
+  /**
+   * Fog never hides the tiles next to this hiker (Rednose).
+   * TODO(phase-11): Fog isn't built yet; `clearsFog` is the hook for it.
+   */
+  clearsFog?(ctx: QueryContext): boolean;
 }
 
 /** A trait's move that doesn't use the action, and what it does to the cost. */
@@ -590,6 +635,11 @@ export interface AbilityDef {
   choices?: readonly AbilityChoice[];
   /** Choices that depend on the moment (Supportive: who to help, and with what). */
   choicesFor?(ctx: QueryContext): AbilityChoice[];
+  /**
+   * After the choice, the player also picks this many resources (any of the
+   * 16, repeats allowed): the choice is sent as `choice|wood,fish` (Spare Parts).
+   */
+  resourcePick?: number;
   /** Used in the scavenge window to reroll a card (Gambler), not from the Abilities panel. */
   scavengeReroll?: true;
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
@@ -706,7 +756,8 @@ export function traitHooks(def: TraitDef, setting: TraitSetting): Hooks {
   return def.hooksWith ? { ...def.hooks, ...def.hooksWith(setting) } : (def.hooks ?? {});
 }
 
-export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
+/** `present` (Nov 20, holiday hikers): only Grammy Clause wraps them, and they're never in a random pool. */
+export type ItemType = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket' | 'present';
 
 /**
  * What using an item does: to its target, the tile, or the map. A use that
@@ -1101,6 +1152,13 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
       const ctx = queryContext(state, self);
       return effectSourcesFor(state, self).some((s) => s.hooks.movesAlone?.(ctx));
     },
+    bagRoom: (hiker) => Math.max(0, bagSlots(state, hiker).total - hiker.inventory.bag.length),
+    resourceRoom: (hiker) =>
+      Math.max(
+        0,
+        resourceLimit(state, hiker) -
+          Object.values(hiker.inventory.resources).reduce<number>((n, c) => n + (c ?? 0), 0),
+      ),
   };
 }
 
@@ -1165,6 +1223,35 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
     },
     useAction: (hiker) => {
       hiker.acted = true;
+    },
+    sendItem: (from, to, itemUid, cause) => {
+      const i = from.inventory.bag.findIndex((x) => x.uid === itemUid);
+      const item = from.inventory.bag[i];
+      if (!item || to.inventory.bag.length >= bagSlots(state, to).total) return;
+      from.inventory.bag.splice(i, 1);
+      to.inventory.bag.push(item);
+      pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, itemId: item.itemId });
+      pushEvent(state, {
+        kind: 'trait',
+        hikerId: from.id,
+        trait: cause,
+        text: `${from.name} sent it to ${to.name}.`,
+      });
+    },
+    usePresent: (hiker, itemUid, how, trait) => {
+      const item = hiker.inventory.bag.find((x) => x.uid === itemUid);
+      if (!item || ITEMS[item.itemId]?.type !== 'present') return;
+      removeItem(hiker, itemUid);
+      pushEvent(state, {
+        kind: 'presentGone',
+        hikerId: hiker.id,
+        how,
+        trait,
+        ...(item.colorway ? { colorway: item.colorway } : {}),
+      });
+    },
+    rollWishLists: (hiker) => {
+      hiker.wishLists = rollWishLists(state.rng);
     },
     take: (from, to, thing, cause) => {
       if ('resource' in thing) {
@@ -1676,6 +1763,14 @@ export function fireSitByFire(state: GameState, hiker: Hiker): void {
   gainXp(state, hiker, BALANCE.xp.fire, 'fire', 'Sat by the fire');
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onSitByFire?.(ctx);
+  // Everyone else on the tile hears of it (Bah Humbug).
+  for (const other of hikersOnTile(state, hiker.tileId)) {
+    if (other.id === hiker.id) continue;
+    const octx = effectContext(state, other);
+    for (const source of effectSourcesFor(state, other)) {
+      source.hooks.onTileSitByFire?.({ sitterId: hiker.id }, octx);
+    }
+  }
 }
 
 /** The stat a night without sleep costs this hiker (Energy, or Appetite for a Nocturnal one). */
@@ -1710,6 +1805,82 @@ export function partyGetsFreeItem(state: GameState): boolean {
     const ctx = queryContext(state, h);
     return effectSourcesFor(state, h).some((s) => s.hooks.freeShopItem?.(ctx));
   });
+}
+
+// ── Holiday hikers (Nov 20 update) ─────────────────────────────────────────
+
+/** A new run began: everyone in the party hears of it once (Gift Wrapper's wish lists). */
+export function fireRunStart(state: GameState): void {
+  for (const hiker of state.hikers) {
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) source.hooks.onRunStart?.(ctx);
+  }
+}
+
+/** Does this hiker craft only Presents (Gift Wrapper)? */
+export function wrapsPresents(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.wrapsPresents?.(ctx));
+}
+
+/** How much more likely each item type is in a Present this hiker opens (multiplied together). */
+export function presentWeights(state: GameState, hiker: Hiker): Partial<Record<ItemType, number>> {
+  const ctx = queryContext(state, hiker);
+  const out: Partial<Record<ItemType, number>> = {};
+  for (const s of effectSourcesFor(state, hiker)) {
+    for (const [type, w] of Object.entries(s.hooks.presentWeights?.(ctx) ?? {})) {
+      const t = type as ItemType;
+      out[t] = (out[t] ?? 1) * (w ?? 1);
+    }
+  }
+  return out;
+}
+
+/** How many items a Present shows this hiker to keep 1 of (1, or Choosy's 3). */
+export function presentChoices(state: GameState, hiker: Hiker): number {
+  const ctx = queryContext(state, hiker);
+  let most = 1;
+  for (const s of effectSourcesFor(state, hiker)) {
+    most = Math.max(most, s.hooks.presentChoices?.(ctx) ?? 1);
+  }
+  return most;
+}
+
+/** Someone opened a Present: every active hiker hears of it (Holiday Spirit, Season of Giving). */
+export function firePresentOpened(
+  state: GameState,
+  e: { openerId: HikerId; tileId: TileId; wrappedBy?: HikerId },
+): void {
+  for (const hiker of state.hikers) {
+    if (hiker.status !== 'active') continue;
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) source.hooks.onPresentOpened?.(e, ctx);
+  }
+}
+
+/** Why this hiker won't give or trade items to other hikers, if they won't (Two Sizes Too Small). */
+export function keepsItemsReason(state: GameState, hiker: Hiker): string | undefined {
+  const ctx = queryContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) {
+    const reason = s.hooks.keepsItems?.(ctx);
+    if (reason) return reason;
+  }
+  return undefined;
+}
+
+/** Does nobody pay the night's extra cost when this hiker moves the group (Rednose)? */
+export function leadsAtNight(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.leadsAtNight?.(ctx));
+}
+
+/**
+ * Does Fog stay off the tiles next to this hiker (Rednose)?
+ * TODO(phase-11): Fog asks this when it's built.
+ */
+export function clearsFog(state: GameState, hiker: Hiker): boolean {
+  const ctx = queryContext(state, hiker);
+  return effectSourcesFor(state, hiker).some((s) => s.hooks.clearsFog?.(ctx));
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────
