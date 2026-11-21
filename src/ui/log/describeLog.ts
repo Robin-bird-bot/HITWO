@@ -4,6 +4,7 @@
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
+import { presentName } from '../../content/items/presents';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { WEATHERS } from '../../content/weather';
 import { WONDER_BY_ID } from '../../content/wonders';
@@ -406,6 +407,34 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({
           id: e.id,
           text: `${name(e.hikerId)} crafted a ${item}${quality}${how}${learned}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'wrapped': {
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} wrapped a ${presentName(e.grade)}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'presentOpened': {
+        const got = e.itemId ? ITEMS[e.itemId]?.name : undefined;
+        lines.push({
+          id: e.id,
+          text: got
+            ? `${name(e.hikerId)} opened a ${presentName(e.grade)}: ${got}!`
+            : `${name(e.hikerId)} opened a ${presentName(e.grade)}.`,
+          tone: 'scavenge',
+        });
+        break;
+      }
+      case 'presentGone': {
+        const did = { parts: 'took apart', eaten: 'ate', smashed: 'smashed' }[e.how];
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} ${did} a Present (${e.trait}).`,
           tone: 'scavenge',
         });
         break;

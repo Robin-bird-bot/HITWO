@@ -8,6 +8,7 @@ import { canUseBlueprint, craftTier, knowsBlueprint } from '../items/craft';
 import { makeItem } from '../items/make';
 import { deserialize, serialize } from '../save';
 import { END, fixtureGame, hiker, run } from '../test/fixtures';
+import type { ItemTypeName } from '../types';
 import type { Action, GameState, ItemOffer } from '../types';
 import { blueprintPrice, itemPrice, resourceSellPrice, sellPrice } from './prices';
 import { fromUsedOrLost, openStation, stationItemCount } from './stock';
@@ -319,7 +320,7 @@ describe('the Workbench', () => {
     s = run(s, {
       type: 'craft',
       hikerId: 'ash',
-      itemType: ITEMS[temp]!.type,
+      itemType: ITEMS[temp]!.type as ItemTypeName,
       blueprint: temp,
       ...(ITEMS[temp]?.madeWithNode ? { node: 'forest' as const } : {}),
     });

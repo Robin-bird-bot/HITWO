@@ -6,6 +6,9 @@ import { noteGone } from '../items/gone';
 import { checkInArrivals } from '../station/checkIn';
 import { rollStock } from '../station/stock';
 import { fullCounters, makeItem, qualityOf } from '../items/make';
+import { makePresent } from '../items/presents';
+import { presentName } from '../../content/items/presents';
+import { rollWishLists } from '../items/wishLists';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
@@ -395,6 +398,26 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       pushEvent(state, {
         kind: 'debug',
         note: `${hiker.name} crafts ${op.itemType} at Tier ${tier}`,
+      });
+      break;
+    }
+    case 'givePresent': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const colorway = Math.min(BALANCE.presents.colorways, Math.max(1, Math.round(op.colorway)));
+      hiker.inventory.bag.push(makePresent(state, op.grade, { colorway, prefix: 'debug' }));
+      pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} a ${presentName(op.grade)}` });
+      break;
+    }
+    case 'setWishLists': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.wishLists = op.lists
+        ? { small: [...op.lists.small], big: [...op.lists.big] }
+        : rollWishLists(state.rng);
+      pushEvent(state, {
+        kind: 'debug',
+        note: `${hiker.name}’s wish lists ${op.lists ? 'set' : 'rolled again'}`,
       });
       break;
     }

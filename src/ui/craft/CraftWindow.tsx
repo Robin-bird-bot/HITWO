@@ -29,7 +29,7 @@ import {
   type GameState,
   type Hiker,
   type ItemId,
-  type ItemType,
+  type ItemTypeName,
   type NodeType,
   type PaidSlot,
   type Recipe,
@@ -63,7 +63,7 @@ interface CraftWindowProps {
   onClose(): void;
 }
 
-const TYPE_ICON: Record<ItemType, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sparkles'> = {
+const TYPE_ICON: Record<ItemTypeName, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sparkles'> = {
   tool: 'hammer',
   clothes: 'shirt',
   food: 'utensils',
@@ -72,7 +72,7 @@ const TYPE_ICON: Record<ItemType, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sp
 };
 const NODES: readonly NodeType[] = ['forest', 'river', 'wildlife', 'mountain'];
 const NUMERAL = ['', 'I', 'II', 'III', 'IV'];
-const plural = (type: ItemType) =>
+const plural = (type: ItemTypeName) =>
   type === 'clothes'
     ? 'clothes'
     : type === 'food'
@@ -83,7 +83,7 @@ export function CraftWindow(props: CraftWindowProps) {
   const { state, hikerId, tab, simple, onTab, onClose } = props;
   const hiker = state.hikers.find((h) => h.id === hikerId);
   const pending = state.crafting?.hikerId === hikerId ? state.crafting : undefined;
-  const [type, setType] = useState<ItemType>(pending?.type ?? 'tool');
+  const [type, setType] = useState<ItemTypeName>(pending?.type ?? 'tool');
   // After a craft: the log events from here on say what was made.
   const [madeFrom, setMadeFrom] = useState<number | null>(null);
   const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('craft');
@@ -228,8 +228,8 @@ function CraftBody({
   state: GameState;
   hiker: Hiker;
   simple: boolean;
-  type: ItemType;
-  onType(t: ItemType): void;
+  type: ItemTypeName;
+  onType(t: ItemTypeName): void;
   onCraft(action: Action): void;
 }) {
   const [blueprint, setBlueprint] = useState<ItemId | null>(null);
@@ -445,7 +445,7 @@ function CraftBody({
   );
 }
 
-function basicWords(type: ItemType, recipe: Recipe): string {
+function basicWords(type: ItemTypeName, recipe: Recipe): string {
   if (type === 'trinket') {
     return `${recipe.length} different resources, picked at random: ${recipeWords(recipe)}. A new set after every trinket.`;
   }
@@ -611,7 +611,8 @@ function Blueprint({
 }) {
   const preview = usePreview({ kind: 'item', itemId, unrolled: true });
   const def = ITEMS[itemId];
-  if (!def) return null;
+  // Blueprints are for crafted items, never a Present.
+  if (!def || def.type === 'present') return null;
   const locked = !teach && def.tier > craftTier(state, hiker, def.type);
   const recipe = def.recipe;
   const missing = recipe ? autoPay(state, hiker, recipe).filter((s) => !s).length : 0;

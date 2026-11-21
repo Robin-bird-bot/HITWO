@@ -17,7 +17,7 @@ import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content';
 import { characterFor } from '../../content/characters';
 import { RESOURCES } from '../../content/resources';
-import type { ItemType, NodeType, Recipe, RecipePart, ResourceId } from '../../engine';
+import type { ItemTypeName, NodeType, Recipe, RecipePart, ResourceId } from '../../engine';
 import { Backdrop } from '../backdrop/Backdrop';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
@@ -59,8 +59,8 @@ const CRAFTER = HIKERS[0] as SampleHiker;
 /** The crafter's tier for every type (the workbench raises it in Phase 9). */
 const CRAFT_TIER = 1;
 
-const TYPES: ItemType[] = ['tool', 'clothes', 'food', 'shelter', 'trinket'];
-const TYPE_ICON: Record<ItemType, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sparkles'> = {
+const TYPES: ItemTypeName[] = ['tool', 'clothes', 'food', 'shelter', 'trinket'];
+const TYPE_ICON: Record<ItemTypeName, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sparkles'> = {
   tool: 'hammer',
   clothes: 'shirt',
   food: 'utensils',
@@ -69,7 +69,7 @@ const TYPE_ICON: Record<ItemType, 'hammer' | 'shirt' | 'utensils' | 'tent' | 'sp
 };
 
 /** The basic recipes (03-items.md, "Basic recipes"), at Tier 1. */
-const BASIC: Record<ItemType, { recipe: Recipe; words: string }> = {
+const BASIC: Record<ItemTypeName, { recipe: Recipe; words: string }> = {
   tool: {
     recipe: [
       { n: 2, ids: ['metal', 'wood'] },
@@ -111,7 +111,7 @@ const BASIC: Record<ItemType, { recipe: Recipe; words: string }> = {
 type Dealt = { itemId: string; quality?: 1 | 2 | 3 | 4 | 5 };
 
 /** What the 3 face-down cards turn out to be (one is a Tier II: the 10% chance). */
-const DEALT: Record<ItemType, Dealt[]> = {
+const DEALT: Record<ItemTypeName, Dealt[]> = {
   tool: [
     { itemId: 'trowel', quality: 4 },
     { itemId: 'wheelbarrow', quality: 2 },
@@ -323,7 +323,7 @@ function CraftWindow({
   simple: boolean;
   onView(v: View): void;
 }) {
-  const [type, setType] = useState<ItemType>('tool');
+  const [type, setType] = useState<ItemTypeName>('tool');
   const [blueprint, setBlueprint] = useState<string | null>(null);
   const look = TYPE_LOOK[type];
   const teaching = view === 'teach';
@@ -407,9 +407,9 @@ function CraftBody({
   onCraft,
 }: {
   simple: boolean;
-  type: ItemType;
+  type: ItemTypeName;
   blueprint: string | null;
-  onType(t: ItemType): void;
+  onType(t: ItemTypeName): void;
   onBlueprint(id: string | null): void;
   onCraft(): void;
 }) {
@@ -665,7 +665,7 @@ function Blueprint({
         {def.art ? (
           <img src={ASSETS.itemArt(def.art)} alt="" className={styles.bpArt} />
         ) : (
-          <Icon name={TYPE_ICON[def.type]} size={34} />
+          <Icon name={def.type === 'present' ? 'package' : TYPE_ICON[def.type]} size={34} />
         )}
         <span className={styles.bpName}>{def.name.toUpperCase()}</span>
       </span>
@@ -718,7 +718,7 @@ function Pool({ paid, simple }: { paid: ReturnType<typeof paidBy>; simple: boole
 
 // ── Pick ────────────────────────────────────────────────────────────────────
 
-function PickBody({ simple, type }: { simple: boolean; type: ItemType }) {
+function PickBody({ simple, type }: { simple: boolean; type: ItemTypeName }) {
   const [flipped, setFlipped] = useState<boolean[]>([false, false, false]);
   const [chosen, setChosen] = useState<number | null>(null);
   const [taken, setTaken] = useState(false);

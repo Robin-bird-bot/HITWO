@@ -352,6 +352,43 @@ export interface ItemInstance {
   maxDurability?: number;
   /** Clothes a Stylish hiker has put on: their extra days were given (once per item). */
   styled?: true;
+  /** A Present's wrapping (1–5), picked at random when it's wrapped (holiday hikers). */
+  colorway?: number;
+  /** A Present: who wrapped it (Season of Giving). None for a starting bag's. */
+  wrappedBy?: HikerId;
+  /** A Present: what's inside, set by the recipe it was wrapped with. */
+  grade?: PresentGrade;
+}
+
+/**
+ * A Present's grade (03-items.md, "Presents"): a plain one holds Tier 1–3, a
+ * Tier 2+ one Tier 2 or 3, a Tier 3 one Tier 3.
+ */
+export type PresentGrade = 'plain' | 'tier2plus' | 'tier3';
+export const PRESENT_GRADES: readonly PresentGrade[] = ['plain', 'tier2plus', 'tier3'];
+
+/** Gift Wrapper's four recipes (07-characters.md, Grammy Clause). */
+export type PresentRecipe = 'sameResource' | 'sameType' | 'smallWish' | 'bigWish';
+export const PRESENT_RECIPES: readonly PresentRecipe[] = [
+  'sameResource',
+  'sameType',
+  'smallWish',
+  'bigWish',
+];
+
+/** Grammy's two wish lists: specific resources, repeats allowed, rolled from all 16. */
+export interface WishLists {
+  small: ResourceId[];
+  big: ResourceId[];
+}
+
+/** A Present opened by a hiker who picks 1 of several (Choosy), waiting for the pick. */
+export interface PresentPick {
+  hikerId: HikerId;
+  /** The items rolled, Quality and all. The one picked goes in the bag. */
+  options: ItemInstance[];
+  grade: PresentGrade;
+  wrappedBy?: HikerId;
 }
 
 export interface Inventory {
@@ -429,6 +466,10 @@ export interface Hiker {
   lastMovedDay?: number;
   /** The last day they faced a challenge (Thrill-Seeker: "facing no challenge the day before"). */
   lastChallengeDay?: number;
+  /** Gift Wrapper: the two wish lists, rolled at the start of the run and after every Present. */
+  wishLists?: WishLists;
+  /** The last day they wrapped a Present (Season of Giving). */
+  lastWrapDay?: number;
 }
 
 // ── Scavenging ─────────────────────────────────────────────────────────────
@@ -538,6 +579,7 @@ export interface ScavengeBonusOffer {
 }
 
 /** Item types (the same as ItemType in effects.ts, here for the state's shape). */
+/** The types a recipe can make (a Present is wrapped, not crafted: `wrapPresent`). */
 export type ItemTypeName = 'tool' | 'clothes' | 'food' | 'shelter' | 'trinket';
 
 /** One resource in one space of a recipe, and who gives it. */
@@ -820,6 +862,24 @@ export type Action =
   /** Take one of the cards a basic craft dealt. */
   | { type: 'craftTake'; index: number; node?: NodeType }
   /**
+   * Gift Wrapper (uses the action, like crafting): wrap a Present with one of
+   * the four recipes. `slots` says who gives what, as for a craft; left out,
+   * the game fills them. `resource` or `node` picks which one for the plain
+   * recipes (3 of one resource, 5 of one node).
+   */
+  | {
+      type: 'wrapPresent';
+      hikerId: HikerId;
+      recipe: PresentRecipe;
+      slots?: PaidSlot[];
+      resource?: ResourceId;
+      node?: NodeType;
+    }
+  /** Open a Present in the hiker's own bag: their action and 1 Energy, for a random item. */
+  | { type: 'openPresent'; hikerId: HikerId; itemUid: string }
+  /** Choosy: keep one of the items a Present held. */
+  | { type: 'presentTake'; index: number }
+  /**
    * Takes one option of the open trait pick (a level-up or an Old Photo). A
    * trait with no empty slot that fits replaces the trait in `replaceSlot`.
    */
@@ -964,7 +1024,11 @@ export type DebugOp =
   /** Sets the tier a hiker crafts one type at (the workbench does this in Phase 9). */
   | { kind: 'setCraftTier'; hikerId: HikerId; itemType: ItemTypeName; tier: number }
   /** Teaches a hiker a blueprint, for free. */
-  | { kind: 'learnBlueprint'; hikerId: HikerId; itemId: ItemId };
+  | { kind: 'learnBlueprint'; hikerId: HikerId; itemId: ItemId }
+  /** Puts a Present in a hiker's bag (even past the limit), with this wrapping and grade. */
+  | { kind: 'givePresent'; hikerId: HikerId; colorway: number; grade: PresentGrade }
+  /** Gift Wrapper's wish lists: rolled again, or set by hand. */
+  | { kind: 'setWishLists'; hikerId: HikerId; lists?: WishLists };
 
 export type ActionType = Action['type'];
 
@@ -1049,6 +1113,34 @@ export type GameEventBody =
   | { kind: 'blueprintFound'; hikerId: HikerId; itemId: ItemId; cause: string }
   /** A hiker taught another a blueprint, for Morale. */
   | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
+  /** A hiker wrapped a Present (Gift Wrapper). */
+  | {
+      kind: 'wrapped';
+      hikerId: HikerId;
+      grade: PresentGrade;
+      recipe: PresentRecipe;
+      paid: PaidSlot[];
+    }
+  /** A hiker opened a Present and got an item (or, Choosy, the items to pick from). */
+  | {
+      kind: 'presentOpened';
+      hikerId: HikerId;
+      grade: PresentGrade;
+      /** What they got; none yet while a Choosy pick waits. */
+      itemId?: ItemId;
+      wrappedBy?: HikerId;
+      /** Its wrapping, for the opening on screen. */
+      colorway?: number;
+    }
+  /** A Present taken apart, eaten or smashed by a trait (Spare Parts, Present Muncher, Wreck the Halls). */
+  | {
+      kind: 'presentGone';
+      hikerId: HikerId;
+      how: 'parts' | 'eaten' | 'smashed';
+      trait: string;
+      /** Its wrapping, for the smash on screen. */
+      colorway?: number;
+    }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */
   | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
   /** Costco Sample: the bite wasn't used up. */
@@ -1401,6 +1493,10 @@ export interface GameState {
   crafting?: PendingCraft;
   /** A level-up or an Old Photo's trait pick. Everything else waits for it too. */
   traitPick?: TraitPick;
+  /** A Present opened by a Choosy hiker: the items to pick 1 from. Everything else waits for it. */
+  presentPick?: PresentPick;
+  /** The last day anyone in the party opened a Present (Holiday Spirit). */
+  lastPresentDay?: number;
   /** The trinket recipe's random different resources, longest first; a new set after each trinket. */
   trinketRecipe?: ResourceId[];
   /** Debug only: card types the next scavenge deals first. */

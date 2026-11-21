@@ -183,7 +183,65 @@
 
 .choices {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.choice:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Picking resources for an ability (Spare Parts). */
+.resourcePick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pickedRow {
+  display: flex;
+  gap: 8px;
+}
+
+.pickedOne {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  border: 1px solid rgba(233, 180, 76, 0.7);
+  background: rgba(233, 180, 76, 0.16);
+  cursor: pointer;
+}
+
+.pickedOne[data-empty] {
+  border: 2px dashed rgba(255, 255, 255, 0.25);
+  background: transparent;
+  cursor: default;
+}
+
+.resourceGrid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.resourceButton {
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.resourceButton:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .choice {

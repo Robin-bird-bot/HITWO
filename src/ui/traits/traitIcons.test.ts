@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { TRAIT_LIST, TRAITS } from '../../content/traits';
+import { HOLIDAY_TRAITS } from '../../content/traits/holiday';
 import { iconFile, kebabName } from '../../content/traits/icons';
 import { fixtureGame, fixtureHiker, hiker } from '../../engine/test/fixtures';
 import { BADGE_COLORS, traitBadges, type BadgeInfo } from './badges';
@@ -14,10 +15,20 @@ const ON_DISK = Object.keys(import.meta.glob('/public/assets/traits/*.png')).map
 );
 
 describe('trait icon files', () => {
-  it('every trait has an icon file', () => {
+  /** The holiday hikers' traits: no art yet, so their badges show initials (holiday-hikers-2). */
+  const AWAITING_ART = HOLIDAY_TRAITS.map((d) => d.id);
+
+  it('every trait has an icon file, except the holiday traits still waiting for art', () => {
     const missing = TRAIT_LIST.filter((def) => !ON_DISK.includes(iconFile(def))).map((d) => d.id);
-    expect(missing).toEqual([]);
-    for (const def of TRAIT_LIST) expect(traitIconUrl(def.id)).toBeDefined();
+    expect(missing).toEqual(AWAITING_ART);
+    for (const def of TRAIT_LIST) {
+      if (!AWAITING_ART.includes(def.id)) expect(traitIconUrl(def.id)).toBeDefined();
+    }
+    // When Wyatt sends them, they're named after the trait.
+    expect(iconFile(TRAITS.giftWrapper!)).toBe('gift-wrapper');
+    expect(iconFile(TRAITS.downTheChimney!)).toBe('down-the-chimney');
+    expect(iconFile(TRAITS.checkingItTwice!)).toBe('checking-it-twice');
+    expect(iconFile(TRAITS.wreckTheHalls!)).toBe('wreck-the-halls');
   });
 
   it('every icon file belongs to a trait', () => {

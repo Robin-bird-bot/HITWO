@@ -1,7 +1,8 @@
 import { makeItem, withDefaults } from './items/make';
 import { ITEMS } from '../content/items';
 import { PARTY_COLORS } from '../content/partyColors';
-import { fireBiomeStart } from './effects';
+import { fireBiomeStart, fireRunStart, wrapsPresents } from './effects';
+import { makePresent } from './items/presents';
 import { scoutAround } from './traits/reveal';
 import { rollDailyTraits } from './traits/daily';
 import { noteXpRows } from './xp';
@@ -37,6 +38,8 @@ import type {
 export interface StartingBag {
   items?: readonly ItemId[];
   blueprints?: { count: number; tier: 1; type?: ItemTypeName };
+  /** Plain Presents (Grammy Clause, the Grinch), each with a random wrapping. */
+  presents?: number;
 }
 
 export interface HikerSetup {
@@ -152,8 +155,9 @@ export function createGame({
     if (h && setup.startingBag) giveStartingBag(state, h, setup.startingBag);
   });
   if (startingResources) giveStartingResources(state);
-  // The first day's daily traits, then the first biome begins (Prepared, Tactical), and
-  // Scouts see around the trailhead.
+  // The run begins (Gift Wrapper rolls the wish lists), then the first day's daily
+  // traits, then the first biome begins (Prepared, Tactical), and Scouts see around the trailhead.
+  fireRunStart(state);
   rollDailyTraits(state);
   fireBiomeStart(state);
   scoutAround(state);
@@ -169,6 +173,14 @@ export function createGame({
 function giveStartingBag(state: GameState, h: Hiker, bag: StartingBag): void {
   for (const itemId of bag.items ?? []) {
     if (ITEMS[itemId]) h.inventory.bag.push(makeItem(state, itemId, { prefix: 'start' }));
+  }
+  // Starting Presents: a wrapper's own count as hers (Season of Giving); anyone else's
+  // were wrapped by nobody in the party. TODO(wyatt): first guess.
+  const own = wrapsPresents(state, h);
+  for (let i = 0; i < (bag.presents ?? 0); i++) {
+    h.inventory.bag.push(
+      makePresent(state, 'plain', { prefix: 'start', ...(own ? { wrappedBy: h.id } : {}) }),
+    );
   }
   const want = bag.blueprints;
   if (!want) return;

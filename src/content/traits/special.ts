@@ -214,8 +214,8 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     },
   ),
   morale('showGirl', 'Show Girl', 'Humans on this hiker’s tile get +1 from every Morale gain.', {
-    ...unique('showgirlGdog'),
-    // TODO(wyatt): every Human on the tile, Show Girl herself included.
+    ...unique('showqueenGdog'),
+    // TODO(wyatt): every Human on the tile, Show Girl herself included (Showqueen Gdog).
     hooks: {
       modifyTileStatChange: (q) =>
         q.stat === 'morale' && q.delta > 0 && q.target.family === 'human'

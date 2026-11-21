@@ -14,7 +14,7 @@ The roster: each character's classes, trait slots and starting traits, plus new 
 | Dogs | Ellie, Finn, Cody, Pearl, Brutus | Duke, Scarlet, Sinjon, Hershal, Kai, Boss & Gracie (Duo) |
 | Cats |  | Loki, Coco, Muffin |
 | Plush |  | Pepper, Goldie |
-| Variants |  | Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie, Planner Wink, Graduate Mom, Showgirl Gdog, Wywee |
+| Variants |  | Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie, Prepared Wink, Graduate Mom, Showqueen Gdog, Wywee, Grammy Clause, Lelf, Grinch, Redolf |
 
 ## Classes
 
@@ -516,16 +516,80 @@ Variants are costumes or alternate versions of a hiker with a different focus.
 | Agility Finn |  | Scout | T, T, T, M | Fast, Scout, Backtracker, Extrovert |
 | Ellie the Devourer | The Iron Stomach | Hardy | T, U, U, M | Glutton, Lead Stomach, Garbage Gut (*new*), Foody |
 | Nosework Ellie |  | Scavenger | U, U, M | Nosework, Fetch, Bossy |
-| Planner Wink | The Planner | Scout | T, T, M | Prepared, Scout, Traveler |
+| Prepared Wink | The Planner | Scout | T, T, M | Prepared, Scout, Traveler |
 | Graduate Mom | The Bargain Hunter | Moneymaker | U, U, U, M | MBA, Non-Non-Profit, Frugal, Wanderlust |
-| Showgirl Gdog | Part of the Mood Ring | Entertainer | U, U, M, M | Singer, Liberal, Show Girl, Caring |
+| Showqueen Gdog | Part of the Mood Ring | Entertainer | U, U, M, M | Singer, Liberal, Show Girl, Caring |
 | Wywee | Wyatt | Tank and Support | T, T, M | Easy Mode (new), Supportive, Rain Lover |
 
 - **Garbage Gut** (*new*, special, Utility): Quality 1 food never gives her a bad condition.
 - **Nosework** is the old Niche Hunter, renamed: each morning a random node type is picked, and on a tile with that node she gets +3 Luck when scavenging and crafting.
-- **Showgirl Gdog:** Show Girl gives every Human on her tile +1 from each Morale gain, and Caring sets her own Morale to the lowest on her tile. Together she lifts everyone else while sharing their mood.
+- **Showqueen Gdog:** Show Girl gives every Human on her tile +1 from each Morale gain, and Caring sets her own Morale to the lowest on her tile. Together she lifts everyone else while sharing their mood.
 
 * **Wywee** (a support tank who makes challenges and conditions easier for others): **Easy Mode** (*new*, unique, Trail): hikers facing a challenge on his tile pay \[1\] less of its cost (never below 0). He starts with a Trooper Mask (see Starting bags).
+
+## Holiday hikers
+
+Christmas variants of Gdog, Leah, Ellie and Cody, built to play together. **Grammy Clause** is the heart of the group: she's the only way to make Presents, and the other three each get something special out of opening them. Like every variant, each one can't join with their base hiker (no cloning). In the Family sort they get their own **Holiday** ribbon.
+
+**Presents** are a new item only Grammy Clause can make (see Items). Opening one costs a hiker their action and 1 Energy, and gives a random item from any tier.
+
+### Grammy Clause "The Festive"
+
+Gdog in a Santa suit. She can't craft normal items, only Presents, and she can't open them herself, so she needs the party around her.
+
+- **Variant of:** Gdog. **Class:** Crafter and Support.
+- **Slots:** U, U, U, M.
+
+| Slot | Trait | Kind | Effect |
+| --- | --- | --- | --- |
+| U | Gift Wrapper | *New*, unique | She can only craft Presents, never other items, and can't open Presents. A plain Present costs 3 of the same resource, or 5 resources of the same type (Forest, River, Mountain or Wildlife). Her two **wish lists** make better ones: 3 specific resources for a Tier 2 or 3 Present, or 5 specific resources for a Tier 3 Present. Both lists change after every Present she wraps. |
+| U | Down the Chimney | *New*, unique, usable | Once per day, as a free action, sends a Present from her pack to any hiker, anywhere on the map. |
+| U | Checking It Twice | *New*, unique, usable | Once per day, as a free action, rerolls both of her wish lists. |
+| M | Season of Giving | *New*, open to all | +1 Morale each time someone opens a Present she wrapped. −1 at the start of a day if she wrapped none the day before. |
+
+### Lelf "The Little Helper"
+
+Leah as one of Santa's elves. She turns Presents into tools, or back into the resources Grammy needs.
+
+- **Variant of:** Leah. **Class:** Crafter and Support.
+- **Slots:** T, U, U, M.
+
+| Slot | Trait | Kind | Effect |
+| --- | --- | --- | --- |
+| T | Short | Existing, Tier I | Moving costs 1 less Appetite (never below 0). −1 item slot. |
+| U | Toy Maker | *New*, special | Presents she opens hold a Tool \[3×\] as often. |
+| U | Spare Parts | *New*, unique, usable | As a free action, takes apart a Present for \[2\] resources of her choice. |
+| M | Holiday Spirit | *New*, open to all | +1 Morale each time a hiker on her tile opens a Present. −1 at the start of a day after nobody opened one. |
+
+### Grinch "The Grumpy"
+
+Ellie, dyed green. She gets the best out of every Present, never shares, and would rather smash a Present than give it away.
+
+- **Variant of:** Ellie. **Class:** Scavenger and Jack.
+- **Slots:** U, U, T/U, M.
+
+| Slot | Trait | Kind | Effect |
+| --- | --- | --- | --- |
+| U | Choosy | *New*, unique | When she opens a Present, she sees 3 random items and keeps 1. |
+| U | Two Sizes Too Small | *New*, unique | She can't give or trade items to other hikers, only receive them. She can still use, drop or sell them. |
+| T/U | Wreck the Halls | *New*, unique, usable | As a free action, destroys a Present in her pack for a random \[3–8\] Morale. |
+| M | Bah Humbug | *New*, special | +1 Morale each time she opens a Present. −1 each time a hiker on her tile Sits by the Fire. |
+
+### Redolf "The Rednose Retriever"
+
+Cody with antlers and a glowing nose. He leads the group through the dark, and eats the wrapping paper.
+
+- **Variant of:** Cody. **Class:** Tank and Scout.
+- **Slots:** T, U, U, M.
+
+| Slot | Trait | Kind | Effect |
+| --- | --- | --- | --- |
+| T | Rednose | *New*, unique | Moving the group at night costs nothing extra, and Fog never hides the tiles next to him. |
+| U | Treat Sniffer | *New*, special | Presents he opens hold Food \[3×\] as often. |
+| U | Present Muncher | *New*, unique, usable | As a free action, eats a Present for a random \[0–5\] Appetite. |
+| M | Holiday Spirit | *New*, open to all | +1 Morale each time a hiker on his tile opens a Present. −1 at the start of a day after nobody opened one. |
+
+**How they play together:** Grammy wraps Presents and sends them anywhere with Down the Chimney. Lelf takes spare ones apart for the resources Grammy needs next (or opens them for tools), Redolf eats them when the group is hungry (or opens them for food), and the Grinch picks the best of 3, though whatever she gets stays with her. When her Morale runs low, she can smash a Present instead.
 
 ## Groups
 
@@ -600,10 +664,14 @@ At the start of a run, the player picks items and resources for each hiker. Some
 | Agility Finn | Jogging Shoes |
 | Ellie the Devourer | 2 Dog Food |
 | Nosework Ellie | Treasure Map |
-| Planner Wink | Tent, Binoculars and Scanner |
+| Prepared Wink | Tent, Binoculars and Scanner |
 | Graduate Mom | Diploma and Wallet |
-| Showgirl Gdog | Fancy Attire |
+| Showqueen Gdog | Fancy Attire |
 | Wywee | Trooper Mask |
+| Grammy Clause | 2 Presents |
+| Lelf | 1 random Tier 1 tool blueprint |
+| Grinch | 1 Present |
+| Redolf | Camping Lamp |
 
 ## Template builds
 
@@ -618,10 +686,10 @@ Starting builds made from traits no character used yet. Each is 2 traits plus a 
 | The Tagalong | Scavenger | Copier, Forager, Extrinsic | Follower Finn |
 | The Iron Stomach | Hardy | Glutton, Lead Stomach, Foody | Ellie the Devourer |
 | The Daredevil | Hardy | Thrill Seeker, Shrug Off, Thrill-Seeker (Morale) | Ben |
-| The Planner | Scout | Prepared, Scout, Traveler | Planner Wink |
+| The Planner | Scout | Prepared, Scout, Traveler | Prepared Wink |
 | The Lone Crafter | Crafter | Focused, Savvy, Zen | Muffin |
 | The Bargain Hunter | Moneymaker | Frugal, Charismatic, Fair-Weather | Graduate Mom (partly) |
-| The Mood Ring | Support | Transparent, Liberal, Caring | Split between Mindy, Nathan and Showgirl Gdog |
+| The Mood Ring | Support | Transparent, Liberal, Caring | Split between Mindy, Nathan and Showqueen Gdog |
 | The Gambler | Jack | Gambler, Fortunate, Thrill-Seeker (Morale) | Not yet |
 
 ## Difficulty (hidden)
@@ -641,7 +709,7 @@ Each hiker has a difficulty rating from 1 to 10: how complicated they are to pla
 | Jackson | 3 | Easy | Forest focus, easy to follow |
 | Mom | 3 | Easy | Wants Dogs nearby, otherwise simple |
 | Muffin | 3 | Easy | Wants to craft alone |
-| Planner Wink | 3 | Easy | Scouting, little upkeep |
+| Prepared Wink | 3 | Easy | Scouting, little upkeep |
 | Scarlet | 3 | Easy | Mostly passive; Morale needs the top spot |
 | Agility Finn | 4 | Medium | Movement tricks to plan |
 | Catie | 4 | Medium | Funny drawback, crafting focus |
@@ -666,15 +734,19 @@ Each hiker has a difficulty rating from 1 to 10: how complicated they are to pla
 | Melissa | 6 | Hard | Two Morale traits and a usable |
 | Nosework Ellie | 6 | Hard | Daily node to chase |
 | Grandpa Sherman | 7 | Hard | Zany is random; timing Trespasser |
-| Showgirl Gdog | 7 | Hard | Shares the group's mood |
+| Showqueen Gdog | 7 | Hard | Shares the group's mood |
 | Wyatt | 7 | Hard | Quirky changes every day |
 | Boss & Gracie | 8 | Expert | Duo with a daily switch |
 | Pepper | 9 | Expert | Plush who moves when no one looks |
+| Lelf | 4 | Medium | Presents in, tools or resources out |
+| Redolf | 4 | Medium | Mostly passive; eats spare Presents |
+| Grinch | 5 | Medium | Great opener, but can’t pass items on |
+| Grammy Clause | 6 | Hard | Can only make Presents; the group revolves around her |
 
 ## Sorting the hiker selection screen
 
 - **Default:** starters first, then the rest. No ribbons.
-- **Family:** grouped by real-life family (the table below). A hiker in two families shows in both. Variants go with their base hiker's family.
+- **Family:** grouped by real-life family (the table below). A hiker in two families shows in both. Variants go in Other, unless the table gives them a family (the holiday hikers have their own Holiday ribbon), so they don't crowd the family groups.
 - **Class:** grouped by main role. Each group's ribbon uses that role's banner color.
 - **Traits:** grouped by how many traits a hiker starts with (open slots don't count).
 - **Difficulty:** grouped by the bands above, easiest first.
@@ -688,7 +760,8 @@ The sort buttons, in order: Default, Family, Class, Traits, Difficulty.
 | Brooks | #3D7EA6 | Mom, Gdog, Grandpa Wink, Pepper, Melissa, Muffin, Coco |
 | Sherman | #D08A2E | Grandpa Sherman, Pearl, Kai, Catie, Mitchell, Nathan, Madeline |
 | Leichty | #4E8F5A | Erin, Jackson, Anni, Boss & Gracie |
-| Other | #6B6F78 | Everyone else |
+| Holiday | #A8233A | Grammy Clause, Lelf, Grinch, Redolf |
+| Other | #6B6F78 | Everyone else, including every variant not listed above |
 
 ## Open questions
 

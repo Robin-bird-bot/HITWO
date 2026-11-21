@@ -141,6 +141,10 @@ export function wonderArt(id: string): string {
 
 function byItemType(path: (type: string) => string) {
   return Object.fromEntries(
-    ['tool', 'food', 'clothes', 'shelter', 'trinket'].map((t) => [t, path(t)]),
-  ) as Record<'tool' | 'food' | 'clothes' | 'shelter' | 'trinket', string>;
+    // A Present has no rays or icon of its own: it borrows the trinket's (it's never face down).
+    ['tool', 'food', 'clothes', 'shelter', 'trinket', 'present'].map((t) => [
+      t,
+      path(t === 'present' ? 'trinket' : t),
+    ]),
+  ) as Record<'tool' | 'food' | 'clothes' | 'shelter' | 'trinket' | 'present', string>;
 }

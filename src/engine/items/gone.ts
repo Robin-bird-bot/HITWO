@@ -12,8 +12,11 @@
  *
  * Selling, dropping, giving and trading don't count.
  */
+import { ITEMS } from '../../content/items';
 import type { GameState, ItemId } from '../types';
 
 export function noteGone(state: GameState, itemId: ItemId): void {
+  // Presents are never in a random pool, Rocco's shops included (holiday hikers).
+  if (ITEMS[itemId]?.type === 'present') return;
   state.usedOrLost = { ...state.usedOrLost, [itemId]: (state.usedOrLost?.[itemId] ?? 0) + 1 };
 }

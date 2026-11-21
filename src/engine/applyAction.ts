@@ -43,6 +43,14 @@ import {
   validateTeach,
 } from './actions/craft';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import {
+  applyOpen,
+  applyPresentTake,
+  applyWrap,
+  validateOpen,
+  validatePresentTake,
+  validateWrap,
+} from './actions/presents';
 import { applyTactical, validateTactical } from './actions/tactical';
 import { scoutAround } from './traits/reveal';
 import { applyPick, pickReason } from './traits/levelUp';
@@ -83,6 +91,7 @@ const STATION_STEPS = new Set<Action['type']>([
   'give',
   'craft',
   'craftTake',
+  'wrapPresent',
   'teach',
   'restAndGo',
   'debug',
@@ -130,6 +139,10 @@ export function validateAction(state: GameState, action: Action): string | null 
   if (state.crafting && action.type !== 'craftTake' && action.type !== 'debug') {
     return 'Finish crafting first: pick one of the cards.';
   }
+  // So does a Choosy hiker's Present.
+  if (state.presentPick && action.type !== 'presentTake' && action.type !== 'debug') {
+    return 'Pick an item from the Present first.';
+  }
   switch (action.type) {
     case 'move':
       return validateMove(state, action) ?? null;
@@ -171,6 +184,12 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateCraftTake(state, action) ?? null;
     case 'teach':
       return validateTeach(state, action) ?? null;
+    case 'wrapPresent':
+      return validateWrap(state, action) ?? null;
+    case 'openPresent':
+      return validateOpen(state, action) ?? null;
+    case 'presentTake':
+      return validatePresentTake(state, action) ?? null;
     case 'buy':
       return validateBuy(state, action) ?? null;
     case 'sell':
@@ -279,6 +298,15 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'teach':
       applyTeach(draft, action);
+      break;
+    case 'wrapPresent':
+      applyWrap(draft, action);
+      break;
+    case 'openPresent':
+      applyOpen(draft, action);
+      break;
+    case 'presentTake':
+      applyPresentTake(draft, action);
       break;
     case 'buy':
       applyBuy(draft, action);

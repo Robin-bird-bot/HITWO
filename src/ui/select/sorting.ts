@@ -11,7 +11,7 @@
  * The sort is remembered on this device; the filter isn't.
  */
 import { CLASS_COLORS, CLASS_NAMES } from '../../content/classes';
-import { HOUSEHOLDS, ROSTER, type RosterHiker } from '../../content/roster';
+import { HOUSEHOLDS, type RosterHiker } from '../../content/roster';
 import { CLASS_IDS } from '../../engine/types';
 import { deviceSetting } from '../app/deviceSetting';
 
@@ -98,21 +98,20 @@ function starterFirst(list: RosterHiker[]): Draft[] {
 }
 
 /**
- * FAMILY: each household's hikers in the table's order, each followed by
- * their variants (in roster order). Other is everyone else, by name. A hiker
- * in two households (Mom) shows in both.
+ * FAMILY (holiday-hikers-2): ELMERS, BROOKS, SHERMAN, LEICHTY, HOLIDAY and
+ * OTHER, each household's hikers in the table's order. Variants are Other
+ * unless they're given a household (the holiday hikers' Holiday), so the
+ * family groups stay the real family. Other is by name. A hiker in two
+ * households (Mom) shows in both.
  */
 function byFamily(list: RosterHiker[]): Draft[] {
-  const otherBases = ROSTER.filter((h) => !h.variantOf && h.households.includes('other'))
-    .sort(byName)
-    .map((h) => h.id);
   return HOUSEHOLDS.map((house) => {
-    const bases = house.id === 'other' ? otherBases : house.members;
-    // Base first, then its variants in the list's (roster) order.
-    const hikers = bases.flatMap((base) => [
-      ...list.filter((h) => h.id === base),
-      ...list.filter((h) => h.variantOf === base),
-    ]);
+    const hikers =
+      house.id === 'other'
+        ? list.filter((h) => h.households.includes('other')).sort(byName)
+        : house.members.flatMap((id) =>
+            list.filter((h) => h.id === id && h.households.includes(house.id)),
+          );
     return { key: house.id, label: house.name.toUpperCase(), color: house.color, hikers };
   });
 }

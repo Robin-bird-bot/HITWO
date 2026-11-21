@@ -12,7 +12,7 @@ import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted } from '../counters';
-import { computeCost, fireCraft, fireAction } from '../effects';
+import { computeCost, fireCraft, fireAction, wrapsPresents } from '../effects';
 import { bagSlots } from '../inventory';
 import {
   autoPay,
@@ -69,7 +69,11 @@ function slotsFor(state: GameState, hiker: Hiker, action: CraftAction): (PaidSlo
  * Inept, Exhausted… At a station's Workbench crafting is free.
  */
 export function craftOpenReason(state: GameState, hiker: Hiker): string | undefined {
-  return craftGate(state, hiker, { type: 'craft', hikerId: hiker.id, itemType: 'tool' });
+  // Gift Wrapper's window wraps Presents instead.
+  const probe: Action = wrapsPresents(state, hiker)
+    ? { type: 'wrapPresent', hikerId: hiker.id, recipe: 'sameResource' }
+    : { type: 'craft', hikerId: hiker.id, itemType: 'tool' };
+  return craftGate(state, hiker, probe);
 }
 
 function craftGate(state: GameState, hiker: Hiker | undefined, action: Action) {
@@ -81,6 +85,8 @@ export function validateCraft(state: GameState, action: CraftAction): string | u
   const hiker = findHiker(state, action.hikerId);
   const reason = craftGate(state, hiker, action);
   if (reason || !hiker) return reason;
+  // Gift Wrapper: Presents only, even at a station's Workbench.
+  if (wrapsPresents(state, hiker)) return `${hiker.name} only wraps Presents.`;
   if (!CRAFT_TYPES.includes(action.itemType)) return 'That isn’t something to craft.';
   if (action.blueprint) {
     const def = ITEMS[action.blueprint];

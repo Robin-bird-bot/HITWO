@@ -46,28 +46,23 @@ describe('FAMILY', () => {
   const groups = sortHikers(ROSTER, 'family');
   const group = (label: string) => groups.find((g) => g.ribbon?.label === label);
 
-  it('five ribbons in order, in their colors', () => {
+  it('six ribbons in order, in their colors (HOLIDAY between LEICHTY and OTHER)', () => {
     expect(ribbons(groups)).toEqual([
-      ['ELMERS', '#B5543A', '16 HIKERS'],
-      ['BROOKS', '#3D7EA6', '10 HIKERS'],
+      ['ELMERS', '#B5543A', '10 HIKERS'],
+      ['BROOKS', '#3D7EA6', '7 HIKERS'],
       ['SHERMAN', '#D08A2E', '7 HIKERS'],
       ['LEICHTY', '#4E8F5A', '4 HIKERS'],
-      ['OTHER', '#6B6F78', '5 HIKERS'],
+      ['HOLIDAY', '#A8233A', '4 HIKERS'],
+      ['OTHER', '#6B6F78', '13 HIKERS'],
     ]);
   });
 
-  it('each family in the table’s order, with variants right after their base hiker', () => {
+  it('each family in the table’s order: the real family only, no variants', () => {
     expect(ids(group('ELMERS'))).toEqual([
       'wyatt',
-      'wywee',
       'mom',
-      'graduateMom',
       'ellie',
-      'ellieDevourer',
-      'noseworkEllie',
       'finn',
-      'followerFinn',
-      'agilityFinn',
       'cody',
       'duke',
       'scarlet',
@@ -77,11 +72,8 @@ describe('FAMILY', () => {
     ]);
     expect(ids(group('BROOKS'))).toEqual([
       'mom',
-      'graduateMom',
       'gdog',
-      'showgirlGdog',
       'grandpaWink',
-      'plannerWink',
       'pepper',
       'melissa',
       'muffin',
@@ -99,29 +91,43 @@ describe('FAMILY', () => {
     expect(ids(group('LEICHTY'))).toEqual(['erin', 'jackson', 'anni', 'bossGracie']);
   });
 
-  it('Other is everyone else, by name', () => {
-    expect(ids(group('OTHER'))).toEqual(['ben', 'goldie', 'leah', 'loki', 'mindy']);
+  it('the holiday hikers have their own group, in order', () => {
+    expect(ids(group('HOLIDAY'))).toEqual(['grammyClause', 'lelf', 'grinch', 'redolf']);
   });
 
-  it('Mom (and Graduate Mom) show in both Elmers and Brooks; everyone else once', () => {
+  it('Other is everyone else by name, every other variant included (Wywee too)', () => {
+    expect(ids(group('OTHER'))).toEqual([
+      'agilityFinn',
+      'ben',
+      'ellieDevourer',
+      'followerFinn',
+      'goldie',
+      'graduateMom',
+      'leah',
+      'loki',
+      'mindy',
+      'noseworkEllie',
+      'preparedWink',
+      'showqueenGdog',
+      'wywee',
+    ]);
+    const variants = ROSTER.filter((h) => h.variantOf && !h.households.includes('holiday'));
+    expect(variants.every((h) => ids(group('OTHER')).includes(h.id))).toBe(true);
+  });
+
+  it('Mom shows in both Elmers and Brooks; everyone else once', () => {
     const seen = new Map<string, number>();
     for (const g of groups) for (const h of g.hikers) seen.set(h.id, (seen.get(h.id) ?? 0) + 1);
     expect(seen.size).toBe(ROSTER.length);
-    expect([...seen].filter(([, n]) => n > 1).map(([id]) => id)).toEqual(['mom', 'graduateMom']);
+    expect([...seen].filter(([, n]) => n > 1).map(([id]) => id)).toEqual(['mom']);
   });
 
-  it('a filter keeps variants with their family, even without the base hiker', () => {
+  it('the VARIANTS filter: Other’s variants and the holiday hikers', () => {
     const variants = sortHikers(ROSTER, 'family', 'variant');
-    expect(ids(variants.find((g) => g.ribbon?.label === 'ELMERS'))).toEqual([
-      'wywee',
-      'graduateMom',
-      'ellieDevourer',
-      'noseworkEllie',
-      'followerFinn',
-      'agilityFinn',
-    ]);
-    // Families with no variants are left out.
-    expect(variants.map((g) => g.ribbon?.label)).toEqual(['ELMERS', 'BROOKS']);
+    expect(variants.map((g) => g.ribbon?.label)).toEqual(['HOLIDAY', 'OTHER']);
+    expect(ids(variants[0])).toEqual(['grammyClause', 'lelf', 'grinch', 'redolf']);
+    expect(ids(variants[1])).toContain('wywee');
+    expect(variants.flatMap((g) => g.hikers)).toHaveLength(12);
   });
 });
 

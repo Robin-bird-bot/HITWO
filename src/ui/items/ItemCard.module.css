@@ -64,6 +64,21 @@
   pointer-events: none;
 }
 
+/* A Tier 2+ or Tier 3 Present's tag, where the tier numeral usually sits. */
+.gradeTag {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #2b1d12;
+  background: linear-gradient(160deg, #ffe08a, #d79a1e);
+  box-shadow: 0 2px 0 rgba(20, 16, 12, 0.6);
+  pointer-events: none;
+}
+
 .text {
   position: absolute;
   display: flex;

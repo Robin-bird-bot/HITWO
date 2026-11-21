@@ -65,6 +65,8 @@ export function bagWords(bag: StartingBag): string {
     const name = ITEMS[id]?.name ?? id;
     return n === 1 ? name : `${n} ${name}`;
   });
+  // The holiday hikers' Presents.
+  if (bag.presents) parts.push(bag.presents === 1 ? 'Present' : `${bag.presents} Presents`);
   const bp = bag.blueprints;
   if (bp && bp.count > 0) {
     const kind = bp.type ? `${bp.type} blueprint` : 'blueprint';

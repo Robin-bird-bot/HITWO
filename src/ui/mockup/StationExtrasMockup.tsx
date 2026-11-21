@@ -24,7 +24,7 @@ import {
   craftRecipe,
   createGame,
   type GameState,
-  type ItemType,
+  type ItemTypeName,
   type Recipe,
   type RecipePart,
 } from '../../engine';
@@ -176,8 +176,8 @@ export function StationExtrasMockup() {
 
 // ── The Workbench tab ───────────────────────────────────────────────────────
 
-const TYPES: ItemType[] = ['tool', 'clothes', 'food', 'shelter', 'trinket'];
-const TYPE_ICON: Record<ItemType, IconName> = {
+const TYPES: ItemTypeName[] = ['tool', 'clothes', 'food', 'shelter', 'trinket'];
+const TYPE_ICON: Record<ItemTypeName, IconName> = {
   tool: 'hammer',
   clothes: 'shirt',
   food: 'utensils',
@@ -235,7 +235,7 @@ function WorkbenchScene({ state, pick }: { state: GameState; pick: boolean }) {
 }
 
 function Workbench({ state }: { state: GameState }) {
-  const [type, setType] = useState<ItemType>('tool');
+  const [type, setType] = useState<ItemTypeName>('tool');
   const [blueprint, setBlueprint] = useState<string | null>(null);
   const crafter = state.hikers[0];
   if (!crafter || !state.station) return null;
@@ -307,11 +307,14 @@ function Workbench({ state }: { state: GameState }) {
                 onClick={() => {
                   if (locked) return;
                   setBlueprint(id);
-                  setType(d.type);
+                  if (d.type !== 'present') setType(d.type);
                 }}
                 style={{ '--type': TYPE_LOOK[d.type].accent } as CSSProperties}
               >
-                <Icon name={locked ? 'shield' : TYPE_ICON[d.type]} size={22} />
+                <Icon
+                  name={locked ? 'shield' : d.type === 'present' ? 'package' : TYPE_ICON[d.type]}
+                  size={22}
+                />
                 <span>{d.name.toUpperCase()}</span>
                 <em>
                   {free ? 'FREE HERE' : locked ? `TIER ${NUMERAL[d.tier]} · LOCKED` : 'KNOWN'}

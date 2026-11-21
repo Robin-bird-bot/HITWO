@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { ITEMS } from '../../content';
 import { CONDITIONS } from '../../content/conditions';
+import { presentName } from '../../content/items/presents';
 import { RESOURCES } from '../../content/resources';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
@@ -29,6 +30,7 @@ import {
   statMax,
   canHandOver,
   choiceOfUse,
+  keepsItemsReason,
   copyChoices,
   readCopy,
   workingTrait,
@@ -174,6 +176,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
     onDispatch(action);
     onClose();
   };
+  const keeps = item && !out ? keepsItemsReason(state, hiker) : undefined;
 
   return (
     <Popout
@@ -203,6 +206,7 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
 
       {item && !out && !useStep && (
         <>
+          <OpenSection state={state} hiker={hiker} itemUid={item.uid} onOpen={act} />
           <EatSection state={state} hiker={hiker} itemUid={item.uid} name={name} onEat={act} />
           <PutOn state={state} hiker={hiker} itemUid={item.uid} onPutOn={act} />
           <PlaceSection state={state} hiker={hiker} itemUid={item.uid} name={name} onPlace={act} />
@@ -222,21 +226,22 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
           {out ? 'No one is here to take it.' : 'No one else is here to give it to.'}
         </span>
       )}
+      {/* Two Sizes Too Small: her items stay with her. */}
+      {item && !out && keeps && <span className={styles.none}>{keeps}</span>}
       {others.map((h) => {
         const room = roomFor(h);
+        const give: Action = resource
+          ? { type: 'give', fromId: hiker.id, toId: h.id, resource: resource.id }
+          : { type: 'give', fromId: hiker.id, toId: h.id, itemUid: item?.uid ?? '' };
+        const why = validateAction(state, give);
         return (
           <button
             key={h.id}
             type="button"
             className={styles.option}
-            disabled={!room}
-            onClick={() =>
-              act(
-                resource
-                  ? { type: 'give', fromId: hiker.id, toId: h.id, resource: resource.id }
-                  : { type: 'give', fromId: hiker.id, toId: h.id, itemUid: item?.uid ?? '' },
-              )
-            }
+            disabled={!room || !!why}
+            title={why ?? undefined}
+            onClick={() => act(give)}
           >
             <Icon name="user" size={16} />
             {out ? `${h.name} takes it` : `Give to ${h.name}`}
@@ -625,6 +630,71 @@ function UseSection({
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** Food: eat a bite (asks first, since it can't be undone). */
+/**
+ * A Present: Open it (the hiker's action and 1 Energy, for a random item).
+ * It asks first, since the Present is gone once it's open.
+ */
+function OpenSection({
+  state,
+  hiker,
+  itemUid,
+  onOpen,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  itemUid: string;
+  onOpen(action: Action): void;
+}) {
+  const [asking, setAsking] = useState(false);
+  const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
+  if (!item || ITEMS[item.itemId]?.type !== 'present') return null;
+  const action: Action = { type: 'openPresent', hikerId: hiker.id, itemUid };
+  const reason = validateAction(state, action);
+  const energy = BALANCE.presents.openEnergy;
+
+  if (asking) {
+    return (
+      <div className={styles.confirm}>
+        <span className={styles.none}>
+          {hiker.name} opens the {presentName(item.grade)}? It uses their action and {energy}{' '}
+          Energy.
+        </span>
+        <button
+          type="button"
+          className={`${styles.option} ${styles.useIt}`}
+          onClick={() => onOpen(action)}
+        >
+          <Icon name="package" size={16} />
+          Yes, open it
+        </button>
+        <button
+          type="button"
+          className={styles.option}
+          data-autofocus
+          onClick={() => setAsking(false)}
+        >
+          Not now
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className={`${styles.option} ${styles.tall}`}
+      disabled={!!reason}
+      title={reason ?? undefined}
+      onClick={() => setAsking(true)}
+    >
+      <Icon name="package" size={16} />
+      <span className={styles.useText}>
+        Open
+        <span className={styles.effect}>{reason ?? `Your action and ${energy} Energy.`}</span>
+      </span>
+    </button>
+  );
+}
+
 function EatSection({
   state,
   hiker,

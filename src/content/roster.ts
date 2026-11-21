@@ -12,11 +12,11 @@ import type { HikerSetup, StartingBag } from '../engine/newGame';
 import type { ClassId, Family, SlotType, TraitSetting } from '../engine/types';
 
 /** Real-life families, for the selection screen's Family sort ("household" in code). */
-export type HouseholdId = 'elmers' | 'brooks' | 'sherman' | 'leichty' | 'other';
+export type HouseholdId = 'elmers' | 'brooks' | 'sherman' | 'leichty' | 'holiday' | 'other';
 
 export interface RosterHiker extends HikerSetup {
   characterId: string;
-  /** Shown under the name in capitals and quotes; none yet for Ben, Mindy and the variants. */
+  /** Shown under the name in capitals and quotes; none yet for Ben, Mindy and most variants. */
   title?: string;
   /** One of the 10 available from the start. */
   starter?: true;
@@ -24,7 +24,10 @@ export interface RosterHiker extends HikerSetup {
   variantOf?: string;
   /** How hard they are to play well, 1–10. Never shown in the game. */
   difficulty: number;
-  /** Their real-life families, in the order the Family sort lists them. */
+  /**
+   * Their real-life families, in the order the Family sort lists them. A
+   * variant is Other unless it's given one (the holiday hikers: Holiday).
+   */
   households: readonly HouseholdId[];
   /** The file in public/assets/portraits/, or none yet. */
   portrait?: string;
@@ -305,16 +308,20 @@ const ENTRIES: RosterHiker[] = [
   }),
 
   // ── Variants (07-characters.md, "Variants") ──
+  // The costume portraits fit the whole costume, so they aren't on the others' head scale
+  // (holiday-hikers-2): drawn as they are, never rescaled.
   hiker('followerFinn', 'Follower Finn', 'dog', ['scavenger'], {
     variantOf: 'finn',
     slots: slots('T follower', 'U copydog', 'U forager', 'M extrinsic'),
     difficulty: 3,
+    portrait: 'follower-finn',
     startingBag: items('sack'),
   }),
   hiker('agilityFinn', 'Agility Finn', 'dog', ['scout'], {
     variantOf: 'finn',
     slots: slots('T fast', 'T scout', 'T backtracker', 'M extrovert'),
     difficulty: 4,
+    portrait: 'agility-finn',
     startingBag: items('joggingShoes'),
   }),
   hiker('ellieDevourer', 'Ellie the Devourer', 'dog', ['hardy'], {
@@ -322,31 +329,36 @@ const ENTRIES: RosterHiker[] = [
     // TODO(wyatt): the table says Glutton; a Dog gets its Dog name, Human Food (like Cody).
     slots: slots('T humanFood', 'U leadStomach', 'U garbageGut', 'M foody'),
     difficulty: 4,
+    portrait: 'devourer-ellie',
     startingBag: items('dogFood', 'dogFood'),
   }),
   hiker('noseworkEllie', 'Nosework Ellie', 'dog', ['scavenger'], {
     variantOf: 'ellie',
     slots: slots('U nosework', 'U fetch', 'M bossy'),
     difficulty: 6,
+    portrait: 'nosework-ellie',
     startingBag: items('treasureMap'),
   }),
-  hiker('plannerWink', 'Planner Wink', 'human', ['scout'], {
+  hiker('preparedWink', 'Prepared Wink', 'human', ['scout'], {
     variantOf: 'grandpaWink',
     // TODO(wyatt): Traveler needs an action and the doc doesn't give one; Tend, like Anni's.
     slots: slots('T prepared', 'T scout', 'M traveler:tend'),
     difficulty: 3,
+    portrait: 'prepared-wink',
     startingBag: items('tent', 'binoculars', 'scanner'),
   }),
   hiker('graduateMom', 'Graduate Mom', 'human', ['moneymaker'], {
     variantOf: 'mom',
     slots: slots('U mba', 'U nonNonProfit', 'U frugal', 'M wanderlust'),
     difficulty: 5,
+    portrait: 'graduate-mom',
     startingBag: items('diploma', 'wallet'),
   }),
-  hiker('showgirlGdog', 'Showgirl Gdog', 'human', ['entertainer'], {
+  hiker('showqueenGdog', 'Showqueen Gdog', 'human', ['entertainer'], {
     variantOf: 'gdog',
     slots: slots('U singer', 'U liberal', 'M showGirl', 'M caring'),
     difficulty: 7,
+    portrait: 'showqueen-gdog',
     startingBag: items('fancyAttire'),
   }),
   hiker('wywee', 'Wywee', 'human', ['tank', 'support'], {
@@ -356,12 +368,51 @@ const ENTRIES: RosterHiker[] = [
     portrait: 'wywee',
     startingBag: items('trooperMask'),
   }),
+
+  // ── Holiday hikers (07-characters.md, "Holiday hikers"): variants in their own Holiday group ──
+  hiker('grammyClause', 'Grammy Clause', 'human', ['crafter', 'support'], {
+    title: 'The Festive',
+    variantOf: 'gdog',
+    households: ['holiday'],
+    slots: slots('U giftWrapper', 'U downTheChimney', 'U checkingItTwice', 'M seasonOfGiving'),
+    difficulty: 6,
+    portrait: 'grammy-clause',
+    startingBag: { presents: 2 },
+  }),
+  hiker('lelf', 'Lelf', 'human', ['crafter', 'support'], {
+    title: 'The Little Helper',
+    variantOf: 'leah',
+    households: ['holiday'],
+    slots: slots('T short', 'U toyMaker', 'U spareParts', 'M holidaySpirit'),
+    difficulty: 4,
+    portrait: 'lelf',
+    startingBag: { blueprints: { count: 1, tier: 1, type: 'tool' } },
+  }),
+  hiker('grinch', 'Grinch', 'dog', ['scavenger', 'jack'], {
+    title: 'The Grumpy',
+    variantOf: 'ellie',
+    households: ['holiday'],
+    slots: slots('U choosy', 'U twoSizesTooSmall', 'T/U wreckTheHalls', 'M bahHumbug'),
+    difficulty: 5,
+    portrait: 'grinch',
+    startingBag: { presents: 1 },
+  }),
+  hiker('redolf', 'Redolf', 'dog', ['tank', 'scout'], {
+    title: 'The Rednose Retriever',
+    variantOf: 'cody',
+    households: ['holiday'],
+    slots: slots('T rednose', 'U treatSniffer', 'U presentMuncher', 'M holidaySpirit'),
+    difficulty: 4,
+    portrait: 'redolf',
+    startingBag: items('campingLamp'),
+  }),
 ];
 
 /**
  * The Family sort's groups (07-characters.md, "Sorting the hiker selection
- * screen"): each household's ribbon color and its hikers in order. Variants
- * join their base hiker's households; everyone else is Other.
+ * screen"; holiday-hikers-2): each household's ribbon color and its hikers in
+ * order. A variant is Other unless it's given a household (the holiday
+ * hikers' Holiday); everyone else not listed is Other too.
  */
 export const HOUSEHOLDS: readonly {
   id: HouseholdId;
@@ -404,13 +455,24 @@ export const HOUSEHOLDS: readonly {
     color: '#4E8F5A',
     members: ['erin', 'jackson', 'anni', 'bossGracie'],
   },
+  {
+    id: 'holiday',
+    name: 'Holiday',
+    color: '#A8233A',
+    members: ['grammyClause', 'lelf', 'grinch', 'redolf'],
+  },
   { id: 'other', name: 'Other', color: '#6B6F78', members: [] },
 ];
 
-/** A hiker's households: their own, or their base hiker's for a variant; Other if none. */
+/**
+ * A hiker's households: the ones they're given (the holiday hikers), or the
+ * ones listing them. A variant only has the households it's given, so the
+ * family groups stay the real family; anyone in none is Other.
+ */
 function householdsOf(h: RosterHiker): HouseholdId[] {
-  const base = h.variantOf ?? h.id;
-  const found = HOUSEHOLDS.filter((g) => g.members.includes(base)).map((g) => g.id);
+  if (h.households.length) return [...h.households];
+  if (h.variantOf) return ['other'];
+  const found = HOUSEHOLDS.filter((g) => g.members.includes(h.id)).map((g) => g.id);
   return found.length ? found : ['other'];
 }
 

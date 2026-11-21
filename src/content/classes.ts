@@ -135,7 +135,13 @@ export const TRAITS_BY_CLASS: Readonly<Record<ClassId, readonly string[]>> = {
 export const GENERAL_TRAITS: readonly string[] = ['strong', 'backtracker'];
 
 /** Morale traits that aren't open to everyone: they stay with their owners. */
-export const SPECIAL_MORALE: readonly string[] = ['misophonia', 'rainLover', 'moody', 'showGirl'];
+export const SPECIAL_MORALE: readonly string[] = [
+  'misophonia',
+  'rainLover',
+  'moody',
+  'showGirl',
+  'bahHumbug',
+];
 
 const CLASSES_OF = new Map<string, ClassId[]>();
 for (const [cls, ids] of Object.entries(TRAITS_BY_CLASS) as [ClassId, readonly string[]][]) {

@@ -30,6 +30,7 @@ import {
   wonderTile,
   tendAmount,
   tendCost,
+  wrapsPresents,
   type Action,
   type GameState,
   type Hiker,
@@ -72,6 +73,8 @@ import { TrialDetails } from '../challenge/TrialWindow';
 import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
 import { LevelUpScreen } from '../levelUp/LevelUpScreen';
+import { PresentFx } from '../presents/PresentFx';
+import { WrapWindow } from '../presents/WrapWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
@@ -672,6 +675,13 @@ export function GameScreen({
       if (d.kind === 'give') dispatch(d.action);
       else if (d.kind === 'eat') {
         setAsk({ at, title: `Eat the ${name}?`, text, options: [choose('Eat', [d.action])] });
+      } else if (d.kind === 'open') {
+        setAsk({
+          at,
+          title: `Open the ${name}?`,
+          text: `It uses ${nameOf(id)}’s action and ${BALANCE.presents.openEnergy} Energy.`,
+          options: [choose('Open', [d.action])],
+        });
       } else {
         const to = nameOf(id);
         setAsk({
@@ -799,6 +809,8 @@ export function GameScreen({
   const openBlueprints = () => selected && setCraftOpen({ hikerId: selected.id, tab: 'teach' });
   // A basic craft waiting for its pick keeps the window open on its crafter.
   const crafter = state.crafting?.hikerId ?? craftOpen?.hikerId;
+  const crafterHiker = crafter ? state.hikers.find((h) => h.id === crafter) : undefined;
+  const wrapper = !!crafterHiker && wrapsPresents(state, crafterHiker);
 
   const onAbility = (abilityId: string, choice?: string) =>
     selected &&
@@ -1168,8 +1180,17 @@ export function GameScreen({
                 />
               )}
 
-              {/* At a station, its Workbench crafts instead. */}
-              {crafter && !state.challenge && !state.station && (
+              {/* At a station, its Workbench crafts instead. Gift Wrapper only wraps Presents. */}
+              {crafter && !state.challenge && !state.station && wrapper && (
+                <WrapWindow
+                  key={crafter}
+                  state={state}
+                  hikerId={crafter}
+                  onDispatch={dispatch}
+                  onClose={() => setCraftOpen(null)}
+                />
+              )}
+              {crafter && !state.challenge && !state.station && !wrapper && (
                 <CraftWindow
                   key={crafter}
                   state={state}
@@ -1245,6 +1266,8 @@ export function GameScreen({
                   onAction={dispatch}
                 />
               )}
+              {/* Opening a Present (and Choosy's pick), or smashing one. */}
+              {!state.station && <PresentFx state={state} onAction={dispatch} />}
               {wonderOpen && !state.challenge && !state.scavenge && !result && (
                 <WonderWindow
                   state={state}
