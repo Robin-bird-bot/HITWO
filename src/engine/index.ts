@@ -38,6 +38,7 @@ export {
   replaceableSlots,
 } from './traits/levelUp';
 export { levelForXp, levelReached, onXpRow, xpForLevel } from './xp';
+export { dailyPickName } from './traits/daily';
 export {
   isExhausted,
   isFamished,

@@ -60,7 +60,7 @@ import type { ActionId } from '../panels/hikerInfo';
 import { PartyPanel } from '../panels/PartyPanel';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
-import { TurnPanel, type StashPick } from '../panels/TurnPanel';
+import { TurnPanel, type AbilityFocus, type StashPick } from '../panels/TurnPanel';
 import { ChallengeResult } from '../challenge/ChallengeResult';
 import { RevealedCard } from '../challenge/RevealedCard';
 import { TrialChips } from '../challenge/TrialChips';
@@ -324,6 +324,16 @@ export function GameScreen({
   };
 
   /** A portrait or token clicked: select them, or (with `add`) put them in or out of the group. */
+  // A usable trait's badge was tapped: pick that hiker and open the Abilities panel at it.
+  const [abilityFocus, setAbilityFocus] = useState<AbilityFocus | null>(null);
+  const useTrait = (id: HikerId, abilityId: string) => {
+    pickHiker(id);
+    setPanelCollapsed('turn', false);
+    setAbilityFocus((f) => ({ hikerId: id, abilityId, at: (f?.at ?? 0) + 1 }));
+  };
+  const focusAbility =
+    abilityFocus && abilityFocus.hikerId === selected?.id ? abilityFocus : undefined;
+
   const pickHiker = (id: HikerId, add = false) => {
     setSkipNote(undefined);
     if (!add) {
@@ -922,9 +932,11 @@ export function GameScreen({
                   }}
                   onAbandon={setConfirmAbandon}
                   onInjure={setConfirmInjure}
+                  onUseTrait={useTrait}
                 />
                 {selected && (
                   <SimpleTurn
+                    focusAbility={focusAbility}
                     state={state}
                     hiker={selected}
                     note={turnNote}
@@ -968,9 +980,11 @@ export function GameScreen({
                   }}
                   onAbandon={setConfirmAbandon}
                   onInjure={setConfirmInjure}
+                  onUseTrait={useTrait}
                 />
                 {selected && (
                   <TurnPanel
+                    focusAbility={focusAbility}
                     state={state}
                     hiker={selected}
                     note={turnNote}

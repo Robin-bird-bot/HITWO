@@ -221,29 +221,9 @@
   color: var(--text-faint);
 }
 
-.slots {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.slot {
-  height: 26px;
-  border: 2px solid transparent;
-  border-radius: 7px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  overflow: hidden;
-}
-
-.slot span {
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.badges {
+  display: block;
+  margin-top: 6px;
 }
 
 .xp {

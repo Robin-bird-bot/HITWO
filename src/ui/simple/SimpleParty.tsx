@@ -21,6 +21,8 @@ import { OrderBadge, SelectToggle } from '../panels/GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './Simple.module.css';
 import { portraitSrc } from '../portrait';
+import { traitBadges } from '../traits/badges';
+import { TraitBadgeRow } from '../traits/TraitBadge';
 
 interface SimplePartyProps {
   state: GameState;
@@ -36,6 +38,8 @@ interface SimplePartyProps {
   onAbandon?(id: HikerId): void;
   /** Asks to confirm taking an injury on purpose (a way out when stuck). */
   onInjure?(id: HikerId): void;
+  /** A usable trait's badge was tapped: open the Abilities panel at it. */
+  onUseTrait?(id: HikerId, abilityId: string): void;
 }
 
 const POPOUT_HEIGHT = 470;
@@ -46,6 +50,7 @@ export function SimpleParty({
   onSelect,
   onAbandon,
   onInjure,
+  onUseTrait,
   order = {},
   picking = false,
   onPicking,
@@ -104,6 +109,9 @@ export function SimpleParty({
               onClick={(card, add) => click(h, card, add)}
               turn={order[h.id]}
               drop={portrait.props(h.id)}
+              {...(onUseTrait
+                ? { onUseTrait: (abilityId: string) => onUseTrait(h.id, abilityId) }
+                : {})}
             />
           ))}
         </div>
@@ -144,6 +152,14 @@ export function SimpleParty({
                   },
                 }
               : {})}
+            {...(onUseTrait
+              ? {
+                  onUseTrait: (id: HikerId, abilityId: string) => {
+                    setOpen(null);
+                    onUseTrait(id, abilityId);
+                  },
+                }
+              : {})}
           />
         </Popout>
       )}
@@ -163,6 +179,7 @@ function HikerCard({
   hiker: h,
   selected,
   onClick,
+  onUseTrait,
   drop,
   turn,
 }: {
@@ -170,6 +187,7 @@ function HikerCard({
   hiker: Hiker;
   selected: boolean;
   onClick(card: HTMLElement, add: boolean): void;
+  onUseTrait?(abilityId: string): void;
   drop?: DropProps;
   /** Its place in the group's turn order. */
   turn?: number;
@@ -247,6 +265,14 @@ function HikerCard({
           />
         ))}
         <ConditionDots hiker={h} />
+        {/* Icons only (Simple view). Spans: the card is already a button. */}
+        <span className={styles.badges}>
+          <TraitBadgeRow
+            badges={traitBadges(state, h)}
+            as="span"
+            {...(onUseTrait ? { onUse: onUseTrait } : {})}
+          />
+        </span>
       </span>
     </button>
   );

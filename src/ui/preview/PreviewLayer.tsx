@@ -9,6 +9,7 @@ import { STAGE_HEIGHT, STAGE_WIDTH } from '../stage/fitStage';
 import { useStage } from '../stage/StageContext';
 import { ItemCard } from '../items/ItemCard';
 import { ScavCard } from '../scavenge/ScavCard';
+import { TraitHover } from '../traits/TraitHover';
 import { PreviewContext, type PreviewApi, type PreviewContent } from './preview';
 import styles from './PreviewLayer.module.css';
 
@@ -21,6 +22,8 @@ const BELOW = 96;
 const SIZE = {
   item: { w: 260, h: 364 + BELOW },
   scavenge: { w: 260, h: 240 + 96 + BELOW },
+  // A trait's window: about this tall with a status line.
+  trait: { w: 300, h: 190 },
 } as const;
 const GAP = 16;
 
@@ -108,8 +111,10 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
             </span>
           )}
         </>
-      ) : (
+      ) : c.kind === 'scavenge' ? (
         <ScavCard card={{ ...c.card, flipped: true }} size={240} faceUp caption="full" />
+      ) : (
+        <TraitHover badge={c.badge} />
       );
   }
 
@@ -122,7 +127,7 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
           data-pinned={shown.pinned || undefined}
           style={{ left: place.left, top: place.top, width: SIZE[shown.content.kind].w }}
           role="dialog"
-          aria-label="Card preview"
+          aria-label={shown.content.kind === 'trait' ? 'Trait' : 'Card preview'}
         >
           {card}
           {shown.pinned && <span className={styles.hint}>Tap anywhere to close</span>}

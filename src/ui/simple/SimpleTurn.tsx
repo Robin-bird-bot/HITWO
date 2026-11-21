@@ -18,6 +18,7 @@ import {
   Equipped,
   Resources,
   TileCard,
+  type AbilityFocus,
   type StashPick,
 } from '../panels/TurnPanel';
 import styles from './Simple.module.css';
@@ -46,6 +47,8 @@ interface SimpleTurnProps {
   onFeature?(): void;
   /** The hikers picked together (multi-select), in turn order. */
   group?: readonly HikerId[];
+  /** A tapped usable badge: the Abilities panel opens at it. */
+  focusAbility?: AbilityFocus | undefined;
 }
 
 export function SimpleTurn({
@@ -63,6 +66,7 @@ export function SimpleTurn({
   onBlueprints,
   onFeature,
   group,
+  focusAbility,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker, group);
   // Why a red action is stopped, after tapping it.
@@ -120,7 +124,13 @@ export function SimpleTurn({
           {!slot && whyText && <p className={styles.why}>{whyText}</p>}
           {note && <p className={styles.note}>{note}</p>}
           {hiker.status === 'active' && hasAbilities && (
-            <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+            <Abilities
+              key={focusAbility?.at ?? 0}
+              state={state}
+              hiker={hiker}
+              onAbility={onAbility}
+              focus={focusAbility}
+            />
           )}
           {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
           <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />

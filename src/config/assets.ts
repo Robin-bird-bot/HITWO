@@ -51,6 +51,14 @@ export const ASSETS = {
   icons: {
     acornCaps: asset('icons/acorn-caps.png'),
   },
+  /**
+   * Trait icons, white on transparent, at public/assets/traits/<trait id>.png
+   * (docs/ASSETS.md). None are in yet: add each id here as its file arrives.
+   * A badge uses the file as a CSS mask, so it can be tinted; until then it
+   * shows the trait's initials.
+   */
+  traitIcons: new Set<string>([]),
+  traitIcon: (traitId: string) => asset(`traits/${traitId}.png`),
   /** Night event creatures (Phase 6), by creature id, shrunk from assets/night-events. */
   nightEvent: (creatureId: string) => asset(`night-events/${creatureId}.jpg`),
   /** Resource icons by resource id (all 16). */

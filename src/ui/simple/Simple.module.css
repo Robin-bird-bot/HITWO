@@ -406,3 +406,9 @@
 .card[data-grouped] {
   border-color: rgba(233, 180, 76, 0.85);
 }
+
+/* The hiker card's trait badges (Phase 10a). */
+.badges {
+  display: block;
+  margin-top: 4px;
+}
