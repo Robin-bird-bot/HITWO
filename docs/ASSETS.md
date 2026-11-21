@@ -125,7 +125,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Ranger station (Phase 9):** the stone fireplace (`src/ui/station/fireplace-stones.svg` and CSS flames), the hanging sign, the counter and the brass caps plaque are drawn in code. The specials (Cement Mixer, Scout Report, Taxi Service) and the shop's blueprint squares use stroke icons. Wyatt may want to paint any of them.
 - **Merchant and Traveling Trader:** no art yet. Their window and the map use the bag and backpack icons.
 - **Empty scavenge card (Phase 9.5):** a placeholder face, drawn in code. It shows the node's backdrop, faded, with "EMPTY" in Edit Undo (`src/ui/scavenge/ScavCard.tsx`). Wyatt may want to paint one.
-- **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/portrait.ts`) and never appear in the real roster.
+- **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/hikers/portraitArt.ts`) and never appear in the real roster.
 
 Until real art arrives, use clearly marked placeholders.
 

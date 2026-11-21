@@ -749,7 +749,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
   - **Slots, level-ups and trinket picks:** `src/engine/traits/slots.ts` and `levelUp.ts`. Daily traits: `src/engine/traits/daily.ts`. Prepared, Tactical and Scout: `reveal.ts`.
   - **XP:** `src/engine/xp.ts` (`gainXp`, the row rule, the level lines).
   - **Trait warnings:** the forecast is `src/engine/traits/forecast.ts`; the setting is `src/ui/app/traitWarnings.ts`; the screen's view is `src/ui/traits/forecastView.ts`.
-  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window is `src/ui/traits/LevelUpWindow.tsx` (a placeholder until 10b); the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
+  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window was a placeholder until 10b replaced it with `src/ui/levelUp/`; the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
   - **Plush:** `src/content/families.ts`, `src/engine/stats.ts` (Stuffing kept in both stats) and `src/engine/thresholds.ts` (its limits).
   - **Debug (backtick):** test hikers on the title screen; add or remove any trait with its setting; add slots; refill uses; odd or even day; force a daily pick; set XP and level; level up now at a chosen tier; switch Trait warnings.
 - **First guesses while building** (`TODO(wyatt)` in the code):
@@ -903,6 +903,35 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 - **Background:** the shader compiles; under reduced motion it draws once; the fallback color shows without WebGL2.
 
 **Done when:** a run starts from the selection screen with 1 to 4 real hikers and their starting bags, every hiker card and sort matches the mockups, level-ups use the new screen, and the tests above pass.
+
+**Phase 10b notes (built Nov 20)**
+- **Where things are:**
+  - **The roster:** `src/content/roster.ts` (every hiker and variant, `HOUSEHOLDS`, no cloning); role colors in `src/content/classes.ts`; party colors by spot in `src/content/partyColors.ts`. Starting bags are handed out in `src/engine/newGame.ts`.
+  - **Art:** trait icons through `src/ui/traits/traitIcons.ts`; portraits, the forest background and family icons through `src/ui/hikers/portraitArt.ts` and `HikerPortrait.tsx`.
+  - **The hiker card:** `src/ui/hikers/HikerCard.tsx` (its data in `cardData.ts`; shrink-to-fit text in `fitText.ts`). A dev gallery at `#mockup-hiker-cards`.
+  - **The selection screen:** `src/ui/select/` (`HikerSelect.tsx`; the party rules in `selection.ts`; filters and sorts in `sorting.ts`; the background in `background/`). The shader is `src/shaders/hiker-select-bg.frag`.
+  - **The level-up screen:** `src/ui/levelUp/` (`LevelUpScreen.tsx`; what it shows in `levelUpView.ts`). Old Photo uses it too.
+  - **Remembered on the device:** the sort (`src/ui/app/deviceSetting.ts` makes any such setting).
+  - **Debug (backtick):** on the selection screen, a small panel shows each card's hidden difficulty. In a hike, "Level up now" (Traits) opens the level-up screen.
+- **Choices made while building (not in the mockups):**
+  - The selection screen has a **BACK** button to the title, so a misclick on New Hike doesn't strand anyone.
+  - A filled spot says **DROP TO SWAP** while a card is over it; dragging a hiker out of the spots shows **DROP TO REMOVE**.
+  - The FAMILY sort button sits second (DEFAULT, FAMILY, CLASS, TRAITS, DIFFICULTY); `HikerSort.png` was drawn before it existed.
+  - The swirling background fills the whole window, letterbox included.
+  - **Level-up:** KEEP MY TRAITS asks first (it can't be undone). A trait placed on a filled slot says "Replaces …" in red before CONFIRM. A placed card can be taken back from its spot in the row ("PLACED · TAKE BACK"). The + spot only shows when a NEW SLOT is offered.
+  - **Option tags** are worked out from the trait and the hiker's roles, not stored: a role the hiker has, JACK, or WILD CARD · ANY CLASS. Morale, general, special and unique traits have no tag.
+  - **Old Photo** keeps its old rule: one of its 3 traits must be taken (no KEEP MY TRAITS).
+  - **Phones:** in the hiker list a vertical swipe scrolls; a card is picked up by moving sideways first, or added with a double-tap. Spots and the level-up cards drag in any direction.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Roster:** Ellie the Devourer's Glutton is the Dog version, Human Food. Planner Wink's Traveler is set to Tend (the doc gives no action). The debug panel's "new game" starts with the first four starters.
+  - **Party colors follow the spot** (1 orange, 2 blue, 3 yellow, 4 purple). RANDOM uses the browser's random (it's the screen, not the run).
+  - **KEEP MY TRAITS** still counts the level, so MBA and Proud Mentor still fire.
+  - **The bracketed numbers:** a card flips in 0.35 s and lifts to 1.2×; the background's swirl 1.2, pixels 150 and pull 0.5, with a 40 s drift loop a quarter of the screen out; the level-up's blur 10 px, bar fill 1.2 s and cards dealt 0.15 s apart. All in `src/config/balance.ts` (`ui`).
+- **Not done yet:**
+  - **Art:** portraits for Ben, Mindy and the variants other than Wywee (they show their family icon or the variant star).
+  - **Phones:** at phone size the stage shrinks to about a third, so card text is very small; worth a look when Phase 12 or 17 sizes things for touch. The drag gestures were tested with simulated touches, not on a real phone.
+  - **Old Photo's screen** was checked by its tests, not in the browser (the debug panel can't open one).
+- **Saves:** version 17. A v16 save's hikers get their party colors. Wyatt's v14 save still loads.
 
 ---
 

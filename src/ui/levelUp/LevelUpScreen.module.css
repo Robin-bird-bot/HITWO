@@ -182,6 +182,12 @@
   cursor: grab;
 }
 
+/* Nothing here scrolls: a finger drags a card (or a placed trait) any way. */
+.optionButton,
+.tile[data-draggable] {
+  touch-action: none;
+}
+
 .optionButton:hover .card {
   filter: brightness(1.08);
 }

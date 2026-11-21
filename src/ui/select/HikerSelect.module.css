@@ -530,6 +530,19 @@
   opacity: 0.35;
 }
 
+/*
+ * On a touchscreen the list scrolls with an up-or-down swipe; a card is
+ * picked up by a sideways move (or added with a double-tap).
+ */
+.cellCard [data-draggable] {
+  touch-action: pan-y;
+}
+
+/* A spot doesn't scroll, so a hiker in it can be dragged any way. */
+.spot[data-draggable] {
+  touch-action: none;
+}
+
 /* The card being dragged leaves a dashed outline. */
 .cellCard[data-lifted] {
   visibility: hidden;
