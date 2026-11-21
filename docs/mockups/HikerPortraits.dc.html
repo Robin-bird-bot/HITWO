@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — portrait scale</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+.eu{font-family:'EditUndo',monospace}
+.hc{position:relative}
+.hc:hover{z-index:30}
+.hb:hover{z-index:40}
+.hb:hover > .tip{display:flex !important}
+.slot-glow{animation:slotPulse 1.6s ease-in-out infinite}
+@keyframes slotPulse{0%,100%{box-shadow:0 0 0 3px var(--c),0 0 0 3px var(--g)}50%{box-shadow:0 0 0 3px var(--c),0 0 0 14px rgba(0,0,0,0)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: #1D2220">
+<div style="position: absolute; left: 40px; top: 28px; width: 1520px; display: flex; flex-direction: column; gap: 6px">
+<span class="eu" style="font-size: 24px; letter-spacing: 0.06em">HIKER PORTRAITS · SCALE CHECK</span>
+<span style="font-size: 14px; color: #C9C2B2">Every portrait re-framed for the card window (1500 × 1240): humans share one head size, pets share another, and each sits on the bottom edge. The number is how much each source image was scaled.</span>
+</div>
+<span class="eu" style="position: absolute; left: 40px; top: 100px; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">HUMANS (15)</span>
+<div style="position: absolute; left: 40px; top: 128px; width: 1520px; display: grid; grid-template-columns: repeat(8, 180px); justify-content: space-between; row-gap: 14px">
+<sc-for list="{{hum}}" as="t" hint-placeholder-count="14"><div style="display: flex; flex-direction: column; gap: 6px">
+<div style="position: relative; width: 180px; height: 149px; border-radius: 10px; overflow: hidden; background: #D6D6D2 url(/_blob/bcad4c301698b1997bcf7c91c422c7f7) center / cover no-repeat"><img src="{{t.por}}" alt="" style="position: absolute; left: 0; top: 0; width: 180px; height: 149px">
+<div class="eu" style="position: absolute; left: 6px; top: 6px; display: {{t.noteD}}; height: 18px; padding: 0 6px; border-radius: 5px; background: rgba(29,34,32,0.85); align-items: center; font-size: 8px; letter-spacing: 0.06em; color: #E9B44C">{{t.note}}</div></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span class="eu" style="font-size: 11px; letter-spacing: 0.06em">{{t.name}}</span><span style="font-size: 11px; color: #9C9585">{{t.s}}</span></div>
+</div></sc-for>
+</div>
+<span class="eu" style="position: absolute; left: 40px; top: 520px; font-size: 14px; letter-spacing: 0.08em; color: #9C9585">PETS AND PLUSH (16)</span>
+<div style="position: absolute; left: 40px; top: 548px; width: 1520px; display: grid; grid-template-columns: repeat(8, 180px); justify-content: space-between; row-gap: 14px">
+<sc-for list="{{pets}}" as="t" hint-placeholder-count="16"><div style="display: flex; flex-direction: column; gap: 6px">
+<div style="position: relative; width: 180px; height: 149px; border-radius: 10px; overflow: hidden; background: #D6D6D2 url(/_blob/bcad4c301698b1997bcf7c91c422c7f7) center / cover no-repeat"><img src="{{t.por}}" alt="" style="position: absolute; left: 0; top: 0; width: 180px; height: 149px">
+<div class="eu" style="position: absolute; left: 6px; top: 6px; display: {{t.noteD}}; height: 18px; padding: 0 6px; border-radius: 5px; background: rgba(29,34,32,0.85); align-items: center; font-size: 8px; letter-spacing: 0.06em; color: #E9B44C">{{t.note}}</div></div>
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span class="eu" style="font-size: 11px; letter-spacing: 0.06em">{{t.name}}</span><span style="font-size: 11px; color: #9C9585">{{t.s}}</span></div>
+</div></sc-for>
+</div>
+<span style="position: absolute; left: 40px; top: 948px; width: 1520px; font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.45; color: #C9C2B2">Still missing: Ben, Mindy and the variants (they use the family icon as a placeholder for now). The pixel pattern now sits at 20%. "Cut edge softened" means the photo ends inside the window, so its edge fades out instead of showing a hard line.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {"hum": [{"name": "WYATT", "por": "/_blob/9e34e46692bfb33f46edff3160f691e0", "s": "×0.91", "note": "", "noteD": "none"}, {"name": "MOM", "por": "/_blob/891bffbbb670008e162914386351727f", "s": "×0.87", "note": "SOURCE IS BLURRED", "noteD": "flex"}, {"name": "GDOG", "por": "/_blob/e781a1e6b6b60ef2fe8507989883c64d", "s": "×0.95", "note": "SHORT ON PURPOSE", "noteD": "flex"}, {"name": "WINK", "por": "/_blob/7db0121accec1043de348d45c1f774fa", "s": "×0.73", "note": "", "noteD": "none"}, {"name": "SHERMAN", "por": "/_blob/f7b7468df4d15660ff45b53c72aa57ec", "s": "×0.72", "note": "", "noteD": "none"}, {"name": "CATIE", "por": "/_blob/bf7f69218b92a0370bda2e563dde2031", "s": "×0.93", "note": "", "noteD": "none"}, {"name": "MELISSA", "por": "/_blob/8df4e4705cc8a7cb8fbfc445164c4dd5", "s": "×0.68", "note": "CUT EDGE SOFTENED", "noteD": "flex"}, {"name": "LEAH", "por": "/_blob/05e01402819b8c42a8e3682909e94a90", "s": "×1.04", "note": "SHORT ON PURPOSE", "noteD": "flex"}, {"name": "ERIN", "por": "/_blob/bd8a6cc1f95583f4e84274fe6443f2bc", "s": "×0.93", "note": "CUT EDGE SOFTENED", "noteD": "flex"}, {"name": "JACKSON", "por": "/_blob/70ae095abd90a8cb48b651e9c7d6a22a", "s": "×0.81", "note": "", "noteD": "none"}, {"name": "ANNI", "por": "/_blob/b1d3b4ecf6f96e94552c3a8d120ab16f", "s": "×0.84", "note": "", "noteD": "none"}, {"name": "MITCHELL", "por": "/_blob/1b113b3a73c9070a9dc029aa895a34b4", "s": "×0.78", "note": "", "noteD": "none"}, {"name": "NATHAN", "por": "/_blob/6a680c3ff075d045a9a9de746f735f77", "s": "×0.91", "note": "", "noteD": "none"}, {"name": "MADELINE", "por": "/_blob/2612a697c30838eb9dc5fd44344159b6", "s": "×0.77", "note": "", "noteD": "none"}, {"name": "WYWEE", "por": "/_blob/fa6601c132b7df11f5d2b6ae3138f574", "s": "×0.73", "note": "", "noteD": "none"}], "pets": [{"name": "ELLIE", "por": "/_blob/309a8a07327de29ea7ee33e37846732a", "s": "×0.93", "note": "", "noteD": "none"}, {"name": "FINN", "por": "/_blob/4b001165bacbb8ab81d058660fc9da71", "s": "×0.91", "note": "", "noteD": "none"}, {"name": "CODY", "por": "/_blob/92196a0eeb4b013e1a00ce69ce7921d9", "s": "×0.62", "note": "SCALED DOWN (CLOSE-UP)", "noteD": "flex"}, {"name": "PEARL", "por": "/_blob/d21f76b26af981eebb519edf973925a2", "s": "×0.80", "note": "FIXED: WAS FLOATING", "noteD": "flex"}, {"name": "BRUTUS", "por": "/_blob/506a530db686f5c1d821c3d0a07e5a7a", "s": "×0.92", "note": "", "noteD": "none"}, {"name": "DUKE", "por": "/_blob/c1b1a48ab62b808d7ae33d3952d1c7bd", "s": "×0.60", "note": "SCALED DOWN (CLOSE-UP)", "noteD": "flex"}, {"name": "SCARLET", "por": "/_blob/7ca4c9a4216a8682f6a6e06952e11ed7", "s": "×0.72", "note": "", "noteD": "none"}, {"name": "SINJON", "por": "/_blob/7cec409842a5debf70df2e8f0ff3dfcf", "s": "×0.79", "note": "CUT EDGE SOFTENED", "noteD": "flex"}, {"name": "HERSHAL", "por": "/_blob/769891caab548421b8fea28aaedbbcbe", "s": "×0.79", "note": "", "noteD": "none"}, {"name": "KAI", "por": "/_blob/e737bcc4ae2a80aa781643d12cccd042", "s": "×0.69", "note": "", "noteD": "none"}, {"name": "BOSS & GRACIE", "por": "/_blob/9a776f5b52614f112fd61e2bc3fe1eb0", "s": "×0.79", "note": "", "noteD": "none"}, {"name": "LOKI", "por": "/_blob/268fb428b586345d6faae0b68814dce9", "s": "×0.69", "note": "CUT EDGE SOFTENED", "noteD": "flex"}, {"name": "COCO", "por": "/_blob/144639d1beb269a598d8ec7d5d90b435", "s": "×0.86", "note": "", "noteD": "none"}, {"name": "MUFFIN", "por": "/_blob/f88ad392dd2778385a2436a1d2702398", "s": "×0.79", "note": "", "noteD": "none"}, {"name": "PEPPER", "por": "/_blob/1318be40a8150e29247841191f4d2dd8", "s": "×0.76", "note": "", "noteD": "none"}, {"name": "GOLDIE", "por": "/_blob/bdb2af2edc5f5b007938f4e43b287d01", "s": "×0.88", "note": "", "noteD": "none"}]};
+  }
+}
+</script>
+</body>
+</html>

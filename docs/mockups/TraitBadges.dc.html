@@ -22,7 +22,7 @@ button{font-family:'EditUndo',monospace;cursor:pointer}
 
 <div style="position: absolute; left: 40px; top: 30px; display: flex; flex-direction: column; gap: 6px">
 <span style="font-family: 'EditUndo', monospace; font-size: 24px; letter-spacing: 0.06em">TRAITS · BADGES, PANEL AND WARNINGS</span>
-<span style="font-size: 14px; color: #C9C2B2">Diamond = always on. Circle = usable. The ring is the trait type's color, the middle a darker shade of it, and every icon is white.</span>
+<span style="font-size: 14px; color: #C9C2B2">Diamond = always on. Circle = usable. The ring and the icon are the trait type's color, and the middle is a darker shade of it.</span>
 </div>
 
 <!-- A: BADGES -->
@@ -33,7 +33,7 @@ button{font-family:'EditUndo',monospace;cursor:pointer}
 <sc-for list="{{passive}}" as="p" hint-placeholder-count="3">
 <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 170px">
 <div style="width: 92px; height: 92px; display: flex; align-items: center; justify-content: center">
-<div style="width: 62px; height: 62px; transform: rotate(45deg); border-radius: 12px; background: {{p.fill}}; box-shadow: 0 0 0 3px {{p.ring}}, 0 6px 14px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{p.icon}}" color="#FFFFFF" size="28" sw="2.2" hint-size="28px,28px"></dc-import></div></div>
+<div style="width: 62px; height: 62px; transform: rotate(45deg); border-radius: 12px; background: {{p.fill}}; box-shadow: 0 0 0 3px {{p.ring}}, 0 6px 14px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{p.icon}}" color="{{p.ring}}" size="28" sw="2.2" hint-size="28px,28px"></dc-import></div></div>
 </div>
 <div style="display: flex; flex-direction: column; align-items: center; gap: 3px"><span style="font-family: 'EditUndo', monospace; font-size: 15px; letter-spacing: 0.05em; color: {{p.ring}}">{{p.name}}</span><span style="font-size: 12px; color: #C9C2B2">{{p.type}}</span></div>
 </div>
@@ -47,7 +47,7 @@ button{font-family:'EditUndo',monospace;cursor:pointer}
 <sc-for list="{{active}}" as="a" hint-placeholder-count="3">
 <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; width: 170px; opacity: {{a.op}}">
 <div style="position: relative; width: 92px; height: 92px; display: flex; align-items: center; justify-content: center">
-<div class="{{a.cls}}" style="--ring: {{a.ring}}; --glow: {{a.glow}}; width: 76px; height: 76px; border-radius: 50%; background: {{a.fill}}; box-shadow: 0 0 0 3px {{a.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{a.icon}}" color="#FFFFFF" size="30" sw="2.2" hint-size="30px,30px"></dc-import></div>
+<div class="{{a.cls}}" style="--ring: {{a.ring}}; --glow: {{a.glow}}; width: 76px; height: 76px; border-radius: 50%; background: {{a.fill}}; box-shadow: 0 0 0 3px {{a.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{a.icon}}" color="{{a.ring}}" size="30" sw="2.2" hint-size="30px,30px"></dc-import></div>
 <div style="position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); height: 18px; box-sizing: border-box; padding: 0 8px; border-radius: 9px; background: #1D2220; box-shadow: 0 0 0 2px {{a.ring}}; display: flex; align-items: center; gap: 4px; white-space: nowrap">
 <sc-for list="{{a.pips}}" as="d" hint-placeholder-count="1"><div style="width: 7px; height: 7px; border-radius: 50%; box-sizing: border-box; border: 1.5px solid {{a.ring}}; background: {{d.fill}}"></div></sc-for>
 <sc-if value="{{a.tag}}" hint-placeholder-val="{{false}}"><span style="font-family: 'EditUndo', monospace; font-size: 9px; letter-spacing: 0.06em; color: {{a.ring}}">{{a.tag}}</span></sc-if>
@@ -72,8 +72,8 @@ button{font-family:'EditUndo',monospace;cursor:pointer}
 <div style="display: flex; align-items: center; gap: 12px; padding: 4px 2px">
 <sc-for list="{{row}}" as="r" hint-placeholder-count="5">
 <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; opacity: {{r.op}}">
-<sc-if value="{{r.dia}}" hint-placeholder-val="{{true}}"><div style="width: 22px; height: 22px; transform: rotate(45deg); border-radius: 5px; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{r.icon}}" color="#FFFFFF" size="13" sw="2.4" hint-size="13px,13px"></dc-import></div></div></sc-if>
-<sc-if value="{{r.coin}}" hint-placeholder-val="{{false}}"><div style="width: 28px; height: 28px; border-radius: 50%; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{r.icon}}" color="#FFFFFF" size="14" sw="2.4" hint-size="14px,14px"></dc-import></div></sc-if>
+<sc-if value="{{r.dia}}" hint-placeholder-val="{{true}}"><div style="width: 22px; height: 22px; transform: rotate(45deg); border-radius: 5px; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{r.icon}}" color="{{r.ring}}" size="13" sw="2.4" hint-size="13px,13px"></dc-import></div></div></sc-if>
+<sc-if value="{{r.coin}}" hint-placeholder-val="{{false}}"><div style="width: 28px; height: 28px; border-radius: 50%; background: {{r.fill}}; box-shadow: 0 0 0 2px {{r.ring}}; display: flex; align-items: center; justify-content: center"><dc-import name="Ic" icon="{{r.icon}}" color="{{r.ring}}" size="14" sw="2.4" hint-size="14px,14px"></dc-import></div></sc-if>
 <sc-if value="{{r.bubble}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: -9px; top: -9px; min-width: 18px; height: 16px; box-sizing: border-box; padding: 0 4px; border-radius: 8px; background: {{r.bubbleBg}}; border: 1.5px solid #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 10px; color: #FFFFFF">{{r.bubble}}</div></sc-if>
 </div>
 </sc-for>
@@ -113,7 +113,7 @@ button{font-family:'EditUndo',monospace;cursor:pointer}
 <sc-for list="{{states}}" as="s" hint-placeholder-count="4">
 <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 12px 8px; border-radius: 12px; background: rgba(255,255,255,0.04)">
 <div style="position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; opacity: {{s.op}}; filter: {{s.filter}}">
-<div style="width: 38px; height: 38px; transform: rotate(45deg); border-radius: 8px; background: {{s.fill}}; box-shadow: 0 0 0 3px {{s.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{s.icon}}" color="#FFFFFF" size="18" sw="2.4" hint-size="18px,18px"></dc-import></div></div>
+<div style="width: 38px; height: 38px; transform: rotate(45deg); border-radius: 8px; background: {{s.fill}}; box-shadow: 0 0 0 3px {{s.ring}}; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg)"><dc-import name="Ic" icon="{{s.icon}}" color="{{s.ring}}" size="18" sw="2.4" hint-size="18px,18px"></dc-import></div></div>
 <sc-if value="{{s.bubble}}" hint-placeholder-val="{{false}}"><div style="position: absolute; right: -4px; top: -4px; min-width: 22px; height: 18px; box-sizing: border-box; padding: 0 5px; border-radius: 9px; background: {{s.bubbleBg}}; border: 2px solid #1D2220; display: flex; align-items: center; justify-content: center; font-family: 'EditUndo', monospace; font-size: 11px; color: #FFFFFF">{{s.bubble}}</div></sc-if>
 </div>
 <span style="font-family: 'EditUndo', monospace; font-size: 12px; letter-spacing: 0.04em; color: {{s.nameC}}">{{s.name}}</span>

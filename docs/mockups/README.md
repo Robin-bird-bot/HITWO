@@ -37,4 +37,10 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 - Hexes are 112×128.
 - The left party panel is 288 px wide, from y 120 to 984.
 - Map coordinates use `PX(x)=760+(x-460)*1.6` and `PY(y)=760+(y-545)*1.6`, which map a design grid onto the stage.
-| `TraitBadges.dc.html` / `TraitBadges.png` | Trait badges (Phase 10a): diamonds for always-on traits, circles for usable ones, their states, the hiker panel's badge row and hover window, the Abilities panel, and the trait warnings |
+| `TraitBadges.dc.html` / `TraitBadges.png` | Trait badges (Phase 10a; icons in the type's ring color since the 10b polish update): diamonds for always-on traits, circles for usable ones, their states, the hiker panel's badge row and hover window, the Abilities panel, and the trait warnings |
+| `HikerCards.dc.html` / `HikerCards.png` | The hiker card (Phase 10b), front and back, 300 × 420 |
+| `HikerPortraits.dc.html` / `HikerPortraits.png` | Every portrait in its card window, with the forest and pixel-pattern background (Phase 10b) |
+| `HikerSelect.dc.html` / `HikerSelect.png` / `HikerSelect-background.png` | The hiker selection screen (Phase 10b): spots, the list, and the darker animated background (family update) |
+| `HikerSort.dc.html` / `HikerSort.png` | The selection list sorted, with group ribbons (Phase 10b) |
+| `SortRibbons.dc.html` / `SortRibbons.png` | Every sort's ribbons, the FAMILY sort's included (Phase 10b family update) |
+| `LevelUp.dc.html` / `LevelUp.png` | The level-up screen (Phase 10b), replacing the 10a placeholder window |
