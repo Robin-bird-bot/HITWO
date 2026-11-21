@@ -875,7 +875,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
       | OTHER | `#6B6F78` | Everyone else, by name (Ben, Mindy, Leah, Loki, Goldie) |
 
       - A hiker in two families shows in both (Mom, in Elmers and Brooks). Both copies are the same hiker: either can be dragged, both dim when she's in the party.
-      - Variants go right after their base hiker: Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie and Wywee in Elmers; Graduate Mom in both Elmers and Brooks; Planner Wink and Showgirl Gdog in Brooks.
+      - ~~Variants go right after their base hiker.~~ Replaced by the holiday update (below): every variant goes in OTHER unless it's given a family, and the holiday hikers get their own HOLIDAY ribbon.
     - **Class:** by main role only, in the role order above, ribbon in the role's color.
     - **Traits:** by how many traits a hiker starts with (open slots don't count): 3 TRAITS `#5C7FA3`, 4 TRAITS `#3F5C82`, any other count `#2E4766`.
     - **Difficulty:** EASY 1–3 `#4E9A5F`, MEDIUM 4–5 `#C9A227`, HARD 6–7 `#D9642E`, EXPERT 8–10 `#B23A48`.
@@ -923,15 +923,92 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
   - **Old Photo** keeps its old rule: one of its 3 traits must be taken (no KEEP MY TRAITS).
   - **Phones:** in the hiker list a vertical swipe scrolls; a card is picked up by moving sideways first, or added with a double-tap. Spots and the level-up cards drag in any direction.
 - **First guesses while building** (`TODO(wyatt)` in the code):
-  - **Roster:** Ellie the Devourer's Glutton is the Dog version, Human Food. Planner Wink's Traveler is set to Tend (the doc gives no action). The debug panel's "new game" starts with the first four starters.
+  - **Roster:** Ellie the Devourer's Glutton is the Dog version, Human Food. Prepared Wink's Traveler is set to Tend (the doc gives no action). The debug panel's "new game" starts with the first four starters.
   - **Party colors follow the spot** (1 orange, 2 blue, 3 yellow, 4 purple). RANDOM uses the browser's random (it's the screen, not the run).
   - **KEEP MY TRAITS** still counts the level, so MBA and Proud Mentor still fire.
   - **The bracketed numbers:** a card flips in 0.35 s and lifts to 1.2×; the background's swirl 1.2, pixels 150 and pull 0.5, with a 40 s drift loop a quarter of the screen out; the level-up's blur 10 px, bar fill 1.2 s and cards dealt 0.15 s apart. All in `src/config/balance.ts` (`ui`).
 - **Not done yet:**
-  - **Art:** portraits for Ben, Mindy and the variants other than Wywee (they show their family icon or the variant star).
+  - **Art:** portraits for Ben and Mindy (they show their family icon). The holiday update sent the variants' portraits.
   - **Phones:** at phone size the stage shrinks to about a third, so card text is very small; worth a look when Phase 12 or 17 sizes things for touch. The drag gestures were tested with simulated touches, not on a real phone.
   - **Old Photo's screen** was checked by its tests, not in the browser (the debug panel can't open one).
 - **Saves:** version 17. A v16 save's hikers get their party colors. Wyatt's v14 save still loads.
+
+---
+
+## Holiday hikers (Nov 20 update)
+
+(New: `docs/UPDATE-2026-11-20-holiday-hikers-2.md`, built after Phase 10b. It replaced a first holiday zip that was never applied, so its "Changes since the first holiday zip" section didn't apply. Where it disagrees with the 10b family update, it wins.)
+
+**Goal:** four Christmas variants who play together around a new item, the Present, plus real portraits for the variants and two renames.
+
+**Build**
+- **Variant art:** real portraits for Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie, Prepared Wink, Graduate Mom and Showqueen Gdog, each with a `faceY`. The costume art fits the whole costume, so it isn't on the others' head scale: drawn as it is, never rescaled. The variant star next to the family icon stays. Ben and Mindy still show their family icon.
+- **Renames:** Prepared Wink (`preparedWink`; his title is still "The Planner") and Showqueen Gdog (`showqueenGdog`; her Show Girl trait keeps its name), everywhere.
+- **Presents** (`03-items.md`, "Presents"): a new item type, `present`.
+  - Each one stores a `colorway` (1–5, at random when wrapped), `wrappedBy` (the hiker) and a `grade` (`plain`, `tier2plus` or `tier3`, from the recipe). No Tier and no Quality on the card; a Tier 2+ or Tier 3 one has a small tag where the tier numeral usually sits.
+  - **Never in a random pool:** not from scavenging, shops (both Rocco shops and the used-or-lost log included), bundles, Mystery Items, night events, challenge and Wonder rewards, or starting resources. Only Grammy Clause and the starting bags make them.
+  - **Opening:** the hiker's action and 1 Energy, from an **Open** button on the card or by dragging it onto their own portrait. Grammy can't. The tier comes from the grade, ignoring the biome's limit: plain Tier 1 [50%], 2 [35%], 3 [15%]; Tier 2+ Tier 2 [70%], 3 [30%]; Tier 3 always Tier 3. Then any item of that tier, each equally likely, never a Present, with Quality on the plain curve. It goes in the opener's pack. The box shakes, the lid pops and the item flips in (just a swap under reduced motion).
+  - Stations won't buy them [first guess]; giving and trading work like any item.
+- **The holiday hikers** (all unlocked; full kits in `07-characters.md`, "Holiday hikers"); no cloning with their base hiker:
+
+  | Hiker | Title | Variant of | Roles | Slots | Traits | Starting bag | Difficulty |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | Grammy Clause | The Festive | Gdog | Crafter, Support | U, U, U, M | Gift Wrapper, Down the Chimney, Checking It Twice, Season of Giving | 2 plain Presents | 6 |
+  | Lelf | The Little Helper | Leah | Crafter, Support | T, U, U, M | Short, Toy Maker, Spare Parts, Holiday Spirit | 1 random Tier 1 tool blueprint | 4 |
+  | Grinch | The Grumpy | Ellie | Scavenger, Jack | U, U, T/U, M | Choosy, Two Sizes Too Small, Wreck the Halls, Bah Humbug | 1 plain Present | 5 |
+  | Redolf | The Rednose Retriever | Cody | Tank, Scout | T, U, U, M | Rednose, Treat Sniffer, Present Muncher, Holiday Spirit | Camping Lamp | 4 |
+
+  - **The Grinch is a she:** she/her in every text about her.
+  - **New traits** (no icon art yet: their badges show initials until Wyatt sends `gift-wrapper.png` and the rest):
+    - **Gift Wrapper:** her crafting window shows only the four Present recipes, no blueprints, and she can't craft anything else or open Presents. 3 of one resource or 5 of one type (any mix) make a plain Present; her 3-resource wish list a Tier 2+ one; her 5-resource wish list a Tier 3 one. Both lists are rolled at the start of the run and again after every Present, saved with the run, with their icons on the recipes.
+    - **Down the Chimney** (once a day, free): a Present from her pack to any hiker on the map with room. **Checking It Twice** (once a day, free): both wish lists again.
+    - **Season of Giving** (Morale, open to all): +1 when anyone opens a Present she wrapped; −1 at the start of a day after she wrapped none.
+    - **Toy Maker:** Tools [3×] as likely in Presents she opens. **Treat Sniffer:** Food [3×]. **Choosy:** 3 items, keep 1, shown side by side.
+    - **Spare Parts** (free, any time): a Present for [2] resources of her choice. **Present Muncher** (free, any time): a Present for [0–5] Appetite. **Wreck the Halls** (free, any time): a Present for [3–8] Morale, with a burst of confetti. All capped at the maximum.
+    - **Holiday Spirit** (Morale, open to all): +1 each time a hiker on their tile opens a Present; −1 at the start of a day after nobody in the party opened one. **Bah Humbug:** +1 each time she opens one; −1 each time another hiker on her tile Sits by the Fire.
+    - **Two Sizes Too Small:** she can't give or trade items to other hikers (their portraits don't light up, and the give buttons say "The Grinch doesn't share."); receiving, using, dropping, selling and giving resources still work.
+    - **Rednose:** when he moves the group at night, nobody pays the night's extra cost. Fog never hides the tiles next to him (a hook for Phase 11).
+- **Family sort:** every variant goes in OTHER unless it's given a family; the holiday hikers get a **HOLIDAY** ribbon `#A8233A` between LEICHTY and OTHER (Grammy Clause, Lelf, Grinch, Redolf). The ribbons are ELMERS, BROOKS, SHERMAN, LEICHTY, HOLIDAY, OTHER. Wywee is a variant everywhere (the star, the VARIANTS filter, no cloning with Wyatt).
+- **Debug panel:** give any hiker a Present with a chosen colorway and grade; roll Grammy's wish lists again, or set them by hand.
+
+**Tests**
+- Gift Wrapper: only Presents, each recipe's grade; 5 of one type takes any mix of that type and refuses a mix of types; both lists change after every Present and survive a save and load; she can't open Presents. Checking It Twice: both lists, once a day.
+- Presents never come from a random pool. Opening costs the action and 1 Energy, uses the grade's odds whatever the biome; a Tier 2+ never holds Tier 1, a Tier 3 always Tier 3.
+- Toy Maker and Treat Sniffer tilt the type; Choosy shows 3 and keeps the one picked; Two Sizes Too Small blocks giving and trading items, not receiving.
+- Down the Chimney once a day; Spare Parts 2 chosen resources; Present Muncher 0–5 Appetite; Wreck the Halls 3–8 Morale, capped.
+- Holiday Spirit, Season of Giving and Bah Humbug at the right moments; Rednose's group moves at night.
+- No old name left; the Family sort's 6 groups; no cloning for each holiday hiker and for Wywee.
+
+**Done when:** the four holiday hikers can be picked and played, Presents can be wrapped, sent, opened, taken apart, eaten and smashed, and the tests above pass.
+
+**Holiday hikers notes (built Nov 20)**
+- **Where things are:**
+  - **Presents:** the item in `src/content/items/presents.ts` (kept out of `TABLE_ITEMS`, so out of every pool); the rules in `src/engine/items/presents.ts` (recipes, wish lists, what's inside) and `src/engine/actions/presents.ts` (`wrapPresent`, `openPresent`, `presentTake`). Rocco's log skips them in `noteGone`.
+  - **Traits:** `src/content/traits/holiday.ts`, through new hooks (`wrapsPresents`, `presentWeights`, `presentChoices`, `onPresentOpened`, `keepsItems`, `leadsAtNight`, `clearsFog`, `onTileSitByFire`, `onRunStart`). Usable traits with no limit use `uses: Infinity`; Spare Parts' resources ride on the choice (`uid|wood,fish`).
+  - **Screens:** Grammy's crafting window and the Workbench's Present recipes in `src/ui/presents/WrapWindow.tsx`; the opening, Choosy's pick and the smash in `src/ui/presents/PresentFx.tsx`; Open in the item menu (`StashMenu.tsx`); the resource picker in the Abilities panel (`TurnPanel.tsx`).
+  - **Debug (backtick):** "Give Present" with a wrapping and grade; "Roll wish lists again", or the two lists set by hand.
+- **Choices made while building:**
+  - **Wrapping is crafting:** it uses the action (free at a station's Workbench), pays like a craft (her own resources first, then the others on the tile), and everything that hears of a craft does (Artist, Fluffy, Work Boots, Rocco's counts).
+  - **Opening asks first** (from the menu or the portrait), since the Present is gone once it's open. Choosy's cards can be picked once they've flipped in.
+  - **What's inside** is any item from the tables at that tier, never an event-only one (Puked Nuggets).
+  - **Ids:** `preparedWink` and `showqueenGdog`, camelCase like every other roster id (the update wrote them with dashes; the portrait files use dashes).
+  - **Pronouns:** the Grinch's traits and "The Grinch doesn't share." say she and her. Shared screens say "their" for every hiker (the gender-neutral rule).
+  - **The −1 at the start of a day** (Season of Giving, Holiday Spirit) looks at the day before, so the first one can come at the start of Day 2.
+  - A hiker given Gift Wrapper by the debug panel has no wish lists until "Roll wish lists again".
+- **First guesses** (`TODO(wyatt)` in the code; numbers in `src/config/balance.ts`):
+  - **The bracketed numbers:** plain Presents Tier 1/2/3 at 50/35/15%, Tier 2+ at 70/30%; Toy Maker and Treat Sniffer 3×; Spare Parts 2 resources; Wreck the Halls 3–8 Morale; Present Muncher 0–5 Appetite (`presents` and `traits`).
+  - **Stations won't buy Presents** (`presents.sellable`).
+  - **Crafting XP for a Present:** 1, as for a Tier 1 item.
+  - **Starting Presents:** Grammy's own count as hers (Season of Giving); the Grinch's were wrapped by nobody in the party.
+  - **The opening:** the box shakes 0.7 s, the lid pops in 0.35 s, the card flips like a Mystery Item (0.52 s), Choosy's cards 0.15 s apart; the smash lasts 0.9 s (`ui.presentOpen`).
+- **Questions for Wyatt:**
+  - **Prepared Wink's title:** the update says it stays "The Planner", but variants have no title line yet (10b), so his card shows none. Should it show "The Planner"?
+  - **Two Sizes Too Small and the Traveling Trader:** she can't give or trade items to other hikers; trading with a Trader (not a hiker) still works. Right?
+- **Not done yet:**
+  - **Trait icons:** none of the 14 holiday traits has art yet; their badges show initials.
+  - **Bah Humbug's −1** waits on Sit by the Fire, which is still held. **Rednose's Fog** waits on Phase 11 (`clearsFog`).
+  - The opening was checked with real clicks; dragging a Present onto a portrait was checked by its tests, not by hand.
+- **Saves:** version 18. In a v17 save, the two renamed hikers come back with their new ids and names (everywhere the id appears). Wyatt's v14 save still loads.
 
 ---
 
@@ -941,7 +1018,7 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 
 **Build**
 - Meadow → Temperate Rainforest → Alpine, at Tier 1 → 3.
-- Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker).
+- Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker). Fog never hides the tiles next to a hiker with Rednose: ask `clearsFog` (holiday update).
 - Challenge spaces draw one tier higher.
 - The snowy, high part of the trail turns on the `[snow only]` challenges, mostly Tier III.
 

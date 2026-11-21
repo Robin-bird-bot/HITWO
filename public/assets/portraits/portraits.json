@@ -122,5 +122,49 @@
  "wywee.png": {
   "hiker": "Wywee",
   "faceY": 0.431
+ },
+ "agility-finn.png": {
+  "hiker": "Agility Finn",
+  "faceY": 0.3
+ },
+ "devourer-ellie.png": {
+  "hiker": "Ellie the Devourer",
+  "faceY": 0.25
+ },
+ "follower-finn.png": {
+  "hiker": "Follower Finn",
+  "faceY": 0.72
+ },
+ "graduate-mom.png": {
+  "hiker": "Graduate Mom",
+  "faceY": 0.35
+ },
+ "nosework-ellie.png": {
+  "hiker": "Nosework Ellie",
+  "faceY": 0.55
+ },
+ "prepared-wink.png": {
+  "hiker": "Prepared Wink",
+  "faceY": 0.62
+ },
+ "showqueen-gdog.png": {
+  "hiker": "Showqueen Gdog",
+  "faceY": 0.62
+ },
+ "grammy-clause.png": {
+  "hiker": "Grammy Clause",
+  "faceY": 0.21
+ },
+ "grinch.png": {
+  "hiker": "Grinch",
+  "faceY": 0.41
+ },
+ "lelf.png": {
+  "hiker": "Lelf",
+  "faceY": 0.28
+ },
+ "redolf.png": {
+  "hiker": "Redolf",
+  "faceY": 0.54
  }
 }

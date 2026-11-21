@@ -285,6 +285,34 @@ Trinkets have no Quality. Their basic recipe is 5 random different resources (se
 
 **Still suggestions** (no art): Lucky Coin (+1 Luck), Friendship Bracelet (+1 Morale at the start of each day if another hiker is on this tile), Pressed Flower (+2 Luck when scavenging Forest nodes), Snow Globe (1 less Shivering each phase), Pocket Fan (1 less Burning each phase) and Rock Collection (Mountain resources sell for 1 more cap each).
 
+## Presents
+
+A special item that only **Grammy Clause** can make (see `07-characters.md`, Holiday hikers). Presents never turn up any other way: not from scavenging, shops, Rocco's shops, bundles, Mystery Items, events or rewards.
+
+- **Recipes** (Grammy's Gift Wrapper trait):
+  - **Plain Present:** 3 of the same resource, or 5 resources of the same type (Forest, River, Mountain or Wildlife).
+  - **Tier 2+ Present:** the 3 specific resources on her 3-resource wish list.
+  - **Tier 3 Present:** the 5 specific resources on her 5-resource wish list.
+  - Both wish lists change after every Present she wraps.
+- **Looks:** each Present gets one of 5 wrapping colorways at random when it's wrapped, and keeps it.
+- **No Tier or Quality on the card.** What's inside is only rolled when it's opened.
+- **Open:** a hiker spends their action and 1 Energy, and gets 1 random item. Grammy Clause can't open Presents.
+  - **Which tier:**
+    - Plain Present: Tier 1 \[50%\], Tier 2 \[35%\], Tier 3 \[15%\].
+    - Tier 2+ Present: Tier 2 \[70%\], Tier 3 \[30%\].
+    - Tier 3 Present: always Tier 3.
+    - The biome the party is in doesn't limit the tier.
+  - **Which item:** any item of that tier, of any type (tools, clothes, food, shelters, trinkets), except Presents. Its Quality rolls like any other item.
+  - **Traits that change it:**
+    - Lelf (Toy Maker) finds Tools 3× as often.
+    - Redolf (Treat Sniffer) finds Food 3× as often.
+    - The Grinch (Choosy) picks 1 of 3.
+- **Other uses:**
+  - Lelf can take one apart for 2 resources of her choice.
+  - Redolf can eat one for 0–5 Appetite.
+  - The Grinch can smash one for 3–8 Morale.
+- **Carrying:** takes an item slot. Presents can be given and traded like any item, but they can't be sold \[first guess\].
+
 ## Older items, merged or replaced
 
 - **Medicine** → Bandaid. **Medkit** keeps its name, now Tier 3.
