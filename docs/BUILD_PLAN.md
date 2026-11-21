@@ -739,6 +739,79 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 - The level-up screen opens at the next camp step, not mid-phase.
 - Levels need 20, 50, 90, 140, 200 and 270 XP in total (each level 10 more than the last); hikers start at level 0.
 
+**Phase 10a notes (built Nov 20)**
+- **Wyatt's answers (Nov 20):**
+  - Level-ups wait for the next camp step; hikers start at level 0, and levels need 20, 50, 90, 140, 200 and 270 XP.
+  - Everything else he left open is a first guess, marked `TODO(wyatt)` and listed below.
+- **Where things are:**
+  - **Traits as data:** `src/content/traits/` (`trail.ts`, `utility.ts`, `morale.ts`, `family.ts`, `special.ts`; helpers in `build.ts` and `moraleKit.ts`; daily picks in `daily.ts`). Classes: `src/content/classes.ts`. Test hikers: `src/content/testHikers.ts`.
+  - **The hooks:** `src/engine/effects.ts` (`TraitDef`, `Hooks`, `workingTrait`, `abilitiesFor`). Every trait's effect is a hook; the engine never checks a trait by name.
+  - **Slots, level-ups and trinket picks:** `src/engine/traits/slots.ts` and `levelUp.ts`. Daily traits: `src/engine/traits/daily.ts`. Prepared, Tactical and Scout: `reveal.ts`.
+  - **XP:** `src/engine/xp.ts` (`gainXp`, the row rule, the level lines).
+  - **Trait warnings:** the forecast is `src/engine/traits/forecast.ts`; the setting is `src/ui/app/traitWarnings.ts`; the screen's view is `src/ui/traits/forecastView.ts`.
+  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window is `src/ui/traits/LevelUpWindow.tsx` (a placeholder until 10b); the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
+  - **Plush:** `src/content/families.ts`, `src/engine/stats.ts` (Stuffing kept in both stats) and `src/engine/thresholds.ts` (its limits).
+  - **Debug (backtick):** test hikers on the title screen; add or remove any trait with its setting; add slots; refill uses; odd or even day; force a daily pick; set XP and level; level up now at a chosen tier; switch Trait warnings.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Classes and picks:**
+    - Follower is a Jack trait.
+    - Quirky and Zany skip traits that need a setting or change daily.
+    - The four Phase 3 hikers got placeholder classes.
+  - **Trail:**
+    - Puller pays a flat 1 Energy in place of all its Appetite for a Move All.
+    - A tile a Trespasser lands on alone never triggers its card.
+    - Shared conditions (Susceptible, Transparent) bring their effects, not their stat changes.
+    - A condition shortened to 0 counts as running out.
+  - **Utility:**
+    - Squirrely makes caps cards twice as likely.
+    - Lead Stomach and Destroyer spend the resources the hiker has most of.
+    - Therapist takes 3 phases off a phase-based condition.
+    - Talented adds 1 to the item's main number.
+  - **Morale:**
+    - Center of Attention does nothing alone, and a tie counts as the highest.
+    - Show Girl counts her own gains.
+    - Soccer Mom counts a party challenge once.
+    - Fair-Weather treats a storm as rain.
+  - **Special and new traits:**
+    - Boss's days are odd, Gracie's even.
+    - Loud gives Ringing Ears to the others on its tile for a phase.
+    - Good Boy gives Motivated for the phase; Coach's Motivated lasts a day.
+    - Alpha Dog takes a challenge's harm once.
+    - Easy Mode takes 1 off each thing a cost asks for.
+    - Nugget Puker doesn't trigger on Puked Nuggets.
+    - Rule Changer only works on a tile whose card is shown.
+  - **Numbers:**
+    - the brackets in `07-characters.md`: Plush 12, 7 and 3; Forgetful, Snores and Fluff Armor 50%; Lanky 25%; Mentor 1; Storyteller 2; Just Around the Next Corner 75% and 25%; Easy Mode 1;
+    - MBA: 3 caps × the new level.
+  - **XP and levels:**
+    - Past level 6, each level keeps needing 10 more than the last.
+    - XP passed on by Wise or a VR Headset gets no bonuses and isn't passed on again.
+    - The Textbook's +1 follows the row rule.
+    - Two of the same Keep trinket count once.
+    - Party objectives will give 10 × their tier (Phase 13).
+  - **Level-up offers:**
+    - 1 option can come from any class.
+    - Each option picks its type first (Trail and Utility 1 each, Morale ½), then a trait of that type.
+    - A new slot is 1 option in 8 (T and U 4 each, mixed 2 each, W 1).
+  - **Trinkets:**
+    - Diploma: 60–100% of a level's XP.
+    - Postcard: +5 XP at a checkpoint, +1 per challenge passed.
+    - Cherished Photo: any tier, any class.
+    - Family Photo: copied from any hiker still on the hike.
+    - Old Photo: from any class, and never a special or unique trait.
+    - Instruction Manual: its mixed slots are T/U, T/M and U/M.
+  - **Trait warnings:**
+    - "Don't ask again this run" lasts for this hike's seed, on this device.
+    - Group turns run through without stopping for checks.
+    - The badges follow a drag, the move pop-up and a waiting Sleep, Keep Watch or Tend, but not just pointing at an action button.
+- **Waiting on later phases:**
+  - **Sit by the Fire is still held:** its XP, Singer, Chatty's fire part, Storyteller and Comedian are built and tested but nothing calls them yet.
+  - **Party objectives' XP:** Phase 13.
+  - **The Ring:** still waits on which family, and for how long.
+  - **10b:** the trait icons (see `docs/ASSETS.md`), the real characters, and the real level-up and hiker selection screens.
+  - **Phone:** at phone size the whole stage shrinks to about a third, so a badge is about 11 screen pixels; worth making badges bigger when Phase 17 (or 12) looks at touch sizes.
+- **Saves:** version 16. A v14 save gets classes and its Finder and Hound node settings (v15); then levels start at 0 and XP already earned becomes level-ups waiting for the next camp (v16).
+
 ---
 
 ## Phase 10b: The real characters, and their screens

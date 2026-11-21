@@ -121,6 +121,12 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Ranger station (Phase 9):** the stone fireplace (`src/ui/station/fireplace-stones.svg` and CSS flames), the hanging sign, the counter and the brass caps plaque are drawn in code. The specials (Cement Mixer, Scout Report, Taxi Service) and the shop's blueprint squares use stroke icons. Wyatt may want to paint any of them.
 - **Merchant and Traveling Trader:** no art yet. Their window and the map use the bag and backpack icons.
 - **Empty scavenge card (Phase 9.5):** a placeholder face, drawn in code. It shows the node's backdrop, faded, with "EMPTY" in Edit Undo (`src/ui/scavenge/ScavCard.tsx`). Wyatt may want to paint one.
+- **Trait icons (Phase 10a):** one per trait, for the trait badges (`docs/mockups/TraitBadges.dc.html`).
+  - **File:** `public/assets/traits/<trait id>.png`, named by the trait's id in `src/content/traits/` (`leader.png`, `secondWind.png`, `bossGracie.png`).
+  - **Look:** white on a transparent background, square, about 128 px, with a little padding. The badge uses the file as a mask (`mask-image`), so only its shape counts and the game can tint it.
+  - **Turning one on:** add its id to `ASSETS.traitIcons` in `src/config/assets.ts`. Until then the badge shows the trait's initials (Le, SW, RF).
+  - **One per trait,** not per setting: River Finder and Rock Finder share `finder.png`. Family versions each get their own (`puller.png`, `leashPuller.png`).
+- **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/portrait.ts`) and never appear in the real roster.
 
 Until real art arrives, use clearly marked placeholders.
 

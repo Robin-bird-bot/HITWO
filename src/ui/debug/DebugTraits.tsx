@@ -20,6 +20,7 @@ import {
   type SlotType,
   type TraitSetting,
 } from '../../engine';
+import { setTraitWarnings, useTraitWarnings } from '../app/traitWarnings';
 import styles from './DebugPanel.module.css';
 
 const TYPE_ORDER = { T: 0, U: 1, M: 2 } as const;
@@ -49,6 +50,7 @@ export function TraitTools({ state, onApply }: { state: GameState; onApply(a: Ac
   const [xp, setXp] = useState('');
   const [level, setLevel] = useState('');
   const [tier, setTier] = useState<1 | 2 | 3>(1);
+  const warnings = useTraitWarnings();
   const hiker = state.hikers.find((h) => h.id === hikerId);
   if (!hiker) return null;
   const def = TRAITS[traitId];
@@ -302,6 +304,21 @@ export function TraitTools({ state, onApply }: { state: GameState; onApply(a: Ac
         >
           Even day
         </button>
+      </div>
+      <div className={styles.row}>
+        <span className={styles.note}>Trait warnings:</span>
+        {(['off', 'simple', 'informative'] as const).map((w) => (
+          <button
+            key={w}
+            type="button"
+            className={styles.button}
+            aria-pressed={warnings === w}
+            style={warnings === w ? { outline: '2px solid #E9B44C' } : undefined}
+            onClick={() => setTraitWarnings(w)}
+          >
+            {w.charAt(0).toUpperCase() + w.slice(1)}
+          </button>
+        ))}
       </div>
     </>
   );

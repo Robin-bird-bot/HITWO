@@ -1660,11 +1660,11 @@ export function fireToolUse(state: GameState, hiker: Hiker, itemId: ItemId): voi
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onToolUse?.({ itemId }, ctx);
 }
 
-/** A hiker Sits by the Fire. TODO(wyatt): the action is still held; only tests call this. */
 /**
  * A hiker Sits by the Fire: 1 XP (action XP, under the row rule), then the
- * traits that listen (Singer, Chatty, Storyteller, Comedian). Nothing calls it
- * in play yet: Sit by the Fire is held (Phase 3's grid shows it as "soon").
+ * traits that listen (Singer, Chatty, Storyteller, Comedian).
+ * TODO(wyatt): the action is still held (the grid shows it as "soon"), so
+ * nothing calls this in play yet; only tests do.
  */
 export function fireSitByFire(state: GameState, hiker: Hiker): void {
   gainXp(state, hiker, BALANCE.xp.fire, 'fire', 'Sat by the fire');
