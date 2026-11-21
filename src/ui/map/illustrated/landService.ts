@@ -189,6 +189,15 @@ export function requestLand(req: LandRequest): void {
     });
 }
 
+/** The last generation's time, followed as it changes (the debug panel). */
+export const useLandTimings = (): LandResult['timings'] | undefined =>
+  useSyncExternalStore(subscribe, lastLandTimings, lastLandTimings);
+
+/** Debug: draws the current section's land again (with `failNextLand`, the fallback test). */
+export function redrawLand(): void {
+  if (currentKey) forgetLand(currentKey);
+}
+
 /** Forgets a land (debug: draw it again). */
 export function forgetLand(key: string): void {
   release(statuses.get(key));

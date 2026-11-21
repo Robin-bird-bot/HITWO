@@ -25,3 +25,10 @@ export const MAP_STYLE_SETTING = deviceSetting<MapStyle>(
 
 /** The map style picked on this device, re-rendering when it changes. */
 export const useMapStyle = (): MapStyle => useDeviceSetting(MAP_STYLE_SETTING);
+
+/**
+ * The style the map is drawn in: the one picked, except Classic for a section
+ * whose illustrated land failed or took too long.
+ */
+export const shownMapStyle = (picked: MapStyle, land: { status: string }): MapStyle =>
+  picked === 'illustrated' && land.status !== 'failed' ? 'illustrated' : 'classic';

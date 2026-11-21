@@ -46,7 +46,7 @@ import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
 import { MapControls, RouteLegend } from '../map/MapControls';
 import { useTabHeld } from '../map/useTabHeld';
-import { useMapStyle } from '../map/mapStyleSetting';
+import { shownMapStyle, useMapStyle } from '../map/mapStyleSetting';
 import { mapGeometry } from '../map/illustrated/geometry';
 import { landKey, sectionLandInput } from '../map/illustrated/land/input';
 import { useLand } from '../map/illustrated/landService';
@@ -54,6 +54,8 @@ import { landCellUnits, landScale } from '../map/illustrated/device';
 import { LandCanvas } from '../map/illustrated/LandCanvas';
 import { MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
 import { paintedPlaces } from '../map/illustrated/land/mask';
+import { FieldView, StampBoxes } from '../map/illustrated/MapDebugLayers';
+import { landDebugOf, paintOverridden, useMapDebug } from '../map/illustrated/mapDebug';
 import { landGrade } from '../map/illustrated/grade';
 import { useReducedMotion } from '../app/useReducedMotion';
 import illustrated from '../map/illustrated/Illustrated.module.css';
@@ -252,14 +254,17 @@ export function GameScreen({
   const bounds = useMemo(() => mapBounds(section), [section]);
   // Classic's grid, or the Illustrated map's moved tiles and winding paths (Phase 10.5).
   const chosenStyle = useMapStyle();
+  // The debug panel's look-only tools: a land seed, reveal all or none, views, forced weather.
+  const dbg = useMapDebug();
+  const lookSeed = dbg.seed ?? state.seed;
   const illustratedGeo = useMemo(
     () =>
       mapGeometry(section, {
         style: 'illustrated',
-        runSeed: state.seed,
+        runSeed: lookSeed,
         sectionIndex: state.sectionIndex,
       }),
-    [section, state.seed, state.sectionIndex],
+    [section, lookSeed, state.sectionIndex],
   );
   const classicGeo = useMemo(
     () =>
@@ -274,17 +279,16 @@ export function GameScreen({
   const landReq = useMemo(() => {
     if (chosenStyle !== 'illustrated') return null;
     const input = sectionLandInput(section, illustratedGeo, {
-      runSeed: state.seed,
+      runSeed: lookSeed,
       sectionIndex: state.sectionIndex,
       cellUnits: landCellUnits(),
     });
     return { key: landKey(input), input, scale: landScale() };
-  }, [chosenStyle, section, illustratedGeo, state.seed, state.sectionIndex]);
+  }, [chosenStyle, section, illustratedGeo, lookSeed, state.sectionIndex]);
   const land = useLand(landReq);
   const reduceMotion = useReducedMotion();
   // If the land fails (or takes over 6 s), this section uses the classic map.
-  const mapStyle =
-    chosenStyle === 'illustrated' && land.status !== 'failed' ? 'illustrated' : 'classic';
+  const mapStyle = shownMapStyle(chosenStyle, land);
   const geo = mapStyle === 'illustrated' ? illustratedGeo : classicGeo;
   const landReady = mapStyle === 'illustrated' && land.status === 'ready' ? land.result : undefined;
   // Place names show once the paint covers their spot (one string, so it only re-renders on a change).
@@ -298,15 +302,16 @@ export function GameScreen({
         .join('\n'),
     );
   };
-  // A name seen for the first time: "Found …" in the trail log, once.
+  // A name seen for the first time: "Found …" in the trail log, once (not while debug paints it).
+  const paintForced = paintOverridden(dbg);
   useEffect(() => {
-    if (!landReady) return;
+    if (!landReady || paintForced) return;
     for (const p of landReady.features.places) {
       if (!shown.has(p.name)) continue;
       if (gameStore.getState()?.foundPlaces?.includes(p.name)) continue;
       gameStore.dispatch({ type: 'foundPlace', name: p.name });
     }
-  }, [shown, landReady]);
+  }, [shown, landReady, paintForced]);
   const place = placer(section, geo);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
@@ -414,7 +419,7 @@ export function GameScreen({
   // The route view (Phase 10.5): the Routes button toggles it; holding Tab shows it too.
   const [routesOn, setRoutesOn] = useState(false);
   const tabHeld = useTabHeld();
-  const routes = routesOn || tabHeld;
+  const routes = routesOn || tabHeld || !!dbg.routes;
   // When the pop-up closes, bring a tile that just got easier into view if none is.
   const easierKey = easier.join(',');
   const [pannedFor, setPannedFor] = useState('');
@@ -1062,17 +1067,24 @@ export function GameScreen({
                 geo={geo}
                 mapStyle={mapStyle}
                 underlay={
-                  mapStyle === 'illustrated' && land.status === 'ready' ? (
-                    <LandCanvas
-                      result={land.result}
-                      section={section}
-                      geo={geo}
-                      runSeed={state.seed}
-                      sectionIndex={state.sectionIndex}
-                      grade={landGrade(state, routes, land.result, geo)}
-                      reduceMotion={reduceMotion}
-                      onMask={onMask}
-                    />
+                  landReady ? (
+                    <>
+                      <LandCanvas
+                        result={landReady}
+                        section={section}
+                        geo={geo}
+                        runSeed={lookSeed}
+                        sectionIndex={state.sectionIndex}
+                        grade={landGrade(state, routes, landReady, geo, dbg.grade)}
+                        reduceMotion={reduceMotion}
+                        onMask={onMask}
+                        debug={landDebugOf(dbg)}
+                      />
+                      {(dbg.view === 'type' || dbg.view === 'height') && (
+                        <FieldView result={landReady} view={dbg.view} />
+                      )}
+                      {dbg.stampBoxes && <StampBoxes result={landReady} />}
+                    </>
                   ) : undefined
                 }
                 {...(landReady ? { bridges: landReady.features.bridges } : {})}
