@@ -1,0 +1,209 @@
+{
+ "_note": "Colors per land type, 4 tones each from shadow to highlight. Meadow is the tuned one; Rainforest and Alpine are first guesses for Wyatt to tune.",
+ "meadow": {
+  "meadowA": [
+   "#86A066",
+   "#AEBB63",
+   "#D3CF77",
+   "#ECE29B"
+  ],
+  "meadowB": [
+   "#829E68",
+   "#A6BC6A",
+   "#CBD283",
+   "#E6E4A3"
+  ],
+  "forestFloor": [
+   "#264B4A",
+   "#2F5B4D",
+   "#3A6A50",
+   "#477954"
+  ],
+  "rock": [
+   "#7F6890",
+   "#B77B7E",
+   "#DDA286",
+   "#F4D6B5"
+  ],
+  "bank": [
+   "#C9B98E",
+   "#DCCB9A",
+   "#E9DAAA",
+   "#F3E6BE"
+  ],
+  "crown": [
+   "#2E5F52",
+   "#3F7A5C",
+   "#5A9663",
+   "#7EB06A"
+  ],
+  "crownShadow": "#1D3A45",
+  "autumn": [
+   [
+    "#9A5A3A",
+    "#C47E47",
+    "#E2AE6C"
+   ],
+   [
+    "#A3863C",
+    "#CDAA52",
+    "#E8CE84"
+   ],
+   [
+    "#94503F",
+    "#B86A51",
+    "#D79274"
+   ]
+  ],
+  "autumnShare": 0.16,
+  "water": {
+   "sand": "#E7D9A9",
+   "shallows": "#9FDCD2",
+   "water": "#4BB0C1",
+   "deep": "#3A92AA",
+   "ripple": "#D6F5EE"
+  },
+  "contour": "#F7EFD8",
+  "haze": "#C9D6E8",
+  "flowers": [
+   "#FFF7E2",
+   "#F4A9BB",
+   "#F7D45E",
+   "#C9A2E6"
+  ]
+ },
+ "rainforest": {
+  "meadowA": [
+   "#5E8A5A",
+   "#7FA35E",
+   "#A3BE72",
+   "#C6D58E"
+  ],
+  "meadowB": [
+   "#587F5E",
+   "#789C66",
+   "#99B57A",
+   "#BCCF95"
+  ],
+  "forestFloor": [
+   "#1C3B3A",
+   "#234840",
+   "#2C5646",
+   "#36644B"
+  ],
+  "rock": [
+   "#5F6B7A",
+   "#7E8A8C",
+   "#A3ADA4",
+   "#C9D0C1"
+  ],
+  "bank": [
+   "#9FA483",
+   "#B4B892",
+   "#C8CBA3",
+   "#DCDDB8"
+  ],
+  "crown": [
+   "#1F4A40",
+   "#2C5E4C",
+   "#3E7655",
+   "#5C9160"
+  ],
+  "crownShadow": "#12282E",
+  "autumn": [
+   [
+    "#4E6B3A",
+    "#6E8C45",
+    "#93AD5C"
+   ]
+  ],
+  "autumnShare": 0.08,
+  "water": {
+   "sand": "#C9C7A0",
+   "shallows": "#8FCFC3",
+   "water": "#3E9DAF",
+   "deep": "#2E7E95",
+   "ripple": "#CDEFE8"
+  },
+  "contour": "#E8EEDC",
+  "haze": "#B8CCD2",
+  "flowers": [
+   "#F3F1E4",
+   "#E59AB0",
+   "#CFE38A"
+  ]
+ },
+ "alpine": {
+  "meadowA": [
+   "#8C9A86",
+   "#AAB49C",
+   "#CBD0BB",
+   "#ECEDE2"
+  ],
+  "meadowB": [
+   "#94A08F",
+   "#B3BCA8",
+   "#D3D8C8",
+   "#F2F3EC"
+  ],
+  "forestFloor": [
+   "#2A3F46",
+   "#33504F",
+   "#3D5E58",
+   "#486A60"
+  ],
+  "rock": [
+   "#6A6E92",
+   "#8C8FAE",
+   "#B8B9CE",
+   "#F4F2EE"
+  ],
+  "bank": [
+   "#B9B8AA",
+   "#CBCABD",
+   "#DCDBD0",
+   "#EEEDE6"
+  ],
+  "crown": [
+   "#244A48",
+   "#305C55",
+   "#3F6F60",
+   "#5A8670"
+  ],
+  "crownShadow": "#1A2E3E",
+  "autumn": [],
+  "autumnShare": 0,
+  "snowAbove": 0.62,
+  "water": {
+   "sand": "#D7D5CA",
+   "shallows": "#BFE6EC",
+   "water": "#6FB9D2",
+   "deep": "#4E98B8",
+   "ripple": "#EAF8FA"
+  },
+  "contour": "#FFFFFF",
+  "haze": "#D3DCEB",
+  "flowers": [
+   "#FFFFFF",
+   "#C9B8E8"
+  ]
+ },
+ "paper": {
+  "base": "#EEE5CB",
+  "graphite": "#857B68",
+  "ink": "#6F8088",
+  "hatch": 0.82
+ },
+ "tile": {
+  "glassFill": "#0F1A16",
+  "glassOpacity": 0.5,
+  "glassOpacityVisited": 0.36,
+  "edge": "#F7F1E4",
+  "pencil": "#5E5648"
+ },
+ "path": {
+  "gray": "#77736A",
+  "casing": "#F4EDDA",
+  "outline": "#1D2220"
+ }
+}

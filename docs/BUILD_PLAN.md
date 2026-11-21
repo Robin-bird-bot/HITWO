@@ -1012,6 +1012,58 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
+## Phase 10.5: Illustrated map (next)
+
+(New in the Nov 21 update: `docs/UPDATE-2026-11-21-phase-10.5-illustrated-map.md`. **Build this next**, before Phase 11. The look is in `docs/mockups/illustrated-map/` (`MapTopDown.jpg` is the target; tile look **A, dark glass** in `MapTileLooks.jpg`; the land on its own in `look/`). The Python prototype in `docs/design/illustrated-map/reference/` has every number: read its README first, and port the ideas and numbers, not the code.)
+
+**Goal:** a second look for the trail map, **Map style: Classic or Illustrated**. The land is painted around each section's trail tree like a colorful illustrated trail map; unexplored land is a pencil sketch that fills in with paint as tiles are revealed. Tiles become dark see-through hexes, paths wind and show who walked them, and places get Oregon names. **It changes only how the map looks**: tiles, connections, costs, triggers and every rule stay the same, and Classic keeps working as it does now.
+
+Numbers in [brackets] are first guesses: in `balance.ts` (or `mapStyle.ts` beside it) with `TODO(wyatt)`. All numbers are in prototype units (rows 134 apart, hex radius 54): multiply by our row spacing ÷ 134.
+
+**Build**
+- **The setting** (section 2): Settings → **Map style**, Classic or Illustrated, saved per device. Default Illustrated [first guess]. It can be switched any time, mid-run included, keeping the camera; switching regenerates the land if needed. Everything below is Illustrated only unless it says otherwise.
+- **Layout** (section 3):
+  - **Jitter:** each tile moves up to ±[24] in x and ±[16] in y, and its size scales by [0.90–1.07]; the trailhead and checkpoint never move. Seeded, so a run always looks the same. Clicks, drags and hover use the moved positions.
+  - **Spacing:** the land has to show between tiles (in the prototype, tiles take about 40% of a row). Spread rows and columns out rather than shrinking hexes below a comfortable click size.
+  - **Winding paths:** `wind()` in `topo_layout.py`: a sideways push of `(a1·sin(π·t·bends + phase) + a2·sin(π·t·(2·bends + 1))) · sin(π·t)`, with `a1` [0.5–1]·amp and `a2` [0.2–0.6]·amp, amp [24] between rows and [16] within one, `bends` alternating 1 and 2. Only for looks.
+- **Generating the land** (section 4; follow `topo.py`), from the section's tiles, nodes, connections and biome, all seeded:
+  - **Fields** on a grid (1 cell per unit, half on phones): fbm noise at [260], [90] and [30]; mountain influence and sharper peaks (off to one side of the tile) from Mountain nodes; forest from Forest nodes; meadow from Wildlife nodes and the trailhead; extra ranges and woods off the tree so the edges aren't empty.
+  - **Water:** the main river from the top edge to the bottom through every River tile in order, smoothed and wandering; a creek from the nearest side edge for a River tile far from it; a pond (offset to peek out) for each River ×2 tile.
+  - **Height** rising toward the checkpoint, with mountains, peaks and noise, dipping along rivers. **Light:** hillshade from the top left, cut into 4 flat tones at the [12%, 42%, 84%] quantiles, smoothed to look painted.
+  - **Land types:** rock where peaks are strong; forest where its field wins (never on rock, near water, or in a clearing under each tile); bank by water; meadow everywhere else, two meadow palettes in large patches. Tones from `palettes.json`; higher land tinted [10%] toward the haze.
+  - **Contours** (about [26] levels, every 5th heavier, at [30%]); **details** (flowers and grass ticks, rock cracks, a sand edge, shallows, water and a deep center with a few short ripples); **tree crowns** on a jittered grid, lowest drawn last ([42%] conifers, the rest round, [16%] autumn in patches; shadow, base, highlight); **paper** grain, brush streaks, a warm wash top left and a cool shade bottom right.
+  - **The pencil sketch**, a second image of the same land: paper and grain, graphite contours, rivers as two ink lines, about [28%] of the trees as little tree symbols, hatching in shadows and on rock.
+  - **Size:** [300] units past the tree's bounding box on every side; plain paper beyond.
+- **Stamps** (section 5): the placeholder PNGs in `public/assets/map/stamps/` (Wyatt's painted ones will replace them with the same names; skip a missing one), side-on with the base at the bottom center, each with a soft oval shadow, scattered into the painted land only: trees and bushes along forest edges [1 per 40 units]; a rock or peak on the strongest peaks; a cabin near the trailhead; a fire lookout beside each Overlook; a tent beside each Campsite; [1–2] deer in the largest meadow; a waterfall at the river's steepest drop if it's big enough [over 0.12 per 40 units]. Trees and peaks about [26] tall, small things [14]. Never in tile hexes or on paths.
+- **Painted as you explore** (section 6): unrevealed land is the sketch, revealed land is painted. Revealed means any tile whose nodes are revealed by the existing rules, plus the trailhead area. Each revealed tile adds a soft disc of radius [150] fading over [70], its edge broken by noise; where the mask is about half, the paint darkens up to [16%] in a thin band (pigment pooling). A new reveal grows from 0 over [1.2 s] (ease-out), redrawing only what changed; several animate together; under reduced motion it just appears. On load the mask is rebuilt with no animation. Fog (Phase 11) hides nodes but doesn't un-paint.
+- **Drawing the map** (section 7), three layers in the existing viewport with the same pan and zoom: the sketch canvas, the painted canvas through the reveal mask, and the overlay (paths, bridges, badges, tiles, tokens, labels).
+  - **Paths** (`gen11.py` → `path_svg`): a cream track under each (`#F4EDDA` [42%], [8] wide). Unwalked are gray `#77736A`: normal dashed [10 on, 7 off] [3.6] wide; steep, muddy and rough dotted (round dots [8.5] apart) [5.6] wide with the cost badge; paved solid with a wider track and the FREE badge. Walked paths take the walker's party color, [15%] wider, with a thin outline (`#1D2220` [50%]): normal turns solid, dotted stays dotted, paved stays solid. **Bridges** where a path crosses water, rotated to it (not inside a hex; one for close crossings).
+  - **Tiles, dark glass** (`gen11.py` → `tile_svg`): revealed, fill `#0F1A16` at [50%] ([36%] once visited), a cream edge `#F7F1E4` [2.2] wide and a faint inner line at 90%, the land showing through with no blur. Unrevealed, pencil: paper fill `#EEE5CB` at [45%], a dashed graphite edge `#5E5648`, pencil node chips with "?", the special icon in pencil colors. Node chips as small hexes along the bottom; the special icon in the middle until someone lands, then top right; hiker tokens as round portraits ringed in their party color.
+  - **Labels:** Fraunces italic 600, about [14–17] px, with a cream halo (font added locally); water `#1F5E6E`, lookouts and peaks `#5A3F66`, woods and meadows `#2A4A3A`.
+  - **Map furniture**, fixed to the screen and clear of the HUD: a small compass rose; a title box ("MEADOW", "SECTION I · TIER I · DAY 3") with a scale bar; a **Legend** button opening the line legend from `MapTopDown.jpg`.
+- **Performance** (section 8): the land depends only on the seed, section index, biome and tiles; no images are saved, they're regenerated on load. In a Web Worker with `OffscreenCanvas` where available, else on the main thread behind a short "Drawing the map…" overlay. Canvas scale `min(devicePixelRatio, 2)`, 1 on phones. Budget under [1.5 s] on a laptop, shown in the debug panel. Keep the current section's canvases; drop the previous ones. If it fails or takes over [6 s]: Classic for that section, logged, with a toast "Using the classic map for this section."
+- **Biomes and time of day** (section 9): palettes for `meadow`, `rainforest` and `alpine` (`meadow` until Phase 11 assigns biomes; Alpine has no autumn trees and turns rock white above `snowAbove`). **Night**, on the land only: `lum·[0.36, 0.44, 0.72]·0.8 + rgb·[0.22, 0.30, 0.42] + [0.03, 0.04, 0.11]`, with a warm glow (`[0.55, 0.32, 0.12]`, radius [60]) where hikers sleep in a shelter or Sit by the Fire and at Campsites with hikers. **Rain:** 78% color + 22% gray, cooler and darker, slanted streaks (off under reduced motion). **Snow:** open ground above [45%] brightness fades to white over a [0.2] ramp; trees stay dark. **Heatwave:** a warm wash. **Storm:** rain, darker. Grades, not regeneration.
+- **Oregon place names** (section 10): the main river, creeks, ponds, Overlook tiles (lookouts), forest patches over [6 tiles' area] (woods), meadow patches over [4 tiles' area] (meadows), peak-stamp peaks and waterfalls, named from `oregon-names.json`. Each list is shuffled once per run with the run seed and used in order section after section, so nothing repeats in a run and a reload gives the same names (nothing to save). Rivers and creeks along a calm stretch, rotated; ponds beside the water; lookouts beside the tile; the rest at the patch's center; never under a tile or another label. A label appears once the paint covers it, fading in with it, and the trail log says "Found Tumalo Pond." the first time.
+- **Walked paths and the route view** (section 11; **both map styles**): each connection gets `walkedBy`, set the first time any hiker crosses it (either way; a Move All's mover), never changed, saved with the run; old saves start unwalked. Classic colors walked lines in the walker's party color too, keeping its own line styles. **Routes**, a map toolbar button (also while `Tab` is held; a toggle on phones): the land fades (`saturate(0.35) brightness(0.72) contrast(0.9)`), tiles shrink to faint outlines (fill `#0F1A16` [25%], edge [35%]), tokens and labels hide, unwalked paths drop to [25%], walked paths stay bright with a small legend of hiker colors. Classic dims everything but walked lines. It never blocks input.
+- **Debug panel** (section 12): switch the map style; regenerate with a new seed; reveal all or hide all; replay the reveal animation on a tile; show the land-type mask, the height map and the reveal mask; the generation time; force night, rain or snow; toggle the route view; show the stamp placement boxes.
+
+**Not in this phase:** the tilted view (`MapTilted.jpg`, `reference/topo_tilt.py`), kept for a possible intro shot later.
+
+**Tests**
+- **Deterministic:** the same seed, section and tiles give identical fields (a hash) and names; another seed gives different ones.
+- **Built from the nodes:** the river passes within a tile radius of every River tile's center; every River ×2 tile has a pond; peaks sit near Mountain tiles; no forest or stamps inside any tile hex; no stamps on paths.
+- **Jitter:** within the limits; the trailhead and checkpoint don't move; clicks land on the moved hexes.
+- **Paths:** `walkedBy` is set by the first crosser only; a Move All uses the mover; a walked normal path is solid and walked dotted paths stay dotted; old saves load with nothing walked.
+- **Reveal:** revealing a tile adds paint around it; a reload rebuilds the same mask; reduced motion skips the animation.
+- **Names:** no repeats across a 3-section run; a label stays hidden until its spot is painted; the "Found …" line appears once.
+- **Setting:** switching styles mid-run keeps the game state and camera; Classic is unchanged apart from colored walked lines and the route view.
+- **Fallback:** a forced generation error falls back to Classic with the toast.
+- **Performance:** generation under the budget on the test machine (logged, not a CI failure).
+
+**Done when:** a run can be played in either style; the Illustrated map matches `MapTopDown.jpg` closely, paints in as tiles are revealed, names its places, grades for night and weather, and stays within its time budget; and the tests above pass.
+
+---
+
 ## Phase 11: Biomes, tiers and weather
 
 Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
@@ -1019,6 +1071,7 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 **Build**
 - Meadow → Temperate Rainforest → Alpine, at Tier 1 → 3.
 - Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker). Fog never hides the tiles next to a hiker with Rednose: ask `clearsFog` (holiday update).
+- **The illustrated map (Phase 10.5):** pass each section's biome in, so it uses that biome's palette (`meadow`, `rainforest` or `alpine`). Fog hides nodes but doesn't un-paint the land.
 - Challenge spaces draw one tier higher.
 - The snowy, high part of the trail turns on the `[snow only]` challenges, mostly Tier III.
 
@@ -1029,7 +1082,7 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 (New in the Nov 14 update.) Wyatt sends mockups first.
 
 **Build**
-- The trail map's look: the background, the trail art and each biome's art.
+- The trail map's look: Classic look stays; the Illustrated look is done in 10.5. Left for later: Wyatt's painted stamps, tuning the Rainforest and Alpine palettes, and maybe a tilted intro shot when a section starts.
 - The hiker portrait panel.
 - **The crafting window:**
   - switch between hikers without closing it;

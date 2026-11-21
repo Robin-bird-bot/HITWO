@@ -180,6 +180,20 @@ Shortcuts, Wellspring, Fire Ring and Lost Hiker live in the opportunity and chal
 - A hiker who passes out behind the group with no one nearby will be abandoned. Keeping a hiker on the tile before the checkpoint is the safety net.
 - After the station visit, the party starts the next biome on a free Trailhead with no challenge or nodes. Hikers can't move back onto a checkpoint.
 
+**Illustrated map (optional look)**
+
+A second look for the trail map, picked in Settings (Map style: Classic or Illustrated). It only changes how the map is drawn: tiles, paths, costs and rules stay the same. The concept boards are on the design canvas.
+
+- **Built from the trail tree:** when a section starts, the game paints the land around that section's tiles. Rivers run through River tiles (River ×2 becomes a pond), peaks rise on Mountain tiles, Forest tiles grow woods and Wildlife tiles open meadows. The land hints at what's ahead, but unrevealed nodes still show as ?.
+- **Style:** top-down, like a colorful illustrated trail map. Flat-toned light and shadow from the top left, faint contour lines, and Slawek Fedorczuk's colors. Wyatt paints a small kit of side-on stamps (trees, rocks, peaks, cabin, fire lookout, bridge, tent, deer, waterfall) that the game scatters over the land.
+- **Painted as you explore:** land no hiker has revealed is a pencil sketch on paper. When a tile is revealed (entering it, Scout, an Overlook), the paint spreads out from it like watercolor.
+- **Tiles:** dark see-through hexes with a cream edge, so the land shows through. Unrevealed tiles are drawn in pencil, with a dashed outline and ? nodes.
+- **Paths:** they wind a little between tiles, and get a plank bridge where they cross water. Unwalked paths are gray: dashed for normal, dotted for steep, muddy or rough (with the cost badge), solid for paved. The first hiker to cross a path paints it their color for the rest of the section, and a Move All uses the color of the hiker who did it. A walked dashed path also turns solid, so routes are easy to follow. Dotted paths stay dotted, so their cost still shows.
+- **Route view:** a button on the map fades the land and tiles so only the walked paths show, in each hiker's color.
+- **Place names:** ponds, lookouts, creeks, woods and meadows get names from places in Oregon (Tumalo Pond, Ochoco Lookout, Santiam Creek), with no repeats in a run. A name appears when the paint reaches it.
+- **Night and weather:** the map tints for night (moonlit blues, warm glow around fires) and for weather (rain dulls it and adds streaks, snow whitens open ground).
+- **Tilted view:** a bird's-eye angle where trees and peaks stand up. Not used for play, since tiles shrink toward the top and ridges can hide paths. It may be used as a short establishing shot when a section starts.
+
 ## Biomes, tiers and weather
 
 The base game has 3 sections, one per biome, and the difficulty tier rises with each section (Tier 1, 2, 3).
