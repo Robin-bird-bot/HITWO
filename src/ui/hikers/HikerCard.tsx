@@ -182,7 +182,7 @@ function useLiftSoon(hikerId: string) {
 }
 
 /** The name and title shrink to fit the band. */
-function FitLine({
+export function FitLine({
   text,
   size,
   className,

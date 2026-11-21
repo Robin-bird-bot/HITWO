@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { DEFAULT_PARTY } from './content/roster';
 import { TEST_HIKERS } from './content/testHikers';
-import { createGame, type HikerSetup, type LoadFailure } from './engine';
+import { createGame, isHikeOver, type HikerSetup, type LoadFailure } from './engine';
 import { gameStore, useGame } from './ui/app/gameStore';
 import { useHash } from './ui/app/useHash';
 import { DebugItems } from './ui/debug/DebugItems';
@@ -11,6 +11,7 @@ import { ConditionsMockup } from './ui/mockup/ConditionsMockup';
 import { CraftingMockup } from './ui/mockup/CraftingMockup';
 import { StationExtrasMockup } from './ui/mockup/StationExtrasMockup';
 import { HikerCardsMockup } from './ui/mockup/HikerCardsMockup';
+import { HikerSelect } from './ui/select/HikerSelect';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
 import { TestHikerPicker } from './ui/debug/DebugTraits';
@@ -34,10 +35,9 @@ const NOTICES: Record<LoadFailure, string | null> = {
 export function App() {
   const hash = useHash();
   const game = useGame();
-  const [screen, setScreen] = useState<'title' | 'game'>('title');
-  const [confirmNew, setConfirmNew] = useState(false);
-  /** Dev only: the test hikers a confirmed new hike starts with. */
-  const [testParty, setTestParty] = useState<string[] | null>(null);
+  const [screen, setScreen] = useState<'title' | 'select' | 'game'>('title');
+  /** The party a new hike will start with, waiting for "replace my saved hike?". */
+  const [pending, setPending] = useState<readonly HikerSetup[] | null>(null);
 
   if (hash.startsWith('#debug-map')) return <DebugMap hash={hash} />;
   if (hash.startsWith('#debug-cards') && debugEnabled()) return <DebugCards />;
@@ -50,9 +50,13 @@ export function App() {
 
   const startNew = (seed = randomSeed(), hikers: readonly HikerSetup[] = DEFAULT_PARTY) => {
     gameStore.newGame(createGame({ seed, hikers }));
-    setConfirmNew(false);
-    setTestParty(null);
+    setPending(null);
     setScreen('game');
+  };
+  /** Starts it, first asking when it would replace a saved hike that isn't over. */
+  const startAsking = (hikers: readonly HikerSetup[]) => {
+    if (game && !isHikeOver(game)) setPending(hikers);
+    else startNew(randomSeed(), hikers);
   };
   /** Dev only: a hike with test hikers (Phase 10a). */
   const testHikers = (ids: string[]) =>
@@ -65,7 +69,7 @@ export function App() {
           key={game.seed}
           state={game}
           onQuit={() => setScreen('title')}
-          onNewHike={() => startNew()}
+          onNewHike={() => setScreen('select')}
         />
         {debugEnabled() && (
           <DebugPanel
@@ -79,6 +83,26 @@ export function App() {
     );
   }
 
+  const replaceDialog = pending && game && (
+    <ConfirmDialog
+      title="Start a new hike?"
+      message={`Your saved hike (${describeSave(game)}) will be replaced. This can’t be undone.`}
+      confirmLabel="Start new hike"
+      cancelLabel="Keep my hike"
+      onCancel={() => setPending(null)}
+      onConfirm={() => startNew(randomSeed(), pending)}
+    />
+  );
+
+  if (screen === 'select') {
+    return (
+      <Stage>
+        <HikerSelect onStart={startAsking} onBack={() => setScreen('title')} />
+        {replaceDialog}
+      </Stage>
+    );
+  }
+
   const problem = gameStore.loadProblem;
   return (
     <Stage>
@@ -86,36 +110,14 @@ export function App() {
         saved={game ? describeSave(game) : null}
         notice={!game && problem ? NOTICES[problem] : null}
         onContinue={() => setScreen('game')}
-        onNewHike={() => (game ? setConfirmNew(true) : startNew())}
+        onNewHike={() => setScreen('select')}
         {...(debugEnabled()
           ? {
-              testPicker: (
-                <TestHikerPicker
-                  onStart={(ids) =>
-                    game
-                      ? (setTestParty(ids), setConfirmNew(true))
-                      : startNew(randomSeed(), testHikers(ids))
-                  }
-                />
-              ),
+              testPicker: <TestHikerPicker onStart={(ids) => startAsking(testHikers(ids))} />,
             }
           : {})}
       />
-      {confirmNew && game && (
-        <ConfirmDialog
-          title="Start a new hike?"
-          message={`Your saved hike (${describeSave(game)}) will be replaced. This can’t be undone.`}
-          confirmLabel="Start new hike"
-          cancelLabel="Keep my hike"
-          onCancel={() => {
-            setConfirmNew(false);
-            setTestParty(null);
-          }}
-          onConfirm={() =>
-            startNew(randomSeed(), testParty ? testHikers(testParty) : DEFAULT_PARTY)
-          }
-        />
-      )}
+      {replaceDialog}
     </Stage>
   );
 }

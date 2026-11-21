@@ -1,0 +1,507 @@
+/* The hiker selection screen (HikerSelect.tsx, mockups/HikerSelect.png). Stage pixels. */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0c1411;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+
+/* ── Top ── */
+
+.top {
+  position: absolute;
+  left: 40px;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+}
+
+.help {
+  margin: 0;
+  font-size: 14px;
+  color: #c9c2b2;
+}
+
+.actions {
+  position: absolute;
+  right: 40px;
+  top: 30px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.back,
+.random,
+.start {
+  height: 44px;
+  border-radius: 11px;
+  font-family: var(--font-pixel);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.back,
+.random {
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #f1eadb;
+  font-size: 13px;
+}
+
+.back {
+  border-color: transparent;
+  color: #c9c2b2;
+}
+
+.back:hover,
+.random:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.start {
+  padding: 0 22px;
+  border: none;
+  background: #e9b44c;
+  color: #1d2220;
+  font-size: 15px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+
+.start:hover:not(:disabled) {
+  background: #f2c262;
+}
+
+.random:disabled,
+.start:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.back:focus-visible,
+.random:focus-visible,
+.start:focus-visible,
+.chip:focus-visible,
+.removeButton:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 3px;
+}
+
+/* ── The four spots ── */
+
+.spots {
+  position: absolute;
+  left: 41px;
+  top: 100px;
+  width: 1518px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.spot {
+  position: relative;
+  width: 360px;
+  height: 350px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  background: rgba(20, 24, 22, 0.7);
+  box-shadow: 0 0 0 3px var(--c);
+}
+
+.spot[data-full] {
+  cursor: grab;
+}
+
+/* While a card is dragged, every spot glows; one that can't take it dims. */
+.spot[data-glow] {
+  animation: spotGlow 1.6s ease-in-out infinite;
+}
+
+.spot[data-drop='no'] {
+  opacity: 0.45;
+  animation: none;
+}
+
+@keyframes spotGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--c),
+      0 0 0 3px color-mix(in srgb, var(--c) 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--c),
+      0 0 0 14px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spot[data-glow] {
+    animation: none;
+    box-shadow:
+      0 0 0 3px var(--c),
+      0 0 0 7px color-mix(in srgb, var(--c) 40%, transparent);
+  }
+}
+
+.spotTab {
+  position: absolute;
+  left: 14px;
+  top: -12px;
+  z-index: 3;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: var(--c);
+  display: flex;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #1d2220;
+}
+
+.spotBody {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #2c2c2c;
+}
+
+.spot[data-leaving] .spotBody {
+  opacity: 0.4;
+}
+
+.spotPortrait {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 360px;
+  height: 204px;
+}
+
+.spotPicture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.bagChip {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  max-width: 300px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: rgba(29, 34, 32, 0.82);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: #f1eadb;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.bagWord {
+  color: #d9a06e;
+}
+
+.removeButton {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(29, 34, 32, 0.82);
+  color: #f1eadb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.removeButton:hover {
+  background: #b4472f;
+}
+
+.spotName {
+  position: absolute;
+  left: 0;
+  top: 204px;
+  width: 360px;
+  height: 52px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.spotNameText,
+.spotTitleText {
+  display: block;
+  width: max-content;
+  font-family: var(--font-pixel);
+  white-space: nowrap;
+}
+
+.spotNameText {
+  line-height: 0.9;
+  color: #111111;
+}
+
+.spotTitleText {
+  line-height: 0.95;
+  color: #5e5e5e;
+}
+
+.spotRoles {
+  position: absolute;
+  left: 0;
+  top: 256px;
+  width: 360px;
+  height: 16px;
+  display: flex;
+}
+
+.spotRoles > span {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+}
+
+.spotBadges {
+  position: absolute;
+  left: 15px;
+  top: 278px;
+  width: 330px;
+  display: flex;
+  justify-content: center;
+}
+
+.spotBadge {
+  display: flex;
+  justify-content: center;
+}
+
+.spotBadge > * {
+  width: 100%;
+  gap: 3px;
+}
+
+/* An empty spot: a dashed outline, a plus and DRAG A HIKER HERE. */
+.empty {
+  position: absolute;
+  inset: 14px;
+  border-radius: 12px;
+  border: 2px dashed rgba(255, 255, 255, 0.14);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #9c9585;
+}
+
+.plus {
+  width: 54px;
+  height: 54px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--c);
+  color: var(--c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The spot under the dragged card. */
+.dropHere {
+  position: absolute;
+  inset: 14px;
+  z-index: 2;
+  box-sizing: border-box;
+  padding-top: 34px;
+  border-radius: 12px;
+  border: 2px dashed var(--c);
+  background: color-mix(in srgb, var(--c) 14%, rgba(20, 24, 22, 0.55));
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  color: var(--c);
+  pointer-events: none;
+}
+
+/* ── The list ── */
+
+.listBar {
+  position: absolute;
+  left: 40px;
+  top: 466px;
+  width: 1520px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.listTitle {
+  margin-right: 10px;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
+.chip {
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9c2b2;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chip[aria-pressed='true'] {
+  background: #e9b44c;
+  color: #1d2220;
+}
+
+/* The cards scroll under the bar. */
+.list {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 500px;
+  bottom: 0;
+  padding: 10px 16px 40px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.grid {
+  width: 1520px;
+  display: grid;
+  grid-template-columns: repeat(9, 160px);
+  justify-content: space-between;
+  row-gap: 14px;
+}
+
+.cell {
+  position: relative;
+  width: 160px;
+  height: 224px;
+}
+
+.cellCard[data-dim] {
+  opacity: 0.35;
+}
+
+/* The card being dragged leaves a dashed outline. */
+.cellCard[data-lifted] {
+  visibility: hidden;
+}
+
+.outline {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+/* IN PARTY in the spot's color, or who's in the way ("FINN IS IN"). */
+.tag {
+  position: absolute;
+  left: 50%;
+  top: 92px;
+  transform: translateX(-50%);
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 7px;
+  background: #c9c2b2;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #1d2220;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Dragging a hiker out of the spots, over the list. */
+.list[data-removing] {
+  box-shadow: inset 0 0 0 2px rgba(229, 98, 74, 0.6);
+  border-radius: 12px;
+}
+
+.removeHint {
+  position: absolute;
+  left: 50%;
+  top: 520px;
+  transform: translateX(-50%);
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 9px;
+  background: #b4472f;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  pointer-events: none;
+}
+
+/* The card under the pointer, tilted a little. */
+.ghost {
+  rotate: 5deg;
+}

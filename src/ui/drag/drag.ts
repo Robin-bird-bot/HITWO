@@ -23,9 +23,13 @@ import {
 } from 'react';
 import type { HikerId, ResourceId } from '../../engine';
 
-/** What's being dragged: a hiker, a bag item or resource from a pack, or a shop card. */
+/**
+ * What's being dragged: a hiker, a bag item or resource from a pack, a shop
+ * card, or a hiker card on the selection screen (from the list, or a spot).
+ */
 export type DragPayload =
   | { kind: 'hiker'; hikerId: HikerId }
+  | { kind: 'pick'; hikerId: string; spot: number | null }
   | { kind: 'item'; hikerId: HikerId; itemUid: string }
   | { kind: 'resource'; hikerId: HikerId; resource: ResourceId }
   | { kind: 'offer'; offerId: string };
