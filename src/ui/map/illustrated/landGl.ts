@@ -44,9 +44,9 @@ const v3 = (a: readonly number[]) => `vec3(${a.map((n) => n.toFixed(4)).join(', 
 const VERTEX = `#version 300 es
 out vec2 vUv;
 void main() {
+  // One triangle over the whole canvas: p is 0–2, and 0–1 of it is on screen.
   vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
-  vUv = vec2(p.x, p.y) * 0.5;
-  vUv.y = 1.0 - vUv.y;
+  vUv = vec2(p.x, 1.0 - p.y);
   gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
 }`;
 

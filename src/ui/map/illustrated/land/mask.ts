@@ -144,3 +144,9 @@ export function maskAt(g: MaskGrid, x: number, y: number): number {
 
 /** Ease-out for the paint soaking in. */
 export const easeOut = (t: number): number => 1 - (1 - Math.min(1, Math.max(0, t))) ** 3;
+
+/** Place names whose spot is painted at least halfway (they show on the map). */
+export const paintedPlaces = <P extends { x: number; y: number }>(
+  places: readonly P[],
+  paintAt: (x: number, y: number) => number,
+): P[] => places.filter((p) => paintAt(p.x, p.y) >= 0.5);

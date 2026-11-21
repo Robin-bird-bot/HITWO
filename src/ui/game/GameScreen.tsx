@@ -52,6 +52,8 @@ import { landKey, sectionLandInput } from '../map/illustrated/land/input';
 import { useLand } from '../map/illustrated/landService';
 import { landCellUnits, landScale } from '../map/illustrated/device';
 import { LandCanvas } from '../map/illustrated/LandCanvas';
+import { MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
+import { paintedPlaces } from '../map/illustrated/land/mask';
 import { landGrade } from '../map/illustrated/grade';
 import { useReducedMotion } from '../app/useReducedMotion';
 import illustrated from '../map/illustrated/Illustrated.module.css';
@@ -284,6 +286,27 @@ export function GameScreen({
   const mapStyle =
     chosenStyle === 'illustrated' && land.status !== 'failed' ? 'illustrated' : 'classic';
   const geo = mapStyle === 'illustrated' ? illustratedGeo : classicGeo;
+  const landReady = mapStyle === 'illustrated' && land.status === 'ready' ? land.result : undefined;
+  // Place names show once the paint covers their spot (one string, so it only re-renders on a change).
+  const [shownKey, setShownKey] = useState('');
+  const shown = useMemo(() => new Set(shownKey ? shownKey.split('\n') : []), [shownKey]);
+  const onMask = (paintAt: (x: number, y: number) => number) => {
+    if (!landReady) return;
+    setShownKey(
+      paintedPlaces(landReady.features.places, paintAt)
+        .map((p) => p.name)
+        .join('\n'),
+    );
+  };
+  // A name seen for the first time: "Found …" in the trail log, once.
+  useEffect(() => {
+    if (!landReady) return;
+    for (const p of landReady.features.places) {
+      if (!shown.has(p.name)) continue;
+      if (gameStore.getState()?.foundPlaces?.includes(p.name)) continue;
+      gameStore.dispatch({ type: 'foundPlace', name: p.name });
+    }
+  }, [shown, landReady]);
   const place = placer(section, geo);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
@@ -1048,7 +1071,14 @@ export function GameScreen({
                       sectionIndex={state.sectionIndex}
                       grade={landGrade(state, routes, land.result, geo)}
                       reduceMotion={reduceMotion}
+                      onMask={onMask}
                     />
+                  ) : undefined
+                }
+                {...(landReady ? { bridges: landReady.features.bridges } : {})}
+                labels={
+                  landReady && !routes ? (
+                    <PlaceLabels places={landReady.features.places} shown={shown} />
                   ) : undefined
                 }
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
@@ -1098,6 +1128,18 @@ export function GameScreen({
                 routes={routes}
                 onRoutes={() => setRoutesOn((on) => !on)}
               />
+              {mapStyle === 'illustrated' && (
+                <MapFurniture
+                  biome={section.biome}
+                  sectionIndex={state.sectionIndex}
+                  tier={section.tier}
+                  day={state.day}
+                  zoom={camera.zoom}
+                  hikerColors={hikers
+                    .filter((h) => h.status !== 'abandoned')
+                    .map((h) => hikerColor(h))}
+                />
+              )}
               {chosenStyle === 'illustrated' && land.status === 'drawing' && (
                 <div className={illustrated.drawing} role="status">
                   Drawing the map…

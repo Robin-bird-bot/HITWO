@@ -837,3 +837,16 @@
 .viewport[data-style='illustrated'] {
   background: #eee5cb;
 }
+
+/* The illustrated map's hex (Phase 10.5): an SVG over the tile, its edge allowed past the box. */
+.glass {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.nodeHidden[data-pencil] {
+  color: #5e5648;
+  box-shadow: inset 0 0 0 1.5px #5e5648;
+}

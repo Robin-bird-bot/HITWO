@@ -242,10 +242,9 @@ export function LandCanvas({
       paintMask(e.mask, all(), e.growth, box);
       e.gl?.uploadMask(e.mask.alpha, e.mask.w, box);
       e.draw();
-      if (done) {
-        live.current.onMask?.((x, y) => paintAt(e.mask, x, y));
-        return;
-      }
+      // Names fade in as the paint reaches them, not after it has finished.
+      live.current.onMask?.((x, y) => paintAt(e.mask, x, y));
+      if (done) return;
       e.frame = requestAnimationFrame(step);
     };
     e.frame = requestAnimationFrame(step);

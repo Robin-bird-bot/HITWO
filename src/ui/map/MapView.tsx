@@ -23,6 +23,8 @@ import { tileLook } from './looks';
 import styles from './MapView.module.css';
 import { LineBadges, TrailLines } from './TrailLines';
 import type { MapGeometry } from './illustrated/geometry';
+import type { Bridge } from './illustrated/land/features';
+import { revealedTiles } from './illustrated/land/mask';
 import { MapGeometryContext, placer, type Placer } from './illustrated/geometryContext';
 
 interface MapViewProps {
@@ -81,6 +83,10 @@ interface MapViewProps {
   mapStyle?: 'classic' | 'illustrated';
   /** Under everything in map space: the Illustrated map's land. */
   underlay?: ReactNode;
+  /** The Illustrated map's bridges, where paths cross water. */
+  bridges?: readonly Bridge[];
+  /** Over the tiles, under the tokens: the Illustrated map's place names. */
+  labels?: ReactNode;
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -122,6 +128,8 @@ export function MapView({
   geo,
   mapStyle = 'classic',
   underlay,
+  bridges,
+  labels,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
@@ -192,6 +200,8 @@ export function MapView({
   };
 
   const place = placer(section, geo);
+  const illustrated = mapStyle === 'illustrated';
+  const painted = illustrated ? new Set(revealedTiles(section)) : undefined;
   const selected = hikers.find((h) => h.id === selectedId);
   const currentTileId = selected?.tileId ?? null;
   const tiles = Object.values(section.tiles);
@@ -240,6 +250,8 @@ export function MapView({
             reachable={targets.filter((t) => t.reason === null).map((t) => t.tileId)}
             colors={Object.fromEntries(hikers.map((h) => [h.id, hikerColor(h)]))}
             routes={routes}
+            illustrated={illustrated}
+            {...(bridges ? { bridges } : {})}
           />
           {tiles.map((t) => (
             <MapTile
@@ -258,9 +270,11 @@ export function MapView({
               checkpointLabelOnHover={checkpointLabelOnHover}
               onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
               {...(hikerDrag || itemDrag ? { drop: tileDrop.props(t.id) } : {})}
+              {...(painted ? { illustrated: { revealed: painted.has(t.id) } } : {})}
             />
           ))}
           <LineBadges section={section} />
+          {labels}
           <HikerTokens
             section={section}
             hikers={hikers}
