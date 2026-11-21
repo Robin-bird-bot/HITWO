@@ -8,6 +8,7 @@
  * - Teach (a free action): a hiker passes a blueprint to another on the same
  *   tile, for 4, 6 or 8 of the teacher's Morale by its tier (Wyatt, Nov 13).
  */
+import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted } from '../counters';
@@ -188,6 +189,9 @@ function finishCraft(
     paid: how.paid,
   });
   countCrafted(state, hiker.id, def.type);
+  // Crafting XP by the item's tier: 1, 2, 4 or 8 (action XP, under the row rule).
+  const xp = BALANCE.xp.craft[Math.min(def.tier, BALANCE.xp.craft.length) - 1] ?? 0;
+  gainXp(state, hiker, xp, 'craft', `Crafted ${def.name}`);
   // Rocco's Rebuilding Trial.
   noteCrafted(state, hiker, def.type);
   // A new set of trinket resources after every trinket.

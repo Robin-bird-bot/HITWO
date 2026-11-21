@@ -24,6 +24,7 @@ import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
 import { rollDailyTraits } from './traits/daily';
+import { openLevelUp } from './traits/levelUp';
 
 /** Active hikers who still have their action this phase. The UI warns before ending the phase. */
 export function hikersWhoHaventActed(state: GameState): Hiker[] {
@@ -112,4 +113,6 @@ export function startNewDay(state: GameState): void {
   firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);
+  // Levels reached since the last camp: the first level-up opens (one at a time).
+  openLevelUp(state);
 }

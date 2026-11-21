@@ -67,6 +67,7 @@ import { TrialChips } from '../challenge/TrialChips';
 import { TrialDetails } from '../challenge/TrialWindow';
 import { showsResult, type ResultToShow } from '../challenge/showsResult';
 import { ChallengeWindow } from '../challenge/ChallengeWindow';
+import { LevelUpWindow } from '../traits/LevelUpWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
@@ -1113,6 +1114,21 @@ export function GameScreen({
                 weather={weatherShown.weather}
                 days={weatherShown.days}
                 onReady={() => setWeatherShown(null)}
+              />
+            )}
+            {/* A level-up (or an Old Photo) waits for the night and the weather to be read. */}
+            {state.traitPick && !nightShown && !weatherShown && (
+              <LevelUpWindow
+                // A new pick (the next level-up) starts fresh.
+                key={`${state.traitPick.hikerId}-${state.traitPick.source}-${state.traitPick.level ?? state.traitPick.slot}`}
+                state={state}
+                onPick={(option, replaceSlot) =>
+                  dispatch({
+                    type: 'pickTrait',
+                    option,
+                    ...(replaceSlot !== undefined ? { replaceSlot } : {}),
+                  })
+                }
               />
             )}
             {wonderOpen && !state.challenge && !state.scavenge && !result && (

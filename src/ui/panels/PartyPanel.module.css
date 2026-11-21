@@ -257,6 +257,11 @@
   font-size: 12px;
 }
 
+.levelWaiting {
+  font-size: 13px;
+  color: #e9b44c;
+}
+
 .conditionList {
   display: flex;
   flex-direction: column;

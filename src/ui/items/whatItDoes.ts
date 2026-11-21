@@ -6,14 +6,19 @@ import { RESOURCES } from '../../content/resources';
 import {
   clothesOf,
   itemText,
+  levelReached,
   qualityOf,
+  readCopy,
   statMax,
   targetOfUse,
   valueAt,
+  workingTrait,
+  xpForLevel,
   type GameState,
   type Hiker,
   type ItemInstance,
   type NodeType,
+  type SlotType,
   type StatName,
 } from '../../engine';
 import { NODE_NAME } from '../map/looks';
@@ -22,6 +27,18 @@ const STAT_NAME: Record<StatName, string> = {
   appetite: 'Appetite',
   energy: 'Energy',
   morale: 'Morale',
+};
+
+/** A new slot, in words (Instruction Manual, a level-up). */
+export const SLOT_WORDS: Record<SlotType, string> = {
+  T: 'Trail slot',
+  U: 'Utility slot',
+  M: 'Morale slot',
+  'T/U': 'Trail or Utility slot',
+  'T/M': 'Trail or Morale slot',
+  'U/M': 'Utility or Morale slot',
+  W: 'Wild slot (any trait)',
+  tag: 'Tag Team slot',
 };
 
 /**
@@ -96,6 +113,25 @@ export function whatItDoes(
       `maximum ${STAT_NAME[use.maxStat]} ${max} → ${max + BALANCE.items.serumMax}, for good`,
     );
   }
+  if (use.levelXp) {
+    const level = levelReached(target);
+    const step = xpForLevel(level + 1) - xpForLevel(level);
+    const { min, max } = BALANCE.items.diplomaXp;
+    out.push(`+${Math.ceil(step * min)} to ${Math.ceil(step * max)} XP`);
+  }
+  if (use.randomTrait) out.push('a random Trail or Utility trait');
+  if (use.copyTrait && choice) {
+    const copy = readCopy(state, choice);
+    if (copy) out.push(`${target.name} learns ${copy.def.name}`);
+  }
+  if (use.swapTrait && choice) {
+    const name = workingTrait(
+      state,
+      target.slots[Number(choice)] ?? { type: 'W', traitId: null },
+    )?.name;
+    if (name) out.push(`pick 1 of 3 traits to replace ${name}`);
+  }
+  if (use.addSlot && choice) out.push(`a new ${SLOT_WORDS[choice as SlotType]}`);
   if (use.boost) {
     if (use.boost.chooseResource && choice) {
       const name = RESOURCES.find((r) => r.id === choice)?.name ?? choice;

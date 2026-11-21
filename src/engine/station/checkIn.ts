@@ -12,6 +12,7 @@
  *   hiker still out there is left behind and abandons the hike. At the last
  *   checkpoint the party has reached the summit, and the hike is over.
  */
+import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { abandonHike, endCarry } from '../health';
 import { pushEvent } from '../log';
@@ -46,7 +47,8 @@ export function checkInArrivals(
     h.status = 'checkedIn';
     delete h.countdown;
     delete h.watching;
-    h.xp += xp;
+    // The check-in line says the XP; a bonus (Postcard, Thinking Cap) gets its own line.
+    gainXp(state, h, xp, 'checkpoint', 'Reached the checkpoint', { quiet: true });
     state.arrivals = [
       ...(state.arrivals ?? []),
       { section: state.sectionIndex, hikerId: h.id, injuries: h.injuries, carried },

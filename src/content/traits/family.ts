@@ -144,7 +144,15 @@ export const FAMILY_TRAITS: readonly TraitDef[] = [
     'Night events that take food or resources skip hikers on this hiker’s tile.',
     { ...family('cat'), hooks: { guardsSupplies: () => true } },
   ),
-  utility(1, 'trainer', 'Trainer', 'Pets on this hiker’s tile gain 50% more XP.', family('human')),
+  utility(1, 'trainer', 'Trainer', 'Pets on this hiker’s tile gain 50% more XP.', {
+    ...family('human'),
+    hooks: {
+      modifyTileXp: (_q, target) =>
+        PETS.includes(target.family)
+          ? { source: 'Trainer', percent: N.trainer.percent }
+          : undefined,
+    },
+  }),
   // Family Morale traits (checked at the start of the day). Plush hikers aren't Dogs or Cats.
   morale(
     'dogLover',

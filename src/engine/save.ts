@@ -23,8 +23,9 @@ import {
   type WeatherState,
 } from './types';
 import { freshWeather } from './weather';
+import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -66,7 +67,22 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   13: (save) => upgradeAbundance(save),
   // Phase 10a: hikers have classes, and the four Finders and Hounds are one trait each with a node.
   14: (save) => upgradeTraits(save),
+  // Phase 10a step 6: levels start at 0 with new XP lines. XP already earned is
+  // kept, and the levels it reaches wait for the next camp step.
+  15: (save) => upgradeLevels(save),
 };
+
+/** Levels start over at 0; XP reaching a level makes a level-up wait for camp. */
+function upgradeLevels(save: SaveData): SaveData {
+  if (!Array.isArray(save.hikers)) return save;
+  const hikers = save.hikers.map((raw: unknown) => {
+    if (!isRecord(raw)) return raw;
+    const xp = isNumber(raw.xp) ? Math.max(0, raw.xp) : 0;
+    const pending = levelForXp(xp);
+    return { ...raw, xp, level: 0, ...(pending ? { pendingLevels: pending } : {}) };
+  });
+  return { ...save, hikers };
+}
 
 /** The Phase 4 node traits, now one trait each with the node as its setting. */
 const NODE_TRAITS: Readonly<Record<string, { traitId: string; node: string }>> = {

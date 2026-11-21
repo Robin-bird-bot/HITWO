@@ -262,7 +262,7 @@ export function Details({
   onInjure?(id: HikerId): void;
 }) {
   const filled = h.slots.filter((s) => s.traitId).length;
-  const xp = xpProgress(h);
+  const xp = xpProgress(state, h);
   // The full list (the approved Phase 6 mockup): injuries, states, then the rest.
   const injury = injuryLook(h);
   const rows = [...(injury ? [injury] : []), ...thresholdLooks(h), ...timedLooks(h)];
@@ -337,15 +337,25 @@ export function Details({
         <div className={styles.track}>
           <div
             style={{
-              width: xp.next ? `${Math.min(100, (xp.xp / xp.next) * 100)}%` : '100%',
+              width: `${Math.min(100, ((xp.xp - xp.from) / Math.max(1, xp.next - xp.from)) * 100)}%`,
               background: '#CDA6EE',
             }}
           />
         </div>
         <span className={styles.statNote}>
-          {xp.xp}/{xp.next ?? '—'} XP
+          {xp.xp}/{xp.next} XP
         </span>
       </div>
+      {xp.waiting > 0 && (
+        <span className={styles.levelWaiting}>
+          Level {xp.level + xp.waiting} reached: pick a trait at the next camp.
+        </span>
+      )}
+      <span className={styles.statNote}>
+        {xp.rowXp
+          ? 'Crafting and lucky finds give XP here today.'
+          : 'No XP for crafting or finds on this row.'}
+      </span>
 
       <div className={styles.lastResorts}>
         {onInjure && h.status === 'active' && (

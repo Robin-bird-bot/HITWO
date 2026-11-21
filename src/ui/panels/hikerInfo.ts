@@ -17,6 +17,9 @@ import {
   scavengeCost,
   STAT_NAMES,
   statMax,
+  levelReached,
+  onXpRow,
+  xpForLevel,
   tendCost,
   thresholdStates,
   validateAction,
@@ -258,10 +261,30 @@ export const FAMILY_LOOK = {
   plush: { label: 'PLUSH', icon: 'paw' },
 } as const satisfies Record<Hiker['family'], { label: string; icon: IconName }>;
 
-export function xpProgress(h: Hiker): { level: number; xp: number; next: number | null } {
-  const levels = BALANCE.xp.levelAt;
-  const next = levels[h.level] ?? null;
-  return { level: h.level, xp: h.xp, next };
+export interface XpProgress {
+  /** Levels taken. */
+  level: number;
+  xp: number;
+  /** XP the level reached started at, and what the next one needs (both totals). */
+  from: number;
+  next: number;
+  /** Levels reached that wait for the next camp step. */
+  waiting: number;
+  /** The row rule: crafting, finds and the fire give XP here today. */
+  rowXp: boolean;
+}
+
+/** A hiker's level and XP, for the details panel. */
+export function xpProgress(state: GameState, h: Hiker): XpProgress {
+  const reached = levelReached(h);
+  return {
+    level: h.level,
+    xp: h.xp,
+    from: xpForLevel(reached),
+    next: xpForLevel(reached + 1),
+    waiting: h.pendingLevels ?? 0,
+    rowXp: onXpRow(state, h),
+  };
 }
 
 /** What to call a tile: its label, special space, or kind. */

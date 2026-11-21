@@ -386,14 +386,25 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'mentor',
     'Mentor',
     'Every other hiker on this tile gains 1 extra XP each time they gain XP.',
-    special('hershal'),
+    {
+      ...special('hershal'),
+      hooks: { modifyTileXp: () => ({ source: 'Mentor', flat: N.mentor.extra }) },
+    },
   ),
   utility(
     null,
     'storyteller',
     'Storyteller',
     'When this hiker Sits by the Fire, every other hiker on the tile gains 2 XP.',
-    { ...special('hershal'), waitsOn: FIRE },
+    {
+      ...special('hershal'),
+      waitsOn: FIRE,
+      hooks: {
+        onSitByFire(ctx) {
+          for (const h of others(ctx)) ctx.gainXp(h, N.storyteller.xp, 'Storyteller');
+        },
+      },
+    },
   ),
   utility(
     null,
@@ -582,7 +593,15 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'linguist',
     'Linguist',
     'Each time this hiker gains XP, they gain 1 extra XP for each other hiker on the tile.',
-    unique('katie'),
+    {
+      ...unique('katie'),
+      hooks: {
+        modifyXp: (_q, ctx) => {
+          const n = others(ctx).length * N.linguist.perOther;
+          return n ? { source: 'Linguist', flat: n } : undefined;
+        },
+      },
+    },
   ),
   trail(
     null,

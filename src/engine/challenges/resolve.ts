@@ -12,6 +12,7 @@
  * - Passing earns XP (passXpPerTier × the tier it played at); failing applies
  *   the penalty to that hiker, or to every hiker on the tile for a party card.
  */
+import { gainXp } from '../xp';
 import { noteGone } from '../items/gone';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
@@ -626,7 +627,7 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
       return;
     }
     if (passes(s)) {
-      for (const h of targets) h.xp += xp;
+      for (const h of targets) gainXp(state, h, xp, 'challenge', card.name);
       if (card.reward?.length) take(applyEffects(state, run(targets), card.reward));
       targets.forEach((h, j) => {
         const reward = rewards[i]?.[j];
@@ -740,7 +741,7 @@ function giveReward(
   if (reward === 'lucky') {
     applyEffects(state, run, [{ op: 'condition', id: 'lucky', duration: 1, unit: 'days' }]);
   }
-  if (reward === 'doubleXp') h.xp += xp;
+  if (reward === 'doubleXp') gainXp(state, h, xp, 'reward', `${card.name}: double XP`);
 }
 
 type ChooseAction = Extract<Action, { type: 'chooseChallenge' }>;

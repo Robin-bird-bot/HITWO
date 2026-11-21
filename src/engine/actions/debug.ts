@@ -1,4 +1,6 @@
 import { rollTrailShop } from '../station/trail';
+import { openLevelUpFor } from '../traits/levelUp';
+import { levelForXp } from '../xp';
 import { STATION_THEME_BY_ID } from '../../content/stations';
 import { noteGone } from '../items/gone';
 import { checkInArrivals } from '../station/checkIn';
@@ -92,6 +94,34 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       if (!hiker?.slots[op.slot]) return;
       hiker.slots.splice(op.slot, 1);
       pushEvent(state, { kind: 'debug', note: `Took slot ${op.slot + 1} from ${hiker.name}` });
+      break;
+    }
+    case 'setXp': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.xp = Math.max(0, Math.floor(op.xp));
+      if (op.level !== undefined) hiker.level = Math.max(0, Math.floor(op.level));
+      // Levels the XP reaches past the hiker's level wait for the next camp step.
+      const pending = Math.max(0, levelForXp(hiker.xp) - hiker.level);
+      if (pending) hiker.pendingLevels = pending;
+      else delete hiker.pendingLevels;
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Set ${hiker.name} to ${hiker.xp} XP, level ${hiker.level}${pending ? ` (${pending} to pick at camp)` : ''}`,
+      });
+      break;
+    }
+    case 'levelUpNow': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      // A level-up right now, in place of anything being picked.
+      hiker.pendingLevels = (hiker.pendingLevels ?? 0) + 1;
+      delete state.traitPick;
+      openLevelUpFor(state, hiker, op.tier);
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Level-up for ${hiker.name} now, with Tier ${op.tier} options`,
+      });
       break;
     }
     case 'refillUses': {

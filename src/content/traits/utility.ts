@@ -409,7 +409,11 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
       },
     },
   ),
-  utility(1, 'mba', 'MBA', 'On level-up, gain caps based on the new level (3 caps per level).'),
+  utility(1, 'mba', 'MBA', 'On level-up, gain caps based on the new level (3 caps per level).', {
+    hooks: {
+      onLevelUp: (e, ctx) => ctx.gainCaps(N.mba.capsPerLevel * e.level, 'MBA'),
+    },
+  }),
   utility(1, 'teacher', 'Teacher', 'Teaching another hiker a blueprint costs half the Morale.', {
     hooks: {
       modifyCost: (q, ctx) =>
@@ -699,6 +703,22 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     'wise',
     'Wise',
     'When this hiker gains XP, every other hiker on the tile gains 50% as much.',
+    {
+      hooks: {
+        // Passed on plainly: nothing adds to it, and it isn't passed on again.
+        onXpGained(e, ctx) {
+          const share = Math.ceil((e.xp * N.wise.percent) / 100);
+          // Everyone else here, checked-in hikers too (at a checkpoint they're all together).
+          const here = ctx.state.hikers.filter(
+            (h) =>
+              h.id !== ctx.self.id &&
+              h.tileId === ctx.self.tileId &&
+              (h.status === 'active' || h.status === 'checkedIn'),
+          );
+          for (const h of here) ctx.shareXp(h, share, 'Wise');
+        },
+      },
+    },
   ),
   utility(
     2,

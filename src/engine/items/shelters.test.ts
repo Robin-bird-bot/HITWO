@@ -169,7 +169,7 @@ describe('trinkets', () => {
     expect(statMax(s, hiker(s, 'ash'), 'energy')).toBe(BALANCE.stats.max);
   });
 
-  it('the ones waiting on Phase 10 or Wyatt say so', () => {
+  it('the one waiting on Wyatt says so', () => {
     const s = fixtureGame();
     const use = (itemId: string): Action => ({
       type: 'useItem',
@@ -177,9 +177,8 @@ describe('trinkets', () => {
       itemUid: give(s, 'ash', itemId),
       targetId: 'ash',
     });
-    expect(validateAction(s, use('diploma'))).toBe(
-      'Diploma can’t be used yet. It works once traits and levels arrive (Phase 10).',
-    );
+    // The Phase 10 trinkets work now (src/engine/traits/trinkets.test.ts).
+    expect(validateAction(s, use('diploma'))).toBeNull();
     expect(validateAction(s, use('ring'))).toContain('Ring can’t be used yet.');
   });
 });

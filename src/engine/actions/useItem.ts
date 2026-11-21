@@ -28,7 +28,20 @@ import { loseUses, removeItem } from '../items/wear';
 import { noteGone } from '../items/gone';
 import { pushEvent } from '../log';
 import { adjacentTileIds, hikersOnTile, tileNodeTypes } from '../map';
-import { pick } from '../rng';
+import { nextFloat, pick } from '../rng';
+import { TRAITS } from '../../content/traits';
+import {
+  addTraitSlot,
+  copyReason,
+  copyTrait,
+  giveRandomTrait,
+  openPhotoPick,
+  photoPool,
+  photoTraitPool,
+  readCopy,
+} from '../traits/levelUp';
+import { canAddSlot } from '../traits/slots';
+import { gainXp, levelReached, xpForLevel } from '../xp';
 import { cureInjuries, shiftStat, statMax, changeStat } from '../stats';
 import type {
   Action,
@@ -38,6 +51,7 @@ import type {
   ItemInstance,
   NodeType,
   ResourceId,
+  SlotType,
   StatName,
 } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
@@ -64,10 +78,22 @@ export function negativeConditions(hiker: Hiker): ConditionInstance[] {
 }
 
 /** What a use asks the player to pick, if anything. */
-export type UseChoice = 'condition' | 'stat' | 'node' | 'resource' | 'clothes' | 'tile';
+export type UseChoice =
+  | 'condition'
+  | 'stat'
+  | 'node'
+  | 'resource'
+  | 'clothes'
+  | 'tile'
+  | 'slotType'
+  | 'traitSlot'
+  | 'copy';
 
 export function choiceOfUse(use: ItemUse): UseChoice | undefined {
   if (use.map?.pick) return 'tile';
+  if (use.addSlot) return 'slotType';
+  if (use.swapTrait) return 'traitSlot';
+  if (use.copyTrait) return 'copy';
   if (use.pickCondition) return 'condition';
   if (use.fillStat) return 'stat';
   if (use.addNode) return 'node';
@@ -158,9 +184,25 @@ function choiceReason(
       node: 'Pick a node to add.',
       resource: 'Pick a resource.',
       clothes: 'Pick a clothing item.',
+      slotType: 'Pick a kind of slot.',
+      traitSlot: 'Pick a trait to replace.',
+      copy: 'Pick a trait to copy.',
     }[kind];
   }
   switch (kind) {
+    case 'slotType':
+      return (use.addSlot as readonly string[]).includes(choice)
+        ? undefined
+        : 'That kind of slot isn’t one of the choices.';
+    case 'traitSlot': {
+      const slot = Number(choice);
+      if (!target.slots[slot]?.traitId) return `${target.name} has no trait there.`;
+      return photoPool(target, slot).length ? undefined : `${def.name} can’t replace that trait.`;
+    }
+    case 'copy': {
+      const copy = readCopy(state, choice);
+      return copy ? copyReason(target, copy) : 'That isn’t a trait to copy.';
+    }
     case 'stat':
       return (STATS as readonly string[]).includes(choice)
         ? undefined
@@ -220,8 +262,16 @@ function uselessReason(
     }
     return undefined;
   }
-  // Raising a maximum or the caps bonus always does something.
-  if (use.capsBonus || use.maxStat) return undefined;
+  // Raising a maximum, the caps bonus and XP always do something.
+  if (use.capsBonus || use.maxStat || use.levelXp) return undefined;
+  if (use.randomTrait) {
+    return photoTraitPool(target).length
+      ? undefined
+      : `${target.name} has no empty slot for a new Trail or Utility trait.`;
+  }
+  if (use.addSlot) return canAddSlot(target) ? undefined : `${target.name} already has 6 slots.`;
+  // Old Photo and Family Photo check their pick.
+  if (use.swapTrait || use.copyTrait) return undefined;
   if (use.lampTonight) {
     return tile?.lampTonight ? 'A Camping Lamp is already lit here tonight.' : undefined;
   }
@@ -417,6 +467,28 @@ export function applyUse(state: GameState, action: UseAction): void {
     };
     details.push(`maximum ${STAT_NAME[stat]} now ${statMax(state, target, stat)}`);
   }
+  if (use.levelXp) {
+    // A share of what the next level takes, rolled (60–100% by default).
+    const level = levelReached(target);
+    const step = xpForLevel(level + 1) - xpForLevel(level);
+    const { min, max } = BALANCE.items.diplomaXp;
+    const share = min + nextFloat(state.rng) * (max - min);
+    const got = gainXp(state, target, Math.ceil(step * share), 'item', def.name);
+    details.push(`+${got} XP`);
+  }
+  if (use.randomTrait) {
+    const got = giveRandomTrait(state, target, def.name);
+    if (got) details.push(`${TRAITS[got]?.name ?? got} learned`);
+  }
+  if (use.copyTrait) {
+    const copy = readCopy(state, action.choice);
+    if (copy) copyTrait(state, target, copy, def.name);
+  }
+  if (use.addSlot && action.choice) {
+    addTraitSlot(state, target, action.choice as SlotType, def.name);
+  }
+  // Old Photo: the player picks 1 of 3 next (the trait pick window).
+  if (use.swapTrait) openPhotoPick(state, target, Number(action.choice));
   if (details.length && usedEvent?.kind === 'used') usedEvent.detail = details.join(', ');
   // A tool takes a use; a trinket is used up.
   if (def.type === 'trinket') {

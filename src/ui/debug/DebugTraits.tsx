@@ -46,6 +46,9 @@ export function TraitTools({ state, onApply }: { state: GameState; onApply(a: Ac
   const [setting, setSetting] = useState<TraitSetting>({});
   const [slotType, setSlotType] = useState<SlotType>('T');
   const [pick, setPick] = useState('');
+  const [xp, setXp] = useState('');
+  const [level, setLevel] = useState('');
+  const [tier, setTier] = useState<1 | 2 | 3>(1);
   const hiker = state.hikers.find((h) => h.id === hikerId);
   if (!hiker) return null;
   const def = TRAITS[traitId];
@@ -221,6 +224,66 @@ export function TraitTools({ state, onApply }: { state: GameState; onApply(a: Ac
           </button>
         </div>
       )}
+      <div className={styles.row}>
+        <span className={styles.note}>
+          LV {hiker.level}
+          {hiker.pendingLevels ? ` (+${hiker.pendingLevels} at camp)` : ''} · {hiker.xp} XP
+        </span>
+        <input
+          className={styles.button}
+          type="number"
+          min={0}
+          placeholder="XP"
+          value={xp}
+          onChange={(e) => setXp(e.target.value)}
+          aria-label="XP"
+          style={{ width: 64 }}
+        />
+        <input
+          className={styles.button}
+          type="number"
+          min={0}
+          placeholder="Level"
+          value={level}
+          onChange={(e) => setLevel(e.target.value)}
+          aria-label="Level"
+          style={{ width: 64 }}
+        />
+        <button
+          type="button"
+          className={styles.button}
+          disabled={xp === '' && level === ''}
+          onClick={() =>
+            debug({
+              kind: 'setXp',
+              hikerId,
+              xp: xp === '' ? hiker.xp : Number(xp),
+              ...(level === '' ? {} : { level: Number(level) }),
+            })
+          }
+        >
+          Set
+        </button>
+      </div>
+      <div className={styles.row}>
+        <select
+          className={styles.button}
+          value={tier}
+          onChange={(e) => setTier(Number(e.target.value) as 1 | 2 | 3)}
+          aria-label="Level-up tier"
+        >
+          <option value={1}>Tier I</option>
+          <option value={2}>Tier II</option>
+          <option value={3}>Tier III</option>
+        </select>
+        <button
+          type="button"
+          className={styles.button}
+          onClick={() => debug({ kind: 'levelUpNow', hikerId, tier })}
+        >
+          Level up now
+        </button>
+      </div>
       <div className={styles.row}>
         <span className={styles.note}>
           Day {state.day} is {state.day % 2 ? 'odd' : 'even'}:

@@ -2,13 +2,12 @@
  * Trinkets (docs/design/03-items.md, "Trinkets"): no Quality, and only the
  * generic recipe (5 random different resources). Use trinkets are used up;
  * Keep trinkets work while carried. Using one is a free action, like a tool
- * (src/engine/actions/useItem.ts). The ones that touch traits, slots or XP
- * wait on Phase 10, and say so when someone tries.
+ * (src/engine/actions/useItem.ts). The ones that touch traits and slots use
+ * src/engine/traits/levelUp.ts; the XP ones go through src/engine/xp.ts.
  */
+import { BALANCE } from '../../config/balance';
 import type { ItemDef } from '../../engine/effects';
 import { item } from './build';
-
-const PHASE_10 = 'It works once traits and levels arrive (Phase 10).';
 
 const trinket = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef =>
   item({ ...def, type: 'trinket' });
@@ -16,48 +15,49 @@ const trinket = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef =>
 export const TRINKETS: readonly ItemDef[] = [
   trinket({
     id: 'diploma',
-    notYet: PHASE_10,
     name: 'Diploma',
     tier: 2,
     trinket: 'use',
-    // TODO(phase 10): XP. BALANCE.items.diplomaXp is the doc's first guess.
+    // BALANCE.items.diplomaXp is the doc's first guess (60–100% of a level).
     text: 'Gain a random large amount of XP.',
+    use: { levelXp: true },
   }),
   trinket({
     id: 'cherishedPhoto',
-    notYet: PHASE_10,
     name: 'Cherished Photo',
     tier: 2,
     trinket: 'use',
-    // TODO(phase 10): traits and slots.
+    // TODO(wyatt): any tier and any class; it needs an empty slot that fits.
     text: 'Gain a random Trail or Utility trait.',
+    use: { randomTrait: true },
   }),
   trinket({
     id: 'familyPhoto',
-    notYet: PHASE_10,
     name: 'Family Photo',
     tier: 3,
     trinket: 'use',
-    // TODO(phase 10): traits and slots.
+    // Not special or unique traits; the receiver needs an empty slot that fits.
+    // TODO(wyatt): copied from any hiker still on the hike, to one on this tile.
     text: 'Copy a trait from one hiker to another.',
+    use: { copyTrait: true },
   }),
   trinket({
     id: 'oldPhoto',
-    notYet: PHASE_10,
     name: 'Old Photo',
     tier: 2,
     trinket: 'use',
-    // TODO(phase 10): traits.
+    // TODO(wyatt): the 3 come from any class; special and unique traits can't be swapped.
     text: 'Replace one of this hiker’s traits: pick 1 of 3 traits of the same type and rank.',
+    use: { swapTrait: true },
   }),
   trinket({
     id: 'instructionManual',
-    notYet: PHASE_10,
     name: 'Instruction Manual',
     tier: 3,
     trinket: 'use',
-    // TODO(phase 10): slots.
+    // TODO(wyatt): "multi-slot" as T/U, T/M or U/M (not W).
     text: 'Add a trait slot: Trail, Utility or multi-slot (your choice).',
+    use: { addSlot: ['T', 'U', 'T/U', 'T/M', 'U/M'] },
   }),
   trinket({
     id: 'wallet',
@@ -69,21 +69,31 @@ export const TRINKETS: readonly ItemDef[] = [
   }),
   trinket({
     id: 'postcard',
-    notYet: PHASE_10,
     name: 'Postcard',
     tier: 1,
     trinket: 'keep',
-    // TODO(phase 10): XP. BALANCE.items.postcardXp is the doc's first guess.
+    // BALANCE.items.postcardXp is the doc's first guess (+5 a checkpoint, +1 a challenge).
     text: 'More XP from checkpoints and challenges.',
+    hooks: {
+      xpForSource: ({ source }) =>
+        source === 'checkpoint'
+          ? BALANCE.items.postcardXp.checkpoint
+          : source === 'challenge'
+            ? BALANCE.items.postcardXp.challenge
+            : 0,
+    },
   }),
   trinket({
     id: 'textbook',
-    notYet: PHASE_10,
     name: 'Textbook',
     tier: 1,
     trinket: 'keep',
-    // TODO(phase 10): XP.
     text: '+1 XP from every scavenge and craft.',
+    // Action XP, so the row rule still applies; once a scavenge, even with a second card.
+    hooks: {
+      xpForSource: ({ source, repeat }) =>
+        (source === 'scavenge' && !repeat) || source === 'craft' ? BALANCE.items.textbookXp : 0,
+    },
   }),
   trinket({
     id: 'energySerum',

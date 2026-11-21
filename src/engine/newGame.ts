@@ -2,6 +2,7 @@ import { withDefaults } from './items/make';
 import { fireBiomeStart } from './effects';
 import { scoutAround } from './traits/reveal';
 import { rollDailyTraits } from './traits/daily';
+import { noteXpRows } from './xp';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -116,7 +117,8 @@ export function createGame({
       slept: false,
       abilityUses: {},
       xp: 0,
-      level: 1,
+      // Hikers start at level 0 (Wyatt, Nov 20).
+      level: 0,
     })),
     caps: 0,
     abundance: freshAbundance(),
@@ -132,6 +134,8 @@ export function createGame({
   rollDailyTraits(state);
   fireBiomeStart(state);
   scoutAround(state);
+  // Day 1 on the trailhead's row is their first: action XP counts there today.
+  noteXpRows(state);
   return state;
 }
 

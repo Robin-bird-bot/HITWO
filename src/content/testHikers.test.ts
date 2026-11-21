@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, deserialize, serialize } from '../engine';
+import { createGame, deserialize, SAVE_VERSION, serialize } from '../engine';
 import { fixtureGame, fixtureHiker } from '../engine/test/fixtures';
 import { fitsSlot } from '../engine/traits/slots';
 import { characterFor, STARTING_PARTY } from './characters';
@@ -83,6 +83,6 @@ describe('saves from before Phase 10a (v14 → v15)', () => {
     expect(first?.slots[0]).toMatchObject({ traitId: 'finder', setting: { x: 'river' } });
     expect(first?.slots[1]).toMatchObject({ traitId: 'leader' });
     expect(birch?.slots[0]).toMatchObject({ traitId: 'hound', setting: { x: 'mountain' } });
-    expect(loaded.state.saveVersion).toBe(15);
+    expect(loaded.state.saveVersion).toBe(SAVE_VERSION);
   });
 });

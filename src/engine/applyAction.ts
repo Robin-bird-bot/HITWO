@@ -45,6 +45,8 @@ import {
 import { applyAbandon, validateAbandon } from './actions/abandon';
 import { applyTactical, validateTactical } from './actions/tactical';
 import { scoutAround } from './traits/reveal';
+import { applyPick, pickReason } from './traits/levelUp';
+import { noteXpRows } from './xp';
 import { applySubmitToInjury, validateSubmitToInjury } from './actions/injure';
 import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
@@ -106,8 +108,15 @@ export function validateAction(state: GameState, action: Action): string | null 
   if (state.station && !STATION_STEPS.has(action.type)) {
     return 'The party is at the ranger station: Rest & Go to move on.';
   }
+  // A level-up (or an Old Photo) waits for its pick, even with a challenge open.
+  if (state.traitPick && action.type !== 'pickTrait' && action.type !== 'debug') {
+    return state.traitPick.source === 'levelUp'
+      ? 'Pick from the level-up first.'
+      : 'Pick a trait for the Old Photo first.';
+  }
   // So does an open challenge.
   const challengeSteps: Action['type'][] = [
+    'pickTrait',
     'resolveChallenge',
     'chooseChallenge',
     'acceptTrial',
@@ -196,6 +205,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateAccomplish(state, action) ?? null;
     case 'tactical':
       return validateTactical(state, action) ?? null;
+    case 'pickTrait':
+      return pickReason(state, action) ?? null;
     case 'endPhase':
     case 'debug':
       return null;
@@ -320,6 +331,9 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'tactical':
       applyTactical(draft, action);
       break;
+    case 'pickTrait':
+      applyPick(draft, action);
+      break;
     case 'endPhase':
       endPhase(draft);
       break;
@@ -329,6 +343,8 @@ export function applyAction(state: GameState, action: Action): GameState {
   }
   // Scouts see the nodes around wherever they are now.
   scoutAround(draft);
+  // The XP row rule: a hiker who moved forward starts their new row now.
+  noteXpRows(draft);
   // Nobody left on the trail and someone checked in: the station opens (or the summit).
   if (readyToLeave(draft)) finishSection(draft);
   // The last active hiker passed out or abandoned, or the summit: the hike is over.

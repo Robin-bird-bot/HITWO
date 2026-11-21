@@ -29,12 +29,16 @@ import {
   statMax,
   canHandOver,
   choiceOfUse,
+  copyChoices,
+  readCopy,
+  workingTrait,
   targetOfUse,
   validateAction,
   type Action,
   type EquipSlot,
   type GameState,
   type Hiker,
+  type ItemUse,
   type StatName,
   type UseChoice,
 } from '../../engine';
@@ -43,7 +47,7 @@ import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { tileName } from '../panels/hikerInfo';
 import { Popout } from '../panels/Popout';
 import type { StashPick } from '../panels/TurnPanel';
-import { itemVerbs, usesAfter, whatItDoes } from '../items/whatItDoes';
+import { itemVerbs, SLOT_WORDS, usesAfter, whatItDoes } from '../items/whatItDoes';
 import { ItemCard as CardFace } from '../items/ItemCard';
 import styles from './StashMenu.module.css';
 
@@ -328,8 +332,26 @@ interface PickOption {
 }
 
 /** What the player can pick for this use on this hiker (a condition, a stat, a node…). */
-function pickOptions(state: GameState, user: Hiker, target: Hiker, kind: UseChoice): PickOption[] {
+function pickOptions(
+  state: GameState,
+  user: Hiker,
+  target: Hiker,
+  kind: UseChoice,
+  use: ItemUse,
+): PickOption[] {
   switch (kind) {
+    case 'slotType':
+      return (use.addSlot ?? []).map((t) => ({ value: t, label: SLOT_WORDS[t] }));
+    case 'traitSlot':
+      return target.slots.flatMap((slot, i) => {
+        const trait = workingTrait(state, slot);
+        return trait ? [{ value: String(i), label: trait.name }] : [];
+      });
+    case 'copy':
+      return copyChoices(state, target).map((value) => {
+        const copy = readCopy(state, value);
+        return { value, label: copy ? `${copy.def.name} (from ${copy.from.name})` : value };
+      });
     case 'condition':
       return negativeConditions(target).map((c) => ({
         value: c.id,
@@ -374,6 +396,9 @@ const PICK_QUESTION: Record<UseChoice, string> = {
   node: 'Which node should it add?',
   resource: 'Which resource?',
   tile: 'Which tile?',
+  slotType: 'Which kind of slot?',
+  traitSlot: 'Which trait should it replace?',
+  copy: 'Which trait should it copy?',
 };
 
 /** Using a tool: who it's for, anything to pick, then a confirm (it can't be undone). */
@@ -448,12 +473,12 @@ function UseSection({
   });
   /** The picks that work for this hiker, or none when there's nothing to pick. */
   const workingPicks = (h: Hiker) => {
-    const all = kind ? pickOptions(state, hiker, h, kind) : [];
+    const all = kind ? pickOptions(state, hiker, h, kind, use) : [];
     return all.filter((o) => !validateAction(state, action(h.id, o.value)));
   };
   /** Why using it on this hiker wouldn't work, if it wouldn't. */
   const reasonFor = (h: Hiker): string | null => {
-    const all = kind ? pickOptions(state, hiker, h, kind) : [];
+    const all = kind ? pickOptions(state, hiker, h, kind, use) : [];
     if (!all.length) return validateAction(state, action(h.id));
     if (workingPicks(h).length) return null;
     return validateAction(state, action(h.id, all[0]?.value));
@@ -471,7 +496,7 @@ function UseSection({
     return (
       <div className={styles.confirm}>
         <span className={styles.none}>{PICK_QUESTION[step.picking]}</span>
-        {pickOptions(state, hiker, target, step.picking).map((o, i, all) => {
+        {pickOptions(state, hiker, target, step.picking, use).map((o, i, all) => {
           const reason = validateAction(state, action(target.id, o.value));
           const first = all.findIndex((x) => !validateAction(state, action(target.id, x.value)));
           return (

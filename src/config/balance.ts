@@ -127,10 +127,15 @@ export const BALANCE = {
       medicTent: 3,
       lodge: 5,
     } as Record<string, number>,
-    /** TODO(wyatt): the Diploma's XP, as a share of a level (first guess 60–100%). TODO(phase 10). */
+    /**
+     * The Diploma's XP: a share of the XP between the hiker's level and the
+     * next, rolled. TODO(wyatt): the doc's first guess, 60–100% of a level.
+     */
     diplomaXp: { min: 0.6, max: 1 },
-    /** TODO(wyatt): the Postcard's extra XP (first guess). TODO(phase 10). */
+    /** The Postcard's extra XP at each checkpoint and each challenge passed. TODO(wyatt): first guess. */
     postcardXp: { checkpoint: 5, challenge: 1 },
+    /** The Textbook's extra XP for every scavenge and craft. */
+    textbookXp: 1,
     /** A Planter can't add a node to a tile that already has this many. */
     maxNodes: 3,
     /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
@@ -554,12 +559,41 @@ export const BALANCE = {
     startingResources: 4,
   },
 
+  /** XP and levels (01-design-doc.md, "XP"; Wyatt, Nov 20). Hikers start at level 0. */
   xp: {
+    /** Total XP to reach levels 1–6: each level needs 10 more than the last. */
+    levelAt: [20, 50, 90, 140, 200, 270],
+    /** Past level 6, each level keeps needing this much more than the one before. TODO(wyatt). */
+    stepGrowth: 10,
     /**
-     * XP needed to reach each level (index 0 = level 1).
-     * TODO(wyatt): placeholder until Phase 10 sets XP and leveling.
+     * Milestones (no row rule): a checkpoint is station.checkInXp, a challenge
+     * passed is challenges.passXpPerTier × its tier.
+     *
+     * Party objectives: 10 × their tier. TODO(wyatt): first guess; objectives come in Phase 13.
      */
-    levelAt: [0, 50, 150, 300, 500, 750],
+    objectivePerTier: 10,
+    /** Action XP (the row rule): crafting by the item's tier (1–4), a lucky draw, the fire. */
+    craft: [1, 2, 4, 8],
+    luckyDraw: 2,
+    fire: 1,
+  },
+
+  /** Level-up offers (01-design-doc.md, "Leveling"; 02, "Trait rules"). */
+  levelUp: {
+    /** Levels 1–3 offer this many options; from level 4, one more a level, up to `maxOptions`. */
+    options: 3,
+    maxOptions: 6,
+    /** Options that can come from any class, not just the hiker's own. TODO(wyatt): [1]. */
+    anyClass: 1,
+    /**
+     * Morale traits come up less often: each option is first a type, Trail and
+     * Utility at 1 each and Morale at this, then a trait of that type. TODO(wyatt).
+     */
+    moraleWeight: 0.5,
+    /** The chance an option is a new slot instead of a trait. TODO(wyatt): first guess. */
+    slotChance: 1 / 8,
+    /** A new slot's type: T and U most common, the mixed slots rarer, W rarest. TODO(wyatt). */
+    slotWeights: { T: 4, U: 4, 'T/U': 2, 'T/M': 2, 'U/M': 2, W: 1 },
   },
 
   /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
@@ -746,6 +780,18 @@ export const BALANCE = {
     coach: { days: 1 },
     comedian: { morale: 1 },
     easyMode: { less: 1 },
+    // ── XP traits (Phase 10a step 6) ──
+    /** Wise: others on the tile gain this share of what this hiker gains (rounded up). */
+    wise: { percent: 50 },
+    /** Mentor: others on the tile gain this much more each time. TODO(wyatt): [1]. */
+    mentor: { extra: 1 },
+    /** Storyteller: others on the tile gain this at the fire. TODO(wyatt): [2]. */
+    storyteller: { xp: 2 },
+    linguist: { perOther: 1 },
+    /** Trainer: Pets on the tile gain this much more. */
+    trainer: { percent: 50 },
+    /** MBA: caps for each level of the new level (3 at level 1, 6 at level 2…). TODO(wyatt). */
+    mba: { capsPerLevel: 3 },
     forager: { cards: 1 },
     gambler: { usesPerDay: 1 },
     /** "Higher chance of drawing that node's resources." TODO(wyatt): first guess. */

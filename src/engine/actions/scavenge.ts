@@ -10,6 +10,7 @@
  *   another take (no more Appetite or action), or Done.
  * While a scavenge is open, every other action waits (see applyAction).
  */
+import { gainXp } from '../xp';
 import { makeItem } from '../items/make';
 import { noteScavenged } from '../challenges/trials';
 import { BALANCE } from '../../config/balance';
@@ -274,6 +275,8 @@ export function applyTake(state: GameState, action: TakeAction): void {
     });
     close();
     payCost(state, hiker, { appetite: base, energy: 0, morale: 0 }, 'Scavenge');
+    // No lucky draw, but "every scavenge" XP still counts (the Textbook).
+    gainXp(state, hiker, 0, 'scavenge', 'Scavenged', { repeat: !first });
     if (first) {
       fireScavenged(state, hiker, { tileId: open.tileId });
       fireAction(state, hiker, { kind: 'scavenge', role: 'actor', tileId: open.tileId });
@@ -338,6 +341,18 @@ export function applyTake(state: GameState, action: TakeAction): void {
   close();
   payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
   noteScavenged(state, hiker, kept);
+  // A lucky draw (anything rarer than common) is worth XP (action XP, under the row rule).
+  const lucky = card.rarity !== 'common' && !card.empty;
+  gainXp(
+    state,
+    hiker,
+    lucky ? BALANCE.xp.luckyDraw : 0,
+    'scavenge',
+    lucky ? 'A lucky draw' : 'Scavenged',
+    {
+      repeat: !first,
+    },
+  );
   // After scavenging: Pockets, Generous, and Dog Mom on the tile.
   if (first) {
     const node = card.node ? { node: card.node } : {};

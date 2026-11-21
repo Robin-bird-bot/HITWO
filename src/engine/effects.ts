@@ -32,6 +32,7 @@ import { shelterSources } from './items/shelters';
 import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
 import { revealAhead, tilesAhead } from './traits/reveal';
+import { gainXp } from './xp';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
@@ -52,11 +53,13 @@ import type {
   ResourceId,
   ScavengeBonus,
   ScavengeCardType,
+  SlotType,
   StatName,
   TileId,
   TraitSetting,
   TraitSlot,
   TraitType,
+  XpSource,
 } from './types';
 
 // ── Queries ────────────────────────────────────────────────────────────────
@@ -278,6 +281,12 @@ export interface EffectContext extends QueryContext {
   cure(hiker: Hiker, id: string, cause: string): void;
   /** Puts a new item in a hiker's bag, if there's room (Nugget Puker). */
   giveItem(hiker: Hiker, itemId: ItemId, cause: string): void;
+  /** A trait gives a hiker XP (Storyteller). */
+  gainXp(hiker: Hiker, xp: number, cause: string): void;
+  /** Passes XP on to a hiker: nothing adds to it or passes it on again (Wise, VR Headset). */
+  shareXp(hiker: Hiker, xp: number, cause: string): void;
+  /** The party gains caps (MBA). */
+  gainCaps(n: number, cause: string): void;
   /** Picks a new card for a tile whose card is shown (Rule Changer). */
   rerollCard(tileId: TileId, cause: string): void;
   /** Uses up the hiker's action for this phase (Good Boy gives his away). */
@@ -294,6 +303,21 @@ export interface EffectContext extends QueryContext {
 // ── Hooks, abilities and sources ───────────────────────────────────────────
 
 type ModifierResult = Modifier | Modifier[] | undefined;
+
+/** An XP gain being worked out: its source, and the amount so far. */
+export interface XpQuery {
+  source: XpSource;
+  amount: number;
+  /** A second card taken in the same scavenge (Gambler): "every scavenge" bonuses count once. */
+  repeat?: true;
+}
+
+/** More XP: flat amounts first, then percentages, rounded up (the stacking rule). */
+export interface XpModifier {
+  source: string;
+  flat?: number;
+  percent?: number;
+}
 
 export interface MoveHookEvent {
   from: TileId;
@@ -472,6 +496,19 @@ export interface Hooks {
   ): StatChangeModifier | undefined;
   /** A hiker on this hiker's tile levelled up (Proud Mentor). Fired from Phase 10a step 6. */
   onTileLevelUp?(e: { hikerId: HikerId }, ctx: EffectContext): void;
+  /** This hiker took a level-up (MBA). */
+  onLevelUp?(e: { level: number }, ctx: EffectContext): void;
+  // ── XP (Phase 10a step 6; src/engine/xp.ts) ──
+  /** Extra XP for this kind of gain, before anything else (Postcard, Textbook). */
+  xpForSource?(q: XpQuery, ctx: QueryContext): number;
+  /** Each time this hiker gains XP: more of it (Thinking Cap, Linguist). */
+  modifyXp?(q: XpQuery, ctx: QueryContext): XpModifier | undefined;
+  /** Each time someone else on this hiker's tile gains XP: more of it (Mentor; Trainer for Pets). */
+  modifyTileXp?(q: XpQuery, target: Hiker, ctx: QueryContext): XpModifier | undefined;
+  /** This hiker gained XP (Wise passes some on). */
+  onXpGained?(e: { xp: number; source: XpSource }, ctx: EffectContext): void;
+  /** Someone else on this hiker's tile gained XP (VR Headset). */
+  onTileXpGained?(e: { hikerId: HikerId; xp: number }, ctx: EffectContext): void;
 
   // ── Families, Plush, Duos and special traits (Phase 10a step 5) ──
   /** Changes someone else's scavenge on this hiker's tile (Dog Whisperer, Lucky Charm). */
@@ -699,6 +736,16 @@ export interface ItemUse {
   capsBonus?: true;
   /** For good: the target's maximum of this stat goes up (the Serums: BALANCE.items.serumMax). */
   maxStat?: StatName;
+  /** XP: a rolled share of what the hiker's next level takes (Diploma: BALANCE.items.diplomaXp). */
+  levelXp?: true;
+  /** A random Trail or Utility trait, into an empty slot that fits (Cherished Photo). */
+  randomTrait?: true;
+  /** Copies a trait the player picks from another hiker, into an empty slot that fits (Family Photo). */
+  copyTrait?: true;
+  /** One of the target's traits, picked, becomes 1 of 3 of its type and tier (Old Photo). */
+  swapTrait?: true;
+  /** A new slot, of one of these types the player picks (Instruction Manual). */
+  addSlot?: readonly SlotType[];
   /**
    * A map tool (src/engine/items/scout.ts): what it does, and the tile the
    * player picks on the map as `choice` (adjacent along a line, beside it on
@@ -910,6 +957,20 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
       itemId: item.itemId,
       name: def.name,
       hooks: itemHooks(def, item),
+    });
+  }
+  // Keep trinkets work while carried (Postcard, Textbook). TODO(wyatt): two of the same count once.
+  const kept = new Set<ItemId>();
+  for (const item of hiker.inventory.bag) {
+    const def = ITEMS[item.itemId];
+    if (def?.trinket !== 'keep' || !def.hooks || kept.has(item.itemId)) continue;
+    kept.add(item.itemId);
+    sources.push({
+      id: `item:${item.uid}`,
+      kind: 'item',
+      itemId: item.itemId,
+      name: def.name,
+      hooks: def.hooks,
     });
   }
   for (const c of hiker.conditions) {
@@ -1157,6 +1218,18 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
         items: [itemId],
         cause,
       });
+    },
+    gainXp: (hiker, xp, cause) => {
+      gainXp(state, hiker, xp, 'trait', cause);
+    },
+    shareXp: (hiker, xp, cause) => {
+      gainXp(state, hiker, xp, 'shared', cause);
+    },
+    gainCaps: (n, cause) => {
+      const got = gainCaps(state, n);
+      if (got > 0) {
+        pushEvent(state, { kind: 'trait', hikerId: self.id, trait: cause, text: `+${got} caps.` });
+      }
     },
     rerollCard: (tileId, cause) => {
       const tile = state.section.tiles[tileId];
@@ -1582,7 +1655,13 @@ export function fireToolUse(state: GameState, hiker: Hiker, itemId: ItemId): voi
 }
 
 /** A hiker Sits by the Fire. TODO(wyatt): the action is still held; only tests call this. */
+/**
+ * A hiker Sits by the Fire: 1 XP (action XP, under the row rule), then the
+ * traits that listen (Singer, Chatty, Storyteller, Comedian). Nothing calls it
+ * in play yet: Sit by the Fire is held (Phase 3's grid shows it as "soon").
+ */
 export function fireSitByFire(state: GameState, hiker: Hiker): void {
+  gainXp(state, hiker, BALANCE.xp.fire, 'fire', 'Sat by the fire');
   const ctx = effectContext(state, hiker);
   for (const source of effectSourcesFor(state, hiker)) source.hooks.onSitByFire?.(ctx);
 }

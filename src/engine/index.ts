@@ -31,6 +31,14 @@ export {
   typesFor,
 } from './traits/slots';
 export {
+  copyChoices,
+  emptySlotsFor,
+  offerShape,
+  readCopy,
+  replaceableSlots,
+} from './traits/levelUp';
+export { levelForXp, levelReached, onXpRow, xpForLevel } from './xp';
+export {
   isExhausted,
   isFamished,
   isFatigued,
