@@ -1,0 +1,267 @@
+/* Trait badges (docs/mockups/TraitBadges.dc.html). Stage pixels. */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.row[data-names] {
+  gap: 4px 6px;
+}
+
+.badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.badge:focus-visible {
+  outline: 2px solid #e9b44c;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* The shape's box: room for the ring and the tab. */
+.shape {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.badge[data-size='large'] .shape {
+  width: 46px;
+  height: 46px;
+}
+
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fill);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* A diamond: always on. */
+.shape[data-shape='diamond'] .face {
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  transform: rotate(45deg);
+}
+
+.shape[data-shape='diamond'] .face > * {
+  transform: rotate(-45deg);
+}
+
+.badge[data-size='large'] .shape[data-shape='diamond'] .face {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* A circle: usable. */
+.shape[data-shape='circle'] .face {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.badge[data-size='large'] .shape[data-shape='circle'] .face {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* Ready: a slow glow. Used up: grey and dimmed. */
+.shape[data-state='ready'] .face {
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px var(--ring),
+      0 0 0 2px color-mix(in srgb, var(--ring) 55%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px var(--ring),
+      0 0 0 7px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shape[data-state='ready'] .face {
+    animation: none;
+  }
+}
+
+.shape[data-state='used'] {
+  opacity: 0.65;
+}
+
+/* An empty slot: a faint outline in the slot's colors. */
+.outline {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  opacity: 0.35;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.badge[data-size='large'] .outline {
+  width: 34px;
+  height: 34px;
+}
+
+.initials {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.badge[data-size='large'] .initials {
+  font-size: 14px;
+}
+
+.icon {
+  display: block;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.badge[data-size='large'] .icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Uses left as dots, or what it's only usable during. */
+.tab {
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 14px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: 7px;
+  background: #1d2220;
+  box-shadow: 0 0 0 1.5px var(--ring);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--ring);
+}
+
+.pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  border: 1.5px solid var(--ring);
+}
+
+.pip[data-on='true'] {
+  background: var(--ring);
+}
+
+.name {
+  max-width: 52px;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Trait warnings: a trait that isn't working right now is dimmed. */
+.shape[data-idle] {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+}
+
+/* Trait warnings: +N or −N Morale coming. */
+.bubble {
+  position: absolute;
+  right: -7px;
+  top: -7px;
+  min-width: 16px;
+  height: 14px;
+  box-sizing: border-box;
+  padding: 0 3px;
+  border-radius: 7px;
+  border: 1.5px solid #1d2220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.bubble[data-tone='gain'] {
+  background: #3f8a57;
+}
+
+.bubble[data-tone='loss'] {
+  background: #b4472f;
+}
+
+/* Trait warnings, Informative: "! −N" on a portrait. Sits in the portrait's wrapper. */
+.atRisk {
+  position: absolute;
+  right: -12px;
+  top: -8px;
+  z-index: 2;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #b4472f;
+  border: 2px solid #1d2220;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1;
+  color: #ffffff;
+  pointer-events: none;
+}

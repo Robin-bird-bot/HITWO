@@ -173,16 +173,102 @@ export interface WeatherState {
 
 // ── Hikers ─────────────────────────────────────────────────────────────────
 
-export type Family = 'human' | 'dog' | 'cat';
+/** Plush (Nov 20 update): stuffed animals that aren't quite real (07-characters.md). */
+export type Family = 'human' | 'dog' | 'cat' | 'plush';
+export const FAMILY_IDS: readonly Family[] = ['human', 'dog', 'cat', 'plush'];
 export type HikerStatus = 'active' | 'passedOut' | 'abandoned' | 'checkedIn';
 
 /** Trail, Utility or Morale. */
 export type TraitType = 'T' | 'U' | 'M';
-export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W';
+/**
+ * What a slot holds: one type, either of two, any (W), or a Duo's Tag Team
+ * trait (`tag`), which only a Tag Team trait fits.
+ */
+export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W' | 'tag';
+export const SLOT_TYPES: readonly SlotType[] = ['T', 'U', 'M', 'T/U', 'T/M', 'U/M', 'W', 'tag'];
+
+/** What a character is good at (07-characters.md, "Classes"). A hiker has 1 or 2. */
+export type ClassId =
+  | 'tank'
+  | 'hardy'
+  | 'scavenger'
+  | 'crafter'
+  | 'scout'
+  | 'support'
+  | 'jack'
+  | 'entertainer'
+  | 'moneymaker';
+export const CLASS_IDS: readonly ClassId[] = [
+  'tank',
+  'hardy',
+  'scavenger',
+  'crafter',
+  'scout',
+  'support',
+  'jack',
+  'entertainer',
+  'moneymaker',
+];
+
+/**
+ * A trait's setting, stored with it on the hiker: a node ([Node] Finder,
+ * Conservationist [X]), two nodes (Location [X/Y]), or one or two actions
+ * (Traveler [X], Action [X/Y]).
+ */
+export interface TraitSetting {
+  x?: string;
+  y?: string;
+}
 
 export interface TraitSlot {
   type: SlotType;
   traitId: TraitId | null;
+  /** The trait's setting, when it has one. */
+  setting?: TraitSetting;
+  /**
+   * Today's pick, for a trait that changes each morning: the trait Quirky or
+   * Zany is today, Nosework's node, Moody's condition. Only counts on `day`.
+   */
+  daily?: { day: number; pick: string };
+}
+
+/**
+ * Where XP comes from (01-design-doc.md, "XP"). Craft, scavenge and fire are
+ * action XP, under the row rule; the rest are milestones. `trait` is XP a
+ * trait gives (Storyteller); `shared` is XP passed on (Wise, VR Headset),
+ * which nothing adds to or passes on again.
+ */
+export type XpSource =
+  | 'checkpoint'
+  | 'objective'
+  | 'challenge'
+  | 'reward'
+  | 'wonder'
+  | 'item'
+  | 'trait'
+  | 'craft'
+  | 'scavenge'
+  | 'fire'
+  | 'shared'
+  | 'debug';
+
+/** One choice in a trait pick: a trait (with its setting, if it has one) or a new empty slot. */
+export type TraitOption =
+  { kind: 'trait'; traitId: TraitId; setting?: TraitSetting } | { kind: 'slot'; slot: SlotType };
+
+/**
+ * A trait pick waiting for the player, rolled with the seeded RNG so a reload
+ * shows the same choices: a level-up's offer (opened at the camp step, or
+ * from the debug panel), or an Old Photo's 3 traits for one slot.
+ */
+export interface TraitPick {
+  hikerId: HikerId;
+  source: 'levelUp' | 'oldPhoto';
+  /** The level being reached (a level-up). */
+  level?: number;
+  options: TraitOption[];
+  /** Old Photo: the slot whose trait the pick replaces. */
+  slot?: number;
 }
 
 /** A timed condition on a hiker. Phase 5 gives it timing; Phase 6 its effects. */
@@ -264,6 +350,8 @@ export interface ItemInstance {
   node?: NodeType;
   /** Clothes: a full durability above the usual (Fort Rock's reward, an Engineering Vest). */
   maxDurability?: number;
+  /** Clothes a Stylish hiker has put on: their extra days were given (once per item). */
+  styled?: true;
 }
 
 export interface Inventory {
@@ -283,6 +371,14 @@ export interface Hiker {
   name: string;
   family: Family;
   placeholder?: boolean;
+  /** Their classes: which Trail and Utility traits level-ups offer them. */
+  classes: ClassId[];
+  /** Who they are, for special and unique traits that belong to certain characters. */
+  characterId?: string;
+  /** A dev-only test hiker (no art). Never in the real roster. */
+  test?: true;
+  /** A Duo: the two characters sharing this hiker card (Boss & Gracie). */
+  duo?: readonly [string, string];
   status: HikerStatus;
   tileId: TileId;
   stats: Stats;
@@ -316,9 +412,21 @@ export interface Hiker {
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
   xp: number;
+  /** Levels taken so far. Hikers start at level 0 (Wyatt, Nov 20). */
   level: number;
+  /** Levels reached that still wait for the camp step to be picked. */
+  pendingLevels?: number;
+  /**
+   * The XP row rule: the furthest row reached in this section, and the day
+   * they first got there. Action XP only counts on that row, that day.
+   */
+  xpRow?: { section: number; row: number; day: number };
   /** Permanent raises to a stat's maximum (Sleeping Giant's +2 maximum Energy). */
   maxBonus?: Partial<Record<StatName, number>>;
+  /** The last day they moved (Wanderlust: "didn't move the day before"). */
+  lastMovedDay?: number;
+  /** The last day they faced a challenge (Thrill-Seeker: "facing no challenge the day before"). */
+  lastChallengeDay?: number;
 }
 
 // ── Scavenging ─────────────────────────────────────────────────────────────
@@ -496,6 +604,8 @@ export interface CardRolls {
 export interface OpenChallenge {
   cardId: string;
   tileId: TileId;
+  /** The hiker who led the group onto the tile, if a Move All did (Alpha Dog). */
+  leaderId?: HikerId;
   /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
   tier: 1 | 2 | 3;
   scale: number;
@@ -534,6 +644,8 @@ export interface QueuedReveal {
   hikerIds: HikerId[];
   /** A card's effect starts a challenge of this tier and node (Bear Country). */
   forced?: { tier: 1 | 2 | 3; node: NodeType };
+  /** The hiker who led the group onto the tile (Alpha Dog). */
+  leaderId?: HikerId;
 }
 
 /** What a Challenge space gives a passing hiker (Phase 5 first guess). */
@@ -645,6 +757,11 @@ export type Action =
   /** A free action: puts a resource back, +1 Abundance. */
   | { type: 'returnToNature'; hikerId: HikerId; resource: ResourceId }
   /**
+   * Tactical: reveals the nodes and card of a tile the hiker picks, for the
+   * rest of the biome. No tile skips it.
+   */
+  | { type: 'tactical'; hikerId: HikerId; tileId?: TileId }
+  /**
    * The hiker leaves the party for good, taking everything they carry. Any
    * hiker, any time; the UI confirms it first.
    */
@@ -700,6 +817,11 @@ export type Action =
     }
   /** Take one of the cards a basic craft dealt. */
   | { type: 'craftTake'; index: number; node?: NodeType }
+  /**
+   * Takes one option of the open trait pick (a level-up or an Old Photo). A
+   * trait with no empty slot that fits replaces the trait in `replaceSlot`.
+   */
+  | { type: 'pickTrait'; option: number; replaceSlot?: number }
   /** Teach a blueprint to a hiker on the same tile (a free action; the teacher pays Morale). */
   | { type: 'teach'; hikerId: HikerId; toId: HikerId; itemId: ItemId }
   /** Drop a bag item for good (a free action; Weak can leave a hiker with too many). */
@@ -749,8 +871,28 @@ export type DebugOp =
   | { kind: 'setStats'; hikerId: HikerId; stats: Partial<Stats>; injuries?: number }
   /** Sets the Abundance bar directly. */
   | { kind: 'setAbundance'; abundance: number }
-  /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type. */
-  | { kind: 'setTrait'; hikerId: HikerId; slot: number; traitId: TraitId | null }
+  /** Puts a trait (or nothing) in one of a hiker's slots, whatever the slot type, with its setting. */
+  | {
+      kind: 'setTrait';
+      hikerId: HikerId;
+      slot: number;
+      traitId: TraitId | null;
+      setting?: TraitSetting;
+    }
+  /** Adds a slot of any type (up to the most a hiker can have). */
+  | { kind: 'addSlot'; hikerId: HikerId; slotType: SlotType }
+  /** Takes a slot away, with its trait. */
+  | { kind: 'removeSlot'; hikerId: HikerId; slot: number }
+  /** Every usable trait and once-a-while rule of this hiker comes back now. */
+  | { kind: 'refillUses'; hikerId: HikerId }
+  /** XP and levels: sets them outright (no level-ups). */
+  | { kind: 'setXp'; hikerId: HikerId; xp: number; level?: number }
+  /** Opens a level-up for the hiker right now, with options of this tier. */
+  | { kind: 'levelUpNow'; hikerId: HikerId; tier: 1 | 2 | 3 }
+  /** Moves the day number to the next odd or even day (Tag Team), keeping the phase. */
+  | { kind: 'setDayParity'; odd: boolean }
+  /** Sets what a daily trait is today (Quirky, Zany, Nosework, Moody). */
+  | { kind: 'setDaily'; hikerId: HikerId; slot: number; pick: string }
   /** The next scavenge deals these card types first, where they can happen. */
   | { kind: 'nextDeal'; types: ScavengeCardType[] }
   /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */
@@ -837,7 +979,16 @@ export type GameEventBody =
       /** Nodes shown for the first time by entering the tile. */
       revealed?: NodeKind[];
     }
-  | { kind: 'stat'; hikerId: HikerId; stat: StatName; from: number; to: number; cause: string }
+  | {
+      kind: 'stat';
+      hikerId: HikerId;
+      stat: StatName;
+      from: number;
+      to: number;
+      cause: string;
+      /** Why, in a few words, when a trait says ("alone right now"). */
+      why?: string;
+    }
   | { kind: 'injury'; hikerId: HikerId; injuries: number; cause: string }
   /** Injuries a card cured (Airlift): how many, and how many are left. */
   | { kind: 'healed'; hikerId: HikerId; healed: number; injuries: number; cause: string }
@@ -1011,6 +1162,22 @@ export type GameEventBody =
     }
   /** A condition made this action free (Motivated). */
   | { kind: 'freeAction'; hikerId: HikerId; cause: string }
+  /** A trait did something worth a line of its own ("Never Hungry: the move cost no Appetite"). */
+  | { kind: 'trait'; hikerId: HikerId; trait: string; text: string }
+  /** XP gained (after every bonus), and from what. `none` says why action XP didn't count. */
+  | { kind: 'xp'; hikerId: HikerId; xp: number; cause: string; none?: 'row' }
+  /** A hiker reached a level: it waits for the camp step. */
+  | { kind: 'levelReached'; hikerId: HikerId; level: number }
+  /** A level-up or a trinket gave a trait or a slot (and maybe replaced a trait). */
+  | {
+      kind: 'traitGained';
+      hikerId: HikerId;
+      cause: string;
+      traitId?: TraitId;
+      slot?: SlotType;
+      replaced?: TraitId;
+      level?: number;
+    }
   /** A hiker landed on a new tile and its challenge opened. */
   | { kind: 'challengeOpened'; cardId: string; tileId: TileId }
   /** A challenge was resolved: who passed, and what they paid. */
@@ -1136,6 +1303,8 @@ interface Offer {
   sold?: true;
   /** Face-down until bought (Rocco's Random Resale): the UI shows only the tier. */
   hidden?: true;
+  /** Free for this party: Thrifty's 1 item at each shop (Phase 10a). */
+  free?: true;
 }
 
 export interface ItemOffer extends Offer {
@@ -1227,10 +1396,14 @@ export interface GameState {
   scavenge?: PendingScavenge;
   /** A basic craft waiting for its pick. Everything else waits for it too. */
   crafting?: PendingCraft;
+  /** A level-up or an Old Photo's trait pick. Everything else waits for it too. */
+  traitPick?: TraitPick;
   /** The trinket recipe's random different resources, longest first; a new set after each trinket. */
   trinketRecipe?: ResourceId[];
   /** Debug only: card types the next scavenge deals first. */
   debugDeal?: ScavengeCardType[];
+  /** Tactical (Phase 10a): hikers who pick a tile to reveal for this biome. */
+  tacticalPicks?: HikerId[];
   /** Challenges, Trials and opportunities already seen in this section (no repeats). */
   usedCards: string[];
   /** The challenge waiting on the party, if any. Nothing else can happen until it's done. */

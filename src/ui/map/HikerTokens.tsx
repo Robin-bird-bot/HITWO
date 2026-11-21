@@ -11,7 +11,6 @@
  */
 import { Fragment, type ComponentProps, type ReactNode } from 'react';
 import { characterFor } from '../../content/characters';
-import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
 import { immovable, type Hiker, type HikerId, type Section } from '../../engine';
 import { conditionCounts } from '../conditions/hikerConditions';
@@ -20,6 +19,7 @@ import { Icon } from '../icons/Icon';
 import { useDrag } from '../drag/drag';
 import { lastRowOf, tileCenter } from './mapLayout';
 import styles from './MapView.module.css';
+import { portraitSrc } from '../portrait';
 
 /** Where tokens sit on a tile when several hikers share it. */
 const SPREAD: Record<number, [number, number][]> = {
@@ -136,7 +136,7 @@ export function HikerTokens({
           }}
         >
           <img
-            src={ASSETS.portraits.placeholder}
+            src={portraitSrc(h.id)}
             alt=""
             draggable={false}
             style={passedOut ? { transform: 'rotate(80deg)' } : undefined}
@@ -255,7 +255,7 @@ function TokenGhost({ hiker }: { hiker: Hiker }) {
   return (
     <img
       className={styles.tokenGhost}
-      src={ASSETS.portraits.placeholder}
+      src={portraitSrc(hiker.id)}
       alt=""
       style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
     />

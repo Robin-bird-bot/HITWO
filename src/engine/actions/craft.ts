@@ -8,10 +8,11 @@
  * - Teach (a free action): a hiker passes a blueprint to another on the same
  *   tile, for 4, 6 or 8 of the teacher's Morale by its tier (Wyatt, Nov 13).
  */
+import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted } from '../counters';
-import { fireCraft } from '../effects';
+import { computeCost, fireCraft, fireAction } from '../effects';
 import { bagSlots } from '../inventory';
 import {
   autoPay,
@@ -188,17 +189,42 @@ function finishCraft(
     paid: how.paid,
   });
   countCrafted(state, hiker.id, def.type);
+  // Crafting XP by the item's tier: 1, 2, 4 or 8 (action XP, under the row rule).
+  const xp = BALANCE.xp.craft[Math.min(def.tier, BALANCE.xp.craft.length) - 1] ?? 0;
+  gainXp(state, hiker, xp, 'craft', `Crafted ${def.name}`);
   // Rocco's Rebuilding Trial.
   noteCrafted(state, hiker, def.type);
   // A new set of trinket resources after every trinket.
   if (def.type === 'trinket') state.trinketRecipe = rollTrinketRecipe(state.rng);
-  fireCraft(state, hiker, itemId, def.type);
+  fireCraft(state, hiker, itemId, def.type, { item, paid: how.paid.map((p) => p.resource) });
+  fireAction(state, hiker, {
+    kind: 'craft',
+    role: 'actor',
+    tileId: hiker.tileId,
+    itemType: def.type,
+  });
   // Work Boots: a free move after crafting.
   earnFreeMove(state, hiker, 'afterCraft');
 }
 
-/** What teaching this blueprint costs the teacher. */
-export function teachCost(itemId: ItemId): number {
+/** What teaching this blueprint costs the teacher: by its tier, and half for a Teacher. */
+export function teachCost(state: GameState, teacher: Hiker, itemId: ItemId): number {
+  return computeCost(
+    state,
+    [teacher],
+    {
+      key: 'teach.morale',
+      actorId: teacher.id,
+      subjectId: teacher.id,
+      role: 'actor',
+      phase: state.phase,
+    },
+    baseTeachCost(itemId),
+  );
+}
+
+/** What teaching this blueprint costs, by its tier (Wyatt, Nov 13). */
+function baseTeachCost(itemId: ItemId): number {
   const tier = ITEMS[itemId]?.tier ?? 1;
   return BALANCE.items.craft.teachMorale[tier] ?? BALANCE.items.craft.teachMorale[1] ?? 4;
 }
@@ -218,7 +244,7 @@ export function validateTeach(state: GameState, action: TeachAction): string | u
   if (!ready) return `${student.name} can’t learn right now.`;
   if (student.tileId !== teacher.tileId) return `${student.name} isn’t on this tile.`;
   if (knowsBlueprint(student, def.id)) return `${student.name} already knows the ${def.name}.`;
-  const cost = teachCost(def.id);
+  const cost = teachCost(state, teacher, def.id);
   if (teacher.stats.morale < cost) {
     return `${teacher.name} needs ${cost} Morale to teach the ${def.name}.`;
   }
@@ -228,7 +254,7 @@ export function validateTeach(state: GameState, action: TeachAction): string | u
 export function applyTeach(state: GameState, action: TeachAction): void {
   const teacher = mustFindHiker(state, action.hikerId);
   const student = mustFindHiker(state, action.toId);
-  const cost = teachCost(action.itemId);
+  const cost = teachCost(state, teacher, action.itemId);
   student.blueprints = [...(student.blueprints ?? []), action.itemId];
   pushEvent(state, {
     kind: 'taught',

@@ -113,7 +113,10 @@ describe('Move All', () => {
   it('costs the mover 1 + 1 per hiker brought: bringing 3 costs 4', () => {
     const s = fixtureGame();
     const costs = moveAllCost(s, 'ash', 'L', ['birch', 'cedar', 'dot']);
-    expect(costs?.[0]).toEqual({ hikerId: 'ash', cost: { appetite: 4, energy: 0, morale: 0 } });
+    expect(costs?.[0]).toMatchObject({
+      hikerId: 'ash',
+      cost: { appetite: 4, energy: 0, morale: 0 },
+    });
     for (const c of costs?.slice(1) ?? []) {
       expect(c.cost).toEqual({ appetite: 0, energy: 0, morale: 0 });
     }
@@ -121,7 +124,7 @@ describe('Move All', () => {
 
   it('makes every hiker who crosses pay their own line extra', () => {
     const steep = moveAllCost(fixtureGame(), 'ash', 'M', ['birch']);
-    expect(steep).toEqual([
+    expect(steep).toMatchObject([
       { hikerId: 'ash', cost: { appetite: 2, energy: 1, morale: 0 } },
       { hikerId: 'birch', cost: { appetite: 0, energy: 1, morale: 0 } },
     ]);
@@ -129,14 +132,14 @@ describe('Move All', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L');
     place(s, 'birch', 'L');
-    expect(moveAllCost(s, 'ash', 'M', ['birch'])).toEqual([
+    expect(moveAllCost(s, 'ash', 'M', ['birch'])).toMatchObject([
       { hikerId: 'ash', cost: { appetite: 3, energy: 0, morale: 0 } },
       { hikerId: 'birch', cost: { appetite: 1, energy: 0, morale: 0 } },
     ]);
 
     place(s, 'ash', 'M');
     place(s, 'birch', 'M');
-    expect(moveAllCost(s, 'ash', 'R', ['birch'])).toEqual([
+    expect(moveAllCost(s, 'ash', 'R', ['birch'])).toMatchObject([
       { hikerId: 'ash', cost: { appetite: 2, energy: 0, morale: 1 } },
       { hikerId: 'birch', cost: { appetite: 0, energy: 0, morale: 1 } },
     ]);
@@ -144,7 +147,7 @@ describe('Move All', () => {
 
   it('makes every hiker who crosses pay the night extra', () => {
     const s = toNight(fixtureGame());
-    expect(moveAllCost(s, 'ash', 'L', ['birch'])).toEqual([
+    expect(moveAllCost(s, 'ash', 'L', ['birch'])).toMatchObject([
       { hikerId: 'ash', cost: { appetite: 3, energy: 0, morale: 0 } },
       { hikerId: 'birch', cost: { appetite: 1, energy: 0, morale: 0 } },
     ]);

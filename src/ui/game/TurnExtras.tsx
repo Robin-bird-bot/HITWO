@@ -44,6 +44,23 @@ export function SleepConfirm({ name, gain, from, to, onConfirm, onCancel }: Slee
   );
 }
 
+/** Tactical (Phase 10a): this hiker picks a tile ahead to see, at the start of the biome. */
+export function TacticalPick({ name, onSkip }: { name: string; onSkip(): void }) {
+  return (
+    <div className={styles.box}>
+      <span className={styles.kicker}>TACTICAL · {name.toUpperCase()}</span>
+      <span className={styles.text}>
+        Pick a tile on the map. Its nodes and card show for the rest of this biome.
+      </span>
+      <div className={styles.buttons}>
+        <button type="button" className={styles.cancel} onClick={onSkip}>
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface WatchConfirmProps {
   name: string;
   /** Everyone else on the tile, who'll be safe too. */

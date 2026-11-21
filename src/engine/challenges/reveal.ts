@@ -10,6 +10,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { CARDS, CHALLENGES } from '../../content/challenges';
+import { skipsChallenges } from '../effects';
 import { pushEvent } from '../log';
 import { pick } from '../rng';
 import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
@@ -58,6 +59,7 @@ export function revealTile(
   tileId: TileId,
   hikerIds: readonly HikerId[],
   forced?: QueuedReveal['forced'],
+  leaderId?: HikerId,
 ): void {
   // A Wonder never draws a card: landing there reveals it, even mid-challenge.
   if (state.section.tiles[tileId]?.wonder) {
@@ -68,12 +70,19 @@ export function revealTile(
   if (state.challenge) {
     state.challengeQueue = [
       ...(state.challengeQueue ?? []),
-      { tileId, hikerIds: [...hikerIds], ...(forced ? { forced } : {}) },
+      {
+        tileId,
+        hikerIds: [...hikerIds],
+        ...(forced ? { forced } : {}),
+        ...(leaderId ? { leaderId } : {}),
+      },
     ];
     return;
   }
   const tile = state.section.tiles[tileId];
-  const here = hikersHere(state, tileId, hikerIds);
+  // A Trespasser's day: no card triggers for them, and they aren't part of one (Phase 10a).
+  // TODO(wyatt): a tile a Trespasser lands on alone never triggers its card.
+  const here = hikersHere(state, tileId, hikerIds).filter((h) => !skipsChallenges(state, h));
   if (!tile || !here.length) return;
 
   // A card revealed early (Old Firewatch Tower): it opens now, with its numbers rolled now.
@@ -92,6 +101,7 @@ export function revealTile(
         ...(early.alternative ? { alternative: early.alternative } : {}),
       },
     );
+    markLeader(state, tileId, leaderId);
     return;
   }
 
@@ -117,6 +127,13 @@ export function revealTile(
     here.map((h) => h.id),
     picked,
   );
+  markLeader(state, tileId, leaderId);
+}
+
+/** The challenge just opened on this tile was led onto by this hiker's Move All (Alpha Dog). */
+function markLeader(state: GameState, tileId: TileId, leaderId: HikerId | undefined): void {
+  const open = state.challenge;
+  if (leaderId && open?.tileId === tileId) open.leaderId = leaderId;
 }
 
 /** Opens a card on a tile: rolls its numbers and marks it used in this section. */
@@ -161,7 +178,7 @@ export function openNext(state: GameState): void {
     const [next, ...rest] = state.challengeQueue;
     if (rest.length) state.challengeQueue = rest;
     else delete state.challengeQueue;
-    if (next) revealTile(state, next.tileId, next.hikerIds, next.forced);
+    if (next) revealTile(state, next.tileId, next.hikerIds, next.forced, next.leaderId);
   }
 }
 

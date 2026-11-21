@@ -18,11 +18,13 @@ import { checkTrials } from './challenges/trials';
 import { BALANCE } from '../config/balance';
 import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
-import { computeCost, fireHook, firePhaseEnd, firePhaseStart } from './effects';
+import { computeCost, fireHook, firePhaseEnd, firePhaseStart, noSleepStat } from './effects';
 import { pushEvent } from './log';
 import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
+import { rollDailyTraits } from './traits/daily';
+import { openLevelUp } from './traits/levelUp';
 
 /** Active hikers who still have their action this phase. The UI warns before ending the phase. */
 export function hikersWhoHaventActed(state: GameState): Hiker[] {
@@ -71,7 +73,8 @@ function noSleepDrain(state: GameState, h: Hiker): void {
     { key: 'night.noSleepEnergy', actorId: h.id, subjectId: h.id, role: 'actor', phase: 'night' },
     BALANCE.night.noSleepEnergy,
   );
-  changeStat(state, h, 'energy', -cost, 'No sleep');
+  // Nocturnal: a night without sleep costs Appetite instead.
+  changeStat(state, h, noSleepStat(state, h), -cost, 'No sleep');
 }
 
 function campStep(state: GameState): void {
@@ -103,9 +106,13 @@ export function startNewDay(state: GameState): void {
   state.scavengedToday = [];
   pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
   advanceWeather(state);
+  // Quirky, Zany, Nosework and Moody change for the day, before the morning's traits.
+  rollDailyTraits(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
   weatherPhaseStart(state);
   firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);
+  // Levels reached since the last camp: the first level-up opens (one at a time).
+  openLevelUp(state);
 }

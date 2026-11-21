@@ -40,7 +40,7 @@ describe('Cats move for free', () => {
 
   it('cost nothing extra to bring along', () => {
     const s = party();
-    expect(moveAllCost(s, 'human', 'L', ['cat'])).toEqual([
+    expect(moveAllCost(s, 'human', 'L', ['cat'])).toMatchObject([
       { hikerId: 'human', cost: { appetite: 1, energy: 0, morale: 0 } },
       { hikerId: 'cat', cost: { appetite: 0, energy: 0, morale: 0 } },
     ]);
@@ -50,7 +50,10 @@ describe('Cats move for free', () => {
     const s = party();
     const costs = moveAllCost(s, 'cat', 'L', ['human', 'kit']);
     // Own crossing free, +1 for the human, +0 for the other Cat.
-    expect(costs?.[0]).toEqual({ hikerId: 'cat', cost: { appetite: 1, energy: 0, morale: 0 } });
+    expect(costs?.[0]).toMatchObject({
+      hikerId: 'cat',
+      cost: { appetite: 1, energy: 0, morale: 0 },
+    });
   });
 
   it('stack with Leader on the mover', () => {

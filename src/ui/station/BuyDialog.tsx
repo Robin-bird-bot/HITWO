@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
-import { findOffer, validateAction, type Action, type GameState } from '../../engine';
+import { buyPrice, findOffer, validateAction, type Action, type GameState } from '../../engine';
 import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { Icon } from '../icons/Icon';
 import { ItemCard } from '../items/ItemCard';
@@ -42,7 +42,7 @@ export function BuyDialog({
     : station && !rejoin
       ? findOffer(station, offerId)
       : undefined;
-  const price = rejoin ? BALANCE.station.rejoin.price : (offer?.price ?? 0);
+  const listed = rejoin ? BALANCE.station.rejoin.price : (offer?.price ?? 0);
 
   const candidates = state.hikers.filter((h) =>
     tileId
@@ -62,6 +62,9 @@ export function BuyDialog({
     able.length === 1 ? (able[0]?.hiker.id ?? null) : null,
   );
   const pick = choices.find((c) => c.hiker.id === chosen && !c.reason);
+  // Frugal: the buyer picked pays a little less.
+  const buyer = state.hikers.find((h) => h.id === chosen);
+  const price = rejoin ? listed : buyPrice(state, buyer, listed);
 
   // Focus goes to the dialog, then its first hiker; it comes back on close.
   const dialog = useFocusOnOpen<HTMLDivElement>();

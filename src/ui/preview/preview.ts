@@ -22,6 +22,7 @@ import {
 import { BALANCE } from '../../config/balance';
 import { mergeHandlers } from '../app/mergeHandlers';
 import type { ItemId, ItemInstance, ScavengeCard } from '../../engine';
+import type { BadgeInfo } from '../traits/badges';
 
 export type PreviewContent =
   | {
@@ -34,7 +35,9 @@ export type PreviewContent =
       /** A line under the card ("Sells for 3 caps"). */
       note?: string;
     }
-  | { kind: 'scavenge'; card: ScavengeCard };
+  | { kind: 'scavenge'; card: ScavengeCard }
+  /** A trait badge's window: what it does and its status now. */
+  | { kind: 'trait'; badge: BadgeInfo };
 
 export interface PreviewApi {
   /** Pinned previews stay until a tap anywhere or Esc; the rest close when the pointer leaves. */

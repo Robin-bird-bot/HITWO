@@ -146,7 +146,11 @@ describe('a basic craft', () => {
     });
     expect(hiker(s, 'ash').blueprints).toEqual([option?.itemId]);
     expect(s.counters.crafted.ash).toEqual({ tool: 1 });
-    expect(s.log.at(-1)).toMatchObject({ kind: 'crafted', learned: true, blueprint: false });
+    expect(s.log.findLast((e) => e.kind === 'crafted')).toMatchObject({
+      kind: 'crafted',
+      learned: true,
+      blueprint: false,
+    });
   });
 
   it('now and then a card is a tier higher; never "Not crafted" items', () => {
@@ -187,7 +191,10 @@ describe('blueprints', () => {
     s = run(s, craft('ash', 'tool', { blueprint: 'shovel' }));
     expect(s.crafting).toBeUndefined();
     expect(hiker(s, 'ash').inventory.bag[0]?.itemId).toBe('shovel');
-    expect(s.log.at(-1)).toMatchObject({ kind: 'crafted', blueprint: true });
+    expect(s.log.findLast((e) => e.kind === 'crafted')).toMatchObject({
+      kind: 'crafted',
+      blueprint: true,
+    });
   });
 
   it('only up to the crafter’s tier for that type', () => {

@@ -127,10 +127,15 @@ export const BALANCE = {
       medicTent: 3,
       lodge: 5,
     } as Record<string, number>,
-    /** TODO(wyatt): the Diploma's XP, as a share of a level (first guess 60–100%). TODO(phase 10). */
+    /**
+     * The Diploma's XP: a share of the XP between the hiker's level and the
+     * next, rolled. TODO(wyatt): the doc's first guess, 60–100% of a level.
+     */
     diplomaXp: { min: 0.6, max: 1 },
-    /** TODO(wyatt): the Postcard's extra XP (first guess). TODO(phase 10). */
+    /** The Postcard's extra XP at each checkpoint and each challenge passed. TODO(wyatt): first guess. */
     postcardXp: { checkpoint: 5, challenge: 1 },
+    /** The Textbook's extra XP for every scavenge and craft. */
+    textbookXp: 1,
     /** A Planter can't add a node to a tile that already has this many. */
     maxNodes: 3,
     /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
@@ -554,12 +559,41 @@ export const BALANCE = {
     startingResources: 4,
   },
 
+  /** XP and levels (01-design-doc.md, "XP"; Wyatt, Nov 20). Hikers start at level 0. */
   xp: {
+    /** Total XP to reach levels 1–6: each level needs 10 more than the last. */
+    levelAt: [20, 50, 90, 140, 200, 270],
+    /** Past level 6, each level keeps needing this much more than the one before. TODO(wyatt). */
+    stepGrowth: 10,
     /**
-     * XP needed to reach each level (index 0 = level 1).
-     * TODO(wyatt): placeholder until Phase 10 sets XP and leveling.
+     * Milestones (no row rule): a checkpoint is station.checkInXp, a challenge
+     * passed is challenges.passXpPerTier × its tier.
+     *
+     * Party objectives: 10 × their tier. TODO(wyatt): first guess; objectives come in Phase 13.
      */
-    levelAt: [0, 50, 150, 300, 500, 750],
+    objectivePerTier: 10,
+    /** Action XP (the row rule): crafting by the item's tier (1–4), a lucky draw, the fire. */
+    craft: [1, 2, 4, 8],
+    luckyDraw: 2,
+    fire: 1,
+  },
+
+  /** Level-up offers (01-design-doc.md, "Leveling"; 02, "Trait rules"). */
+  levelUp: {
+    /** Levels 1–3 offer this many options; from level 4, one more a level, up to `maxOptions`. */
+    options: 3,
+    maxOptions: 6,
+    /** Options that can come from any class, not just the hiker's own. TODO(wyatt): [1]. */
+    anyClass: 1,
+    /**
+     * Morale traits come up less often: each option is first a type, Trail and
+     * Utility at 1 each and Morale at this, then a trait of that type. TODO(wyatt).
+     */
+    moraleWeight: 0.5,
+    /** The chance an option is a new slot instead of a trait. TODO(wyatt): first guess. */
+    slotChance: 1 / 8,
+    /** A new slot's type: T and U most common, the mixed slots rarer, W rarest. TODO(wyatt). */
+    slotWeights: { T: 4, U: 4, 'T/U': 2, 'T/M': 2, 'U/M': 2, W: 1 },
   },
 
   /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
@@ -637,11 +671,127 @@ export const BALANCE = {
 
   /** Numbers used by specific traits (see src/content/traits.ts). */
   traits: {
+    /** The most trait slots a hiker can have (02-traits-and-conditions.md). */
+    maxSlots: 6,
     leader: { moveAllDiscount: 1 },
+    // ── Trail traits (Phase 10a step 2), from 02-traits-and-conditions.md ──
+    independent: { discount: 1 },
+    glutton: { appetite: 1 },
+    strong: { slots: 1 },
+    mule: { slots: 2 },
+    short: { discount: 1, slots: -1 },
+    /** "25% chance to cost no Appetite"; "every food restores 1 less". */
+    neverHungry: { chance: 0.25, food: -1 },
+    /**
+     * "Moving the group costs 1 Energy instead of Appetite." TODO(wyatt): the
+     * doc's open question; first guess: a flat 1 Energy in place of all the
+     * mover's Appetite for the Move All.
+     */
+    puller: { energy: 1 },
+    manager: { reach: 1 },
+    fast: { extraAppetite: 1 },
+    hardy: { moraleCost: 2, shorten: 1 },
+    lookout: { reach: 1 },
+    sherpa: { reach: 1 },
+    /** "A chance to restore 1 Energy": the doc's default chance. */
+    photosynthesis: { chance: 0.25, energy: 1 },
+    splitter: { appetite: 1 },
+    soldiersMarch: { discount: 1 },
+    // ── Utility traits (Phase 10a step 3), from 02-traits-and-conditions.md ──
+    collaborative: { luck: 1 },
+    focused: { luck: 1 },
+    ecoConscious: { drain: 1 },
+    /** "Higher chance of acorn caps." TODO(wyatt): first guess, caps cards twice as likely. */
+    squirrely: { capsWeight: 2 },
+    /**
+     * Lead Stomach and Destroyer spend resources. TODO(wyatt): first guess, the
+     * ones the hiker has the most of go first.
+     */
+    leadStomach: { resources: 2, appetite: 1 },
+    destroyer: { resources: 3, gain: 1 },
+    charismatic: { caps: 2 },
+    frugal: { caps: 1 },
+    nonNonProfit: { percent: 50 },
+    thumb: { cards: 1, abundance: 1 },
+    /** Chances the doc doesn't number use its default (25%). */
+    chef: { chance: 0.25, appetite: 1 },
+    carefulHands: { min: 0, max: 3 },
+    teacher: { percent: -50 },
+    pockets: { chance: 0.25 },
+    savvy: { chance: 0.25 },
+    handy: { cards: 1 },
+    proficient: { cards: 2 },
+    fortunate: { luck: 1 },
+    /**
+     * Therapist: 1 Morale to shorten every negative condition on the tile by 1
+     * day. TODO(wyatt): a phase-based condition loses a day's worth (3 phases).
+     */
+    therapist: { morale: 1, days: 1 },
+    liberal: { energy: 1 },
+    /**
+     * Talented: "+1 to the numbers on items this hiker crafts". TODO(wyatt):
+     * read as each item's main number: food +1 Appetite, a tool +1 use,
+     * clothes +1 day of durability (shelters and trinkets have none).
+     */
+    talented: { bonus: 1 },
+    closer: { luck: 1 },
+    lovinglyMade: { morale: 8, luck: 1 },
+    dreamAlchemist: { chance: 0.1 },
+    alchemist: { resources: 2 },
+    singer: { morale: 1 },
     /** Thrill Seeker (Nov 6): losing this much Energy in one phase gives Energized for this many days. */
     thrillSeeker: { energyLost: 3, days: 1 },
     stoic: { moraleCost: 2, gain: 1 },
     extrinsic: { together: 1, alone: -1 },
+    // ── Morale traits (Phase 10a step 4), from 02-traits-and-conditions.md ──
+    /** The usual Morale a Morale trait gives or takes. */
+    morale: 1,
+    zen: 2,
+    foody: { high: 8, low: 5 },
+    dressed: { many: 2 },
+    slowAndSteady: { forward: -2 },
+    misophonia: { otherEats: -1, craftsFood: 2 },
+    rainLover: { extra: 1 },
+    showGirl: { extra: 1 },
+    // ── Family, special and unique traits (Phase 10a step 5) ──
+    /** Fetch reaches the next tile; on Boss's days (Tag Team) 2 tiles, and items too. */
+    fetch: { reach: 1 },
+    dogWhisperer: { cards: 1 },
+    /** Boss & Gracie: Boss's days are odd (TODO(wyatt)); both reach 2 tiles. */
+    tagTeam: { reach: 2 },
+    fluffy: { fur: 1 },
+    nosework: { luck: 3 },
+    yodeler: { reach: 2, morale: 1, mountain: 2 },
+    stylish: { luck: 1, days: 3 },
+    /** Loud gives Ringing Ears at night. TODO(wyatt): for a phase, to the others on the tile. */
+    loud: { reach: 1, ringingEarsPhases: 1 },
+    rabbitDiet: { appetite: 1 },
+    /** The bracketed numbers in 07-characters.md. TODO(wyatt). */
+    forgetful: { chance: 0.5 },
+    snores: { shield: 50, sleep: -1 },
+    lanky: { chance: 0.25 },
+    spoiled: { appetite: 1 },
+    fluffArmor: { chance: 0.5 },
+    hypeDog: { reach: 1, days: 1 },
+    luckyCharm: { luck: 1 },
+    cuddleBuddy: { morale: 1 },
+    justAroundTheNextCorner: { tiles: 3, alone: 0.75, group: 0.25 },
+    /** Coach's Motivated, and Good Boy's (his action, given this phase). TODO(wyatt): how long. */
+    coach: { days: 1 },
+    comedian: { morale: 1 },
+    easyMode: { less: 1 },
+    // ── XP traits (Phase 10a step 6) ──
+    /** Wise: others on the tile gain this share of what this hiker gains (rounded up). */
+    wise: { percent: 50 },
+    /** Mentor: others on the tile gain this much more each time. TODO(wyatt): [1]. */
+    mentor: { extra: 1 },
+    /** Storyteller: others on the tile gain this at the fire. TODO(wyatt): [2]. */
+    storyteller: { xp: 2 },
+    linguist: { perOther: 1 },
+    /** Trainer: Pets on the tile gain this much more. */
+    trainer: { percent: 50 },
+    /** MBA: caps for each level of the new level (3 at level 1, 6 at level 2…). TODO(wyatt). */
+    mba: { capsPerLevel: 3 },
     forager: { cards: 1 },
     gambler: { usesPerDay: 1 },
     /** "Higher chance of drawing that node's resources." TODO(wyatt): first guess. */
@@ -657,6 +807,14 @@ export const BALANCE = {
      */
     copier: { appetiteEach: 1 },
   },
+
+  /**
+   * Plush hikers (Nov 20 update, 07-characters.md): Energy and Appetite are one
+   * bar, Stuffing. At `low` or less they can't move the group and can only
+   * sleep at night; at `veryLow` or less they can only sleep; at 0, an injury.
+   * TODO(wyatt): [12], [7] and [3].
+   */
+  plush: { stuffingMax: 12, low: 7, veryLow: 3 },
 
   rules: {
     /** Passed-out hikers skip the camp-step drains: they're out cold (Wyatt, Nov 7). */

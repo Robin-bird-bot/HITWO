@@ -1,11 +1,11 @@
 import { BALANCE } from '../../config/balance';
-import type { StatName } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { BAR_LEVELS, barColor, barLevel, STAT_META } from './hikerInfo';
+import { BAR_LEVELS, barColor, barLevel, STAT_META, type BarStat } from './hikerInfo';
 import styles from './StatBar.module.css';
 
 interface StatBarProps {
-  stat: StatName;
+  /** A stat, or a Plush hiker's Stuffing. */
+  stat: BarStat;
   value: number;
   /** Simple mode: the number at the end of the bar. */
   showNumber?: boolean;
@@ -17,7 +17,7 @@ interface StatBarProps {
   max?: number;
 }
 
-/** An Energy, Appetite or Morale bar: amber at a threshold, red with a gentle pulse when critical. */
+/** An Energy, Appetite, Morale or Stuffing bar: amber at a threshold, red with a gentle pulse when critical. */
 export function StatBar({
   stat,
   value,

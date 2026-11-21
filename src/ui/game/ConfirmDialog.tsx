@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useFocusOnOpen } from '../app/useFocusOnOpen';
 import { useDraggable } from '../windows/useDraggable';
 import styles from './ConfirmDialog.module.css';
@@ -10,6 +10,10 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   /** Start on the cancel button, so Enter keeps things as they are (abandoning a hiker). */
   focusCancel?: boolean;
+  /** A list under the message (who's about to lose Morale, and why). */
+  lines?: readonly string[];
+  /** Something under the buttons (a "Don't ask again" box). */
+  extra?: ReactNode;
   onConfirm(): void;
   onCancel(): void;
 }
@@ -25,6 +29,8 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Keep playing',
   focusCancel = false,
+  lines,
+  extra,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -61,6 +67,13 @@ export function ConfirmDialog({
         <p id="confirm-message" className={styles.message}>
           {message}
         </p>
+        {lines && lines.length > 0 && (
+          <ul className={styles.lines}>
+            {lines.map((l) => (
+              <li key={l}>{l}</li>
+            ))}
+          </ul>
+        )}
         <div className={styles.buttons}>
           <button ref={cancelRef} type="button" className={styles.cancel} onClick={onCancel}>
             {cancelLabel}
@@ -69,7 +82,24 @@ export function ConfirmDialog({
             {confirmLabel}
           </button>
         </div>
+        {extra}
       </div>
     </div>
+  );
+}
+
+/** "Don't ask again this run", under a trait warning's check. */
+export function DontAskAgain({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange(checked: boolean): void;
+}) {
+  return (
+    <label className={styles.quiet}>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      Don’t ask again this run
+    </label>
   );
 }

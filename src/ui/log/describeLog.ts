@@ -23,6 +23,8 @@ import { cardText } from '../challenge/cardText';
 import { tileName } from '../panels/hikerInfo';
 import { resourceName, resourcesTitle } from '../scavenge/cardLook';
 import { safeLines } from '../night/nightLines';
+import { TRAITS } from '../../content/traits';
+import { SLOT_WORDS } from '../items/whatItDoes';
 
 export interface LogLine {
   /** The event it describes. */
@@ -273,7 +275,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         }
         lines.push({
           id: e.id,
-          text: `${name(e.hikerId)}: ${signed(e.to - e.from, e.stat)} (${e.cause}).`,
+          text: `${name(e.hikerId)}: ${signed(e.to - e.from, e.stat)} (${e.cause}${e.why ? `: ${e.why}` : ''}).`,
           tone: 'drain',
         });
         break;
@@ -307,6 +309,38 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
           ? `The fire spread to ${where}.`
           : `A node ${verb} on ${where}.`;
         lines.push({ id: e.id, text, tone: 'drain' });
+        break;
+      }
+      case 'trait':
+        lines.push({ id: e.id, text: `${e.trait}: ${e.text}`, tone: 'rest' });
+        break;
+      case 'xp':
+        lines.push({
+          id: e.id,
+          text:
+            e.none === 'row'
+              ? `${name(e.hikerId)} got no XP (${e.cause}): crafting and finds give XP only on a hiker’s first day on a row.`
+              : `${name(e.hikerId)} gained ${e.xp} XP (${e.cause}).`,
+          tone: e.none ? 'drain' : 'rest',
+        });
+        break;
+      case 'levelReached':
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} reached level ${e.level}! They pick a trait at the next camp.`,
+          tone: 'ability',
+        });
+        break;
+      case 'traitGained': {
+        const trait = e.traitId ? (TRAITS[e.traitId]?.name ?? e.traitId) : undefined;
+        const got = trait ?? `a new ${e.slot ? SLOT_WORDS[e.slot] : 'slot'}`;
+        const replaced = e.replaced ? ` in place of ${TRAITS[e.replaced]?.name ?? e.replaced}` : '';
+        const why = e.level ? `level ${e.level}` : e.cause;
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} got ${got}${replaced} (${why}).`,
+          tone: 'ability',
+        });
         break;
       }
       case 'freeAction':

@@ -2,6 +2,7 @@
  * The cards along the top of the game screen (docs/mockups/Main.dc.html):
  * biome, day and phase with weather, the objective, and Abundance with caps.
  */
+import { setTraitWarnings, useTraitWarnings, type TraitWarnings } from '../app/traitWarnings';
 import { useRef, useState } from 'react';
 import { WEATHERS } from '../../content/weather';
 import { PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
@@ -166,10 +167,25 @@ const MODES: { id: UiMode; label: string; text: string }[] = [
   { id: 'informative', label: 'Informative', text: 'Every number, label and threshold on screen.' },
 ];
 
+const WARNINGS: { id: TraitWarnings; label: string; text: string }[] = [
+  { id: 'off', label: 'Off', text: 'Traits don’t warn you about anything.' },
+  {
+    id: 'simple',
+    label: 'Simple',
+    text: 'Morale badges turn green or red before a gain or a loss; traits that aren’t working are dimmed.',
+  },
+  {
+    id: 'informative',
+    label: 'Informative',
+    text: 'Also a tag on the portrait, and a check before anything that costs someone Morale.',
+  },
+];
+
 /** The ☰ menu: settings and the way back to the title screen. Closes on click-away or Esc. */
 export function MenuButton({ onTitle }: { onTitle(): void }) {
   const [open, setOpen] = useState(false);
   const mode = useUiMode();
+  const warnings = useTraitWarnings();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -211,6 +227,24 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
               ))}
             </div>
             <span className={styles.small}>{MODES.find((m) => m.id === mode)?.text}</span>
+          </div>
+          <div className={styles.setting}>
+            <span className={styles.settingName}>Trait warnings</span>
+            <div className={styles.segmented} role="radiogroup" aria-label="Trait warnings">
+              {WARNINGS.map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={warnings === w.id}
+                  className={styles.segment}
+                  onClick={() => setTraitWarnings(w.id)}
+                >
+                  {w.label}
+                </button>
+              ))}
+            </div>
+            <span className={styles.small}>{WARNINGS.find((w) => w.id === warnings)?.text}</span>
           </div>
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
             Reset window layout

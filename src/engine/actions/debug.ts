@@ -1,4 +1,6 @@
 import { rollTrailShop } from '../station/trail';
+import { openLevelUpFor } from '../traits/levelUp';
+import { levelForXp } from '../xp';
 import { STATION_THEME_BY_ID } from '../../content/stations';
 import { noteGone } from '../items/gone';
 import { checkInArrivals } from '../station/checkIn';
@@ -21,6 +23,8 @@ import { resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
 import { adjacentTileIds } from '../map';
 import type { DebugOp, GameState, ItemInstance, NodeType } from '../types';
+import { canAddSlot } from '../traits/slots';
+import { setDaily } from '../traits/daily';
 
 /** Dev tools for the debug panel. They bypass the rules on purpose, and say so in the log. */
 export function applyDebug(state: GameState, op: DebugOp): void {
@@ -72,7 +76,79 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const slot = hiker?.slots[op.slot];
       if (!hiker || !slot) return;
       slot.traitId = op.traitId;
+      delete slot.daily;
+      if (op.setting && (op.setting.x || op.setting.y)) slot.setting = { ...op.setting };
+      else delete slot.setting;
       pushEvent(state, { kind: 'debug', note: `Set ${hiker.name}'s slot ${op.slot + 1}` });
+      break;
+    }
+    case 'addSlot': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker || !canAddSlot(hiker)) return;
+      hiker.slots.push({ type: op.slotType, traitId: null });
+      pushEvent(state, { kind: 'debug', note: `Gave ${hiker.name} a ${op.slotType} slot` });
+      break;
+    }
+    case 'removeSlot': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker?.slots[op.slot]) return;
+      hiker.slots.splice(op.slot, 1);
+      pushEvent(state, { kind: 'debug', note: `Took slot ${op.slot + 1} from ${hiker.name}` });
+      break;
+    }
+    case 'setXp': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.xp = Math.max(0, Math.floor(op.xp));
+      if (op.level !== undefined) hiker.level = Math.max(0, Math.floor(op.level));
+      // Levels the XP reaches past the hiker's level wait for the next camp step.
+      const pending = Math.max(0, levelForXp(hiker.xp) - hiker.level);
+      if (pending) hiker.pendingLevels = pending;
+      else delete hiker.pendingLevels;
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Set ${hiker.name} to ${hiker.xp} XP, level ${hiker.level}${pending ? ` (${pending} to pick at camp)` : ''}`,
+      });
+      break;
+    }
+    case 'levelUpNow': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      // A level-up right now, in place of anything being picked.
+      hiker.pendingLevels = (hiker.pendingLevels ?? 0) + 1;
+      delete state.traitPick;
+      openLevelUpFor(state, hiker, op.tier);
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Level-up for ${hiker.name} now, with Tier ${op.tier} options`,
+      });
+      break;
+    }
+    case 'refillUses': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      // Uses and once-a-while rules are counted in abilityUses; clearing it brings them all back.
+      hiker.abilityUses = {};
+      pushEvent(state, { kind: 'debug', note: `Refilled ${hiker.name}'s trait uses` });
+      break;
+    }
+    case 'setDayParity': {
+      if ((state.day % 2 === 1) !== op.odd) state.day += 1;
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Now day ${state.day} (${op.odd ? 'odd' : 'even'})`,
+      });
+      break;
+    }
+    case 'setDaily': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const slot = hiker?.slots[op.slot];
+      if (!hiker || !slot?.traitId) return;
+      setDaily(state, hiker, slot, op.pick);
+      pushEvent(state, {
+        kind: 'debug',
+        note: `${hiker.name}'s slot ${op.slot + 1} is ${op.pick} today`,
+      });
       break;
     }
     case 'nextDeal': {

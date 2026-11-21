@@ -10,15 +10,26 @@ import type { Action, Hiker } from './types';
 
 const T = BALANCE.thresholds;
 
-export const isHungry = (h: Hiker) => h.stats.appetite <= T.hungry;
-export const isFamished = (h: Hiker) => h.stats.appetite <= T.famished;
-export const isFatigued = (h: Hiker) => h.stats.energy <= T.fatigued;
-export const isExhausted = (h: Hiker) => h.stats.energy <= T.exhausted;
+const P = BALANCE.plush;
+const plush = (h: Hiker) => h.family === 'plush';
 
-export type ThresholdState = 'hungry' | 'famished' | 'fatigued' | 'exhausted';
+// A Plush hiker has Stuffing instead, with its own limits (lowStuffing, veryLowStuffing).
+export const isHungry = (h: Hiker) => !plush(h) && h.stats.appetite <= T.hungry;
+export const isFamished = (h: Hiker) => !plush(h) && h.stats.appetite <= T.famished;
+export const isFatigued = (h: Hiker) => !plush(h) && h.stats.energy <= T.fatigued;
+export const isExhausted = (h: Hiker) => !plush(h) && h.stats.energy <= T.exhausted;
+/** A Plush hiker's Stuffing is low: can't move the group, and only sleeps at night. */
+export const isLowStuffing = (h: Hiker) => plush(h) && h.stats.energy <= P.low;
+/** A Plush hiker's Stuffing is very low: can only sleep. */
+export const isVeryLowStuffing = (h: Hiker) => plush(h) && h.stats.energy <= P.veryLow;
+
+export type ThresholdState =
+  'hungry' | 'famished' | 'fatigued' | 'exhausted' | 'lowStuffing' | 'veryLowStuffing';
 
 export function thresholdStates(h: Hiker): ThresholdState[] {
   const out: ThresholdState[] = [];
+  if (isLowStuffing(h)) out.push('lowStuffing');
+  if (isVeryLowStuffing(h)) out.push('veryLowStuffing');
   if (isHungry(h)) out.push('hungry');
   if (isFamished(h)) out.push('famished');
   if (isFatigued(h)) out.push('fatigued');
@@ -35,6 +46,37 @@ const canBeBrought = BALANCE.rules.exhaustedOrFatiguedCanBeBrought;
 
 export function thresholdSources(h: Hiker): EffectSource[] {
   const sources: EffectSource[] = [];
+
+  if (isVeryLowStuffing(h)) {
+    sources.push({
+      id: 'threshold:veryLowStuffing',
+      kind: 'threshold',
+      name: 'Very low Stuffing',
+      hooks: {
+        canAct(q) {
+          if (!usesAction(q) || isSleep(q)) return undefined;
+          if (q.role === 'brought' && canBeBrought) return undefined;
+          return `Very low Stuffing: can only sleep (${P.veryLow} or less).`;
+        },
+      },
+    });
+  } else if (isLowStuffing(h)) {
+    sources.push({
+      id: 'threshold:lowStuffing',
+      kind: 'threshold',
+      name: 'Low Stuffing',
+      hooks: {
+        canAct(q) {
+          if (q.role === 'actor' && q.action.type === 'moveAll') {
+            return `Low Stuffing: can’t move the group (${P.low} or less).`;
+          }
+          if (q.phase !== 'night' || !usesAction(q) || isSleep(q)) return undefined;
+          if (q.role === 'brought' && canBeBrought) return undefined;
+          return `Low Stuffing: at night, can only sleep (${P.low} or less).`;
+        },
+      },
+    });
+  }
 
   if (isExhausted(h)) {
     sources.push({

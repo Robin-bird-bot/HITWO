@@ -117,7 +117,8 @@ describe('a party challenge (Flies)', () => {
     expect(hiker(after, 'birch').inventory.resources).toEqual({ fish: 2 });
     expect(hiker(after, 'ash').xp).toBe(xpFor(1));
     expect(hiker(after, 'birch').xp).toBe(xpFor(1));
-    expect(after.log.at(-1)).toMatchObject({
+    // The challenge's line, then each hiker's XP.
+    expect(after.log.findLast((e) => e.kind === 'challenge')).toMatchObject({
       kind: 'challenge',
       cardId: 'flies',
       party: true,

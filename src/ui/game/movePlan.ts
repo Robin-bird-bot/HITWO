@@ -4,6 +4,8 @@
  */
 import {
   adjacentTileIds,
+  bringReach,
+  tileDistance,
   atLastSection,
   checkInPreview,
   hikersOnTile,
@@ -15,10 +17,9 @@ import {
   type GameState,
   type Hiker,
   type HikerId,
-  type StatName,
   type TileId,
 } from '../../engine';
-import { tileName } from '../panels/hikerInfo';
+import { tileName, type BarStat } from '../panels/hikerInfo';
 
 export type MoveMode = { kind: 'move' } | { kind: 'moveAll'; bring: HikerId[] };
 
@@ -43,7 +44,8 @@ export function moveTargets(state: GameState, hiker: Hiker, mode: MoveMode): Mov
 }
 
 export interface StatChange {
-  stat: StatName;
+  /** A stat, or a Plush hiker's Stuffing (their Energy and Appetite costs together). */
+  stat: BarStat;
   from: number;
   to: number;
 }
@@ -94,9 +96,16 @@ export function movePreview(
   const rows: CostRow[] = costs.map(({ hikerId, cost }) => {
     const h = state.hikers.find((x) => x.id === hikerId);
     const changes: StatChange[] = [];
+    const plush = h?.family === 'plush';
+    if (h && plush) {
+      // Stuffing takes both kinds of cost.
+      const amount = (cost?.energy ?? 0) + (cost?.appetite ?? 0);
+      const now = h.stats.energy;
+      if (amount > 0) changes.push({ stat: 'stuffing', from: now, to: Math.max(0, now - amount) });
+    }
     for (const stat of STAT_NAMES) {
       const amount = cost?.[stat] ?? 0;
-      if (!h || amount <= 0) continue;
+      if (!h || amount <= 0 || (plush && stat !== 'morale')) continue;
       changes.push({ stat, from: h.stats[stat], to: Math.max(0, h.stats[stat] - amount) });
     }
     return {
@@ -147,24 +156,33 @@ export interface BringOption {
 /** Hikers on the mover's tile who could be brought along by Move All. */
 export function bringOptions(state: GameState, mover: Hiker): BringOption[] {
   const targets = adjacentTileIds(state.section, mover.tileId);
-  return hikersOnTile(state, mover.tileId)
-    .filter((h) => h.id !== mover.id)
-    .map((h) => {
-      if (h.acted) return { hiker: h, reason: `${h.name} has already acted this ${state.phase}.` };
-      let reason: string | null = 'There’s nowhere to go from here.';
-      for (const t of targets) {
-        const r = validateAction(state, {
-          type: 'moveAll',
-          hikerId: mover.id,
-          toTileId: t,
-          bring: [h.id],
-        });
-        if (r === null) return { hiker: h, reason: null };
-        // Prefer a reason about this hiker over one about the tile.
-        if (reason === 'There’s nowhere to go from here.' || r.startsWith(h.name)) reason = r;
-      }
-      return { hiker: h, reason };
-    });
+  // Sherpa: hikers on the tiles next to the mover's can come too.
+  const reach = bringReach(state, mover);
+  return (
+    state.hikers
+      .filter(
+        (h) =>
+          h.id !== mover.id &&
+          h.status === 'active' &&
+          tileDistance(state.section, h.tileId, mover.tileId) <= reach,
+      )
+      // The rules say who can come (a Tank Butt leader can bring hikers who've acted).
+      .map((h) => {
+        let reason: string | null = 'There’s nowhere to go from here.';
+        for (const t of targets) {
+          const r = validateAction(state, {
+            type: 'moveAll',
+            hikerId: mover.id,
+            toTileId: t,
+            bring: [h.id],
+          });
+          if (r === null) return { hiker: h, reason: null };
+          // Prefer a reason about this hiker over one about the tile.
+          if (reason === 'There’s nowhere to go from here.' || r.startsWith(h.name)) reason = r;
+        }
+        return { hiker: h, reason };
+      })
+  );
 }
 
 /**
@@ -176,14 +194,12 @@ export function bringChoices(state: GameState, mover: Hiker, tileId: TileId): Br
     .filter((h) => h.id !== mover.id)
     .map((h) => ({
       hiker: h,
-      reason: h.acted
-        ? `${h.name} has already acted this ${state.phase}.`
-        : validateAction(state, {
-            type: 'moveAll',
-            hikerId: mover.id,
-            toTileId: tileId,
-            bring: [h.id],
-          }),
+      reason: validateAction(state, {
+        type: 'moveAll',
+        hikerId: mover.id,
+        toTileId: tileId,
+        bring: [h.id],
+      }),
     }));
 }
 

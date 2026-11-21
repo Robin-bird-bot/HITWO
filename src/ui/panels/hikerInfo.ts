@@ -9,11 +9,17 @@ import { BALANCE } from '../../config/balance';
 import {
   adjacentTileIds,
   blockedByStatus,
-  hikersOnTile,
+  bringReach,
+  tileDistance,
   isSheltered,
   moraleLuck,
   moveCost,
   scavengeCost,
+  STAT_NAMES,
+  statMax,
+  levelReached,
+  onXpRow,
+  xpForLevel,
   tendCost,
   thresholdStates,
   validateAction,
@@ -30,11 +36,19 @@ import type { IconName } from '../icons/paths';
 import { NODE_NAME, SPECIAL_LOOK } from '../map/looks';
 
 const T = BALANCE.thresholds;
+const P = BALANCE.plush;
 
-export const STAT_META: Record<StatName, { label: string; icon: IconName }> = {
+/**
+ * A bar on a hiker card: Energy, Appetite and Morale, or for a Plush hiker
+ * one Stuffing bar in place of Energy and Appetite (Nov 20 update).
+ */
+export type BarStat = StatName | 'stuffing';
+
+export const STAT_META: Record<BarStat, { label: string; icon: IconName }> = {
   energy: { label: 'Energy', icon: 'zap' },
   appetite: { label: 'Appetite', icon: 'utensils' },
   morale: { label: 'Morale', icon: 'heart' },
+  stuffing: { label: 'Stuffing', icon: 'package' },
 };
 
 /**
@@ -42,10 +56,11 @@ export const STAT_META: Record<StatName, { label: string; icon: IconName }> = {
  * Appetite follow the threshold states; Morale has none in the rules, so its
  * bar uses 5 and 2 (Wyatt, Nov 3).
  */
-export const BAR_LEVELS: Record<StatName, { low: number; critical: number }> = {
+export const BAR_LEVELS: Record<BarStat, { low: number; critical: number }> = {
   energy: { low: T.fatigued, critical: T.exhausted },
   appetite: { low: T.hungry, critical: T.famished },
   morale: { low: 5, critical: 2 },
+  stuffing: { low: P.low, critical: P.veryLow },
 };
 
 /**
@@ -55,30 +70,47 @@ export const BAR_LEVELS: Record<StatName, { low: number; critical: number }> = {
 export const THRESHOLD_STATS: readonly StatName[] = ['energy', 'appetite'];
 
 /** Bar colors (Wyatt, Nov 3): each stat's own color, amber at a threshold, red when critical. */
-export const BAR_COLOR: Record<StatName, string> & { low: string; critical: string } = {
+export const BAR_COLOR: Record<BarStat, string> & { low: string; critical: string } = {
   energy: '#7FC29B',
   appetite: '#C08A5A',
   morale: '#B98AE0',
+  stuffing: '#E58FB0',
   low: '#F0A83A',
   critical: '#E5624A',
 };
 
 export type BarLevel = 'normal' | 'low' | 'critical';
 
-export function barLevel(stat: StatName, value: number): BarLevel {
+export function barLevel(stat: BarStat, value: number): BarLevel {
   const l = BAR_LEVELS[stat];
   if (value <= l.critical) return 'critical';
   if (value <= l.low) return 'low';
   return 'normal';
 }
 
-export function barColor(stat: StatName, value: number): string {
+export function barColor(stat: BarStat, value: number): string {
   const level = barLevel(stat, value);
   return level === 'normal' ? BAR_COLOR[stat] : BAR_COLOR[level];
 }
 
+/** The bars on a hiker's card, in order: a Plush hiker's Stuffing stands in for Energy and Appetite. */
+export function hikerBars(
+  state: GameState,
+  h: Hiker,
+): { stat: BarStat; value: number; max: number }[] {
+  const bar = (stat: StatName) => ({ stat, value: h.stats[stat], max: statMax(state, h, stat) });
+  if (h.family !== 'plush') return STAT_NAMES.map(bar);
+  // Stuffing is kept in both Energy and Appetite; they always match.
+  return [{ ...bar('energy'), stat: 'stuffing' }, bar('morale')];
+}
+
 /** The next threshold for a stat, or the state it's in. */
-export function statNote(stat: StatName, value: number): string {
+export function statNote(stat: BarStat, value: number): string {
+  if (stat === 'stuffing') {
+    if (value <= P.veryLow) return 'Very low: can only sleep';
+    if (value <= P.low) return `Very low at ${P.veryLow}`;
+    return `Low at ${P.low}`;
+  }
   if (stat === 'energy') {
     if (value <= T.exhausted) return 'Exhausted';
     if (value <= T.fatigued) return `Exhausted at ${T.exhausted}`;
@@ -130,6 +162,21 @@ export function conditionChips(h: Hiker): ConditionChip[] {
       icon: 'utensils',
       kind: 'state',
       label: 'Hungry: can’t scavenge or move the group',
+    });
+  }
+  if (states.includes('veryLowStuffing')) {
+    chips.push({
+      key: 'veryLowStuffing',
+      icon: 'package',
+      kind: 'state',
+      label: 'Very low Stuffing: can only sleep',
+    });
+  } else if (states.includes('lowStuffing')) {
+    chips.push({
+      key: 'lowStuffing',
+      icon: 'package',
+      kind: 'state',
+      label: 'Low Stuffing: can’t move the group; at night, can only sleep',
     });
   }
   if (states.includes('exhausted')) {
@@ -211,12 +258,33 @@ export const FAMILY_LOOK = {
   human: { label: 'HUMAN', icon: 'user' },
   dog: { label: 'DOG', icon: 'paw' },
   cat: { label: 'CAT', icon: 'paw' },
+  plush: { label: 'PLUSH', icon: 'paw' },
 } as const satisfies Record<Hiker['family'], { label: string; icon: IconName }>;
 
-export function xpProgress(h: Hiker): { level: number; xp: number; next: number | null } {
-  const levels = BALANCE.xp.levelAt;
-  const next = levels[h.level] ?? null;
-  return { level: h.level, xp: h.xp, next };
+export interface XpProgress {
+  /** Levels taken. */
+  level: number;
+  xp: number;
+  /** XP the level reached started at, and what the next one needs (both totals). */
+  from: number;
+  next: number;
+  /** Levels reached that wait for the next camp step. */
+  waiting: number;
+  /** The row rule: crafting, finds and the fire give XP here today. */
+  rowXp: boolean;
+}
+
+/** A hiker's level and XP, for the details panel. */
+export function xpProgress(state: GameState, h: Hiker): XpProgress {
+  const reached = levelReached(h);
+  return {
+    level: h.level,
+    xp: h.xp,
+    from: xpForLevel(reached),
+    next: xpForLevel(reached + 1),
+    waiting: h.pendingLevels ?? 0,
+    rowXp: onXpRow(state, h),
+  };
 }
 
 /** What to call a tile: its label, special space, or kind. */
@@ -333,8 +401,15 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     ...judge(state, moves, 'No connected tiles.'),
   };
 
-  // Move All: ready if someone here can come along to some connected tile.
-  const company = hikersOnTile(state, h.tileId).filter((o) => o.id !== h.id && !o.acted);
+  // Move All: ready if someone here (or nearby, for a Sherpa) can come along to some connected
+  // tile. The rules judge each one (a Tank Butt leader can bring hikers who've acted).
+  const reach = bringReach(state, h);
+  const company = state.hikers.filter(
+    (o) =>
+      o.id !== h.id &&
+      o.status === 'active' &&
+      tileDistance(state.section, o.tileId, h.tileId) <= reach,
+  );
   const groupMoves = targets.flatMap((t) =>
     company.map((o): Action => ({ type: 'moveAll', hikerId: h.id, toTileId: t, bring: [o.id] })),
   );

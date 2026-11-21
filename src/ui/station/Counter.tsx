@@ -293,6 +293,9 @@ export function PriceTag({ price, sold, short }: { price: number; sold: boolean;
     <span className={styles.tag} data-short={sold ? true : short}>
       {sold ? (
         'SOLD'
+      ) : price === 0 ? (
+        // Thrifty's free item.
+        'FREE'
       ) : (
         <>
           <Icon name="acorn" size={13} />

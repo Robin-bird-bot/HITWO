@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BALANCE } from '../../config/balance';
 import { STARTING_PARTY } from '../../content/characters';
 import { applyAction, createGame, type Action, type GameState } from '../../engine';
 import { fixtureGame, place, run, toNight } from '../../engine/test/fixtures';
@@ -26,7 +27,11 @@ describe('trail log sentences', () => {
       flipped: true,
     };
     const after = run(open, { type: 'scavengeTake', card: 0 });
-    expect(texts(after)).toEqual(['Ash scavenged Wood ×2 (−1 Appetite).']);
+    // An uncommon card is a lucky draw: XP too.
+    expect(texts(after)).toEqual([
+      'Ash scavenged Wood ×2 (−1 Appetite).',
+      `Ash gained ${BALANCE.xp.luckyDraw} XP (A lucky draw).`,
+    ]);
   });
 
   it('describe tending, giving and returning', () => {
@@ -133,8 +138,9 @@ describe('trail log sentences', () => {
       }
     }
     const days = g.log.find((e) => e.kind === 'condition');
-    expect(texts(g).slice(-2)).toEqual([
+    expect(texts(g).slice(-3)).toEqual([
       'Steep Trail: Ash paid 2 Energy · Birch failed.',
+      `Ash gained ${BALANCE.challenges.passXpPerTier} XP (Steep Trail).`,
       `Birch is Strained for ${days?.kind === 'condition' ? days.remaining : '?'} day${days?.kind === 'condition' && days.remaining === 1 ? '' : 's'} (Steep Trail).`,
     ]);
   });

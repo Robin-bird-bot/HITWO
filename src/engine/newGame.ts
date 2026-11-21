@@ -1,4 +1,8 @@
 import { withDefaults } from './items/make';
+import { fireBiomeStart } from './effects';
+import { scoutAround } from './traits/reveal';
+import { rollDailyTraits } from './traits/daily';
+import { noteXpRows } from './xp';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -10,6 +14,7 @@ import { generateSection } from './trail/generate';
 import { freshWeather } from './weather';
 import type {
   BiomeId,
+  ClassId,
   Family,
   GameState,
   Hiker,
@@ -26,6 +31,14 @@ export interface HikerSetup {
   family: Family;
   slots: TraitSlot[];
   placeholder?: boolean;
+  /** Their 1 or 2 classes (07-characters.md). */
+  classes?: readonly ClassId[];
+  /** Who they are, for traits that belong to certain characters. */
+  characterId?: string;
+  /** A dev-only test hiker. */
+  test?: true;
+  /** A Duo: the two characters sharing the card. */
+  duo?: readonly [string, string];
   /** Starting stats when a character doesn't start full. */
   stats?: Partial<Stats>;
   /** Items and resources the character starts with. */
@@ -70,11 +83,25 @@ export function createGame({
       name: setup.name,
       family: setup.family,
       ...(setup.placeholder ? { placeholder: true } : {}),
+      classes: [...(setup.classes ?? [])],
+      ...(setup.characterId ? { characterId: setup.characterId } : {}),
+      ...(setup.test ? { test: true } : {}),
+      ...(setup.duo ? { duo: setup.duo } : {}),
       status: 'active',
       tileId: section.trailheadId,
-      stats: { ...BALANCE.stats.start, ...setup.stats },
+      stats: {
+        ...BALANCE.stats.start,
+        // A Plush hiker starts with full Stuffing (kept in both Energy and Appetite).
+        ...(setup.family === 'plush'
+          ? { energy: BALANCE.plush.stuffingMax, appetite: BALANCE.plush.stuffingMax }
+          : {}),
+        ...setup.stats,
+      },
       injuries: 0,
-      slots: setup.slots.map((s) => ({ ...s })),
+      slots: setup.slots.map((s) => ({
+        ...s,
+        ...(s.setting ? { setting: { ...s.setting } } : {}),
+      })),
       conditions: [],
       inventory: {
         bag: (setup.inventory?.bag ?? []).map(withDefaults),
@@ -90,7 +117,8 @@ export function createGame({
       slept: false,
       abilityUses: {},
       xp: 0,
-      level: 1,
+      // Hikers start at level 0 (Wyatt, Nov 20).
+      level: 0,
     })),
     caps: 0,
     abundance: freshAbundance(),
@@ -101,6 +129,13 @@ export function createGame({
     log: [],
   };
   if (startingResources) giveStartingResources(state);
+  // The first day's daily traits, then the first biome begins (Prepared, Tactical), and
+  // Scouts see around the trailhead.
+  rollDailyTraits(state);
+  fireBiomeStart(state);
+  scoutAround(state);
+  // Day 1 on the trailhead's row is their first: action XP counts there today.
+  noteXpRows(state);
   return state;
 }
 

@@ -9,6 +9,7 @@
  *   the tile. When all 3 are met, `accomplishWonder` gives each of those
  *   hikers the reward they picked, and the Wonder is done for good.
  */
+import { gainXp, levelForXp, levelReached } from '../xp';
 import { durabilityLeft, makeItem, maxDurabilityOf } from '../items/make';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
@@ -131,11 +132,8 @@ function itemsOfType(h: Hiker, type: string): number {
   return all.filter((i) => i && ITEMS[i.itemId]?.type === type).length;
 }
 
-/** A hiker's level from their XP (Phase 10 does leveling up properly). */
-export function levelOf(h: Hiker): number {
-  const reached = BALANCE.xp.levelAt.filter((need) => h.xp >= need).length;
-  return Math.max(h.level, reached);
-}
+/** A hiker's level: levels taken, plus any reached that wait for the camp step. */
+export const levelOf = (h: Hiker): number => Math.max(levelReached(h), levelForXp(h.xp));
 
 function nodeOf(resource: string) {
   return RESOURCE_BY_ID.get(resource)?.node;
@@ -434,7 +432,7 @@ function giveReward(
 ): void {
   switch (reward.kind) {
     case 'xp':
-      h.xp += BALANCE.wonders.lotOfXp;
+      gainXp(state, h, BALANCE.wonders.lotOfXp, 'wonder', cause);
       return;
     case 'caps': {
       const n = gainCaps(state, BALANCE.wonders.lotOfCaps);

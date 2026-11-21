@@ -48,6 +48,7 @@ import styles from './CraftWindow.module.css';
 import { partLabel, payWords, recipeWords, resName } from './craftWords';
 import { keyEnough, swapInto, swapOptions } from './craftSwap';
 import type { DropProps } from '../drag/drag';
+import { portraitSrc } from '../portrait';
 
 export type CraftTab = 'craft' | 'teach';
 
@@ -208,7 +209,7 @@ export function Face({ id, size }: { id: string; size: number }) {
   return (
     <img
       className={styles.face}
-      src={ASSETS.portraits.placeholder}
+      src={portraitSrc(id)}
       alt=""
       style={{ width: size, height: size, boxShadow: `0 0 0 2px ${characterFor(id).color}` }}
     />
@@ -619,7 +620,7 @@ function Blueprint({
     ? !paymentReason(state, hiker, recipe, autoPay(state, hiker, recipe))
     : false;
   const status = teach
-    ? `TIER ${NUMERAL[def.tier]} · ${teachCost(def.id)} MORALE`
+    ? `TIER ${NUMERAL[def.tier]} · ${teachCost(state, hiker, def.id)} MORALE`
     : locked
       ? `TIER ${NUMERAL[def.tier]} · LOCKED`
       : missing
@@ -929,7 +930,7 @@ function TeachBody({
   const [bp, setBp] = useState<ItemId | null>(known[0] ?? null);
   const [to, setTo] = useState<string | null>(null);
   const def = bp ? ITEMS[bp] : undefined;
-  const cost = bp ? teachCost(bp) : 0;
+  const cost = bp ? teachCost(state, hiker, bp) : 0;
   const students = craftPool(state, hiker).filter((h) => h.id !== hiker.id);
   const action: Action | null =
     bp && to ? { type: 'teach', hikerId: hiker.id, toId: to, itemId: bp } : null;

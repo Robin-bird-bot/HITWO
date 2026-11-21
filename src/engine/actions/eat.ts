@@ -17,6 +17,8 @@ import {
   effectContext,
   effectSourcesFor,
   fireTileEat,
+  fireAction,
+  hikerHas,
 } from '../effects';
 import type { EatContext } from '../effects';
 import { hikersOnTile } from '../map';
@@ -31,6 +33,7 @@ import type { Action, GameState, Hiker, ItemInstance } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
 import { negativeConditions } from './useItem';
 import { noteEat } from '../challenges/trials';
+import { CONDITIONS } from '../../content/conditions';
 
 type EatAction = Extract<Action, { type: 'eat' }>;
 
@@ -62,6 +65,9 @@ export function applyEat(state: GameState, action: EatAction): void {
   if (!item || !def) return;
   const quality = qualityOf(item);
   const bitesLeft = Math.max(1, item.bitesLeft ?? valueAt(def.bites ?? 1, quality));
+  // Garbage Gut: Quality 1 food gives this hiker no bad condition.
+  const toughGut = quality === 1 && hikerHas(state, hiker, 'ignoresBadFood');
+  const bad = (id: string) => toughGut && CONDITIONS[id]?.kind === 'negative';
   let keep = false;
   let ateAppetite = false;
 
@@ -96,7 +102,7 @@ export function applyEat(state: GameState, action: EatAction): void {
     },
     stat: (stat, n) => changeStat(state, hiker, stat, n, def.name),
     condition: (id, n, unit, extra = {}) => {
-      if (n <= 0) return;
+      if (n <= 0 || bad(id)) return;
       addCondition(state, hiker, id, n, unit, def.name, {
         ...(extra.stacks ? { stacks: extra.stacks } : {}),
         ...(extra.thisPhase ? { thisPhase: true as const } : {}),
@@ -109,8 +115,9 @@ export function applyEat(state: GameState, action: EatAction): void {
     rollY: (lo, hi) => int(state.rng, lo, Math.max(lo, hi)),
     randomPositive: (count, n, unit) =>
       addRandomConditions(state, hiker, 'positive', count, n, unit, def.name),
-    randomNegative: (n, unit) =>
-      addRandomConditions(state, hiker, 'negative', 1, n, unit, def.name),
+    randomNegative: (n, unit) => {
+      if (!toughGut) addRandomConditions(state, hiker, 'negative', 1, n, unit, def.name);
+    },
     cureRandomNegative: (count) => {
       for (let i = 0; i < count; i++) {
         const bad = negativeConditions(hiker);
@@ -137,6 +144,7 @@ export function applyEat(state: GameState, action: EatAction): void {
   for (const source of effectSourcesFor(state, hiker))
     source.hooks.onEat?.({ itemId: item.itemId }, ctx);
   fireTileEat(state, hiker, item.itemId);
+  fireAction(state, hiker, { kind: 'eat', role: 'actor', tileId: hiker.tileId });
   // Mold Invasion: eating on its tile brings its penalty.
   noteEat(state, hiker);
 

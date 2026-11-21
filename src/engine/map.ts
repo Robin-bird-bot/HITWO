@@ -16,6 +16,27 @@ export function adjacentTileIds(section: Section, tileId: TileId): TileId[] {
   return out;
 }
 
+/** How many lines apart two tiles are (0 for the same tile), or Infinity if they don't connect. */
+export function tileDistance(section: Section, a: TileId, b: TileId): number {
+  if (a === b) return 0;
+  const seen = new Set([a]);
+  let frontier = [a];
+  for (let d = 1; frontier.length; d++) {
+    const next: TileId[] = [];
+    for (const t of frontier) {
+      for (const n of adjacentTileIds(section, t)) {
+        if (n === b) return d;
+        if (!seen.has(n)) {
+          seen.add(n);
+          next.push(n);
+        }
+      }
+    }
+    frontier = next;
+  }
+  return Infinity;
+}
+
 /** Active hikers standing on a tile. */
 export function hikersOnTile(state: GameState, tileId: TileId): Hiker[] {
   return state.hikers.filter((h) => h.tileId === tileId && h.status === 'active');

@@ -40,12 +40,33 @@ const THRESHOLD_LOOKS: Record<string, Omit<ConditionLook, 'tone'>> = {
     text: `At night, can only sleep (Energy ${BALANCE.thresholds.fatigued} or less).`,
     icon: 'battery',
   },
+  // A Plush hiker's limits, in place of the four above.
+  veryLowStuffing: {
+    key: 'veryLowStuffing',
+    name: 'Very low Stuffing',
+    text: `Can only sleep (Stuffing ${BALANCE.plush.veryLow} or less).`,
+    icon: 'package',
+  },
+  lowStuffing: {
+    key: 'lowStuffing',
+    name: 'Low Stuffing',
+    text: `Can’t move the group. At night, can only sleep (Stuffing ${BALANCE.plush.low} or less).`,
+    icon: 'package',
+  },
 };
 
-/** Hungry and Fatigued, or the worse Famished and Exhausted in their place. */
+/**
+ * Hungry and Fatigued, or the worse Famished and Exhausted in their place. A
+ * Plush hiker shows Low Stuffing, or Very low Stuffing in its place.
+ */
 export function thresholdLooks(h: Hiker): ConditionLook[] {
   const states = thresholdStates(h);
   const shown = [
+    states.includes('veryLowStuffing')
+      ? 'veryLowStuffing'
+      : states.includes('lowStuffing')
+        ? 'lowStuffing'
+        : undefined,
     states.includes('famished') ? 'famished' : states.includes('hungry') ? 'hungry' : undefined,
     states.includes('exhausted')
       ? 'exhausted'

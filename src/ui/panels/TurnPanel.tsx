@@ -2,8 +2,8 @@
  * The right panel: the selected hiker's turn (docs/mockups/Main.dc.html).
  * Actions, abilities, the current tile, equipped items, bag and resources.
  */
-import { useState, type ReactNode } from 'react';
-import { ITEMS, TRAITS } from '../../content';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ITEMS } from '../../content';
 import { RESOURCES } from '../../content/resources';
 import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
@@ -37,6 +37,8 @@ import { Panel } from './Panel';
 import panel from './Panel.module.css';
 import { BoostChips } from '../items/BoostChips';
 import { itemVerbs } from '../items/whatItDoes';
+import { badgeColors, traitBadges } from '../traits/badges';
+import { TraitBadge } from '../traits/TraitBadge';
 import styles from './TurnPanel.module.css';
 
 const PHASE_NAME = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
@@ -65,6 +67,8 @@ interface TurnPanelProps {
   onFeature?(): void;
   /** The hikers picked together (multi-select), in turn order. */
   group?: readonly HikerId[];
+  /** A tapped usable badge: the Abilities panel opens at it. */
+  focusAbility?: AbilityFocus | undefined;
 }
 
 export function TurnPanel({
@@ -81,6 +85,7 @@ export function TurnPanel({
   onBlueprints,
   onFeature,
   group,
+  focusAbility,
 }: TurnPanelProps) {
   return (
     <Panel
@@ -103,7 +108,13 @@ export function TurnPanel({
               slot={slot}
               {...(group ? { group } : {})}
             />
-            <Abilities state={state} hiker={hiker} onAbility={onAbility} />
+            <Abilities
+              key={focusAbility?.at ?? 0}
+              state={state}
+              hiker={hiker}
+              onAbility={onAbility}
+              focus={focusAbility}
+            />
           </>
         ) : (
           <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
@@ -180,73 +191,113 @@ function ActionGrid({
   );
 }
 
-const TRAIT_COLOR = { T: '#F2B950', U: '#9CC3A8', M: '#CDA6EE' };
-const PER = { day: 'DAY', phase: 'PHASE', biome: 'SECTION' };
+/** A usable badge was tapped: the Abilities panel opens at that ability. */
+export interface AbilityFocus {
+  hikerId: HikerId;
+  abilityId: string;
+  /** Counts up with each tap, so tapping the same badge again shows it again. */
+  at: number;
+}
 
+/**
+ * The Abilities panel (docs/mockups/TraitBadges.dc.html): only usable
+ * traits, each with its badge, what it does and USE. One only usable during
+ * something says so in place of the button; a used one says when it's back.
+ * Mount it with `key={focus?.at}` so a tapped badge opens it fresh.
+ */
 export function Abilities({
   state,
   hiker,
   onAbility,
+  focus,
 }: {
   state: GameState;
   hiker: Hiker;
   onAbility(abilityId: string, choice?: string): void;
+  /** The ability a tapped badge points at: scrolled to, lit up, its choices open. */
+  focus?: AbilityFocus | undefined;
 }) {
   const abilities = abilitiesFor(state, hiker);
-  const [choosing, setChoosing] = useState<string | null>(null);
+  const badges = traitBadges(state, hiker).filter((b) => b.shape === 'circle');
+  const focused = focus?.hikerId === hiker.id ? focus.abilityId : undefined;
+  const hasChoices = (id: string | undefined) =>
+    !!id && !!abilities.find((a) => a.ability.id === id)?.choices;
+  const [choosing, setChoosing] = useState<string | null>(
+    hasChoices(focused) ? (focused ?? null) : null,
+  );
+  const rows = useRef<Record<string, HTMLDivElement | null>>({});
+  useEffect(() => {
+    if (!focused) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    rows.current[focused]?.scrollIntoView({
+      block: 'nearest',
+      behavior: reduce ? 'auto' : 'smooth',
+    });
+  }, [focused, focus?.at]);
+
   return (
     <div className={styles.block}>
       <span className={panel.label}>ABILITIES</span>
-      {abilities.length === 0 && <span className={styles.muted}>No active traits.</span>}
-      {abilities.map(({ ability, usesLeft }) => {
-        const trait = Object.values(TRAITS).find((t) => t.ability?.id === ability.id);
-        const color = trait ? TRAIT_COLOR[trait.type] : '#C9C2B2';
-        const used = usesLeft <= 0;
+      {badges.length === 0 && <span className={styles.muted}>No usable traits.</span>}
+      {badges.map((badge) => {
+        const available = abilities.find((a) => a.ability.id === badge.abilityId);
+        if (!available || !badge.abilityId) return null;
+        const { ability, choices } = available;
+        const id = badge.abilityId;
+        const color = badgeColors(badge).ring;
+        const used = badge.state === 'used';
         return (
           <div
-            key={ability.id}
+            key={id}
+            ref={(el) => {
+              rows.current[id] = el;
+            }}
             className={styles.ability}
             data-used={used}
-            style={used ? undefined : { borderColor: `${color}59`, background: `${color}1A` }}
+            data-focus={focused === id || undefined}
+            style={used ? undefined : { borderColor: `${color}59`, background: `${color}14` }}
           >
             <div className={styles.abilityHead}>
-              <span className={styles.hex} style={{ background: color }} />
+              <TraitBadge badge={badge} size="large" showTab as="span" />
               <div className={styles.abilityText}>
                 <span className={styles.abilityName} style={{ color }}>
-                  {ability.label.toUpperCase()} · {ability.limit.uses}/{PER[ability.limit.per]}
+                  {badge.name.toUpperCase()} ·{' '}
+                  {Number.isFinite(ability.limit.uses)
+                    ? `${ability.limit.uses}/${PER[ability.limit.per]}`
+                    : 'ANY TIME'}
                 </span>
-                <span className={styles.small}>{trait?.text}</span>
+                <span className={styles.small}>{badge.text}</span>
+                {(used || badge.state === 'during') && badge.status && (
+                  <span className={styles.muted}>{badge.status.text}</span>
+                )}
               </div>
-              {ability.scavengeReroll ? (
-                <span className={styles.muted}>{used ? 'Used' : 'When scavenging'}</span>
-              ) : used ? (
-                <span className={styles.muted}>Used</span>
-              ) : (
+              {badge.state === 'ready' && (
                 <button
                   type="button"
                   className={styles.use}
                   style={{ background: color }}
-                  aria-expanded={choosing === ability.id}
+                  aria-expanded={choices ? choosing === id : undefined}
                   onClick={() =>
-                    ability.choices
-                      ? setChoosing(choosing === ability.id ? null : ability.id)
-                      : onAbility(ability.id)
+                    choices ? setChoosing(choosing === id ? null : id) : onAbility(id)
                   }
                 >
                   USE
                 </button>
               )}
             </div>
-            {choosing === ability.id && ability.choices && (
+            {choosing === id && choices && badge.state === 'ready' && (
               <div className={styles.choices}>
-                {ability.choices.map((c) => (
+                {choices.length === 0 && (
+                  <span className={styles.muted}>Nothing to use it on right now.</span>
+                )}
+                {choices.map((c) => (
                   <button
                     key={c.id}
                     type="button"
                     className={styles.choice}
                     onClick={() => {
                       setChoosing(null);
-                      onAbility(ability.id, c.id);
+                      onAbility(id, c.id);
                     }}
                   >
                     {c.label}
@@ -260,6 +311,8 @@ export function Abilities({
     </div>
   );
 }
+
+const PER = { day: 'DAY', phase: 'PHASE', biome: 'BIOME' };
 
 /**
  * A hiker who can't act: passed out (the countdown, how to help, and

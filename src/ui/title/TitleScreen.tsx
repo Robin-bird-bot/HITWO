@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ASSETS } from '../../config/assets';
 import styles from './TitleScreen.module.css';
 
@@ -8,9 +9,17 @@ interface TitleScreenProps {
   notice?: string | null;
   onContinue(): void;
   onNewHike(): void;
+  /** Dev only: a picker for a hike with test hikers (Phase 10a). */
+  testPicker?: ReactNode;
 }
 
-export function TitleScreen({ saved, notice, onContinue, onNewHike }: TitleScreenProps) {
+export function TitleScreen({
+  saved,
+  notice,
+  onContinue,
+  onNewHike,
+  testPicker,
+}: TitleScreenProps) {
   return (
     <main className={styles.scene}>
       <img className={styles.sun} src={ASSETS.sky.sun} alt="" draggable={false} />
@@ -55,6 +64,12 @@ export function TitleScreen({ saved, notice, onContinue, onNewHike }: TitleScree
           <p className={styles.notice} role="status">
             {notice}
           </p>
+        )}
+        {testPicker && (
+          <details className={styles.testPicker}>
+            <summary>Test hike (dev only)</summary>
+            {testPicker}
+          </details>
         )}
       </section>
 

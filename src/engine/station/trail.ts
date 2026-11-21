@@ -31,7 +31,7 @@ import type {
   TrailShop,
 } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from '../actions/common';
-import { blueprintPrice, itemPrice } from './prices';
+import { blueprintPrice, buyPrice, freeItemAtShop, itemPrice } from './prices';
 import { makeShopItem, pickFrom } from './stock';
 
 type MerchantBuy = Extract<Action, { type: 'merchantBuy' }>;
@@ -86,6 +86,11 @@ function rollMerchant(state: GameState): TrailShop {
     const item = makeShopItem(state, itemId);
     offers.push({ kind: 'item', id, item, price: itemPrice(itemId, qualityOf(item)) });
   }
+  // Thrifty: 1 random item free.
+  freeItemAtShop(
+    state,
+    offers.filter((o): o is ItemOffer => o.kind === 'item'),
+  );
   return { kind: 'merchant', offers };
 }
 
@@ -121,7 +126,8 @@ export function validateMerchantBuy(state: GameState, action: MerchantBuy): stri
   const offer = shop.offers.find((o) => o.id === action.offerId);
   if (!offer) return 'The Merchant doesn’t have that.';
   if (offer.sold) return 'That’s already sold.';
-  if (state.caps < offer.price) return `The party needs ${offer.price} caps.`;
+  const price = buyPrice(state, hiker, offer.price);
+  if (state.caps < price) return `The party needs ${price} caps.`;
   const bagFull = hiker.inventory.bag.length >= bagSlots(state, hiker).total;
   if (offer.kind === 'item' && bagFull) return `${hiker.name}’s bag is full.`;
   if (offer.kind === 'bundle') {
@@ -140,9 +146,10 @@ export function applyMerchantBuy(state: GameState, action: MerchantBuy): void {
   const hiker = mustFindHiker(state, action.hikerId);
   const offer = shopHere(state, hiker, 'merchant')?.offers.find((o) => o.id === action.offerId);
   if (!offer) return;
-  state.caps -= offer.price;
+  // Frugal: the buyer pays a little less.
+  const price = buyPrice(state, hiker, offer.price);
+  state.caps -= price;
   offer.sold = true;
-  const price = offer.price;
   if (offer.kind === 'blueprint') {
     hiker.blueprints = [...(hiker.blueprints ?? []), offer.itemId];
     pushEvent(state, { kind: 'bought', hikerId: hiker.id, price, blueprint: offer.itemId });

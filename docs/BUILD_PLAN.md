@@ -696,27 +696,136 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 10: Traits, slots, XP and leveling
+## Phase 10a: Every trait, with test hikers
+
+(New in the Nov 20 update, `docs/UPDATE-2026-11-20-phase-10a.md`, which has the details.) Phase 10 is split in two. 10a builds the whole trait system and tests it with placeholder hikers that have no art. 10b adds the real characters and the screens around them.
+
+**Goal:** every trait works, hikers level up and pick new traits, and the player can see at a glance which traits are about to help or hurt.
 
 **Build**
-- **Trait slots:**
-  - types T, U, M, T/U, T/M, U/M and W, drawn as colored outlines;
-  - characters start with 2–4 slots, up to 6 maximum;
-  - special and unique traits take a slot.
-- **Every trait** in `02-traits-and-conditions.md`, as hook effects, including the Nov 3 additions: Never Hungry, Archaeologist, MBA, Lovingly Made, Wise, Dream Alchemist, Trainer, and the Morale "Empath" (it needs a new name; ask Wyatt). Active traits go in the Abilities panel with their uses left.
-- **XP:** milestones and actions, with the row rule.
-- **Level-ups:**
-  - level N offers 3 Tier N traits drawn from every slot type the hiker has, filled or open, with Morale traits less likely;
-  - from level 4 there are more options, all Tier III, up to 6;
-  - an option is sometimes a new slot: T and U are common, dual slots rarer, W rarest;
-  - special and unique traits are offered only to the characters they belong to;
-  - picking a trait with no fitting open slot replaces a trait in a slot that fits.
-- **Families:** Human, Dog and Cat with their built-ins, family versions of traits, and family items.
-- **Trinkets.**
+- **Every trait** in `02-traits-and-conditions.md` and every trait marked New in `07-characters.md`:
+  - the Trail, Utility, Morale, family, special and unique tables;
+  - the new traits from the character doc (Wanderer, Forgetful, Snores, Alpha Dog, Lanky, Good Boy, Spoiled, Fluff Armor, Mentor, Storyteller, Hype Dog, Shifty, Night Shifty, Lucky Charm, Cuddle Buddy, Rule Changer, Strong Walker, Just Around the Next Corner, Tank Butt, Linguist, Coach, Comedian, Easy Mode, Garbage Gut, the Boss & Gracie Tag Team, and the new Morale traits);
+  - Wyatt's Nov 20 changes: Caring (once Empath), Closer (the old Tank Butt), Nosework (once Niche Hunter), Soccer Mom (once Team Player), Backtracker and Teacher as Tier I, usable Trespasser, Alchemist and Thrifty;
+  - family names: Leash Puller (Puller), Human Food (Glutton), Copydog (Copier);
+  - trait data in `src/content/traits.ts`: id, name, type, tier, kind and owner, classes, `active`, `uses` and their reset, and an effect through the shared hooks, never through name checks;
+  - traits with a setting ([Node] Finder, Hound, the Thumbs and Pockets, Location, Action, Traveler, Conservationist, Allergies) store it on the hiker;
+  - Quirky, Zany, Nosework and Moody re-roll each morning.
+- **Classes:** Tank, Hardy, Scavenger, Crafter, Scout, Support, Jack, Entertainer and Moneymaker. Trail and Utility traits are tagged with theirs; Strong and Backtracker are general; Morale traits are open to all but Misophonia, Rain Lover, Moody and Show Girl.
+- **Slots:** T, U, M, T/U, T/M, U/M and W; 2 to 6 per hiker; no trait twice; special and unique traits take a slot.
+- **XP and levels:** every source in the design doc, with the row rule. Level-ups wait for the camp step (Wyatt, Nov 20).
+- **Level-up offers:**
+  - level N (1–3) offers 3 Tier N traits, from the hiker's classes, Jack and general traits, with [1] from any class;
+  - only types the hiker's slots can hold; Morale traits rarer;
+  - from level 4, one more option per level, all Tier III, up to 6;
+  - sometimes a new slot instead (T and U common, mixed rarer, W rarest), never past 6;
+  - only the family version that matches; special and unique traits only to their owners;
+  - a trait with no open slot that fits replaces one the player picks.
+  - The level-up screen is a bare-bones placeholder.
+- **Trinkets** left from Phase 8: the three Photos, Instruction Manual, Diploma, Postcard and Textbook.
+- **Families:** Human, Dog and Cat built-ins, family traits and items, and the new **Plush** family (Stuffing in place of Energy and Appetite; Carried; not counted as Dogs). **Duos:** one card for two characters, with a Tag Team trait that switches on odd and even days.
+- **Trait badges** (`docs/mockups/TraitBadges.dc.html`): a diamond for always-on traits, a circle for usable ones; ring in the type's color, a darker middle, a white icon from `public/assets/traits/<trait-id>.png` (placeholder until Wyatt's icons arrive). Usable states: ready (slow glow, uses as dots), used up (grey), only during something (a tab naming when). A row of badges in the hiker panel with a hover window (name, type, what it does, its status now); names under the icons in Informative mode; empty slots as faint outlines. The Abilities panel lists usable traits with **USE**.
+- **Trait warnings** (☰ menu: Off, Simple, Informative; default Simple):
+  - forecasts for start-of-day Morale traits (if everyone stays put), for Morale traits that react to the action being hovered or dragged, and "working now or not" for other traits with a condition;
+  - Simple: on the badge (green or red middle with a +N or −N bubble; dimmed when not working);
+  - Informative: also a "! −N" tag on the portrait, a check before an action that would cost a hiker Morale (with "Don't ask again this run"), and one check before ending the day;
+  - one engine dry run of the trait hooks feeds them all.
+- **Test hikers** (dev only, no art: a colored circle with initials): Test Tank, Hardy, Scavenger, Crafter, Scout, Support, Moneymaker, Cat, Plush, Duo and Wild, each exercising a group of traits. They never appear in the real roster.
+- **Debug panel:** add or remove any trait (with its setting), add slots, set level and XP, trigger a level-up at a chosen tier, refill uses, set the day odd or even, force a daily trait's pick, and switch Trait warnings.
+
+**Done when:** every trait has a test of its effect; uses reset on schedule; level-up offers respect slot types, classes, the any-class option, family versions and owners, keep Morale rarer and never offer a 7th slot; Plush's Stuffing and Carried, and the Tag Team switch, are tested; forecasts match what happens at the next start of day.
+
+**Asked and answered (Nov 20)**
+- The level-up screen opens at the next camp step, not mid-phase.
+- Levels need 20, 50, 90, 140, 200 and 270 XP in total (each level 10 more than the last); hikers start at level 0.
+
+**Phase 10a notes (built Nov 20)**
+- **Wyatt's answers (Nov 20):**
+  - Level-ups wait for the next camp step; hikers start at level 0, and levels need 20, 50, 90, 140, 200 and 270 XP.
+  - Everything else he left open is a first guess, marked `TODO(wyatt)` and listed below.
+- **Where things are:**
+  - **Traits as data:** `src/content/traits/` (`trail.ts`, `utility.ts`, `morale.ts`, `family.ts`, `special.ts`; helpers in `build.ts` and `moraleKit.ts`; daily picks in `daily.ts`). Classes: `src/content/classes.ts`. Test hikers: `src/content/testHikers.ts`.
+  - **The hooks:** `src/engine/effects.ts` (`TraitDef`, `Hooks`, `workingTrait`, `abilitiesFor`). Every trait's effect is a hook; the engine never checks a trait by name.
+  - **Slots, level-ups and trinket picks:** `src/engine/traits/slots.ts` and `levelUp.ts`. Daily traits: `src/engine/traits/daily.ts`. Prepared, Tactical and Scout: `reveal.ts`.
+  - **XP:** `src/engine/xp.ts` (`gainXp`, the row rule, the level lines).
+  - **Trait warnings:** the forecast is `src/engine/traits/forecast.ts`; the setting is `src/ui/app/traitWarnings.ts`; the screen's view is `src/ui/traits/forecastView.ts`.
+  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window is `src/ui/traits/LevelUpWindow.tsx` (a placeholder until 10b); the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
+  - **Plush:** `src/content/families.ts`, `src/engine/stats.ts` (Stuffing kept in both stats) and `src/engine/thresholds.ts` (its limits).
+  - **Debug (backtick):** test hikers on the title screen; add or remove any trait with its setting; add slots; refill uses; odd or even day; force a daily pick; set XP and level; level up now at a chosen tier; switch Trait warnings.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Classes and picks:**
+    - Follower is a Jack trait.
+    - Quirky and Zany skip traits that need a setting or change daily.
+    - The four Phase 3 hikers got placeholder classes.
+  - **Trail:**
+    - Puller pays a flat 1 Energy in place of all its Appetite for a Move All.
+    - A tile a Trespasser lands on alone never triggers its card.
+    - Shared conditions (Susceptible, Transparent) bring their effects, not their stat changes.
+    - A condition shortened to 0 counts as running out.
+  - **Utility:**
+    - Squirrely makes caps cards twice as likely.
+    - Lead Stomach and Destroyer spend the resources the hiker has most of.
+    - Therapist takes 3 phases off a phase-based condition.
+    - Talented adds 1 to the item's main number.
+  - **Morale:**
+    - Center of Attention does nothing alone, and a tie counts as the highest.
+    - Show Girl counts her own gains.
+    - Soccer Mom counts a party challenge once.
+    - Fair-Weather treats a storm as rain.
+  - **Special and new traits:**
+    - Boss's days are odd, Gracie's even.
+    - Loud gives Ringing Ears to the others on its tile for a phase.
+    - Good Boy gives Motivated for the phase; Coach's Motivated lasts a day.
+    - Alpha Dog takes a challenge's harm once.
+    - Easy Mode takes 1 off each thing a cost asks for.
+    - Nugget Puker doesn't trigger on Puked Nuggets.
+    - Rule Changer only works on a tile whose card is shown.
+  - **Numbers:**
+    - the brackets in `07-characters.md`: Plush 12, 7 and 3; Forgetful, Snores and Fluff Armor 50%; Lanky 25%; Mentor 1; Storyteller 2; Just Around the Next Corner 75% and 25%; Easy Mode 1;
+    - MBA: 3 caps × the new level.
+  - **XP and levels:**
+    - Past level 6, each level keeps needing 10 more than the last.
+    - XP passed on by Wise or a VR Headset gets no bonuses and isn't passed on again.
+    - The Textbook's +1 follows the row rule.
+    - Two of the same Keep trinket count once.
+    - Party objectives will give 10 × their tier (Phase 13).
+  - **Level-up offers:**
+    - 1 option can come from any class.
+    - Each option picks its type first (Trail and Utility 1 each, Morale ½), then a trait of that type.
+    - A new slot is 1 option in 8 (T and U 4 each, mixed 2 each, W 1).
+  - **Trinkets:**
+    - Diploma: 60–100% of a level's XP.
+    - Postcard: +5 XP at a checkpoint, +1 per challenge passed.
+    - Cherished Photo: any tier, any class.
+    - Family Photo: copied from any hiker still on the hike.
+    - Old Photo: from any class, and never a special or unique trait.
+    - Instruction Manual: its mixed slots are T/U, T/M and U/M.
+  - **Trait warnings:**
+    - "Don't ask again this run" lasts for this hike's seed, on this device.
+    - Group turns run through without stopping for checks.
+    - The badges follow a drag, the move pop-up and a waiting Sleep, Keep Watch or Tend, but not just pointing at an action button.
+- **Waiting on later phases:**
+  - **Sit by the Fire is still held:** its XP, Singer, Chatty's fire part, Storyteller and Comedian are built and tested but nothing calls them yet.
+  - **Party objectives' XP:** Phase 13.
+  - **The Ring:** still waits on which family, and for how long.
+  - **10b:** the trait icons (see `docs/ASSETS.md`), the real characters, and the real level-up and hiker selection screens.
+  - **Phone:** at phone size the whole stage shrinks to about a third, so a badge is about 11 screen pixels; worth making badges bigger when Phase 17 (or 12) looks at touch sizes.
+- **Saves:** version 16. A v14 save gets classes and its Finder and Hound node settings (v15); then levels start at 0 and XP already earned becomes level-ups waiting for the next camp (v16).
+
+---
+
+## Phase 10b: The real characters, and their screens
+
+(Later, with Wyatt.)
+
+**Build**
+- The real roster from `07-characters.md`: every character and variant with their classes, slots, starting traits and starting bags. Every character starts unlocked; locking comes in a later phase.
+- Trait art and character art.
+- The **hiker selection screen** and the **level-up screen**, designed together with Wyatt.
 
 **Ask Wyatt first**
-- The full character roster with slots, traits and starting attributes.
-- Trait tiers where they're still marked "proposed".
+- The designs for both screens.
+- The trait icons and character portraits.
 
 ---
 

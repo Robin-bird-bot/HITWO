@@ -15,7 +15,9 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { fullCounters, maxDurabilityOf, qualityOf } from '../items/make';
 import type { Quality } from '../items/quality';
-import type { GameState, ItemId, ItemInstance, ResourceId } from '../types';
+import { computeCost, computeGain, partyGetsFreeItem } from '../effects';
+import { pick } from '../rng';
+import type { GameState, Hiker, ItemId, ItemInstance, ItemOffer, ResourceId } from '../types';
 
 const S = BALANCE.station;
 
@@ -68,3 +70,46 @@ export function marketMult(state: GameState, resource: ResourceId): number {
 /** What the shop pays for `count` of one resource (two ×½ ones make a cap). */
 export const resourceSellPrice = (state: GameState, resource: ResourceId, count: number): number =>
   down(count * S.resourcePrice * marketMult(state, resource));
+
+/**
+ * Caps from one sale for this seller: the price, then their traits, flat
+ * amounts first and then percentages (Charismatic: +2, then Non-Non-Profit:
+ * +50%), rounded up. The party's own caps bonuses (Fancy Attire, the Wallet)
+ * don't add to sales.
+ */
+export function saleCaps(state: GameState, seller: Hiker, base: number): number {
+  return computeGain(
+    state,
+    [seller],
+    {
+      key: 'sale.caps',
+      actorId: seller.id,
+      subjectId: seller.id,
+      role: 'actor',
+      phase: state.phase,
+    },
+    base,
+  );
+}
+
+/** What a purchase costs this buyer (Frugal: 1 cap less), never below 0. */
+export function buyPrice(state: GameState, buyer: Hiker | undefined, price: number): number {
+  if (!buyer) return price;
+  return computeCost(
+    state,
+    [buyer],
+    { key: 'buy.caps', actorId: buyer.id, subjectId: buyer.id, role: 'actor', phase: state.phase },
+    price,
+  );
+}
+
+/**
+ * Thrifty: 1 random item at each shop is free, when anyone in the party has
+ * it. The offer's price becomes 0 and it's marked free.
+ */
+export function freeItemAtShop(state: GameState, offers: readonly ItemOffer[]): void {
+  if (!offers.length || !partyGetsFreeItem(state)) return;
+  const offer = pick(state.rng, offers);
+  offer.price = 0;
+  offer.free = true;
+}

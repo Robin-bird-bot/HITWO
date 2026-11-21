@@ -3,27 +3,31 @@
  * hiker, with the selected hiker's card expanded.
  */
 import { characterFor } from '../../content/characters';
-import { TRAITS } from '../../content';
-import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import {
-  STAT_NAMES,
-  statMax,
-  type GameState,
-  type Hiker,
-  type HikerId,
-  type SlotType,
-} from '../../engine';
+import { type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
 import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
-import { FAMILY_LOOK, STAT_META, carryNote, statNote, statusTag, xpProgress } from './hikerInfo';
+import {
+  FAMILY_LOOK,
+  STAT_META,
+  carryNote,
+  hikerBars,
+  statNote,
+  statusTag,
+  xpProgress,
+} from './hikerInfo';
 import { Panel } from './Panel';
 import { StatBar } from './StatBar';
 import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from './GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
+import { portraitSrc } from '../portrait';
+import { traitBadges } from '../traits/badges';
+import { TraitBadgeRow } from '../traits/TraitBadge';
+import { AtRiskTag } from '../traits/AtRiskTag';
+import { useTraitView } from '../traits/forecastView';
 
 interface PartyPanelProps {
   state: GameState;
@@ -39,6 +43,8 @@ interface PartyPanelProps {
   onAbandon?(id: HikerId): void;
   /** Asks to confirm taking an injury on purpose (a way out when stuck). */
   onInjure?(id: HikerId): void;
+  /** A usable trait's badge was tapped: open the Abilities panel at it. */
+  onUseTrait?(id: HikerId, abilityId: string): void;
 }
 
 export function PartyPanel({
@@ -47,6 +53,7 @@ export function PartyPanel({
   onSelect,
   onAbandon,
   onInjure,
+  onUseTrait,
   order = {},
   picking = false,
   onPicking,
@@ -84,6 +91,7 @@ export function PartyPanel({
             drop={portrait.props(h.id)}
             {...(onAbandon ? { onAbandon } : {})}
             {...(onInjure ? { onInjure } : {})}
+            {...(onUseTrait ? { onUseTrait } : {})}
           />
         ))}
       </div>
@@ -104,12 +112,14 @@ function HikerCard({
   onSelect,
   onAbandon,
   onInjure,
+  onUseTrait,
   drop,
   turn,
 }: {
   state: GameState;
   hiker: Hiker;
   selected: boolean;
+  onUseTrait?(id: HikerId, abilityId: string): void;
   onSelect(id: HikerId, add?: boolean): void;
   onAbandon?(id: HikerId): void;
   onInjure?(id: HikerId): void;
@@ -118,6 +128,7 @@ function HikerCard({
   turn?: number;
 }) {
   const color = characterFor(h.id).color;
+  const traitView = useTraitView();
   const tag = statusTag(h, selected);
   const tagColors =
     tag === 'ACTING' ? { bg: color, fg: '#1D2220' } : (TAG_COLORS[tag] ?? TAG_COLORS.ACTED!);
@@ -139,13 +150,14 @@ function HikerCard({
         <OrderBadge n={turn}>
           <img
             className={styles.portrait}
-            src={ASSETS.portraits.placeholder}
+            src={portraitSrc(h.id)}
             alt=""
             style={{
               boxShadow: `0 0 0 3px ${color}`,
               filter: dim && !selected ? 'grayscale(1)' : 'none',
             }}
           />
+          <AtRiskTag hikerId={h.id} name={h.name} />
         </OrderBadge>
         <div className={styles.info}>
           <div className={styles.nameRow}>
@@ -186,16 +198,21 @@ function HikerCard({
               {note.text}
             </span>
           )}
-          {STAT_NAMES.map((stat) => (
-            <StatBar
-              key={stat}
-              stat={stat}
-              value={h.stats[stat]}
-              max={statMax(state, h, stat)}
-              ticks
-            />
+          {hikerBars(state, h).map((b) => (
+            <StatBar key={b.stat} stat={b.stat} value={b.value} max={b.max} ticks />
           ))}
           <ConditionPills hiker={h} />
+          {/* Icons only here; the details show them with their names. */}
+          {!selected && (
+            <span className={styles.badges} onClick={(e) => e.stopPropagation()}>
+              <TraitBadgeRow
+                badges={traitBadges(state, h, traitView.view ?? undefined)}
+                {...(onUseTrait
+                  ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) }
+                  : {})}
+              />
+            </span>
+          )}
         </div>
       </div>
 
@@ -205,6 +222,7 @@ function HikerCard({
           hiker={h}
           {...(onAbandon ? { onAbandon } : {})}
           {...(onInjure ? { onInjure } : {})}
+          {...(onUseTrait ? { onUseTrait } : {})}
         />
       )}
     </div>
@@ -224,25 +242,6 @@ export function ConditionPills({ hiker: h }: { hiker: Hiker }) {
   );
 }
 
-const SLOT_COLOR = { T: '#F2B950', U: '#9CC3A8', M: '#CDA6EE' };
-const SLOT_RING: Record<SlotType, string> = {
-  T: SLOT_COLOR.T,
-  U: SLOT_COLOR.U,
-  M: SLOT_COLOR.M,
-  'T/U': `linear-gradient(90deg, ${SLOT_COLOR.T} 0 50%, ${SLOT_COLOR.U} 50% 100%)`,
-  'T/M': `linear-gradient(90deg, ${SLOT_COLOR.T} 0 50%, ${SLOT_COLOR.M} 50% 100%)`,
-  'U/M': `linear-gradient(90deg, ${SLOT_COLOR.U} 0 50%, ${SLOT_COLOR.M} 50% 100%)`,
-  W: `linear-gradient(90deg, ${SLOT_COLOR.T} 0 33%, ${SLOT_COLOR.U} 33% 66%, ${SLOT_COLOR.M} 66% 100%)`,
-};
-const SLOT_NAME: Record<SlotType, string> = {
-  T: 'Trail',
-  U: 'Utility',
-  M: 'Morale',
-  'T/U': 'Trail or Utility',
-  'T/M': 'Trail or Morale',
-  'U/M': 'Utility or Morale',
-  W: 'Wild: any trait',
-};
 const MAX_SLOTS = 6;
 
 /** Exact stats with thresholds, every condition with what it does, trait slots and XP. */
@@ -251,16 +250,19 @@ export function Details({
   hiker: h,
   onAbandon,
   onInjure,
+  onUseTrait,
 }: {
   state: GameState;
   hiker: Hiker;
+  onUseTrait?(id: HikerId, abilityId: string): void;
   /** Asks to confirm abandoning the hike for this hiker (kept away from the action grid). */
   onAbandon?(id: HikerId): void;
   /** Asks to confirm taking an injury on purpose, for a hiker who's stuck (Wyatt, Nov 14). */
   onInjure?(id: HikerId): void;
 }) {
   const filled = h.slots.filter((s) => s.traitId).length;
-  const xp = xpProgress(h);
+  const traitView = useTraitView();
+  const xp = xpProgress(state, h);
   // The full list (the approved Phase 6 mockup): injuries, states, then the rest.
   const injury = injuryLook(h);
   const rows = [...(injury ? [injury] : []), ...thresholdLooks(h), ...timedLooks(h)];
@@ -274,14 +276,14 @@ export function Details({
         </div>
       )}
       <div className={styles.stats}>
-        {STAT_NAMES.map((stat) => (
-          <div key={stat} className={styles.statRow}>
-            <Icon name={STAT_META[stat].icon} size={14} />
-            <span className={styles.statName}>{STAT_META[stat].label}</span>
+        {hikerBars(state, h).map((b) => (
+          <div key={b.stat} className={styles.statRow}>
+            <Icon name={STAT_META[b.stat].icon} size={14} />
+            <span className={styles.statName}>{STAT_META[b.stat].label}</span>
             <span className={styles.statValue}>
-              {h.stats[stat]}/{statMax(state, h, stat)}
+              {b.value}/{b.max}
             </span>
-            <span className={styles.statNote}>{statNote(stat, h.stats[stat])}</span>
+            <span className={styles.statNote}>{statNote(b.stat, b.value)}</span>
           </div>
         ))}
         <div className={styles.statRow}>
@@ -306,27 +308,14 @@ export function Details({
             {filled} filled · {h.slots.length} of {MAX_SLOTS} max
           </span>
         </div>
-        <div className={styles.slots}>
-          {h.slots.map((slot, i) => {
-            const trait = slot.traitId ? TRAITS[slot.traitId] : undefined;
-            const desc = `${SLOT_NAME[slot.type]} slot · ${trait ? `${trait.name}: ${trait.text}` : 'empty'}`;
-            return (
-              <div
-                key={i}
-                className={styles.slot}
-                title={desc}
-                aria-label={desc}
-                style={{
-                  background: `${trait ? '#262C29' : '#1F2422'} padding-box, ${SLOT_RING[slot.type]} border-box`,
-                }}
-              >
-                <span style={{ color: trait ? SLOT_COLOR[trait.type] : '#6F6A60' }}>
-                  {trait ? trait.name.toUpperCase() : 'EMPTY'}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {/* Informative view: each badge with its name under it. */}
+        <span className={styles.badges} onClick={(e) => e.stopPropagation()}>
+          <TraitBadgeRow
+            badges={traitBadges(state, h, traitView.view ?? undefined)}
+            showNames
+            {...(onUseTrait ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) } : {})}
+          />
+        </span>
       </div>
 
       <div className={styles.xp}>
@@ -334,15 +323,25 @@ export function Details({
         <div className={styles.track}>
           <div
             style={{
-              width: xp.next ? `${Math.min(100, (xp.xp / xp.next) * 100)}%` : '100%',
+              width: `${Math.min(100, ((xp.xp - xp.from) / Math.max(1, xp.next - xp.from)) * 100)}%`,
               background: '#CDA6EE',
             }}
           />
         </div>
         <span className={styles.statNote}>
-          {xp.xp}/{xp.next ?? '—'} XP
+          {xp.xp}/{xp.next} XP
         </span>
       </div>
+      {xp.waiting > 0 && (
+        <span className={styles.levelWaiting}>
+          Level {xp.level + xp.waiting} reached: pick a trait at the next camp.
+        </span>
+      )}
+      <span className={styles.statNote}>
+        {xp.rowXp
+          ? 'Crafting and lucky finds give XP here today.'
+          : 'No XP for crafting or finds on this row.'}
+      </span>
 
       <div className={styles.lastResorts}>
         {onInjure && h.status === 'active' && (

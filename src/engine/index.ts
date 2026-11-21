@@ -15,7 +15,42 @@ export { applyAction, validateAction, InvalidActionError } from './applyAction';
 export { createGame, type HikerSetup, type NewGameOptions } from './newGame';
 export { hikersWhoHaventActed } from './dayLoop';
 export { moveCost, moveAllCost, type HikerCost } from './costs';
-export { abilitiesFor, type AvailableAbility, type TraitDef } from './effects';
+export {
+  abilitiesFor,
+  workingTrait,
+  type AvailableAbility,
+  type TraitDef,
+  type WorkingTrait,
+} from './effects';
+export {
+  canAddSlot,
+  familyCanHave,
+  familyVersion,
+  fitsSlot,
+  slotReason,
+  typesFor,
+} from './traits/slots';
+export {
+  copyChoices,
+  emptySlotsFor,
+  offerShape,
+  readCopy,
+  replaceableSlots,
+} from './traits/levelUp';
+export { levelForXp, levelReached, onXpRow, xpForLevel } from './xp';
+export { dailyPickName } from './traits/daily';
+export {
+  actionLosses,
+  forecastAction,
+  forecastStartOfDay,
+  lossesIn,
+  workingNow,
+  type ActionForecast,
+  type MoraleForecast,
+  type MoraleForecasts,
+  type MoraleLoss,
+  type MoralePart,
+} from './traits/forecast';
 export {
   isExhausted,
   isFamished,
@@ -74,10 +109,12 @@ export {
 } from './station/checkIn';
 export {
   blueprintPrice,
+  buyPrice,
   itemPrice,
   leftShare,
   marketMult,
   resourceSellPrice,
+  saleCaps,
   sellPrice,
 } from './station/prices';
 export { stationItemCount, stationTheme } from './station/stock';
@@ -128,7 +165,10 @@ export {
   type WonderProgress,
 } from './wonders/wonders';
 export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
-export { overBag } from './actions/give';
+export { canHandOver, overBag } from './actions/give';
+export { tilesAhead } from './traits/reveal';
+export { bringReach } from './effects';
+export { tileDistance } from './map';
 export {
   autoPay,
   basicRecipe,

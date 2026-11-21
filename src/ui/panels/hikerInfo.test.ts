@@ -2,8 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { STARTING_PARTY } from '../../content/characters';
 import { createGame } from '../../engine';
 import { addCondition } from '../../engine/conditions';
-import { fixtureGame, hiker, place, toNight } from '../../engine/test/fixtures';
-import { actionStates, conditionChips, simpleActions, statNote, statusTag } from './hikerInfo';
+import { fixtureGame, fixtureHiker, hiker, place, toNight } from '../../engine/test/fixtures';
+import {
+  actionStates,
+  conditionChips,
+  hikerBars,
+  simpleActions,
+  statNote,
+  statusTag,
+} from './hikerInfo';
 
 const byId = (s: ReturnType<typeof fixtureGame>, id: string) =>
   Object.fromEntries(actionStates(s, hiker(s, id)).map((a) => [a.id, a]));
@@ -134,5 +141,34 @@ describe('hiker card details', () => {
     expect(statusTag(h, false)).toBe('ACTED');
     h.status = 'passedOut';
     expect(statusTag(h, false)).toBe('PASSED OUT');
+  });
+});
+
+describe('a Plush hiker’s card', () => {
+  const plush = () =>
+    fixtureGame({ hikers: [{ ...fixtureHiker('ash'), family: 'plush' }, fixtureHiker('birch')] });
+
+  it('shows one Stuffing bar in place of Energy and Appetite', () => {
+    const s = plush();
+    expect(hikerBars(s, hiker(s, 'ash'))).toEqual([
+      { stat: 'stuffing', value: 12, max: 12 },
+      { stat: 'morale', value: hiker(s, 'ash').stats.morale, max: 10 },
+    ]);
+    expect(hikerBars(s, hiker(s, 'birch')).map((b) => b.stat)).toEqual([
+      'energy',
+      'appetite',
+      'morale',
+    ]);
+  });
+
+  it('names the Plush limits', () => {
+    const s = plush();
+    const ash = hiker(s, 'ash');
+    ash.stats.energy = ash.stats.appetite = 7;
+    expect(conditionChips(ash).map((c) => c.key)).toEqual(['lowStuffing']);
+    expect(statNote('stuffing', 7)).toBe('Very low at 3');
+    ash.stats.energy = ash.stats.appetite = 2;
+    expect(conditionChips(ash).map((c) => c.key)).toEqual(['veryLowStuffing']);
+    expect(statNote('stuffing', 2)).toBe('Very low: can only sleep');
   });
 });

@@ -137,11 +137,26 @@
   gap: 10px;
 }
 
-.hex {
-  width: 18px;
-  height: 21px;
-  flex: none;
-  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+/* A tapped badge brought you here: a gold flash, once. */
+.ability[data-focus] {
+  animation: focusFlash 1.6s ease-out;
+}
+
+@keyframes focusFlash {
+  0%,
+  40% {
+    box-shadow: 0 0 0 2px #e9b44c;
+  }
+  100% {
+    box-shadow: 0 0 0 2px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ability[data-focus] {
+    animation: none;
+    box-shadow: 0 0 0 2px #e9b44c;
+  }
 }
 
 .abilityText {

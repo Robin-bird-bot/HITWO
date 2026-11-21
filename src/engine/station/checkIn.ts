@@ -12,11 +12,13 @@
  *   hiker still out there is left behind and abandons the hike. At the last
  *   checkpoint the party has reached the summit, and the hike is over.
  */
+import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { abandonHike, endCarry } from '../health';
 import { pushEvent } from '../log';
 import { openStation } from './stock';
 import type { GameState, Hiker, HikerId, TileId } from '../types';
+import { freeItemAtShop } from './prices';
 
 export const isCheckpoint = (state: GameState, tileId: TileId): boolean =>
   state.section.tiles[tileId]?.kind === 'checkpoint';
@@ -45,7 +47,8 @@ export function checkInArrivals(
     h.status = 'checkedIn';
     delete h.countdown;
     delete h.watching;
-    h.xp += xp;
+    // The check-in line says the XP; a bonus (Postcard, Thinking Cap) gets its own line.
+    gainXp(state, h, xp, 'checkpoint', 'Reached the checkpoint', { quiet: true });
     state.arrivals = [
       ...(state.arrivals ?? []),
       { section: state.sectionIndex, hikerId: h.id, injuries: h.injuries, carried },
@@ -74,6 +77,8 @@ export function finishSection(state: GameState): void {
     return;
   }
   state.station = openStation(state);
+  // Thrifty: 1 random item on the counter is free.
+  freeItemAtShop(state, state.station.items);
   pushEvent(state, { kind: 'stationOpened', checkpoint: state.station.checkpoint });
 }
 

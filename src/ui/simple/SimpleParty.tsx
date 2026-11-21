@@ -5,11 +5,10 @@
  */
 import { useRef, useState } from 'react';
 import { characterFor } from '../../content/characters';
-import { ASSETS } from '../../config/assets';
 import { BALANCE } from '../../config/balance';
-import { STAT_NAMES, statMax, type GameState, type Hiker, type HikerId } from '../../engine';
+import { type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
-import { FAMILY_LOOK, THRESHOLD_STATS, carryNote } from '../panels/hikerInfo';
+import { FAMILY_LOOK, carryNote, hikerBars } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
 import { Details } from '../panels/PartyPanel';
 import { ConditionDot } from '../conditions/ConditionBadges';
@@ -21,6 +20,11 @@ import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from '../panels/GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './Simple.module.css';
+import { portraitSrc } from '../portrait';
+import { traitBadges } from '../traits/badges';
+import { TraitBadgeRow } from '../traits/TraitBadge';
+import { AtRiskTag } from '../traits/AtRiskTag';
+import { useTraitView } from '../traits/forecastView';
 
 interface SimplePartyProps {
   state: GameState;
@@ -36,6 +40,8 @@ interface SimplePartyProps {
   onAbandon?(id: HikerId): void;
   /** Asks to confirm taking an injury on purpose (a way out when stuck). */
   onInjure?(id: HikerId): void;
+  /** A usable trait's badge was tapped: open the Abilities panel at it. */
+  onUseTrait?(id: HikerId, abilityId: string): void;
 }
 
 const POPOUT_HEIGHT = 470;
@@ -46,6 +52,7 @@ export function SimpleParty({
   onSelect,
   onAbandon,
   onInjure,
+  onUseTrait,
   order = {},
   picking = false,
   onPicking,
@@ -104,6 +111,9 @@ export function SimpleParty({
               onClick={(card, add) => click(h, card, add)}
               turn={order[h.id]}
               drop={portrait.props(h.id)}
+              {...(onUseTrait
+                ? { onUseTrait: (abilityId: string) => onUseTrait(h.id, abilityId) }
+                : {})}
             />
           ))}
         </div>
@@ -144,6 +154,14 @@ export function SimpleParty({
                   },
                 }
               : {})}
+            {...(onUseTrait
+              ? {
+                  onUseTrait: (id: HikerId, abilityId: string) => {
+                    setOpen(null);
+                    onUseTrait(id, abilityId);
+                  },
+                }
+              : {})}
           />
         </Popout>
       )}
@@ -163,6 +181,7 @@ function HikerCard({
   hiker: h,
   selected,
   onClick,
+  onUseTrait,
   drop,
   turn,
 }: {
@@ -170,11 +189,13 @@ function HikerCard({
   hiker: Hiker;
   selected: boolean;
   onClick(card: HTMLElement, add: boolean): void;
+  onUseTrait?(abilityId: string): void;
   drop?: DropProps;
   /** Its place in the group's turn order. */
   turn?: number;
 }) {
   const color = characterFor(h.id).color;
+  const traitView = useTraitView();
   const family = FAMILY_LOOK[h.family];
   // Passing out and carrying, in one short line under the name.
   const carry = carryNote(state, h);
@@ -210,10 +231,11 @@ function HikerCard({
       <OrderBadge n={turn}>
         <img
           className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
+          src={portraitSrc(h.id)}
           alt=""
           style={{ boxShadow: `0 0 0 3px ${color}` }}
         />
+        <AtRiskTag hikerId={h.id} name={h.name} />
       </OrderBadge>
       <span className={styles.cardBody}>
         <span className={styles.nameRow}>
@@ -235,18 +257,26 @@ function HikerCard({
             {note.text}
           </span>
         )}
-        {STAT_NAMES.map((stat) => (
+        {hikerBars(state, h).map((b) => (
           <StatBar
-            key={stat}
-            stat={stat}
-            value={h.stats[stat]}
-            max={statMax(state, h, stat)}
+            key={b.stat}
+            stat={b.stat}
+            value={b.value}
+            max={b.max}
             showNumber
-            ticks={THRESHOLD_STATS.includes(stat)}
+            ticks={b.stat !== 'morale'}
             size="regular"
           />
         ))}
         <ConditionDots hiker={h} />
+        {/* Icons only (Simple view). Spans: the card is already a button. */}
+        <span className={styles.badges}>
+          <TraitBadgeRow
+            badges={traitBadges(state, h, traitView.view ?? undefined)}
+            as="span"
+            {...(onUseTrait ? { onUse: onUseTrait } : {})}
+          />
+        </span>
       </span>
     </button>
   );

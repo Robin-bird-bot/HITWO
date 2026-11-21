@@ -6,10 +6,10 @@
  * title. Scoring arrives in Phase 13.
  */
 import { useEffect, useRef } from 'react';
-import { ASSETS } from '../../config/assets';
 import { characterFor } from '../../content/characters';
 import type { GameState, Hiker } from '../../engine';
 import styles from './HikeOverScreen.module.css';
+import { portraitSrc } from '../portrait';
 
 const ENDED: Record<Hiker['status'], string> = {
   active: 'Still going',
@@ -51,7 +51,7 @@ export function HikeOverScreen({
           {state.hikers.map((h) => (
             <li key={h.id} className={styles.hiker}>
               <img
-                src={ASSETS.portraits.placeholder}
+                src={portraitSrc(h.id)}
                 alt=""
                 draggable={false}
                 style={{ boxShadow: `0 0 0 3px ${characterFor(h.id).color}` }}

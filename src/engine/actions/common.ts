@@ -1,7 +1,7 @@
 import { rollTrailShop } from '../station/trail';
 import { CONDITIONS } from '../../content/conditions';
 import { removeCondition } from '../conditions';
-import { canActReason } from '../effects';
+import { canActReason, waivesAppetite } from '../effects';
 import { pushEvent } from '../log';
 import { changeStat } from '../stats';
 import type { Action, GameState, Hiker, HikerId, NodeKind, StatAmounts, TileId } from '../types';
@@ -58,7 +58,17 @@ export function spendAction(state: GameState, hiker: Hiker): void {
 
 /** Pays a cost one stat at a time, so each change (and any injury) resolves before the next. */
 export function payCost(state: GameState, hiker: Hiker, cost: StatAmounts, cause: string): void {
-  changeStat(state, hiker, 'appetite', -cost.appetite, cause);
+  // A chance that it costs no Appetite (Never Hungry), rolled as it's paid.
+  const waived = cost.appetite > 0 ? waivesAppetite(state, hiker, cause) : undefined;
+  if (waived) {
+    pushEvent(state, {
+      kind: 'trait',
+      hikerId: hiker.id,
+      trait: waived,
+      text: `${cause} cost ${hiker.name} no Appetite.`,
+    });
+  }
+  changeStat(state, hiker, 'appetite', waived ? 0 : -cost.appetite, cause);
   changeStat(state, hiker, 'energy', -cost.energy, cause);
   changeStat(state, hiker, 'morale', -cost.morale, cause);
 }

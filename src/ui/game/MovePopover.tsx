@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
-import { ASSETS } from '../../config/assets';
 import { characterFor } from '../../content/characters';
-import type { Hiker, HikerId } from '../../engine';
+import type { Action, Hiker, HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { MAP_VIEW, type Point } from '../map/mapLayout';
 import { STAT_META } from '../panels/hikerInfo';
 import { shortWhy, type BringOption, type MovePreview } from './movePlan';
 import styles from './MovePopover.module.css';
+import { portraitSrc } from '../portrait';
 
 const WIDTH = 300;
 
@@ -25,6 +25,8 @@ interface MovePopoverProps {
   below: Point;
   onGo(bring: HikerId[] | null): void;
   onCancel(): void;
+  /** The move it would make now (or null), for the trait warnings' live forecast. */
+  onPreview?(action: Action | null): void;
 }
 
 /**
@@ -43,6 +45,7 @@ export function MovePopover({
   below,
   onGo,
   onCancel,
+  onPreview,
 }: MovePopoverProps) {
   const ready = choices.filter((c) => c.reason === null).map((c) => c.hiker.id);
   const [all, setAll] = useState(startWithAll && ready.length > 0);
@@ -54,6 +57,12 @@ export function MovePopover({
   const allowed = !!preview && preview.reason === null && (!all || checked.length > 0);
   const leavesSomeone = (preview?.checkIn?.leftBehind.length ?? 0) > 0;
   const go = () => allowed && onGo(bring);
+  // The trait warnings follow the move as it's set up (alone, or with whom).
+  const previewKey = allowed && preview ? JSON.stringify(preview.action) : '';
+  useEffect(() => {
+    onPreview?.(previewKey ? (JSON.parse(previewKey) as Action) : null);
+  }, [previewKey, onPreview]);
+  useEffect(() => () => onPreview?.(null), [onPreview]);
 
   useEffect(() => {
     (leavesSomeone ? cancelRef : goRef).current?.focus();
@@ -92,7 +101,7 @@ export function MovePopover({
       <div className={styles.head}>
         <img
           className={styles.portrait}
-          src={ASSETS.portraits.placeholder}
+          src={portraitSrc(hiker.id)}
           alt=""
           style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
         />
@@ -124,7 +133,7 @@ export function MovePopover({
                   }
                 />
                 <img
-                  src={ASSETS.portraits.placeholder}
+                  src={portraitSrc(h.id)}
                   alt=""
                   style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
                 />
@@ -166,7 +175,8 @@ export function MovePopover({
               {preview.carrying.length > 1 ? ' each' : ''}.
             </span>
           )}
-          {preview.night && (
+          {/* Only when it costs something (a free night move, Night Shifty's, has nothing extra). */}
+          {preview.night && preview.rows.some((r) => r.changes.length > 0) && (
             <span className={styles.note}>Moving at night costs 1 extra Appetite.</span>
           )}
           {preview.reveals > 0 && (

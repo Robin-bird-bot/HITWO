@@ -10,6 +10,7 @@
  * - Effects that wait on a later phase still record their data on the
  *   hiker or item (TODO(phase N) notes say where).
  */
+import { gainXp, loseXp } from '../xp';
 import { durabilityLeft, makeItem } from '../items/make';
 import { loseDurability, loseUses, removeItem } from '../items/wear';
 import { noteGone } from '../items/gone';
@@ -305,7 +306,8 @@ function applyToHiker(
     }
     case 'xp': {
       const n = amount(e.delta, ctx);
-      h.xp = Math.max(0, h.xp + (e.lose ? -n : n));
+      if (e.lose) loseXp(h, n);
+      else gainXp(state, h, n, 'reward', cause);
       return;
     }
     case 'loseResources': {

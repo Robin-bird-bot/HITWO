@@ -19,6 +19,7 @@ import { STATION_THEME_BY_ID } from '../../content/stations';
 import {
   findOffer,
   resourceSellPrice,
+  saleCaps,
   sellPrice,
   type Action,
   type BiomeId,
@@ -339,7 +340,7 @@ function SellConfirm({
   if (sale.itemUid) {
     const item = hiker.inventory.bag.find((i) => i.uid === sale.itemUid);
     if (!item) return null;
-    const price = sellPrice(item);
+    const price = saleCaps(state, hiker, sellPrice(item));
     const name = ITEMS[item.itemId]?.name ?? 'item';
     return (
       <ConfirmDialog
@@ -355,7 +356,8 @@ function SellConfirm({
   const r = sale.resource;
   const count = sale.count ?? 1;
   if (!r) return null;
-  const price = resourceSellPrice(state, r, count);
+  const base = resourceSellPrice(state, r, count);
+  const price = base < 1 ? base : saleCaps(state, hiker, base);
   const name = resourceName(r);
   if (price < 1) {
     return (

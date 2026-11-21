@@ -5,15 +5,31 @@
  * without sleep still costs Energy at camp.
  */
 import { pushEvent } from '../log';
-import { hikersOnTile } from '../map';
-import type { Action, GameState, TileId } from '../types';
+import { watchReach, fireAction } from '../effects';
+import { hikersOnTile, tileDistance } from '../map';
+import type { Action, GameState, Hiker, TileId } from '../types';
 import { findHiker, mustFindHiker, phaseActionReason, spendAction } from './common';
 
 type WatchAction = Extract<Action, { type: 'keepWatch' }>;
 
 /** Is anyone keeping watch on this tile tonight? */
 export function isWatched(state: GameState, tileId: TileId): boolean {
-  return hikersOnTile(state, tileId).some((h) => h.watching);
+  return !!watcherFor(state, tileId);
+}
+
+/**
+ * Who keeps watch over a tile tonight: someone on it, or someone whose watch
+ * reaches it from nearby (Lookout).
+ */
+export function watcherFor(state: GameState, tileId: TileId): Hiker | undefined {
+  const here = hikersOnTile(state, tileId).find((h) => h.watching);
+  if (here) return here;
+  return state.hikers.find(
+    (h) =>
+      h.watching &&
+      h.status === 'active' &&
+      tileDistance(state.section, h.tileId, tileId) <= watchReach(state, h),
+  );
 }
 
 export function validateWatch(state: GameState, action: WatchAction): string | undefined {
@@ -32,4 +48,5 @@ export function applyWatch(state: GameState, action: WatchAction): void {
   spendAction(state, hiker);
   hiker.watching = true;
   pushEvent(state, { kind: 'watch', hikerId: hiker.id });
+  fireAction(state, hiker, { kind: 'watch', role: 'actor', tileId: hiker.tileId });
 }

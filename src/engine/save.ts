@@ -9,6 +9,7 @@ import { BALANCE } from '../config/balance';
 import { clampAbundance, freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
+import { STARTING_PARTY } from '../content/characters';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
 import { shelterNights } from './items/shelters';
@@ -22,8 +23,9 @@ import {
   type WeatherState,
 } from './types';
 import { freshWeather } from './weather';
+import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 16;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -63,7 +65,59 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   12: (save) => upgradeTrailShops(save),
   // Phase 9.5 (Nov 14 update): one Abundance bar, the average of the four meters.
   13: (save) => upgradeAbundance(save),
+  // Phase 10a: hikers have classes, and the four Finders and Hounds are one trait each with a node.
+  14: (save) => upgradeTraits(save),
+  // Phase 10a step 6: levels start at 0 with new XP lines. XP already earned is
+  // kept, and the levels it reaches wait for the next camp step.
+  15: (save) => upgradeLevels(save),
 };
+
+/** Levels start over at 0; XP reaching a level makes a level-up wait for camp. */
+function upgradeLevels(save: SaveData): SaveData {
+  if (!Array.isArray(save.hikers)) return save;
+  const hikers = save.hikers.map((raw: unknown) => {
+    if (!isRecord(raw)) return raw;
+    const xp = isNumber(raw.xp) ? Math.max(0, raw.xp) : 0;
+    const pending = levelForXp(xp);
+    return { ...raw, xp, level: 0, ...(pending ? { pendingLevels: pending } : {}) };
+  });
+  return { ...save, hikers };
+}
+
+/** The Phase 4 node traits, now one trait each with the node as its setting. */
+const NODE_TRAITS: Readonly<Record<string, { traitId: string; node: string }>> = {
+  forestFinder: { traitId: 'finder', node: 'forest' },
+  riverFinder: { traitId: 'finder', node: 'river' },
+  creatureFinder: { traitId: 'finder', node: 'wildlife' },
+  rockFinder: { traitId: 'finder', node: 'mountain' },
+  forestHound: { traitId: 'hound', node: 'forest' },
+  riverHound: { traitId: 'hound', node: 'river' },
+  creatureHound: { traitId: 'hound', node: 'wildlife' },
+  rockHound: { traitId: 'hound', node: 'mountain' },
+};
+
+/**
+ * Phase 10a: each hiker gets their character's classes (none for anyone
+ * unknown), and the old node traits keep working as Finder or Hound set to
+ * their node.
+ */
+function upgradeTraits(save: SaveData): SaveData {
+  if (!Array.isArray(save.hikers)) return save;
+  const hikers = save.hikers.map((raw: unknown) => {
+    if (!isRecord(raw)) return raw;
+    const id = isString(raw.id) ? raw.id : '';
+    const slots = Array.isArray(raw.slots)
+      ? raw.slots.map((slot: unknown) => {
+          if (!isRecord(slot) || !isString(slot.traitId)) return slot;
+          const node = NODE_TRAITS[slot.traitId];
+          return node ? { ...slot, traitId: node.traitId, setting: { x: node.node } } : slot;
+        })
+      : [];
+    const classes = STARTING_PARTY.find((c) => c.id === id)?.classes ?? [];
+    return { ...raw, slots, classes: Array.isArray(raw.classes) ? raw.classes : [...classes] };
+  });
+  return { ...save, hikers };
+}
 
 /** Phase 4's meters: one per node, each 0–10, starting at 8. */
 const OLD_METER = { max: 10, start: 8 };

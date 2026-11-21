@@ -69,6 +69,8 @@ export function clampToCaps(state: GameState, hiker: Hiker): void {
 export interface StatChangeOptions {
   /** A positive condition can push a stat above its maximum (Energized). */
   pastMax?: boolean;
+  /** Why, in a few words, for the log (a Morale trait's reason: "alone right now"). */
+  why?: string;
 }
 
 /**
@@ -81,7 +83,7 @@ export function changeStat(
   stat: StatName,
   delta: number,
   cause: string,
-  { pastMax = false }: StatChangeOptions = {},
+  { pastMax = false, why }: StatChangeOptions = {},
 ): void {
   if (delta === 0 || hiker.status === 'abandoned') return;
   const change = adjustStatChange(state, hiker, { stat, delta, cause });
@@ -92,7 +94,16 @@ export function changeStat(
   if (to === from) return;
 
   hiker.stats[stat] = to;
-  pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
+  mirrorStuffing(hiker, stat);
+  pushEvent(state, {
+    kind: 'stat',
+    hikerId: hiker.id,
+    stat,
+    from,
+    to,
+    cause,
+    ...(why ? { why } : {}),
+  });
 
   if (stat === 'morale') fireMoraleChange(state, hiker, to - from, cause);
   fireStatChange(state, hiker, { stat, from, to, cause });
@@ -100,6 +111,17 @@ export function changeStat(
   if (injures && to === BALANCE.stats.min && change < 0) addInjury(state, hiker, `${stat} hit 0`);
   // Hangry's Morale cap moves with Appetite.
   clampToCaps(state, hiker);
+}
+
+/** A Plush hiker's Energy and Appetite are one bar, Stuffing: a change to either is a change to both. */
+export const isStuffing = (hiker: Hiker, stat: StatName): boolean =>
+  hiker.family === 'plush' && (stat === 'energy' || stat === 'appetite');
+
+/** After a change to a Plush hiker's Energy or Appetite, the other one matches it. */
+function mirrorStuffing(hiker: Hiker, stat: StatName): void {
+  if (!isStuffing(hiker, stat)) return;
+  const other = stat === 'energy' ? 'appetite' : 'energy';
+  hiker.stats[other] = hiker.stats[stat];
 }
 
 /**
@@ -119,6 +141,7 @@ export function shiftStat(
   const to = Math.max(BALANCE.stats.min, Math.min(from + delta, ceiling));
   if (to === from) return;
   hiker.stats[stat] = to;
+  mirrorStuffing(hiker, stat);
   pushEvent(state, { kind: 'stat', hikerId: hiker.id, stat, from, to, cause });
 }
 

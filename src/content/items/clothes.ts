@@ -160,7 +160,8 @@ const GEAR: ItemDef[] = [
     values: { xp: q(1, 1, 1, 1, 2) },
     text: '+{xp} XP from every source.',
     recipe: 'Fur 2, Moss 1, any 4',
-    // TODO(phase 10): XP from every source.
+    // Each time the wearer gains XP (not XP passed on by Wise or a VR Headset).
+    hooksAt: (v) => ({ modifyXp: () => ({ source: 'Thinking Cap', flat: v('xp') }) }),
   }),
   gear({
     id: 'vrHeadset',
@@ -169,7 +170,9 @@ const GEAR: ItemDef[] = [
     values: { xp: q(1, 1, 1, 1, 2) },
     text: 'Gains {xp} XP whenever another hiker on this tile gains XP.',
     recipe: 'Metal 2, Oil 1, Shell 1, Flint 1, any 2',
-    // TODO(phase 10): XP when others here gain it.
+    hooksAt: (v) => ({
+      onTileXpGained: (_e, ctx) => ctx.shareXp(ctx.self, v('xp'), 'VR Headset'),
+    }),
   }),
   gear({
     id: 'hardhat',

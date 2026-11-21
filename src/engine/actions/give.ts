@@ -8,10 +8,11 @@
 import { BALANCE } from '../../config/balance';
 import { RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
-import { tradesAnywhere } from '../effects';
+import { giveReach, tradesAnywhere, fireGive } from '../effects';
+import { tileDistance } from '../map';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
 import { pushEvent } from '../log';
-import type { Action, GameState } from '../types';
+import type { Action, GameState, Hiker } from '../types';
 import { findHiker, mustFindHiker, notActiveReason } from './common';
 
 type GiveAction = Extract<Action, { type: 'give' }>;
@@ -29,10 +30,11 @@ export function validateGive(state: GameState, action: GiveAction): string | und
     : ((takeFromOut ? undefined : notActiveReason(from)) ?? notActiveReason(to));
   if (reason || !from || !to) return reason;
   if (from.id === to.id) return 'Pick someone else to give it to.';
-  // A Walkie-Talkie lets either one trade with anyone, anywhere.
-  const anywhere = !takeFromOut && (tradesAnywhere(state, from) || tradesAnywhere(state, to));
-  if (from.tileId !== to.tileId && !anywhere) return `${to.name} isn’t on this tile.`;
   if ((action.resource ? 1 : 0) + (action.itemUid ? 1 : 0) !== 1) return 'Pick one thing to give.';
+  if (!takeFromOut && !canHandOver(state, from, to, action.itemUid ? 'item' : 'resource')) {
+    return `${to.name} isn’t on this tile.`;
+  }
+  if (takeFromOut && from.tileId !== to.tileId) return `${to.name} isn’t on this tile.`;
 
   if (action.resource) {
     if ((from.inventory.resources[action.resource] ?? 0) < 1)
@@ -47,6 +49,26 @@ export function validateGive(state: GameState, action: GiveAction): string | und
   return undefined;
 }
 
+/**
+ * Can `from` hand this kind of thing to `to` where they stand? On the same
+ * tile always; farther with a Walkie-Talkie (either one, anywhere) or a trait
+ * (Manager: items to and from the next tile; Carrier Pigeon: sending anywhere).
+ */
+export function canHandOver(
+  state: GameState,
+  from: Hiker,
+  to: Hiker,
+  what: 'item' | 'resource',
+): boolean {
+  if (from.tileId === to.tileId) return true;
+  if (tradesAnywhere(state, from) || tradesAnywhere(state, to)) return true;
+  const reach = Math.max(
+    giveReach(state, from, what, 'sender'),
+    giveReach(state, to, what, 'receiver'),
+  );
+  return reach > 0 && tileDistance(state.section, from.tileId, to.tileId) <= reach;
+}
+
 export function applyGive(state: GameState, action: GiveAction): void {
   const from = mustFindHiker(state, action.fromId);
   const to = mustFindHiker(state, action.toId);
@@ -57,6 +79,7 @@ export function applyGive(state: GameState, action: GiveAction): void {
     if (!from.inventory.resources[r]) delete from.inventory.resources[r];
     to.inventory.resources[r] = (to.inventory.resources[r] ?? 0) + 1;
     pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, resource: r, ...taken });
+    fireGive(state, from, to.id, tileDistance(state.section, from.tileId, to.tileId));
     return;
   }
   const i = from.inventory.bag.findIndex((it) => it.uid === action.itemUid);
@@ -64,6 +87,7 @@ export function applyGive(state: GameState, action: GiveAction): void {
   if (!item) return;
   to.inventory.bag.push(item);
   pushEvent(state, { kind: 'give', fromId: from.id, toId: to.id, itemId: item.itemId, ...taken });
+  fireGive(state, from, to.id, tileDistance(state.section, from.tileId, to.tileId));
 }
 
 export function validateReturn(state: GameState, action: ReturnAction): string | undefined {
