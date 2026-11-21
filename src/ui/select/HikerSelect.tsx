@@ -7,14 +7,16 @@
  * - **Four spots** in the party colors. Drag a card onto one; dropping on a
  *   filled spot swaps, spot to spot swaps, and dragging out of the spots
  *   removes. × removes too.
- * - **The list:** every hiker's card, filtered by family. A click flips a
- *   card; Enter or a double-click adds it to the first empty spot. Cards in
- *   the party dim with IN PARTY; variants kept out by no cloning dim too,
- *   with who's in the way.
+ * - **The list:** every hiker's card, filtered by family and sorted
+ *   (sorting.ts), under a ribbon per group. A click flips a card; Enter or a
+ *   double-click adds it to the first empty spot. Cards in the party dim with
+ *   IN PARTY; variants kept out by no cloning dim too, with who's in the way.
  */
-import { useState, type CSSProperties } from 'react';
+import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { PARTY_COLORS } from '../../content/partyColors';
 import { ROSTER, ROSTER_BY_ID } from '../../content/roster';
+import { useDeviceSetting } from '../app/deviceSetting';
+import { useShowDifficulty } from '../debug/debugFlags';
 import type { HikerSetup } from '../../engine/newGame';
 import { useDrag, useDragState, useDrop } from '../drag/drag';
 import { DragLayer } from '../drag/DragLayer';
@@ -39,27 +41,20 @@ import {
   startLabel,
   type Party,
 } from './selection';
+import {
+  FILTERS,
+  HIKER_SORT,
+  sortHikers,
+  SORTS,
+  type FilterId,
+  type HikerGroup,
+  type Ribbon,
+} from './sorting';
 
 /** A list card: 160 × 224. */
 const LIST_SCALE = 160 / 300;
 /** The card under the pointer while dragging. */
 const GHOST_SCALE = 0.6;
-
-const FILTERS = [
-  ['all', 'ALL'],
-  ['human', 'HUMANS'],
-  ['dog', 'DOGS'],
-  ['cat', 'CATS'],
-  ['plush', 'PLUSH'],
-  ['variant', 'VARIANTS'],
-] as const;
-type Filter = (typeof FILTERS)[number][0];
-
-const shown = (id: string, filter: Filter): boolean => {
-  const h = ROSTER_BY_ID.get(id);
-  if (!h || filter === 'all') return !!h;
-  return filter === 'variant' ? !!h.variantOf : h.family === filter;
-};
 
 const nameOf = (id: string) => ROSTER_BY_ID.get(id)?.name ?? id;
 
@@ -88,7 +83,13 @@ function SelectScreen({
   onBack(): void;
 }) {
   const [party, setParty] = useState<Party>(EMPTY_PARTY);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<FilterId>('all');
+  const sort = useDeviceSetting(HIKER_SORT);
+  const groups = useMemo(() => sortHikers(ROSTER, sort, filter), [sort, filter]);
+  const showDifficulty = useShowDifficulty();
+  const listRef = useRef<HTMLDivElement>(null);
+  /** A new filter or sort starts the list from the top. */
+  const toTop = () => listRef.current?.scrollTo({ top: 0 });
   const drag = useDragState();
   const picking = drag?.payload.kind === 'pick' ? drag.payload : null;
 
@@ -163,25 +164,46 @@ function SelectScreen({
             type="button"
             className={styles.chip}
             aria-pressed={filter === id}
-            onClick={() => setFilter(id)}
+            onClick={() => {
+              setFilter(id);
+              toTop();
+            }}
           >
             {label}
           </button>
         ))}
+        <div className={styles.sort}>
+          <span className={styles.sortWord}>SORT</span>
+          <div className={styles.sortOptions} role="group" aria-label="Sort">
+            {SORTS.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                className={styles.sortOption}
+                aria-pressed={sort === id}
+                onClick={() => {
+                  HIKER_SORT.set(id);
+                  toTop();
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className={styles.list} data-removing={removing || undefined}>
-        <div className={styles.grid}>
-          {ROSTER.filter((h) => shown(h.id, filter)).map((h) => (
-            <ListCard
-              key={h.id}
-              hikerId={h.id}
-              party={party}
-              lifted={picking?.hikerId === h.id && picking.spot === null}
-              onAdd={addHiker}
-            />
-          ))}
-        </div>
+      <div ref={listRef} className={styles.list} data-removing={removing || undefined}>
+        {groups.map((group) => (
+          <Group
+            key={group.key}
+            group={group}
+            party={party}
+            lifted={picking?.spot === null ? picking : null}
+            showDifficulty={showDifficulty}
+            onAdd={addHiker}
+          />
+        ))}
       </div>
       {removing && <div className={styles.removeHint}>DROP TO REMOVE</div>}
     </div>
@@ -197,19 +219,70 @@ function Ghost({ hikerId }: { hikerId: string }) {
   );
 }
 
-function ListCard({
-  hikerId,
+/** A ribbon across the list (none for DEFAULT), then the group's cards. */
+function Group({
+  group,
   party,
   lifted,
+  showDifficulty,
+  onAdd,
+}: {
+  group: HikerGroup;
+  party: Party;
+  /** The list card being dragged, if any. */
+  lifted: { hikerId: string; copy?: string } | null;
+  showDifficulty: boolean;
+  onAdd(id: string): void;
+}) {
+  return (
+    <section className={styles.group} aria-label={group.ribbon?.label ?? 'Hikers'}>
+      {group.ribbon && <RibbonBar ribbon={group.ribbon} />}
+      <div className={styles.grid}>
+        {group.hikers.map((h) => (
+          <ListCard
+            key={h.id}
+            hikerId={h.id}
+            copy={group.key}
+            party={party}
+            lifted={lifted?.hikerId === h.id && lifted.copy === group.key}
+            difficulty={showDifficulty ? h.difficulty : undefined}
+            onAdd={onAdd}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** A colored bar with notched ends: the group's name and how many hikers. */
+function RibbonBar({ ribbon }: { ribbon: Ribbon }) {
+  return (
+    <h2 className={styles.ribbon} style={{ background: ribbon.color }}>
+      {ribbon.label}
+      <span className={styles.ribbonCount}>{ribbon.count}</span>
+    </h2>
+  );
+}
+
+function ListCard({
+  hikerId,
+  copy,
+  party,
+  lifted,
+  difficulty,
   onAdd,
 }: {
   hikerId: string;
+  /** Which group this copy is in (Mom shows in two families). */
+  copy: string;
   party: Party;
   /** Being dragged: a dashed outline stays in its place. */
   lifted: boolean;
+  /** Debug only: the hidden difficulty, in the corner. */
+  difficulty: number | undefined;
   onAdd(id: string): void;
 }) {
-  const drag = useDrag({ kind: 'pick', hikerId, spot: null }, <Ghost hikerId={hikerId} />);
+  const drag = useDrag({ kind: 'pick', hikerId, spot: null, copy }, <Ghost hikerId={hikerId} />);
   const spot = spotOf(party, hikerId);
   const inWay = spot < 0 ? blocker(party, hikerId) : undefined;
   return (
@@ -233,6 +306,11 @@ function ListCard({
       )}
       {inWay && <span className={styles.tag}>{nameOf(inWay).toUpperCase()} IS IN</span>}
       {lifted && <span className={styles.outline} />}
+      {difficulty !== undefined && (
+        <span className={styles.difficulty} data-difficulty={difficulty} title="Hidden difficulty">
+          {difficulty}
+        </span>
+      )}
     </div>
   );
 }

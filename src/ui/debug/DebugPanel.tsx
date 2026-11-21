@@ -7,7 +7,7 @@
  * traits, the next scavenge, Abundance, conditions, challenges, weather and
  * tonight's night event.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CARDS, CONDITIONS, ITEMS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER } from '../../content';
 import { WEATHERS, WEATHER_IDS } from '../../content/weather';
 import { RESOURCES } from '../../content/resources';
@@ -35,6 +35,7 @@ import { emptyPercent } from '../panels/abundanceLook';
 import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import { TestHikerPicker, TraitTools } from './DebugTraits';
 import styles from './DebugPanel.module.css';
+import { useBacktickToggle } from './useBacktickToggle';
 
 const PHASE_NAMES = { morning: 'Morning', afternoon: 'Afternoon', night: 'Night' } as const;
 
@@ -48,21 +49,9 @@ interface DebugPanelProps {
 }
 
 export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPanelProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useBacktickToggle();
   const [message, setMessage] = useState('');
   const [seed, setSeed] = useState(String(state.seed));
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Backquote' && e.key !== '`') return;
-      const target = e.target as HTMLElement | null;
-      if (target instanceof Element && target.closest('input, textarea, select')) return;
-      e.preventDefault();
-      setOpen((o) => !o);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, []);
 
   if (!open) return null;
 

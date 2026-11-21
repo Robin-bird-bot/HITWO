@@ -29,7 +29,8 @@ import type { HikerId, ResourceId } from '../../engine';
  */
 export type DragPayload =
   | { kind: 'hiker'; hikerId: HikerId }
-  | { kind: 'pick'; hikerId: string; spot: number | null }
+  /** `copy`: which list group it came from (Mom shows twice when sorted by family). */
+  | { kind: 'pick'; hikerId: string; spot: number | null; copy?: string }
   | { kind: 'item'; hikerId: HikerId; itemUid: string }
   | { kind: 'resource'; hikerId: HikerId; resource: ResourceId }
   | { kind: 'offer'; offerId: string };

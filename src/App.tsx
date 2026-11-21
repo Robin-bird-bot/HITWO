@@ -14,6 +14,7 @@ import { HikerCardsMockup } from './ui/mockup/HikerCardsMockup';
 import { HikerSelect } from './ui/select/HikerSelect';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
+import { SelectDebugPanel } from './ui/debug/SelectDebugPanel';
 import { TestHikerPicker } from './ui/debug/DebugTraits';
 import { debugEnabled } from './ui/debug/debugEnabled';
 import { ConfirmDialog } from './ui/game/ConfirmDialog';
@@ -96,10 +97,13 @@ export function App() {
 
   if (screen === 'select') {
     return (
-      <Stage>
-        <HikerSelect onStart={startAsking} onBack={() => setScreen('title')} />
-        {replaceDialog}
-      </Stage>
+      <>
+        <Stage>
+          <HikerSelect onStart={startAsking} onBack={() => setScreen('title')} />
+          {replaceDialog}
+        </Stage>
+        {debugEnabled() && <SelectDebugPanel />}
+      </>
     );
   }
 

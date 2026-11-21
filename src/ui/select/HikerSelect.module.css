@@ -413,6 +413,54 @@
   color: #1d2220;
 }
 
+/* SORT, on the right of the filter row. */
+.sort {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sortWord {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #9c9585;
+}
+
+.sortOptions {
+  display: flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sortOption {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #c9c2b2;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.sortOption:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sortOption[aria-pressed='true'] {
+  background: #e9b44c;
+  color: #1d2220;
+}
+
+.sortOption:focus-visible {
+  outline: 2px solid #f1eadb;
+  outline-offset: 2px;
+}
+
 /* The cards scroll under the bar. */
 .list {
   position: absolute;
@@ -420,13 +468,50 @@
   right: 24px;
   top: 500px;
   bottom: 0;
-  padding: 10px 16px 40px;
+  padding: 6px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
+/* A ribbon, then its cards. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 4px;
+}
+
+/* A full-width bar with notched ends (mockups/SortRibbons.png). */
+.ribbon {
+  flex: none;
+  width: 1520px;
+  height: 30px;
+  margin: 0;
+  padding-left: 40px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 50%, 100% 100%, 0 100%, 16px 50%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  font-weight: normal;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ribbonCount {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+}
+
 .grid {
+  flex: none;
   width: 1520px;
   display: grid;
   grid-template-columns: repeat(9, 160px);
@@ -474,6 +559,26 @@
   letter-spacing: 0.08em;
   color: #1d2220;
   white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Debug only: the hidden difficulty, in the card's top-right corner. */
+.difficulty {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 12px;
+  background: #e9b44c;
+  color: #1d2220;
+  box-shadow: 0 0 0 2px #1d2220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: 12px;
   pointer-events: none;
 }
 
