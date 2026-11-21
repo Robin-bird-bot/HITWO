@@ -11,7 +11,7 @@ import {
   type Camera,
 } from './mapLayout';
 import styles from './MapView.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 /** The rail's track, in stage pixels (from Main.dc.html). */
 const RAIL = { left: 1200, top: 204, height: 640 };
@@ -84,7 +84,7 @@ export function SideRail({ section, hikers, camera, bounds, onJump }: SideRailPr
           title={`Jump to ${h.name}`}
           onClick={() => onJump(focusOn(center, camera.zoom, bounds))}
         >
-          <img src={portraitSrc(h.id)} alt="" draggable={false} />
+          <HikerPortrait hikerId={h.id} className={styles.railFacePic} />
         </button>
       ))}
       <div className={styles.railStart}>START</div>

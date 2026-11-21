@@ -7,7 +7,7 @@ import { MAP_VIEW, type Point } from '../map/mapLayout';
 import { STAT_META } from '../panels/hikerInfo';
 import { shortWhy, type BringOption, type MovePreview } from './movePlan';
 import styles from './MovePopover.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 const WIDTH = 300;
 
@@ -99,10 +99,9 @@ export function MovePopover({
     >
       <span className={styles.arrow} data-flip={flip} style={{ left: arrowLeft - 7 }} />
       <div className={styles.head}>
-        <img
+        <HikerPortrait
+          hikerId={hiker.id}
           className={styles.portrait}
-          src={portraitSrc(hiker.id)}
-          alt=""
           style={{ boxShadow: `0 0 0 3px ${hikerColor(hiker)}` }}
         />
         <span className={styles.headText}>
@@ -132,9 +131,9 @@ export function MovePopover({
                     )
                   }
                 />
-                <img
-                  src={portraitSrc(h.id)}
-                  alt=""
+                <HikerPortrait
+                  hikerId={h.id}
+                  className={styles.checkFace}
                   style={{ boxShadow: `0 0 0 2px ${hikerColor(h)}` }}
                 />
                 <span className={styles.checkName}>{h.name}</span>

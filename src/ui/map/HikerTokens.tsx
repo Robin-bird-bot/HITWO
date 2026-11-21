@@ -19,7 +19,7 @@ import { Icon } from '../icons/Icon';
 import { useDrag } from '../drag/drag';
 import { lastRowOf, tileCenter } from './mapLayout';
 import styles from './MapView.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 /** Where tokens sit on a tile when several hikers share it. */
 const SPREAD: Record<number, [number, number][]> = {
@@ -135,10 +135,9 @@ export function HikerTokens({
               : `0 0 0 ${small ? 2 : 3}px ${color}, 0 6px 10px rgba(0,0,0,0.25)`,
           }}
         >
-          <img
-            src={portraitSrc(h.id)}
-            alt=""
-            draggable={false}
+          <HikerPortrait
+            hikerId={h.id}
+            className={styles.tokenFace}
             style={passedOut ? { transform: 'rotate(80deg)' } : undefined}
           />
           {stuck && (
@@ -253,10 +252,9 @@ function TokenButton({
 /** What follows the pointer while a hiker is dragged: their portrait. */
 function TokenGhost({ hiker }: { hiker: Hiker }) {
   return (
-    <img
+    <HikerPortrait
+      hikerId={hiker.id}
       className={styles.tokenGhost}
-      src={portraitSrc(hiker.id)}
-      alt=""
       style={{ boxShadow: `0 0 0 3px ${hikerColor(hiker)}` }}
     />
   );

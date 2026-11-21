@@ -51,7 +51,7 @@ export interface BadgeInfo {
   during?: string;
   abilityId?: string;
   status?: BadgeStatus;
-  /** The placeholder icon: the trait's initials, until Wyatt's icons arrive. */
+  /** The stand-in icon for a trait with no icon file yet: its initials. */
   initials: string;
   /** Trait warnings: the Morale this Morale trait is about to give or take. */
   morale?: { delta: number; when: 'now' | 'tomorrow' };

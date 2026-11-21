@@ -38,7 +38,7 @@ import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard, type ScavCardProps } from './ScavCard';
 import { usePreview, withPreview } from '../preview/preview';
 import styles from './ScavengeWindow.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 type TakeAction = Extract<Action, { type: 'scavengeTake' }>;
 
@@ -163,10 +163,9 @@ export function ScavengeWindow({
           )}
           {hiker && open && (
             <span className={styles.hiker}>
-              <img
+              <HikerPortrait
+                hikerId={hiker.id}
                 className={styles.portrait}
-                src={portraitSrc(hiker.id)}
-                alt=""
                 style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
               />
               <span className={styles.hikerName}>{hiker.name.toUpperCase()}</span>

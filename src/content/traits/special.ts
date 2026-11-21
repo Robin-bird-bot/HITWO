@@ -441,6 +441,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Boss’s days: Fetch can take an item too, and can reach 2 tiles away. Gracie’s days: once per day, as a free action, gives 1 resource or item to a hiker up to 2 tiles away.',
     {
       ...unique('bossGracie'),
+      icon: 'tag-team',
       tagTeam: BOSS_GRACIE,
       hooks: {
         // Boss's days: Fetch reaches farther and takes items too.

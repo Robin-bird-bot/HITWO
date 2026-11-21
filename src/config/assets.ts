@@ -52,13 +52,14 @@ export const ASSETS = {
     acornCaps: asset('icons/acorn-caps.png'),
   },
   /**
-   * Trait icons, white on transparent, at public/assets/traits/<trait id>.png
-   * (docs/ASSETS.md). None are in yet: add each id here as its file arrives.
-   * A badge uses the file as a CSS mask, so it can be tinted; until then it
-   * shows the trait's initials.
+   * The hiker card's portrait window (Phase 10b): the forest backdrop and the
+   * pixel pattern over it. Trait icons are in src/ui/traits/traitIcons.ts and
+   * family icons in src/ui/hikers/portraitArt.ts.
    */
-  traitIcons: new Set<string>([]),
-  traitIcon: (traitId: string) => asset(`traits/${traitId}.png`),
+  cards: {
+    forest: asset('cards/forest.png'),
+    pattern: asset('cards/pixel-pattern.png'),
+  },
   /** Night event creatures (Phase 6), by creature id, shrunk from assets/night-events. */
   nightEvent: (creatureId: string) => asset(`night-events/${creatureId}.jpg`),
   /** Resource icons by resource id (all 16). */

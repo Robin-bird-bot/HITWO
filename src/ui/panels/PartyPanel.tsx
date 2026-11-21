@@ -23,7 +23,7 @@ import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from './GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
 import { AtRiskTag } from '../traits/AtRiskTag';
@@ -148,10 +148,9 @@ function HikerCard({
     >
       <div className={styles.top}>
         <OrderBadge n={turn}>
-          <img
+          <HikerPortrait
+            hikerId={h.id}
             className={styles.portrait}
-            src={portraitSrc(h.id)}
-            alt=""
             style={{
               boxShadow: `0 0 0 3px ${color}`,
               filter: dim && !selected ? 'grayscale(1)' : 'none',

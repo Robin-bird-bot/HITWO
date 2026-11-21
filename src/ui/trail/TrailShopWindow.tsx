@@ -35,7 +35,7 @@ import counter from '../station/Counter.module.css';
 import { bundleName } from '../station/stationLook';
 import room from '../station/StationScreen.module.css';
 import styles from './TrailShopWindow.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 type Merchant = Extract<TrailShop, { kind: 'merchant' }>;
 type Trader = Extract<TrailShop, { kind: 'trader' }>;
@@ -316,10 +316,9 @@ const itemName = (item: ItemInstance) => (ITEMS[item.itemId]?.name ?? '').toUppe
 function Owner({ hiker, worn }: { hiker: Hiker; worn: boolean }) {
   return (
     <span className={styles.owner}>
-      <img
+      <HikerPortrait
+        hikerId={hiker.id}
         className={styles.face}
-        src={portraitSrc(hiker.id)}
-        alt=""
         style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
       />
       {hiker.name.toUpperCase()}

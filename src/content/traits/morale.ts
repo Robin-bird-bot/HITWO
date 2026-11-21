@@ -193,6 +193,7 @@ export const MORALE_TRAITS: readonly TraitDef[] = [
     'Thrill-Seeker',
     '+1 Morale each challenge passed. −1 Morale at the start of a day after facing no challenge.',
     {
+      icon: 'thrill-seeker-morale',
       hooks: {
         ...atStartOfDay('Thrill-Seeker', (ctx) =>
           ctx.self.lastChallengeDay === ctx.state.day - 1

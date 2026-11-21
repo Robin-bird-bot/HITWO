@@ -15,7 +15,7 @@ import { Icon } from '../icons/Icon';
 import { useDraggable } from '../windows/useDraggable';
 import { safeLines } from './nightLines';
 import styles from './NightEventWindow.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 const SAFE_ICON = { watch: 'eye', shelter: 'tent', lamp: 'flame', item: 'shield' } as const;
 
@@ -80,11 +80,9 @@ export function NightEventWindow({
           <div className={styles.body}>
             {event.hits.map((hit) => (
               <div key={hit.hikerId} className={styles.row}>
-                <img
+                <HikerPortrait
+                  hikerId={hit.hikerId}
                   className={styles.portrait}
-                  src={portraitSrc(hit.hikerId)}
-                  alt=""
-                  draggable={false}
                   style={{ boxShadow: `0 0 0 2px ${colorOfHiker(hit.hikerId)}` }}
                 />
                 <div className={styles.words}>

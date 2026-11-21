@@ -1,17 +1,18 @@
 /**
  * One trait badge (docs/mockups/TraitBadges.dc.html): a diamond for an
  * always-on trait, a circle for a usable one, a faint outline for an empty
- * slot. The ring is the type's color and the middle a darker shade, with a
- * white icon (the trait's initials until Wyatt's icons arrive). A ready
+ * slot. The ring is the type's color and the middle a darker shade, with
+ * Wyatt's icon in the ring color, filling the shape (initials for a trait
+ * with no icon file yet). A ready
  * trait glows slowly; a used one is grey; one only usable during something
  * has a tab naming it. Hover a moment (or long-press) for its window.
  */
 import type { CSSProperties, MouseEvent } from 'react';
-import { ASSETS } from '../../config/assets';
 import type { SlotType } from '../../engine';
 import { usePreview, withPreview } from '../preview/preview';
 import { BADGE_COLORS, badgeColors, WARNING_FILL, type BadgeInfo } from './badges';
 import styles from './TraitBadge.module.css';
+import { traitIconUrl } from './traitIcons';
 
 /** An empty slot's outline: its type's color, or a blend for a mixed slot. */
 const SLOT_OUTLINE: Record<SlotType, string> = {
@@ -25,11 +26,17 @@ const SLOT_OUTLINE: Record<SlotType, string> = {
   tag: '#E9B44C',
 };
 
-/** The icon: Wyatt's art as a mask when it's in, else the trait's initials. */
+/** The icon: Wyatt's art as a mask in the ring color, else the trait's initials. */
 function BadgeIcon({ badge }: { badge: BadgeInfo }) {
-  if (badge.traitId && ASSETS.traitIcons.has(badge.traitId)) {
-    const url = `url(${ASSETS.traitIcon(badge.traitId)})`;
-    return <span className={styles.icon} style={{ maskImage: url, WebkitMaskImage: url }} />;
+  const src = badge.traitId ? traitIconUrl(badge.traitId) : undefined;
+  if (src) {
+    const url = `url(${src})`;
+    return (
+      <span
+        className={styles.icon}
+        style={{ maskImage: url, WebkitMaskImage: url, backgroundColor: 'var(--ring)' }}
+      />
+    );
   }
   return <span className={styles.initials}>{badge.initials}</span>;
 }

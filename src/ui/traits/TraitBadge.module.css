@@ -48,6 +48,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   background: var(--fill);
   box-shadow: 0 0 0 2px var(--ring);
 }
@@ -145,11 +146,15 @@
   font-size: 14px;
 }
 
+/*
+ * Wyatt's icon in the ring color, filling the shape and clipped to it (cropping
+ * at the edges is fine): about the diamond's full side, 85% of the circle.
+ */
 .icon {
   display: block;
-  width: 14px;
-  height: 14px;
-  background: #ffffff;
+  flex: none;
+  width: 97%;
+  height: 97%;
   mask-size: contain;
   mask-repeat: no-repeat;
   mask-position: center;
@@ -158,9 +163,9 @@
   -webkit-mask-position: center;
 }
 
-.badge[data-size='large'] .icon {
-  width: 22px;
-  height: 22px;
+.shape[data-shape='circle'] .icon {
+  width: 85%;
+  height: 85%;
 }
 
 /* Uses left as dots, or what it's only usable during. */

@@ -82,7 +82,7 @@ import {
   type Target,
 } from './challengeDraft';
 import styles from './ChallengeWindow.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
 
@@ -1095,10 +1095,9 @@ export function ItemFace({
 export function Face({ hikerId, size }: { hikerId: HikerId; size: number }) {
   const color = colorOfHiker(hikerId);
   return (
-    <img
+    <HikerPortrait
+      hikerId={hikerId}
       className={styles.face}
-      src={portraitSrc(hikerId)}
-      alt=""
       style={{ width: size, height: size, boxShadow: `0 0 0 2px ${color}` }}
     />
   );
