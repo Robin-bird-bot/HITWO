@@ -19,13 +19,17 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `item-card-front-background.png` | The card front background (Nov 7), cropped to square corners (1422×1982) | Round it in CSS to match the card: `border-radius` 7.5% of the card's width, `overflow: hidden`. Supersedes `item-cards/front-background.png` for the card front. The game loads a 717×1000 JPEG copy, `public/assets/item-cards/front.jpg` |
 | `items/` | 141 item images, one per item, named after it (`fishing-rod.png`, `din-tai-fung.png`…) | Trimmed and evened out on a 1024×1024 transparent square. The game loads 384 px copies from `public/assets/items/<art>.png`, via `ASSETS.itemArt(art)` |
 | `item-cards/samples/` | bandages, hatchet, jerky, net, rain jacket, shovel, trail mix, trail shoes | Old flat card art from the card game, for reference only |
-| `portraits/` | placeholder, placeholder-character-card | **Use the placeholder for every hiker for now.** Real character art comes later |
+| `portraits/` | placeholder, placeholder-character-card | The old stand-ins. Since Phase 10b the real portraits are in `public/assets/portraits/` (see below) |
 | `shopkeepers/` | The 8 ranger station shopkeepers (Nov 13): fancy-finn, chef-bear-ellie, sleepy-wink, serious-businessman (+ `-arm`), rocco-raccoon, doctor-sckhunk, bear-e-i, bearnes-and-nobles; `lineup.png` is a reference only | 465×800 transparent PNGs, all at one scale and anchored at the bottom, so they stand behind the counter as they are (don't trim or rescale them). `serious-businessman-arm.png` is a second layer that goes in front of the counter. The game loads copies from `public/assets/shopkeepers/` (not the lineup). See `design/06-ranger-stations.md` |
 | `art/` | challenge-bear, challenge-fallen-tree | Early challenge pop-up art (superseded by `challenges/`) |
 | `challenges/` | One 1920×1080 JPEG per challenge and Trial (96), named after it (`flies.jpg`, `the-grim-sleeper.jpg`…) | Challenge and Trial pop-up art at 16:9. The game loads shrunk copies (960×540 JPEG) from `public/assets/challenges/<id>.jpg`, via `cardArt(card)` |
 | `opportunities/` | One 1920×1080 JPEG per opportunity (17): `snake-slots.jpg`, `citro-tub.jpg`… | Opportunity pop-up art. Shrunk copies (960×540) in `public/assets/opportunities/`, via `cardArt(card)` |
 | `wonders/` | One 1920×1080 JPEG per Wonder (7): `crater-lake.jpg`, `multnomah-falls.jpg`… | The Wonder pop-up's full-width banner. Shrunk copies (1600×900) in `public/assets/wonders/`, via `wonderArt(id)` |
 | `night-events/` | One 1920×1080 JPEG per night event creature (15): `raccoons.jpg`, `cultists.jpg`… | The night event window's banner. Shrunk copies (960×540) in `public/assets/night-events/<id>.jpg`, via `ASSETS.nightEvent(id)` |
+| `public/assets/traits/` (Phase 10b) | 161 trait icons, white on transparent, cut with almost no margin | Named by the trait's **name** in lowercase with dashes (`dog-mom.png`). Shared ones: `puller`, `glutton`, `node-finder`, `node-hound`, `node-thumb`, `location`, `action`, `conservationist`; `thrill-seeker` and `thrill-seeker-morale`; `tag-team`. Drawn through a CSS mask in the type's ring color, filling and clipped to the badge |
+| `public/assets/portraits/` (Phase 10b) | 31 portraits (750 × 620, already framed for the card's portrait window) and `portraits.json` | Draw each at the full window from the top-left, never cropped one by one. `portraits.json` gives each one's `faceY` (0 top, 1 bottom) for wherever only part shows. Humans share one head size and pets another; Gdog and Leah are short on purpose |
+| `public/assets/cards/` (Phase 10b) | `forest.png` and `pixel-pattern.png` (the portrait background), and `family/` (human, dog, cat, plush, duo and the variant star) | The family icons are white on transparent, drawn in `#1A1A1A` through a mask |
+| `src/shaders/hiker-select-bg.frag` (Phase 10b) | The selection screen's animated background, a WebGL2 fragment shader | Colors from the family update: `#0C1411`, `#1D3129`, `#476055`, `#E9B44C`; without WebGL2, plain `#0C1411` |
 
 **Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
 
@@ -114,19 +118,14 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 ## Still missing
 
 - **Bigger icon:** a hi-res mushroom.
-- **Character art:** real portraits, once characters are final.
+- **Character art:** portraits for Ben, Mindy and the variants other than Wywee (they show their family icon or the variant star for now).
 - **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
 - **Biome layers:** a rainforest foreground, and alpine snow and rock layers in the flat style.
 - **Ranger station (Phase 9):** the stone fireplace (`src/ui/station/fireplace-stones.svg` and CSS flames), the hanging sign, the counter and the brass caps plaque are drawn in code. The specials (Cement Mixer, Scout Report, Taxi Service) and the shop's blueprint squares use stroke icons. Wyatt may want to paint any of them.
 - **Merchant and Traveling Trader:** no art yet. Their window and the map use the bag and backpack icons.
 - **Empty scavenge card (Phase 9.5):** a placeholder face, drawn in code. It shows the node's backdrop, faded, with "EMPTY" in Edit Undo (`src/ui/scavenge/ScavCard.tsx`). Wyatt may want to paint one.
-- **Trait icons (Phase 10a):** one per trait, for the trait badges (`docs/mockups/TraitBadges.dc.html`).
-  - **File:** `public/assets/traits/<trait id>.png`, named by the trait's id in `src/content/traits/` (`leader.png`, `secondWind.png`, `bossGracie.png`).
-  - **Look:** white on a transparent background, square, about 128 px, with a little padding. The badge uses the file as a mask (`mask-image`), so only its shape counts and the game can tint it.
-  - **Turning one on:** add its id to `ASSETS.traitIcons` in `src/config/assets.ts`. Until then the badge shows the trait's initials (Le, SW, RF).
-  - **One per trait,** not per setting: River Finder and Rock Finder share `finder.png`. Family versions each get their own (`puller.png`, `leashPuller.png`).
-- **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/portrait.ts`) and never appear in the real roster.
+- **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/hikers/portraitArt.ts`) and never appear in the real roster.
 
 Until real art arrives, use clearly marked placeholders.
 

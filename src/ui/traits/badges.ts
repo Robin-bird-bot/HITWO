@@ -51,7 +51,7 @@ export interface BadgeInfo {
   during?: string;
   abilityId?: string;
   status?: BadgeStatus;
-  /** The placeholder icon: the trait's initials, until Wyatt's icons arrive. */
+  /** The stand-in icon for a trait with no icon file yet: its initials. */
   initials: string;
   /** Trait warnings: the Morale this Morale trait is about to give or take. */
   morale?: { delta: number; when: 'now' | 'tomorrow' };
@@ -61,7 +61,8 @@ export interface BadgeInfo {
 
 const TYPE_WORD = { T: 'Trail', U: 'Utility', M: 'Morale' } as const;
 const NUMERAL = { 1: 'I', 2: 'II', 3: 'III' } as const;
-const SLOT_WORD: Record<SlotType, string> = {
+/** A slot's type in words ("Trail or Utility"). */
+export const SLOT_WORD: Readonly<Record<SlotType, string>> = {
   T: 'Trail',
   U: 'Utility',
   M: 'Morale',

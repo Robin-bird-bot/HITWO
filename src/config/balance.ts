@@ -890,5 +890,48 @@ export const BALANCE = {
     stationDrift: { farSeconds: 180, nearSeconds: 70 },
     /** Multi-select: each grouped hiker acts this long (ms) after the last. TODO(wyatt): first guess. */
     groupStepMs: 350,
+    /** A hiker card turns over in this long (ms). TODO(wyatt): [0.35 s]. */
+    cardFlipMs: 350,
+    /**
+     * Hovering a flipped hiker card lifts it to the middle of the screen at
+     * this size (times a full 300 × 420 card). TODO(wyatt): [1.2×].
+     */
+    cardLiftScale: 1.2,
+    /**
+     * The hiker selection screen's swirling background (src/shaders/
+     * hiker-select-bg.frag). TODO(wyatt): swirl [1.2], pixels [150] and pull
+     * [0.5] are from the plan; the drift and ease are first guesses.
+     */
+    /**
+     * The level-up screen's opening (mockups/LevelUp.png), in seconds from
+     * when it opens. TODO(wyatt): the blur [10 px], the bar's fill [1.2 s]
+     * and the deal [0.15 s apart] are bracketed in the plan.
+     */
+    levelUp: {
+      blurPx: 10,
+      portraitAt: 0.1,
+      barAt: 0.6,
+      barSeconds: 1.2,
+      badgeAt: 1.8,
+      cardsAt: 2.0,
+      dealGapSeconds: 0.15,
+      traitsAt: 2.5,
+    },
+    selectBackground: {
+      /** How much the paint twists toward the edges. */
+      swirl: 1.2,
+      /** How many pixel rows tall the screen is (chunkier when lower). */
+      pixels: 150,
+      /** How much the paint bends toward the pointer. */
+      pull: 0.5,
+      /** Never drawn at more than this many device pixels per screen pixel. */
+      maxPixelRatio: 1.5,
+      /** With the pointer away, the bend drifts in a loop this long (s)... */
+      driftSeconds: 40,
+      /** ...this far from the middle (0 to 0.5 of the screen). */
+      driftRadius: 0.25,
+      /** How quickly the bend follows the pointer (higher is snappier). */
+      pointerEase: 2.5,
+    },
   },
 };

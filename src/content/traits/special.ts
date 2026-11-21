@@ -169,7 +169,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Artist',
     'When this hiker crafts an item, every hiker on the tile gains 1 Morale.',
     {
-      ...unique('katie'),
+      ...unique('catie'),
       hooks: {
         onCraft(_e, ctx) {
           for (const h of ctx.hikersOnTile(ctx.self.tileId)) {
@@ -229,7 +229,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Nugget Puker',
     'After eating food, gains a Puked Nuggets food card (+1 Appetite, 1 use).',
     {
-      ...special('katie'),
+      ...special('catie'),
       hooks: {
         // TODO(wyatt): eating Puked Nuggets doesn't make more (or they'd never run out).
         onEat(e, ctx) {
@@ -441,6 +441,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Boss’s days: Fetch can take an item too, and can reach 2 tiles away. Gracie’s days: once per day, as a free action, gives 1 resource or item to a hiker up to 2 tiles away.',
     {
       ...unique('bossGracie'),
+      icon: 'tag-team',
       tagTeam: BOSS_GRACIE,
       hooks: {
         // Boss's days: Fetch reaches farther and takes items too.
@@ -606,7 +607,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Linguist',
     'Each time this hiker gains XP, they gain 1 extra XP for each other hiker on the tile.',
     {
-      ...unique('katie'),
+      ...unique('catie'),
       hooks: {
         workingNow: (ctx) => others(ctx).length > 0,
         modifyXp: (_q, ctx) => {

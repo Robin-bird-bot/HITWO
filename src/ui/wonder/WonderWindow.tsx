@@ -134,9 +134,7 @@ export function WonderWindow({ state, tileId, onClose, onAccomplish }: WonderWin
           <img src={wonderArt(p.def.id)} alt="" draggable={false} />
           <div className={styles.fade} />
           <div className={styles.artText}>
-            <span className={styles.quote}>
-              “{p.def.description ?? 'Description placeholder: Wyatt is writing this.'}”
-            </span>
+            <span className={styles.quote}>“{p.def.description ?? 'Placeholder text'}”</span>
             <span className={styles.how}>
               {done
                 ? 'Accomplished. Each hiker who was here took 1 reward.'

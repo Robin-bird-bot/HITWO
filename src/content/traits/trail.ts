@@ -84,6 +84,7 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
   }),
   trail(1, 'humanFood', 'Human Food', 'Food gives this hiker 1 extra Appetite.', {
     group: 'glutton',
+    icon: 'glutton',
     who: ['dog'],
     hooks: gluttonHooks('Human Food'),
   }),
@@ -179,6 +180,7 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
   }),
   trail(2, 'leashPuller', 'Leash Puller', 'Moving the group costs 1 Energy instead of Appetite.', {
     group: 'puller',
+    icon: 'puller',
     who: ['dog'],
     hooks: pullerHooks,
   }),

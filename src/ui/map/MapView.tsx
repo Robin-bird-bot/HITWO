@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import type { Hiker, HikerId, Section, Tile } from '../../engine';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { useStage } from '../stage/StageContext';
 import { useDragPointer, useDragState, useDrop, type DropTarget } from '../drag/drag';
 import { NO_DROP } from '../drag/itemDrops';
@@ -229,7 +229,7 @@ export function MapView({
             tile={t}
             at={tileCenter(t, lastRow)}
             look={tileLook(section, t, currentTileId)}
-            currentColor={selected ? characterFor(selected.id).color : undefined}
+            currentColor={selected ? hikerColor(selected) : undefined}
             reach={reachOf(t.id)}
             reachLabel={reachLabel}
             checkpoint={checkpointInfo}

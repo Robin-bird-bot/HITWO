@@ -37,7 +37,9 @@ export type PreviewContent =
     }
   | { kind: 'scavenge'; card: ScavengeCard }
   /** A trait badge's window: what it does and its status now. */
-  | { kind: 'trait'; badge: BadgeInfo };
+  | { kind: 'trait'; badge: BadgeInfo }
+  /** A turned hiker card, lifted to the middle of the screen, larger. */
+  | { kind: 'hiker'; hikerId: string };
 
 export interface PreviewApi {
   /** Pinned previews stay until a tap anywhere or Esc; the rest close when the pointer leaves. */

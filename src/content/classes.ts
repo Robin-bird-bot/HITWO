@@ -20,6 +20,22 @@ export const CLASS_NAMES: Readonly<Record<ClassId, string>> = {
   moneymaker: 'Moneymaker',
 };
 
+/**
+ * Role colors (Phase 10b, mockups/HikerCards.png): the role banner on hiker
+ * cards and the Class sort's ribbons. "Roles" on screen, classes in code.
+ */
+export const CLASS_COLORS: Readonly<Record<ClassId, string>> = {
+  tank: '#DC3B44',
+  hardy: '#E27A2B',
+  scavenger: '#93A33A',
+  crafter: '#3A7752',
+  scout: '#3E8FC9',
+  support: '#F0AB35',
+  jack: '#5F7487',
+  entertainer: '#D675EF',
+  moneymaker: '#1FA39A',
+};
+
 const CRAFTING_TIERS = ['Cook', 'Crafter', 'Architect', 'Tailor'].flatMap((t) => [
   `artisan${t}`,
   `master${t}`,

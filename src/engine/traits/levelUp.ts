@@ -16,7 +16,12 @@
  * - **Taking a trait** puts it in an empty slot that fits, or in place of the
  *   trait in a fitting slot the player picks. Blueprints stay learned.
  *
- * Old Photo opens the same kind of pick: 3 traits for one slot.
+ * - **Keeping your traits:** a level-up can be taken with nothing new (KEEP
+ *   MY TRAITS). The level still counts. TODO(wyatt): so MBA and Proud Mentor
+ *   still fire.
+ *
+ * Old Photo opens the same kind of pick: 3 traits for one slot, and one of
+ * them must be taken.
  */
 import { BALANCE } from '../../config/balance';
 import { classesOf, isGeneral } from '../../content/classes';
@@ -27,6 +32,7 @@ import { pushEvent } from '../log';
 import { hikersOnTile } from '../map';
 import { pick, roll, shuffle, weightedPick } from '../rng';
 import type {
+  ClassId,
   GameState,
   Hiker,
   SlotType,
@@ -79,6 +85,21 @@ export function inClass(hiker: Hiker, def: TraitDef): boolean {
   if (def.type === 'M' || isGeneral(def)) return true;
   const classes = classesOf(def);
   return classes.includes('jack') || classes.some((c) => hiker.classes.includes(c));
+}
+
+/**
+ * Where an offered trait comes from, for its card's tag: one of the hiker's
+ * roles, Jack (open to everyone), or `any` (a wild card from another class).
+ * None for Morale, general, special and unique traits.
+ */
+export function optionSource(hiker: Hiker, def: TraitDef): ClassId | 'any' | undefined {
+  if (def.type === 'M' || isGeneral(def) || def.kind === 'special' || def.kind === 'unique') {
+    return undefined;
+  }
+  const classes = classesOf(def);
+  const own = hiker.classes.find((c) => classes.includes(c));
+  if (own) return own;
+  return classes.includes('jack') ? 'jack' : 'any';
 }
 
 /** The trait types a hiker's slots can hold, filled or open. */
@@ -234,12 +255,15 @@ export function replaceableSlots(hiker: Hiker, def: TraitDef): number[] {
     .map(({ i }) => i);
 }
 
-type PickAction = { option: number; replaceSlot?: number };
+type PickAction = { option: number; replaceSlot?: number; keep?: true };
 
 /** Why this pick can't be taken, or undefined when it can. */
 export function pickReason(state: GameState, action: PickAction): string | undefined {
   const open = state.traitPick;
   if (!open) return 'There’s nothing to pick right now.';
+  if (action.keep) {
+    return open.source === 'levelUp' ? undefined : 'Pick a trait for the Old Photo.';
+  }
   const hiker = state.hikers.find((h) => h.id === open.hikerId);
   const option = open.options[action.option];
   if (!hiker || !option) return 'That isn’t one of the choices.';
@@ -308,10 +332,25 @@ export function addTraitSlot(
   });
 }
 
-/** Takes the picked option, then opens the next level-up waiting. */
+/**
+ * Takes the picked option (or nothing, with `keep`), then opens the next
+ * level-up waiting.
+ */
 export function applyPick(state: GameState, action: PickAction): void {
   const open = state.traitPick;
   const hiker = open && state.hikers.find((h) => h.id === open.hikerId);
+  if (open && hiker && action.keep && open.source === 'levelUp') {
+    pushEvent(state, {
+      kind: 'trait',
+      hikerId: hiker.id,
+      trait: 'Level-up',
+      text: `${hiker.name} reached level ${open.level ?? hiker.level + 1} and kept their traits.`,
+    });
+    delete state.traitPick;
+    takeLevel(state, hiker);
+    openLevelUp(state);
+    return;
+  }
   const option = open?.options[action.option];
   if (!open || !hiker || !option) return;
   const levelUp = open.source === 'levelUp';

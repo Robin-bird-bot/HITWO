@@ -374,7 +374,7 @@ The base game's systems are settled; what's left is content Wyatt is writing, nu
 **Content Wyatt is writing**
 
 - [ ] Traits: first pass is in the Traits and Conditions tab; tiers and numbers still to finalize
-- [ ] Character roster with traits, abilities and starting attributes (the cards plus Mom, Katie, Melissa, Leah, Red Pack, Hershal, Sinjon, Muffin & Coco, Pepper, Mitchell & Nathan, Ben & Mindy)
+- [ ] Character roster with traits, abilities and starting attributes (the cards plus Mom, Catie, Melissa, Leah, Red Pack, Hershal, Sinjon, Muffin & Coco, Pepper, Mitchell & Nathan, Ben & Mindy)
 - [ ] Challenge and opportunity templates, tagged by tier, node and biome
 - [ ] Night events
 - [ ] Party objectives

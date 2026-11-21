@@ -12,7 +12,7 @@
  */
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { ASSETS } from '../../config/assets';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { ITEMS } from '../../content';
 import {
   bagSlots,
@@ -36,7 +36,7 @@ import { useDrag, useDrop, type DropTarget } from '../drag/drag';
 import { NO_DROP } from '../drag/itemDrops';
 import { resourceName } from '../scavenge/cardLook';
 import styles from './Counter.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 /** What a sale would be, for the confirm. */
 export interface SaleRequest {
@@ -75,10 +75,10 @@ export function Packs({
         return (
           <li key={h.id} className={styles.pack} {...(gone ? {} : pack.props(h.id))}>
             <div className={styles.packHead}>
-              <img
-                src={portraitSrc(h.id)}
-                alt=""
-                style={{ boxShadow: `0 0 0 2px ${characterFor(h.id).color}` }}
+              <HikerPortrait
+                hikerId={h.id}
+                className={styles.packFace}
+                style={{ boxShadow: `0 0 0 2px ${hikerColor(h)}` }}
               />
               <span className={styles.packName}>{h.name.toUpperCase()}</span>
               {!gone && (

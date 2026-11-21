@@ -1,0 +1,85 @@
+/* A hiker's picture (HikerPortrait.tsx). The caller's class sizes and shapes the box. */
+
+/* Defaults the caller's class can override (zero specificity). */
+:where(.box) {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+  background: #d6d6d2;
+}
+
+.box {
+  overflow: hidden;
+  container-type: size;
+}
+
+/* The 750 × 620 portrait window: the forest backdrop covering it, on a misty grey. */
+.window {
+  position: absolute;
+  aspect-ratio: 750 / 620;
+  background-color: #d6d6d2;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* The pixel pattern at 20%, also covering. */
+.pattern {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+}
+
+/* The portrait at the window's full size, from the top-left. */
+.portrait {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* The placeholder party and test hikers: their image fills the box. */
+.fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* A family icon or the variant star, white art drawn in #1A1A1A. */
+.mark {
+  display: block;
+  aspect-ratio: 1;
+  background: #1a1a1a;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+/* No portrait yet: the icon in the middle, about a third of the window's width, at 30%. */
+.standIn {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(36.7cqw, 62cqh);
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+}
+
+/* Small round faces: a bigger icon so it still reads. */
+.box[data-view='face'] .standIn {
+  width: 55cqw;
+}

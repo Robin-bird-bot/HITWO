@@ -1,4 +1,6 @@
-import { withDefaults } from './items/make';
+import { makeItem, withDefaults } from './items/make';
+import { ITEMS } from '../content/items';
+import { PARTY_COLORS } from '../content/partyColors';
 import { fireBiomeStart } from './effects';
 import { scoutAround } from './traits/reveal';
 import { rollDailyTraits } from './traits/daily';
@@ -8,7 +10,7 @@ import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
 import { RESOURCES } from '../content/resources';
 import { resourceCount, resourceLimit } from './inventory';
-import { pick, seedRng } from './rng';
+import { pick, seedRng, shuffle } from './rng';
 import { SAVE_VERSION } from './save';
 import { generateSection } from './trail/generate';
 import { freshWeather } from './weather';
@@ -20,10 +22,22 @@ import type {
   Hiker,
   HikerId,
   Inventory,
+  ItemId,
+  ItemTypeName,
   Section,
   Stats,
   TraitSlot,
 } from './types';
+
+/**
+ * What a character brings (07-characters.md, "Starting bags"): items, which
+ * roll Quality like any other, and random blueprints they already know (no
+ * item slot), Tier 1 and maybe of one type.
+ */
+export interface StartingBag {
+  items?: readonly ItemId[];
+  blueprints?: { count: number; tier: 1; type?: ItemTypeName };
+}
 
 export interface HikerSetup {
   id: HikerId;
@@ -43,6 +57,10 @@ export interface HikerSetup {
   stats?: Partial<Stats>;
   /** Items and resources the character starts with. */
   inventory?: Partial<Inventory>;
+  /** Handed out when the run starts (the real roster, Phase 10b). */
+  startingBag?: StartingBag;
+  /** Their party color. Without one, their spot's: 1 orange, 2 blue, 3 yellow, 4 purple. */
+  color?: string;
 }
 
 export interface NewGameOptions {
@@ -78,10 +96,11 @@ export function createGame({
     sectionIndex: 0,
     section,
     weather: freshWeather(seed),
-    hikers: hikers.map((setup): Hiker => ({
+    hikers: hikers.map((setup, i): Hiker => ({
       id: setup.id,
       name: setup.name,
       family: setup.family,
+      color: setup.color ?? PARTY_COLORS[i % PARTY_COLORS.length] ?? '#C9C2B2',
       ...(setup.placeholder ? { placeholder: true } : {}),
       classes: [...(setup.classes ?? [])],
       ...(setup.characterId ? { characterId: setup.characterId } : {}),
@@ -128,6 +147,10 @@ export function createGame({
     nextEventId: 1,
     log: [],
   };
+  hikers.forEach((setup, i) => {
+    const h = state.hikers[i];
+    if (h && setup.startingBag) giveStartingBag(state, h, setup.startingBag);
+  });
   if (startingResources) giveStartingResources(state);
   // The first day's daily traits, then the first biome begins (Prepared, Tactical), and
   // Scouts see around the trailhead.
@@ -137,6 +160,30 @@ export function createGame({
   // Day 1 on the trailhead's row is their first: action XP counts there today.
   noteXpRows(state);
   return state;
+}
+
+/**
+ * A character's starting bag: its items in the bag (rolling Quality), and its
+ * random Tier 1 blueprints learned, each one they don't know yet.
+ */
+function giveStartingBag(state: GameState, h: Hiker, bag: StartingBag): void {
+  for (const itemId of bag.items ?? []) {
+    if (ITEMS[itemId]) h.inventory.bag.push(makeItem(state, itemId, { prefix: 'start' }));
+  }
+  const want = bag.blueprints;
+  if (!want) return;
+  const known = new Set(h.blueprints ?? []);
+  const pool = Object.values(ITEMS)
+    .filter(
+      (d) =>
+        d.tier === want.tier &&
+        !!d.recipe &&
+        (!want.type || d.type === want.type) &&
+        !known.has(d.id),
+    )
+    .map((d) => d.id);
+  const picked = shuffle(state.rng, pool).slice(0, want.count);
+  if (picked.length) h.blueprints = [...known, ...picked];
 }
 
 /**

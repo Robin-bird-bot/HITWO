@@ -10,7 +10,7 @@
  *   press doesn't pan the map, and a tap still selects.
  */
 import { Fragment, type ComponentProps, type ReactNode } from 'react';
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import { immovable, type Hiker, type HikerId, type Section } from '../../engine';
 import { conditionCounts } from '../conditions/hikerConditions';
@@ -19,7 +19,7 @@ import { Icon } from '../icons/Icon';
 import { useDrag } from '../drag/drag';
 import { lastRowOf, tileCenter } from './mapLayout';
 import styles from './MapView.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 /** Where tokens sit on a tile when several hikers share it. */
 const SPREAD: Record<number, [number, number][]> = {
@@ -90,7 +90,7 @@ export function HikerTokens({
 
   const token = (h: Hiker, left: number, top: number, size: number, riding?: Hiker) => {
     const selected = h.id === selectedId;
-    const color = characterFor(h.id).color;
+    const color = hikerColor(h);
     const passedOut = h.status === 'passedOut';
     const faded = h.acted || h.status !== 'active';
     const { bad, good } = conditionCounts(h);
@@ -135,10 +135,9 @@ export function HikerTokens({
               : `0 0 0 ${small ? 2 : 3}px ${color}, 0 6px 10px rgba(0,0,0,0.25)`,
           }}
         >
-          <img
-            src={portraitSrc(h.id)}
-            alt=""
-            draggable={false}
+          <HikerPortrait
+            hikerId={h.id}
+            className={styles.tokenFace}
             style={passedOut ? { transform: 'rotate(80deg)' } : undefined}
           />
           {stuck && (
@@ -253,11 +252,10 @@ function TokenButton({
 /** What follows the pointer while a hiker is dragged: their portrait. */
 function TokenGhost({ hiker }: { hiker: Hiker }) {
   return (
-    <img
+    <HikerPortrait
+      hikerId={hiker.id}
       className={styles.tokenGhost}
-      src={portraitSrc(hiker.id)}
-      alt=""
-      style={{ boxShadow: `0 0 0 3px ${characterFor(hiker.id).color}` }}
+      style={{ boxShadow: `0 0 0 3px ${hikerColor(hiker)}` }}
     />
   );
 }

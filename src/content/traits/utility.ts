@@ -302,6 +302,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     '[Color] Thumb',
     'For one node: +1 card to choose from when scavenging it, and Tend on a tile with that node restores 1 extra Abundance.',
     {
+      icon: 'node-thumb',
       setting: 'node',
       nameWith: nodeName(NODE_NAMES.thumb, 'Thumb'),
       textWith: nodeText(
@@ -465,6 +466,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     '[Node] Pockets',
     'After scavenging, a chance to also gain a random resource of that node.',
     {
+      icon: 'pockets',
       setting: 'node',
       nameWith: nodeName(NODE_NAMES.pockets, 'Pockets'),
       textWith: nodeText((w) => `After scavenging, a chance to also gain a random ${w} resource.`),

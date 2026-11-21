@@ -1,0 +1,12 @@
+/* Fills the window behind the stage; the inline color shows until (or unless) it draws. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

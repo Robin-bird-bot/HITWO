@@ -1,4 +1,4 @@
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import type { Hiker, Section } from '../../engine';
 import { Icon } from '../icons/Icon';
 import {
@@ -11,7 +11,7 @@ import {
   type Camera,
 } from './mapLayout';
 import styles from './MapView.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 
 /** The rail's track, in stage pixels (from Main.dc.html). */
 const RAIL = { left: 1200, top: 204, height: 640 };
@@ -78,13 +78,13 @@ export function SideRail({ section, hikers, camera, bounds, onJump }: SideRailPr
           style={{
             top,
             left,
-            boxShadow: `0 0 0 2px ${characterFor(h.id).color}, 0 3px 6px rgba(0,0,0,0.3)`,
+            boxShadow: `0 0 0 2px ${hikerColor(h)}, 0 3px 6px rgba(0,0,0,0.3)`,
           }}
           aria-label={`Jump to ${h.name}`}
           title={`Jump to ${h.name}`}
           onClick={() => onJump(focusOn(center, camera.zoom, bounds))}
         >
-          <img src={portraitSrc(h.id)} alt="" draggable={false} />
+          <HikerPortrait hikerId={h.id} className={styles.railFacePic} />
         </button>
       ))}
       <div className={styles.railStart}>START</div>

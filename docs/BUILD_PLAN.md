@@ -749,7 +749,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
   - **Slots, level-ups and trinket picks:** `src/engine/traits/slots.ts` and `levelUp.ts`. Daily traits: `src/engine/traits/daily.ts`. Prepared, Tactical and Scout: `reveal.ts`.
   - **XP:** `src/engine/xp.ts` (`gainXp`, the row rule, the level lines).
   - **Trait warnings:** the forecast is `src/engine/traits/forecast.ts`; the setting is `src/ui/app/traitWarnings.ts`; the screen's view is `src/ui/traits/forecastView.ts`.
-  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window is `src/ui/traits/LevelUpWindow.tsx` (a placeholder until 10b); the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
+  - **On screen:** badges, their hover window and the portrait tag in `src/ui/traits/`; the level-up window was a placeholder until 10b replaced it with `src/ui/levelUp/`; the Abilities panel is in `src/ui/panels/TurnPanel.tsx`.
   - **Plush:** `src/content/families.ts`, `src/engine/stats.ts` (Stuffing kept in both stats) and `src/engine/thresholds.ts` (its limits).
   - **Debug (backtick):** test hikers on the title screen; add or remove any trait with its setting; add slots; refill uses; odd or even day; force a daily pick; set XP and level; level up now at a chosen tier; switch Trait warnings.
 - **First guesses while building** (`TODO(wyatt)` in the code):
@@ -816,16 +816,122 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ## Phase 10b: The real characters, and their screens
 
-(Later, with Wyatt.)
+(New in the Nov 20 updates: `docs/UPDATE-2026-11-20-phase-10b.md`, then `-icons`, `-polish` and `-family`. Each later one wins where they disagree, so the family update has the last word.)
+
+**Goal:** the real roster plays. Every hiker has a card, the player picks a party of 1 to 4 on the selection screen, and level-ups get their real screen.
 
 **Build**
-- The real roster from `07-characters.md`: every character and variant with their classes, slots, starting traits and starting bags. Every character starts unlocked; locking comes in a later phase.
-- Trait art and character art.
-- The **hiker selection screen** and the **level-up screen**, designed together with Wyatt.
+- **Placeholder text:** player-facing text that says "Wyatt will write" (or the same idea worded differently) becomes exactly `Placeholder text`, in game data, UI strings and the docs. `TODO(wyatt)` code comments stay.
+- **The real roster** (`07-characters.md`): every character and variant, all unlocked. The 10a test hikers stay, dev-only.
+  - **Data per hiker:** `id`, `name`, `title`, `family`, roles (classes in code, **roles** on screen, main first), slots, traits, starting bag, portrait (or none), `starter` (the 10 starters), `variantOf`, a hidden `difficulty`, and `households` (the Family sort).
+  - **Since 10a:** **Catie**, not Katie. **Mitchell** has slots U, U, M, M, and his second Morale trait is **Cat Person**.
+  - **Titles** go under the name, in capitals and quotes (the table in `07-characters.md`). Ben, Mindy and the variants have none yet: no title line, no empty quotes.
+  - **Starting bags** are handed out when a run starts. A starting blueprint is learned and takes no item slot; starting items roll Quality as usual. The 4 random starting resources stay.
+  - **No cloning:** a variant can't join if that hiker, or another of their variants, is already in the party.
+- **Art:**
+  - **Trait icons:** `public/assets/traits/<name>.png`, the trait's name in lowercase with dashes (`dog-mom`, `just-around-the-next-corner`). Every trait has one now; the placeholder stays only for traits added later without a file.
+    - Shared files: Puller and Leash Puller use `puller`, Glutton and Human Food `glutton`; every [Node] Finder `node-finder`, Hound `node-hound` and Thumb `node-thumb`; every Location `location`, Action `action` and Conservationist `conservationist`.
+    - The Trail Thrill-Seeker uses `thrill-seeker`, the Morale one `thrill-seeker-morale`; Boss & Gracie's Tag Team uses `tag-team`.
+  - **Icon color:** drawn through a CSS mask in the type's **ring color** (Trail `#F2B950`, Utility `#9CC3A8`, Morale `#CDA6EE`, used up `#6F6A60`) on the badge's darker middle, everywhere a badge appears. The card back is the exception: the icon in the type's **middle** color on a ring-colored square.
+  - **Icon size:** the icon fills the shape and is clipped to it: a diamond holds it at its full side, a circle at 85% of its width. On a 300-wide card: diamond 35 px with a 34 px icon, circle 42 px with a 36 px icon, in a 50 px box per badge. The 10a hiker panel badges follow the same rule.
+  - **Portraits:** each PNG is already framed for the card's 750 × 620 portrait window. Draw it at the full window size from the top-left; never crop, scale or move one by one. `portraits.json` gives each one's `faceY` (0 top, 1 bottom) for wherever only part shows. Behind it: `forest.png` covering the window, then `pixel-pattern.png` at 20%.
+  - **No portrait yet:** Ben and Mindy show their family icon, and variants without art the star, a third of the window wide, at 30% opacity, in `#1A1A1A`.
+  - **Family icons:** `public/assets/cards/family/<human|dog|cat|plush|duo|variant>.png`, white, drawn in `#1A1A1A` through a mask. Variant cards show the star (22 px) just right of their family icon.
+- **The hiker card** (one shared component; `mockups/HikerCards.png`; sizes for a 300 × 420 card, everything scales together; Edit Undo except trait-window and back text):
+  - **Front:**
+    - the portrait window (top 250), with the family icon top left (26 px, 11 px in);
+    - the white name band (52): the NAME about 28 px (line-height 0.9) with the "TITLE" right under it, no gap, about 18 px in `#5E5E5E` (line-height 0.95); long names and titles shrink to fit;
+    - the role banner (17): the role in white capitals on its color; two roles get equal split tabs, main on the left;
+    - the trait area (`#2C2C2C`): the badges in one row, each named in tiny capitals in its ring color; an open slot is a faint dashed diamond labeled OPEN; hover (or long-press) opens the 10a trait window;
+    - a STARTING BAG tab, bottom center, in the main role's color, whose hover shows the bag.
+  - **Role colors:** Tank `#DC3B44`, Hardy `#E27A2B`, Scavenger `#93A33A`, Crafter `#3A7752`, Scout `#3E8FC9`, Support `#F0AB35`, Jack `#5F7487`, Entertainer `#D675EF`, Moneymaker `#1FA39A`.
+  - **Back:**
+    - the portrait strip (84), shifted so the face (`faceY`) sits in its middle;
+    - the name band (34), name only, and the role banner;
+    - one row per trait from 142: the icon square (icon at 90%, round square for usable traits), a ring-colored strip with the name (and a USABLE tag), and the short description in white on the middle color; an open slot is a grey row, "OPEN SLOT · Filled on a level-up.";
+    - the starting bag in a brown bar (`#895637`) at the bottom.
+  - **Flipping:** a click flips it [0.35 s] (under reduced motion the sides just swap). Hovering a flipped card lifts it to the middle, larger [1.2×]. On a phone, long-press a flipped card to open it large and tap anywhere to close. Drags work from either side, after a [6 px] movement so a click never starts one.
+- **The hiker selection screen** (the screen for a new run; `mockups/HikerSelect.png`, `HikerSort.png` and `SortRibbons.png`):
+  - **Top:** CHOOSE YOUR HIKERS and the line "Drag a card into a spot. Click a card to flip it, and hover a flipped card to lift it to the middle. Start with 1 to 4 hikers."; **RANDOM** fills the empty spots (no cloning); **START HIKE · N HIKERS** works with 1 to 4 and is disabled at 0.
+  - **4 spots** in the hiker colors (1 orange, 2 blue, 3 yellow, 4 purple) with a HIKER N tab; spot order is the run's hiker order.
+    - Empty: a dashed outline, a plus and "DRAG A HIKER HERE".
+    - Filled (360 × 350): the portrait, 204 tall, cropped by `faceY`, with a BAG chip and an × to remove; the white band (52) with the name (26 px) and the title under it (16 px); the role banner; the badges with names from 278, with their windows on hover.
+  - **Dragging** (the shared 9.5 drag system): every spot glows and the hovered one says DROP TO ADD. Dropping on a filled spot swaps (the old hiker goes back to the list); spot to spot swaps; out of a spot and anywhere else removes. Enter or a double-click adds a card to the first empty spot.
+  - **The list:**
+    - filter chips ALL, HUMANS, DOGS, CATS, PLUSH, VARIANTS;
+    - cards in the party dim, with an IN PARTY tag in their spot's color; blocked variants dim too, tagged with who's in ("FINN IS IN");
+    - the card being dragged leaves a dashed outline.
+  - **Sorting:** a SORT control on the right of the filter row: **DEFAULT, FAMILY, CLASS, TRAITS, DIFFICULTY**, remembered in settings. Filters and sorts combine.
+    - **Default:** the 10 starters in roster order, then everyone else by name. No ribbons.
+    - **The others** split the list into groups, each under a full-width ribbon: a colored bar with notched ends, the group name in white capitals on the left and a small count ("13 HIKERS").
+    - **Family** (called `household` in the data, a `households` list per hiker, since "family" already means Human, Dog, Cat or Plush):
 
-**Ask Wyatt first**
-- The designs for both screens.
-- The trait icons and character portraits.
+      | Ribbon | Color | Hikers, in this order |
+      | --- | --- | --- |
+      | ELMERS | `#B5543A` | Wyatt, Mom, Ellie, Finn, Cody, Duke, Scarlet, Hershal, Sinjon, Brutus |
+      | BROOKS | `#3D7EA6` | Mom, Gdog, Grandpa Wink, Pepper, Melissa, Muffin, Coco |
+      | SHERMAN | `#D08A2E` | Grandpa Sherman, Pearl, Kai, Catie, Mitchell, Nathan, Madeline |
+      | LEICHTY | `#4E8F5A` | Erin, Jackson, Anni, Boss & Gracie |
+      | OTHER | `#6B6F78` | Everyone else, by name (Ben, Mindy, Leah, Loki, Goldie) |
+
+      - A hiker in two families shows in both (Mom, in Elmers and Brooks). Both copies are the same hiker: either can be dragged, both dim when she's in the party.
+      - Variants go right after their base hiker: Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie and Wywee in Elmers; Graduate Mom in both Elmers and Brooks; Planner Wink and Showgirl Gdog in Brooks.
+    - **Class:** by main role only, in the role order above, ribbon in the role's color.
+    - **Traits:** by how many traits a hiker starts with (open slots don't count): 3 TRAITS `#5C7FA3`, 4 TRAITS `#3F5C82`, any other count `#2E4766`.
+    - **Difficulty:** EASY 1–3 `#4E9A5F`, MEDIUM 4–5 `#C9A227`, HARD 6–7 `#D9642E`, EXPERT 8–10 `#B23A48`.
+    - **Inside a group:** by name; by rating then name for Difficulty; the table's order for Family.
+  - **Animated background** (only this screen): `src/shaders/hiker-select-bg.frag`, a WebGL2 fragment shader on a full-screen canvas behind everything, drawn with one full-screen triangle, with `#version 300 es`, `precision highp float;` and `out vec4 outColor;` prepended.
+    - Uniforms: `uTime` (seconds since the screen opened), `uResolution`, `uMouse` (0–1, y up, smoothed; drifting in a slow loop when the pointer is away), `uDeep` `#0C1411`, `uMoss` `#1D3129`, `uMist` `#476055`, `uGlow` `#E9B44C`, `uSwirl` [1.2], `uPixels` [150], `uPull` [0.5].
+    - At most 1.5× device pixels; paused when the screen or tab is hidden; one still frame under reduced motion; a plain `#0C1411` without WebGL2.
+- **Hidden difficulty:** each hiker's 1–10 rating from the "Difficulty (hidden)" table. Never shown in the game; players only see the Difficulty sort's ribbons. A dev-only debug toggle shows the number in each card's corner.
+- **The level-up screen** (`mockups/LevelUp.png`; replaces the 10a placeholder, at the moment 10a decided):
+  - No window: a backdrop blur [10 px] and a navy overlay `rgba(12, 20, 46, 0.82)`, with the content on top.
+  - **Opening:** 0.0 s the blur and overlay fade in; 0.1 s the portrait pops in at the top middle (a circle ringed in the hiker's color, a soft glow, the name under it); 0.6 s the XP bar fills to full [1.2 s], "LEVEL N" left and "XP a / b" right; 1.8 s a "LEVEL N+1!" badge pops at its end; 2.0 s the options deal in [0.15 s apart] under "PICK A NEW TRAIT"; 2.5 s "YOUR TRAITS" slides up. A click skips to the end; under reduced motion it all just appears.
+  - **Option cards** (240 × 280): a top strip in the ring color with the name; a big badge (diamond 58 px with a 58 px icon, circle 72 px with a 62 px icon) on the type's middle color; the type ("TRAIL · USABLE"); the description; and a tag naming where it came from, the **role** in its color or **WILD CARD · ANY CLASS**. From level 4 they shrink to fit up to 6 in a row. A new slot is a card too ("NEW SLOT · TRAIL"), dropped on a "+" spot at the end of the trait row.
+  - **Your traits:** one tile per slot: the slot type on top (TRAIL, UTILITY, TRAIL OR UTILITY, MORALE…), the badge at 1.4×, the name and a status chip.
+  - **Picking:** drag an option onto a slot. While dragging, tiles it fits glow gold (a filled one says REPLACE, an open one EMPTY · DROP HERE) and the rest dim (CAN'T GO HERE). A dropped trait can still be moved. Replacing removes the old trait for good. **CONFIRM** lights up once something is placed; **KEEP MY TRAITS** takes nothing and closes. Click fallback: an option, then a slot. Several hikers leveling at once get their screens one after another.
+
+**Tests**
+- **Roster:** every hiker in `07-characters.md` exists with the right slots, traits, roles, title, starting bag and households; Mitchell has Cat Person; starting bags are handed out at the start of a run.
+- **No cloning:** a variant can't join with its base hiker or another of their variants; RANDOM follows the rule.
+- **Selection:** start works with 1, 2, 3 and 4 hikers, not 0; dropping on a filled spot swaps; the × removes a hiker.
+- **Sorting:** each sort makes the right groups in the right order; Family's 5 groups, with Mom in both Elmers and Brooks and the variants after their base hiker; DEFAULT has no ribbons; the difficulty number never shows (debug toggle off).
+- **Level-up:** only fitting slots accept a trait; replacing removes the old trait; KEEP MY TRAITS changes nothing; a new-slot option adds a slot; queued level-ups come one after another.
+- **Placeholder text:** none still says "Wyatt will write".
+- **Assets:** every trait has an icon file, every family has an icon file, and every portrait has a `portraits.json` entry.
+- **Icon color:** every badge icon uses its type's ring color, and the used-up color when used up.
+- **Background:** the shader compiles; under reduced motion it draws once; the fallback color shows without WebGL2.
+
+**Done when:** a run starts from the selection screen with 1 to 4 real hikers and their starting bags, every hiker card and sort matches the mockups, level-ups use the new screen, and the tests above pass.
+
+**Phase 10b notes (built Nov 20)**
+- **Where things are:**
+  - **The roster:** `src/content/roster.ts` (every hiker and variant, `HOUSEHOLDS`, no cloning); role colors in `src/content/classes.ts`; party colors by spot in `src/content/partyColors.ts`. Starting bags are handed out in `src/engine/newGame.ts`.
+  - **Art:** trait icons through `src/ui/traits/traitIcons.ts`; portraits, the forest background and family icons through `src/ui/hikers/portraitArt.ts` and `HikerPortrait.tsx`.
+  - **The hiker card:** `src/ui/hikers/HikerCard.tsx` (its data in `cardData.ts`; shrink-to-fit text in `fitText.ts`). A dev gallery at `#mockup-hiker-cards`.
+  - **The selection screen:** `src/ui/select/` (`HikerSelect.tsx`; the party rules in `selection.ts`; filters and sorts in `sorting.ts`; the background in `background/`). The shader is `src/shaders/hiker-select-bg.frag`.
+  - **The level-up screen:** `src/ui/levelUp/` (`LevelUpScreen.tsx`; what it shows in `levelUpView.ts`). Old Photo uses it too.
+  - **Remembered on the device:** the sort (`src/ui/app/deviceSetting.ts` makes any such setting).
+  - **Debug (backtick):** on the selection screen, a small panel shows each card's hidden difficulty. In a hike, "Level up now" (Traits) opens the level-up screen.
+- **Choices made while building (not in the mockups):**
+  - The selection screen has a **BACK** button to the title, so a misclick on New Hike doesn't strand anyone.
+  - A filled spot says **DROP TO SWAP** while a card is over it; dragging a hiker out of the spots shows **DROP TO REMOVE**.
+  - The FAMILY sort button sits second (DEFAULT, FAMILY, CLASS, TRAITS, DIFFICULTY); `HikerSort.png` was drawn before it existed.
+  - The swirling background fills the whole window, letterbox included.
+  - **Level-up:** KEEP MY TRAITS asks first (it can't be undone). A trait placed on a filled slot says "Replaces …" in red before CONFIRM. A placed card can be taken back from its spot in the row ("PLACED · TAKE BACK"). The + spot only shows when a NEW SLOT is offered.
+  - **Option tags** are worked out from the trait and the hiker's roles, not stored: a role the hiker has, JACK, or WILD CARD · ANY CLASS. Morale, general, special and unique traits have no tag.
+  - **Old Photo** keeps its old rule: one of its 3 traits must be taken (no KEEP MY TRAITS).
+  - **Phones:** in the hiker list a vertical swipe scrolls; a card is picked up by moving sideways first, or added with a double-tap. Spots and the level-up cards drag in any direction.
+- **First guesses while building** (`TODO(wyatt)` in the code):
+  - **Roster:** Ellie the Devourer's Glutton is the Dog version, Human Food. Planner Wink's Traveler is set to Tend (the doc gives no action). The debug panel's "new game" starts with the first four starters.
+  - **Party colors follow the spot** (1 orange, 2 blue, 3 yellow, 4 purple). RANDOM uses the browser's random (it's the screen, not the run).
+  - **KEEP MY TRAITS** still counts the level, so MBA and Proud Mentor still fire.
+  - **The bracketed numbers:** a card flips in 0.35 s and lifts to 1.2×; the background's swirl 1.2, pixels 150 and pull 0.5, with a 40 s drift loop a quarter of the screen out; the level-up's blur 10 px, bar fill 1.2 s and cards dealt 0.15 s apart. All in `src/config/balance.ts` (`ui`).
+- **Not done yet:**
+  - **Art:** portraits for Ben, Mindy and the variants other than Wywee (they show their family icon or the variant star).
+  - **Phones:** at phone size the stage shrinks to about a third, so card text is very small; worth a look when Phase 12 or 17 sizes things for touch. The drag gestures were tested with simulated touches, not on a real phone.
+  - **Old Photo's screen** was checked by its tests, not in the browser (the debug panel can't open one).
+- **Saves:** version 17. A v16 save's hikers get their party colors. Wyatt's v14 save still loads.
 
 ---
 

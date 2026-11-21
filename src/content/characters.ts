@@ -82,6 +82,14 @@ export const STARTING_PARTY: readonly CharacterDef[] = [
 
 const BY_ID = new Map([...STARTING_PARTY, ...TEST_HIKERS].map((c) => [c.id, c]));
 
+/**
+ * A hiker's party color: the one they got from their spot when the run
+ * started, or (for an old save's hikers) their character's.
+ */
+export function hikerColor(hiker: { id: string; color?: string } | undefined): string {
+  return hiker?.color ?? characterFor(hiker?.id ?? '').color;
+}
+
 /** A hiker's character, for their color and portrait. Unknown ids get a neutral look. */
 export function characterFor(
   hikerId: string,

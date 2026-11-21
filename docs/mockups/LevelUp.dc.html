@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hike in the Woods — level up</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&amp;display=swap">
+<style>
+@font-face{font-family:'EditUndo';src:url(/_blob/5f302223387e626fdc9a5f5df6ebee5c) format('truetype');font-display:block}
+body{margin:0}
+.eu{font-family:'EditUndo',monospace}
+.hc{position:relative}
+.hc:hover{z-index:30}
+.hb:hover{z-index:40}
+.hb:hover > .tip{display:flex !important}
+.slot-glow{animation:slotPulse 1.6s ease-in-out infinite}
+@keyframes slotPulse{0%,100%{box-shadow:0 0 0 3px var(--c),0 0 0 3px var(--g)}50%{box-shadow:0 0 0 3px var(--c),0 0 0 14px rgba(0,0,0,0)}}
+@media (prefers-reduced-motion: reduce){*{animation:none !important}}
+@keyframes luPop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes luFill{from{width:38%}to{width:100%}}
+@keyframes luBurst{0%{transform:scale(.4);opacity:0}50%{transform:scale(1.25);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes luIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.lu-pop{animation:luPop .5s ease-out both}
+.lu-fill{animation:luFill 1.2s .6s cubic-bezier(.3,.7,.3,1) both}
+.lu-burst{animation:luBurst .45s 1.8s ease-out both}
+.lu-in{animation:luIn .45s ease-out both}
+</style>
+</helmet>
+<div style="position: relative; width: 1600px; height: 1000px; overflow: hidden; font-family: 'DM Sans', sans-serif; color: #F1EADB; background: #1D2220">
+<div style="position: absolute; inset: -30px; filter: blur(12px)">
+<div style="position: absolute; inset: 0; background: url(/_blob/bcad4c301698b1997bcf7c91c422c7f7) center / cover no-repeat"></div>
+<div style="position: absolute; left: 60px; top: 90px; width: 330px; height: 760px; border-radius: 18px; background: rgba(29,34,32,0.85)"></div>
+<div style="position: absolute; left: 520px; top: 260px; width: 120px; height: 104px; border-radius: 22px; background: #E4D8BF"></div>
+<div style="position: absolute; left: 700px; top: 380px; width: 120px; height: 104px; border-radius: 22px; background: #C3D5C5"></div>
+<div style="position: absolute; left: 880px; top: 260px; width: 120px; height: 104px; border-radius: 22px; background: #C3D5C5"></div>
+<div style="position: absolute; left: 1060px; top: 520px; width: 120px; height: 104px; border-radius: 22px; background: #5F7A70"></div>
+<div style="position: absolute; left: 0; top: 0; width: 100%; height: 64px; background: rgba(29,34,32,0.9)"></div>
+</div>
+<div style="position: absolute; inset: 0; background: rgba(12,20,46,0.82)"></div>
+
+<div class="lu-pop" style="position: absolute; left: 725px; top: 34px; width: 150px; height: 150px; border-radius: 50%; overflow: hidden; background: #D6D6D2 url({{port.bg}}) center / cover no-repeat; box-shadow: 0 0 0 5px #EBC04A, 0 0 40px rgba(235,192,74,0.45)"><img src="{{port.por}}" alt="" style="position: absolute; left: {{port.left}}px; top: {{port.top}}px; width: {{port.w}}px; height: {{port.h}}px"></div>
+<div class="lu-pop" style="position: absolute; left: 0; top: 196px; width: 1600px; display: flex; flex-direction: column; align-items: center; gap: 6px"><span class="eu" style="font-size: 30px; letter-spacing: 0.06em">BRUTUS</span></div>
+<div style="position: absolute; left: 520px; top: 244px; width: 560px; display: flex; justify-content: space-between; align-items: baseline"><span class="eu" style="font-size: 12px; letter-spacing: 0.08em; color: #9DA6C4">LEVEL 2</span><span style="font-size: 12px; color: #9DA6C4">XP 12 / 12</span></div>
+<div style="position: absolute; left: 520px; top: 264px; width: 560px; height: 18px; box-sizing: border-box; border-radius: 9px; background: #0A1230; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14); overflow: hidden"><div class="lu-fill" style="height: 100%; border-radius: 9px; background: linear-gradient(90deg, #E9A93A, #F2B950 60%, #FFE29A)"></div></div>
+<div class="lu-burst eu" style="position: absolute; left: 1094px; top: 254px; height: 36px; padding: 0 12px; border-radius: 9px; background: #EBC04A; display: flex; align-items: center; font-size: 16px; letter-spacing: 0.08em; color: #1D2220; box-shadow: 0 0 24px rgba(235,192,74,0.6)">LEVEL 3!</div>
+
+<div class="lu-in" style="position: absolute; left: 0; top: 314px; width: 1600px; display: flex; flex-direction: column; align-items: center; gap: 4px; animation-delay: 1.9s"><span class="eu" style="font-size: 16px; letter-spacing: 0.1em">PICK A NEW TRAIT</span><span style="font-size: 13px; color: #9DA6C4">Drag one onto a slot below. Dropping it on a trait replaces that trait.</span></div>
+<div style="position: absolute; left: 400px; top: 368px; width: 800px; display: flex; justify-content: space-between">
+<sc-for list="{{opts3}}" as="o" hint-placeholder-count="3">
+<div class="lu-in" style="position: relative; width: 240px; height: 280px; animation-delay: {{o.delay}}">
+<div style="opacity: {{o.op}}"><div style="position: relative; width: 240px; height: 280px; box-sizing: border-box; border-radius: 14px; overflow: hidden; background: {{o.fill}}; box-shadow: 0 0 0 3px {{o.ring}}, 0 16px 30px rgba(0,0,0,0.45); display: flex; flex-direction: column; align-items: center">
+<div class="eu" style="width: 100%; height: 34px; flex: none; background: {{o.ring}}; display: flex; align-items: center; justify-content: center; font-size: 15px; letter-spacing: 0.06em; color: {{o.fill}}">{{o.name}}</div>
+<div style="width: 100%; height: 96px; flex: none; background: rgba(0,0,0,0.16); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{o.dia}}" hint-placeholder-val="{{true}}"><div style="width: 58px; height: 58px; transform: rotate(45deg); border-radius: 10px; background: {{o.fill}}; box-shadow: 0 0 0 4px {{o.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="width: 58px; height: 58px; flex: none; transform: rotate(-45deg); background: {{o.ring}}; -webkit-mask: url({{o.ic}}) center / contain no-repeat; mask: url({{o.ic}}) center / contain no-repeat"></div></div></sc-if>
+<sc-if value="{{o.coin}}" hint-placeholder-val="{{false}}"><div style="width: 72px; height: 72px; border-radius: 50%; background: {{o.fill}}; box-shadow: 0 0 0 4px {{o.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="width: 62px; height: 62px; flex: none; background: {{o.ring}}; -webkit-mask: url({{o.ic}}) center / contain no-repeat; mask: url({{o.ic}}) center / contain no-repeat"></div></div></sc-if>
+</div>
+<span class="eu" style="margin-top: 12px; font-size: 10px; letter-spacing: 0.08em; color: {{o.ring}}">{{o.type}}</span>
+<span style="margin: 8px 16px 0; font-size: 13.5px; line-height: 1.4; color: #FFFFFF; text-align: center">{{o.desc}}</span>
+<span class="eu" style="position: absolute; bottom: 12px; height: 20px; padding: 0 8px; border-radius: 5px; background: {{o.srcCol}}; display: flex; align-items: center; font-size: 9px; letter-spacing: 0.08em; color: #FFFFFF">{{o.src}}</span>
+</div></div>
+<div style="position: absolute; inset: 0; display: {{o.ph}}; align-items: center; justify-content: center; border-radius: 14px; border: 2px dashed rgba(255,255,255,0.2)"><span class="eu" style="font-size: 11px; letter-spacing: 0.08em; color: #7D8299">PICKED UP</span></div>
+</div>
+</sc-for>
+</div>
+
+<div class="lu-in" style="position: absolute; left: 0; top: 678px; width: 1600px; display: flex; justify-content: center; animation-delay: 2.5s"><span class="eu" style="font-size: 14px; letter-spacing: 0.1em; color: #C9CEE0">YOUR TRAITS</span></div>
+<div class="lu-in" style="position: absolute; left: 424px; top: 708px; width: 752px; display: flex; justify-content: space-between; animation-delay: 2.5s">
+<sc-for list="{{lslots}}" as="t" hint-placeholder-count="4">
+<div style="position: relative; width: 170px; height: 176px; box-sizing: border-box; border-radius: 14px; border: {{t.dash}}; background: rgba(255,255,255,0.05); box-shadow: {{t.glow}}; opacity: {{t.op}}; display: flex; flex-direction: column; align-items: center; padding-top: 12px; gap: 8px">
+<span class="eu" style="font-size: 9px; letter-spacing: 0.08em; color: {{t.kindC}}">{{t.kind}}</span>
+<div style="position: relative; transform: scale(1.4); margin: 10px 0">
+<sc-for list="{{t.bl}}" as="b" hint-placeholder-count="1"><div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center">
+<sc-if value="{{b.dia}}" hint-placeholder-val="{{true}}"><div style="width: 35px; height: 35px; transform: rotate(45deg); border-radius: 6px; box-sizing: border-box; border: {{b.dash}}; background: {{b.fill}}; box-shadow: 0 0 0 3px {{b.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="transform: rotate(-45deg); width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center"><div style="width: 34px; height: 34px; flex: none; display: {{b.icD}}; background: {{b.ring}}; -webkit-mask: url({{b.ic}}) center / contain no-repeat; mask: url({{b.ic}}) center / contain no-repeat"></div><span class="eu" style="display: {{b.qD}}; font-size: 18px; color: {{b.ring}}">?</span></div></div></sc-if>
+<sc-if value="{{b.coin}}" hint-placeholder-val="{{false}}"><div style="width: 42px; height: 42px; border-radius: 50%; background: {{b.fill}}; box-shadow: 0 0 0 3px {{b.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="width: 36px; height: 36px; flex: none; display: {{b.icD}}; background: {{b.ring}}; -webkit-mask: url({{b.ic}}) center / contain no-repeat; mask: url({{b.ic}}) center / contain no-repeat"></div><span class="eu" style="display: {{b.qD}}; font-size: 19px; color: {{b.ring}}">?</span></div></sc-if>
+</div></sc-for>
+</div>
+<span class="eu" style="font-size: 11px; letter-spacing: 0.04em; color: #F1EADB; text-align: center">{{t.name}}</span>
+<span class="eu" style="position: absolute; bottom: 12px; height: 20px; padding: 0 8px; border-radius: 5px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 0 1px {{t.chipC}}; display: flex; align-items: center; font-size: 9px; letter-spacing: 0.08em; color: {{t.chipC}}">{{t.chip}}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="position: absolute; left: 880px; top: 596px; transform: rotate(4deg) scale(0.72); transform-origin: 0 0; filter: drop-shadow(0 20px 26px rgba(0,0,0,0.6))"><sc-for list="{{ghostL}}" as="o" hint-placeholder-count="1"><div style="position: relative; width: 240px; height: 280px; box-sizing: border-box; border-radius: 14px; overflow: hidden; background: {{o.fill}}; box-shadow: 0 0 0 3px {{o.ring}}, 0 16px 30px rgba(0,0,0,0.45); display: flex; flex-direction: column; align-items: center">
+<div class="eu" style="width: 100%; height: 34px; flex: none; background: {{o.ring}}; display: flex; align-items: center; justify-content: center; font-size: 15px; letter-spacing: 0.06em; color: {{o.fill}}">{{o.name}}</div>
+<div style="width: 100%; height: 96px; flex: none; background: rgba(0,0,0,0.16); display: flex; align-items: center; justify-content: center">
+<sc-if value="{{o.dia}}" hint-placeholder-val="{{true}}"><div style="width: 58px; height: 58px; transform: rotate(45deg); border-radius: 10px; background: {{o.fill}}; box-shadow: 0 0 0 4px {{o.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="width: 58px; height: 58px; flex: none; transform: rotate(-45deg); background: {{o.ring}}; -webkit-mask: url({{o.ic}}) center / contain no-repeat; mask: url({{o.ic}}) center / contain no-repeat"></div></div></sc-if>
+<sc-if value="{{o.coin}}" hint-placeholder-val="{{false}}"><div style="width: 72px; height: 72px; border-radius: 50%; background: {{o.fill}}; box-shadow: 0 0 0 4px {{o.ring}}; overflow: hidden; display: flex; align-items: center; justify-content: center"><div style="width: 62px; height: 62px; flex: none; background: {{o.ring}}; -webkit-mask: url({{o.ic}}) center / contain no-repeat; mask: url({{o.ic}}) center / contain no-repeat"></div></div></sc-if>
+</div>
+<span class="eu" style="margin-top: 12px; font-size: 10px; letter-spacing: 0.08em; color: {{o.ring}}">{{o.type}}</span>
+<span style="margin: 8px 16px 0; font-size: 13.5px; line-height: 1.4; color: #FFFFFF; text-align: center">{{o.desc}}</span>
+<span class="eu" style="position: absolute; bottom: 12px; height: 20px; padding: 0 8px; border-radius: 5px; background: {{o.srcCol}}; display: flex; align-items: center; font-size: 9px; letter-spacing: 0.08em; color: #FFFFFF">{{o.src}}</span>
+</div></sc-for></div>
+
+<div class="lu-in" style="position: absolute; left: 0; top: 922px; width: 1600px; display: flex; justify-content: center; gap: 14px; animation-delay: 2.6s">
+<button class="eu" style="height: 44px; padding: 0 20px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.25); background: transparent; color: #F1EADB; font-size: 13px; letter-spacing: 0.08em">KEEP MY TRAITS</button>
+<button class="eu" style="height: 44px; padding: 0 26px; border-radius: 11px; border: none; background: #4A5070; color: #8E93AA; font-size: 14px; letter-spacing: 0.08em">CONFIRM</button>
+</div>
+
+<div style="position: absolute; left: 40px; top: 330px; width: 300px; display: flex; flex-direction: column; gap: 10px">
+<span class="eu" style="font-size: 12px; letter-spacing: 0.08em; color: #9DA6C4">THE ANIMATION</span>
+<sc-for list="{{steps}}" as="p" hint-placeholder-count="6"><div style="display: flex; gap: 10px; font-size: 12.5px; line-height: 1.35; color: #C9CEE0"><span class="eu" style="width: 38px; flex: none; color: #EBC04A; font-size: 11px">{{p.t}}</span><span>{{p.d}}</span></div></sc-for>
+<span style="font-size: 12px; line-height: 1.4; color: #7D8299">Click anywhere to skip to the end. Reduced motion: everything just appears.</span>
+</div>
+<div style="position: absolute; left: 1260px; top: 330px; width: 300px; display: flex; flex-direction: column; gap: 10px; font-size: 12.5px; line-height: 1.45; color: #C9CEE0">
+<span class="eu" style="font-size: 12px; letter-spacing: 0.08em; color: #9DA6C4">HOW DROPPING WORKS</span>
+<span>While a card is dragged, the slots it fits glow and the rest dim. Stoic is a Trail trait, so it can replace Forgetful or fill the open Trail-or-Utility slot.</span>
+<span>A replaced trait is gone. CONFIRM lights up once a trait is placed; you can drag it somewhere else before confirming.</span>
+<span>If several hikers level up at once, their screens come one after another.</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {"port": {"por": "/_blob/506a530db686f5c1d821c3d0a07e5a7a", "bg": "/_blob/bcad4c301698b1997bcf7c91c422c7f7", "left": -60.0, "top": -82.1, "w": 270.0, "h": 223.20000000000002}, "opts3": [{"name": "STOIC", "ring": "#F2B950", "fill": "#8A6320", "type": "TRAIL · USABLE", "desc": "Once per day, spend 2 Morale to gain 1 Energy or 1 Appetite.", "ic": "/_blob/9bdd1cd84d470c9385e9448ccc7326a7", "src": "HARDY", "srcCol": "#E27A2B", "dia": false, "coin": true, "delay": "2.0s", "op": 0.0, "ph": "flex"}, {"name": "LEAD STOMACH", "ring": "#9CC3A8", "fill": "#4C7759", "type": "UTILITY · USABLE", "desc": "Free: eat 2 resources to gain 1 Appetite.", "ic": "/_blob/2ed3c823d2d89ad243e55180782e028f", "src": "HARDY", "srcCol": "#E27A2B", "dia": false, "coin": true, "delay": "2.15s", "op": 1, "ph": "none"}, {"name": "SCOUT", "ring": "#F2B950", "fill": "#8A6320", "type": "TRAIL", "desc": "Reveals the nodes of every adjacent tile.", "ic": "/_blob/1a16a26f04860857fb8d6a240af1ffac", "src": "WILD CARD · ANY CLASS", "srcCol": "#5F6B8A", "dia": true, "coin": false, "delay": "2.3s", "op": 1, "ph": "none"}], "ghostL": [{"name": "STOIC", "ring": "#F2B950", "fill": "#8A6320", "type": "TRAIL · USABLE", "desc": "Once per day, spend 2 Morale to gain 1 Energy or 1 Appetite.", "ic": "/_blob/9bdd1cd84d470c9385e9448ccc7326a7", "src": "HARDY", "srcCol": "#E27A2B", "dia": false, "coin": true, "delay": "0s", "op": 1, "ph": "none"}], "lslots": [{"bl": [{"dia": true, "coin": false, "ring": "#F2B950", "fill": "#8A6320", "ic": "/_blob/c58505fadfc2dc43e607b84226dd08b6", "icD": "block", "qD": "none", "label": "FORGETFUL", "name": "FORGETFUL", "typeName": "TRAIL", "desc": "Each morning, a 50% chance to forget one bad condition.", "colW": 150, "tipD": "none", "tipW": 230, "tf1": 14.0, "tf2": 12.5, "tf3": 9.0, "dash": "none", "open": false}], "name": "FORGETFUL", "kind": "TRAIL", "kindC": "#F2B950", "chip": "REPLACE", "chipC": "#E9B44C", "op": 1, "glow": "0 0 0 2px #E9B44C, 0 0 22px rgba(233,180,76,0.45)", "dash": "none"}, {"bl": [{"dia": true, "coin": false, "ring": "#9CC3A8", "fill": "#4C7759", "ic": "/_blob/bd595f61c5678b3481503508b4343522", "icD": "block", "qD": "none", "label": "SNORES", "name": "SNORES", "typeName": "UTILITY", "desc": "Night events are less likely on his tile. Others sleeping here get 1 less Energy.", "colW": 150, "tipD": "none", "tipW": 230, "tf1": 14.0, "tf2": 12.5, "tf3": 9.0, "dash": "none", "open": false}], "name": "SNORES", "kind": "UTILITY", "kindC": "#9CC3A8", "chip": "CAN'T GO HERE", "chipC": "#7D8299", "op": 0.38, "glow": "0 0 0 1px rgba(255,255,255,0.12)", "dash": "none"}, {"bl": [{"dia": true, "coin": false, "ring": "#F2B950", "fill": "transparent", "ic": "", "icD": "none", "qD": "none", "label": "OPEN", "name": "Open slot", "typeName": "EMPTY", "desc": "Filled on a level-up.", "colW": 150, "tipD": "none", "tipW": 230, "tf1": 14.0, "tf2": 12.5, "tf3": 9.0, "dash": "1px dashed #8A8478", "open": true}], "name": "OPEN SLOT", "kind": "TRAIL OR UTILITY", "kindC": "#F2B950", "chip": "EMPTY · DROP HERE", "chipC": "#E9B44C", "op": 1, "glow": "0 0 0 2px #E9B44C, 0 0 26px rgba(233,180,76,0.55)", "dash": "2px dashed #F2B950"}, {"bl": [{"dia": true, "coin": false, "ring": "#CDA6EE", "fill": "#6B4C8F", "ic": "/_blob/206d27bf03a40b7023787a1ac0b2bf3a", "icD": "block", "qD": "none", "label": "SIMPLE PLEASU…", "name": "SIMPLE PLEASURES", "typeName": "MORALE", "desc": "+1 Morale each time he eats or sleeps. −1 each time he crafts.", "colW": 150, "tipD": "none", "tipW": 230, "tf1": 14.0, "tf2": 12.5, "tf3": 9.0, "dash": "none", "open": false}], "name": "SIMPLE PLEASURES", "kind": "MORALE", "kindC": "#CDA6EE", "chip": "CAN'T GO HERE", "chipC": "#7D8299", "op": 0.38, "glow": "0 0 0 1px rgba(255,255,255,0.12)", "dash": "none"}], "steps": [{"t": "0.0s", "d": "Screen blurs, navy overlay fades in"}, {"t": "0.1s", "d": "Portrait pops in, top middle"}, {"t": "0.6s", "d": "XP bar fills"}, {"t": "1.8s", "d": "LEVEL UP! and the new level"}, {"t": "2.0s", "d": "New trait cards deal in, one by one"}, {"t": "2.5s", "d": "Your traits slide up from the bottom"}]};
+  }
+}
+</script>
+</body>
+</html>

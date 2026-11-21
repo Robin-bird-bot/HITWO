@@ -2,7 +2,7 @@
  * The party panel on the left (docs/mockups/Main.dc.html): a compact card per
  * hiker, with the selected hiker's card expanded.
  */
-import { characterFor } from '../../content/characters';
+import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
 import { type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -23,7 +23,7 @@ import { useDrop, type DropProps } from '../drag/drag';
 import { OrderBadge, SelectToggle } from './GroupBits';
 import { NO_DROP, useItemDrops } from '../drag/itemDrops';
 import styles from './PartyPanel.module.css';
-import { portraitSrc } from '../portrait';
+import { HikerPortrait } from '../hikers/HikerPortrait';
 import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
 import { AtRiskTag } from '../traits/AtRiskTag';
@@ -127,7 +127,7 @@ function HikerCard({
   /** Its place in the group's turn order. */
   turn?: number;
 }) {
-  const color = characterFor(h.id).color;
+  const color = hikerColor(h);
   const traitView = useTraitView();
   const tag = statusTag(h, selected);
   const tagColors =
@@ -148,10 +148,9 @@ function HikerCard({
     >
       <div className={styles.top}>
         <OrderBadge n={turn}>
-          <img
+          <HikerPortrait
+            hikerId={h.id}
             className={styles.portrait}
-            src={portraitSrc(h.id)}
-            alt=""
             style={{
               boxShadow: `0 0 0 3px ${color}`,
               filter: dim && !selected ? 'grayscale(1)' : 'none',

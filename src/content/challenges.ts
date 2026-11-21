@@ -6,7 +6,7 @@
  * - Card text drops [brackets] (game logic) and shows {names} as the rolled
  *   numbers. A Y shows as its range on the card, and as each hiker's own
  *   number in their section.
- * - Descriptions are "…" until Wyatt writes them (descriptionPlaceholder).
+ * - Descriptions say "Placeholder text" until Wyatt writes them (descriptionPlaceholder).
  * - The 4 opportunities are made up so the blue flow works (placeholder).
  */
 import { BALANCE } from '../config/balance';
@@ -66,7 +66,7 @@ const injury = (extra: Partial<Effect> = {}): Effect => ({ op: 'injury', ...extr
 const lose = (s: StatName, n: Amount, extra: Partial<Effect> = {}): Effect =>
   ({ op: 'stat', stat: s, delta: n, lose: true, ...extra }) as Effect;
 
-const DESCRIPTION = '…';
+const DESCRIPTION = 'Placeholder text';
 
 type ChallengeInput = Omit<ChallengeDef, 'id' | 'kind' | 'description' | 'art'> & {
   kind?: 'challenge' | 'opportunity';

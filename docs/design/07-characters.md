@@ -1,6 +1,6 @@
 # Characters
 
-The roster: each character's classes, trait slots and starting traits, plus new traits that came from their personalities. Numbers in [brackets] are first guesses.
+The roster: each character's classes, trait slots and starting traits, plus new traits that came from their personalities. Numbers in \[brackets\] are first guesses.
 
 ## Roster
 
@@ -10,7 +10,7 @@ The roster: each character's classes, trait slots and starting traits, plus new 
 
 | Family | Starters | Unlocked later |
 | --- | --- | --- |
-| Humans | Wyatt, Mom, Gdog, Grandpa Wink, Grandpa Sherman | Katie, Melissa, Leah, Erin, Jackson, Anni, Mitchell, Nathan, Ben, Mindy, Madeline |
+| Humans | Wyatt, Mom, Gdog, Grandpa Wink, Grandpa Sherman | Catie, Melissa, Leah, Erin, Jackson, Anni, Mitchell, Nathan, Ben, Mindy, Madeline |
 | Dogs | Ellie, Finn, Cody, Pearl, Brutus | Duke, Scarlet, Sinjon, Hershal, Kai, Boss & Gracie (Duo) |
 | Cats |  | Loki, Coco, Muffin |
 | Plush |  | Pepper, Goldie |
@@ -36,7 +36,7 @@ A class says what a character is good at. It isn't strict: a character can have 
 
 - Each character has 1 or 2 classes.
 - A level-up's Trail and Utility options come from the hiker's classes, from Jack traits, and from general traits that fit any class (Strong, Backtracker).
-- To keep some surprise, [1] of the 3 options can come from any class.
+- To keep some surprise, \[1\] of the 3 options can come from any class.
 - **Morale traits are open to everyone.** They aren't tied to a class, and new Morale traits made for a character can be learned by any hiker. A few existing ones stay special (Misophonia, Rain Lover, Moody, Show Girl).
 - Special and unique Trail and Utility traits still only go to the characters they belong to.
 
@@ -48,7 +48,7 @@ A trait can be in two classes. Morale traits aren't listed.
 | --- | --- |
 | Tank | Leader, Puller, Mule, Sherpa, Supportive, Shrug Off, Trespasser, Herder, Pet Sitter |
 | Hardy | Hardy, Stoic, Second Wind, Glutton, Never Hungry, Thrill Seeker, Photosynthesis, Nocturnal, Lead Stomach, Destroyer |
-| Scavenger | Forager, Copier, Copydog, Copycat, [Node] Finder, [Node] Hound, the Pockets, the Thumbs, Gambler, Fortunate, Eagle Eye, Pirate, Archaeologist, Eco-conscious, Fetch, Generous |
+| Scavenger | Forager, Copier, Copydog, Copycat, \[Node\] Finder, \[Node\] Hound, the Pockets, the Thumbs, Gambler, Fortunate, Eagle Eye, Pirate, Archaeologist, Eco-conscious, Fetch, Generous |
 | Crafter | Collaborative, Focused, Chef, Careful Hands, Artisan and Master traits, Savvy, Handy, Talented, Lovingly Made, Proficient, German Efficiency, Alchemist |
 | Scout | Scout, Independent, Prepared, Tactical, Fast, Short, Prowler, Sneaker, Stalker, Trailer, Lookout |
 | Support | Supportive, Therapist, Transparent, Susceptible, Splitter, Wise, Manager, Carrier Pigeon, Dog Whisperer, Trainer, Mouser, Teacher |
@@ -57,6 +57,22 @@ A trait can be in two classes. Morale traits aren't listed.
 | Jack | Day Napper, Closer, Dream Alchemist, Lap Pet |
 
 Entertainer is thin, so it needs a few new traits before it's a real class.
+
+### Role colors
+
+Each role has a color, used on the role banner under a hiker's name. A hiker with two roles gets split tabs, main role first.
+
+| Role | Color |
+| --- | --- |
+| Tank | #DC3B44 |
+| Hardy | #E27A2B |
+| Scavenger | #93A33A |
+| Crafter | #3A7752 |
+| Scout | #3E8FC9 |
+| Support | #F0AB35 |
+| Jack | #5F7487 |
+| Entertainer | #D675EF |
+| Moneymaker | #1FA39A |
 
 ## Dogs
 
@@ -96,7 +112,7 @@ A bossy Samoyed who doesn't say much, but when she does, she's loud. Loves eatin
 - **Chef Ellie** (Crafter): Garbage Chef. Food she crafts can use any resources for its broad part, but always comes out Quality 1 or 2, and her Quality 1 food never gives Food Poisoning.
 - **Fluff Ellie** (Tank): Fluff Armor, like Sinjon's.
 
-### Pearl
+### Pearl "The Pirate"
 
 - **Class:** Scout and Scavenger.
 - **Slots:** T, U, M.
@@ -107,7 +123,7 @@ A bossy Samoyed who doesn't say much, but when she does, she's loud. Loves eatin
 | U | Pirate | Existing, Tier II | Scavenging alone costs no Appetite. |
 | M | Wanderlust | New, open to all | +1 Morale each time she moves to an unrevealed tile. −1 Morale at the start of a day if she didn't move the day before. |
 
-### Brutus
+### Brutus "Doesn't know where he is"
 
 A forgetful male pug, far from the brightest, but his short memory lets him forget his own problems. Snores.
 
@@ -116,14 +132,14 @@ A forgetful male pug, far from the brightest, but his short memory lets him forg
 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| T | Forgetful | New, special | Each morning, a [50%] chance to forget one random negative condition (it's removed). |
-| U | Snores | New, special | Night events are [50%] less likely to hit hikers on his tile (nothing wants to come near). Other hikers sleeping on his tile get 1 less Energy from sleep. |
+| T | Forgetful | New, special | Each morning, a \[50%\] chance to forget one random negative condition (it's removed). |
+| U | Snores | New, special | Night events are \[50%\] less likely to hit hikers on his tile (nothing wants to come near). Other hikers sleeping on his tile get 1 less Energy from sleep. |
 | T/U | (open) |  | Filled on a level-up. |
 | M | Simple Pleasures | New, open to all | +1 Morale each time he eats or sleeps. −1 Morale each time he crafts (thinking is hard). |
 
 **Idea for a variant or a level-up special:** Ignorance Is Bliss (Hardy). His Morale can't drop below 3, but −1 Luck when crafting.
 
-### Cody
+### Cody "The King Red"
 
 A large red retriever, the self-declared alpha of the Red Pack (with Duke and Scarlet). Can be ferocious around other dogs, loves leading, and loves eating bread.
 
@@ -136,7 +152,7 @@ A large red retriever, the self-declared alpha of the Red Pack (with Duke and Sc
 | T | Human Food | Dog version of Glutton | Food gives him 1 extra Appetite. |
 | M | Alpha | Existing, now open to all | Start of day: +1 Morale on a tile with more Humans than Dogs, −1 on a tile with more Dogs than Humans. |
 
-### Duke
+### Duke "The Middle Red"
 
 The tall, lanky middle child of the Red Pack. Keeps to himself, but is a very good and dedicated boy.
 
@@ -145,11 +161,11 @@ The tall, lanky middle child of the Red Pack. Keeps to himself, but is a very go
 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| T | Lanky | New, special | Each move has a [25%] chance not to use his action. |
+| T | Lanky | New, special | Each move has a \[25%\] chance not to use his action. |
 | U | Good Boy | New, special | Instead of acting, he can give his action to a hiker on his tile, who gets an extra action this phase. |
 | M | Close Company | New, open to all | Start of day: +1 Morale sharing a tile with exactly 1 other hiker, −1 on a tile with 3 or more hikers in total. |
 
-### Scarlet
+### Scarlet "The Bossy Red"
 
 The youngest of the Red Pack: bossy, strong and demanding, and loves being the center of attention.
 
@@ -162,7 +178,7 @@ The youngest of the Red Pack: bossy, strong and demanding, and loves being the c
 | U | Spoiled | New, special | When another hiker on her tile eats, she gains 1 Appetite too (she begs). |
 | M | Center of Attention | New, open to all | Start of day: +1 Morale if she has the highest Morale on her tile, −1 if someone there has more. |
 
-### Hershal
+### Hershal "The Wise Old Man"
 
 A wise old dog whose whole build helps everyone else gain XP.
 
@@ -171,11 +187,11 @@ A wise old dog whose whole build helps everyone else gain XP.
 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| U | Mentor | *New*, special | Every other hiker on his tile gains [1] extra XP each time they gain XP. |
-| U | Storyteller | *New*, special | When he Sits by the Fire, every other hiker on his tile gains [2] XP. |
+| U | Mentor | *New*, special | Every other hiker on his tile gains \[1\] extra XP each time they gain XP. |
+| U | Storyteller | *New*, special | When he Sits by the Fire, every other hiker on his tile gains \[2\] XP. |
 | M | Proud Mentor | *New*, open to all | +1 Morale each time a hiker on his tile levels up. −1 Morale at the start of a day alone. |
 
-### Sinjon
+### Sinjon "Tough and Fluff"
 
 A border collie and chow mix: wise but strong. His fluff works like armor.
 
@@ -184,11 +200,11 @@ A border collie and chow mix: wise but strong. His fluff works like armor.
 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| T | Fluff Armor | New, special | Each negative condition he'd get has a [50%] chance to be blocked, at most once per day. |
+| T | Fluff Armor | New, special | Each negative condition he'd get has a \[50%\] chance to be blocked, at most once per day. |
 | U | Wise | Existing, Tier II | When he gains XP, every other hiker on the tile gains 50% as much. |
 | M | Alpha | Existing, now open to all | Start of day: +1 Morale on a tile with more Humans than Dogs, −1 on a tile with more Dogs than Humans. |
 
-### Kai
+### Kai "Crazy like his Dad"
 
 An energetic support dog, built to help Pearl and Grandpa Sherman (see Groups).
 
@@ -201,7 +217,7 @@ An energetic support dog, built to help Pearl and Grandpa Sherman (see Groups).
 | U | Hype Dog | *New*, special | Once per day, as a free action, makes a hiker on his tile or an adjacent tile Energized for 1 day. |
 | M | Loyal | Existing (pets) | Start of day: +1 Morale sharing a tile with a Human, −1 with no Human on the tile. |
 
-### Boss & Gracie (Duo)
+### Boss & Gracie (Duo) "Danger Duo"
 
 Shepherd hybrid siblings who are always together. They share one hiker card, and they round out Erin's family (see Groups).
 
@@ -223,12 +239,12 @@ A fourth family, next to Human, Dog and Cat: stuffed animals that aren't quite r
 
 **Built in for every Plush hiker:**
 
-- **Stuffing:** Energy and Appetite are combined into one bar, Stuffing, with a maximum of [12]. Plush hikers still eat and sleep, but every Energy or Appetite cost and gain goes to Stuffing.
-  - Low Stuffing: at [7] or less they can't move the group and can only sleep at night; at [3] or less they can only sleep; at 0 they take an injury.
+- **Stuffing:** Energy and Appetite are combined into one bar, Stuffing, with a maximum of \[12\]. Plush hikers still eat and sleep, but every Energy or Appetite cost and gain goes to Stuffing.
+  - Low Stuffing: at \[7\] or less they can't move the group and can only sleep at night; at \[3\] or less they can only sleep; at 0 they take an injury.
 - **Carried:** can't move alone. Being moved with the group costs nothing and doesn't use their action. Someone has to carry them.
 - Traits that check for Dogs don't count them, because they aren't real dogs.
 
-### Pepper
+### Pepper "The Troublemaker"
 
 A life-sized stuffed border collie who moves when no one is looking. Pepper is special: his traits let him move on his own, which other Plush hikers can't.
 
@@ -241,7 +257,7 @@ A life-sized stuffed border collie who moves when no one is looking. Pepper is s
 | T | Night Shifty | New, unique | Once per night, he can move to an adjacent tile for free. In the morning he's just somewhere else. |
 | M | Intrinsic | Existing | Start of day: +1 Morale alone, −1 sharing a tile with 2 or more other hikers. |
 
-### Goldie
+### Goldie "The Good One"
 
 A life-sized stuffed golden retriever.
 
@@ -260,15 +276,15 @@ The Cat family moves for no Appetite, alone or with the group, but has 1 fewer i
 
 | Cat | Class | Slots | Traits | Notes |
 | --- | --- | --- | --- | --- |
-| Loki | Tank | T, T, M | Leader, Stoic, Bossy | The Trail Boss build. Bossy gives Morale for every group move, and Stoic turns that Morale into Energy or Appetite. Leader still helps, because the rest of the group pays to move. |
-| Coco | Scout | U, U, M | Nocturnal, Mouser, Aloof | The Night Owl build, adjusted for a cat. Cats already move for free, so Prowler would do nothing; Mouser (night events can't take food or resources on Coco's tile) keeps the night theme. Aloof is the Cat Morale trait. |
-| Muffin | Crafter | U, U, M | Focused, Savvy, Zen | The Lone Crafter build: +1 Luck crafting alone, gets resources back, and Zen rewards the solitude. |
+| Loki "The mean" | Tank | T, T, M | Leader, Stoic, Bossy | The Trail Boss build. Bossy gives Morale for every group move, and Stoic turns that Morale into Energy or Appetite. Leader still helps, because the rest of the group pays to move. |
+| Coco "The Cat" | Scout | U, U, M | Nocturnal, Mouser, Aloof | The Night Owl build, adjusted for a cat. Cats already move for free, so Prowler would do nothing; Mouser (night events can't take food or resources on Coco's tile) keeps the night theme. Aloof is the Cat Morale trait. |
+| Muffin "The Cat" | Crafter | U, U, M | Focused, Savvy, Zen | The Lone Crafter build: +1 Luck crafting alone, gets resources back, and Zen rewards the solitude. |
 
 ## Humans
 
 Humans have no built-in strength or drawback, so their traits carry them.
 
-### Mom
+### Mom "Doesn't like Photos"
 
 The main character. Loves travel, arts and crafts, and dogs.
 
@@ -281,7 +297,7 @@ The main character. Loves travel, arts and crafts, and dogs.
 | U | Handy | Existing, Tier II | +1 card to choose from when crafting. |
 | M | Wanderlust | Open to all | +1 Morale each move to an unrevealed tile. −1 Morale at the start of a day if she didn't move the day before. |
 
-### Wyatt
+### Wyatt "Rain hiker"
 
 The creator of the game.
 
@@ -295,7 +311,7 @@ The creator of the game.
 | M | Rain Lover | Existing, special | During rain or snow, every Morale gain is 1 larger. |
 | M | Thrill-Seeker | Existing | +1 Morale each challenge passed. −1 Morale at the start of a day after facing no challenge. |
 
-### Gdog
+### Gdog "The Tiny"
 
 An amazing chef who deeply cares about her fellow hikers and wants the best for them.
 
@@ -308,7 +324,7 @@ An amazing chef who deeply cares about her fellow hikers and wants the best for 
 | U | Lovingly Made | Existing, Tier II | At 8 or more Morale, +1 extra Luck when crafting. |
 | M | Misophonia | Existing, special | Right away: −1 Morale when another hiker eats on her tile; +2 Morale when crafting food. |
 
-### Grandpa Wink
+### Grandpa Wink "Always Prepared"
 
 - **Class:** Tank.
 - **Slots:** T, T, M.
@@ -316,12 +332,12 @@ An amazing chef who deeply cares about her fellow hikers and wants the best for 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
 | T | Strong Walker | *New*, special | Hikers he moves with the group don't use their action. |
-| T | Just Around the Next Corner | *New*, special | Moving to a tile 3 or fewer tiles from the checkpoint: moving alone has a [75%] chance to cost no Appetite, and when he moves the group, each hiker has a [25%] chance to pay no Appetite. |
+| T | Just Around the Next Corner | *New*, special | Moving to a tile 3 or fewer tiles from the checkpoint: moving alone has a \[75%\] chance to cost no Appetite, and when he moves the group, each hiker has a \[25%\] chance to pay no Appetite. |
 | M | Slow and Steady | Open to all | −2 Morale each move forward. +1 Morale each phase he stays on the same tile. |
 
 Slow and Steady's −2 adds up fast for a Tank who moves the group a lot. Worth watching in playtests.
 
-### Grandpa Sherman
+### Grandpa Sherman "Probably Trespassing"
 
 A strange and unpredictable man who loves trespassing and the beach. Was once a soldier.
 
@@ -337,7 +353,7 @@ A strange and unpredictable man who loves trespassing and the beach. Was once a 
 
 The old Utility trait called Tank Butt is now **Closer**. Soldier's March ("moving alone costs 1 less Appetite") is already listed as his and Grandpa W.'s, so it could be his level-up special.
 
-### Katie
+### Catie\* "The Artist"
 
 An artist and linguist.
 
@@ -351,7 +367,7 @@ An artist and linguist.
 | T/U | Linguist | *New*, unique | Each time she gains XP, she gains 1 extra XP for each other hiker on her tile. |
 | M | Action (crafting) | Existing | +1 Morale each time she crafts. −1 Morale each time she scavenges. |
 
-### Melissa
+### Melissa "The Bossy"
 
 Bossy, but helps others move instead of leading the group herself. A successful D1 soccer athlete.
 
@@ -365,7 +381,7 @@ Bossy, but helps others move instead of leading the group herself. A successful 
 | M | Soccer Mom | Open to all | +1 Morale each time a hiker on her tile passes a challenge. −1 Morale each time one fails. |
 | M | Bossy | Open to all | +1 Morale each time she moves the group. −1 Morale each time someone else moves her with the group. |
 
-### Leah
+### Leah "The Short One"
 
 Tiny, loves helping others, but never wants the attention on herself.
 
@@ -379,7 +395,7 @@ Tiny, loves helping others, but never wants the attention on herself.
 | T/U | Supportive | Existing, Tier II | Once per day, as a free action, takes one negative condition from a hiker on her tile. |
 | M | Chatty | Existing | +1 Morale sitting by the fire with others (they each gain 1 too). −1 alone. |
 
-### Erin
+### Erin "Modern Art"
 
 A chatty architect who loves talking with people and being creative. Mom of Jackson and Anni.
 
@@ -393,7 +409,7 @@ A chatty architect who loves talking with people and being creative. Mom of Jack
 | U | Teacher | New, Tier I (open) | Teaching another hiker a blueprint costs half the Morale. |
 | M | Chatty | Existing | +1 Morale sitting by the fire with others (they each gain 1 too). −1 alone. |
 
-### Jackson
+### Jackson "The Homebody"
 
 A homebody archaeologist who loves nature but doesn't like going too far. Erin's son and Anni's brother.
 
@@ -406,7 +422,7 @@ A homebody archaeologist who loves nature but doesn't like going too far. Erin's
 | U | Green Thumb | Existing, Tier I | +1 card when scavenging Forest nodes, and Tend on a tile with a Forest node restores 1 extra Abundance. |
 | M | Conservationist (Forest) | Existing | +1 Morale each time Tending on a tile with a Forest node. −1 Morale each time scavenging a Forest node. |
 
-### Anni
+### Anni "The Traveler"
 
 A traveler and athlete who loves to explore. Erin's daughter and Jackson's sister.
 
@@ -419,20 +435,21 @@ A traveler and athlete who loves to explore. Erin's daughter and Jackson's siste
 | T | Scout | Existing, Tier I | The nodes of all adjacent tiles are revealed. |
 | M | Traveler (Tend) | Existing | +1 Morale each move. −1 Morale each time she Tends (sitting still isn't her thing). |
 
-### Mitchell
+### Mitchell "Cat Lover"
 
 Nathan's husband. Has great taste in fashion and once worked in a men's underwear store.
 
 - **Class:** Crafter.
-- **Slots:** U, U, M.
+- **Slots:** U, U, M, M. The second Morale slot holds Cat Person.
 
 | Slot | Trait | Kind | Effect |
 | --- | --- | --- | --- |
 | U | Stylish | Existing, unique | With all 3 equipment slots filled: +1 Luck when scavenging and crafting. Clothes last 3 extra days when he equips them. |
 | U | Careful Hands | Existing, Tier I | Clothes he crafts get 0–3 extra days of durability. |
 | M | Extrinsic | Existing | +1 Morale sharing a tile with another hiker, −1 alone. |
+| M | Cat Person | Existing (Humans) | Start of day: +1 Morale sharing a tile with a Cat, −1 with no Cat on the tile. |
 
-### Nathan
+### Nathan "The Singer"
 
 Mitchell's husband. Sings in a choir.
 
@@ -473,7 +490,7 @@ Ben's wife. A Morale supporter who always wants to make sure people are at their
 | U | Therapist | Existing, Tier II | Once per day, can spend 1 Morale to shorten every negative condition of hikers on her tile by 1 day. |
 | M | Chatty | Existing | +1 Morale sitting by the fire with others (they each gain 1 too). −1 alone. |
 
-### Madeline
+### Madeline "The Crazy Therapist"
 
 Grandpa Sherman's girlfriend, and the group's therapist. Loud and funny, and keeps everyone's spirits up.
 
@@ -508,7 +525,7 @@ Variants are costumes or alternate versions of a hiker with a different focus.
 - **Nosework** is the old Niche Hunter, renamed: each morning a random node type is picked, and on a tile with that node she gets +3 Luck when scavenging and crafting.
 - **Showgirl Gdog:** Show Girl gives every Human on her tile +1 from each Morale gain, and Caring sets her own Morale to the lowest on her tile. Together she lifts everyone else while sharing their mood.
 
-* **Wywee** (a support tank who makes challenges and conditions easier for others): **Easy Mode** (*new*, unique, Trail): hikers facing a challenge on his tile pay [1] less of its cost (never below 0). He starts with a Trooper Mask (see Starting bags).
+* **Wywee** (a support tank who makes challenges and conditions easier for others): **Easy Mode** (*new*, unique, Trail): hikers facing a challenge on his tile pay \[1\] less of its cost (never below 0). He starts with a Trooper Mask (see Starting bags).
 
 ## Groups
 
@@ -537,7 +554,7 @@ No group traits for now. Instead, characters who belong together have traits tha
 
 ## Starting bags
 
-At the start of a run, the player picks items and resources for each hiker. Some hikers also come with their own **starting bag**: special items, or blueprints they already know. [First guesses.]
+At the start of a run, the player picks items and resources for each hiker. Some hikers also come with their own **starting bag**: special items, or blueprints they already know. \[First guesses.\]
 
 - **Starters** get 1 thing that fits them.
 - **Unlockable characters** get 1 or 2.
@@ -568,7 +585,7 @@ At the start of a run, the player picks items and resources for each hiker. Some
 | Loki | Backpack |
 | Coco | Camping Lamp |
 | Muffin | 1 random Tier 1 tool blueprint |
-| Katie | 1 random Tier 1 blueprint |
+| Catie | 1 random Tier 1 blueprint |
 | Melissa | Trail Shoes |
 | Leah | Bandaid |
 | Erin | 1 random Tier 1 shelter blueprint |
@@ -597,7 +614,7 @@ Starting builds made from traits no character used yet. Each is 2 traits plus a 
 | The Night Owl | Scout | Prowler, Nocturnal, Zen | Coco (adjusted) |
 | The Trail Boss | Tank | Leader, Stoic, Bossy | Loki |
 | The Pack Mule | Tank | Mule, Manager, Extrinsic | Not yet |
-| The Specialist | Scavenger | [Node] Finder, matching Thumb, Location | Not yet |
+| The Specialist | Scavenger | \[Node\] Finder, matching Thumb, Location | Not yet |
 | The Tagalong | Scavenger | Copier, Forager, Extrinsic | Follower Finn |
 | The Iron Stomach | Hardy | Glutton, Lead Stomach, Foody | Ellie the Devourer |
 | The Daredevil | Hardy | Thrill Seeker, Shrug Off, Thrill-Seeker (Morale) | Ben |
@@ -606,6 +623,72 @@ Starting builds made from traits no character used yet. Each is 2 traits plus a 
 | The Bargain Hunter | Moneymaker | Frugal, Charismatic, Fair-Weather | Graduate Mom (partly) |
 | The Mood Ring | Support | Transparent, Liberal, Caring | Split between Mindy, Nathan and Showgirl Gdog |
 | The Gambler | Jack | Gambler, Fortunate, Thrill-Seeker (Morale) | Not yet |
+
+## Difficulty (hidden)
+
+Each hiker has a difficulty rating from 1 to 10: how complicated they are to play well. **Players never see the number.** It's only used to sort the hiker selection screen, where hikers are grouped into bands under a colored ribbon: Easy (1–3), Medium (4–5), Hard (6–7) and Expert (8–10). First guesses, so change any of them.
+
+| Hiker | Rating | Band | Why |
+| --- | --- | --- | --- |
+| Anni | 2 | Easy | Simple movement traits |
+| Finn | 2 | Easy | Always-on traits that just work |
+| Sinjon | 2 | Easy | Passive protection and XP |
+| Wywee | 2 | Easy | Helps others with no upkeep |
+| Ben | 3 | Easy | Daredevil, rewards facing challenges |
+| Brutus | 3 | Easy | Random but harmless; open slot |
+| Follower Finn | 3 | Easy | Tags along and copies |
+| Hershal | 3 | Easy | Passive XP help |
+| Jackson | 3 | Easy | Forest focus, easy to follow |
+| Mom | 3 | Easy | Wants Dogs nearby, otherwise simple |
+| Muffin | 3 | Easy | Wants to craft alone |
+| Planner Wink | 3 | Easy | Scouting, little upkeep |
+| Scarlet | 3 | Easy | Mostly passive; Morale needs the top spot |
+| Agility Finn | 4 | Medium | Movement tricks to plan |
+| Catie | 4 | Medium | Funny drawback, crafting focus |
+| Coco | 4 | Medium | Night-focused, avoids Dogs |
+| Cody | 4 | Medium | Takes hits for the group on purpose |
+| Ellie the Devourer | 4 | Medium | Food juggling |
+| Erin | 4 | Medium | Wants company when crafting |
+| Gdog | 4 | Medium | Food crafter; Misophonia needs care |
+| Kai | 4 | Medium | Has to stay near Pearl to shine |
+| Madeline | 4 | Medium | Usable Therapist, fire bonuses |
+| Nathan | 4 | Medium | One usable trait, needs clothes |
+| Pearl | 4 | Medium | Wants to wander alone |
+| Duke | 5 | Medium | Gives away his action, random moves |
+| Ellie | 5 | Medium | Loud has a real drawback |
+| Graduate Mom | 5 | Medium | Money management |
+| Grandpa Wink | 5 | Medium | Morale drops with every forward move |
+| Loki | 5 | Medium | Morale-to-stats juggling |
+| Mindy | 5 | Medium | Shares conditions, usable Therapist |
+| Mitchell | 5 | Medium | Needs 3 clothes and a Cat nearby |
+| Goldie | 6 | Hard | Plush: must be carried |
+| Leah | 6 | Hard | Can't eat food cards |
+| Melissa | 6 | Hard | Two Morale traits and a usable |
+| Nosework Ellie | 6 | Hard | Daily node to chase |
+| Grandpa Sherman | 7 | Hard | Zany is random; timing Trespasser |
+| Showgirl Gdog | 7 | Hard | Shares the group's mood |
+| Wyatt | 7 | Hard | Quirky changes every day |
+| Boss & Gracie | 8 | Expert | Duo with a daily switch |
+| Pepper | 9 | Expert | Plush who moves when no one looks |
+
+## Sorting the hiker selection screen
+
+- **Default:** starters first, then the rest. No ribbons.
+- **Family:** grouped by real-life family (the table below). A hiker in two families shows in both. Variants go with their base hiker's family.
+- **Class:** grouped by main role. Each group's ribbon uses that role's banner color.
+- **Traits:** grouped by how many traits a hiker starts with (open slots don't count).
+- **Difficulty:** grouped by the bands above, easiest first.
+- Inside a group, hikers go by name (by rating first when sorting by difficulty).
+
+The sort buttons, in order: Default, Family, Class, Traits, Difficulty.
+
+| Family | Ribbon color | Hikers |
+| --- | --- | --- |
+| Elmers | #B5543A | Wyatt, Mom, Ellie, Finn, Cody, Duke, Scarlet, Hershal, Sinjon, Brutus |
+| Brooks | #3D7EA6 | Mom, Gdog, Grandpa Wink, Pepper, Melissa, Muffin, Coco |
+| Sherman | #D08A2E | Grandpa Sherman, Pearl, Kai, Catie, Mitchell, Nathan, Madeline |
+| Leichty | #4E8F5A | Erin, Jackson, Anni, Boss & Gracie |
+| Other | #6B6F78 | Everyone else |
 
 ## Open questions
 

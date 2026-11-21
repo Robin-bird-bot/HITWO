@@ -23,9 +23,16 @@ import {
 } from 'react';
 import type { HikerId, ResourceId } from '../../engine';
 
-/** What's being dragged: a hiker, a bag item or resource from a pack, or a shop card. */
+/**
+ * What's being dragged: a hiker, a bag item or resource from a pack, a shop
+ * card, or a hiker card on the selection screen (from the list, or a spot).
+ */
 export type DragPayload =
   | { kind: 'hiker'; hikerId: HikerId }
+  /** `copy`: which list group it came from (Mom shows twice when sorted by family). */
+  | { kind: 'pick'; hikerId: string; spot: number | null; copy?: string }
+  /** A level-up option card; `placed`: picked up again from the slot it was put in. */
+  | { kind: 'levelOption'; option: number; placed?: true }
   | { kind: 'item'; hikerId: HikerId; itemUid: string }
   | { kind: 'resource'; hikerId: HikerId; resource: ResourceId }
   | { kind: 'offer'; offerId: string };

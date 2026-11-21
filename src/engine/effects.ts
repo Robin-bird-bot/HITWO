@@ -617,6 +617,12 @@ export interface TraitDef {
   /** A usable trait: a button in the Abilities panel. Every other trait is always on. */
   ability?: AbilityDef;
   placeholder?: boolean;
+  /**
+   * Its icon file in public/assets/traits/, when it isn't the name in
+   * lowercase with dashes: a shared file (Human Food uses `glutton`) or a
+   * different one (the Morale Thrill-Seeker uses `thrill-seeker-morale`).
+   */
+  icon?: string;
   /** Normal unless it says otherwise. */
   kind?: TraitKind;
   /** Family traits and family versions: the families that can have it. */

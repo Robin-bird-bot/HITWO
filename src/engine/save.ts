@@ -10,6 +10,8 @@ import { clampAbundance, freshAbundance } from './abundance';
 import { freshCounters } from './counters';
 import { WONDERS } from '../content/wonders';
 import { STARTING_PARTY } from '../content/characters';
+import { PARTY_COLORS } from '../content/partyColors';
+import { TEST_HIKERS } from '../content/testHikers';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
 import { shelterNights } from './items/shelters';
@@ -25,7 +27,7 @@ import {
 import { freshWeather } from './weather';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -70,7 +72,21 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 10a step 6: levels start at 0 with new XP lines. XP already earned is
   // kept, and the levels it reaches wait for the next camp step.
   15: (save) => upgradeLevels(save),
+  // Phase 10b: each hiker keeps a party color. Older hikers get the color they had.
+  16: (save) => addPartyColors(save),
 };
+
+/** The color each older hiker already showed: their character's, else their spot's. */
+function addPartyColors(save: SaveData): SaveData {
+  if (!Array.isArray(save.hikers)) return save;
+  const hikers = save.hikers.map((raw: unknown, i: number) => {
+    if (!isRecord(raw) || isString(raw.color)) return raw;
+    const id = isString(raw.id) ? raw.id : '';
+    const known = [...STARTING_PARTY, ...TEST_HIKERS].find((c) => c.id === id)?.color;
+    return { ...raw, color: known ?? PARTY_COLORS[i % PARTY_COLORS.length] };
+  });
+  return { ...save, hikers };
+}
 
 /** Levels start over at 0; XP reaching a level makes a level-up wait for camp. */
 function upgradeLevels(save: SaveData): SaveData {
