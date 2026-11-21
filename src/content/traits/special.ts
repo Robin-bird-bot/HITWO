@@ -73,6 +73,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
         const here = noseworkLuck(node);
         const label = `Nosework: +${N.nosework.luck} Luck on today’s node`;
         return {
+          workingNow: here,
           modifyScavenge: (_q, ctx) =>
             here(ctx)
               ? { source: 'Nosework', label, tone: 'luck', luck: N.nosework.luck }
@@ -192,6 +193,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
           );
         const label = `Stylish: +${N.stylish.luck} Luck, all dressed up`;
         return {
+          workingNow: full,
           modifyScavenge: (_q, ctx) =>
             full(ctx)
               ? { source: 'Stylish', label, tone: 'luck', luck: N.stylish.luck }
@@ -266,6 +268,8 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...special('pearl'),
       hooks: {
+        workingNow: (ctx) =>
+          ctx.state.phase !== 'night' && ctx.used(ctx.self, 'wanderer', 'phase') === 0,
         freeMove: (q, ctx) =>
           ctx.state.phase !== 'night' && !ctx.state.section.tiles[q.toTileId]?.visited
             ? { key: 'wanderer', per: 'phase' }
@@ -366,6 +370,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...special('sinjon'),
       hooks: {
+        workingNow: (ctx) => ctx.used(ctx.self, 'fluffArmor', 'day') === 0,
         blockCondition(id, ctx) {
           if (ctx.used(ctx.self, 'fluffArmor', 'day') > 0 || !ctx.roll(N.fluffArmor.chance)) {
             return false;
@@ -388,7 +393,10 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     'Every other hiker on this tile gains 1 extra XP each time they gain XP.',
     {
       ...special('hershal'),
-      hooks: { modifyTileXp: () => ({ source: 'Mentor', flat: N.mentor.extra }) },
+      hooks: {
+        workingNow: (ctx) => others(ctx).length > 0,
+        modifyTileXp: () => ({ source: 'Mentor', flat: N.mentor.extra }),
+      },
     },
   ),
   utility(
@@ -457,6 +465,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...unique('pepper'),
       hooks: {
+        workingNow: (ctx) => ctx.isAlone(ctx.self),
         movesAlone: (ctx) => ctx.isAlone(ctx.self),
         freeMove: (_q, ctx) =>
           ctx.isAlone(ctx.self) ? { key: 'shifty', per: 'phase' } : undefined,
@@ -471,6 +480,8 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...unique('pepper'),
       hooks: {
+        workingNow: (ctx) =>
+          ctx.state.phase === 'night' && ctx.used(ctx.self, 'nightShifty', 'day') === 0,
         movesAlone: (ctx) =>
           ctx.state.phase === 'night' && ctx.used(ctx.self, 'nightShifty', 'day') === 0,
         freeMove: (_q, ctx) =>
@@ -488,6 +499,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...unique('goldie'),
       hooks: {
+        workingNow: (ctx) => others(ctx).length > 0,
         modifyTileScavenge: (_q, _target, ctx) => ({
           source: 'Lucky Charm',
           label: `Lucky Charm: +${N.luckyCharm.luck} Luck (${ctx.self.name} is here)`,
@@ -596,6 +608,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
     {
       ...unique('katie'),
       hooks: {
+        workingNow: (ctx) => others(ctx).length > 0,
         modifyXp: (_q, ctx) => {
           const n = others(ctx).length * N.linguist.perOther;
           return n ? { source: 'Linguist', flat: n } : undefined;

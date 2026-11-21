@@ -40,6 +40,18 @@ export {
 export { levelForXp, levelReached, onXpRow, xpForLevel } from './xp';
 export { dailyPickName } from './traits/daily';
 export {
+  actionLosses,
+  forecastAction,
+  forecastStartOfDay,
+  lossesIn,
+  workingNow,
+  type ActionForecast,
+  type MoraleForecast,
+  type MoraleForecasts,
+  type MoraleLoss,
+  type MoralePart,
+} from './traits/forecast';
+export {
   isExhausted,
   isFamished,
   isFatigued,

@@ -10,7 +10,7 @@ import type { CSSProperties, MouseEvent } from 'react';
 import { ASSETS } from '../../config/assets';
 import type { SlotType } from '../../engine';
 import { usePreview, withPreview } from '../preview/preview';
-import { BADGE_COLORS, badgeColors, type BadgeInfo } from './badges';
+import { BADGE_COLORS, badgeColors, WARNING_FILL, type BadgeInfo } from './badges';
 import styles from './TraitBadge.module.css';
 
 /** An empty slot's outline: its type's color, or a blend for a mixed slot. */
@@ -58,7 +58,13 @@ export function TraitBadge({
   const usable = badge.shape === 'circle';
   // Always-on badges open their window on a click too; usable ones open the Abilities panel.
   const preview = usePreview({ kind: 'trait', badge }, { clickOpens: !usable || !onUse });
-  const vars = { '--ring': colors.ring, '--fill': colors.fill } as CSSProperties;
+  // Trait warnings: a green or red middle for Morale about to change.
+  const fill = badge.morale
+    ? badge.morale.delta > 0
+      ? WARNING_FILL.gain
+      : WARNING_FILL.loss
+    : colors.fill;
+  const vars = { '--ring': colors.ring, '--fill': fill } as CSSProperties;
   const label = `${badge.name}: ${badge.kindWord}. ${badge.text}${badge.status ? ` ${badge.status.text}` : ''}`;
   const own = {
     // A tap is the badge's own: it doesn't also pick the hiker card it sits on.
@@ -70,12 +76,23 @@ export function TraitBadge({
   const handlers = withPreview(own, preview);
   const body = (
     <>
-      <span className={styles.shape} data-shape={badge.shape} data-state={badge.state}>
+      <span
+        className={styles.shape}
+        data-shape={badge.shape}
+        data-state={badge.state}
+        data-idle={badge.working === false || undefined}
+      >
         {badge.shape === 'empty' ? (
           <span className={styles.outline} style={{ background: SLOT_OUTLINE[badge.slotType] }} />
         ) : (
           <span className={styles.face}>
             <BadgeIcon badge={badge} />
+          </span>
+        )}
+        {badge.morale && (
+          <span className={styles.bubble} data-tone={badge.morale.delta > 0 ? 'gain' : 'loss'}>
+            {badge.morale.delta > 0 ? '+' : '−'}
+            {Math.abs(badge.morale.delta)}
           </span>
         )}
         {showTab && usable && (badge.during || badge.usesMax) && (

@@ -8,7 +8,7 @@ import type { Hooks, QueryContext, TraitDef } from '../../engine/effects';
 import type { Family, ResourceId } from '../../engine/types';
 import { ITEMS } from '../items';
 import { RESOURCES } from '../resources';
-import { atStartOfDay, othersOf } from './moraleKit';
+import { atStartOfDay, others, othersOf } from './moraleKit';
 import { family, morale, PETS, trail, utility } from './build';
 import { COPY_TEXT, copyHooks } from './utility';
 
@@ -75,6 +75,7 @@ export const FAMILY_TRAITS: readonly TraitDef[] = [
     {
       ...family('human'),
       hooks: {
+        workingNow: (ctx) => othersOf(ctx, 'dog').length > 0,
         modifyTileScavenge: (_q, target, ctx) =>
           target.family === 'dog'
             ? {
@@ -147,6 +148,7 @@ export const FAMILY_TRAITS: readonly TraitDef[] = [
   utility(1, 'trainer', 'Trainer', 'Pets on this hiker’s tile gain 50% more XP.', {
     ...family('human'),
     hooks: {
+      workingNow: (ctx) => others(ctx).some((h) => PETS.includes(h.family)),
       modifyTileXp: (_q, target) =>
         PETS.includes(target.family)
           ? { source: 'Trainer', percent: N.trainer.percent }

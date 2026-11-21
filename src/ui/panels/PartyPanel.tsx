@@ -26,6 +26,8 @@ import styles from './PartyPanel.module.css';
 import { portraitSrc } from '../portrait';
 import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
+import { AtRiskTag } from '../traits/AtRiskTag';
+import { useTraitView } from '../traits/forecastView';
 
 interface PartyPanelProps {
   state: GameState;
@@ -126,6 +128,7 @@ function HikerCard({
   turn?: number;
 }) {
   const color = characterFor(h.id).color;
+  const traitView = useTraitView();
   const tag = statusTag(h, selected);
   const tagColors =
     tag === 'ACTING' ? { bg: color, fg: '#1D2220' } : (TAG_COLORS[tag] ?? TAG_COLORS.ACTED!);
@@ -154,6 +157,7 @@ function HikerCard({
               filter: dim && !selected ? 'grayscale(1)' : 'none',
             }}
           />
+          <AtRiskTag hikerId={h.id} name={h.name} />
         </OrderBadge>
         <div className={styles.info}>
           <div className={styles.nameRow}>
@@ -202,7 +206,7 @@ function HikerCard({
           {!selected && (
             <span className={styles.badges} onClick={(e) => e.stopPropagation()}>
               <TraitBadgeRow
-                badges={traitBadges(state, h)}
+                badges={traitBadges(state, h, traitView.view ?? undefined)}
                 {...(onUseTrait
                   ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) }
                   : {})}
@@ -257,6 +261,7 @@ export function Details({
   onInjure?(id: HikerId): void;
 }) {
   const filled = h.slots.filter((s) => s.traitId).length;
+  const traitView = useTraitView();
   const xp = xpProgress(state, h);
   // The full list (the approved Phase 6 mockup): injuries, states, then the rest.
   const injury = injuryLook(h);
@@ -306,7 +311,7 @@ export function Details({
         {/* Informative view: each badge with its name under it. */}
         <span className={styles.badges} onClick={(e) => e.stopPropagation()}>
           <TraitBadgeRow
-            badges={traitBadges(state, h)}
+            badges={traitBadges(state, h, traitView.view ?? undefined)}
             showNames
             {...(onUseTrait ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) } : {})}
           />

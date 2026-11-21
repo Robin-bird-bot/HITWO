@@ -498,6 +498,12 @@ export interface Hooks {
   onTileLevelUp?(e: { hikerId: HikerId }, ctx: EffectContext): void;
   /** This hiker took a level-up (MBA). */
   onLevelUp?(e: { level: number }, ctx: EffectContext): void;
+  /**
+   * For trait warnings: does the trait's condition hold right now (Focused:
+   * alone)? The same check its effect uses. Leave it out for a trait that's
+   * always working.
+   */
+  workingNow?(ctx: QueryContext): boolean;
   // ── XP (Phase 10a step 6; src/engine/xp.ts) ──
   /** Extra XP for this kind of gain, before anything else (Postcard, Textbook). */
   xpForSource?(q: XpQuery, ctx: QueryContext): number;

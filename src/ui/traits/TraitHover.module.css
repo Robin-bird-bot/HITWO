@@ -60,6 +60,16 @@
   color: #c9c2b2;
 }
 
+.status[data-tone='gain'] {
+  background: rgba(63, 138, 87, 0.25);
+  color: #a6ddbc;
+}
+
+.status[data-tone='loss'] {
+  background: rgba(180, 71, 47, 0.25);
+  color: #f3c2b6;
+}
+
 .status[data-tone='info'] {
   background: rgba(233, 180, 76, 0.14);
   color: #f2c978;

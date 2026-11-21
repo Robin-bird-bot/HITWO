@@ -23,6 +23,8 @@ import styles from './Simple.module.css';
 import { portraitSrc } from '../portrait';
 import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
+import { AtRiskTag } from '../traits/AtRiskTag';
+import { useTraitView } from '../traits/forecastView';
 
 interface SimplePartyProps {
   state: GameState;
@@ -193,6 +195,7 @@ function HikerCard({
   turn?: number;
 }) {
   const color = characterFor(h.id).color;
+  const traitView = useTraitView();
   const family = FAMILY_LOOK[h.family];
   // Passing out and carrying, in one short line under the name.
   const carry = carryNote(state, h);
@@ -232,6 +235,7 @@ function HikerCard({
           alt=""
           style={{ boxShadow: `0 0 0 3px ${color}` }}
         />
+        <AtRiskTag hikerId={h.id} name={h.name} />
       </OrderBadge>
       <span className={styles.cardBody}>
         <span className={styles.nameRow}>
@@ -268,7 +272,7 @@ function HikerCard({
         {/* Icons only (Simple view). Spans: the card is already a button. */}
         <span className={styles.badges}>
           <TraitBadgeRow
-            badges={traitBadges(state, h)}
+            badges={traitBadges(state, h, traitView.view ?? undefined)}
             as="span"
             {...(onUseTrait ? { onUse: onUseTrait } : {})}
           />

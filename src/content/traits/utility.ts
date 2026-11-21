@@ -158,6 +158,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     '+1 Luck when crafting on a tile with other hikers.',
     {
       hooks: {
+        workingNow: (ctx) => companions(ctx).length > 0,
         modifyCraft: craftLuck(
           'Collaborative',
           `Collaborative: +${N.collaborative.luck} Luck with others here`,
@@ -169,6 +170,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
   ),
   utility(1, 'focused', 'Focused', '+1 Luck when crafting alone.', {
     hooks: {
+      workingNow: (ctx) => companions(ctx).length === 0,
       modifyCraft: craftLuck(
         'Focused',
         `Focused: +${N.focused.luck} Luck crafting alone`,
@@ -194,6 +196,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     'The first scavenge each day drains 1 less Abundance.',
     {
       hooks: {
+        workingNow: (ctx) => !ctx.state.scavengedToday.some((r) => r.hikerId === ctx.self.id),
         modifyCost(q, ctx) {
           if (q.key !== 'scavenge.drain' || q.subjectId !== ctx.self.id) return undefined;
           const first = !ctx.state.scavengedToday.some((r) => r.hikerId === ctx.self.id);
@@ -539,6 +542,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
   ),
   utility(2, 'pirate', 'Pirate', 'Scavenging alone costs no Appetite.', {
     hooks: {
+      workingNow: (ctx) => ctx.isAlone(ctx.self),
       modifyCost: (q, ctx) =>
         q.key === 'scavenge.appetite' && q.subjectId === ctx.self.id && ctx.isAlone(ctx.self)
           ? { source: 'Pirate', percent: -100 }
@@ -665,6 +669,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
   ),
   utility(2, 'closer', 'Closer', '+1 Luck when this hiker is the last to act in a phase.', {
     hooks: {
+      workingNow: lastToAct,
       modifyScavenge: (_q, ctx) =>
         lastToAct(ctx)
           ? {
@@ -689,6 +694,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     'At high Morale (8 or more), +1 extra Luck when crafting.',
     {
       hooks: {
+        workingNow: (ctx) => ctx.self.stats.morale >= N.lovinglyMade.morale,
         modifyCraft: craftLuck(
           'Lovingly Made',
           `Lovingly Made: +${N.lovinglyMade.luck} Luck at high Morale`,
@@ -705,6 +711,7 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
     'When this hiker gains XP, every other hiker on the tile gains 50% as much.',
     {
       hooks: {
+        workingNow: (ctx) => companions(ctx).length > 0,
         // Passed on plainly: nothing adds to it, and it isn't passed on again.
         onXpGained(e, ctx) {
           const share = Math.ceil((e.xp * N.wise.percent) / 100);

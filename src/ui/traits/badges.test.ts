@@ -4,6 +4,7 @@ import { setDaily } from '../../engine/traits/daily';
 import { END, fixtureGame, fixtureHiker, hiker, run, toNight } from '../../engine/test/fixtures';
 import type { Action, GameState } from '../../engine/types';
 import { initials, kindWord, traitBadges } from './badges';
+import { forecastView, moraleAtRisk } from './forecastView';
 
 /** Ash with these traits (each in a W slot), and an empty T slot at the end. */
 function game(traits: string[]): GameState {
@@ -103,11 +104,47 @@ describe('what the window says', () => {
     expect(kindWord(TRAITS.extrinsic!)).toBe('Morale');
     expect(kindWord(TRAITS.mentor!)).toBe('Utility · Special');
     expect(kindWord(TRAITS.yodeler!)).toBe('Utility · Unique');
-    expect(['Leader', 'Second Wind', 'Boss & Gracie', 'Quirky (Focused)'].map(initials)).toEqual([
-      'Le',
-      'SW',
-      'BG',
-      'Qu',
-    ]);
+    expect(
+      [
+        'Leader',
+        'Second Wind',
+        'Boss & Gracie',
+        'Quirky (Focused)',
+        'River Finder',
+        '[Node] Finder',
+      ].map(initials),
+    ).toEqual(['Le', 'SW', 'BG', 'Qu', 'RF', 'Fi']);
+  });
+});
+
+describe('trait warnings on the badges', () => {
+  it('a Morale badge says what it’s about to do; others whether they’re working', () => {
+    const s = game(['extrinsic', 'focused']);
+    hiker(s, 'ash').stats.morale = 5; // room to gain
+    const view = forecastView(s);
+    const [extrinsic, focused] = traitBadges(s, hiker(s, 'ash'), view);
+    // Birch is here too: +1 tomorrow, and Focused isn't working (not alone).
+    expect(extrinsic).toMatchObject({
+      morale: { delta: 1, when: 'tomorrow' },
+      status: { text: 'With company: gains 1 Morale tomorrow morning.', tone: 'gain' },
+    });
+    expect(focused).toMatchObject({ working: false, status: { text: 'Not working right now.' } });
+  });
+
+  it('follows an action being looked at: moving away alone', () => {
+    const s = game(['extrinsic', 'focused']);
+    const view = forecastView(s, { type: 'move', hikerId: 'ash', toTileId: 'L' });
+    const [extrinsic, focused] = traitBadges(s, hiker(s, 'ash'), view);
+    expect(extrinsic?.morale).toEqual({ delta: -1, when: 'tomorrow' });
+    expect(extrinsic?.status?.tone).toBe('loss');
+    expect(focused?.working).toBe(true);
+    expect(moraleAtRisk(view, 'ash')).toBe(1);
+  });
+
+  it('nothing without a forecast (warnings off)', () => {
+    const s = game(['extrinsic', 'focused']);
+    const [extrinsic, focused] = traitBadges(s, hiker(s, 'ash'));
+    expect(extrinsic?.morale).toBeUndefined();
+    expect(focused?.working).toBeUndefined();
   });
 });

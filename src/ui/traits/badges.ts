@@ -18,14 +18,16 @@ import {
   type Hiker,
   type SlotType,
   type TraitDef,
+  workingNow,
 } from '../../engine';
+import type { ForecastView } from './forecastView';
 
 export type BadgeState = 'on' | 'ready' | 'used' | 'during' | 'empty';
 
 export interface BadgeStatus {
   text: string;
-  /** Ready to use, used up, or just something to know. */
-  tone: 'ready' | 'used' | 'info';
+  /** Ready to use, used up, a Morale gain or loss coming, or just something to know. */
+  tone: 'ready' | 'used' | 'gain' | 'loss' | 'info';
 }
 
 export interface BadgeInfo {
@@ -51,6 +53,10 @@ export interface BadgeInfo {
   status?: BadgeStatus;
   /** The placeholder icon: the trait's initials, until Wyatt's icons arrive. */
   initials: string;
+  /** Trait warnings: the Morale this Morale trait is about to give or take. */
+  morale?: { delta: number; when: 'now' | 'tomorrow' };
+  /** Trait warnings: whether this trait's condition holds right now (Focused: alone). */
+  working?: boolean;
 }
 
 const TYPE_WORD = { T: 'Trail', U: 'Utility', M: 'Morale' } as const;
@@ -76,10 +82,10 @@ export function kindWord(def: TraitDef): string {
   return def.tier ? `${type} · Tier ${NUMERAL[def.tier]}` : type;
 }
 
-/** "Le" for Leader, "SW" for Second Wind: the placeholder icon. */
+/** "Le" for Leader, "SW" for Second Wind, "RF" for River Finder: the placeholder icon. */
 export function initials(name: string): string {
   const words = name
-    .replace(/\(.*\)/, '')
+    .replace(/\(.*\)|\[.*?\]/g, '')
     .trim()
     .split(/[\s&-]+/)
     .filter(Boolean);
@@ -90,9 +96,35 @@ export function initials(name: string): string {
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-/** Every slot's badge, in slot order. */
-export function traitBadges(state: GameState, hiker: Hiker): BadgeInfo[] {
+const capitalize = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
+/** A Morale trait's coming change, from the forecast: its total, when, and why. */
+function moraleComing(
+  view: ForecastView,
+  hikerId: string,
+  names: readonly string[],
+): { delta: number; when: 'now' | 'tomorrow'; why?: string } | undefined {
+  const mine = (when: 'now' | 'tomorrow') =>
+    (view[when][hikerId]?.parts ?? []).filter((p) => names.includes(p.trait));
+  const now = mine('now');
+  const tomorrow = mine('tomorrow');
+  const sum = (ps: typeof now) => ps.reduce((n, p) => n + p.delta, 0);
+  const delta = sum(now) + sum(tomorrow);
+  if (!delta) return undefined;
+  const when = sum(now) ? 'now' : 'tomorrow';
+  const why = (when === 'now' ? now : tomorrow).find((p) => p.why)?.why;
+  return { delta, when, ...(why ? { why } : {}) };
+}
+
+/**
+ * Every slot's badge, in slot order. With a forecast (trait warnings on),
+ * Morale badges say what they're about to do and the others whether they're
+ * working right now.
+ */
+export function traitBadges(state: GameState, hiker: Hiker, view?: ForecastView): BadgeInfo[] {
   const abilities = abilitiesFor(state, hiker);
+  // The hiker as the forecast sees them (after an action being looked at).
+  const later = view?.state.hikers.find((h) => h.id === hiker.id);
   return hiker.slots.map((slot, i): BadgeInfo => {
     const working = workingTrait(state, slot);
     if (!working) {
@@ -118,7 +150,7 @@ export function traitBadges(state: GameState, hiker: Hiker): BadgeInfo[] {
       text: working.text,
       shape: 'diamond',
       state: 'on',
-      initials: initials(def.name),
+      initials: initials(working.name),
     };
     // What it is today, for one that changes each morning (Nosework's node, Moody's mood).
     const today = slot.daily?.day === state.day ? slot.daily.pick : undefined;
@@ -128,6 +160,30 @@ export function traitBadges(state: GameState, hiker: Hiker): BadgeInfo[] {
     // Waiting on a rule the game doesn't have yet (Sit by the Fire).
     const waits = runs.waitsOn ?? def.waitsOn;
     if (waits) base.status = { text: `Works once ${waits} is in the game.`, tone: 'info' };
+
+    // Trait warnings: what a Morale trait is about to do, or whether another is working now.
+    if (view && def.type === 'M') {
+      const coming = moraleComing(view, hiker.id, [def.name, working.name]);
+      if (coming) {
+        const n = Math.abs(coming.delta);
+        const verb = coming.delta > 0 ? 'gains' : 'loses';
+        const when = coming.when === 'now' ? 'now' : 'tomorrow morning';
+        base.morale = { delta: coming.delta, when: coming.when };
+        base.status = {
+          text: `${coming.why ? `${capitalize(coming.why)}: ` : ''}${verb} ${n} Morale ${when}.`,
+          tone: coming.delta > 0 ? 'gain' : 'loss',
+        };
+      }
+    } else if (view && later) {
+      const works = workingNow(view.state, later, i);
+      if (works !== undefined) {
+        base.working = works;
+        base.status ??= {
+          text: works ? 'Working right now.' : 'Not working right now.',
+          tone: 'info',
+        };
+      }
+    }
 
     const ability = runs.ability;
     const available = ability && abilities.find((a) => a.ability.id === ability.id);
@@ -175,6 +231,9 @@ export const BADGE_COLORS = {
   M: { ring: '#CDA6EE', fill: '#6B4C8F' },
   used: { ring: '#6F6A60', fill: '#3A3833' },
 } as const;
+
+/** Trait warnings: a Morale badge's middle before a gain or a loss (the mockup's). */
+export const WARNING_FILL = { gain: '#3F8A57', loss: '#B4472F' } as const;
 
 export const badgeColors = (b: BadgeInfo) =>
   b.state === 'used' || !b.type ? BADGE_COLORS.used : BADGE_COLORS[b.type];

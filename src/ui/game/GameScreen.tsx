@@ -8,6 +8,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
+  actionLosses,
+  forecastStartOfDay,
+  lossesIn,
+  type MoraleLoss,
   hikersOnTile,
   hikersWhoHaventActed,
   atLastSection,
@@ -97,7 +101,9 @@ import { SimpleParty } from '../simple/SimpleParty';
 import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
 import { SimpleTurn } from '../simple/SimpleTurn';
 import { Stage } from '../stage/Stage';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog, DontAskAgain } from './ConfirmDialog';
+import { checksQuiet, quietChecks, useTraitWarnings } from '../app/traitWarnings';
+import { forecastView, TraitViewContext, type TraitView } from '../traits/forecastView';
 import { MovePopover } from './MovePopover';
 import { StashMenu } from './StashMenu';
 import {
@@ -185,6 +191,32 @@ function listNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }
 
+/** The actions trait warnings check before they happen (Informative). */
+const CHECKED_ACTIONS = new Set<Action['type']>([
+  'move',
+  'moveAll',
+  'scavenge',
+  'craft',
+  'sleep',
+  'keepWatch',
+  'tend',
+  'eat',
+  'give',
+  'useAbility',
+  'useItem',
+  'putOn',
+  'takeOff',
+  'teach',
+  'placeShelter',
+]);
+
+/** A trait check's title: "Move Cody?", or "Go ahead?" for anything else. */
+function checkTitle(action: Action, nameOf: (id: HikerId) => string): string {
+  if (action.type === 'move') return `Move ${nameOf(action.hikerId)}?`;
+  if (action.type === 'moveAll') return `Move the group with ${nameOf(action.hikerId)}?`;
+  return 'Go ahead?';
+}
+
 export function GameScreen({
   state,
   onQuit,
@@ -240,6 +272,15 @@ export function GameScreen({
   const [drag, setDrag] = useState<DragState | null>(null);
   /** A drop that asks first (eat, feed, place, use a map tool), where it was dropped. */
   const [ask, setAsk] = useState<Omit<DropAskProps, 'onCancel'> | null>(null);
+  // ── Trait warnings (Phase 10a) ──
+  const warnings = useTraitWarnings();
+  /** The move the open pop-up would make, for the live forecast. */
+  const [popoverAction, setPopoverAction] = useState<Action | null>(null);
+  /** An action that would cost someone Morale through a trait, waiting on a yes (Informative). */
+  const [traitCheck, setTraitCheck] = useState<{ action: Action; losses: MoraleLoss[] } | null>(
+    null,
+  );
+  const [dontAsk, setDontAsk] = useState(false);
   // ── Multi-select (Nov 14 update) ──
   /** Hikers picked for one action each, in turn order (two or more, or none). */
   const [group, setGroup] = useState<HikerId[]>([]);
@@ -365,8 +406,22 @@ export function GameScreen({
     reset();
   };
 
-  /** Applies an action; after a hiker uses their phase, the next ready hiker is selected. */
-  const dispatch = (action: Action): boolean => {
+  /**
+   * Applies an action; after a hiker uses their phase, the next ready hiker is
+   * selected. With trait warnings on Informative, an action that would cost
+   * someone Morale through a trait asks first (`checked` skips that).
+   */
+  const dispatch = (action: Action, { checked = false }: { checked?: boolean } = {}): boolean => {
+    if (!checked && warnings === 'informative' && CHECKED_ACTIONS.has(action.type)) {
+      if (!checksQuiet(state.seed)) {
+        const losses = actionLosses(state, action);
+        if (losses.length) {
+          setDontAsk(false);
+          setTraitCheck({ action, losses });
+          return false;
+        }
+      }
+    }
     // The scavenger, for a take (the selection can differ after a reload mid-draw).
     const actorId =
       action.type === 'scavengeTake'
@@ -487,7 +542,8 @@ export function GameScreen({
       setRun(step.run);
       const who = 'hikerId' in step.action ? step.action.hikerId : undefined;
       if (who) setSelectedId(who);
-      dispatch(step.action);
+      // A group runs through without stopping for trait checks.
+      dispatch(step.action, { checked: true });
     } else if (step.kind === 'own') {
       setRun(step.run);
       if (step.run.own) select(step.run.own);
@@ -756,7 +812,25 @@ export function GameScreen({
   const waiting = hikersWhoHaventActed(state);
   const abandoning = confirmAbandon ? hikers.find((h) => h.id === confirmAbandon) : undefined;
   const injuring = confirmInjure ? hikers.find((h) => h.id === confirmInjure) : undefined;
-  const endPhase = () => (waiting.length ? setConfirmEnd(true) : dispatch({ type: 'endPhase' }));
+  // Informative trait warnings: before the night ends, everyone about to lose Morale overnight.
+  const overnight =
+    warnings === 'informative' && state.phase === 'night' && !checksQuiet(state.seed)
+      ? lossesIn(forecastStartOfDay(state), 'tomorrow')
+      : [];
+  const endPhase = () => {
+    if (!waiting.length && !overnight.length) {
+      dispatch({ type: 'endPhase' });
+      return;
+    }
+    setDontAsk(false);
+    setConfirmEnd(true);
+  };
+  /** "Ellie loses 1 Morale tomorrow morning (Extrinsic: alone right now)." */
+  const lossLine = (l: MoraleLoss) => {
+    const why = l.parts.map((p) => (p.why ? `${p.trait}: ${p.why}` : p.trait)).join('; ');
+    const when = l.when === 'now' ? 'right away' : 'tomorrow morning';
+    return `${nameOf(l.hikerId)} loses ${-l.delta} Morale ${when} (${why}).`;
+  };
   const phaseWord = PHASE_WORD[state.phase];
 
   // Who a group action skipped stays up beside any newer message.
@@ -848,6 +922,34 @@ export function GameScreen({
     );
   }
 
+  // ── The trait warnings' forecast, live: a hiker dragged over a tile, the move pop-up's
+  // move, or a Sleep, Keep Watch or Tend waiting for its yes. Otherwise tomorrow morning.
+  const dragMove: Action | null =
+    drag?.payload.kind === 'hiker' && drag.hover?.id === 'tile' && drag.hover.arg
+      ? { type: 'move', hikerId: drag.payload.hikerId, toTileId: drag.hover.arg }
+      : null;
+  const confirming: Action | null = !selected
+    ? null
+    : mode.kind === 'sleep'
+      ? { type: 'sleep', hikerId: selected.id }
+      : mode.kind === 'watch'
+        ? { type: 'keepWatch', hikerId: selected.id }
+        : mode.kind === 'tend'
+          ? { type: 'tend', hikerId: selected.id }
+          : null;
+  const previewAction = dragMove ?? (pendingTile ? popoverAction : null) ?? confirming;
+  const previewKey = previewAction ? JSON.stringify(previewAction) : '';
+  const traitView = useMemo<TraitView>(
+    () => ({
+      warnings,
+      view:
+        warnings === 'off'
+          ? null
+          : forecastView(state, previewKey ? (JSON.parse(previewKey) as Action) : null),
+    }),
+    [state, warnings, previewKey],
+  );
+
   // Where the move preview points: the top and bottom of the chosen tile.
   const pending = pendingTile ? section.tiles[pendingTile] : undefined;
   const pendingCenter = pending ? tileCenter(pending, lastRow) : null;
@@ -855,382 +957,424 @@ export function GameScreen({
 
   return (
     <Stage>
-      <PreviewLayer>
-        <DragLayer onDragChange={onDragChange}>
-          <ItemDropsContext.Provider value={itemDrops}>
-            <Backdrop
-              phase={state.phase}
-              biome={section.biome}
-              scrollY={scrollAbove(camera, bounds)}
-            />
-            <MapView
-              section={section}
-              hikers={hikers}
-              targets={targets}
-              checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
-              reachLabel={
-                tactical
-                  ? 'See this tile'
-                  : toolMap && toolItem
-                    ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
-                    : undefined
-              }
-              onTileClick={(tileId) =>
-                tactical
-                  ? dispatch({ type: 'tactical', hikerId: tactical.id, tileId })
-                  : toolMap
-                    ? setToolTile(tileId)
-                    : group.length > 1 && groupAsk?.kind === 'move'
-                      ? setGroupAsk({ kind: 'move', tileId })
-                      : setPendingTile(tileId)
-              }
-              onEmptyClick={() => group.length && clearGroup()}
-              order={orderNumbers(group)}
-              fx={fx}
-              checkpointLabelOnHover={simple}
-              marks={marks}
-              onRevealedClick={setRevealedOpen}
-              onWonderClick={setWonderOpen}
-              selectedId={selected?.id ?? null}
-              onSelectHiker={pickHiker}
-              camera={camera}
-              setCamera={setCamera}
-              bounds={bounds}
-              hikerDrag={hikerDrag}
-              itemDrag={itemDrag}
-            />
-            <SideRail
-              section={section}
-              hikers={hikers}
-              camera={camera}
-              bounds={bounds}
-              onJump={setCamera}
-            />
-            <MapControls
-              camera={camera}
-              bounds={bounds}
-              onCamera={setCamera}
-              onCenter={() => setCamera(focusOn(centerOf(selected?.tileId), camera.zoom, bounds))}
-            />
-
-            {simple ? (
-              <>
-                <BiomePill state={state} />
-                <DayPill state={state} />
-                <GoalPill />
-                <CapsPill state={state} />
-                <MenuButton onTitle={onQuit} />
-                <SimpleParty
-                  state={state}
-                  selectedId={selected?.id ?? null}
-                  onSelect={pickHiker}
-                  order={orderNumbers(group)}
-                  picking={picking}
-                  onPicking={(on) => {
-                    setPicking(on);
-                    if (!on && group.length < 2) clearGroup();
-                  }}
-                  onAbandon={setConfirmAbandon}
-                  onInjure={setConfirmInjure}
-                  onUseTrait={useTrait}
-                />
-                {selected && (
-                  <SimpleTurn
-                    focusAbility={focusAbility}
-                    state={state}
-                    hiker={selected}
-                    note={turnNote}
-                    slot={slot}
-                    activeAction={
-                      mode.kind === 'moveAll' ||
-                      mode.kind === 'sleep' ||
-                      mode.kind === 'watch' ||
-                      mode.kind === 'tend'
-                        ? mode.kind
-                        : null
-                    }
-                    onAction={onAction}
-                    onAbility={onAbility}
-                    onEndPhase={endPhase}
-                    onPick={setStash}
-                    onFree={dispatch}
-                    onAbandon={setConfirmAbandon}
-                    onBlueprints={openBlueprints}
-                    onFeature={() => setShopTile(selected.tileId)}
-                    group={group}
-                  />
-                )}
-              </>
-            ) : (
-              <>
-                <BiomeCard state={state} />
-                <DayBar state={state} />
-                <ObjectiveCard />
-                <AbundanceCard state={state} />
-                <MenuButton onTitle={onQuit} />
-                <PartyPanel
-                  state={state}
-                  selectedId={selected?.id ?? null}
-                  onSelect={pickHiker}
-                  order={orderNumbers(group)}
-                  picking={picking}
-                  onPicking={(on) => {
-                    setPicking(on);
-                    if (!on && group.length < 2) clearGroup();
-                  }}
-                  onAbandon={setConfirmAbandon}
-                  onInjure={setConfirmInjure}
-                  onUseTrait={useTrait}
-                />
-                {selected && (
-                  <TurnPanel
-                    focusAbility={focusAbility}
-                    state={state}
-                    hiker={selected}
-                    note={turnNote}
-                    slot={slot}
-                    onAction={onAction}
-                    onAbility={onAbility}
-                    onEndPhase={endPhase}
-                    onPick={setStash}
-                    onFree={dispatch}
-                    onAbandon={setConfirmAbandon}
-                    onBlueprints={openBlueprints}
-                    onFeature={() => setShopTile(selected.tileId)}
-                    group={group}
-                  />
-                )}
-              </>
-            )}
-            <TrailLog state={state} />
-
-            {selected && pendingTile && pendingCenter && (
-              <MovePopover
-                key={`${selected.id}-${pendingTile}-${mode.kind}`}
-                hiker={selected}
-                choices={bringChoices(state, selected, pendingTile)}
-                startWithAll={mode.kind === 'moveAll'}
-                previewFor={(bring) =>
-                  movePreview(
-                    state,
-                    selected,
-                    bring ? { kind: 'moveAll', bring } : { kind: 'move' },
-                    pendingTile,
-                  )
+      <TraitViewContext.Provider value={traitView}>
+        <PreviewLayer>
+          <DragLayer onDragChange={onDragChange}>
+            <ItemDropsContext.Provider value={itemDrops}>
+              <Backdrop
+                phase={state.phase}
+                biome={section.biome}
+                scrollY={scrollAbove(camera, bounds)}
+              />
+              <MapView
+                section={section}
+                hikers={hikers}
+                targets={targets}
+                checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
+                reachLabel={
+                  tactical
+                    ? 'See this tile'
+                    : toolMap && toolItem
+                      ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
+                      : undefined
                 }
-                above={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y - halfH })}
-                below={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y + halfH })}
-                onCancel={() => setPendingTile(null)}
-                onGo={(bring) => dispatch(popupAction(selected, pendingTile, bring))}
-              />
-            )}
-
-            {stash && selected && (
-              <StashMenu
-                state={state}
-                hiker={selected}
-                pick={stash}
-                onDispatch={dispatch}
-                onClose={() => setStash(null)}
-                onMapTool={(itemUid) => {
-                  const name =
-                    ITEMS[selected.inventory.bag.find((i) => i.uid === itemUid)?.itemId ?? '']
-                      ?.name;
-                  setStash(null);
-                  setPendingTile(null);
-                  setMode({ kind: 'tool', itemUid });
-                  setNote(
-                    `Click a tile with a gold ring to use the ${name ?? 'tool'}. Esc to stop.`,
-                  );
-                }}
-              />
-            )}
-
-            {flies.map((f) => (
-              <TakeFly
-                key={f.key}
-                fly={f}
-                onDone={() => setFlies((all) => all.filter((x) => x.key !== f.key))}
-              />
-            ))}
-            {state.scavenge && (
-              <ScavengeWindow
-                state={state}
-                simple={simple}
-                onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
-                onCancel={() => dispatch({ type: 'scavengeCancel' })}
-                onReroll={(card) => dispatch({ type: 'scavengeReroll', card })}
-                onTake={takeCard}
-              />
-            )}
-
-            {/* At a station, its Workbench crafts instead. */}
-            {crafter && !state.challenge && !state.station && (
-              <CraftWindow
-                key={crafter}
-                state={state}
-                hikerId={crafter}
-                tab={craftOpen?.tab ?? 'craft'}
-                simple={simple}
-                onTab={(tab) => setCraftOpen({ hikerId: crafter, tab })}
-                onDispatch={dispatch}
-                onClose={() => setCraftOpen(null)}
-              />
-            )}
-
-            {shopTile && !state.challenge && !state.scavenge && !result && !state.station && (
-              <TrailShopWindow
-                state={state}
-                tileId={shopTile}
-                onDispatch={dispatch}
-                onClose={() => setShopTile(null)}
-              />
-            )}
-
-            {state.challenge && (
-              <ChallengeWindow
-                state={state}
-                simple={simple}
-                onResolve={resolveChallenge}
-                onChoose={(cardId) => dispatch({ type: 'chooseChallenge', cardId })}
-                onAccept={() => dispatch({ type: 'acceptTrial' })}
-                onPress={(action) => dispatch(action)}
-              />
-            )}
-            <TrialChips
-              state={state}
-              style={simple ? { left: 768, top: 112, translate: '-50% 0' } : { left: 470, top: 84 }}
-              onOpen={setTrialOpen}
-            />
-            {trialOpen && !state.challenge && (
-              <TrialDetails state={state} uid={trialOpen} onClose={() => setTrialOpen(null)} />
-            )}
-            {result && (
-              <ChallengeResult state={state} result={result} onClose={() => setResult(null)} />
-            )}
-            {revealedOpen && !state.challenge && (
-              <RevealedCard
-                state={state}
-                tileId={revealedOpen}
-                onClose={() => setRevealedOpen(null)}
-              />
-            )}
-            {nightShown && (
-              <NightEventWindow
-                key={nightShown.id}
-                state={state}
-                event={nightShown}
-                onClose={() => setNightShown(null)}
-              />
-            )}
-            {weatherShown && (
-              <WeatherScreen
-                weather={weatherShown.weather}
-                days={weatherShown.days}
-                onReady={() => setWeatherShown(null)}
-              />
-            )}
-            {/* A level-up (or an Old Photo) waits for the night and the weather to be read. */}
-            {state.traitPick && !nightShown && !weatherShown && (
-              <LevelUpWindow
-                // A new pick (the next level-up) starts fresh.
-                key={`${state.traitPick.hikerId}-${state.traitPick.source}-${state.traitPick.level ?? state.traitPick.slot}`}
-                state={state}
-                onPick={(option, replaceSlot) =>
-                  dispatch({
-                    type: 'pickTrait',
-                    option,
-                    ...(replaceSlot !== undefined ? { replaceSlot } : {}),
-                  })
+                onTileClick={(tileId) =>
+                  tactical
+                    ? dispatch({ type: 'tactical', hikerId: tactical.id, tileId })
+                    : toolMap
+                      ? setToolTile(tileId)
+                      : group.length > 1 && groupAsk?.kind === 'move'
+                        ? setGroupAsk({ kind: 'move', tileId })
+                        : setPendingTile(tileId)
                 }
+                onEmptyClick={() => group.length && clearGroup()}
+                order={orderNumbers(group)}
+                fx={fx}
+                checkpointLabelOnHover={simple}
+                marks={marks}
+                onRevealedClick={setRevealedOpen}
+                onWonderClick={setWonderOpen}
+                selectedId={selected?.id ?? null}
+                onSelectHiker={pickHiker}
+                camera={camera}
+                setCamera={setCamera}
+                bounds={bounds}
+                hikerDrag={hikerDrag}
+                itemDrag={itemDrag}
               />
-            )}
-            {wonderOpen && !state.challenge && !state.scavenge && !result && (
-              <WonderWindow
+              <SideRail
+                section={section}
+                hikers={hikers}
+                camera={camera}
+                bounds={bounds}
+                onJump={setCamera}
+              />
+              <MapControls
+                camera={camera}
+                bounds={bounds}
+                onCamera={setCamera}
+                onCenter={() => setCamera(focusOn(centerOf(selected?.tileId), camera.zoom, bounds))}
+              />
+
+              {simple ? (
+                <>
+                  <BiomePill state={state} />
+                  <DayPill state={state} />
+                  <GoalPill />
+                  <CapsPill state={state} />
+                  <MenuButton onTitle={onQuit} />
+                  <SimpleParty
+                    state={state}
+                    selectedId={selected?.id ?? null}
+                    onSelect={pickHiker}
+                    order={orderNumbers(group)}
+                    picking={picking}
+                    onPicking={(on) => {
+                      setPicking(on);
+                      if (!on && group.length < 2) clearGroup();
+                    }}
+                    onAbandon={setConfirmAbandon}
+                    onInjure={setConfirmInjure}
+                    onUseTrait={useTrait}
+                  />
+                  {selected && (
+                    <SimpleTurn
+                      focusAbility={focusAbility}
+                      state={state}
+                      hiker={selected}
+                      note={turnNote}
+                      slot={slot}
+                      activeAction={
+                        mode.kind === 'moveAll' ||
+                        mode.kind === 'sleep' ||
+                        mode.kind === 'watch' ||
+                        mode.kind === 'tend'
+                          ? mode.kind
+                          : null
+                      }
+                      onAction={onAction}
+                      onAbility={onAbility}
+                      onEndPhase={endPhase}
+                      onPick={setStash}
+                      onFree={dispatch}
+                      onAbandon={setConfirmAbandon}
+                      onBlueprints={openBlueprints}
+                      onFeature={() => setShopTile(selected.tileId)}
+                      group={group}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <BiomeCard state={state} />
+                  <DayBar state={state} />
+                  <ObjectiveCard />
+                  <AbundanceCard state={state} />
+                  <MenuButton onTitle={onQuit} />
+                  <PartyPanel
+                    state={state}
+                    selectedId={selected?.id ?? null}
+                    onSelect={pickHiker}
+                    order={orderNumbers(group)}
+                    picking={picking}
+                    onPicking={(on) => {
+                      setPicking(on);
+                      if (!on && group.length < 2) clearGroup();
+                    }}
+                    onAbandon={setConfirmAbandon}
+                    onInjure={setConfirmInjure}
+                    onUseTrait={useTrait}
+                  />
+                  {selected && (
+                    <TurnPanel
+                      focusAbility={focusAbility}
+                      state={state}
+                      hiker={selected}
+                      note={turnNote}
+                      slot={slot}
+                      onAction={onAction}
+                      onAbility={onAbility}
+                      onEndPhase={endPhase}
+                      onPick={setStash}
+                      onFree={dispatch}
+                      onAbandon={setConfirmAbandon}
+                      onBlueprints={openBlueprints}
+                      onFeature={() => setShopTile(selected.tileId)}
+                      group={group}
+                    />
+                  )}
+                </>
+              )}
+              <TrailLog state={state} />
+
+              {selected && pendingTile && pendingCenter && (
+                <MovePopover
+                  key={`${selected.id}-${pendingTile}-${mode.kind}`}
+                  hiker={selected}
+                  choices={bringChoices(state, selected, pendingTile)}
+                  startWithAll={mode.kind === 'moveAll'}
+                  previewFor={(bring) =>
+                    movePreview(
+                      state,
+                      selected,
+                      bring ? { kind: 'moveAll', bring } : { kind: 'move' },
+                      pendingTile,
+                    )
+                  }
+                  above={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y - halfH })}
+                  below={worldToStage(camera, { x: pendingCenter.x, y: pendingCenter.y + halfH })}
+                  onCancel={() => setPendingTile(null)}
+                  onGo={(bring) => dispatch(popupAction(selected, pendingTile, bring))}
+                  onPreview={setPopoverAction}
+                />
+              )}
+
+              {stash && selected && (
+                <StashMenu
+                  state={state}
+                  hiker={selected}
+                  pick={stash}
+                  onDispatch={dispatch}
+                  onClose={() => setStash(null)}
+                  onMapTool={(itemUid) => {
+                    const name =
+                      ITEMS[selected.inventory.bag.find((i) => i.uid === itemUid)?.itemId ?? '']
+                        ?.name;
+                    setStash(null);
+                    setPendingTile(null);
+                    setMode({ kind: 'tool', itemUid });
+                    setNote(
+                      `Click a tile with a gold ring to use the ${name ?? 'tool'}. Esc to stop.`,
+                    );
+                  }}
+                />
+              )}
+
+              {flies.map((f) => (
+                <TakeFly
+                  key={f.key}
+                  fly={f}
+                  onDone={() => setFlies((all) => all.filter((x) => x.key !== f.key))}
+                />
+              ))}
+              {state.scavenge && (
+                <ScavengeWindow
+                  state={state}
+                  simple={simple}
+                  onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
+                  onCancel={() => dispatch({ type: 'scavengeCancel' })}
+                  onReroll={(card) => dispatch({ type: 'scavengeReroll', card })}
+                  onTake={takeCard}
+                />
+              )}
+
+              {/* At a station, its Workbench crafts instead. */}
+              {crafter && !state.challenge && !state.station && (
+                <CraftWindow
+                  key={crafter}
+                  state={state}
+                  hikerId={crafter}
+                  tab={craftOpen?.tab ?? 'craft'}
+                  simple={simple}
+                  onTab={(tab) => setCraftOpen({ hikerId: crafter, tab })}
+                  onDispatch={dispatch}
+                  onClose={() => setCraftOpen(null)}
+                />
+              )}
+
+              {shopTile && !state.challenge && !state.scavenge && !result && !state.station && (
+                <TrailShopWindow
+                  state={state}
+                  tileId={shopTile}
+                  onDispatch={dispatch}
+                  onClose={() => setShopTile(null)}
+                />
+              )}
+
+              {state.challenge && (
+                <ChallengeWindow
+                  state={state}
+                  simple={simple}
+                  onResolve={resolveChallenge}
+                  onChoose={(cardId) => dispatch({ type: 'chooseChallenge', cardId })}
+                  onAccept={() => dispatch({ type: 'acceptTrial' })}
+                  onPress={(action) => dispatch(action)}
+                />
+              )}
+              <TrialChips
                 state={state}
-                tileId={wonderOpen}
-                onClose={() => setWonderOpen(null)}
-                onAccomplish={(action) => dispatch(action)}
+                style={
+                  simple ? { left: 768, top: 112, translate: '-50% 0' } : { left: 470, top: 84 }
+                }
+                onOpen={setTrialOpen}
               />
-            )}
+              {trialOpen && !state.challenge && (
+                <TrialDetails state={state} uid={trialOpen} onClose={() => setTrialOpen(null)} />
+              )}
+              {result && (
+                <ChallengeResult state={state} result={result} onClose={() => setResult(null)} />
+              )}
+              {revealedOpen && !state.challenge && (
+                <RevealedCard
+                  state={state}
+                  tileId={revealedOpen}
+                  onClose={() => setRevealedOpen(null)}
+                />
+              )}
+              {nightShown && (
+                <NightEventWindow
+                  key={nightShown.id}
+                  state={state}
+                  event={nightShown}
+                  onClose={() => setNightShown(null)}
+                />
+              )}
+              {weatherShown && (
+                <WeatherScreen
+                  weather={weatherShown.weather}
+                  days={weatherShown.days}
+                  onReady={() => setWeatherShown(null)}
+                />
+              )}
+              {/* A level-up (or an Old Photo) waits for the night and the weather to be read. */}
+              {state.traitPick && !nightShown && !weatherShown && (
+                <LevelUpWindow
+                  // A new pick (the next level-up) starts fresh.
+                  key={`${state.traitPick.hikerId}-${state.traitPick.source}-${state.traitPick.level ?? state.traitPick.slot}`}
+                  state={state}
+                  onPick={(option, replaceSlot) =>
+                    dispatch({
+                      type: 'pickTrait',
+                      option,
+                      ...(replaceSlot !== undefined ? { replaceSlot } : {}),
+                    })
+                  }
+                />
+              )}
+              {wonderOpen && !state.challenge && !state.scavenge && !result && (
+                <WonderWindow
+                  state={state}
+                  tileId={wonderOpen}
+                  onClose={() => setWonderOpen(null)}
+                  onAccomplish={(action) => dispatch(action)}
+                />
+              )}
 
-            {state.station && !isHikeOver(state) && (
-              <StationScreen state={state} simple={simple} onDispatch={dispatch} />
-            )}
+              {state.station && !isHikeOver(state) && (
+                <StationScreen state={state} simple={simple} onDispatch={dispatch} />
+              )}
 
-            {isHikeOver(state) && (
-              <HikeOverScreen
-                state={state}
-                onTitle={onQuit}
-                {...(onNewHike ? { onNewHike } : {})}
-              />
-            )}
+              {isHikeOver(state) && (
+                <HikeOverScreen
+                  state={state}
+                  onTitle={onQuit}
+                  {...(onNewHike ? { onNewHike } : {})}
+                />
+              )}
 
-            {toolTile && toolItem && (
-              <ConfirmDialog
-                title={`Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'}?`}
-                message={`On ${
-                  section.tiles[toolTile] ? tileName(section.tiles[toolTile]) : 'that tile'
-                }. ${usesAfter(toolItem, ITEMS[toolItem.itemId]?.name ?? 'tool')}`}
-                confirmLabel="Yes, use it"
-                cancelLabel="Not now"
-                onCancel={() => setToolTile(null)}
-                onConfirm={() => {
-                  const a = toolAction(toolTile);
-                  setToolTile(null);
-                  if (a) dispatch(a);
-                }}
-              />
-            )}
-            {injuring && (
-              <ConfirmDialog
-                title={`Submit ${injuring.name} to an injury?`}
-                message={injureMessage(injuring)}
-                confirmLabel="Take the injury"
-                cancelLabel="Not now"
-                focusCancel
-                onCancel={() => setConfirmInjure(null)}
-                onConfirm={() => {
-                  setConfirmInjure(null);
-                  dispatch({ type: 'submitToInjury', hikerId: injuring.id });
-                }}
-              />
-            )}
-            {abandoning && (
-              <ConfirmDialog
-                title={`Abandon the hike for ${abandoning.name}?`}
-                message={abandonMessage(state, abandoning)}
-                confirmLabel="Abandon"
-                cancelLabel={`Keep ${abandoning.name}`}
-                focusCancel
-                onCancel={() => setConfirmAbandon(null)}
-                onConfirm={() => {
-                  setConfirmAbandon(null);
-                  dispatch({ type: 'abandon', hikerId: abandoning.id });
-                }}
-              />
-            )}
+              {toolTile && toolItem && (
+                <ConfirmDialog
+                  title={`Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'}?`}
+                  message={`On ${
+                    section.tiles[toolTile] ? tileName(section.tiles[toolTile]) : 'that tile'
+                  }. ${usesAfter(toolItem, ITEMS[toolItem.itemId]?.name ?? 'tool')}`}
+                  confirmLabel="Yes, use it"
+                  cancelLabel="Not now"
+                  onCancel={() => setToolTile(null)}
+                  onConfirm={() => {
+                    const a = toolAction(toolTile);
+                    setToolTile(null);
+                    if (a) dispatch(a);
+                  }}
+                />
+              )}
+              {injuring && (
+                <ConfirmDialog
+                  title={`Submit ${injuring.name} to an injury?`}
+                  message={injureMessage(injuring)}
+                  confirmLabel="Take the injury"
+                  cancelLabel="Not now"
+                  focusCancel
+                  onCancel={() => setConfirmInjure(null)}
+                  onConfirm={() => {
+                    setConfirmInjure(null);
+                    dispatch({ type: 'submitToInjury', hikerId: injuring.id });
+                  }}
+                />
+              )}
+              {abandoning && (
+                <ConfirmDialog
+                  title={`Abandon the hike for ${abandoning.name}?`}
+                  message={abandonMessage(state, abandoning)}
+                  confirmLabel="Abandon"
+                  cancelLabel={`Keep ${abandoning.name}`}
+                  focusCancel
+                  onCancel={() => setConfirmAbandon(null)}
+                  onConfirm={() => {
+                    setConfirmAbandon(null);
+                    dispatch({ type: 'abandon', hikerId: abandoning.id });
+                  }}
+                />
+              )}
 
-            {confirmEnd && (
-              <ConfirmDialog
-                title={`End the ${phaseWord}?`}
-                message={`${
-                  waiting.length === hikers.filter((h) => h.status === 'active').length
-                    ? 'Nobody has'
-                    : `${listNames(waiting.map((h) => h.name))} ${waiting.length === 1 ? 'hasn’t' : 'haven’t'}`
-                } acted yet. End the ${phaseWord} anyway?`}
-                confirmLabel={`End ${phaseWord}`}
-                onCancel={() => setConfirmEnd(false)}
-                onConfirm={() => {
-                  setConfirmEnd(false);
-                  dispatch({ type: 'endPhase' });
-                }}
-              />
-            )}
-            {ask && <DropAsk {...ask} onCancel={() => setAsk(null)} />}
-          </ItemDropsContext.Provider>
-        </DragLayer>
-      </PreviewLayer>
+              {confirmEnd && (
+                <ConfirmDialog
+                  title={`End the ${phaseWord}?`}
+                  message={
+                    waiting.length
+                      ? `${
+                          waiting.length === hikers.filter((h) => h.status === 'active').length
+                            ? 'Nobody has'
+                            : `${listNames(waiting.map((h) => h.name))} ${waiting.length === 1 ? 'hasn’t' : 'haven’t'}`
+                        } acted yet.${overnight.length ? ' And traits will cost Morale tomorrow morning:' : ` End the ${phaseWord} anyway?`}`
+                      : 'Traits will cost Morale tomorrow morning:'
+                  }
+                  lines={overnight.map(lossLine)}
+                  {...(overnight.length
+                    ? { extra: <DontAskAgain checked={dontAsk} onChange={setDontAsk} /> }
+                    : {})}
+                  confirmLabel={`End ${phaseWord}`}
+                  onCancel={() => {
+                    if (dontAsk) quietChecks(state.seed);
+                    setConfirmEnd(false);
+                  }}
+                  onConfirm={() => {
+                    if (dontAsk) quietChecks(state.seed);
+                    setConfirmEnd(false);
+                    dispatch({ type: 'endPhase' });
+                  }}
+                />
+              )}
+              {traitCheck && (
+                <ConfirmDialog
+                  title={checkTitle(traitCheck.action, nameOf)}
+                  message="Traits will cost Morale:"
+                  lines={traitCheck.losses.map(lossLine)}
+                  extra={<DontAskAgain checked={dontAsk} onChange={setDontAsk} />}
+                  confirmLabel={
+                    traitCheck.action.type === 'move' || traitCheck.action.type === 'moveAll'
+                      ? 'Move anyway'
+                      : 'Go ahead'
+                  }
+                  cancelLabel="Cancel"
+                  focusCancel
+                  onCancel={() => {
+                    if (dontAsk) quietChecks(state.seed);
+                    setTraitCheck(null);
+                  }}
+                  onConfirm={() => {
+                    if (dontAsk) quietChecks(state.seed);
+                    const { action } = traitCheck;
+                    setTraitCheck(null);
+                    dispatch(action, { checked: true });
+                  }}
+                />
+              )}
+              {ask && <DropAsk {...ask} onCancel={() => setAsk(null)} />}
+            </ItemDropsContext.Provider>
+          </DragLayer>
+        </PreviewLayer>
+      </TraitViewContext.Provider>
     </Stage>
   );
 }

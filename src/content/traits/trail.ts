@@ -55,6 +55,7 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
     'Once per day, moving alone to a tile with no hikers costs 1 less Appetite.',
     {
       hooks: {
+        workingNow: (ctx) => ctx.used(ctx.self, 'independent', 'day') === 0,
         modifyCost(q, ctx) {
           if (q.key !== 'move.appetite' || q.via !== 'move' || q.subjectId !== ctx.self.id) {
             return undefined;
@@ -337,6 +338,7 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
     'Once per biome, the first injury this hiker would receive is prevented.',
     {
       hooks: {
+        workingNow: (ctx) => ctx.used(ctx.self, 'shrugOff', 'biome') === 0,
         blockInjury(_cause, ctx) {
           if (ctx.used(ctx.self, 'shrugOff', 'biome') > 0) return false;
           ctx.tally(ctx.self, 'shrugOff', 1, 'biome');
