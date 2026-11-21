@@ -3,8 +3,12 @@ import { fitStage, STAGE_HEIGHT, STAGE_WIDTH, type StageFit } from './fitStage';
 import { StageContext } from './StageContext';
 import styles from './Stage.module.css';
 
-/** Lays children out on the 1600×1000 stage, scaled to fit the window and centered. */
-export function Stage({ children }: { children: ReactNode }) {
+/**
+ * Lays children out on the 1600×1000 stage, scaled to fit the window and
+ * centered. A `backdrop` fills the whole window behind it, letterbox included
+ * (the selection screen's swirling background).
+ */
+export function Stage({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<StageFit>(() => fitStage(window.innerWidth, window.innerHeight));
 
@@ -21,6 +25,7 @@ export function Stage({ children }: { children: ReactNode }) {
 
   return (
     <div ref={viewportRef} className={styles.viewport}>
+      {backdrop}
       <div
         className={styles.stage}
         style={{

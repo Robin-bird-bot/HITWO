@@ -4,7 +4,8 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #0c1411;
+  /* The swirling background is behind the stage (SelectBackground). */
+  background: transparent;
   color: var(--text);
   font-family: var(--font-body);
 }

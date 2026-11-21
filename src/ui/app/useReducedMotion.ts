@@ -10,5 +10,10 @@ function subscribe(onChange: () => void) {
 
 /** True when the player has asked their device for less motion. */
 export function useReducedMotion(): boolean {
-  return useSyncExternalStore(subscribe, () => window.matchMedia?.(QUERY).matches ?? false);
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia?.(QUERY).matches ?? false,
+    // Rendered ahead of time (tests): full motion until the browser says otherwise.
+    () => false,
+  );
 }

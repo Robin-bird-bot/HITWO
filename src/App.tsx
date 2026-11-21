@@ -15,6 +15,7 @@ import { HikerSelect } from './ui/select/HikerSelect';
 import { DebugMap } from './ui/debug/DebugMap';
 import { DebugPanel } from './ui/debug/DebugPanel';
 import { SelectDebugPanel } from './ui/debug/SelectDebugPanel';
+import { SelectBackground } from './ui/select/background/SelectBackground';
 import { TestHikerPicker } from './ui/debug/DebugTraits';
 import { debugEnabled } from './ui/debug/debugEnabled';
 import { ConfirmDialog } from './ui/game/ConfirmDialog';
@@ -98,7 +99,7 @@ export function App() {
   if (screen === 'select') {
     return (
       <>
-        <Stage>
+        <Stage backdrop={<SelectBackground />}>
           <HikerSelect onStart={startAsking} onBack={() => setScreen('title')} />
           {replaceDialog}
         </Stage>

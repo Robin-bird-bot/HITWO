@@ -897,5 +897,26 @@ export const BALANCE = {
      * this size (times a full 300 × 420 card). TODO(wyatt): [1.2×].
      */
     cardLiftScale: 1.2,
+    /**
+     * The hiker selection screen's swirling background (src/shaders/
+     * hiker-select-bg.frag). TODO(wyatt): swirl [1.2], pixels [150] and pull
+     * [0.5] are from the plan; the drift and ease are first guesses.
+     */
+    selectBackground: {
+      /** How much the paint twists toward the edges. */
+      swirl: 1.2,
+      /** How many pixel rows tall the screen is (chunkier when lower). */
+      pixels: 150,
+      /** How much the paint bends toward the pointer. */
+      pull: 0.5,
+      /** Never drawn at more than this many device pixels per screen pixel. */
+      maxPixelRatio: 1.5,
+      /** With the pointer away, the bend drifts in a loop this long (s)... */
+      driftSeconds: 40,
+      /** ...this far from the middle (0 to 0.5 of the screen). */
+      driftRadius: 0.25,
+      /** How quickly the bend follows the pointer (higher is snappier). */
+      pointerEase: 2.5,
+    },
   },
 };
