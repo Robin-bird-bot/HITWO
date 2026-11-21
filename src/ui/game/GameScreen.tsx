@@ -44,7 +44,9 @@ import { ITEMS } from '../../content';
 import { useUiMode } from '../app/uiMode';
 import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
-import { MapControls } from '../map/MapControls';
+import { MapControls, RouteLegend } from '../map/MapControls';
+import { useTabHeld } from '../map/useTabHeld';
+import { hikerColor } from '../../content/characters';
 import {
   clampCamera,
   CHECKPOINT_HEX,
@@ -342,6 +344,10 @@ export function GameScreen({
   }
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
+  // The route view (Phase 10.5): the Routes button toggles it; holding Tab shows it too.
+  const [routesOn, setRoutesOn] = useState(false);
+  const tabHeld = useTabHeld();
+  const routes = routesOn || tabHeld;
   // When the pop-up closes, bring a tile that just got easier into view if none is.
   const easierKey = easier.join(',');
   const [pannedFor, setPannedFor] = useState('');
@@ -977,11 +983,13 @@ export function GameScreen({
                 phase={state.phase}
                 biome={section.biome}
                 scrollY={scrollAbove(camera, bounds)}
+                faded={routes}
               />
               <MapView
                 section={section}
                 hikers={hikers}
                 targets={targets}
+                routes={routes}
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
                 reachLabel={
                   tactical
@@ -1026,7 +1034,16 @@ export function GameScreen({
                 bounds={bounds}
                 onCamera={setCamera}
                 onCenter={() => setCamera(focusOn(centerOf(selected?.tileId), camera.zoom, bounds))}
+                routes={routes}
+                onRoutes={() => setRoutesOn((on) => !on)}
               />
+              {routes && (
+                <RouteLegend
+                  hikers={hikers
+                    .filter((h) => h.status !== 'abandoned')
+                    .map((h) => ({ id: h.id, name: h.name, color: hikerColor(h) }))}
+                />
+              )}
 
               {simple ? (
                 <>

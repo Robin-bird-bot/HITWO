@@ -2,20 +2,31 @@ import type { Section } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { lastRowOf, tileCenter, type Bounds } from './mapLayout';
 import styles from './MapView.module.css';
-import { LINE_LOOK, VISITED_LINE, type LineLook } from './looks';
+import { LINE_LOOK, VISITED_LINE, walkedStrokes, type LineLook } from './looks';
+import { MAP_STYLE } from '../../config/mapStyle';
 
-/** Dashed trail lines, styled by kind. Lines between two visited tiles turn solid. */
+/**
+ * Dashed trail lines, styled by kind. Lines between two visited tiles turn
+ * solid, in the party color of the first hiker who walked them (Phase 10.5).
+ * The route view dims every line nobody has walked.
+ */
 export function TrailLines({
   section,
   bounds,
   from,
   reachable = [],
+  colors = {},
+  routes = false,
 }: {
   section: Section;
   bounds: Bounds;
   /** The selected hiker's tile, and the tiles they can move to: those lines glow gold. */
   from?: string | null;
   reachable?: string[];
+  /** Each hiker's party color, for the lines they walked. */
+  colors?: Readonly<Record<string, string>>;
+  /** The route view: only walked lines stay bright. */
+  routes?: boolean;
 }) {
   const lastRow = lastRowOf(section);
   const w = bounds.maxX - bounds.minX;
@@ -36,11 +47,18 @@ export function TrailLines({
           const q = tileCenter(b, lastRow);
           const d = `M${p.x} ${p.y} L${q.x} ${q.y}`;
           const walked = a.visited && b.visited && line.kind !== 'paved';
-          const strokes: LineLook['strokes'] = walked
-            ? [VISITED_LINE]
-            : LINE_LOOK[line.kind].strokes;
+          const walker = line.walkedBy ? colors[line.walkedBy] : undefined;
+          const strokes: LineLook['strokes'] = walker
+            ? walkedStrokes(line.kind, walker)
+            : walked
+              ? [VISITED_LINE]
+              : LINE_LOOK[line.kind].strokes;
           return (
-            <g key={line.id}>
+            <g
+              key={line.id}
+              data-walked={walker ? line.walkedBy : undefined}
+              opacity={routes && !walker ? MAP_STYLE.routes.unwalked : undefined}
+            >
               <path d={d} stroke="#22322D" strokeOpacity={0.16} strokeWidth={12} />
               {strokes.map((s, i) => (
                 <path

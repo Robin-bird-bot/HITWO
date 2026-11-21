@@ -43,6 +43,7 @@ import {
   validateTeach,
 } from './actions/craft';
 import { applyAbandon, validateAbandon } from './actions/abandon';
+import { applyFound, validateFound } from './actions/found';
 import {
   applyOpen,
   applyPresentTake,
@@ -109,6 +110,8 @@ export class InvalidActionError extends Error {
 
 /** Why the action isn't allowed right now, for the UI to show, or null when it is. */
 export function validateAction(state: GameState, action: Action): string | null {
+  // The illustrated map finding a place is only a look: nothing waits on it, and it waits on nothing.
+  if (action.type === 'foundPlace') return validateFound(state, action) ?? null;
   // Nobody can act any more (the debug panel still works).
   if (action.type !== 'debug' && isHikeOver(state)) return 'The hike is over.';
   // An open scavenge waits for a card before anything else happens.
@@ -307,6 +310,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'presentTake':
       applyPresentTake(draft, action);
+      break;
+    case 'foundPlace':
+      applyFound(draft, action);
       break;
     case 'buy':
       applyBuy(draft, action);

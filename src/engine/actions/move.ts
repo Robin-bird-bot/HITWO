@@ -53,6 +53,8 @@ export function applyMove(state: GameState, action: MoveAction): void {
   const free = freeMoveFor(state, hiker, action.toTileId);
   hiker.cameFrom = from;
   hiker.tileId = action.toTileId;
+  // The first hiker to cross a line paints it their color (Phase 10.5).
+  line.walkedBy ??= hiker.id;
   // Whoever they carry comes along.
   const carried = bringCarried(state, [hiker], from).map((c) => c.id);
   if (free) spendFreeMove(state, hiker, free);

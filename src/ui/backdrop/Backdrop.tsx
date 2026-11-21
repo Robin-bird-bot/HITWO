@@ -67,9 +67,11 @@ export interface BackdropProps {
   biome: BiomeId;
   /** How far the map has scrolled up from the trailhead, in stage pixels. */
   scrollY?: number;
+  /** The route view (Phase 10.5): the land fades so walked paths stand out. */
+  faded?: boolean;
 }
 
-export function Backdrop({ phase, biome, scrollY = 0 }: BackdropProps) {
+export function Backdrop({ phase, biome, scrollY = 0, faded = false }: BackdropProps) {
   const reduced = useReducedMotion();
   const stars = useMemo(() => makeStars(), []);
   const night = phase === 'night';
@@ -83,7 +85,7 @@ export function Backdrop({ phase, biome, scrollY = 0 }: BackdropProps) {
   });
 
   return (
-    <div className={styles.backdrop} aria-hidden="true">
+    <div className={styles.backdrop} aria-hidden="true" data-faded={faded || undefined}>
       {PHASES.map((p) => (
         <div
           key={p}

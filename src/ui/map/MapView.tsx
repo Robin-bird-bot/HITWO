@@ -73,6 +73,8 @@ interface MapViewProps {
    * target, or a shelter's own tile), or anywhere (a tool with no tile).
    */
   itemDrag?: { tile: DropTarget; map: DropTarget };
+  /** The route view (Phase 10.5): only walked paths stay bright. */
+  routes?: boolean;
 }
 
 /** A scouting tool at work, for a few seconds: tiles to sweep, and counts to fade away. */
@@ -110,6 +112,7 @@ export function MapView({
   itemDrag,
   order,
   onEmptyClick,
+  routes = false,
 }: MapViewProps) {
   const fit = useStage();
   const drag = useDragState();
@@ -199,6 +202,7 @@ export function MapView({
       ref={viewportRef}
       className={styles.viewport}
       data-dragging={dragged ? 'hiker' : undefined}
+      data-routes={routes || undefined}
       {...(itemDrag ? mapDrop.props() : {})}
       onPointerDown={onPointerDown}
       onClickCapture={(e) => {
@@ -222,6 +226,8 @@ export function MapView({
           bounds={bounds}
           from={currentTileId}
           reachable={targets.filter((t) => t.reason === null).map((t) => t.tileId)}
+          colors={Object.fromEntries(hikers.map((h) => [h.id, hikerColor(h)]))}
+          routes={routes}
         />
         {tiles.map((t) => (
           <MapTile
