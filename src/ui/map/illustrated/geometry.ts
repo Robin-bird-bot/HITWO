@@ -12,7 +12,9 @@
  * hover and the camera all use these positions.
  */
 import { MAP_STYLE, u } from '../../../config/mapStyle';
-import { seedRng, nextFloat, type RngState, type Section } from '../../../engine';
+// The RNG module itself, not the engine index: the land worker only needs this.
+import { nextFloat, seedRng } from '../../../engine/rng';
+import type { RngState, Section } from '../../../engine/types';
 import { lastRowOf, tileCenter, type Point } from '../mapLayout';
 import type { MapStyle } from '../mapStyleSetting';
 

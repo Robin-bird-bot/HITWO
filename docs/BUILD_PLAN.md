@@ -1012,7 +1012,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 10.5: Illustrated map (next)
+## Phase 10.5: Illustrated map
 
 (New in the Nov 21 update: `docs/UPDATE-2026-11-21-phase-10.5-illustrated-map.md`. **Build this next**, before Phase 11. The look is in `docs/mockups/illustrated-map/` (`MapTopDown.jpg` is the target; tile look **A, dark glass** in `MapTileLooks.jpg`; the land on its own in `look/`). The Python prototype in `docs/design/illustrated-map/reference/` has every number: read its README first, and port the ideas and numbers, not the code.)
 
@@ -1062,9 +1062,31 @@ Numbers in [brackets] are first guesses: in `balance.ts` (or `mapStyle.ts` besid
 
 **Done when:** a run can be played in either style; the Illustrated map matches `MapTopDown.jpg` closely, paints in as tiles are revealed, names its places, grades for night and weather, and stays within its time budget; and the tests above pass.
 
+**Phase 10.5 notes (built Nov 21)**
+- **What's playable:** either map style, switched any time in Settings (or the debug panel). Illustrated paints the land in a Web Worker, shows unexplored land as a pencil sketch that paints in as tiles are revealed, draws tiles as dark glass and unrevealed ones in pencil, winds and jitters the paths, colors walked paths, adds bridges, stamps and Oregon place names ("Found …" in the trail log), grades the land for night, rain, storm, snow and heat, and has the compass, title box with scale bar, and Legend. The Routes button (or holding Tab) works in both styles. The debug panel has a **Map look** section.
+- **Decisions:**
+  - **Scale:** Classic's grid stays (rows 152 apart, hex radius 64), and every prototype number is multiplied by 152 ÷ 134 (`u()` in `src/config/mapStyle.ts`). Tiles already take about 42% of a row, so nothing had to be spread out, and switching styles keeps the camera.
+  - **Field grid:** 2 prototype units a cell (3 on phones), not 1. At 1 it took about 2.2 s on this laptop, over the 1.5 s budget. Contours, water and tree crowns are still drawn sharp; only the color fields are coarser.
+  - **Rivers:** one main river runs top to bottom through the longest top-to-bottom chain of River tiles; any other River tile gets a creek from the nearest side.
+  - **Names:** at most 6 per kind in a section (`NAMES_PER_SECTION`), so the lists last the whole run.
+  - **The land is fixed per section:** it's made from the section's tiles when you enter it, so revealing nodes later changes only the paint, not the land.
+  - **Palettes:** Meadow everywhere until Phase 11 passes the biome in (`BIOME_PALETTES` in `land/palette.ts`).
+  - **Scale bar:** "one move" (one row of the trail at the current zoom). The mockup's "about half a day" didn't match anything the game measures.
+  - Names that show only because of the debug panel's "Reveal all" aren't logged as found.
+  - The worker imports the RNG module directly, not the engine index (38 kB instead of 223 kB).
+- **Generation time on this laptop:** about 1.1–1.2 s for a section in the worker (land about 0.9 s, features 0.12 s, paint 0.05 s). With the window in the background the browser slows it to 1.4–1.5 s, so the 6 s give-up only counts time on screen.
+- **Questions for Wyatt:**
+  - **Scale bar:** is "one move" right, or should it say something else?
+  - **Default style:** Illustrated (the update's first guess). Keep it?
+- **Not done yet:**
+  - Biome palettes, Alpine snow on rock, and Fog wait on Phase 11. The Sit by the Fire glow waits on that trait (still held).
+  - The tilted view isn't in this phase.
+  - Rain streaks and reduced motion were checked in code and tests, not by eye at full size.
+- **Saves:** version 19. A v18 save loads with nothing walked and no places found. Wyatt's v14 save still loads.
+
 ---
 
-## Phase 11: Biomes, tiers and weather
+## Phase 11: Biomes, tiers and weather (next)
 
 Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
 

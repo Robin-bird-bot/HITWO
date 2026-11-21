@@ -18,7 +18,8 @@
  * same land. Nothing here is saved.
  */
 import { MAP_STYLE, u } from '../../../../config/mapStyle';
-import { nextFloat, type NodeKind, type RngState } from '../../../../engine';
+import { nextFloat } from '../../../../engine/rng';
+import type { NodeKind, RngState } from '../../../../engine/types';
 import type { Point } from '../../mapLayout';
 import { mapSeed } from '../geometry';
 import {

@@ -137,3 +137,4 @@ Until real art arrives, use clearly marked placeholders.
 
 - **Edit Undo:** freeware from Brian Kent. See `fonts/edit-undo-README.txt`.
 - **Game Quotes:** © Typia Nesia. Wyatt confirmed his license covers use in the game on the web.
+- **DM Sans** and **Fraunces** (the illustrated map's place names, italic 600, Phase 10.5): SIL Open Font License, bundled from the `@fontsource` npm packages, so nothing to copy into `public/`.

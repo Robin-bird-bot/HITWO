@@ -4,7 +4,8 @@
  * flat Float32Arrays (row by row, `w` wide). Pure, so the land can be built
  * in a worker or a test.
  */
-import { nextFloat, seedRng, type RngState } from '../../../../engine';
+import { nextFloat, seedRng } from '../../../../engine/rng';
+import type { RngState } from '../../../../engine/types';
 
 export interface Field {
   w: number;

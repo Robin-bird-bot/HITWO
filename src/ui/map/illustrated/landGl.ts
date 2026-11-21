@@ -20,6 +20,8 @@ export interface Grade {
   snow: number;
   heat: number;
   routes: number;
+  /** The rain's slanted streaks (0 under reduced motion). */
+  streaks: number;
   /** Seconds, for the rain streaks. */
   time: number;
   /** Warm glows, in land pixels (x, y), at night. */
@@ -33,6 +35,7 @@ export const NO_GRADE: Grade = {
   snow: 0,
   heat: 0,
   routes: 0,
+  streaks: 0,
   time: 0,
   glows: [],
 };
@@ -59,7 +62,7 @@ uniform sampler2D uSketch;
 uniform sampler2D uMask;
 uniform vec2 uMaskScale;
 uniform vec2 uSize;
-uniform float uNight, uRain, uStorm, uSnow, uHeat, uRoutes, uTime;
+uniform float uNight, uRain, uStorm, uSnow, uHeat, uRoutes, uStreaks, uTime;
 uniform vec2 uGlow[${MAX_GLOWS}];
 uniform int uGlows;
 uniform int uView;
@@ -92,7 +95,7 @@ void main() {
   vec2 q = vec2(px.x + px.y * 0.33, px.y - uTime * 260.0);
   vec2 cellId = floor(q / vec2(9.0, 64.0));
   vec2 f = fract(q / vec2(9.0, 64.0));
-  float streak = step(0.86, hash(cellId)) * step(abs(f.x - 0.5), 0.07) * step(f.y, 0.28);
+  float streak = uStreaks * step(0.86, hash(cellId)) * step(abs(f.x - 0.5), 0.07) * step(f.y, 0.28);
   rain = rain * (1.0 - 0.35 * streak) + streak * 0.35 * vec3(0.85, 0.92, 0.98);
   col = mix(col, rain, uRain);
 
@@ -188,6 +191,7 @@ export function createLandGl(
     snow: loc('uSnow'),
     heat: loc('uHeat'),
     routes: loc('uRoutes'),
+    streaks: loc('uStreaks'),
     time: loc('uTime'),
     glow: loc('uGlow'),
     glows: loc('uGlows'),
@@ -225,6 +229,7 @@ export function createLandGl(
       gl.uniform1f(U.snow, g.snow);
       gl.uniform1f(U.heat, g.heat);
       gl.uniform1f(U.routes, g.routes);
+      gl.uniform1f(U.streaks, g.streaks);
       gl.uniform1f(U.time, g.time);
       const glows = g.glows.slice(0, MAX_GLOWS);
       const flat = new Float32Array(MAX_GLOWS * 2);

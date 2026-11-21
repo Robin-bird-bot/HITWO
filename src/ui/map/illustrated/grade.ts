@@ -40,6 +40,7 @@ export function landGrade(
     snow: weather === 'snow' ? 1 : 0,
     heat: weather === 'heatwave' ? 1 : 0,
     routes: routes ? 1 : 0,
+    streaks: weather === 'rain' || weather === 'storm' ? 1 : 0,
     glows,
   };
 }

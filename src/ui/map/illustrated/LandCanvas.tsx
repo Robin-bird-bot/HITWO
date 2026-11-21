@@ -157,9 +157,10 @@ export function LandCanvas({
       starts: {} as Record<string, number>,
       frame: 0,
       draw() {
-        const { grade: g, debug: d } = live.current;
-        if (gl)
-          gl.render({ ...g, time: performance.now() / 1000 }, d?.view === 'mask' ? 'mask' : 'land');
+        const { grade: g, debug: d, reduceMotion: still } = live.current;
+        // Under reduced motion the rain has no streaks at all, not frozen ones.
+        const now = { ...g, streaks: still ? 0 : g.streaks, time: performance.now() / 1000 };
+        if (gl) gl.render(now, d?.view === 'mask' ? 'mask' : 'land');
         else drawFlat();
       },
     };

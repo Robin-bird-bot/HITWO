@@ -14,7 +14,8 @@
  * Pure and seeded, like the land.
  */
 import { MAP_STYLE, u } from '../../../../config/mapStyle';
-import { nextFloat, seedRng, shuffle, type RngState } from '../../../../engine';
+import { nextFloat, seedRng, shuffle } from '../../../../engine/rng';
+import type { RngState } from '../../../../engine/types';
 import type { Point } from '../../mapLayout';
 import { mapSeed } from '../geometry';
 import { rngFor, uniform } from './grid';
