@@ -1,3 +1,4 @@
+import { ownerLeft } from '../items/shelters';
 import { revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveAllCost } from '../costs';
@@ -103,6 +104,8 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   }
   // Whoever they carry comes along.
   const carried = bringCarried(state, group, from).map((c) => c.id);
+  // Shelters any of them set up there pack themselves, if there's room (Phase 10.6).
+  for (const h of group) ownerLeft(state, h, from);
   const revealed = enterTile(state, action.toTileId);
   pushEvent(state, {
     kind: 'move',

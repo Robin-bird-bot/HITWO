@@ -200,3 +200,5 @@ export {
 } from './items/presents';
 export type { CraftModifier } from './effects';
 export { mapTargets } from './items/scout';
+export { deploymentsOf, shelterDeployments, shelterOn } from './items/shelters';
+export { foodAppetiteEstimate } from './items/foodValue';

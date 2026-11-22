@@ -33,7 +33,7 @@ describe('the item list (03-items.md)', () => {
       if (i.type === 'tool') expect(i.uses, i.id).toBeDefined();
       if (i.type === 'food') expect(i.bites, i.id).toBeDefined();
       if (i.type === 'clothes') expect(i.slot, i.id).toBeDefined();
-      if (i.type === 'shelter') expect(i.nights, i.id).toBeGreaterThan(0);
+      if (i.type === 'shelter') expect(i.deployments, i.id).toBeGreaterThan(0);
       if (i.type === 'trinket') expect(i.trinket, i.id).toBeDefined();
       if (i.slot === 'feet') expect(i.footwear, i.id).toBeDefined();
     }

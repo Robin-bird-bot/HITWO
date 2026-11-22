@@ -638,8 +638,64 @@ export function TileCard({
         )}
       </div>
       <BoostChips state={state} hiker={hiker} />
+      {onFree && <PackUp state={state} hiker={hiker} onFree={onFree} />}
       {onFree && <CampMeals state={state} hiker={hiker} onFree={onFree} />}
     </>
+  );
+}
+
+/** A shelter set up on this tile (Phase 10.6): pack it up (free), or throw it away when worn out. */
+function PackUp({
+  state,
+  hiker,
+  onFree,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onFree(action: Action): void;
+}) {
+  const [asking, setAsking] = useState(false);
+  const up = state.section.tiles[hiker.tileId]?.shelters?.[0];
+  if (!up || hiker.status !== 'active') return null;
+  const name = ITEMS[up.itemId]?.name ?? 'Shelter';
+  const action: Action = { type: 'packUpShelter', hikerId: hiker.id };
+  const reason = validateAction(state, action);
+  const worn = up.deploymentsLeft <= 0;
+  return (
+    <div className={styles.campMeal}>
+      <Icon name="tent" size={15} color="#83C4ED" />
+      <span className={styles.small}>
+        <b>{name.toUpperCase()}</b> set up here · {worn ? 'worn out' : `${up.deploymentsLeft} left`}
+      </span>
+      {asking ? (
+        <>
+          <button
+            type="button"
+            className={styles.feature}
+            onClick={() => {
+              setAsking(false);
+              onFree(action);
+            }}
+          >
+            Throw it away
+          </button>
+          <button type="button" className={styles.feature} onClick={() => setAsking(false)}>
+            No
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className={styles.feature}
+          disabled={!!reason}
+          title={reason ?? (worn ? `Throw the worn-out ${name} away` : `Pack the ${name} up`)}
+          // Packing up can be undone (set it up again); throwing away can't, so it asks.
+          onClick={() => (worn ? setAsking(true) : onFree(action))}
+        >
+          {worn ? 'Throw away' : 'Pack up'}
+        </button>
+      )}
+    </div>
   );
 }
 

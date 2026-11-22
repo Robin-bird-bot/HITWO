@@ -36,6 +36,7 @@ import {
   workingTrait,
   targetOfUse,
   validateAction,
+  deploymentsOf,
   type Action,
   type EquipSlot,
   type GameState,
@@ -780,10 +781,10 @@ function PlaceSection({
   const item = hiker.inventory.bag.find((i) => i.uid === itemUid);
   const def = item && ITEMS[item.itemId];
   if (!item || def?.type !== 'shelter') return null;
-  const action: Action = { type: 'placeShelter', hikerId: hiker.id, itemUid };
+  const action: Action = { type: 'setUpShelter', hikerId: hiker.id, itemUid };
   const reason = validateAction(state, action);
-  const nights = def.nights ?? 1;
-  const lasts = `${nights} night${nights === 1 ? '' : 's'}`;
+  const left = deploymentsOf(item);
+  const after = Math.max(0, left - 1);
   const tile = state.section.tiles[hiker.tileId];
   const where = tile ? tileName(tile) : 'this tile';
 
@@ -791,7 +792,8 @@ function PlaceSection({
     return (
       <div className={styles.confirm}>
         <span className={styles.none}>
-          Place the {name} on {where}? It stays there for {lasts}, then it’s gone.
+          Set up the {name} on {where}? It uses 1 of {left}: {after} left after. You can pack it up
+          again.
         </span>
         <button
           type="button"
@@ -799,7 +801,7 @@ function PlaceSection({
           onClick={() => onPlace(action)}
         >
           <Icon name="tent" size={16} />
-          Yes, place it
+          Yes, set it up
         </button>
         <button
           type="button"
@@ -822,8 +824,8 @@ function PlaceSection({
     >
       <Icon name="tent" size={16} />
       <span className={styles.useText}>
-        Place here
-        <span className={styles.effect}>{reason ?? `Lasts ${lasts}`}</span>
+        Set up here
+        <span className={styles.effect}>{reason ?? `Free. ${left} left`}</span>
       </span>
     </button>
   );

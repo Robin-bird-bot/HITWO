@@ -121,7 +121,7 @@ export function tileDrop(state: GameState, p: DragPayload, tileId: TileId): Tile
   const def = defOf(state, p);
   if (!hiker || !def) return null;
   if (def.type === 'shelter') {
-    const place: Action = { type: 'placeShelter', hikerId: hiker.id, itemUid: p.itemUid };
+    const place: Action = { type: 'setUpShelter', hikerId: hiker.id, itemUid: p.itemUid };
     return tileId === hiker.tileId && ok(state, place) ? { kind: 'place', action: place } : null;
   }
   const map = def.use?.map;

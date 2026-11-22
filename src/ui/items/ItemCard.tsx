@@ -40,7 +40,14 @@ import styles from './ItemCard.module.css';
 
 type Counters = Pick<
   ItemInstance,
-  'quality' | 'usesLeft' | 'bitesLeft' | 'durability' | 'node' | 'colorway' | 'grade'
+  | 'quality'
+  | 'usesLeft'
+  | 'bitesLeft'
+  | 'durability'
+  | 'deploymentsLeft'
+  | 'node'
+  | 'colorway'
+  | 'grade'
 >;
 
 export interface ItemCardProps {
@@ -70,7 +77,11 @@ const textFit = (text: string) =>
 function counter(itemId: string, item: Counters | undefined, quality: Quality | undefined) {
   const def = ITEMS[itemId];
   if (!def) return { left: 0, max: 0 };
-  if (def.type === 'shelter') return { left: def.nights ?? 0, max: def.nights ?? 0 };
+  // Shelters (Phase 10.6): the times it can still be set up.
+  if (def.type === 'shelter') {
+    const max = def.deployments ?? 0;
+    return { left: Math.min(max, item?.deploymentsLeft ?? max), max };
+  }
   const full = fullCounters(def, quality);
   const max = full.usesLeft ?? full.bitesLeft ?? full.durability ?? 0;
   const own = item?.usesLeft ?? item?.bitesLeft ?? item?.durability;
@@ -332,7 +343,12 @@ export function ItemCard({
                 style={{ gap: Math.max(1, Math.round(3 * k)) }}
               >
                 <span className={styles.tiny} style={{ fontSize: Math.max(6, Math.round(10 * k)) }}>
-                  {look.count} {range ? rangeWords(range) : `${left}/${max}`}
+                  {look.count}{' '}
+                  {range
+                    ? rangeWords(range)
+                    : def.type === 'shelter'
+                      ? `${left} LEFT`
+                      : `${left}/${max}`}
                 </span>
                 <span
                   className={styles.pips}

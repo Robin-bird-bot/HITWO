@@ -862,8 +862,8 @@ export interface ItemDef {
   bites?: QualityValues | number;
   /** Clothes: days of durability, when not the tier's usual (Plain Shirt lasts longer). */
   durability?: QualityValues;
-  /** Shelters: nights it lasts once placed. */
-  nights?: number;
+  /** Shelters: how many times it can be set up (Phase 10.6). */
+  deployments?: number;
   /** Trinkets: used up when used, or works while carried. */
   trinket?: 'use' | 'keep';
   /** Its own recipe, used once the hiker knows its blueprint. */

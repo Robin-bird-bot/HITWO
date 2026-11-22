@@ -327,17 +327,20 @@ export interface ItemBoost {
 
 /** One item a hiker carries (docs/design/03-items.md). */
 /**
- * A shelter standing on a tile (03-items.md, "Shelters"). It counts down its
- * nights at each camp step and is gone when they run out.
+ * A shelter set up on a tile (Phase 10.6: carried and set up, not left
+ * behind). While it's up it takes no pack slot, and everyone on the tile is
+ * sheltered.
  */
 export interface PlacedShelter {
   uid: string;
   itemId: ItemId;
-  /** Nights left, counting tonight. */
-  nightsLeft: number;
-  /** Who placed it; none when Ruins built it. */
+  /** Times it can still be set up after this one. At 0 it's thrown away when packed. */
+  deploymentsLeft: number;
+  /** Who set it up; none when Ruins built it. It packs itself when they leave. */
   by?: HikerId;
-  /** Medic Tent: hikers it has already healed. */
+  /** The pack item it came from, so packing it gives the same card back. */
+  itemUid?: string;
+  /** Medic Tent: hikers it has already healed, this time it's up. */
   healed?: HikerId[];
 }
 
@@ -350,6 +353,8 @@ export interface ItemInstance {
   usesLeft?: number;
   /** Food: bites left. */
   bitesLeft?: number;
+  /** Shelters (Phase 10.6): times it can still be set up (full when missing). */
+  deploymentsLeft?: number;
   /** Clothes: days of durability left. */
   durability?: number;
   /** Food eaten one bite a day (Advent Calendar): the day of the last bite. */
@@ -864,7 +869,10 @@ export type Action =
    */
   | { type: 'eat'; hikerId: HikerId; itemUid: string; fromHikerId?: HikerId }
   /** Place a shelter from the bag on the hiker's tile (a free action). */
-  | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
+  /** Set up a shelter from the pack on this hiker's tile (Phase 10.6). */
+  | { type: 'setUpShelter'; hikerId: HikerId; itemUid: string }
+  /** Pack up the shelter on this hiker's tile into their pack (Phase 10.6). */
+  | { type: 'packUpShelter'; hikerId: HikerId }
   /**
    * Craft (uses the action): a basic recipe for a type (then pick 1 of the
    * cards dealt), or a known blueprint for exactly that item. `slots` says
@@ -1110,6 +1118,23 @@ export type GameEventBody =
   | { kind: 'shelterPlaced'; tileId: TileId; itemId: ItemId; nights: number; hikerId?: HikerId }
   /** A shelter's last night is over. */
   | { kind: 'shelterGone'; tileId: TileId; itemId: ItemId }
+  /** Phase 10.6: set up, packed up (by hand, or on its own when its owner left), or worn out. */
+  | {
+      kind: 'shelterSetUp';
+      tileId: TileId;
+      itemId: ItemId;
+      left: number;
+      hikerId?: HikerId;
+    }
+  | {
+      kind: 'shelterPackedUp';
+      tileId: TileId;
+      itemId: ItemId;
+      hikerId: HikerId;
+      left: number;
+      auto?: true;
+    }
+  | { kind: 'shelterWornOut'; tileId: TileId; itemId: ItemId; hikerId?: HikerId }
   /** A hiker crafted an item, from a basic recipe or a blueprint. */
   | {
       kind: 'crafted';

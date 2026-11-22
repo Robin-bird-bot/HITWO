@@ -270,7 +270,7 @@
   }
 }
 
-/* A shelter standing on the tile: a tent and its nights left, above the top point. */
+/* A shelter set up on the tile: a tent and the times it can still be set up, above the top point. */
 .shelter {
   position: absolute;
   top: -8px;
@@ -285,6 +285,17 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Illustrated: a small tent stamp beside the hex, on its right (Phase 10.6). */
+.shelterStamp {
+  position: absolute;
+  right: -30px;
+  bottom: 4px;
+  width: 34px;
+  height: auto;
+  pointer-events: auto;
+  filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.35));
 }
 
 .shelterNights {

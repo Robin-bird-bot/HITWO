@@ -1,5 +1,5 @@
 import { tileLabel } from '../../content/tileLabels';
-import { ASSETS } from '../../config/assets';
+import { ASSETS, asset } from '../../config/assets';
 import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engine';
 import { CARDS, ITEMS } from '../../content';
 import { WONDER_BY_ID } from '../../content/wonders';
@@ -216,12 +216,19 @@ export function MapTile({
 
       {tile.scan && !tile.visited && <ScanBadge scan={tile.scan} />}
 
-      {tile.shelters?.length ? (
+      {tile.shelters?.length && illustrated ? (
+        // Illustrated: a small tent stamp beside the hex (Phase 10.6).
+        <img
+          className={styles.shelterStamp}
+          src={TENT_STAMP}
+          alt=""
+          title={shelterWords(tile)}
+          draggable={false}
+        />
+      ) : tile.shelters?.length ? (
         <div className={styles.shelter} title={shelterWords(tile)}>
           <Icon name="tent" size={13} strokeWidth={2.5} />
-          <span className={styles.shelterNights}>
-            {Math.max(...tile.shelters.map((s) => s.nightsLeft))}
-          </span>
+          <span className={styles.shelterNights}>{tile.shelters[0]?.deploymentsLeft ?? 0}</span>
         </div>
       ) : null}
 
@@ -413,15 +420,14 @@ function ScanBadge({ scan }: { scan: NonNullable<Tile['scan']> }) {
   );
 }
 
-/** "Tent, 2 nights left · Cabin, 5 nights left". */
+/** "Tent set up here · 3 left" (Phase 10.6: the times it can still be set up). */
 function shelterWords(tile: Tile): string {
   return (tile.shelters ?? [])
-    .map((s) => {
-      const name = ITEMS[s.itemId]?.name ?? 'Shelter';
-      return `${name}, ${s.nightsLeft} night${s.nightsLeft === 1 ? '' : 's'} left`;
-    })
+    .map((s) => `${ITEMS[s.itemId]?.name ?? 'Shelter'} set up here · ${s.deploymentsLeft} left`)
     .join(' · ');
 }
+
+const TENT_STAMP = asset('map/stamps/tent.png');
 
 function describeTile(tile: Tile, label: string | null): string {
   if (tile.kind === 'trailhead') return 'Trailhead';

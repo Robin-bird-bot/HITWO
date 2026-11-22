@@ -225,7 +225,8 @@ const CHECKED_ACTIONS = new Set<Action['type']>([
   'putOn',
   'takeOff',
   'teach',
-  'placeShelter',
+  'setUpShelter',
+  'packUpShelter',
 ]);
 
 /** A trait check's title: "Move Cody?", or "Go ahead?" for anything else. */

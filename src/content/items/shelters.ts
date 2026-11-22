@@ -1,15 +1,16 @@
 /**
- * Shelters (docs/design/03-items.md, "Shelters"): placed on a tile and gone
- * after their nights. Every one is a basic shelter (+1 Energy when sleeping,
- * safe from night events, Drizzle and Sheer Cold) plus its own effect, which
- * works for hikers on its tile (src/engine/items/shelters.ts). No Quality.
- * Nights marked [first guess] in the doc are in BALANCE.items.
+ * Shelters (Phase 10.6, docs/design/08-overhaul-plan.md, "Portable shelters"):
+ * carried in a pack (1 slot) and set up on a tile, each a set number of times
+ * (its deployments, in BALANCE.items.shelterDeployments). While it's up, every
+ * hiker on the tile is sheltered (+1 Energy when sleeping, safe from night
+ * events) plus its own effect (src/engine/items/shelters.ts). No Quality.
+ * Recipes cost 1 "any" less than in 03-items.md [first guess].
  */
 import { BALANCE } from '../../config/balance';
 import type { Hooks, ItemDef, ItemType } from '../../engine/effects';
 import { item } from './build';
 
-const N = BALANCE.items.shelterNights;
+const N = BALANCE.items.shelterDeployments;
 const S = BALANCE.items.shelter;
 
 /** +1 Quality (up to 5) for these types crafted on this tile (Tailgate, Lodge). */
@@ -30,8 +31,8 @@ const moreSleep = (name: string): Hooks => ({
   modifyGain: (q) => (q.key === 'sleep.energy' ? { source: name, flat: S.sleepEnergy } : undefined),
 });
 
-const shelter = (def: Omit<Parameters<typeof item>[0], 'type' | 'nights'>): ItemDef =>
-  item({ ...def, type: 'shelter', nights: N[def.id] ?? 1 });
+const shelter = (def: Omit<Parameters<typeof item>[0], 'type' | 'deployments'>): ItemDef =>
+  item({ ...def, type: 'shelter', deployments: N[def.id] ?? 1 });
 
 export const SHELTERS: readonly ItemDef[] = [
   shelter({
@@ -39,21 +40,21 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Hammock',
     tier: 1,
     text: 'A basic shelter.',
-    recipe: 'Fur 2, Moss 1, Wood 2, any 1',
+    recipe: 'Fur 2, Moss 1, Wood 2',
   }),
   shelter({
     id: 'tent',
     name: 'Tent',
     tier: 1,
     text: 'A basic shelter.',
-    recipe: 'Fur 2, Wood 2, Moss 1, any 2',
+    recipe: 'Fur 2, Wood 2, Moss 1, any 1',
   }),
   shelter({
     id: 'cabin',
     name: 'Cabin',
     tier: 2,
     text: 'Sleeping here gives +1 more Energy.',
-    recipe: 'Wood 4, Stone 2, Metal 1, any 1',
+    recipe: 'Wood 4, Stone 2, Metal 1',
     hooks: moreSleep('Cabin'),
   }),
   shelter({
@@ -61,7 +62,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Tailgate',
     tier: 2,
     text: 'Food crafted on this tile gets +1 Quality (up to 5).',
-    recipe: 'Metal 3, Oil 2, any 3',
+    recipe: 'Metal 3, Oil 2, any 2',
     hooks: craftQuality('Tailgate', ['food']),
   }),
   shelter({
@@ -69,7 +70,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Yurt',
     tier: 2,
     text: 'Hikers scavenging on this tile see 1 extra card.',
-    recipe: 'Fur 3, Wood 2, Grass 1, any 2',
+    recipe: 'Fur 3, Wood 2, Grass 1, any 1',
     hooks: {
       modifyScavenge: () => ({
         source: 'Yurt',
@@ -84,7 +85,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Hostel',
     tier: 2,
     text: '+1 more Energy when sleeping here with 2 or more hikers on the tile, and +1 more again with all 4.',
-    recipe: 'Wood 2, Stone 2, Clay 2, any 2',
+    recipe: 'Wood 2, Stone 2, Clay 2, any 1',
     hooks: {
       modifyGain: (q, ctx) => {
         if (q.key !== 'sleep.energy') return undefined;
@@ -101,7 +102,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Tree-House',
     tier: 3,
     text: 'Also protects every connected tile from night events.',
-    recipe: 'Wood 4, Fur 1, Metal 1, Stone 1, any 2',
+    recipe: 'Wood 4, Fur 1, Metal 1, Stone 1, any 1',
     shelterReach: 'guards',
   }),
   shelter({
@@ -109,7 +110,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'RV',
     tier: 3,
     text: 'Every connected tile also counts as sheltered. Sleeping here gives +1 more Energy.',
-    recipe: 'Metal 4, Oil 2, Shell 1, any 2',
+    recipe: 'Metal 4, Oil 2, Shell 1, any 1',
     shelterReach: 'shelters',
     hooks: moreSleep('RV'),
   }),
@@ -118,7 +119,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Medic Tent',
     tier: 3,
     text: 'The first time each hiker sleeps here, they remove 1 injury.',
-    recipe: 'Fur 3, Moss 2, Wood 2, Salt 1, any 1',
+    recipe: 'Fur 3, Moss 2, Wood 2, Salt 1',
     // TODO(wyatt): a hiker with no injury to remove keeps their turn for a later night.
     placedHooks: (placed) => ({
       onSleep: (ctx) => {
@@ -133,7 +134,7 @@ export const SHELTERS: readonly ItemDef[] = [
     name: 'Lodge',
     tier: 3,
     text: 'Tools and clothes crafted on this tile get +1 Quality (up to 5).',
-    recipe: 'Wood 4, Stone 2, Metal 1, Fur 1, any 1',
+    recipe: 'Wood 4, Stone 2, Metal 1, Fur 1',
     hooks: craftQuality('Lodge', ['tool', 'clothes']),
   }),
 ];

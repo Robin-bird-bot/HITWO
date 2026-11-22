@@ -14,7 +14,7 @@ import { PARTY_COLORS } from '../content/partyColors';
 import { TEST_HIKERS } from '../content/testHikers';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
-import { shelterNights } from './items/shelters';
+import { shelterDeployments } from './items/shelters';
 import {
   NODE_TYPES,
   PHASES,
@@ -92,7 +92,11 @@ const noStorm = (w: unknown): unknown => (w === 'storm' ? 'rain' : w);
  * Phase 10.6 (Simplify), for a version 19 save:
  * - Storm becomes Rain, today and in the forecast;
  * - nodes the weather changed go back to what they were;
- * - a Wonder still on this section's tiles becomes a quiet tile.
+ * - a Wonder still on this section's tiles becomes a quiet tile;
+ * - a placed shelter becomes a set-up one: its nights left become its
+ *   deployments left, and its owner is whoever placed it, or else the first
+ *   hiker on its tile. Only one stays up on a tile (the one with the most).
+ *   Shelters in packs keep their full deployments (nothing to change).
  */
 function simplify(save: SaveData): SaveData {
   const out = structuredClone(save);
@@ -111,6 +115,22 @@ function simplify(save: SaveData): SaveData {
     if (tile.wonder) {
       delete tile.wonder;
       tile.quiet = true;
+    }
+    if (Array.isArray(tile.shelters) && tile.shelters.length) {
+      const firstHere = (Array.isArray(out.hikers) ? out.hikers : []).find(
+        (h) => isRecord(h) && h.tileId === tile.id && h.status !== 'abandoned',
+      );
+      const converted = tile.shelters.filter(isRecord).map((s) => {
+        const { nightsLeft, ...rest } = s;
+        const by = isString(s.by) ? s.by : isRecord(firstHere) ? firstHere.id : undefined;
+        return {
+          ...rest,
+          deploymentsLeft: isNumber(nightsLeft) ? Math.max(0, nightsLeft) : 0,
+          ...(isString(by) ? { by } : {}),
+        };
+      });
+      converted.sort((a, b) => b.deploymentsLeft - a.deploymentsLeft);
+      tile.shelters = converted.slice(0, 1);
     }
   }
   return out;
@@ -272,14 +292,21 @@ function upgradeStation(save: SaveData): SaveData {
   return save;
 }
 
+/** The nights a shelter lasted before Phase 10.6 (its deployments − 1), for old saves. */
+const shelterNights = (itemId: string) => Math.max(1, shelterDeployments(itemId) - 1);
+
 /** Shelters stored as item ids become placed shelters with their full nights. */
 function upgradeShelters(save: SaveData): SaveData {
   const section = save.section;
   if (!isRecord(section) || !isRecord(section.tiles)) return save;
   for (const [id, tile] of Object.entries(section.tiles)) {
     if (!isRecord(tile) || !Array.isArray(tile.shelters)) continue;
-    tile.shelters = tile.shelters.map((s, i) =>
-      isString(s) ? { uid: `shelter-${id}-${i}-${s}`, itemId: s, nightsLeft: shelterNights(s) } : s,
+    tile.shelters = tile.shelters.map(
+      (s, i) =>
+        isString(s)
+          ? { uid: `shelter-${id}-${i}-${s}`, itemId: s, nightsLeft: shelterNights(s) }
+          : s,
+      // (Version 19 turns nights left into deployments: see simplify().)
     );
   }
   return save;

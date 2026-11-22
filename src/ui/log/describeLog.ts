@@ -471,6 +471,34 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'rest' });
         break;
       }
+      case 'shelterSetUp': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? tileName(tile) : 'the tile';
+        const left = `${e.left} left`;
+        const text = e.hikerId
+          ? `${name(e.hikerId)} set up the ${item} on ${where} (${left}).`
+          : `A ${item} now stands on ${where} (${left}).`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterPackedUp': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const text = e.auto
+          ? `${name(e.hikerId)} packed up the ${item} on the way out.`
+          : `${name(e.hikerId)} packed up the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterWornOut': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        lines.push({
+          id: e.id,
+          text: `The ${item} is worn out and was thrown away.`,
+          tone: 'drain',
+        });
+        break;
+      }
       case 'shelterGone': {
         const item = ITEMS[e.itemId]?.name ?? 'shelter';
         const tile = state.section.tiles[e.tileId];

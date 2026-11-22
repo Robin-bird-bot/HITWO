@@ -9,7 +9,7 @@ import type { Action, GameState, ItemTypeName, PaidSlot, ResourceId } from '../t
 import { autoPay, basicRecipe, craftSetup, paymentReason } from './craft';
 import { freeMoveFor } from './freeMoves';
 import { makeItem, fullDurability } from './make';
-import { placeShelterOn } from './shelters';
+import { setUpShelterOn } from './shelters';
 
 const give = (s: GameState, id: string, res: Partial<Record<ResourceId, number>>) => {
   hiker(s, id).inventory.resources = { ...res };
@@ -34,9 +34,10 @@ describe('recipes', () => {
     ]);
     expect(basicRecipe(s, 'tool', 2).map((p) => p.n)).toEqual([3, 4]);
     expect(basicRecipe(s, 'tool', 3).map((p) => p.n)).toEqual([4, 5]);
+    // Phase 10.6: the generic shelter craft is 5, not 6.
     expect(basicRecipe(s, 'shelter', 1)).toEqual([
       { n: 3, ids: ['wood', 'stone'] },
-      { n: 3, any: true },
+      { n: 2, any: true },
     ]);
   });
 
@@ -245,10 +246,11 @@ describe('what changes a craft', () => {
   it('a Tailgate adds Quality to food crafted on its tile; a Lodge to tools and clothes', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L');
-    placeShelterOn(s, 'L', 'tailgate');
+    setUpShelterOn(s, 'L', 'tailgate', 4);
     expect(craftSetup(s, hiker(s, 'ash'), 'food').quality).toBe(1);
     expect(craftSetup(s, hiker(s, 'ash'), 'tool').quality).toBe(0);
-    placeShelterOn(s, 'L', 'lodge');
+    delete s.section.tiles.L!.shelters;
+    setUpShelterOn(s, 'L', 'lodge', 6);
     expect(craftSetup(s, hiker(s, 'ash'), 'tool').quality).toBe(1);
   });
 

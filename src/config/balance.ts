@@ -113,20 +113,21 @@ export const BALANCE = {
       3: [8, 10, 10, 10, 12],
     } as Record<number, readonly [number, number, number, number, number]>,
     /**
-     * Nights each shelter lasts once placed.
-     * TODO(wyatt): Tailgate, Yurt, Hostel, Tree-House, RV, Medic Tent and Lodge are the doc's first guesses.
+     * Portable shelters (Phase 10.6): how many times each can be set up (the
+     * old nights + 1). At 0 it can't be set up again, and it's thrown away
+     * when it's packed. TODO(wyatt): every number is a first guess.
      */
-    shelterNights: {
-      hammock: 1,
-      tent: 3,
+    shelterDeployments: {
+      hammock: 2,
+      tent: 4,
       cabin: 5,
-      tailgate: 3,
-      yurt: 4,
-      hostel: 4,
-      treeHouse: 4,
-      rv: 4,
-      medicTent: 3,
-      lodge: 5,
+      tailgate: 4,
+      yurt: 5,
+      hostel: 5,
+      treeHouse: 5,
+      rv: 5,
+      medicTent: 4,
+      lodge: 6,
     } as Record<string, number>,
     /**
      * The Diploma's XP: a share of the XP between the hiker's level and the
