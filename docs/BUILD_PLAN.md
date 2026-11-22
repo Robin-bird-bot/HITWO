@@ -1012,7 +1012,7 @@ Follow `docs/design/03-items.md` (the source of truth for items) and the item ca
 
 ---
 
-## Phase 10.5: Illustrated map
+## Phase 10.5: Illustrated map (done)
 
 (New in the Nov 21 update: `docs/UPDATE-2026-11-21-phase-10.5-illustrated-map.md`. **Build this next**, before Phase 11. The look is in `docs/mockups/illustrated-map/` (`MapTopDown.jpg` is the target; tile look **A, dark glass** in `MapTileLooks.jpg`; the land on its own in `look/`). The Python prototype in `docs/design/illustrated-map/reference/` has every number: read its README first, and port the ideas and numbers, not the code.)
 
@@ -1086,14 +1086,76 @@ Numbers in [brackets] are first guesses: in `balance.ts` (or `mapStyle.ts` besid
 
 ---
 
-## Phase 11: Biomes, tiers and weather (next)
+## Phase 10.6: Simplify (now)
+
+(New in the Nov 21 updates: `docs/UPDATE-2026-11-21-phase-10.6-simplify.md` and its add-on `docs/UPDATE-2026-11-21-map-corners.md`. The first step of the overhaul in `docs/design/08-overhaul-plan.md`, which wins over the older design docs where they disagree. Only its "Phase 10.6" section is built here.)
+
+**Goal:** fewer systems, each easier to follow. A difficulty setup (always Medium for now) decides how many plain tiles have a challenge; Wonders and Trials are gone; weather only changes what scavenging finds; nine foods; shelters you carry and set up. Plus two illustrated-map follow-ups and a fix so no card or tooltip is ever cut off.
+
+Numbers in [brackets] are first guesses: in `balance.ts` or the new `difficulty.ts`, with `TODO(wyatt)`.
+
+**Build**
+- **A. Illustrated map follow-ups:**
+  - **Show whole map:** Settings → Map style → a switch, shown only for Illustrated, default off. On: the land is fully painted with no sketch or reveal animation, and every place name shows. Tiles, nodes, special spaces and challenges still follow the normal reveal rules.
+  - **A paper map on a table** (`MapEdge.jpg`, `look/edge-table.jpg`, `reference/topo_edge.py`): a cream paper margin about [40] units around the land, a printed double border ([12] and [18] in from the edge) and a line where the land starts, a slightly torn edge, faint fold lines, a soft shadow (blur [14], offset [10, 14], [55%]). The sheet stays straight. Behind it, generated wood planks, made at screen size once. Zooming out stops with the whole sheet on screen and about [8%] of table around it; panning stops when the sheet's edge is about [40%] across the screen. Classic doesn't change.
+  - **Map corners** (map-corners add-on): the section box (biome name, `SECTION I · TIER I`, the 3-block scale bar) in the land's bottom-left corner and the compass rose in its top-right, about [20] units in, drawn in map coordinates on top of paint and sketch alike. Section box about [170 × 74] units, compass about [80]. The screen-fixed compass and title box from 10.5 go; the Legend button stays.
+- **B. Nothing cut off at the edges**, for every window and pop-up:
+  - card rows that don't fit shrink evenly (down to [80%]), then wrap to a second row;
+  - tooltips and hover windows check they fit in the game screen with an [8 px] margin, flip sides, then nudge inside, and render in a top layer;
+  - check scavenging (the most cards possible), crafting, shops, challenge windows, hiker cards, trait badges and the level-up screen, at desktop and phone landscape sizes;
+  - a dev-only **edge test** button in the debug panel opens each window with the most cards possible.
+- **C. Simplify:**
+  - **Difficulty** (`difficulty.ts`): `easy`, `medium`, `hard`, `nightmare`, always Medium for now (the debug panel can switch it). `challengeShare` ¼ / ½ / ¾ / 1, `opportunitiesPerSection` [3] / [2] / [1] / 0, `sectionRows` [0.8] / 1 / [1.2] / [1.4], and the rest at today's values. When a section is made, `round(challengeShare × plain tiles)` plain tiles get a challenge (no more than [3] in a row along a path, if avoidable), then `opportunitiesPerSection` of the rest get an opportunity; every other plain tile is quiet. Special spaces work as now.
+  - **Removed:** Wonders (behind `ENABLE_WONDERS = false`) and Trials (`enabled: false`, Rocco's included). Redolf's **Rednose** does nothing and reads "Placeholder text".
+  - **Weather:** Clear, Rain, Snow, **Wind** (new) and Heatwave; Storm and Fog are gone. The only effect: on a tile with the weather's node (Rain River, Snow Mountain, Wind Forest, Heatwave Wildlife) its resources are [1.5×] as likely, and on any tile each resource card has a [10%] chance to become one of that node's, with a small weather icon. No weather conditions or node changes. Each weather lasts [1–3] days, Meadow odds everywhere until Phase 11: Clear [40%], Rain [25%], Wind [20%], Heatwave [15%]. Wind gets a placeholder icon and drifting leaves on the illustrated map. The pop-up and forecast say one line each ("Rain: more River resources.").
+  - **Food:** only Trail Mix, Costco Sample, Dog Food, Mystery Meat, S'mores, Jerky, Fish and Chips, Rotisserie Chicken (a camp meal anyone on the tile can eat from) and Din Tai Fung, with the update's numbers. Every other food is switched off everywhere it could come from, but still works if already in a pack. Starting bags swap switched-off food for Trail Mix at the same Quality. The debug panel logs the average Appetite per food crafted.
+  - **Portable shelters:** 1 pack slot; **Set up** is a free action on your tile using 1 deployment (only 1 up per tile); while up, everyone on the tile is sheltered (+1 Energy from sleeping, safe from night events, plus its own effect); **Pack up** is free; it packs itself when its owner leaves, if there's room; at 0 deployments it can't be set up and is thrown away when packed. Deployments per the update's table; recipes lose 1 "any" (the generic shelter craft 6 → 5). Old saves: a placed shelter becomes a set-up one.
+  - **Debug panel:** the difficulty switch, force any weather (Wind too), add any of the 9 foods at a Quality, add any shelter with chosen deployments, the edge test, and Show whole map.
+
+**Tests**
+- **Difficulty:** each level gives exactly `round(share × plain tiles)` challenge tiles and the right number of opportunities on the rest; special spaces unchanged; Nightmare has no opportunities on plain tiles.
+- **Removed:** no Wonders or Trials over 50 seeded runs; Rednose does nothing.
+- **Weather:** no Storm or Fog anywhere; each weather boosts its node's resources on tiles with the node and sometimes adds them elsewhere; no conditions from weather.
+- **Food:** only the 9 foods from crafting, scavenging, shops or rewards; bites and Appetite match the table; the camp meal works without trading; switched-off foods in old saves still work.
+- **Shelters:** set up uses a deployment, shelters everyone on the tile, auto-packs when its owner leaves, is thrown away at 0, only 1 per tile; old saves convert.
+- **Map:** Show whole map paints everything but leaves tiles hidden as normal; zooming out stops with the whole sheet on screen; the sheet isn't rotated and clicks hit the right tiles. No compass or title box is fixed to the screen in Illustrated; both corner pieces sit in the land's corners, move with the camera and overlap no tile, path or label.
+- **Layout:** in the edge test, no card or tooltip goes outside its window or the game screen, at desktop and phone sizes.
+
+**Done when:** a run plays on Medium with the new challenge density, weather, food and shelters; the illustrated map sits on its table with its corner pieces; nothing is cut off anywhere; and the tests above pass.
+
+---
+
+## Phase 10.7: Hikers (next, design first)
+
+(Outline only, from `docs/design/08-overhaul-plan.md`. Wyatt will send the design; don't build before it arrives.)
+
+- **One starting trait** per hiker, picked from a short list for that hiker, plus their morale type. Fewer traits, but much stronger.
+- **Skill trees** instead of swapping traits: three routes per hiker (**Movement, Resources, Utility**), each 3 tiers deep, fairly unique per hiker.
+- **Party XP:** one shared bar; each party level-up gives points for any hiker's tree. Tiers unlock by party level.
+- **Morale types:** Extrovert, Introvert, Ambivert, Foody, Energetic, Wanderlust, Homebody.
+- **New trinkets** that work from the pack and wear out, instead of giving or swapping traits.
+- Rednose gets its rework here.
+
+---
+
+## Phase 10.8: Challenges and opportunities (after 10.7, design first)
+
+(Outline only, from `docs/design/08-overhaul-plan.md`.)
+
+- **The minigame library:** a few base games (Barrels, Snake, Minefield, Memory, Puzzle, Reaction, Timing, Trivia, Jumping, Dodging), each with several skins, all playable with taps on a phone.
+- **The first challenges and opportunities** built from them: prepare by spending resources or items, stakes that fit the challenge, party size that matters, penalties that reach past the tile.
+- Trials come back only if they fit the new challenges.
+
+---
+
+## Phase 11: Biomes, tiers and weather
 
 Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
 
 **Build**
 - Meadow → Temperate Rainforest → Alpine, at Tier 1 → 3.
-- Biome node weights, challenge pools, weather schedules and Fog (hides nodes on tiles with no hiker). Fog never hides the tiles next to a hiker with Rednose: ask `clearsFog` (holiday update).
-- **The illustrated map (Phase 10.5):** pass each section's biome in, so it uses that biome's palette (`meadow`, `rainforest` or `alpine`). Fog hides nodes but doesn't un-paint the land.
+- Biome node weights, challenge pools and weather schedules per biome. **Fog and Storm are gone** (Phase 10.6); they may come back later as special weather.
+- **The illustrated map (Phase 10.5):** pass each section's biome in, so it uses that biome's palette (`meadow`, `rainforest` or `alpine`).
 - Challenge spaces draw one tier higher.
 - The snowy, high part of the trail turns on the `[snow only]` challenges, mostly Tier III.
 
@@ -1111,6 +1173,12 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
   - every blueprint shown, with the unlearned ones grayed out;
   - favorite recipes, and their resources shown at the bottom of the scavenge window.
 - Scavenging windows for several hikers on screen at once, side by side, so they can plan together.
+- **From the overhaul plan** (`docs/design/08-overhaul-plan.md`, "UI"):
+  - **small hiker frames:** a banner with the name, the portrait beside it, stat bars below and a marker for conditions; click to expand with traits and conditions;
+  - **a crafting book** in the style of Catan's recipe cards and Minecraft's crafting grid: every cost up front, slots at the top that fill when you click a recipe, favorites first, missing resources shown;
+  - **a 3×3 crafting deal:** face-down cards, reveal 3 and pick one (crafter traits can change it);
+  - **poster-style windows** like the new map (WPA-era National Park posters, Olly Moss);
+  - **dealt-card animations** (challenge cards slide in and flip, scavenge cards with small offsets and tilts) and a **rarity glow** on rare face-down cards.
 
 **Ask Wyatt first:** the mockups.
 

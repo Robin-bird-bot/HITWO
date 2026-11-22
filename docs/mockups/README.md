@@ -32,7 +32,7 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `Kit.dc.html` | Visual kit: tile states, tokens, special icons, bars, condition icons, palette |
 | `Ic.dc.html` | Stroke icon set (SVG paths), including binoculars, chat, trendUp and trendDown for the station |
 | `Px.dc.html` | Old pixel icon component (unused) |
-| `illustrated-map/` (Phase 10.5) | JPEG boards for the illustrated map: `MapTopDown.jpg` (the chosen look, mid-run), `MapTrailLines.jpg` (path types, walked colors, the route view), `MapTileLooks.jpg` (look **A, dark glass**, is chosen), `MapLayers.jpg` (the land layer by layer, and the stamp kit), `MapIdeas.jpg` (night, rain, snow) and `MapTilted.jpg` (not built). `look/` has full-size renders of the land on its own to match. Made by the prototype in `docs/design/illustrated-map/reference/` |
+| `illustrated-map/` (Phase 10.5) | JPEG boards for the illustrated map: `MapTopDown.jpg` (the chosen look, mid-run), `MapTrailLines.jpg` (path types, walked colors, the route view), `MapTileLooks.jpg` (look **A, dark glass**, is chosen), `MapLayers.jpg` (the land layer by layer, and the stamp kit), `MapIdeas.jpg` (night, rain, snow) `MapTilted.jpg` (not built) and `MapEdge.jpg` (Phase 10.6: the paper map on a wood table, with the section box and compass printed in its corners). `look/` has full-size renders of the land on its own to match, plus `edge-table.jpg` (the chosen edge) and `edge-clouds.jpg` (the edge Wyatt didn't pick, for comparison). Made by the prototype in `docs/design/illustrated-map/reference/` |
 
 **Geometry from `Main.dc.html`**
 - Hexes are 112×128.
