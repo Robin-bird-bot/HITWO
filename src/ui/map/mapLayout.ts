@@ -74,17 +74,24 @@ export function mapBounds(section: Section): Bounds {
 export const minZoomOf = (b: Bounds): number => b.minZoom ?? ZOOM.min;
 
 /**
- * Keeps the camera on the map. A map smaller than the view is centred.
- * Classic: the view stays inside the bounds. Illustrated (`edgeAt`): the
- * sheet's edge may come part of the way across the view, never further.
+ * Keeps the camera on the map.
+ * - Classic: the view stays inside the bounds; a map smaller than the view is centred.
+ * - Illustrated (`edgeAt`): a sheet bigger than the view can show its edge part
+ *   of the way across, never further; once the whole sheet fits, all of it
+ *   stays in view.
  */
 export function clampCamera(cam: Camera, b: Bounds): Camera {
   const zoom = clamp(cam.zoom, minZoomOf(b), ZOOM.max);
-  const keep = b.edgeAt === undefined ? 1 : 1 - 2 * b.edgeAt;
   const halfW = MAP_VIEW.w / 2 / zoom;
   const halfH = MAP_VIEW.h / 2 / zoom;
-  const axis = (v: number, min: number, max: number, half: number) =>
-    max - min <= 2 * half * keep ? (min + max) / 2 : clamp(v, min + half * keep, max - half * keep);
+  const edgeAt = b.edgeAt;
+  const axis = (v: number, min: number, max: number, half: number) => {
+    const fits = max - min <= 2 * half;
+    if (edgeAt === undefined) return fits ? (min + max) / 2 : clamp(v, min + half, max - half);
+    if (fits) return clamp(v, max - half, min + half);
+    const keep = 1 - 2 * edgeAt;
+    return clamp(v, min + half * keep, max - half * keep);
+  };
   return { zoom, x: axis(cam.x, b.minX, b.maxX, halfW), y: axis(cam.y, b.minY, b.maxY, halfH) };
 }
 

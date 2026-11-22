@@ -52,6 +52,16 @@ describe('the camera on the paper sheet', () => {
       Math.abs(sheet.height * out.zoom - MAP_VIEW.h * (1 - 2 * m)) < 1e-6;
     expect(fills).toBe(true);
     expect(clampCamera({ x: 0, y: 0, zoom: 99 }, b).zoom).toBe(ZOOM.max);
+    // Wherever the camera was, all of the sheet is in view once it fits.
+    for (const at of [-1e6, 1e6]) {
+      const c = clampCamera({ x: at, y: at, zoom: 0.01 }, b);
+      const halfW = MAP_VIEW.w / 2 / c.zoom;
+      const halfH = MAP_VIEW.h / 2 / c.zoom;
+      expect(sheet.x0).toBeGreaterThanOrEqual(c.x - halfW - 1e-6);
+      expect(sheet.x0 + sheet.width).toBeLessThanOrEqual(c.x + halfW + 1e-6);
+      expect(sheet.y0).toBeGreaterThanOrEqual(c.y - halfH - 1e-6);
+      expect(sheet.y0 + sheet.height).toBeLessThanOrEqual(c.y + halfH + 1e-6);
+    }
   });
 
   it('panning stops once the sheet’s edge is 40% of the way across the view', () => {
