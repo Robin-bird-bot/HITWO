@@ -11,6 +11,7 @@ import { AbundanceBar } from './AbundanceBar';
 import type { IconName } from '../icons/paths';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { resetWindowLayout } from '../windows/windowLayout';
+import { MAP_STYLE_SETTING, MAP_STYLES, useMapStyle } from '../map/mapStyleSetting';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weather/weatherLook';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
@@ -186,6 +187,7 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
   const [open, setOpen] = useState(false);
   const mode = useUiMode();
   const warnings = useTraitWarnings();
+  const mapStyle = useMapStyle();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -245,6 +247,24 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
               ))}
             </div>
             <span className={styles.small}>{WARNINGS.find((w) => w.id === warnings)?.text}</span>
+          </div>
+          <div className={styles.setting}>
+            <span className={styles.settingName}>Map style</span>
+            <div className={styles.segmented} role="radiogroup" aria-label="Map style">
+              {MAP_STYLES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={mapStyle === m.id}
+                  className={styles.segment}
+                  onClick={() => MAP_STYLE_SETTING.set(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <span className={styles.small}>{MAP_STYLES.find((m) => m.id === mapStyle)?.text}</span>
           </div>
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
             Reset window layout

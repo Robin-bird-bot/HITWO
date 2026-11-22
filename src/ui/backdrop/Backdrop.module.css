@@ -73,3 +73,18 @@
   background-repeat: repeat;
   opacity: 0.1;
 }
+
+/* The route view (Phase 10.5): the land fades so walked paths stand out. */
+.backdrop {
+  transition: filter 0.25s ease-out;
+}
+
+.backdrop[data-faded] {
+  filter: saturate(0.35) brightness(0.72) contrast(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop {
+    transition: none;
+  }
+}

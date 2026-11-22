@@ -7,14 +7,52 @@ interface MapControlsProps {
   bounds: Bounds;
   onCamera(cam: Camera): void;
   onCenter(): void;
+  /** The route view (Phase 10.5): only walked paths stay bright. */
+  routes?: boolean;
+  onRoutes?(): void;
 }
 
 const CENTER = { x: MAP_VIEW.x + MAP_VIEW.w / 2, y: MAP_VIEW.y + MAP_VIEW.h / 2 };
 
-/** Zoom in, zoom out, and centre on the selected hiker. */
-export function MapControls({ camera, bounds, onCamera, onCenter }: MapControlsProps) {
+/** The route view, zoom in, zoom out, and centre on the selected hiker. */
+/** The route view's legend: each hiker's color. */
+export function RouteLegend({ hikers }: { hikers: { id: string; name: string; color: string }[] }) {
+  return (
+    <div className={styles.routeLegend} role="note" aria-label="Route colors">
+      <span className={styles.routeTitle}>ROUTES</span>
+      {hikers.map((h) => (
+        <span key={h.id} className={styles.routeHiker}>
+          <span className={styles.routeDot} style={{ background: h.color }} />
+          {h.name}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+export function MapControls({
+  camera,
+  bounds,
+  onCamera,
+  onCenter,
+  routes = false,
+  onRoutes,
+}: MapControlsProps) {
   return (
     <div className={styles.controls}>
+      {onRoutes && (
+        <button
+          type="button"
+          className={styles.control}
+          aria-label="Routes: show who walked where"
+          aria-pressed={routes}
+          title="Routes: show who walked where (or hold Tab)"
+          data-on={routes || undefined}
+          onClick={onRoutes}
+        >
+          <Icon name="road" size={20} />
+        </button>
+      )}
       <button
         type="button"
         className={styles.control}

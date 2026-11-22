@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createGame } from '../../engine';
 import { STARTING_PARTY } from '../../content/characters';
-import { LINE_LOOK, tileLook } from './looks';
+import { LINE_LOOK, tileLook, walkedStrokes } from './looks';
 
 describe('tile looks', () => {
   const game = createGame({ seed: 5, hikers: STARTING_PARTY });
@@ -34,5 +34,16 @@ describe('line cost badges', () => {
     expect(LINE_LOOK.steep.badge?.icon).toBe('zap');
     expect(LINE_LOOK.muddy.badge?.icon).toBe('utensils');
     expect(LINE_LOOK.rough.badge?.icon).toBe('heart');
+  });
+});
+
+describe('walked lines in Classic (Phase 10.5)', () => {
+  it('turn solid in the walker’s color; paved keeps its road', () => {
+    expect(walkedStrokes('normal', '#E2683C')).toEqual([{ color: '#E2683C', width: 4 }]);
+    expect(walkedStrokes('steep', '#4A8FD4')).toEqual([{ color: '#4A8FD4', width: 4 }]);
+    expect(walkedStrokes('paved', '#EBC04A')).toEqual([
+      { color: '#ECE5D6', width: 10 },
+      { color: '#EBC04A', width: 3 },
+    ]);
   });
 });

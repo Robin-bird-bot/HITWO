@@ -44,17 +44,31 @@ import { ITEMS } from '../../content';
 import { useUiMode } from '../app/uiMode';
 import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
-import { MapControls } from '../map/MapControls';
+import { MapControls, RouteLegend } from '../map/MapControls';
+import { useTabHeld } from '../map/useTabHeld';
+import { shownMapStyle, useMapStyle } from '../map/mapStyleSetting';
+import { mapGeometry } from '../map/illustrated/geometry';
+import { landKey, sectionLandInput } from '../map/illustrated/land/input';
+import { useLand } from '../map/illustrated/landService';
+import { landCellUnits, landScale } from '../map/illustrated/device';
+import { LandCanvas } from '../map/illustrated/LandCanvas';
+import { MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
+import { paintedPlaces } from '../map/illustrated/land/mask';
+import { FieldView, StampBoxes } from '../map/illustrated/MapDebugLayers';
+import { landDebugOf, paintOverridden, useMapDebug } from '../map/illustrated/mapDebug';
+import { landGrade } from '../map/illustrated/grade';
+import { useReducedMotion } from '../app/useReducedMotion';
+import illustrated from '../map/illustrated/Illustrated.module.css';
+import { placer } from '../map/illustrated/geometryContext';
+import { hikerColor } from '../../content/characters';
 import {
   clampCamera,
   CHECKPOINT_HEX,
   focusOn,
   HEX,
-  lastRowOf,
   MAP_VIEW,
   mapBounds,
   scrollAbove,
-  tileCenter,
   worldToStage,
   ZOOM,
   type Camera,
@@ -238,6 +252,67 @@ export function GameScreen({
     if (simple) setPanelCollapsed('log', true);
   }, [simple]);
   const bounds = useMemo(() => mapBounds(section), [section]);
+  // Classic's grid, or the Illustrated map's moved tiles and winding paths (Phase 10.5).
+  const chosenStyle = useMapStyle();
+  // The debug panel's look-only tools: a land seed, reveal all or none, views, forced weather.
+  const dbg = useMapDebug();
+  const lookSeed = dbg.seed ?? state.seed;
+  const illustratedGeo = useMemo(
+    () =>
+      mapGeometry(section, {
+        style: 'illustrated',
+        runSeed: lookSeed,
+        sectionIndex: state.sectionIndex,
+      }),
+    [section, lookSeed, state.sectionIndex],
+  );
+  const classicGeo = useMemo(
+    () =>
+      mapGeometry(section, {
+        style: 'classic',
+        runSeed: state.seed,
+        sectionIndex: state.sectionIndex,
+      }),
+    [section, state.seed, state.sectionIndex],
+  );
+  // The illustrated land: made in a worker, only for the Illustrated style.
+  const landReq = useMemo(() => {
+    if (chosenStyle !== 'illustrated') return null;
+    const input = sectionLandInput(section, illustratedGeo, {
+      runSeed: lookSeed,
+      sectionIndex: state.sectionIndex,
+      cellUnits: landCellUnits(),
+    });
+    return { key: landKey(input), input, scale: landScale() };
+  }, [chosenStyle, section, illustratedGeo, lookSeed, state.sectionIndex]);
+  const land = useLand(landReq);
+  const reduceMotion = useReducedMotion();
+  // If the land fails (or takes over 6 s), this section uses the classic map.
+  const mapStyle = shownMapStyle(chosenStyle, land);
+  const geo = mapStyle === 'illustrated' ? illustratedGeo : classicGeo;
+  const landReady = mapStyle === 'illustrated' && land.status === 'ready' ? land.result : undefined;
+  // Place names show once the paint covers their spot (one string, so it only re-renders on a change).
+  const [shownKey, setShownKey] = useState('');
+  const shown = useMemo(() => new Set(shownKey ? shownKey.split('\n') : []), [shownKey]);
+  const onMask = (paintAt: (x: number, y: number) => number) => {
+    if (!landReady) return;
+    setShownKey(
+      paintedPlaces(landReady.features.places, paintAt)
+        .map((p) => p.name)
+        .join('\n'),
+    );
+  };
+  // A name seen for the first time: "Found …" in the trail log, once (not while debug paints it).
+  const paintForced = paintOverridden(dbg);
+  useEffect(() => {
+    if (!landReady || paintForced) return;
+    for (const p of landReady.features.places) {
+      if (!shown.has(p.name)) continue;
+      if (gameStore.getState()?.foundPlaces?.includes(p.name)) continue;
+      gameStore.dispatch({ type: 'foundPlace', name: p.name });
+    }
+  }, [shown, landReady, paintForced]);
+  const place = placer(section, geo);
   // Start on the first hiker who still has their action (useful after Continue).
   const [selectedId, setSelectedId] = useState<HikerId | null>(
     () =>
@@ -326,10 +401,9 @@ export function GameScreen({
   );
   for (const id of easier) marks[id] = 'easier';
 
-  const lastRow = lastRowOf(section);
   const centerOf = (tileId: string | undefined) => {
     const tile = tileId ? section.tiles[tileId] : undefined;
-    return tile ? tileCenter(tile, lastRow) : { x: 0, y: 0 };
+    return tile ? place.center(tile) : { x: 0, y: 0 };
   };
   const [rawCamera, setCamera] = useState<Camera>(() =>
     focusOn(centerOf(selected?.tileId), ZOOM.default, bounds),
@@ -342,6 +416,10 @@ export function GameScreen({
   }
   // Keep the camera inside the map even if the map changes under it.
   const camera = clampCamera(rawCamera, bounds);
+  // The route view (Phase 10.5): the Routes button toggles it; holding Tab shows it too.
+  const [routesOn, setRoutesOn] = useState(false);
+  const tabHeld = useTabHeld();
+  const routes = routesOn || tabHeld || !!dbg.routes;
   // When the pop-up closes, bring a tile that just got easier into view if none is.
   const easierKey = easier.join(',');
   const [pannedFor, setPannedFor] = useState('');
@@ -964,7 +1042,7 @@ export function GameScreen({
 
   // Where the move preview points: the top and bottom of the chosen tile.
   const pending = pendingTile ? section.tiles[pendingTile] : undefined;
-  const pendingCenter = pending ? tileCenter(pending, lastRow) : null;
+  const pendingCenter = pending ? place.center(pending) : null;
   const halfH = (pending?.kind === 'checkpoint' ? CHECKPOINT_HEX.h : HEX.h) / 2;
 
   return (
@@ -973,15 +1051,48 @@ export function GameScreen({
         <PreviewLayer>
           <DragLayer onDragChange={onDragChange}>
             <ItemDropsContext.Provider value={itemDrops}>
-              <Backdrop
-                phase={state.phase}
-                biome={section.biome}
-                scrollY={scrollAbove(camera, bounds)}
-              />
+              {mapStyle === 'classic' && (
+                <Backdrop
+                  phase={state.phase}
+                  biome={section.biome}
+                  scrollY={scrollAbove(camera, bounds)}
+                  faded={routes}
+                />
+              )}
               <MapView
                 section={section}
                 hikers={hikers}
                 targets={targets}
+                routes={routes}
+                geo={geo}
+                mapStyle={mapStyle}
+                underlay={
+                  landReady ? (
+                    <>
+                      <LandCanvas
+                        result={landReady}
+                        section={section}
+                        geo={geo}
+                        runSeed={lookSeed}
+                        sectionIndex={state.sectionIndex}
+                        grade={landGrade(state, routes, landReady, geo, dbg.grade)}
+                        reduceMotion={reduceMotion}
+                        onMask={onMask}
+                        debug={landDebugOf(dbg)}
+                      />
+                      {(dbg.view === 'type' || dbg.view === 'height') && (
+                        <FieldView result={landReady} view={dbg.view} />
+                      )}
+                      {dbg.stampBoxes && <StampBoxes result={landReady} />}
+                    </>
+                  ) : undefined
+                }
+                {...(landReady ? { bridges: landReady.features.bridges } : {})}
+                labels={
+                  landReady && !routes ? (
+                    <PlaceLabels places={landReady.features.places} shown={shown} />
+                  ) : undefined
+                }
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
                 reachLabel={
                   tactical
@@ -1026,7 +1137,38 @@ export function GameScreen({
                 bounds={bounds}
                 onCamera={setCamera}
                 onCenter={() => setCamera(focusOn(centerOf(selected?.tileId), camera.zoom, bounds))}
+                routes={routes}
+                onRoutes={() => setRoutesOn((on) => !on)}
               />
+              {mapStyle === 'illustrated' && (
+                <MapFurniture
+                  biome={section.biome}
+                  sectionIndex={state.sectionIndex}
+                  tier={section.tier}
+                  day={state.day}
+                  zoom={camera.zoom}
+                  hikerColors={hikers
+                    .filter((h) => h.status !== 'abandoned')
+                    .map((h) => hikerColor(h))}
+                />
+              )}
+              {chosenStyle === 'illustrated' && land.status === 'drawing' && (
+                <div className={illustrated.drawing} role="status">
+                  Drawing the map…
+                </div>
+              )}
+              {chosenStyle === 'illustrated' && land.status === 'failed' && (
+                <div key={landReq?.key} className={illustrated.toast} role="status">
+                  Using the classic map for this section.
+                </div>
+              )}
+              {routes && (
+                <RouteLegend
+                  hikers={hikers
+                    .filter((h) => h.status !== 'abandoned')
+                    .map((h) => ({ id: h.id, name: h.name, color: hikerColor(h) }))}
+                />
+              )}
 
               {simple ? (
                 <>

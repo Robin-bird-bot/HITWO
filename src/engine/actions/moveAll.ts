@@ -82,6 +82,8 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
 
   const from = mover.tileId;
   const firstHere = !state.section.tiles[action.toTileId]?.visited;
+  // A Move All paints the line in the mover's color, if nobody crossed it first (Phase 10.5).
+  line.walkedBy ??= mover.id;
   const group = [mover, ...action.bring.map((id) => mustFindHiker(state, id))];
   // Lifted Boots: bringing exactly 1 hiker leaves them their action.
   const ctx = queryContext(state, mover);

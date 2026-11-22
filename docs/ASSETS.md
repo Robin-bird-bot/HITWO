@@ -30,6 +30,7 @@ Wyatt made all of the art. Wyatt keeps the full-resolution masters (the original
 | `public/assets/traits/` (Phase 10b) | 161 trait icons, white on transparent, cut with almost no margin | Named by the trait's **name** in lowercase with dashes (`dog-mom.png`). Shared ones: `puller`, `glutton`, `node-finder`, `node-hound`, `node-thumb`, `location`, `action`, `conservationist`; `thrill-seeker` and `thrill-seeker-morale`; `tag-team`. Drawn through a CSS mask in the type's ring color, filling and clipped to the badge |
 | `public/assets/portraits/` (Phase 10b; holiday hikers) | 42 portraits (750 × 620, already framed for the card's portrait window) and `portraits.json` | Draw each at the full window from the top-left, never cropped one by one. `portraits.json` gives each one's `faceY` (0 top, 1 bottom) for wherever only part shows. Humans share one head size and pets another; Gdog and Leah are short on purpose. The holiday update added the 7 variants (Follower Finn, Agility Finn, Ellie the Devourer, Nosework Ellie, Prepared Wink, Graduate Mom, Showqueen Gdog) and the 4 holiday hikers (Grammy Clause, Lelf, Grinch, Redolf). Costume art fits the whole costume, so it isn't on the others' head scale, on purpose: never rescale it |
 | `public/assets/cards/` (Phase 10b) | `forest.png` and `pixel-pattern.png` (the portrait background, 1600 × 930 since the holiday update, so they stay sharp), and `family/` (human, dog, cat, plush, duo and the variant star) | The family icons are white on transparent, drawn in `#1A1A1A` through a mask |
+| `public/assets/map/` (Phase 10.5) | `stamps/` (12 placeholder stamps: conifer, leafy-tree, autumn-tree, bush, rock, peak, cabin, fire-lookout, bridge, tent, deer, waterfall), `palettes.json` (the land colors for meadow, rainforest and alpine) and `oregon-names.json` (place names) | The illustrated map. Stamps are side-on with the base at the bottom center; Wyatt's painted ones will replace them with the same names, and a missing one is skipped. The mockups are in `docs/mockups/illustrated-map/` |
 | `src/shaders/hiker-select-bg.frag` (Phase 10b) | The selection screen's animated background, a WebGL2 fragment shader | Colors from the family update: `#0C1411`, `#1D3129`, `#476055`, `#E9B44C`; without WebGL2, plain `#0C1411` |
 
 **Game copies.** The game loads smaller copies from `public/assets/`. The scavenge backdrops are 400 px JPEGs (they have no transparency), and the rays and back icons are 400 px PNGs. The item card type icons and rays are 300×420 PNGs. The masters in `/assets` stay full size.
@@ -120,6 +121,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 - **Bigger icon:** a hi-res mushroom.
 - **Character art:** portraits for Ben and Mindy (they show their family icon for now).
+- **Illustrated map stamps (Phase 10.5):** Wyatt's painted versions of the 12 placeholder stamps in `public/assets/map/stamps/`, with the same file names.
 - **Holiday trait icons:** the 14 holiday traits (`gift-wrapper.png`, `down-the-chimney.png`, `checking-it-twice.png`, `wreck-the-halls.png` and the rest, named after the trait). Their badges show initials until they arrive.
 - **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
@@ -135,3 +137,4 @@ Until real art arrives, use clearly marked placeholders.
 
 - **Edit Undo:** freeware from Brian Kent. See `fonts/edit-undo-README.txt`.
 - **Game Quotes:** © Typia Nesia. Wyatt confirmed his license covers use in the game on the web.
+- **DM Sans** and **Fraunces** (the illustrated map's place names, italic 600, Phase 10.5): SIL Open Font License, bundled from the `@fontsource` npm packages, so nothing to copy into `public/`.

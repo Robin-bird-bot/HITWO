@@ -4,6 +4,7 @@ import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engi
 import { CARDS, ITEMS } from '../../content';
 import { WONDER_BY_ID } from '../../content/wonders';
 import { Icon } from '../icons/Icon';
+import { MAP_STYLE, u } from '../../config/mapStyle';
 import { CHECKPOINT_HEX, HEX, type Point } from './mapLayout';
 import type { DropProps } from '../drag/drag';
 import styles from './MapView.module.css';
@@ -19,6 +20,8 @@ import {
 interface MapTileProps {
   tile: Tile;
   at: Point;
+  /** Its size on the Illustrated map (1 on the grid). */
+  scale?: number;
   look: TileLookName;
   /** Edge color for the current tile (the selected hiker's color). */
   currentColor?: string;
@@ -39,6 +42,11 @@ interface MapTileProps {
   checkpoint?: CheckpointInfo;
   /** A drop spot for a dragged hiker (see ui/drag): marks whether it would take them. */
   drop?: DropProps;
+  /**
+   * The illustrated map's tile (Phase 10.5): dark glass once revealed, pencil
+   * before. Icons only, no words.
+   */
+  illustrated?: { revealed: boolean };
 }
 
 export interface CheckpointInfo {
@@ -52,6 +60,7 @@ export interface CheckpointInfo {
 export function MapTile({
   tile,
   at,
+  scale = 1,
   look,
   currentColor,
   reach,
@@ -63,6 +72,7 @@ export function MapTile({
   onWonder,
   checkpoint = { number: 1, summit: false, checkedIn: 0, total: 4 },
   drop,
+  illustrated,
 }: MapTileProps) {
   if (tile.kind === 'checkpoint') {
     return (
@@ -74,9 +84,11 @@ export function MapTile({
         onClick={onClick}
         labelOnHover={checkpointLabelOnHover}
         drop={drop}
+        illustrated={illustrated}
       />
     );
   }
+  const pencil = !!illustrated && !illustrated.revealed;
 
   const colors = TILE_LOOK[look];
   const edge = look === 'current' && currentColor ? currentColor : colors.edge;
@@ -100,7 +112,13 @@ export function MapTile({
   return (
     <div
       className={styles.tile}
-      style={{ left: at.x - HEX.w / 2, top: at.y - HEX.h / 2, width: HEX.w, height: HEX.h }}
+      style={{
+        left: at.x - HEX.w / 2,
+        top: at.y - HEX.h / 2,
+        width: HEX.w,
+        height: HEX.h,
+        ...(scale !== 1 ? { transform: `scale(${scale})` } : {}),
+      }}
       title={describe}
       data-reach={reach}
       {...drop}
@@ -108,21 +126,48 @@ export function MapTile({
     >
       {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
       {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
-      <div className={styles.hex} style={{ inset: 0, background: edge }} />
-      <div className={styles.hex} style={{ inset: 5, background: colors.fill }} />
+      {illustrated ? (
+        <GlassHex
+          w={HEX.w}
+          h={HEX.h}
+          revealed={illustrated.revealed}
+          visited={!!tile.visited}
+          {...(look === 'current' && currentColor ? { edge: currentColor } : {})}
+        />
+      ) : (
+        <>
+          <div className={styles.hex} style={{ inset: 0, background: edge }} />
+          <div className={styles.hex} style={{ inset: 5, background: colors.fill }} />
+        </>
+      )}
 
       {specialCentered && (
-        <div className={styles.special} style={{ opacity: look === 'fog' ? 0.8 : 1 }}>
-          <div className={styles.specialIcon} style={{ background: special.bg, color: special.fg }}>
+        <div
+          className={styles.special}
+          style={{ opacity: look === 'fog' && !illustrated ? 0.8 : 1 }}
+        >
+          <div
+            className={styles.specialIcon}
+            data-pencil={pencil || undefined}
+            style={
+              pencil
+                ? { background: '#EEE5CB', color: '#5E5648', boxShadow: '0 0 0 2px #5E5648' }
+                : illustrated
+                  ? { background: special.bg, color: special.fg, boxShadow: '0 0 0 2px #F7F1E4' }
+                  : { background: special.bg, color: special.fg }
+            }
+          >
             {tile.special === 'narrowPath' ? (
               <span className={styles.capacity}>{tile.narrowCapacity}</span>
             ) : (
               <Icon name={special.icon} size={22} />
             )}
           </div>
-          <span className={styles.specialName} style={{ color: colors.text }}>
-            {special.name}
-          </span>
+          {!illustrated && (
+            <span className={styles.specialName} style={{ color: colors.text }}>
+              {special.name}
+            </span>
+          )}
         </div>
       )}
 
@@ -131,13 +176,15 @@ export function MapTile({
           <div className={styles.wonderEmblem} data-done={wonderDone}>
             <Icon name="sparkles" size={24} strokeWidth={2.25} />
           </div>
-          <span className={styles.specialName} style={{ color: colors.text }}>
-            {wonderName}
-          </span>
+          {!illustrated && (
+            <span className={styles.specialName} style={{ color: colors.text }}>
+              {wonderName}
+            </span>
+          )}
         </div>
       )}
 
-      {!specialCentered && !wonderName && label && (
+      {!illustrated && !specialCentered && !wonderName && label && (
         <div className={styles.label} style={{ color: colors.text }}>
           {label}
         </div>
@@ -201,7 +248,7 @@ export function MapTile({
 
       <div className={styles.nodes}>
         {nodes.map((n, i) => (
-          <NodeBadge key={i} node={n} hiddenBg={colors.hiddenBg} />
+          <NodeBadge key={i} node={n} hiddenBg={colors.hiddenBg} pencil={pencil} />
         ))}
       </div>
     </div>
@@ -217,7 +264,16 @@ const NODE_STATE_WORDS = {
   fire: 'Fire node: gives nothing, +1 Luck to the other nodes here',
 } as const;
 
-function NodeBadge({ node, hiddenBg }: { node: TileNode; hiddenBg: string }) {
+function NodeBadge({
+  node,
+  hiddenBg,
+  pencil = false,
+}: {
+  node: TileNode;
+  hiddenBg: string;
+  /** An unrevealed tile on the illustrated map: a pencil hex with "?". */
+  pencil?: boolean;
+}) {
   const changed = node.weather?.state;
   const name = changed
     ? NODE_STATE_WORDS[changed]
@@ -226,7 +282,11 @@ function NodeBadge({ node, hiddenBg }: { node: TileNode; hiddenBg: string }) {
     <div className={styles.node} title={node.revealed ? name : 'Unknown node'}>
       {node.revealed && node.bounty && <div className={styles.bounty} />}
       {!node.revealed ? (
-        <div className={styles.nodeHidden} style={{ background: hiddenBg }}>
+        <div
+          className={styles.nodeHidden}
+          data-pencil={pencil || undefined}
+          style={{ background: pencil ? 'rgba(238,229,203,0.7)' : hiddenBg }}
+        >
           ?
         </div>
       ) : changed ? (
@@ -275,6 +335,7 @@ function CheckpointTile({
   onClick,
   labelOnHover,
   drop,
+  illustrated,
 }: {
   at: Point;
   info: CheckpointInfo;
@@ -283,6 +344,7 @@ function CheckpointTile({
   onClick?(): void;
   labelOnHover?: boolean;
   drop?: DropProps;
+  illustrated?: { revealed: boolean } | undefined;
 }) {
   const { w, h } = CHECKPOINT_HEX;
   const name = info.summit ? 'The summit' : `Checkpoint ${info.number}: the ranger station`;
@@ -303,10 +365,21 @@ function CheckpointTile({
         )}
       >
         {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
-        <div className={styles.hex} style={{ inset: 0, background: '#F7F1E4' }} />
-        <div className={`${styles.hex} ${styles.checkpointFill}`} style={{ inset: 6 }}>
-          <Icon name="tower" size={46} color="#F7F1E4" />
-        </div>
+        {illustrated ? (
+          <>
+            <GlassHex w={w} h={h} revealed={illustrated.revealed} visited={false} />
+            <div className={styles.special}>
+              <Icon name="tower" size={42} color={illustrated.revealed ? '#F7F1E4' : '#5E5648'} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className={styles.hex} style={{ inset: 0, background: '#F7F1E4' }} />
+            <div className={`${styles.hex} ${styles.checkpointFill}`} style={{ inset: 6 }}>
+              <Icon name="tower" size={46} color="#F7F1E4" />
+            </div>
+          </>
+        )}
       </div>
       <div className={styles.checkpointCard} style={{ left: at.x - w / 2 - 184, top: at.y - 34 }}>
         <span className={styles.cardTitle}>
@@ -411,5 +484,66 @@ function RevealedIcon({ cardId, onOpen }: { cardId: string; onOpen: (() => void)
         strokeWidth={2.5}
       />
     </button>
+  );
+}
+
+/**
+ * The illustrated map's hex (gen11.py → tile_svg, look A): dark see-through
+ * glass with a cream edge and a faint inner line once revealed; before that,
+ * pencil on paper with a dashed graphite edge.
+ */
+function GlassHex({
+  w,
+  h,
+  revealed,
+  visited,
+  edge,
+}: {
+  w: number;
+  h: number;
+  revealed: boolean;
+  visited: boolean;
+  /** The selected hiker's tile: its edge in their color. */
+  edge?: string;
+}) {
+  const T = MAP_STYLE.tiles;
+  const k = u(1);
+  const R = h / 2;
+  const pts = (s: number) =>
+    Array.from({ length: 6 }, (_, i) => {
+      const a = ((-90 + 60 * i) * Math.PI) / 180;
+      return `${(w / 2 + R * s * Math.cos(a)).toFixed(1)},${(h / 2 + R * s * Math.sin(a)).toFixed(1)}`;
+    }).join(' ');
+  return (
+    <svg className={styles.glass} width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true">
+      {revealed ? (
+        <>
+          <polygon
+            points={pts(1)}
+            fill={T.fill}
+            fillOpacity={visited ? T.visitedOpacity : T.opacity}
+            stroke={edge ?? T.edge}
+            strokeOpacity={0.92}
+            strokeWidth={T.edgeWidth * k * (edge ? 1.6 : 1)}
+          />
+          <polygon
+            points={pts(0.9)}
+            fill="none"
+            stroke={T.edge}
+            strokeOpacity={0.22}
+            strokeWidth={k}
+          />
+        </>
+      ) : (
+        <polygon
+          points={pts(1)}
+          fill={T.paper}
+          fillOpacity={T.paperOpacity}
+          stroke={T.pencil}
+          strokeWidth={1.7 * k}
+          strokeDasharray={`${(6 * k).toFixed(1)} ${(4 * k).toFixed(1)}`}
+        />
+      )}
+    </svg>
   );
 }

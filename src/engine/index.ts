@@ -65,7 +65,7 @@ export { isSheltered } from './actions/sleep';
 export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure } from './save';
 export { generateSection, type SectionOptions } from './trail/generate';
 export { checkSection } from './trail/check';
-export { seedRng } from './rng';
+export { seedRng, nextFloat, shuffle } from './rng';
 export { bagSlots, resourceCount, resourceLimit, type BagSlots, type ItemSlots } from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
 export {

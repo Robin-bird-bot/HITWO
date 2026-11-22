@@ -134,6 +134,11 @@ export interface Line {
   a: TileId;
   b: TileId;
   kind: LineKind;
+  /**
+   * The first hiker to cross it, either way, and never changed after (Phase
+   * 10.5): its path takes their party color. A Move All counts its mover.
+   */
+  walkedBy?: HikerId;
 }
 
 export interface Section {
@@ -880,6 +885,11 @@ export type Action =
   /** Choosy: keep one of the items a Present held. */
   | { type: 'presentTake'; index: number }
   /**
+   * The illustrated map painted a named place for the first time (Phase 10.5):
+   * the trail log says "Found …". Only a look: it changes nothing else.
+   */
+  | { type: 'foundPlace'; name: string }
+  /**
    * Takes one option of the open trait pick (a level-up or an Old Photo). A
    * trait with no empty slot that fits replaces the trait in `replaceSlot`.
    */
@@ -1113,6 +1123,8 @@ export type GameEventBody =
   | { kind: 'blueprintFound'; hikerId: HikerId; itemId: ItemId; cause: string }
   /** A hiker taught another a blueprint, for Morale. */
   | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
+  /** A named place on the illustrated map was painted for the first time. */
+  | { kind: 'found'; name: string }
   /** A hiker wrapped a Present (Gift Wrapper). */
   | {
       kind: 'wrapped';
@@ -1493,6 +1505,11 @@ export interface GameState {
   crafting?: PendingCraft;
   /** A level-up or an Old Photo's trait pick. Everything else waits for it too. */
   traitPick?: TraitPick;
+  /**
+   * Places on the illustrated map whose names have been found (Phase 10.5):
+   * the trail log says "Found …" once for each.
+   */
+  foundPlaces?: string[];
   /** A Present opened by a Choosy hiker: the items to pick 1 from. Everything else waits for it. */
   presentPick?: PresentPick;
   /** The last day anyone in the party opened a Present (Holiday Spirit). */

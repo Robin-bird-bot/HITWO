@@ -411,6 +411,9 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         });
         break;
       }
+      case 'found':
+        lines.push({ id: e.id, text: `Found ${e.name}.`, tone: 'scavenge' });
+        break;
       case 'wrapped': {
         lines.push({
           id: e.id,

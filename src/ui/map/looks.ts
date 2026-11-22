@@ -57,6 +57,19 @@ export const LINE_LOOK: Record<LineKind, LineLook> = {
 /** A line both of whose tiles have been visited is drawn solid. */
 export const VISITED_LINE = { color: '#F7F1E4', width: 4 };
 
+/**
+ * A walked line in Classic (Phase 10.5): its own solid visited look, in the
+ * party color of the first hiker to cross it. Paved keeps its wide road.
+ */
+export function walkedStrokes(kind: LineKind, color: string): LineLook['strokes'] {
+  return kind === 'paved'
+    ? [
+        { color: '#ECE5D6', width: 10 },
+        { color, width: 3 },
+      ]
+    : [{ ...VISITED_LINE, color }];
+}
+
 export interface SpecialLook {
   name: string;
   icon: IconName;

@@ -37,6 +37,7 @@ import { gameStore } from '../app/gameStore';
 import { emptyPercent } from '../panels/abundanceLook';
 import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import { TestHikerPicker, TraitTools } from './DebugTraits';
+import { MapLookTools } from './MapLookTools';
 import styles from './DebugPanel.module.css';
 import { useBacktickToggle } from './useBacktickToggle';
 
@@ -184,6 +185,8 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
           })}
         </div>
       </section>
+
+      <MapLookTools state={state} />
 
       <StationDebug state={state} run={run} />
 

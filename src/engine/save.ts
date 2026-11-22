@@ -27,7 +27,7 @@ import {
 import { freshWeather } from './weather';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -77,6 +77,9 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Holiday hikers (Nov 20): Planner Wink is Prepared Wink and Showgirl Gdog is Showqueen
   // Gdog, ids and names. Presents, wish lists and the rest are new and optional.
   17: (save) => upgradePresents(renameHikers(save)),
+  // Phase 10.5: who walked each line, and the places found on the illustrated map. Both
+  // optional, so an older save starts with nothing walked and nothing found.
+  18: (save) => save,
 };
 
 /** Renamed roster ids (holiday-hikers-2), and the names that went with them. */
