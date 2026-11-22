@@ -6,7 +6,9 @@ import { DIFFICULTY, DIFFICULTY_IDS, MAX_CHALLENGES_IN_A_ROW } from '../../confi
 import { STARTING_PARTY } from '../../content/characters';
 import { pickForTile } from '../challenges/pick';
 import { CARDS } from '../../content/challenges';
+import { applyAction } from '../applyAction';
 import { createGame } from '../newGame';
+import { openStation } from '../station/stock';
 import { seedRng } from '../rng';
 import type { Section, Tile } from '../types';
 import { generateSection, longestRun, middleRowsFor } from './generate';
@@ -87,6 +89,18 @@ describe('challenge density', () => {
         else expect(kind).not.toBe('trial');
       }
     }
+  });
+});
+
+describe('the debug panel’s difficulty switch', () => {
+  it('applies to the next section made, not the one being walked', () => {
+    let game = createGame({ seed: 77, hikers: STARTING_PARTY });
+    const before = JSON.stringify(game.section);
+    game = applyAction(game, { type: 'debug', op: { kind: 'setDifficulty', difficulty: 'hard' } });
+    expect(JSON.stringify(game.section)).toBe(before);
+    const next = openStation(game).next;
+    const lastRow = Math.max(...Object.values(next.tiles).map((t) => t.row));
+    expect(lastRow - 1).toBe(middleRowsFor('hard'));
   });
 });
 

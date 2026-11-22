@@ -39,6 +39,7 @@ import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import { TestHikerPicker, TraitTools } from './DebugTraits';
 import { MapLookTools } from './MapLookTools';
 import { EdgeTest } from './EdgeTest';
+import { SimplifyTools } from './DebugSimplify';
 import styles from './DebugPanel.module.css';
 import { useBacktickToggle } from './useBacktickToggle';
 
@@ -188,6 +189,8 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
       </section>
 
       <MapLookTools state={state} />
+
+      <SimplifyTools state={state} onApply={run} />
 
       <EdgeTest state={state} onApply={run} />
 

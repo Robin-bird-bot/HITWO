@@ -1123,6 +1123,28 @@ Numbers in [brackets] are first guesses: in `balance.ts` or the new `difficulty.
 
 **Done when:** a run plays on Medium with the new challenge density, weather, food and shelters; the illustrated map sits on its table with its corner pieces; nothing is cut off anywhere; and the tests above pass.
 
+**Phase 10.6 notes (built Nov 21)**
+- **What's playable:** a run on Medium (half the plain tiles hold a challenge, 2 opportunities, the rest quiet), no Wonders or Trials, weather that only changes scavenging (Wind is new), 9 foods with Rotisserie Chicken as a camp meal, shelters you carry, set up and pack up. On the illustrated map: Show whole map, the paper sheet on a wood table, and the section box and compass printed in the land's corners. Card rows and tooltips are never cut off.
+- **Starting bags that changed:** Cody (Dill Rolls), Kai (Citro Drink) and Madeline (Wine) start with Trail Mix (Quality rolls as before). Citro Tub's reward is Trail Mix too.
+- **Decisions:**
+  - **Challenge spread:** challenges are placed one at a time in a seeded order, skipping any that would make more than 3 in a row along a path up; skipped ones fill in only if the count can't be reached otherwise.
+  - **Weather and challenges:** Storm, Lightning and Blazing Sun were gated on Storm or sunny weather. Weather no longer picks challenges, so they can come up in any weather.
+  - **Weather and traits:** traits that react to rain or snow keep doing so (Storm is removed from their lists); Phase 10.7 reworks traits.
+  - **Shivering and Burning:** they still end when the weather changes, as their own rule says; nothing else gives them from the weather now.
+  - **A hike starts Clear**, for one spell (1–3 days).
+  - **Shelters:** setting one up asks first (it uses a deployment); packing up doesn't (it can be undone); throwing a worn-out one away asks. Ruins sets a shelter up with nobody as its owner, only on a tile with none up. An old save's tile with several shelters keeps the one with the most left.
+  - **Old saves:** v20. Storm days become Rain, weather-changed nodes go back, a leftover Wonder tile becomes quiet, placed shelters become set-up ones.
+  - **Difficulty:** only the share, opportunities, rows and challenge tier offset do anything yet (the night event odds use theirs too). Luck, rarity and Appetite drain are stored at their "as now" values and plug in when difficulties are built.
+  - **Map edge:** zoomed out, once the whole sheet fits, all of it stays in view; the 40% edge rule applies while the sheet is bigger than the view. The scale bar in the section box has no words (the mockup's).
+  - **Edge fix:** the shop counter stays a scroller (every card can be reached by scrolling; nothing is cut away). The level-up row already shrank to fit.
+- **Questions for Wyatt:**
+  - Should Storm, Lightning and Blazing Sun leave the pool instead of coming up in any weather?
+  - Citro Tub gives Trail Mix now. Another food?
+- **Not done yet:**
+  - Luck, rarity and Appetite drain difficulty settings aren't wired (no level changes them yet).
+  - The edge test checks the scavenge, craft, challenge and level-up windows and every tooltip on screen; hiker cards and the shop counter were checked by eye.
+- **Saves:** version 20.
+
 ---
 
 ## Phase 10.7: Hikers (next, design first)

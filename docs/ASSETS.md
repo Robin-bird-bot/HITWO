@@ -122,6 +122,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Bigger icon:** a hi-res mushroom.
 - **Character art:** portraits for Ben and Mindy (they show their family icon for now).
 - **Illustrated map stamps (Phase 10.5):** Wyatt's painted versions of the 12 placeholder stamps in `public/assets/map/stamps/`, with the same file names.
+- **Wind (Phase 10.6):** the animated Wind icon is a placeholder drawn in code (three curved gusts, `src/ui/weather/WeatherIcon.tsx`), and so is its small stroke icon. The wood table, the paper sheet and the map's corner pieces are drawn in code too.
 - **Holiday trait icons:** the 14 holiday traits (`gift-wrapper.png`, `down-the-chimney.png`, `checking-it-twice.png`, `wreck-the-halls.png` and the rest, named after the trait). Their badges show initials until they arrive.
 - **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
