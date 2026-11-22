@@ -766,10 +766,15 @@ export function GameScreen({
         setAsk({
           at,
           title: `The ${name}, for ${to}`,
-          text: d.eat ? `Give it to ${to}, or ${to} eats it now.` : `Give it to ${to}.`,
+          text: d.campEat
+            ? `A camp meal: ${to} can eat a bite without taking it.`
+            : d.eat
+              ? `Give it to ${to}, or ${to} eats it now.`
+              : `Give it to ${to}.`,
           options: [
+            ...(d.campEat ? [choose(`${to} eats a bite`, [d.campEat])] : []),
             choose('Give', [d.give]),
-            ...(d.eat ? [choose(`${to} eats it`, [d.give, d.eat])] : []),
+            ...(d.eat && !d.campEat ? [choose(`${to} eats it`, [d.give, d.eat])] : []),
           ],
         });
       }

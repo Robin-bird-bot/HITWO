@@ -61,7 +61,13 @@ export type PortraitDrop =
    * Food on someone else: give it, or they eat it now (`eat`, when they can).
    * TODO(wyatt): first guess, since giving and eating share the portrait.
    */
-  | { kind: 'feed'; give: Action; eat: Action | null };
+  | {
+      kind: 'feed';
+      give: Action;
+      eat: Action | null;
+      /** A camp meal (Phase 10.6): they eat a bite straight from the owner's pack, no trade. */
+      campEat?: Action;
+    };
 
 export function portraitDrop(state: GameState, p: DragPayload, toId: HikerId): PortraitDrop | null {
   if (p.kind === 'resource') {
@@ -79,11 +85,24 @@ export function portraitDrop(state: GameState, p: DragPayload, toId: HikerId): P
     return food && ok(state, eat) ? { kind: 'eat', action: eat } : null;
   }
   const give: Action = { type: 'give', fromId: p.hikerId, toId, itemUid: p.itemUid };
-  if (!ok(state, give)) return null;
+  // A camp meal: they can eat a bite where it is, without trading for it.
+  const campEat: Action = {
+    type: 'eat',
+    hikerId: toId,
+    itemUid: p.itemUid,
+    fromHikerId: p.hikerId,
+  };
+  const canCampEat = food && !!defOf(state, p)?.campMeal && ok(state, campEat);
+  if (!ok(state, give)) return canCampEat ? { kind: 'eat', action: campEat } : null;
   if (!food) return { kind: 'give', action: give };
   // Could they eat it once it's theirs?
   const eat: Action = { type: 'eat', hikerId: toId, itemUid: p.itemUid };
-  return { kind: 'feed', give, eat: ok(applyAction(state, give), eat) ? eat : null };
+  return {
+    kind: 'feed',
+    give,
+    eat: ok(applyAction(state, give), eat) ? eat : null,
+    ...(canCampEat ? { campEat } : {}),
+  };
 }
 
 /** Clothes dropped on one of the wearer's slots: put them on, if it's their slot. */

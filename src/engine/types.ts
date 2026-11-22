@@ -692,6 +692,11 @@ export interface RunCounters {
   daysSinceSleep: Record<HikerId, number>;
   /** Shelters built in each section (by section index). */
   sheltersPlaced: Record<number, number>;
+  /**
+   * Food crafted, and its Appetite over all its bites (an estimate), for the
+   * debug panel's stats (Phase 10.6 tuning). Missing in older saves.
+   */
+  foodCrafted?: { count: number; appetite: number };
 }
 
 /** A tile a hiker landed on while a challenge was open: it opens next. */
@@ -853,7 +858,11 @@ export type Action =
       choice?: string;
     }
   /** Eat one bite of a food in the bag (a free action). */
-  | { type: 'eat'; hikerId: HikerId; itemUid: string }
+  /**
+   * Eat a bite: from the hiker's own pack, or (`fromHikerId`) a camp meal in
+   * another hiker's pack on the same tile (Rotisserie Chicken, Phase 10.6).
+   */
+  | { type: 'eat'; hikerId: HikerId; itemUid: string; fromHikerId?: HikerId }
   /** Place a shelter from the bag on the hiker's tile (a free action). */
   | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
   /**
@@ -1159,7 +1168,14 @@ export type GameEventBody =
       colorway?: number;
     }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */
-  | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
+  | {
+      kind: 'ate';
+      hikerId: HikerId;
+      itemId: ItemId;
+      bitesLeft: number;
+      /** A camp meal eaten from this hiker's pack (Phase 10.6). */
+      fromHikerId?: HikerId;
+    }
   /** Costco Sample: the bite wasn't used up. */
   | { kind: 'biteKept'; hikerId: HikerId; itemId: ItemId }
   /**

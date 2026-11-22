@@ -63,11 +63,11 @@ describe('eating', () => {
   it('Din Tai Fung gives Appetite equal to the bites left', () => {
     let s = fixtureGame();
     place(s, 'ash', 'T', { appetite: 0 });
-    const uid = food(s, 'ash', 'dinTaiFung'); // 4 bites at Quality 3
+    const uid = food(s, 'ash', 'dinTaiFung'); // 5 bites at Quality 3 (Phase 10.6)
     s = run(s, eat('ash', uid));
-    expect(hiker(s, 'ash').stats.appetite).toBe(4);
+    expect(hiker(s, 'ash').stats.appetite).toBe(5);
     s = run(s, eat('ash', uid));
-    expect(hiker(s, 'ash').stats.appetite).toBe(7);
+    expect(hiker(s, 'ash').stats.appetite).toBe(9);
   });
 
   it('Advent Calendar: only 1 bite a day', () => {
@@ -115,23 +115,29 @@ describe('eating', () => {
     let s = fixtureGame();
     place(s, 'ash', 'T', { appetite: 2, morale: 5 });
     s = run(s, eat('ash', food(s, 'ash', 'smores')));
-    expect(hiker(s, 'ash').stats).toMatchObject({ appetite: 3, morale: 5 });
+    expect(hiker(s, 'ash').stats).toMatchObject({ appetite: 4, morale: 5 });
     s = toNight(s);
     const before = hiker(s, 'ash').stats;
     const [appetite, morale] = [before.appetite, before.morale];
     s = run(s, eat('ash', food(s, 'ash', 'smores')));
-    expect(hiker(s, 'ash').stats.appetite).toBe(appetite + 2);
+    expect(hiker(s, 'ash').stats.appetite).toBe(appetite + 3);
     expect(hiker(s, 'ash').stats.morale).toBe(morale + 1);
   });
 
-  it('Dog Food: +4 for a Dog, +2 and −1 Morale for anyone else', () => {
+  it('Dog Food: Dogs +3, anyone else +2; the first bite gives Dogs +1 Morale and anyone else −1', () => {
     let s = fixtureGame();
     hiker(s, 'birch').family = 'dog';
     place(s, 'ash', 'T', { appetite: 2, morale: 5 });
     place(s, 'birch', 'T', { appetite: 2, morale: 5 });
-    s = run(s, eat('ash', food(s, 'ash', 'dogFood')), eat('birch', food(s, 'birch', 'dogFood')));
+    const mine = food(s, 'ash', 'dogFood');
+    const theirs = food(s, 'birch', 'dogFood');
+    s = run(s, eat('ash', mine), eat('birch', theirs));
     expect(hiker(s, 'ash').stats).toMatchObject({ appetite: 4, morale: 4 });
-    expect(hiker(s, 'birch').stats).toMatchObject({ appetite: 6, morale: 6 });
+    expect(hiker(s, 'birch').stats).toMatchObject({ appetite: 5, morale: 6 });
+    // The second bite: Appetite only.
+    s = run(s, eat('ash', mine), eat('birch', theirs));
+    expect(hiker(s, 'ash').stats).toMatchObject({ appetite: 6, morale: 4 });
+    expect(hiker(s, 'birch').stats).toMatchObject({ appetite: 8, morale: 6 });
   });
 
   it('Energy Drink: Energized for 2 days, then Buzzed', () => {

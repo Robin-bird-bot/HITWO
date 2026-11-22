@@ -621,3 +621,25 @@ button.itemCard:hover {
   touch-action: none;
   cursor: grab;
 }
+
+/* Someone else's camp meal on this tile (Phase 10.6): eat a bite, no trade. */
+.campMeals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.campMeal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(233, 180, 76, 0.1);
+  border: 1px solid rgba(233, 180, 76, 0.35);
+}
+
+.campMeal .small {
+  flex: 1;
+}

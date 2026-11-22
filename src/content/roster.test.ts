@@ -250,7 +250,10 @@ describe('the roster matches 07-characters.md', () => {
         const n = many ? Number(many[1]) : 1;
         const id = itemByName.get((many ? many[2]! : part).toLowerCase());
         expect(id, `${name}: ${part}`).toBeDefined();
-        for (let i = 0; i < n; i++) items.push(id!);
+        // Phase 10.6: a switched-off food in the doc's bag is Trail Mix in the game.
+        const def = ITEMS[id!];
+        const given = def?.type === 'food' && def.enabled === false ? 'trailMix' : id!;
+        for (let i = 0; i < n; i++) items.push(given);
       }
       expect(h.startingBag.items ?? [], name).toEqual(items);
       expect(h.startingBag.presents ?? 0, name).toBe(presents);

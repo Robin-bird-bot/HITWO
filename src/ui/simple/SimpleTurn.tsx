@@ -133,7 +133,12 @@ export function SimpleTurn({
             />
           )}
           {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
-          <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />
+          <TileCard
+            state={state}
+            hiker={hiker}
+            {...(onFeature ? { onFeature } : {})}
+            {...(onFree ? { onFree } : {})}
+          />
           <Equipped hiker={hiker} compact {...(onPick ? { onPick } : {})} />
           <Bag state={state} hiker={hiker} compact onPick={onPick} />
           <Resources state={state} hiker={hiker} compact onPick={onPick} />

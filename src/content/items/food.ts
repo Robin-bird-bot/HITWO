@@ -9,8 +9,29 @@
 import type { EatContext, ItemDef } from '../../engine/effects';
 import { item, q } from './build';
 
-const food = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef =>
-  item({ ...def, type: 'food' });
+/**
+ * Only these foods are switched on for now (Phase 10.6, 08-overhaul-plan.md).
+ * Every other food has `enabled: false`: out of crafting, scavenging, shops,
+ * rewards and starting kits, but one already in a pack still works. Puked
+ * Nuggets stay (only the Nugget Puker makes them).
+ */
+export const FOODS_ON: readonly string[] = [
+  'trailMix',
+  'costcoSample',
+  'dogFood',
+  'mysteryMeat',
+  'smores',
+  'jerky',
+  'fishAndChips',
+  'rotisserieChicken',
+  'dinTaiFung',
+];
+const STAYS_ON = new Set([...FOODS_ON, 'pukedNuggets']);
+
+const food = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef => ({
+  ...item({ ...def, type: 'food' }),
+  ...(STAYS_ON.has(def.id) ? {} : { enabled: false as const }),
+});
 
 /** A chance of Food Poisoning at Quality 1 only. */
 const poisonAtQ1 = (pct: number) => q(pct, 0, 0, 0, 0);
@@ -68,9 +89,9 @@ export const FOOD: readonly ItemDef[] = [
       poison(e);
     },
     tier: 3,
-    bites: q(3, 4, 4, 4, 5),
+    bites: q(4, 5, 5, 5, 6),
     values: { poison: poisonAtQ1(20) },
-    text: `Gain Appetite equal to the bites left, counting this one.${POISON}`,
+    text: `Appetite equal to the bites left, counting this one.${POISON}`,
     recipe: 'Meat 2, Grass 2, Fish 1, Mushroom 1, Salt 1, any 1',
   }),
   food({
@@ -185,7 +206,7 @@ export const FOOD: readonly ItemDef[] = [
     id: 'costcoSample',
     name: 'Costco Sample',
     onEat: (e) => {
-      e.appetite(1);
+      e.appetite(2);
       if (e.chance(e.v('keep'))) e.keepBite();
       if (e.chance(e.v('positive'))) e.randomPositive(1, 1, 'phases');
       poison(e);
@@ -197,7 +218,7 @@ export const FOOD: readonly ItemDef[] = [
       positive: q(0, 15, 15, 15, 15),
       poison: poisonAtQ1(20),
     },
-    text: `+1 Appetite. A {keep}% chance not to use up the bite[, and a {positive}% chance of a random positive condition for 1 phase].${POISON}`,
+    text: `+2 Appetite. A {keep}% chance not to use up the bite[, and a {positive}% chance of a random positive condition for 1 phase].${POISON}`,
     recipe: 'Meat 1, Salt 1, any 2',
   }),
   food({
@@ -216,15 +237,15 @@ export const FOOD: readonly ItemDef[] = [
   food({
     id: 'rotisserieChicken',
     name: 'Rotisserie Chicken',
+    campMeal: true,
     onEat: (e) => {
-      e.appetite(e.v('appetite'));
-      e.condition('sleepy', 1, 'days');
+      e.appetite(3);
       poison(e);
     },
     tier: 3,
-    bites: 1,
-    values: { appetite: q(4, 5, 5, 5, 6), poison: poisonAtQ1(30) },
-    text: `+{appetite} Appetite, Sleepy for 1 day.${POISON}`,
+    bites: q(3, 4, 4, 4, 5),
+    values: { poison: poisonAtQ1(30) },
+    text: `+3 Appetite. Camp meal: anyone on this tile can eat a bite.${POISON}`,
     recipe: 'Meat 3, Salt 1, Oil 1, Grass 1, any 1',
   }),
   food({
@@ -257,13 +278,13 @@ export const FOOD: readonly ItemDef[] = [
     id: 'trailMix',
     name: 'Trail Mix',
     onEat: (e) => {
-      e.appetite(1);
+      e.appetite(2);
       if (e.v('lucky')) e.condition('lucky', 1, 'phases', { thisPhase: true });
     },
     tier: 1,
     bites: q(2, 3, 3, 3, 4),
     values: { lucky: q(0, 1, 1, 1, 1) },
-    text: '+1 Appetite[lucky? and Lucky for this phase].',
+    text: '+2 Appetite[lucky?, and Lucky this phase].',
     recipe: 'Grass 1, Salt 1, Mushroom 1, any 1',
   }),
   food({
@@ -309,18 +330,16 @@ export const FOOD: readonly ItemDef[] = [
     id: 'dogFood',
     name: 'Dog Food',
     onEat: (e) => {
-      if (e.hiker.family === 'dog') {
-        e.appetite(4);
-        e.stat('morale', e.v('dogMorale'));
-      } else {
-        e.appetite(2);
-        e.stat('morale', -1);
-      }
+      const dog = e.hiker.family === 'dog';
+      e.appetite(dog ? 3 : 2);
+      if (!e.firstBite) return;
+      if (dog) e.stat('morale', e.v('dogMorale'));
+      else e.stat('morale', -1);
     },
     tier: 1,
-    bites: 1,
+    bites: 2,
     values: { dogMorale: q(0, 1, 1, 1, 1) },
-    text: 'Dogs: +4 Appetite[ and +{dogMorale} Morale]. Anyone else: +2 Appetite and −1 Morale.',
+    text: 'Dogs: +3 Appetite[, and +{dogMorale} Morale on the first bite]. Anyone else: +2 Appetite, and −1 Morale on the first bite.',
     recipe: 'Meat 2, Bones 1, any 1',
   }),
   food({
@@ -484,13 +503,13 @@ export const FOOD: readonly ItemDef[] = [
     id: 'mysteryMeat',
     name: 'Mystery Meat',
     onEat: (e) => {
-      e.appetite(e.rollY(0, 10));
+      e.appetite(e.rollY(2, 10));
       if (e.chance(e.v('pct'))) e.randomNegative(e.v('phases'), 'phases');
     },
     tier: 1,
     bites: 1,
     values: { pct: q(60, 50, 50, 50, 40), phases: q(3, 2, 2, 2, 1) },
-    text: '+0–10 Appetite, and a {pct}% chance of a random negative condition for {phases} phase{phases:s}.',
+    text: '+2–10 Appetite, and a {pct}% chance of a random negative condition for {phases} phase{phases:s}.',
     recipe: 'Meat 1, Bones 1, any 2',
   }),
   food({
@@ -502,7 +521,7 @@ export const FOOD: readonly ItemDef[] = [
       poison(e);
     },
     tier: 2,
-    bites: q(2, 2, 3, 3, 3),
+    bites: q(3, 3, 4, 4, 5),
     values: { poison: poisonAtQ1(20) },
     text: `+2 Appetite. Never loses Appetite value (Flies, night events).${POISON}`,
     recipe: 'Meat 2, Salt 2, any 1',
@@ -511,13 +530,13 @@ export const FOOD: readonly ItemDef[] = [
     id: 'smores',
     name: 'S’mores',
     onEat: (e) => {
-      e.appetite(1 + (e.night ? e.v('night') : 0));
+      e.appetite(2 + (e.night ? e.v('night') : 0));
       if (e.night) e.stat('morale', e.v('morale'));
     },
     tier: 1,
-    bites: 1,
-    values: { night: q(0, 1, 1, 1, 1), morale: q(0, 1, 1, 1, 2) },
-    text: '+1 Appetite.[ Eaten at night: +{night} more Appetite and +{morale} Morale.]',
+    bites: 2,
+    values: { night: q(0, 1, 1, 1, 1), morale: q(0, 1, 1, 1, 1) },
+    text: '+2 Appetite.[ At night: +{night} more Appetite and +{morale} Morale.]',
     recipe: 'Grass 2, Wood 1, any 1',
   }),
   food({
@@ -525,13 +544,13 @@ export const FOOD: readonly ItemDef[] = [
     name: 'Fish and Chips',
     onEat: (e) => {
       e.appetite(e.v('appetite'));
-      e.stat('morale', e.v('morale'));
+      if (e.firstBite) e.stat('morale', e.v('morale'));
       poison(e);
     },
     tier: 2,
-    bites: 1,
+    bites: 2,
     values: { appetite: q(2, 3, 3, 3, 4), morale: q(0, 1, 1, 1, 1), poison: poisonAtQ1(25) },
-    text: `+{appetite} Appetite[, +{morale} Morale].${POISON}`,
+    text: `+{appetite} Appetite[, and +{morale} Morale on the first bite].${POISON}`,
     recipe: 'Fish 2, Grass 1, Oil 1, Salt 1',
   }),
 ];

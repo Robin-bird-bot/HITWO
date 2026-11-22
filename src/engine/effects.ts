@@ -872,6 +872,12 @@ export interface ItemDef {
   notCrafted?: true;
   /** Never found by scavenging either (Puked Nuggets: only from the Nugget Puker). */
   notFound?: true;
+  /**
+   * Switched off (Phase 10.6): out of crafting, scavenging, shops, bundles,
+   * Mystery Items, Presents, rewards and starting kits. One already in a
+   * pack still works.
+   */
+  enabled?: false;
   /** Its art in public/assets/items/{art}.png; null when there's none yet (the type's icon). */
   art?: string | null;
   /** Equipped items plug into hooks, like traits. */
@@ -913,6 +919,11 @@ export interface ItemDef {
   onEat?: (e: EatContext) => void;
   /** Food that never loses Appetite value (Jerky). */
   keepsValue?: true;
+  /**
+   * A camp meal (Rotisserie Chicken, Phase 10.6): any hiker on the owner's
+   * tile can eat a bite of it without trading for it first.
+   */
+  campMeal?: true;
   /** Food: only 1 bite a day (Advent Calendar). */
   oneBiteADay?: true;
   /**
@@ -930,6 +941,8 @@ export interface EatContext {
   v(key: string): number;
   /** Bites left, counting this one (Din Tai Fung). */
   bitesLeft: number;
+  /** The food's first bite (Dog Food's and Fish and Chips' Morale). */
+  firstBite: boolean;
   /** Eaten at night (S'mores). */
   night: boolean;
   /** Gains Appetite from the food: plus any change recorded on it, less Food Poisoning. */

@@ -145,7 +145,7 @@ describe('Select opportunities', () => {
 });
 
 describe('spend-any-amount opportunities', () => {
-  it('Citro Tub: ending at 6 Energy or less gets a Citro Drink, 3 or less also Energized', () => {
+  it('Citro Tub: ending at 6 Energy or less gets a Trail Mix (Citro Drink is off), 3 or less also Energized', () => {
     const s = opened('citro-tub');
     const after = run(
       s,
@@ -154,9 +154,9 @@ describe('spend-any-amount opportunities', () => {
         { hikerId: 'birch', pay: true, gifts: [stat('birch', 'energy', 7)] },
       ),
     );
-    expect(hiker(after, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['citroDrink']);
+    expect(hiker(after, 'ash').inventory.bag.map((i) => i.itemId)).toEqual(['trailMix']);
     expect(hiker(after, 'ash').conditions).toEqual([]);
-    expect(hiker(after, 'birch').inventory.bag.map((i) => i.itemId)).toEqual(['citroDrink']);
+    expect(hiker(after, 'birch').inventory.bag.map((i) => i.itemId)).toEqual(['trailMix']);
     expect(hiker(after, 'birch').conditions.map((c) => c.id)).toEqual(['energized']);
   });
 

@@ -10,7 +10,7 @@
  *   trade. Trading, like selling, isn't "lost" for Rocco's Boutique.
  */
 import { BALANCE } from '../../config/balance';
-import { ITEMS, TABLE_ITEMS } from '../../content/items';
+import { ITEMS, OFFERED_ITEMS } from '../../content/items';
 import { RESOURCES } from '../../content/resources';
 import type { ItemDef } from '../effects';
 import { bagSlots, resourceCount, resourceLimit } from '../inventory';
@@ -44,8 +44,8 @@ const WANTS: readonly Wanted[] = ['tool', 'clothes', 'food'];
 const OFFERS = ['tool', 'clothes', 'food', 'shelter'] as const;
 
 const sellable = (d: ItemDef) => !d.notFound;
-const anything = () => TABLE_ITEMS.filter((d) => sellable(d) && d.type !== 'trinket');
-const trinkets = () => TABLE_ITEMS.filter((d) => sellable(d) && d.type === 'trinket');
+const anything = () => OFFERED_ITEMS.filter((d) => sellable(d) && d.type !== 'trinket');
+const trinkets = () => OFFERED_ITEMS.filter((d) => sellable(d) && d.type === 'trinket');
 
 /** Rolls a side feature's wares the first time someone stands on its tile. */
 export function rollTrailShop(state: GameState, tile: Tile): void {
@@ -97,7 +97,7 @@ function rollMerchant(state: GameState): TrailShop {
 function rollTrader(state: GameState): TrailShop {
   const tier = Math.min(3, state.section.tier + S.traderTierAbove);
   const type = pick(state.rng, OFFERS);
-  const ofType = TABLE_ITEMS.filter((d) => sellable(d) && d.type === type);
+  const ofType = OFFERED_ITEMS.filter((d) => sellable(d) && d.type === type);
   const atTier = ofType.filter((d) => d.tier === tier);
   const def = pick(state.rng, atTier.length ? atTier : ofType);
   const wants = pick(

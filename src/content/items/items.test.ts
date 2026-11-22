@@ -87,8 +87,8 @@ describe('card text at each Quality', () => {
     expect(at('popcorn', 3)).toBe('+1 Appetite, +1 Morale.');
     expect(at('pelmeni', 1)).toBe('+1 Appetite. A 25% chance of Food Poisoning.');
     expect(at('pelmeni', 2)).toBe('+1 Appetite.');
-    expect(at('trailMix', 1)).toBe('+1 Appetite.');
-    expect(at('trailMix', 3)).toBe('+1 Appetite and Lucky for this phase.');
+    expect(at('trailMix', 1)).toBe('+2 Appetite.');
+    expect(at('trailMix', 3)).toBe('+2 Appetite, and Lucky this phase.');
     expect(at('wine', 1)).toBe('+1 Appetite, then Unlucky for 1 day.');
     expect(at('wine', 3)).toBe('+2 Appetite, then Lucky or Unlucky (50/50) for 1 day.');
     expect(at('energyDrink', 1)).toBe('Buzzed for 2 days.');

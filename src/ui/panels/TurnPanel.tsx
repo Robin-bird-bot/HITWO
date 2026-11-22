@@ -120,7 +120,12 @@ export function TurnPanel({
           <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
         )}
         {onFree && <CarryCard state={state} hiker={hiker} onFree={onFree} />}
-        <TileCard state={state} hiker={hiker} {...(onFeature ? { onFeature } : {})} />
+        <TileCard
+          state={state}
+          hiker={hiker}
+          {...(onFeature ? { onFeature } : {})}
+          {...(onFree ? { onFree } : {})}
+        />
         <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
         <Bag state={state} hiker={hiker} onPick={onPick} />
         <Resources state={state} hiker={hiker} onPick={onPick} />
@@ -562,11 +567,14 @@ export function TileCard({
   state,
   hiker,
   onFeature,
+  onFree,
 }: {
   state: GameState;
   hiker: Hiker;
   /** Opens the tile's Merchant or Traveling Trader. */
   onFeature?(): void;
+  /** Free actions here: a bite of someone's camp meal, packing up a shelter. */
+  onFree?(action: Action): void;
 }) {
   const tile = state.section.tiles[hiker.tileId];
   if (!tile) return null;
@@ -630,7 +638,82 @@ export function TileCard({
         )}
       </div>
       <BoostChips state={state} hiker={hiker} />
+      {onFree && <CampMeals state={state} hiker={hiker} onFree={onFree} />}
     </>
+  );
+}
+
+/**
+ * Camp meals on this tile (Rotisserie Chicken, Phase 10.6): another hiker's,
+ * which this hiker can eat a bite of without trading. Eating asks first.
+ */
+function CampMeals({
+  state,
+  hiker,
+  onFree,
+}: {
+  state: GameState;
+  hiker: Hiker;
+  onFree(action: Action): void;
+}) {
+  const [asking, setAsking] = useState<string | null>(null);
+  if (hiker.status !== 'active') return null;
+  const meals = hikersOnTile(state, hiker.tileId)
+    .filter((h) => h.id !== hiker.id)
+    .flatMap((owner) =>
+      owner.inventory.bag.filter((i) => ITEMS[i.itemId]?.campMeal).map((item) => ({ owner, item })),
+    );
+  if (!meals.length) return null;
+  return (
+    <div className={styles.campMeals}>
+      {meals.map(({ owner, item }) => {
+        const def = ITEMS[item.itemId];
+        const action: Action = {
+          type: 'eat',
+          hikerId: hiker.id,
+          itemUid: item.uid,
+          fromHikerId: owner.id,
+        };
+        const reason = validateAction(state, action);
+        const bites = item.bitesLeft ?? 1;
+        const label = `${owner.name}’s ${def?.name ?? 'meal'}`;
+        return (
+          <div key={item.uid} className={styles.campMeal}>
+            <Icon name="utensils" size={15} color="#E9B44C" />
+            <span className={styles.small}>
+              <b>CAMP MEAL</b> · {label} · {bites} bite{bites === 1 ? '' : 's'}
+            </span>
+            {asking === item.uid ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.feature}
+                  onClick={() => {
+                    setAsking(null);
+                    onFree(action);
+                  }}
+                >
+                  Eat a bite
+                </button>
+                <button type="button" className={styles.feature} onClick={() => setAsking(null)}>
+                  No
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className={styles.feature}
+                disabled={!!reason}
+                title={reason ?? `${hiker.name} eats a bite of ${label}`}
+                onClick={() => setAsking(item.uid)}
+              >
+                Eat
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

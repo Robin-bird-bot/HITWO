@@ -11,7 +11,8 @@
 import { gainXp } from '../xp';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
-import { countCrafted } from '../counters';
+import { countCrafted, countFoodCrafted } from '../counters';
+import { foodAppetiteEstimate } from '../items/foodValue';
 import { computeCost, fireCraft, fireAction, wrapsPresents } from '../effects';
 import { bagSlots } from '../inventory';
 import {
@@ -31,7 +32,7 @@ import {
 } from '../items/craft';
 import { earnFreeMove } from '../items/freeMoves';
 import { noteCrafted } from '../challenges/trials';
-import { makeItem } from '../items/make';
+import { makeItem, qualityOf } from '../items/make';
 import type { Quality } from '../items/quality';
 import { pushEvent } from '../log';
 import { changeStat } from '../stats';
@@ -195,6 +196,7 @@ function finishCraft(
     paid: how.paid,
   });
   countCrafted(state, hiker.id, def.type);
+  if (def.type === 'food') countFoodCrafted(state, foodAppetiteEstimate(def, qualityOf(item) ?? 3));
   // Crafting XP by the item's tier: 1, 2, 4 or 8 (action XP, under the row rule).
   const xp = BALANCE.xp.craft[Math.min(def.tier, BALANCE.xp.craft.length) - 1] ?? 0;
   gainXp(state, hiker, xp, 'craft', `Crafted ${def.name}`);

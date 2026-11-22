@@ -486,7 +486,12 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const item = ITEMS[e.itemId]?.name ?? 'some food';
         const left =
           e.bitesLeft > 0 ? ` (${e.bitesLeft} bite${e.bitesLeft === 1 ? '' : 's'} left)` : '';
-        lines.push({ id: e.id, text: `${name(e.hikerId)} ate the ${item}${left}.`, tone: 'rest' });
+        const whose = e.fromHikerId ? `${name(e.fromHikerId)}’s ` : 'the ';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} ate ${whose}${item}${left}.`,
+          tone: 'rest',
+        });
         break;
       }
       case 'biteKept': {

@@ -1147,13 +1147,14 @@ const OPPORTUNITIES: ChallengeDef[] = [
       what: { stat: 'energy' },
       readout: 'statAfter',
       thresholds: [
-        { atMost: 6, effects: [{ op: 'gainItem', itemId: 'citroDrink' }] },
+        // Citro Drink is switched off (Phase 10.6): Trail Mix instead. TODO(wyatt): or another food?
+        { atMost: 6, effects: [{ op: 'gainItem', itemId: 'trailMix' }] },
         { atMost: 3, effects: [cond('energized', DAYS, 'days')] },
       ],
     },
     costText: ['Each hiker may spend any amount of Energy.'],
     rewardText: [
-      'Ending at 6 Energy or less: a Citro Drink (food card). Ending at 3 or less: also Energized.',
+      'Ending at 6 Energy or less: a Trail Mix (food card). Ending at 3 or less: also Energized.',
     ],
   }),
   op({
