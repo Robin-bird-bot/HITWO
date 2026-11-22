@@ -62,7 +62,7 @@ describe('card previews before Quality is rolled (Nov 14 update)', () => {
     expect(nuggets && itemRangeText(nuggets)).toBe('+1 Appetite.');
     const tent = ITEMS.tent;
     expect(tent && hasQuality(tent)).toBe(false);
-    expect(tent && counterRange(tent)).toEqual({ min: tent?.nights, max: tent?.nights });
+    expect(tent && counterRange(tent)).toEqual({ min: tent?.deployments, max: tent?.deployments });
   });
 
   it('valueRange and rangeWords', () => {

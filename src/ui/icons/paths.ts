@@ -64,6 +64,8 @@ export const ICON_PATHS = {
   dice: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 8h.01 M16 8h.01 M12 12h.01 M8 16h.01 M16 16h.01',
   shield:
     'M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z',
+  /** Added in Phase 10.6 for Wind: three gusts, in the same stroke style. */
+  wind: 'M12.8 19.6A2 2 0 1 0 14 16H2 M17.5 8a2.5 2.5 0 1 1 2 4H2 M9.8 4.4A2 2 0 1 1 11 8H2',
   /** Added in Phase 6 for Frozen and Shivering, in the same stroke style. */
   snowflake:
     'M12 2v20 M3.3 7l17.4 10 M3.3 17l17.4-10 M9.5 3.5 12 6l2.5-2.5 M9.5 20.5 12 18l2.5 2.5 M3.6 10.4l3.4-1-1-3.4 M20.4 13.6l-3.4 1 1 3.4 M3.6 13.6l3.4 1-1 3.4 M20.4 10.4l-3.4-1 1-3.4',

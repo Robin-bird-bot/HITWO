@@ -11,7 +11,6 @@ import { countSleep } from './counters';
 import { countdownAtCamp } from './health';
 import { wearAtCamp } from './items/wear';
 import { tickBoosts } from './items/boosts';
-import { sheltersAtCamp } from './items/shelters';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
 import { checkTrials } from './challenges/trials';
@@ -20,7 +19,7 @@ import { recoverOvernight } from './abundance';
 import { tickConditions } from './conditions';
 import { computeCost, fireHook, firePhaseEnd, firePhaseStart, noSleepStat } from './effects';
 import { pushEvent } from './log';
-import { advanceWeather, weatherPhaseEnd, weatherPhaseStart } from './weather';
+import { advanceWeather } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
 import { rollDailyTraits } from './traits/daily';
@@ -35,9 +34,7 @@ export function endPhase(state: GameState): void {
   // Trials are judged first: Jogger needs to know who acted this phase.
   checkTrials(state);
   for (const h of state.hikers) h.acted = false;
-  // A Fire node burns whoever ends the phase on it; then conditions that act each phase
-  // (Soaked, Allergies, Burning cooling off), then the tick.
-  weatherPhaseEnd(state);
+  // Conditions that act each phase (Soaked, Allergies, Burning cooling off), then the tick.
   for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
   tickConditions(state, 'phases');
   // Items used "this phase" stop working.
@@ -46,12 +43,10 @@ export function endPhase(state: GameState): void {
   if (state.phase === 'morning') {
     state.phase = 'afternoon';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
-    weatherPhaseStart(state);
     firePhaseStart(state);
   } else if (state.phase === 'afternoon') {
     state.phase = 'night';
     pushEvent(state, { kind: 'phase', day: state.day, phase: state.phase });
-    weatherPhaseStart(state);
     firePhaseStart(state);
   } else {
     campStep(state);
@@ -88,9 +83,8 @@ function campStep(state: GameState): void {
   countSleep(state);
   recoverOvernight(state);
   tickConditions(state, 'days');
-  // Worn clothes lose a day of durability, and shelters count a night.
+  // Worn clothes lose a day of durability. (Shelters no longer count nights: Phase 10.6.)
   wearAtCamp(state);
-  sheltersAtCamp(state);
   // Passed-out hikers left alone count down, last.
   countdownAtCamp(state);
 }
@@ -109,7 +103,6 @@ export function startNewDay(state: GameState): void {
   // Quirky, Zany, Nosework and Moody change for the day, before the morning's traits.
   rollDailyTraits(state);
   for (const h of state.hikers) if (h.status === 'active') fireHook(state, h, 'onStartOfDay');
-  weatherPhaseStart(state);
   firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);

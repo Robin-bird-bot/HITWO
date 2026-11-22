@@ -5,7 +5,7 @@
  *   with the paint darkening a little where the mask is about half (pigment
  *   pooling at the edge);
  * - the grades, on the land only: night (moonlit blues and a warm glow at
- *   camps), rain and storm (duller, cooler, slanted streaks), snow (open
+ *   camps), rain (duller, cooler, slanted streaks), snow (open
  *   ground fades to white, trees stay dark), heatwave (a warm wash), and the
  *   route view's fade.
  *
@@ -16,7 +16,6 @@ import { MAP_STYLE } from '../../../config/mapStyle';
 export interface Grade {
   night: number;
   rain: number;
-  storm: number;
   snow: number;
   heat: number;
   routes: number;
@@ -31,7 +30,6 @@ export interface Grade {
 export const NO_GRADE: Grade = {
   night: 0,
   rain: 0,
-  storm: 0,
   snow: 0,
   heat: 0,
   routes: 0,
@@ -62,7 +60,7 @@ uniform sampler2D uSketch;
 uniform sampler2D uMask;
 uniform vec2 uMaskScale;
 uniform vec2 uSize;
-uniform float uNight, uRain, uStorm, uSnow, uHeat, uRoutes, uStreaks, uTime;
+uniform float uNight, uRain, uSnow, uHeat, uRoutes, uStreaks, uTime;
 uniform vec2 uGlow[${MAX_GLOWS}];
 uniform int uGlows;
 uniform int uView;
@@ -90,8 +88,8 @@ void main() {
   }
   col = mix(col, night, uNight);
 
-  // Rain (and Storm, darker): duller and cooler, with slanted streaks drifting down.
-  vec3 rain = (col * ${G.rain.color.toFixed(3)} + lum * ${G.rain.gray.toFixed(3)}) * ${v3(G.rain.tint)} - ${G.rain.darken.toFixed(3)} - uStorm * ${G.storm.darken.toFixed(3)};
+  // Rain: duller and cooler, with slanted streaks drifting down.
+  vec3 rain = (col * ${G.rain.color.toFixed(3)} + lum * ${G.rain.gray.toFixed(3)}) * ${v3(G.rain.tint)} - ${G.rain.darken.toFixed(3)};
   vec2 q = vec2(px.x + px.y * 0.33, px.y - uTime * 260.0);
   vec2 cellId = floor(q / vec2(9.0, 64.0));
   vec2 f = fract(q / vec2(9.0, 64.0));
@@ -187,7 +185,6 @@ export function createLandGl(
   const U = {
     night: loc('uNight'),
     rain: loc('uRain'),
-    storm: loc('uStorm'),
     snow: loc('uSnow'),
     heat: loc('uHeat'),
     routes: loc('uRoutes'),
@@ -225,7 +222,6 @@ export function createLandGl(
     render(g, view = 'land') {
       gl.uniform1f(U.night, g.night);
       gl.uniform1f(U.rain, g.rain);
-      gl.uniform1f(U.storm, g.storm);
       gl.uniform1f(U.snow, g.snow);
       gl.uniform1f(U.heat, g.heat);
       gl.uniform1f(U.routes, g.routes);

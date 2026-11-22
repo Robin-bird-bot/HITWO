@@ -49,7 +49,7 @@ export function landInput(
       scale: geo.scales[t.id] ?? 1,
       kind: t.kind,
       special: t.special,
-      nodes: t.nodes.map((n) => n.weather?.was ?? n.type) as NodeKind[],
+      nodes: t.nodes.map((n) => n.type) as NodeKind[],
     }));
   const paths = section.lines.map((l) => ({ id: l.id, kind: l.kind, pts: geo.paths[l.id] ?? [] }));
   return {

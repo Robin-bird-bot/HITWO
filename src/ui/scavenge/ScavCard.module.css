@@ -164,6 +164,19 @@ button.card:hover {
   color: var(--gold);
 }
 
+/* A card the weather brought (Phase 10.6): its weather's icon, top right. */
+.weatherMark {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border-radius: 50%;
+  background: rgba(29, 34, 32, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+
 .corner {
   position: absolute;
   left: 8px;

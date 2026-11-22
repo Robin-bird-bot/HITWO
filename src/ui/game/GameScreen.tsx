@@ -5,6 +5,8 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
+import { MAP_STYLE, u } from '../../config/mapStyle';
+import { landRect } from '../map/illustrated/land/model';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BALANCE } from '../../config/balance';
 import {
@@ -46,15 +48,17 @@ import { Backdrop } from '../backdrop/Backdrop';
 import { TrailLog } from '../log/TrailLog';
 import { MapControls, RouteLegend } from '../map/MapControls';
 import { useTabHeld } from '../map/useTabHeld';
-import { shownMapStyle, useMapStyle } from '../map/mapStyleSetting';
+import { shownMapStyle, useMapStyle, useWholeMap } from '../map/mapStyleSetting';
 import { mapGeometry } from '../map/illustrated/geometry';
 import { landKey, sectionLandInput } from '../map/illustrated/land/input';
 import { useLand } from '../map/illustrated/landService';
 import { landCellUnits, landScale } from '../map/illustrated/device';
 import { LandCanvas } from '../map/illustrated/LandCanvas';
-import { MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
+import { MapCorners, MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
+import { Folds, Sheet } from '../map/illustrated/PaperSheet';
 import { paintedPlaces } from '../map/illustrated/land/mask';
 import { FieldView, StampBoxes } from '../map/illustrated/MapDebugLayers';
+import { Leaves } from '../map/illustrated/Leaves';
 import { landDebugOf, paintOverridden, useMapDebug } from '../map/illustrated/mapDebug';
 import { landGrade } from '../map/illustrated/grade';
 import { useReducedMotion } from '../app/useReducedMotion';
@@ -68,6 +72,7 @@ import {
   HEX,
   MAP_VIEW,
   mapBounds,
+  sheetBounds,
   scrollAbove,
   worldToStage,
   ZOOM,
@@ -224,7 +229,8 @@ const CHECKED_ACTIONS = new Set<Action['type']>([
   'putOn',
   'takeOff',
   'teach',
-  'placeShelter',
+  'setUpShelter',
+  'packUpShelter',
 ]);
 
 /** A trait check's title: "Move Cody?", or "Go ahead?" for anything else. */
@@ -251,11 +257,12 @@ export function GameScreen({
   useEffect(() => {
     if (simple) setPanelCollapsed('log', true);
   }, [simple]);
-  const bounds = useMemo(() => mapBounds(section), [section]);
   // Classic's grid, or the Illustrated map's moved tiles and winding paths (Phase 10.5).
   const chosenStyle = useMapStyle();
   // The debug panel's look-only tools: a land seed, reveal all or none, views, forced weather.
   const dbg = useMapDebug();
+  // Settings → Show whole map (Phase 10.6): the land fully painted; tiles as usual.
+  const wholeMap = useWholeMap();
   const lookSeed = dbg.seed ?? state.seed;
   const illustratedGeo = useMemo(
     () =>
@@ -290,6 +297,26 @@ export function GameScreen({
   // If the land fails (or takes over 6 s), this section uses the classic map.
   const mapStyle = shownMapStyle(chosenStyle, land);
   const geo = mapStyle === 'illustrated' ? illustratedGeo : classicGeo;
+  // The illustrated map is a paper sheet (Phase 10.6): its land plus the margin.
+  const sheet = useMemo(() => {
+    if (!landReq) return undefined;
+    const land = landRect(landReq.input.tiles, landReq.input.hexR);
+    const m = u(MAP_STYLE.sheet.margin);
+    return {
+      land,
+      x0: land.x0 - m,
+      y0: land.y0 - m,
+      width: land.width + 2 * m,
+      height: land.height + 2 * m,
+    };
+  }, [landReq]);
+  const bounds = useMemo(
+    () =>
+      mapStyle === 'illustrated' && sheet
+        ? sheetBounds(sheet, MAP_STYLE.camera.fitMargin, MAP_STYLE.camera.edgeAt)
+        : mapBounds(section),
+    [mapStyle, sheet, section],
+  );
   const landReady = mapStyle === 'illustrated' && land.status === 'ready' ? land.result : undefined;
   // Place names show once the paint covers their spot (one string, so it only re-renders on a change).
   const [shownKey, setShownKey] = useState('');
@@ -303,7 +330,7 @@ export function GameScreen({
     );
   };
   // A name seen for the first time: "Found …" in the trail log, once (not while debug paints it).
-  const paintForced = paintOverridden(dbg);
+  const paintForced = paintOverridden(dbg) || wholeMap;
   useEffect(() => {
     if (!landReady || paintForced) return;
     for (const p of landReady.features.places) {
@@ -765,10 +792,15 @@ export function GameScreen({
         setAsk({
           at,
           title: `The ${name}, for ${to}`,
-          text: d.eat ? `Give it to ${to}, or ${to} eats it now.` : `Give it to ${to}.`,
+          text: d.campEat
+            ? `A camp meal: ${to} can eat a bite without taking it.`
+            : d.eat
+              ? `Give it to ${to}, or ${to} eats it now.`
+              : `Give it to ${to}.`,
           options: [
+            ...(d.campEat ? [choose(`${to} eats a bite`, [d.campEat])] : []),
             choose('Give', [d.give]),
-            ...(d.eat ? [choose(`${to} eats it`, [d.give, d.eat])] : []),
+            ...(d.eat && !d.campEat ? [choose(`${to} eats it`, [d.give, d.eat])] : []),
           ],
         });
       }
@@ -1066,31 +1098,50 @@ export function GameScreen({
                 routes={routes}
                 geo={geo}
                 mapStyle={mapStyle}
+                table={mapStyle === 'illustrated'}
                 underlay={
-                  landReady ? (
+                  mapStyle === 'illustrated' && sheet ? (
                     <>
-                      <LandCanvas
-                        result={landReady}
-                        section={section}
-                        geo={geo}
-                        runSeed={lookSeed}
-                        sectionIndex={state.sectionIndex}
-                        grade={landGrade(state, routes, landReady, geo, dbg.grade)}
-                        reduceMotion={reduceMotion}
-                        onMask={onMask}
-                        debug={landDebugOf(dbg)}
-                      />
-                      {(dbg.view === 'type' || dbg.view === 'height') && (
-                        <FieldView result={landReady} view={dbg.view} />
+                      <Sheet rect={sheet} scale={landReq?.scale ?? 1} />
+                      {landReady && (
+                        <>
+                          <LandCanvas
+                            result={landReady}
+                            section={section}
+                            geo={geo}
+                            runSeed={lookSeed}
+                            sectionIndex={state.sectionIndex}
+                            grade={landGrade(state, routes, landReady, geo, dbg.grade)}
+                            reduceMotion={reduceMotion}
+                            onMask={onMask}
+                            debug={landDebugOf(dbg, wholeMap)}
+                          />
+                          {(dbg.view === 'type' || dbg.view === 'height') && (
+                            <FieldView result={landReady} view={dbg.view} />
+                          )}
+                          {dbg.stampBoxes && <StampBoxes result={landReady} />}
+                          {(dbg.grade?.weather ?? state.weather.today) === 'wind' &&
+                            !reduceMotion && <Leaves rect={landReady} />}
+                        </>
                       )}
-                      {dbg.stampBoxes && <StampBoxes result={landReady} />}
+                      <Folds rect={sheet} />
                     </>
                   ) : undefined
                 }
                 {...(landReady ? { bridges: landReady.features.bridges } : {})}
                 labels={
-                  landReady && !routes ? (
-                    <PlaceLabels places={landReady.features.places} shown={shown} />
+                  mapStyle === 'illustrated' && sheet ? (
+                    <>
+                      {landReady && !routes && (
+                        <PlaceLabels places={landReady.features.places} shown={shown} />
+                      )}
+                      <MapCorners
+                        land={sheet.land}
+                        biome={section.biome}
+                        sectionIndex={state.sectionIndex}
+                        tier={section.tier}
+                      />
+                    </>
                   ) : undefined
                 }
                 checkpoint={{ number: state.sectionIndex + 1, summit: atLastSection(state) }}
@@ -1142,11 +1193,6 @@ export function GameScreen({
               />
               {mapStyle === 'illustrated' && (
                 <MapFurniture
-                  biome={section.biome}
-                  sectionIndex={state.sectionIndex}
-                  tier={section.tier}
-                  day={state.day}
-                  zoom={camera.zoom}
                   hikerColors={hikers
                     .filter((h) => h.status !== 'abandoned')
                     .map((h) => hikerColor(h))}

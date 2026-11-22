@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ENABLE_WONDERS } from '../../content/wonders';
 import { BALANCE } from '../../config/balance';
 import { STARTING_PARTY } from '../../content/characters';
 import { applyAction, createGame, type Action, type GameState } from '../../engine';
@@ -241,7 +242,7 @@ describe('trail log sentences', () => {
     expect(texts(full)).toContain('Ash got Stone, and 1 resource didn’t fit (Snake Slots).');
   });
 
-  it('describe finding and accomplishing a Wonder', () => {
+  it.skipIf(!ENABLE_WONDERS)('describe finding and accomplishing a Wonder', () => {
     const s = fixtureGame();
     s.section.tiles.M!.nodes = [];
     s.section.tiles.M!.wonder = { id: 'swiss-alps', decoys: 2 };

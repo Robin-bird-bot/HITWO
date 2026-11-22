@@ -8,6 +8,9 @@
  * - Then the food's own effect (ItemDef.onEat): conditions, Morale, rolls.
  * - A bite is used up (Costco Sample can keep it). The last bite finishes it.
  * - Advent Calendar: only 1 bite a day.
+ * - A camp meal (Rotisserie Chicken, Phase 10.6): another hiker on the
+ *   owner's tile can eat a bite of it straight from the owner's pack, with
+ *   no trade first. It stays in the owner's pack.
  */
 import { ITEMS } from '../../content/items';
 import { addCondition, addRandomConditions, removeCondition } from '../conditions';
@@ -37,14 +40,25 @@ import { CONDITIONS } from '../../content/conditions';
 
 type EatAction = Extract<Action, { type: 'eat' }>;
 
+/** Whose pack the bite comes from: the eater's own, or a camp meal's owner on their tile. */
+function ownerOf(state: GameState, action: EatAction): Hiker | undefined {
+  return findHiker(state, action.fromHikerId ?? action.hikerId);
+}
+
 export function validateEat(state: GameState, action: EatAction): string | undefined {
   const hiker = findHiker(state, action.hikerId);
   const reason = notActiveReason(hiker);
   if (reason || !hiker) return reason;
-  const item = hiker.inventory.bag.find((i) => i.uid === action.itemUid);
-  if (!item) return `${hiker.name} doesn’t have that.`;
+  const owner = ownerOf(state, action);
+  if (!owner) return 'Nobody has that.';
+  const item = owner.inventory.bag.find((i) => i.uid === action.itemUid);
+  if (!item) return `${owner.name} doesn’t have that.`;
   const def = ITEMS[item.itemId];
   if (!def || def.type !== 'food') return `${def?.name ?? 'That'} isn’t food.`;
+  if (owner.id !== hiker.id) {
+    if (!def.campMeal) return `${def.name} isn’t a camp meal: trade for it first.`;
+    if (owner.tileId !== hiker.tileId) return `${hiker.name} isn’t on ${owner.name}’s tile.`;
+  }
   if (def.oneBiteADay && item.lastBiteDay === state.day) {
     return `${hiker.name} already had today’s bite of the ${def.name}.`;
   }
@@ -60,11 +74,13 @@ export function biteAppetite(item: ItemInstance, base: number): number {
 
 export function applyEat(state: GameState, action: EatAction): void {
   const hiker = mustFindHiker(state, action.hikerId);
-  const item = hiker.inventory.bag.find((i) => i.uid === action.itemUid);
+  const owner = ownerOf(state, action) ?? hiker;
+  const item = owner.inventory.bag.find((i) => i.uid === action.itemUid);
   const def = item && ITEMS[item.itemId];
   if (!item || !def) return;
   const quality = qualityOf(item);
-  const bitesLeft = Math.max(1, item.bitesLeft ?? valueAt(def.bites ?? 1, quality));
+  const fullBites = Math.max(1, valueAt(def.bites ?? 1, quality));
+  const bitesLeft = Math.max(1, item.bitesLeft ?? fullBites);
   // Garbage Gut: Quality 1 food gives this hiker no bad condition.
   const toughGut = quality === 1 && hikerHas(state, hiker, 'ignoresBadFood');
   const bad = (id: string) => toughGut && CONDITIONS[id]?.kind === 'negative';
@@ -76,12 +92,14 @@ export function applyEat(state: GameState, action: EatAction): void {
     hikerId: hiker.id,
     itemId: item.itemId,
     bitesLeft: bitesLeft - 1,
+    ...(owner.id !== hiker.id ? { fromHikerId: owner.id } : {}),
   });
 
   const e: EatContext = {
     hiker,
     v: (key) => valueAt(def.values?.[key], quality),
     bitesLeft,
+    firstBite: bitesLeft >= fullBites,
     night: state.phase === 'night',
     appetite: (n) => {
       ateAppetite = true;
@@ -153,7 +171,7 @@ export function applyEat(state: GameState, action: EatAction): void {
     return;
   }
   item.bitesLeft = bitesLeft - 1;
-  if (item.bitesLeft <= 0) finishFood(state, hiker, item);
+  if (item.bitesLeft <= 0) finishFood(state, owner, item);
 }
 
 function finishFood(state: GameState, hiker: Hiker, item: ItemInstance): void {

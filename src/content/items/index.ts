@@ -36,11 +36,17 @@ export const TABLE_ITEMS: readonly ItemDef[] = [
   ...TRINKETS,
 ];
 
+/** Offered anywhere: not switched off (Phase 10.6: only 9 foods are on). */
+export const isOffered = (def: ItemDef | undefined): boolean => !!def && def.enabled !== false;
+
+/** The table items that can be offered: every random or offered pool draws from these. */
+export const OFFERED_ITEMS: readonly ItemDef[] = TABLE_ITEMS.filter(isOffered);
+
 /**
  * The Tier III items a Wonder's "pick 1 of 3" and Snake Slots' jackpot draw
- * from: every Tier III item in the tables (not event-only ones).
+ * from: every Tier III item in the tables (not event-only or switched-off ones).
  */
-export const TIER_3_ITEMS: readonly string[] = TABLE_ITEMS.filter(
+export const TIER_3_ITEMS: readonly string[] = OFFERED_ITEMS.filter(
   (i) => i.tier === 3 && !i.notFound,
 ).map((i) => i.id);
 
@@ -49,12 +55,12 @@ export const TIER_3_ITEMS: readonly string[] = TABLE_ITEMS.filter(
  * ones only from events (Puked Nuggets) or still to place.
  */
 export function findableItems(type: ItemType, tier: number = 1): ItemDef[] {
-  return TABLE_ITEMS.filter((i) => i.type === type && !i.notFound && i.tier === tier);
+  return OFFERED_ITEMS.filter((i) => i.type === type && !i.notFound && i.tier === tier);
 }
 
 /** Items a basic recipe can deal at exactly this tier: never "Not crafted" ones. */
 export function craftableItems(type: ItemType, tier: number): ItemDef[] {
-  return TABLE_ITEMS.filter((i) => i.type === type && !i.notCrafted && i.tier === tier);
+  return OFFERED_ITEMS.filter((i) => i.type === type && !i.notCrafted && i.tier === tier);
 }
 
 /**

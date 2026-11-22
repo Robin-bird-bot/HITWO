@@ -283,3 +283,21 @@
   background: var(--gold);
   color: var(--page);
 }
+
+/* Map style → Show whole map (Phase 10.6): a checkbox with a big hit area. */
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  margin-top: 6px;
+  cursor: pointer;
+  color: #f1eadb;
+  font-size: 14px;
+}
+
+.switchRow input {
+  width: 20px;
+  height: 20px;
+  accent-color: #e9b44c;
+}

@@ -7,7 +7,7 @@ import { CARDS, CONDITIONS, ITEMS } from '../../content';
 import { presentName } from '../../content/items/presents';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { WEATHERS } from '../../content/weather';
-import { WONDER_BY_ID } from '../../content/wonders';
+import { ENABLE_WONDERS, WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
   type BiomeId,
@@ -294,7 +294,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const text =
           e.to === 'clear'
             ? `The ${WEATHERS[e.from].name.toLowerCase()} is over: clear skies.`
-            : `${to.name} for the next ${days}: ${to.node?.name} now, ${to.hiker?.name} from tomorrow.`;
+            : `${to.name} for the next ${days}. ${to.line}`;
         lines.push({ id: e.id, text, tone: 'phase' });
         break;
       }
@@ -471,6 +471,34 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text, tone: 'rest' });
         break;
       }
+      case 'shelterSetUp': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const tile = state.section.tiles[e.tileId];
+        const where = tile ? tileName(tile) : 'the tile';
+        const left = `${e.left} left`;
+        const text = e.hikerId
+          ? `${name(e.hikerId)} set up the ${item} on ${where} (${left}).`
+          : `A ${item} now stands on ${where} (${left}).`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterPackedUp': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        const text = e.auto
+          ? `${name(e.hikerId)} packed up the ${item} on the way out.`
+          : `${name(e.hikerId)} packed up the ${item}.`;
+        lines.push({ id: e.id, text, tone: 'rest' });
+        break;
+      }
+      case 'shelterWornOut': {
+        const item = ITEMS[e.itemId]?.name ?? 'shelter';
+        lines.push({
+          id: e.id,
+          text: `The ${item} is worn out and was thrown away.`,
+          tone: 'drain',
+        });
+        break;
+      }
       case 'shelterGone': {
         const item = ITEMS[e.itemId]?.name ?? 'shelter';
         const tile = state.section.tiles[e.tileId];
@@ -486,7 +514,12 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const item = ITEMS[e.itemId]?.name ?? 'some food';
         const left =
           e.bitesLeft > 0 ? ` (${e.bitesLeft} bite${e.bitesLeft === 1 ? '' : 's'} left)` : '';
-        lines.push({ id: e.id, text: `${name(e.hikerId)} ate the ${item}${left}.`, tone: 'rest' });
+        const whose = e.fromHikerId ? `${name(e.fromHikerId)}’s ` : 'the ';
+        lines.push({
+          id: e.id,
+          text: `${name(e.hikerId)} ate ${whose}${item}${left}.`,
+          tone: 'rest',
+        });
         break;
       }
       case 'biteKept': {
@@ -711,6 +744,8 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         break;
       }
       case 'wonderRevealed': {
+        // Wonders are switched off for now (Phase 10.6): their lines don't show.
+        if (!ENABLE_WONDERS) break;
         const name = WONDER_BY_ID[e.wonderId]?.name ?? 'a Wonder';
         lines.push({
           id: e.id,
@@ -720,6 +755,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         break;
       }
       case 'wonderAccomplished': {
+        if (!ENABLE_WONDERS) break;
         const def = WONDER_BY_ID[e.wonderId];
         const parts = Object.entries(e.picks).map(([id, pick]) => {
           const r = def?.rewards[pick.reward];

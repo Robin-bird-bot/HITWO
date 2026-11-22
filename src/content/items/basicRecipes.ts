@@ -28,9 +28,10 @@ export const BASIC_RECIPES: Readonly<
     key: { n: 2, ids: ['fish', 'meat', 'mushroom'] },
     broad: { n: 2, nodes: ['forest', 'river'] },
   },
+  // Phase 10.6: 1 less (6 → 5) now that shelters are carried. TODO(wyatt): first guess.
   shelter: {
     key: { n: 3, ids: ['wood', 'stone'] },
-    broad: { n: 3, any: true },
+    broad: { n: 2, any: true },
   },
 };
 

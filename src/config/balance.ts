@@ -14,6 +14,7 @@ import type {
   ScavengeCardType,
   SpecialSpace,
   StatName,
+  WeatherId,
 } from '../engine/types';
 
 type PartialStats = Partial<Record<StatName, number>>;
@@ -112,20 +113,21 @@ export const BALANCE = {
       3: [8, 10, 10, 10, 12],
     } as Record<number, readonly [number, number, number, number, number]>,
     /**
-     * Nights each shelter lasts once placed.
-     * TODO(wyatt): Tailgate, Yurt, Hostel, Tree-House, RV, Medic Tent and Lodge are the doc's first guesses.
+     * Portable shelters (Phase 10.6): how many times each can be set up (the
+     * old nights + 1). At 0 it can't be set up again, and it's thrown away
+     * when it's packed. TODO(wyatt): every number is a first guess.
      */
-    shelterNights: {
-      hammock: 1,
-      tent: 3,
+    shelterDeployments: {
+      hammock: 2,
+      tent: 4,
       cabin: 5,
-      tailgate: 3,
-      yurt: 4,
-      hostel: 4,
-      treeHouse: 4,
-      rv: 4,
-      medicTent: 3,
-      lodge: 5,
+      tailgate: 4,
+      yurt: 5,
+      hostel: 5,
+      treeHouse: 5,
+      rv: 5,
+      medicTent: 4,
+      lodge: 6,
     } as Record<string, number>,
     /**
      * The Diploma's XP: a share of the XP between the hiker's level and the
@@ -447,8 +449,8 @@ export const BALANCE = {
 
   /** Challenges, opportunities and Trials (docs/design/04-challenges.md). */
   challenges: {
-    /** What a new tile gets (Wyatt, Nov 5: 70 / 20 / 10). */
-    mix: { challenge: 70, trial: 20, opportunity: 10 },
+    // What each plain tile holds is decided when the section is made, by the
+    // difficulty (src/config/difficulty.ts, Phase 10.6). Trials are switched off.
     /**
      * A challenge one tier above its own has its ranges scaled by this
      * (Wyatt, Nov 5: ×1.5). Backwards ranges (Dangerous Current) shrink.
@@ -473,13 +475,6 @@ export const BALANCE = {
      * trailhead and the checkpoint.
      */
     noCardOn: [] as readonly SpecialSpace[],
-    /**
-     * CHALLENGE_SHARE: the share of each biome's plain tiles (no special space,
-     * no Wonder) that hold a card. 1 means every one, as before. Below 1, the
-     * rest are quiet, and the scouting tools are worth more. Special spaces
-     * and Wonders always keep theirs. TODO(wyatt): try lowering it.
-     */
-    share: { meadow: 1, temperateRainforest: 1, alpine: 1 } as Record<BiomeId, number>,
     /**
      * On a Challenge space, each passing hiker gets one of these at random: an
      * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.
@@ -610,31 +605,24 @@ export const BALANCE = {
   /** Weather (05-nights-and-weather.md, Phase 6). */
   weather: {
     /**
-     * The placeholder schedule until Phase 11 gives each biome its own odds:
-     * Clear for 2–4 days, then a random weather for 2–3 days (Wyatt, Nov 6).
-     * TODO(phase 11): per-biome odds (Snow up high, Heatwave in the Meadow).
+     * The schedule (Phase 10.6): each weather lasts this many days, then the
+     * next is drawn from these odds. Every section uses the Meadow odds until
+     * Phase 11 gives each biome its own (Snow up high).
+     * TODO(wyatt): [1–3] days; Clear [40%], Rain [25%], Wind [20%], Heatwave [15%].
      */
     schedule: {
-      clearDays: { min: 2, max: 4 },
-      weatherDays: { min: 2, max: 3 },
-      weights: { rain: 35, storm: 20, snow: 15, heatwave: 30 },
+      days: { min: 1, max: 3 },
+      odds: { clear: 40, rain: 25, wind: 20, heatwave: 15, snow: 0 } as Record<WeatherId, number>,
     },
     /** How many days ahead the forecast shows. */
     forecastDays: 3,
-    /** Each phase, the chance a node floods, freezes or catches fire. */
-    nodeChance: 0.15,
-    /** Each phase, the chance fire spreads to a connected tile with a Forest node. */
-    fireSpread: 0.35,
-    /** Luck a Fire node gives the other nodes on its tile. */
-    fireLuck: 1,
-    /** Drizzle: each clothing item's chance to lose 1 durability each phase. */
-    drizzleWear: 0.35,
-    /** Drizzle: how long Wet lasts. TODO(wyatt): the doc doesn't say; first guess. */
-    drizzleWetDays: 1,
-    /** Thunder: how likely Wildlife cards are while it storms. */
-    thunderWildlifeWeight: 0.25,
-    /** Sheer Cold: Shivering each phase, less 1 a clothing item, 1 a hiker with you, 2 for a shelter. */
-    sheerCold: { base: 3, perClothes: 1, perHiker: 1, shelter: 2 },
+    /** On a tile with the weather's node, its resource cards are this many times as likely. TODO(wyatt): [1.5×]. */
+    boost: 1.5,
+    /**
+     * On any tile, each resource card's chance to be one of the weather's node's
+     * resources instead (with a small weather icon). TODO(wyatt): [10%].
+     */
+    swapChance: 0.1,
   },
 
   /** Condition numbers from 02-traits-and-conditions.md (Phase 6). */
@@ -932,6 +920,13 @@ export const BALANCE = {
 
   /** Screen timings (Nov 14 update). */
   ui: {
+    /**
+     * Nothing cut off (Phase 10.6): a card row that doesn't fit shrinks evenly
+     * down to this scale, then wraps onto another row. TODO(wyatt): [80%].
+     */
+    cardRowMinScale: 0.8,
+    /** Tooltips and hover windows keep this far from the game screen's edges (px). TODO(wyatt): [8 px]. */
+    popupMargin: 8,
     /** Hovering a card or item this long (ms) opens its preview. TODO(wyatt): [400 ms]. */
     previewHoverMs: 400,
     /** A long-press on a phone: this long (ms) opens the preview instead of a tap. */

@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { fitStage, STAGE_HEIGHT, STAGE_WIDTH, type StageFit } from './fitStage';
-import { StageContext } from './StageContext';
+import { StageContext, TopLayerContext } from './StageContext';
 import styles from './Stage.module.css';
 
 /**
@@ -11,6 +11,7 @@ import styles from './Stage.module.css';
 export function Stage({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState<StageFit>(() => fitStage(window.innerWidth, window.innerHeight));
+  const [topLayer, setTopLayer] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -28,13 +29,17 @@ export function Stage({ children, backdrop }: { children: ReactNode; backdrop?: 
       {backdrop}
       <div
         className={styles.stage}
+        data-stage=""
         style={{
           width: STAGE_WIDTH,
           height: STAGE_HEIGHT,
           transform: `translate(${fit.left}px, ${fit.top}px) scale(${fit.scale})`,
         }}
       >
-        <StageContext.Provider value={fit}>{children}</StageContext.Provider>
+        <StageContext.Provider value={fit}>
+          <TopLayerContext.Provider value={topLayer}>{children}</TopLayerContext.Provider>
+        </StageContext.Provider>
+        <div ref={setTopLayer} className={styles.topLayer} />
       </div>
     </div>
   );

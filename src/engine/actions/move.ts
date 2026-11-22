@@ -1,3 +1,4 @@
+import { ownerLeft } from '../items/shelters';
 import { revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveCost } from '../costs';
@@ -57,6 +58,8 @@ export function applyMove(state: GameState, action: MoveAction): void {
   line.walkedBy ??= hiker.id;
   // Whoever they carry comes along.
   const carried = bringCarried(state, [hiker], from).map((c) => c.id);
+  // A shelter they set up packs itself, if there's room (Phase 10.6).
+  ownerLeft(state, hiker, from);
   if (free) spendFreeMove(state, hiker, free);
   else spendAction(state, hiker);
   const revealed = enterTile(state, hiker.tileId);

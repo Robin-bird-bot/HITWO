@@ -192,6 +192,8 @@ Three slots: **Gear**, **Body** (Wyatt's "Outfit") and **Feet** (shoes or socks;
 
 ## Food
 
+Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
+
 Food with more than 1 bite can be eaten more than once, one bite at a time. Several foods share an effect but have different recipes (Salad and Salmon), so the party can make them from whatever it has.
 
 **Quality 1 food** is worse in the way shown in the last column:
@@ -246,6 +248,8 @@ Food with more than 1 bite can be eaten more than once, one bite at a time. Seve
 | Lemonade | 1 | 1 | +1 Appetite, lose (X 1/1/1/1/2) Burning. | Grass 2, Salt 1, any 1 |
 
 ## Shelters
+
+Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
 
 Placed on a tile and used up after a number of nights. Every shelter counts as a basic shelter: hikers who sleep under it get the shelter bonus (+1 Energy) and are protected from night events, Drizzle and Sheer Cold. Shelters have no Quality. Nights marked \[first guess\] weren't set by Wyatt.
 

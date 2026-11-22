@@ -256,12 +256,9 @@ export const HOLIDAY_TRAITS: readonly TraitDef[] = [
     null,
     'rednose',
     'Rednose',
-    'When this hiker moves the group at night, nobody pays the extra night cost. Fog never hides the tiles next to this hiker.',
-    {
-      ...unique('redolf'),
-      // TODO(phase-11): Fog isn't built yet; clearsFog is its hook.
-      hooks: { leadsAtNight: () => true, clearsFog: () => true },
-    },
+    // No effect for now (Phase 10.6); it's reworked in Phase 10.7. The badge and icon stay.
+    'Placeholder text',
+    { ...unique('redolf') },
   ),
   utility(
     null,

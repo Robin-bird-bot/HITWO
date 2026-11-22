@@ -38,6 +38,8 @@ import { emptyPercent } from '../panels/abundanceLook';
 import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import { TestHikerPicker, TraitTools } from './DebugTraits';
 import { MapLookTools } from './MapLookTools';
+import { EdgeTest } from './EdgeTest';
+import { SimplifyTools } from './DebugSimplify';
 import styles from './DebugPanel.module.css';
 import { useBacktickToggle } from './useBacktickToggle';
 
@@ -187,6 +189,10 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
       </section>
 
       <MapLookTools state={state} />
+
+      <SimplifyTools state={state} onApply={run} />
+
+      <EdgeTest state={state} onApply={run} />
 
       <StationDebug state={state} run={run} />
 
@@ -488,14 +494,6 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
           }
         >
           Hold the weather
-        </button>
-        <button
-          type="button"
-          className={styles.button}
-          disabled={state.day > state.weather.since}
-          onClick={() => onApply({ type: 'debug', op: { kind: 'skipGraceDay' } })}
-        >
-          Skip the grace day
         </button>
         <span className={styles.note}>
           Ahead:{' '}
@@ -1062,26 +1060,6 @@ function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action:
         </button>
       </div>
       <div className={styles.row}>
-        <span className={styles.note}>On their tile:</span>
-        {(
-          [
-            ['flooded', 'Flood'],
-            ['frozen', 'Freeze'],
-            ['fire', 'Burn'],
-          ] as const
-        ).map(([state, label]) => (
-          <button
-            key={state}
-            type="button"
-            className={styles.button}
-            onClick={() => {
-              const tileId = hikers.find((h) => h.id === hikerId)?.tileId;
-              if (tileId) onApply({ type: 'debug', op: { kind: 'nodeState', tileId, state } });
-            }}
-          >
-            {label} a node
-          </button>
-        ))}
         <button
           type="button"
           className={styles.button}

@@ -119,7 +119,8 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T alphaDog', 'T humanFood', 'M alpha'),
     difficulty: 4,
     portrait: 'cody',
-    startingBag: items('dillRolls'),
+    // Phase 10.6: dillRolls is switched off, so Trail Mix (Quality rolls as before).
+    startingBag: items('trailMix'),
   }),
   hiker('grandpaSherman', 'Grandpa Sherman', 'human', ['tank', 'jack'], {
     title: 'Probably Trespassing',
@@ -181,7 +182,8 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T trailer', 'U hypeDog', 'M loyal'),
     difficulty: 4,
     portrait: 'kai',
-    startingBag: items('citroDrink'),
+    // Phase 10.6: citroDrink is switched off, so Trail Mix (Quality rolls as before).
+    startingBag: items('trailMix'),
   }),
   hiker('bossGracie', 'Boss & Gracie', 'dog', ['support', 'scavenger'], {
     title: 'Danger Duo',
@@ -304,7 +306,8 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('U therapist', 'U comedian', 'M extrovert'),
     difficulty: 4,
     portrait: 'madeline',
-    startingBag: items('wine'),
+    // Phase 10.6: wine is switched off, so Trail Mix (Quality rolls as before).
+    startingBag: items('trailMix'),
   }),
 
   // ── Variants (07-characters.md, "Variants") ──

@@ -2,7 +2,14 @@
  * The trail map: tiles, lines, cost badges and hiker tokens on a camera you
  * can scroll (wheel or drag) and zoom (ctrl/pinch + wheel, or the buttons).
  */
-import { useEffect, useRef, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import {
+  useEffect,
+  useRef,
+  type CSSProperties,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import type { Hiker, HikerId, Section, Tile } from '../../engine';
 import { hikerColor } from '../../content/characters';
 import { useStage } from '../stage/StageContext';
@@ -14,6 +21,7 @@ import {
   HEX,
   panBy,
   stageToWorld,
+  worldToStage,
   worldTransform,
   zoomAt,
   type Bounds,
@@ -25,6 +33,7 @@ import { LineBadges, TrailLines } from './TrailLines';
 import type { MapGeometry } from './illustrated/geometry';
 import type { Bridge } from './illustrated/land/features';
 import { revealedTiles } from './illustrated/land/mask';
+import { tableImage } from './illustrated/sheet';
 import { MapGeometryContext, placer, type Placer } from './illustrated/geometryContext';
 
 interface MapViewProps {
@@ -83,6 +92,8 @@ interface MapViewProps {
   mapStyle?: 'classic' | 'illustrated';
   /** Under everything in map space: the Illustrated map's land. */
   underlay?: ReactNode;
+  /** The illustrated map's wood table behind the sheet (Phase 10.6). */
+  table?: boolean;
   /** The Illustrated map's bridges, where paths cross water. */
   bridges?: readonly Bridge[];
   /** Over the tiles, under the tokens: the Illustrated map's place names. */
@@ -101,6 +112,21 @@ const COUNT_COLOR = { challenge: '#E5624A', opportunity: '#7FC29B', trial: '#CDA
 const COUNT_LIFT = 84;
 
 const DRAG_THRESHOLD = 5;
+
+/**
+ * The wood table (Phase 10.6): an image made once at stage size, repeated,
+ * moving and scaling with the camera like the sheet on it.
+ */
+function tableStyle(camera: Camera): CSSProperties {
+  const origin = worldToStage(camera, { x: 0, y: 0 });
+  const w = 800 * 2 * camera.zoom;
+  const h = 500 * 2 * camera.zoom;
+  return {
+    backgroundImage: `url(${tableImage()})`,
+    backgroundSize: `${w}px ${h}px`,
+    backgroundPosition: `${origin.x}px ${origin.y}px`,
+  };
+}
 
 export function MapView({
   section,
@@ -128,6 +154,7 @@ export function MapView({
   geo,
   mapStyle = 'classic',
   underlay,
+  table = false,
   bridges,
   labels,
 }: MapViewProps) {
@@ -223,6 +250,7 @@ export function MapView({
       data-dragging={dragged ? 'hiker' : undefined}
       data-routes={routes || undefined}
       data-style={mapStyle}
+      style={table ? tableStyle(camera) : undefined}
       {...(itemDrag ? mapDrop.props() : {})}
       onPointerDown={onPointerDown}
       onClickCapture={(e) => {

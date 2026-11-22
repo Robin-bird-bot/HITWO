@@ -162,6 +162,7 @@ function Screen({
     <div
       ref={rootRef}
       className={styles.screen}
+      data-edge-window="Level-up"
       style={vars}
       data-skip={skipped || undefined}
       role="dialog"
@@ -232,7 +233,7 @@ function Screen({
         </span>
       </div>
 
-      <div className={styles.options} style={{ gap }}>
+      <div className={styles.options} style={{ gap }} data-edge-row="">
         {open.options.map((option, i) => (
           <OptionSpot
             key={i}
@@ -355,7 +356,7 @@ function OptionSpot({
   const size = { width: 240 * scale, height: 280 * scale, animationDelay: `${delay}s` };
   const name = view.badge.name;
   return (
-    <div className={styles.optionSpot} style={size}>
+    <div className={styles.optionSpot} style={size} data-edge-card="">
       {held || placed ? (
         <button
           type="button"

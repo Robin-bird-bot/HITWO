@@ -600,13 +600,6 @@ export interface Hooks {
   ): void;
   /** Why this hiker won't give or trade items to other hikers (Two Sizes Too Small). */
   keepsItems?(ctx: QueryContext): string | undefined;
-  /** When this hiker moves the group at night, nobody pays the night's extra cost (Rednose). */
-  leadsAtNight?(ctx: QueryContext): boolean;
-  /**
-   * Fog never hides the tiles next to this hiker (Rednose).
-   * TODO(phase-11): Fog isn't built yet; `clearsFog` is the hook for it.
-   */
-  clearsFog?(ctx: QueryContext): boolean;
 }
 
 /** A trait's move that doesn't use the action, and what it does to the cost. */
@@ -869,8 +862,8 @@ export interface ItemDef {
   bites?: QualityValues | number;
   /** Clothes: days of durability, when not the tier's usual (Plain Shirt lasts longer). */
   durability?: QualityValues;
-  /** Shelters: nights it lasts once placed. */
-  nights?: number;
+  /** Shelters: how many times it can be set up (Phase 10.6). */
+  deployments?: number;
   /** Trinkets: used up when used, or works while carried. */
   trinket?: 'use' | 'keep';
   /** Its own recipe, used once the hiker knows its blueprint. */
@@ -879,6 +872,12 @@ export interface ItemDef {
   notCrafted?: true;
   /** Never found by scavenging either (Puked Nuggets: only from the Nugget Puker). */
   notFound?: true;
+  /**
+   * Switched off (Phase 10.6): out of crafting, scavenging, shops, bundles,
+   * Mystery Items, Presents, rewards and starting kits. One already in a
+   * pack still works.
+   */
+  enabled?: false;
   /** Its art in public/assets/items/{art}.png; null when there's none yet (the type's icon). */
   art?: string | null;
   /** Equipped items plug into hooks, like traits. */
@@ -920,6 +919,11 @@ export interface ItemDef {
   onEat?: (e: EatContext) => void;
   /** Food that never loses Appetite value (Jerky). */
   keepsValue?: true;
+  /**
+   * A camp meal (Rotisserie Chicken, Phase 10.6): any hiker on the owner's
+   * tile can eat a bite of it without trading for it first.
+   */
+  campMeal?: true;
   /** Food: only 1 bite a day (Advent Calendar). */
   oneBiteADay?: true;
   /**
@@ -937,6 +941,8 @@ export interface EatContext {
   v(key: string): number;
   /** Bites left, counting this one (Din Tai Fung). */
   bitesLeft: number;
+  /** The food's first bite (Dog Food's and Fish and Chips' Morale). */
+  firstBite: boolean;
   /** Eaten at night (S'mores). */
   night: boolean;
   /** Gains Appetite from the food: plus any change recorded on it, less Food Poisoning. */
@@ -987,7 +993,7 @@ function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
   return off;
 }
 
-/** Every source affecting a hiker right now, the weather included (Storm's Thunder). */
+/** Every source affecting a hiker right now, the weather included (its scavenging boost). */
 export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
   const weather = WEATHERS[state.weather?.today ?? 'clear'];
@@ -995,7 +1001,7 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     sources.push({
       id: `weather:${weather.id}`,
       kind: 'weather',
-      name: weather.node?.name ?? weather.name,
+      name: weather.name,
       hooks: weather.hooks,
     });
   }
@@ -1866,21 +1872,6 @@ export function keepsItemsReason(state: GameState, hiker: Hiker): string | undef
     if (reason) return reason;
   }
   return undefined;
-}
-
-/** Does nobody pay the night's extra cost when this hiker moves the group (Rednose)? */
-export function leadsAtNight(state: GameState, hiker: Hiker): boolean {
-  const ctx = queryContext(state, hiker);
-  return effectSourcesFor(state, hiker).some((s) => s.hooks.leadsAtNight?.(ctx));
-}
-
-/**
- * Does Fog stay off the tiles next to this hiker (Rednose)?
- * TODO(phase-11): Fog asks this when it's built.
- */
-export function clearsFog(state: GameState, hiker: Hiker): boolean {
-  const ctx = queryContext(state, hiker);
-  return effectSourcesFor(state, hiker).some((s) => s.hooks.clearsFog?.(ctx));
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────

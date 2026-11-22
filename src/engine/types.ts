@@ -2,6 +2,7 @@
  * The shape of the whole game. Everything here is plain JSON data so a game
  * can be saved, loaded, replayed and compared in tests.
  */
+import type { DifficultyId } from '../config/difficulty';
 import type { StationThemeId } from './station/types';
 import type { WonderPick, WonderState } from './wonders/types';
 
@@ -64,7 +65,10 @@ export const SPECIAL_SPACES: readonly SpecialSpace[] = [
 /** Side features attach to a normal tile and add an extra option there. */
 export type SideFeature = 'merchant' | 'trader';
 
-/** What weather did to a node (Phase 6): flooded counts as River; frozen and on fire give nothing. */
+/**
+ * What weather did to a node (Phase 6). Weather no longer changes nodes
+ * (Phase 10.6); this stays for old trail log lines.
+ */
 export type NodeWeatherState = 'flooded' | 'frozen' | 'fire';
 
 export interface TileNode {
@@ -73,8 +77,6 @@ export interface TileNode {
   revealed: boolean;
   /** A Bounty node: extra resources are more likely, at an extra Abundance cost. */
   bounty?: true;
-  /** Changed by the weather, and what it was before, so it goes back when the weather ends. */
-  weather?: { state: NodeWeatherState; was: NodeType };
 }
 
 export interface Tile {
@@ -111,8 +113,10 @@ export interface Tile {
     /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
     hidden?: true;
   };
-  /** No card here: CHALLENGE_SHARE left it empty, or a Fire Flower burned it away. */
+  /** No card here: a quiet tile (Phase 10.6 difficulty), or a Fire Flower burned it away. */
   quiet?: true;
+  /** A plain tile that holds an opportunity, not a challenge (Phase 10.6 difficulty). */
+  opportunity?: true;
   /** What scouting found out, shown on the map: a card or not, and maybe its kind and tier. */
   scan?: { has: boolean; kind?: 'challenge' | 'opportunity' | 'trial'; tier?: number };
   /** Shelters placed on this tile, by a hiker or Ruins. */
@@ -162,7 +166,8 @@ export interface NightHit {
 
 // ── Weather ────────────────────────────────────────────────────────────────
 
-export type WeatherId = 'clear' | 'rain' | 'storm' | 'snow' | 'heatwave';
+/** Storm and Fog are gone for now; Wind is new (Phase 10.6). */
+export type WeatherId = 'clear' | 'rain' | 'snow' | 'wind' | 'heatwave';
 
 export interface WeatherState {
   today: WeatherId;
@@ -322,17 +327,20 @@ export interface ItemBoost {
 
 /** One item a hiker carries (docs/design/03-items.md). */
 /**
- * A shelter standing on a tile (03-items.md, "Shelters"). It counts down its
- * nights at each camp step and is gone when they run out.
+ * A shelter set up on a tile (Phase 10.6: carried and set up, not left
+ * behind). While it's up it takes no pack slot, and everyone on the tile is
+ * sheltered.
  */
 export interface PlacedShelter {
   uid: string;
   itemId: ItemId;
-  /** Nights left, counting tonight. */
-  nightsLeft: number;
-  /** Who placed it; none when Ruins built it. */
+  /** Times it can still be set up after this one. At 0 it's thrown away when packed. */
+  deploymentsLeft: number;
+  /** Who set it up; none when Ruins built it. It packs itself when they leave. */
   by?: HikerId;
-  /** Medic Tent: hikers it has already healed. */
+  /** The pack item it came from, so packing it gives the same card back. */
+  itemUid?: string;
+  /** Medic Tent: hikers it has already healed, this time it's up. */
   healed?: HikerId[];
 }
 
@@ -345,6 +353,8 @@ export interface ItemInstance {
   usesLeft?: number;
   /** Food: bites left. */
   bitesLeft?: number;
+  /** Shelters (Phase 10.6): times it can still be set up (full when missing). */
+  deploymentsLeft?: number;
   /** Clothes: days of durability left. */
   durability?: number;
   /** Food eaten one bite a day (Advent Calendar): the day of the last bite. */
@@ -564,6 +574,8 @@ export interface ScavengeCard {
   flipped: boolean;
   /** Already taken, on a scavenge that keeps more than one card (a Sack). */
   taken?: true;
+  /** Turned into the weather's node's resources by the weather (Phase 10.6): shows its icon. */
+  weather?: WeatherId;
 }
 
 /** A line in the scavenge window's bonuses pop-over: what's changing this draw, and why. */
@@ -685,6 +697,11 @@ export interface RunCounters {
   daysSinceSleep: Record<HikerId, number>;
   /** Shelters built in each section (by section index). */
   sheltersPlaced: Record<number, number>;
+  /**
+   * Food crafted, and its Appetite over all its bites (an estimate), for the
+   * debug panel's stats (Phase 10.6 tuning). Missing in older saves.
+   */
+  foodCrafted?: { count: number; appetite: number };
 }
 
 /** A tile a hiker landed on while a challenge was open: it opens next. */
@@ -846,9 +863,16 @@ export type Action =
       choice?: string;
     }
   /** Eat one bite of a food in the bag (a free action). */
-  | { type: 'eat'; hikerId: HikerId; itemUid: string }
+  /**
+   * Eat a bite: from the hiker's own pack, or (`fromHikerId`) a camp meal in
+   * another hiker's pack on the same tile (Rotisserie Chicken, Phase 10.6).
+   */
+  | { type: 'eat'; hikerId: HikerId; itemUid: string; fromHikerId?: HikerId }
   /** Place a shelter from the bag on the hiker's tile (a free action). */
-  | { type: 'placeShelter'; hikerId: HikerId; itemUid: string }
+  /** Set up a shelter from the pack on this hiker's tile (Phase 10.6). */
+  | { type: 'setUpShelter'; hikerId: HikerId; itemUid: string }
+  /** Pack up the shelter on this hiker's tile into their pack (Phase 10.6). */
+  | { type: 'packUpShelter'; hikerId: HikerId }
   /**
    * Craft (uses the action): a basic recipe for a type (then pick 1 of the
    * cards dealt), or a known blueprint for exactly that item. `slots` says
@@ -968,6 +992,13 @@ export type DebugOp =
   | { kind: 'setDaily'; hikerId: HikerId; slot: number; pick: string }
   /** The next scavenge deals these card types first, where they can happen. */
   | { kind: 'nextDeal'; types: ScavengeCardType[] }
+  /** The edge test (Phase 10.6): open a scavenge or a craft with this many cards. */
+  | { kind: 'edgeScavenge'; hikerId: HikerId; count: number }
+  | { kind: 'edgeCraft'; hikerId: HikerId; count: number }
+  /** The difficulty for the next section made (Phase 10.6). */
+  | { kind: 'setDifficulty'; difficulty: DifficultyId }
+  /** Add a shelter to a hiker's pack with this many deployments (Phase 10.6). */
+  | { kind: 'addShelter'; hikerId: HikerId; itemId: ItemId; deployments: number }
   /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */
   | {
       kind: 'addCondition';
@@ -1016,9 +1047,7 @@ export type DebugOp =
   /** Sets today's weather (it starts today), and whether it holds instead of changing. */
   | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
   /** Skips the grace day, so the weather's hiker effect starts now. */
-  | { kind: 'skipGraceDay' }
   /** Turns a tile's first fitting node flooded, frozen or on fire. */
-  | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
   /** Puts a clothing item on a hiker (equipping arrives in Phase 8). */
   | { kind: 'wearClothes'; hikerId: HikerId }
   /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */
@@ -1096,6 +1125,23 @@ export type GameEventBody =
   | { kind: 'shelterPlaced'; tileId: TileId; itemId: ItemId; nights: number; hikerId?: HikerId }
   /** A shelter's last night is over. */
   | { kind: 'shelterGone'; tileId: TileId; itemId: ItemId }
+  /** Phase 10.6: set up, packed up (by hand, or on its own when its owner left), or worn out. */
+  | {
+      kind: 'shelterSetUp';
+      tileId: TileId;
+      itemId: ItemId;
+      left: number;
+      hikerId?: HikerId;
+    }
+  | {
+      kind: 'shelterPackedUp';
+      tileId: TileId;
+      itemId: ItemId;
+      hikerId: HikerId;
+      left: number;
+      auto?: true;
+    }
+  | { kind: 'shelterWornOut'; tileId: TileId; itemId: ItemId; hikerId?: HikerId }
   /** A hiker crafted an item, from a basic recipe or a blueprint. */
   | {
       kind: 'crafted';
@@ -1154,7 +1200,14 @@ export type GameEventBody =
       colorway?: number;
     }
   /** A hiker ate a bite of food; bitesLeft is what's left after it. */
-  | { kind: 'ate'; hikerId: HikerId; itemId: ItemId; bitesLeft: number }
+  | {
+      kind: 'ate';
+      hikerId: HikerId;
+      itemId: ItemId;
+      bitesLeft: number;
+      /** A camp meal eaten from this hiker's pack (Phase 10.6). */
+      fromHikerId?: HikerId;
+    }
   /** Costco Sample: the bite wasn't used up. */
   | { kind: 'biteKept'; hikerId: HikerId; itemId: ItemId }
   /**
@@ -1510,6 +1563,8 @@ export interface GameState {
    * the trail log says "Found …" once for each.
    */
   foundPlaces?: string[];
+  /** The difficulty (Phase 10.6): always Medium for now; the debug panel can switch it. */
+  difficulty?: DifficultyId;
   /** A Present opened by a Choosy hiker: the items to pick 1 from. Everything else waits for it. */
   presentPick?: PresentPick;
   /** The last day anyone in the party opened a Present (Holiday Spirit). */

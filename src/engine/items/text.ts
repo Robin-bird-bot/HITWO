@@ -126,10 +126,12 @@ function fillRange(
 
 /**
  * What a full item has before its Quality is rolled: the counter's range
- * across Qualities 1–5 (uses, bites or durability; a shelter's nights).
+ * across Qualities 1–5 (uses, bites or durability; a shelter's deployments).
  */
 export function counterRange(def: ItemDef): { min: number; max: number } | undefined {
-  if (def.type === 'shelter') return def.nights ? { min: def.nights, max: def.nights } : undefined;
+  if (def.type === 'shelter') {
+    return def.deployments ? { min: def.deployments, max: def.deployments } : undefined;
+  }
   const qualities = def.fixedQuality ? [def.fixedQuality] : QUALITIES;
   const counts = qualities.map((q) => {
     const full = fullCounters(def, q);

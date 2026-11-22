@@ -4,13 +4,13 @@
  * (a Campsite with hikers on it, or a shelter someone slept in). Sit by the
  * Fire glows too once it's built (it's still held).
  */
-import type { GameState } from '../../../engine';
+import type { GameState, WeatherId } from '../../../engine';
 import type { MapGeometry } from './geometry';
 import type { Grade } from './landGl';
 
 export interface GradeOverride {
   night?: boolean;
-  weather?: 'rain' | 'snow' | 'storm' | 'heatwave' | 'clear';
+  weather?: WeatherId;
 }
 
 export function landGrade(
@@ -35,12 +35,11 @@ export function landGrade(
   }
   return {
     night: night ? 1 : 0,
-    rain: weather === 'rain' || weather === 'storm' ? 1 : 0,
-    storm: weather === 'storm' ? 1 : 0,
+    rain: weather === 'rain' ? 1 : 0,
     snow: weather === 'snow' ? 1 : 0,
     heat: weather === 'heatwave' ? 1 : 0,
     routes: routes ? 1 : 0,
-    streaks: weather === 'rain' || weather === 'storm' ? 1 : 0,
+    streaks: weather === 'rain' ? 1 : 0,
     glows,
   };
 }

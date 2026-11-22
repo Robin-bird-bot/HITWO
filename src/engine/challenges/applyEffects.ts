@@ -14,7 +14,7 @@ import { gainXp, loseXp } from '../xp';
 import { durabilityLeft, makeItem } from '../items/make';
 import { loseDurability, loseUses, removeItem } from '../items/wear';
 import { noteGone } from '../items/gone';
-import { placeShelterOn } from '../items/shelters';
+import { setUpShelterOn, shelterDeployments, shelterOn } from '../items/shelters';
 import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { craftableItems } from '../../content/items';
 import { BALANCE } from '../../config/balance';
@@ -635,12 +635,14 @@ function applyOnce(
       return;
     }
     case 'placeShelter': {
-      // Ruins: a real random shelter, at the biome's tier.
-      if (!tile) return;
+      // Ruins: a real random shelter, at the biome's tier, set up with nobody as its
+      // owner (Phase 10.6). Only 1 can be up on a tile.
+      if (!tile || shelterOn(state, tile.id)) return;
       const shelters = findableItems('shelter', state.section.tier);
       const pool = shelters.length ? shelters : findableItems('shelter');
       if (!pool.length) return;
-      placeShelterOn(state, tile.id, pick(state.rng, pool).id);
+      const id = pick(state.rng, pool).id;
+      setUpShelterOn(state, tile.id, id, shelterDeployments(id));
       return;
     }
     case 'tileLuck': {

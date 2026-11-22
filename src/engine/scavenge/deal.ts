@@ -24,6 +24,7 @@ import type {
   ScavengeCard,
   ScavengeCardType,
   TileNode,
+  WeatherId,
 } from '../types';
 import { rollRarity, stepDown } from './rarity';
 
@@ -48,6 +49,11 @@ export interface DealInput {
   resourceWeight?: Partial<Record<ResourceId, number>>;
   /** Cards dealt on top of `count`, of a set type and node (a Supply Map's Choice card). */
   extraCards?: readonly { type: ScavengeCardType; node: NodeType }[];
+  /**
+   * The weather (Phase 10.6): each resource card has this chance to be the
+   * weather's node's resources instead, even on a tile without that node.
+   */
+  weatherSwap?: { weather: WeatherId; node: NodeType; chance: number };
 }
 
 interface Spot {
@@ -119,7 +125,26 @@ const ALL = RESOURCES.map((r) => r.id);
 export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {
   const card = dealContents(rng, input, forced);
   // A card the debug panel asked for is never Empty, so it can be tried.
-  return forced && card.type === forced ? card : maybeEmpty(rng, card, input);
+  if (forced && card.type === forced) return card;
+  return maybeEmpty(rng, weatherSwap(rng, card, input.weatherSwap), input);
+}
+
+/**
+ * The weather's swap (Phase 10.6): a resource card becomes the weather's
+ * node's resources, the same count, marked with the weather for its icon.
+ */
+export function weatherSwap(
+  rng: RngState,
+  card: ScavengeCard,
+  swap: DealInput['weatherSwap'],
+): ScavengeCard {
+  if (!swap || !isResourceCard(card.type) || !roll(rng, swap.chance)) return card;
+  const own = resourcesOf(swap.node);
+  const out: ScavengeCard = { ...card, node: swap.node, weather: swap.weather };
+  delete out.node2;
+  if (card.resources) out.resources = card.resources.map(() => pick(rng, own));
+  if (card.pick && card.pick.from !== 'all') out.pick = { ...card.pick, from: swap.node };
+  return out;
 }
 
 function dealContents(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {

@@ -165,6 +165,8 @@ New costs beyond resources, items, caps, stats and durability:
 
 ## Trials (orange)
 
+Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
+
 Trials ask hikers to **do** something within a deadline instead of paying.
 
 **How they work**
@@ -204,6 +206,8 @@ Trials ask hikers to **do** something within a deadline instead of paying.
 | Avalanche Warning | Bear Country (2) |  | III | Any \[snow only\] | Every hiker leaves this row within 2 phases. | Each hiker still on the row gains 1 injury. |
 
 ## Wonders (purple)
+
+Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
 
 Wonders are famous landmarks with a big group goal and a big reward.
 

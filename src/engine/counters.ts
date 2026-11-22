@@ -28,6 +28,13 @@ export function countShelter(state: GameState): void {
   state.counters.sheltersPlaced[i] = (state.counters.sheltersPlaced[i] ?? 0) + 1;
 }
 
+/** Food crafted, with its Appetite over all its bites (the debug panel's average). */
+export function countFoodCrafted(state: GameState, appetite: number): void {
+  const f = (state.counters.foodCrafted ??= { count: 0, appetite: 0 });
+  f.count += 1;
+  f.appetite += appetite;
+}
+
 /** A hiker crafted an item of this type (Multnomah Falls' goal). */
 export function countCrafted(state: GameState, hikerId: HikerId, type: string): void {
   const mine = (state.counters.crafted[hikerId] ??= {});

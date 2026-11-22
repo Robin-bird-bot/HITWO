@@ -30,6 +30,14 @@ export interface Bounds {
   minY: number;
   maxX: number;
   maxY: number;
+  /** The illustrated map (Phase 10.6): how far zooming out goes (else ZOOM.min). */
+  minZoom?: number;
+  /**
+   * The illustrated map: how far across the view the map's edge may come
+   * (0.4: the edge can reach 40% of the way across). Without it, the view
+   * stays inside the bounds.
+   */
+  edgeAt?: number;
 }
 
 /** The world point shown at the centre of MAP_VIEW, and the zoom. */
@@ -62,14 +70,52 @@ export function mapBounds(section: Section): Bounds {
   };
 }
 
-/** Keeps the camera inside the map. A map smaller than the view is centred. */
+/** The smallest zoom these bounds allow. */
+export const minZoomOf = (b: Bounds): number => b.minZoom ?? ZOOM.min;
+
+/**
+ * Keeps the camera on the map.
+ * - Classic: the view stays inside the bounds; a map smaller than the view is centred.
+ * - Illustrated (`edgeAt`): a sheet bigger than the view can show its edge part
+ *   of the way across, never further; once the whole sheet fits, all of it
+ *   stays in view.
+ */
 export function clampCamera(cam: Camera, b: Bounds): Camera {
-  const zoom = clamp(cam.zoom, ZOOM.min, ZOOM.max);
+  const zoom = clamp(cam.zoom, minZoomOf(b), ZOOM.max);
   const halfW = MAP_VIEW.w / 2 / zoom;
   const halfH = MAP_VIEW.h / 2 / zoom;
-  const axis = (v: number, min: number, max: number, half: number) =>
-    max - min <= 2 * half ? (min + max) / 2 : clamp(v, min + half, max - half);
+  const edgeAt = b.edgeAt;
+  const axis = (v: number, min: number, max: number, half: number) => {
+    const fits = max - min <= 2 * half;
+    if (edgeAt === undefined) return fits ? (min + max) / 2 : clamp(v, min + half, max - half);
+    if (fits) return clamp(v, max - half, min + half);
+    const keep = 1 - 2 * edgeAt;
+    return clamp(v, min + half * keep, max - half * keep);
+  };
   return { zoom, x: axis(cam.x, b.minX, b.maxX, halfW), y: axis(cam.y, b.minY, b.maxY, halfH) };
+}
+
+/**
+ * The illustrated map's bounds (Phase 10.6): the paper sheet, with the zoom
+ * that fits all of it in the view with a little table around it.
+ */
+export function sheetBounds(
+  sheet: { x0: number; y0: number; width: number; height: number },
+  fitMargin: number,
+  edgeAt: number,
+): Bounds {
+  const fit = Math.min(
+    (MAP_VIEW.w * (1 - 2 * fitMargin)) / sheet.width,
+    (MAP_VIEW.h * (1 - 2 * fitMargin)) / sheet.height,
+  );
+  return {
+    minX: sheet.x0,
+    minY: sheet.y0,
+    maxX: sheet.x0 + sheet.width,
+    maxY: sheet.y0 + sheet.height,
+    minZoom: Math.min(ZOOM.default, fit),
+    edgeAt,
+  };
 }
 
 const viewCenter = (): Point => ({
@@ -90,7 +136,7 @@ export function stageToWorld(cam: Camera, s: Point): Point {
 /** Zooms by a factor, keeping the world point under `anchor` (a stage point) still. */
 export function zoomAt(cam: Camera, factor: number, anchor: Point, b: Bounds): Camera {
   const fixed = stageToWorld(cam, anchor);
-  const zoom = clamp(cam.zoom * factor, ZOOM.min, ZOOM.max);
+  const zoom = clamp(cam.zoom * factor, minZoomOf(b), ZOOM.max);
   const c = viewCenter();
   return clampCamera(
     { zoom, x: fixed.x - (anchor.x - c.x) / zoom, y: fixed.y - (anchor.y - c.y) / zoom },

@@ -9,7 +9,7 @@ export interface TypeLook {
   label: string;
   accent: string;
   /** The counter on the bottom right, and how its pips look. */
-  count: 'USES' | 'DURABILITY' | 'BITES' | 'NIGHTS' | null;
+  count: 'USES' | 'DURABILITY' | 'BITES' | 'SET UP: FREE ·' | null;
   shape: 'square' | 'bar' | 'circle';
 }
 
@@ -17,7 +17,8 @@ export const TYPE_LOOK: Record<ItemType, TypeLook> = {
   tool: { label: 'Tool', accent: '#F2A65A', count: 'USES', shape: 'square' },
   clothes: { label: 'Clothes', accent: '#E6B389', count: 'DURABILITY', shape: 'bar' },
   food: { label: 'Food', accent: '#C7DA7B', count: 'BITES', shape: 'circle' },
-  shelter: { label: 'Shelter', accent: '#83C4ED', count: 'NIGHTS', shape: 'square' },
+  // Phase 10.6: "Set up: free. 3 left."
+  shelter: { label: 'Shelter', accent: '#83C4ED', count: 'SET UP: FREE ·', shape: 'square' },
   trinket: { label: 'Trinket', accent: '#E2A9F1', count: null, shape: 'square' },
   present: { label: 'Present', accent: '#F2867A', count: null, shape: 'square' },
 };

@@ -31,7 +31,11 @@ import styles from './Illustrated.module.css';
 
 export interface LandDebug {
   /** Paint everything, or nothing (to see the sketch). */
-  reveal?: 'all' | 'none';
+  /**
+   * Paint every tile's disc, or none (to see the sketch), or `whole`: the
+   * whole land painted at once with no animation (Settings → Show whole map).
+   */
+  reveal?: 'all' | 'none' | 'whole';
   /** Play a tile's reveal again (the time asks for it once). */
   replay?: { tileId: string; at: number };
   view?: 'land' | 'mask';
@@ -86,6 +90,8 @@ export function LandCanvas({
     return t && c ? { id, x: c.x, y: c.y, trailhead: t.kind === 'trailhead' } : undefined;
   };
   const wantedFor = (d: LandDebug['reveal']): string[] => {
+    // Show whole map paints everything, but the reveals keep following the game.
+    if (d === 'whole') return revealedTiles(section);
     if (d === 'none') return [];
     if (d === 'all') return Object.keys(section.tiles).sort();
     return revealedTiles(section);
@@ -103,7 +109,8 @@ export function LandCanvas({
       const s = spotFor(id);
       if (s) spots.set(id, s);
     }
-    paintMask(mask, [...spots.values()]);
+    if (live.current.debug?.reveal === 'whole') mask.alpha.fill(255);
+    else paintMask(mask, [...spots.values()]);
     let gl: LandGl | null = null;
     const glc = glCanvas.current;
     if (glc) {
@@ -210,6 +217,11 @@ export function LandCanvas({
       e.draw();
       live.current.onMask?.((x, y) => paintAt(e.mask, x, y));
     };
+    // Show whole map: everything is painted already; new reveals just join quietly.
+    if (live.current.debug?.reveal === 'whole') {
+      for (const id of grow) e.growth[id] = 1;
+      return;
+    }
     if (removed) {
       paintMask(e.mask, all(), e.growth);
       finish();
@@ -252,6 +264,24 @@ export function LandCanvas({
     // It follows the set of revealed tiles (and a replay), not every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wantedKey, replayAt, result]);
+
+  // Show whole map on or off: the whole land at once, or back to the reveal mask, with no animation.
+  const whole = debug?.reveal === 'whole';
+  const wholeRef = useRef(whole);
+  useEffect(() => {
+    const e = engine.current;
+    if (!e || wholeRef.current === whole) return;
+    wholeRef.current = whole;
+    cancelAnimationFrame(e.frame);
+    if (whole) e.mask.alpha.fill(255);
+    else {
+      for (const id of e.spots.keys()) e.growth[id] = 1;
+      paintMask(e.mask, [...e.spots.values()], e.growth);
+    }
+    e.gl?.uploadMask(e.mask.alpha, e.mask.w, { x0: 0, y0: 0, x1: e.mask.w - 1, y1: e.mask.h - 1 });
+    e.draw();
+    live.current.onMask?.((x, y) => paintAt(e.mask, x, y));
+  }, [whole, result]);
 
   // Grades and views: redraw; rain keeps moving unless motion is reduced.
   const gradeKey = JSON.stringify([grade, debug?.view]);

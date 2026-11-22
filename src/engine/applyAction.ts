@@ -33,7 +33,12 @@ import { applyTend, validateTend } from './actions/tend';
 import { applyWatch, validateWatch } from './actions/watch';
 import { applyUse, validateUse } from './actions/useItem';
 import { applyEat, validateEat } from './actions/eat';
-import { applyPlaceShelter, validatePlaceShelter } from './actions/shelter';
+import {
+  applyPackUpShelter,
+  applySetUpShelter,
+  validatePackUpShelter,
+  validateSetUpShelter,
+} from './actions/shelter';
 import {
   applyCraft,
   applyCraftTake,
@@ -179,8 +184,10 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validateUse(state, action) ?? null;
     case 'eat':
       return validateEat(state, action) ?? null;
-    case 'placeShelter':
-      return validatePlaceShelter(state, action) ?? null;
+    case 'setUpShelter':
+      return validateSetUpShelter(state, action) ?? null;
+    case 'packUpShelter':
+      return validatePackUpShelter(state, action) ?? null;
     case 'craft':
       return validateCraft(state, action) ?? null;
     case 'craftTake':
@@ -290,8 +297,11 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'eat':
       applyEat(draft, action);
       break;
-    case 'placeShelter':
-      applyPlaceShelter(draft, action);
+    case 'setUpShelter':
+      applySetUpShelter(draft, action);
+      break;
+    case 'packUpShelter':
+      applyPackUpShelter(draft, action);
       break;
     case 'craft':
       applyCraft(draft, action);

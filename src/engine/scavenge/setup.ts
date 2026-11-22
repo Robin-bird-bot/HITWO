@@ -4,6 +4,7 @@
  * the window lists. Also the cost and why a hiker can't scavenge.
  */
 import { BALANCE } from '../../config/balance';
+import { WEATHERS } from '../../content/weather';
 import { computeCost, scavengeModifiers } from '../effects';
 import { resourceCount, resourceLimit } from '../inventory';
 import type {
@@ -18,7 +19,6 @@ import type {
 import { phaseIndex } from '../challenges/trials';
 import { canDeal, scavengeSpots, type DealInput } from './deal';
 import { clampLuck } from './rarity';
-import { nodeGives } from '../weather';
 import { adjacentTileIds } from '../map';
 
 export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
@@ -89,20 +89,13 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
       tone: 'luck',
     });
   }
-  // Frozen and Fire nodes give nothing; a Fire node gives Luck to the others (Phase 6 weather).
   // Eagle Eye: the revealed nodes of the tiles next to this one too.
   const near = adjacent
     ? adjacentTileIds(state.section, hiker.tileId).flatMap(
         (id) => state.section.tiles[id]?.nodes.filter((n) => n.revealed) ?? [],
       )
     : [];
-  const giving = [...(tile?.nodes ?? []), ...near].filter(nodeGives);
-  const fires = (tile?.nodes ?? []).filter((n) => n.weather?.state === 'fire').length;
-  if (fires > 0) {
-    const fireLuck = fires * BALANCE.weather.fireLuck;
-    luck += fireLuck;
-    bonuses.push({ source: 'Fire', label: `Fire nearby: +${fireLuck} Luck`, tone: 'luck' });
-  }
+  const giving = [...(tile?.nodes ?? []), ...near];
   const canGive = new Set(scavengeSpots({ nodes: giving }).map((s) => s.node));
   return {
     nodes: giving,
@@ -117,9 +110,19 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     nodeWeight,
     typeWeight,
     nodeTypeWeight,
+    ...weatherSwapFor(state),
     bonuses,
     bonusOffers,
     dropChance,
+  };
+}
+
+/** The weather's chance to turn a card into its node's resources (Phase 10.6). */
+function weatherSwapFor(state: GameState): Pick<DealInput, 'weatherSwap'> {
+  const weather = WEATHERS[state.weather?.today ?? 'clear'];
+  if (!weather?.node) return {};
+  return {
+    weatherSwap: { weather: weather.id, node: weather.node, chance: BALANCE.weather.swapChance },
   };
 }
 
@@ -146,9 +149,7 @@ export function scavengeTileReason(state: GameState, hiker: Hiker): string | und
   const tile = state.section.tiles[hiker.tileId];
   if (tile?.wonder) return 'Nobody can scavenge at a Wonder: it has no nodes.';
   if (!tile || tile.nodes.length === 0) return 'There’s nothing to scavenge on this tile.';
-  if (!canDeal({ nodes: tile.nodes.filter(nodeGives) })) {
-    return 'Nothing to find here: the weather has frozen or burned the nodes.';
-  }
+  if (!canDeal({ nodes: tile.nodes })) return 'There’s nothing to scavenge on this tile.';
   if (resourceCount(hiker) >= resourceLimit(state, hiker)) {
     return `${hiker.name}’s resources are full (${resourceLimit(state, hiker)}/${resourceLimit(state, hiker)}). Give some away or return them to nature first.`;
   }

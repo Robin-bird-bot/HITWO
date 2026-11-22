@@ -2,8 +2,9 @@
  * The big animated weather icons (docs/mockups/WeatherIcons.dc.html), in the
  * simple style of a phone weather app.
  *
- * - Rain, Storm and Snow: the sun slides out as a cloud slides in, then rain
- *   falls, a bolt flashes, or snowflakes drift down.
+ * - Rain and Snow: the sun slides out as a cloud slides in, then rain falls
+ *   or snowflakes drift down.
+ * - Wind (Phase 10.6, a placeholder): three curved gusts sweep in and drift.
  * - Heatwave: the sun swells while its rays shrink and spin faster.
  * - Clear: the sun turns once.
  *
@@ -53,6 +54,12 @@ function Cloud() {
 }
 
 const DROPS = [98, 122, 146, 110, 134];
+/** Wind's three gusts, each ending in a curl. */
+const GUSTS = [
+  'M24 70 H118 C140 70 148 46 132 36 C118 28 104 40 110 52',
+  'M24 104 H154 C176 104 184 128 168 138 C154 146 140 134 146 122',
+  'M48 138 H104 C120 138 126 156 114 164 C104 170 94 162 98 152',
+];
 const FLAKES = [96, 124, 152, 110, 138];
 /** Each drop or flake lands a little after the last. */
 const after = (i: number): CSSProperties => ({ animationDelay: `${3.1 + i * 0.14}s` });
@@ -70,7 +77,23 @@ export function WeatherIcon({ weather, size = 230 }: { weather: WeatherId; size?
           <Sun raysClass={styles.heatRays} coreClass={styles.heatCore} />
         </g>
       )}
-      {(weather === 'rain' || weather === 'storm' || weather === 'snow') && (
+      {weather === 'wind' && (
+        <g>
+          {GUSTS.map((d, i) => (
+            <path
+              key={i}
+              className={styles.gust}
+              style={{ animationDelay: `${i * 0.25}s` }}
+              d={d}
+              fill="none"
+              stroke="#DCEAF2"
+              strokeWidth={9}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+      )}
+      {(weather === 'rain' || weather === 'snow') && (
         <>
           <g className={styles.sunOut}>
             <Sun />
@@ -94,16 +117,6 @@ export function WeatherIcon({ weather, size = 230 }: { weather: WeatherId; size?
                   />
                 ))}
               </g>
-            )}
-            {weather === 'storm' && (
-              <polygon
-                className={styles.bolt}
-                points="126,138 104,174 120,174 108,200 146,160 128,160 140,138"
-                fill="#FFD23F"
-                stroke="#E8A912"
-                strokeWidth={2}
-                strokeLinejoin="round"
-              />
             )}
             {weather === 'snow' && (
               <g className={styles.after}>

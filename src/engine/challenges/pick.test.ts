@@ -53,42 +53,42 @@ describe('which cards fit a tile', () => {
     expect(cardFits(card('snow-leopard'), s, anyTile, s.hikers, 3)).toBe(false);
     expect(cardFits(card('snow-leopard'), snowy, anyTile, s.hikers, 3)).toBe(true);
 
-    expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(false);
-    const as = (today: 'storm' | 'heatwave') => ({ ...s, weather: { ...s.weather, today } });
-    expect(cardFits(card('lightning'), as('storm'), anyTile, s.hikers, 3)).toBe(true);
-    expect(cardFits(card('blazing-sun'), as('heatwave'), anyTile, s.hikers, 2)).toBe(true);
+    // Weather no longer picks challenges (Phase 10.6): Lightning and Blazing Sun fit any day.
+    expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(true);
+    expect(cardFits(card('blazing-sun'), s, anyTile, s.hikers, 2)).toBe(true);
   });
 
   it('leaves out cards whose systems aren’t built yet', () => {
     // Durability, tool uses, eating and crafting all work now (Phase 8).
-    expect(notPlayableYet(card('thorn-thicket'))).toBeUndefined();
-    expect(notPlayableYet(card('fashion-critic'))).toBeUndefined();
-    expect(notPlayableYet(card('sticky-sap'))).toBeUndefined();
-    expect(notPlayableYet(card('mold-invasion'))).toBeUndefined();
-    expect(notPlayableYet(card('bear-country'))).toBeUndefined();
-    expect(notPlayableYet(card('frozen-fingers'))).toMatch(/phase 6/);
-    expect(notPlayableYet(card('train'))).toBeUndefined();
-    const off = TRIALS.filter((t) => notPlayableYet(t)).map((t) => t.id);
-    expect(off.sort()).toEqual(['frozen-fingers']);
+    for (const id of [
+      'thorn-thicket',
+      'fashion-critic',
+      'sticky-sap',
+      'mold-invasion',
+      'bear-country',
+    ]) {
+      const c = card(id);
+      if (c.kind === 'trial') expect(notPlayableYet(c)).toMatch(/switched off/);
+      else expect(notPlayableYet(c)).toBeUndefined();
+    }
+    // Trials (Frozen Fingers, Train) are switched off for now (Phase 10.6).
+    expect(notPlayableYet(card('frozen-fingers'))).toMatch(/switched off/);
+    expect(notPlayableYet(card('train'))).toMatch(/switched off/);
+    // Every Trial is switched off for now (Phase 10.6), Rocco's included.
+    expect(TRIALS.every((t) => notPlayableYet(t))).toBe(true);
   });
 });
 
 describe('picking a card for a new tile', () => {
-  it('mixes about 70% challenges, 20% Trials and 10% opportunities', () => {
+  it('a plain tile holds a challenge, or an opportunity where the section placed one (Phase 10.6)', () => {
     const s = fixtureGame();
-    const mixed = tile([
+    const plain = tile([
       { type: 'forest', revealed: true },
       { type: 'river', revealed: true },
     ]);
-    const all = picks(s, mixed, 5000);
-    const share = (kind: string) =>
-      all.filter((p) => card(p.cardId).kind === kind).length / all.length;
-    expect(share('challenge')).toBeGreaterThan(0.66);
-    expect(share('challenge')).toBeLessThan(0.74);
-    expect(share('trial')).toBeGreaterThan(0.17);
-    expect(share('trial')).toBeLessThan(0.23);
-    expect(share('opportunity')).toBeGreaterThan(0.08);
-    expect(share('opportunity')).toBeLessThan(0.12);
+    expect(picks(s, plain, 300).every((p) => card(p.cardId).kind === 'challenge')).toBe(true);
+    plain.opportunity = true;
+    expect(picks(s, plain, 300).every((p) => card(p.cardId).kind === 'opportunity')).toBe(true);
   });
 
   it('never picks a Trial that’s switched off, or a third Trial', () => {

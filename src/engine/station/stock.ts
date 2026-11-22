@@ -15,7 +15,7 @@
  * - The next section is made now, so Preview Next Trail can show it.
  */
 import { BALANCE } from '../../config/balance';
-import { ITEMS, TABLE_ITEMS } from '../../content/items';
+import { ITEMS, OFFERED_ITEMS } from '../../content/items';
 import { RESOURCES } from '../../content/resources';
 import { STATION_THEME_BY_ID, STATION_THEMES } from '../../content/stations';
 import type { ItemDef } from '../effects';
@@ -64,7 +64,7 @@ function pickTheme(state: GameState): StationTheme {
 
 /** Every station sells from the doc's tables; Puked Nuggets only where featured (Chef Bear). */
 const sellable = (theme: StationTheme) =>
-  TABLE_ITEMS.filter((d) => !d.notFound || theme.featured.includes(d.id));
+  OFFERED_ITEMS.filter((d) => !d.notFound || theme.featured.includes(d.id));
 
 /** The items a focus (or a blueprint pool) stands for. Trinkets only come from the trinket chance. */
 function poolOf(theme: StationTheme, focus: StationFocus): ItemDef[] {
@@ -255,6 +255,7 @@ export function openStation(state: GameState): StationVisit {
     biome: biomes[nextIndex] ?? biomes[biomes.length - 1] ?? 'meadow',
     tier: Math.min(nextIndex + 1, 3),
     usedWonders: state.usedWonders ?? [],
+    ...(state.difficulty ? { difficulty: state.difficulty } : {}),
   });
   return { checkpoint, themeId: theme.id, ...rollStock(state, theme, checkpoint), next };
 }

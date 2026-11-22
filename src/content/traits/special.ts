@@ -110,7 +110,7 @@ export const SPECIAL_TRAITS: readonly TraitDef[] = [
       modifyStatChange: (q, ctx) =>
         q.stat === 'morale' &&
         q.delta > 0 &&
-        ['rain', 'storm', 'snow'].includes(ctx.state.weather?.today ?? 'clear')
+        ['rain', 'snow'].includes(ctx.state.weather?.today ?? 'clear')
           ? { add: N.rainLover.extra }
           : undefined,
     },

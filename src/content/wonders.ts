@@ -32,6 +32,9 @@ const XP: WonderRewardDef = {
   reward: { kind: 'xp' },
 };
 
+/** Wonders are switched off for now (Phase 10.6): never made, and none of their windows show. The data stays. */
+export const ENABLE_WONDERS = false;
+
 export const WONDERS: readonly WonderDef[] = [
   {
     id: 'witchs-castle',

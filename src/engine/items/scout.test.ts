@@ -1,10 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { BALANCE } from '../../config/balance';
+import { describe, expect, it } from 'vitest';
 import { validateAction } from '../applyAction';
 import { lineBetween } from '../map';
-import { seedRng } from '../rng';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
-import { generateSection } from '../trail/generate';
 import type { Action, GameState } from '../types';
 import { makeItem } from './make';
 
@@ -26,27 +23,7 @@ const use = (itemUid: string, choice?: string): Action => ({
 /** Challenges on, everyone on the trailhead. */
 const game = (seed = 3) => fixtureGame({ seed, challenges: true });
 
-describe('CHALLENGE_SHARE', () => {
-  const was = BALANCE.challenges.share.meadow;
-  afterEach(() => {
-    BALANCE.challenges.share.meadow = was;
-  });
-
-  it('at 1, every tile keeps its card and the trail is the same', () => {
-    const a = generateSection(seedRng(9), { biome: 'meadow', tier: 1 });
-    expect(Object.values(a.tiles).some((t) => t.quiet)).toBe(false);
-  });
-
-  it('below 1, only that share of plain tiles holds a card; special spaces and Wonders keep theirs', () => {
-    BALANCE.challenges.share.meadow = 0.5;
-    const s = generateSection(seedRng(9), { biome: 'meadow', tier: 1 });
-    const tiles = Object.values(s.tiles);
-    const plain = tiles.filter((t) => t.kind === 'normal' && !t.special && !t.wonder);
-    const quiet = tiles.filter((t) => t.quiet);
-    expect(quiet.length).toBe(Math.round(plain.length / 2));
-    expect(quiet.every((t) => !t.special && !t.wonder)).toBe(true);
-  });
-
+describe('quiet tiles', () => {
   it('a quiet tile opens nothing when someone lands there', () => {
     let s = game();
     s.section.tiles.L!.quiet = true;

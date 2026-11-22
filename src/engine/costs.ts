@@ -11,7 +11,6 @@ import { BALANCE } from '../config/balance';
 import {
   computeCost,
   effectSourcesFor,
-  leadsAtNight,
   pullsGroup,
   queryContext,
   type CostKey,
@@ -47,9 +46,7 @@ function crossingCost(
   role: Role,
 ): StatAmounts {
   const extra = BALANCE.lines.extra[line.kind];
-  // Rednose: when he moves the group at night, nobody pays the night's extra cost.
-  const nightFree = via === 'moveAll' && leadsAtNight(state, actor);
-  const night = state.phase === 'night' && !nightFree ? BALANCE.night.moveExtraAppetite : 0;
+  const night = state.phase === 'night' ? BALANCE.night.moveExtraAppetite : 0;
   // A brought hiker's base crossing is paid by the mover as the group cost.
   const base = role === 'actor' ? BALANCE.lines.baseAppetite[line.kind] : 0;
   const q = (key: CostKey, parts?: { base: number; line: number; night: number }) => ({

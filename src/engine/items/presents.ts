@@ -12,7 +12,7 @@
  *   types), never a Present. Its Quality rolls on the plain curve.
  */
 import { BALANCE } from '../../config/balance';
-import { ITEMS, TABLE_ITEMS } from '../../content/items';
+import { ITEMS, OFFERED_ITEMS } from '../../content/items';
 import { PRESENT_ID } from '../../content/items/presents';
 import { RESOURCES } from '../../content/resources';
 import { presentWeights, type ItemType } from '../effects';
@@ -162,7 +162,7 @@ export function wrapSlots(
 
 /** Items a Present can hold at a tier: any type but Presents, never event-only ones. */
 export function presentPool(tier: number) {
-  return TABLE_ITEMS.filter((d) => d.tier === tier && !d.notFound && d.type !== 'present');
+  return OFFERED_ITEMS.filter((d) => d.tier === tier && !d.notFound && d.type !== 'present');
 }
 
 /** The tier inside a Present of this grade (the biome's tier doesn't limit it). */

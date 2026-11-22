@@ -212,6 +212,28 @@ export function riverChain(tiles: readonly LandTile[], rowGap: number): LandTile
 
 // ── The build ────────────────────────────────────────────────────────────────
 
+/**
+ * The land's box in world pixels: the trail tree's box plus the margin on
+ * every side. The camera and the paper sheet use it too (Phase 10.6), so it's
+ * known before the land is made.
+ */
+export function landRect(
+  tiles: readonly { x: number; y: number }[],
+  hexR: number,
+): { x0: number; y0: number; width: number; height: number } {
+  const xs = tiles.map((t) => t.x);
+  const ys = tiles.map((t) => t.y);
+  const margin = u(MAP_STYLE.land.margin);
+  const x0 = Math.min(...xs) - hexR - margin;
+  const y0 = Math.min(...ys) - hexR - margin;
+  return {
+    x0,
+    y0,
+    width: Math.max(...xs) + hexR + margin - x0,
+    height: Math.max(...ys) + hexR + margin - y0,
+  };
+}
+
 /** How long each part of the last build took (ms), for the debug panel and tuning. */
 export const LAND_TIMINGS: Record<string, number> = {};
 
@@ -233,11 +255,7 @@ export function buildLand(input: LandInput): LandModel {
   // The land: the tree's box plus the margin on every side.
   const xs = input.tiles.map((t) => t.x);
   const ys = input.tiles.map((t) => t.y);
-  const margin = u(L.margin);
-  const x0 = Math.min(...xs) - R - margin;
-  const y0 = Math.min(...ys) - R - margin;
-  const width = Math.max(...xs) + R + margin - x0;
-  const height = Math.max(...ys) + R + margin - y0;
+  const { x0, y0, width, height } = landRect(input.tiles, R);
   const gw = Math.ceil(width / cell);
   const gh = Math.ceil(height / cell);
   const N = gw * gh;

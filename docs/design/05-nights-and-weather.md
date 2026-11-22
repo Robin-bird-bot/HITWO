@@ -1,5 +1,7 @@
 # Nights and weather
 
+Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
+
 Night events, weather, and the conditions and nodes they add. Numbers in \[brackets\] are first guesses to tune.
 
 ## Night events

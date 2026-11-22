@@ -352,6 +352,8 @@ export interface ChallengeDef extends BaseDef {
 
 export interface TrialDef extends BaseDef {
   kind: 'trial';
+  /** Switched off: never drawn (every Trial, Phase 10.6). The data stays for later. */
+  enabled?: false;
   goal: TrialGoal;
   deadline: Deadline;
   goalText: readonly TextPart[];

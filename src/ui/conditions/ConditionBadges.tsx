@@ -10,19 +10,43 @@
  */
 import { Icon } from '../icons/Icon';
 import { TONE_LOOK, type ConditionLook } from './conditionLook';
+import { useTooltip } from '../layout/Tooltip';
 import styles from './ConditionBadges.module.css';
 
-function Tip({ look }: { look: ConditionLook }) {
+function TipBody({ look }: { look: ConditionLook }) {
   return (
-    <span className={styles.tip} role="tooltip">
+    <>
       <span className={styles.tipName}>
         {look.name.toUpperCase()}
         {look.stacks !== undefined && ` ×${look.stacks}`}
       </span>
       <span className={styles.tipText}>{look.text}</span>
       {look.long && <span className={styles.tipTime}>{look.long}</span>}
+    </>
+  );
+}
+
+/** The old in-place tip, for mockup pages with no stage top layer. */
+function Tip({ look }: { look: ConditionLook }) {
+  return (
+    <span className={styles.tip} role="tooltip">
+      <TipBody look={look} />
     </span>
   );
+}
+
+/**
+ * The badge's tip (Phase 10.6): in the stage's top layer, placed so it's
+ * never cut off; in place only where there's no stage (mockups).
+ */
+function useConditionTip(look: ConditionLook, open?: boolean) {
+  const t = useTooltip(<TipBody look={look} />, { className: styles.floatTip });
+  const inline = t.inline || !!open;
+  return {
+    anchorProps: inline ? {} : t.anchor,
+    inPlace: inline ? <Tip look={look} /> : null,
+    floating: inline ? null : t.tip,
+  };
 }
 
 const describe = (l: ConditionLook) =>
@@ -30,8 +54,10 @@ const describe = (l: ConditionLook) =>
 
 export function ConditionPill({ look, open }: { look: ConditionLook; open?: boolean }) {
   const tone = TONE_LOOK[look.tone];
+  const tip = useConditionTip(look, open);
   return (
     <span
+      {...tip.anchorProps}
       className={styles.pill}
       data-tone={look.tone}
       data-open={open || undefined}
@@ -43,7 +69,8 @@ export function ConditionPill({ look, open }: { look: ConditionLook; open?: bool
       <span className={styles.pillName}>{look.name.toUpperCase()}</span>
       {look.short && <span className={styles.pillTime}>{look.short}</span>}
       {look.stacks !== undefined && <span className={styles.stack}>×{look.stacks}</span>}
-      <Tip look={look} />
+      {tip.inPlace}
+      {tip.floating}
     </span>
   );
 }
@@ -63,8 +90,10 @@ export function ConditionDot({
 }) {
   const tone = TONE_LOOK[look.tone];
   const corner = look.stacks !== undefined ? `×${look.stacks}` : look.short;
+  const tip = useConditionTip(look, open);
   return (
     <span
+      {...tip.anchorProps}
       className={styles.dot}
       data-tone={look.tone}
       data-open={open || undefined}
@@ -89,7 +118,8 @@ export function ConditionDot({
           {corner}
         </span>
       )}
-      <Tip look={look} />
+      {tip.inPlace}
+      {tip.floating}
     </span>
   );
 }

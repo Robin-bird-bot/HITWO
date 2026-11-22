@@ -11,7 +11,7 @@
  *   other active hikers on the tile.
  */
 import { BALANCE } from '../../config/balance';
-import { ITEMS, craftableItems } from '../../content/items';
+import { ITEMS, craftableItems, isOffered } from '../../content/items';
 import { BASIC_RECIPES, TRINKET_RESOURCES } from '../../content/items/basicRecipes';
 import { RESOURCES } from '../../content/resources';
 import { craftModifiers, traitCraftTier, type CraftModifier } from '../effects';
@@ -68,8 +68,10 @@ export function craftTier(state: GameState, hiker: Hiker, type: ItemTypeName): n
  * station's free temporary blueprints while they're at its Workbench.
  */
 export const canUseBlueprint = (state: GameState, hiker: Hiker, itemId: ItemId): boolean =>
-  knowsBlueprint(hiker, itemId) ||
-  (atWorkbench(state, hiker) && !!state.station?.tempBlueprints.includes(itemId));
+  // A switched-off item's blueprint can't be crafted (Phase 10.6), even if it's known.
+  isOffered(ITEMS[itemId]) &&
+  (knowsBlueprint(hiker, itemId) ||
+    (atWorkbench(state, hiker) && !!state.station?.tempBlueprints.includes(itemId)));
 
 export const knowsBlueprint = (hiker: Hiker, itemId: ItemId) =>
   (hiker.blueprints ?? []).includes(itemId);

@@ -24,8 +24,8 @@ const nodeWord = (x: string | undefined, fallback: string) =>
 const actionWord = (x: string | undefined, fallback: string) =>
   isTraitAction(x) ? ACTION_WORD[x] : fallback;
 
-/** Weather the Morale traits care about: rain or snow (a storm brings rain). */
-const WET_WEATHER = ['rain', 'storm', 'snow'];
+/** Weather the Morale traits care about: rain or snow. */
+const WET_WEATHER = ['rain', 'snow'];
 
 export const MORALE_TRAITS: readonly TraitDef[] = [
   morale(

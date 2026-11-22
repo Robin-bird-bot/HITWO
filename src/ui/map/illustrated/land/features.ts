@@ -13,6 +13,7 @@
  *
  * Pure and seeded, like the land.
  */
+import { cornerBoxes } from './corners';
 import { MAP_STYLE, u } from '../../../../config/mapStyle';
 import { nextFloat, seedRng, shuffle } from '../../../../engine/rng';
 import type { RngState } from '../../../../engine/types';
@@ -376,6 +377,8 @@ export function buildFeatures(land: LandModel, lists: NameLists): LandFeatures {
     woods: 15,
     meadow: 15,
   };
+  const { section, compass } = cornerBoxes(land);
+  const corners = [section, compass];
   const boxOf = (x: number, y: number, text: string, size: number, rot: number) => {
     const w = text.length * size * 0.52;
     const h = size * 1.25;
@@ -396,6 +399,10 @@ export function buildFeatures(land: LandModel, lists: NameLists): LandFeatures {
     for (const t of tiles) {
       const r = R * t.scale * 1.02;
       if (b.x1 > t.x - r && b.x0 < t.x + r && b.y1 > t.y - r && b.y0 < t.y + r) return false;
+    }
+    // The map's corner pieces (map-corners update): the section box and the compass.
+    if (corners.some((c) => b.x1 > c.x0 && b.x0 < c.x1 && b.y1 > c.y0 && b.y0 < c.y1)) {
+      return false;
     }
     return !places.some(
       (p) => b.x1 > p.box.x0 && b.x0 < p.box.x1 && b.y1 > p.box.y0 && b.y0 < p.box.y1,

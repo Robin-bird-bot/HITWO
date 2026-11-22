@@ -1,5 +1,5 @@
 import { makeItem, withDefaults } from './items/make';
-import { ITEMS } from '../content/items';
+import { ITEMS, isOffered } from '../content/items';
 import { PARTY_COLORS } from '../content/partyColors';
 import { fireBiomeStart, fireRunStart, wrapsPresents } from './effects';
 import { makePresent } from './items/presents';
@@ -190,6 +190,7 @@ function giveStartingBag(state: GameState, h: Hiker, bag: StartingBag): void {
       (d) =>
         d.tier === want.tier &&
         !!d.recipe &&
+        isOffered(d) &&
         (!want.type || d.type === want.type) &&
         !known.has(d.id),
     )
