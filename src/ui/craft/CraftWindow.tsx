@@ -44,6 +44,7 @@ import { TYPE_LOOK } from '../items/itemLook';
 import { NODE_IMAGE, NODE_NAME } from '../map/looks';
 import { ItemBack } from '../scavenge/ItemBack';
 import { useDraggable } from '../windows/useDraggable';
+import { fitCardRow, rowWidth } from '../layout/fitCardRow';
 import styles from './CraftWindow.module.css';
 import { partLabel, payWords, recipeWords, resName } from './craftWords';
 import { keyEnough, swapInto, swapOptions } from './craftSwap';
@@ -118,6 +119,7 @@ export function CraftWindow(props: CraftWindowProps) {
       <section
         ref={ref}
         className={styles.window}
+        data-edge-window="Craft"
         style={{ '--accent': TYPE_LOOK[type].accent, translate } as CSSProperties}
         role="dialog"
         aria-modal="true"
@@ -719,12 +721,16 @@ function Pool({
 
 // ── Pick ────────────────────────────────────────────────────────────────────
 
+/** The gap between the dealt cards. */
+const CARD_GAP = 36;
+
 export function PickBody({
   state,
   hiker,
   simple,
   onTake,
-  cardWidth = 220,
+  cardWidth: fullWidth = 220,
+  room = 900,
 }: {
   state: GameState;
   hiker: Hiker;
@@ -732,9 +738,14 @@ export function PickBody({
   onTake(index: number, node?: NodeType): void;
   /** The cards' width (the station's Workbench uses smaller ones). */
   cardWidth?: number;
+  /** The width the row of cards has (Phase 10.6: more cards shrink, then wrap). */
+  room?: number;
 }) {
   const open = state.crafting;
   const cards = open?.options ?? [];
+  // Nothing cut off (Phase 10.6): extra cards shrink evenly to 80%, then wrap.
+  const fit = fitCardRow(cards.length, fullWidth, CARD_GAP, room);
+  const cardWidth = Math.floor(fullWidth * fit.scale);
   const [flipped, setFlipped] = useState<boolean[]>(() => cards.map(() => false));
   const [chosen, setChosen] = useState<number | null>(null);
   const [node, setNode] = useState<NodeType | null>(null);
@@ -762,7 +773,10 @@ export function PickBody({
             any card can come up a tier higher.
           </p>
         )}
-        <div className={styles.cards}>
+        <div
+          className={styles.cards}
+          style={{ maxWidth: rowWidth(fit, fullWidth, CARD_GAP), gap: CARD_GAP }}
+        >
           {cards.map((c, i) => {
             const up = flipped[i];
             const higher = (ITEMS[c.itemId]?.tier ?? 1) > tier;
@@ -771,6 +785,7 @@ export function PickBody({
                 key={`${c.itemId}-${i}`}
                 type="button"
                 className={styles.card}
+                data-edge-card=""
                 style={{ width: cardWidth, height: Math.round((cardWidth * 7) / 5) }}
                 data-up={up}
                 aria-pressed={chosen === i}

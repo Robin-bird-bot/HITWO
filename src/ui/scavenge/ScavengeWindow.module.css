@@ -161,10 +161,13 @@
 
 .cards {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: flex-start;
   gap: 18px;
   min-height: 290px;
+  /* The row's width is set from fitCardRow, so extra cards wrap evenly (Phase 10.6). */
+  margin: 0 auto;
 }
 
 .chooser {

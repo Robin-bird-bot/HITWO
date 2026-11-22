@@ -1290,6 +1290,19 @@
   pointer-events: none;
 }
 
+/* The odds in the stage's top layer (Phase 10.6). */
+.oddsFloat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 250px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(22, 27, 25, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
 .buttons:hover + .odds,
 .buttons:focus-within + .odds {
   display: flex;

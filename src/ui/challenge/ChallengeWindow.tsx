@@ -81,6 +81,7 @@ import {
   type Source,
   type Target,
 } from './challengeDraft';
+import { useTooltip } from '../layout/Tooltip';
 import styles from './ChallengeWindow.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 
@@ -221,7 +222,7 @@ function ChallengeBody({
             windowProps.onPointerDown?.(e);
           }}
         >
-          <div className={styles.window}>
+          <div className={styles.window} data-edge-window="Challenge">
             <header className={styles.banner} data-drag-handle>
               <span className={styles.bannerSide}>
                 <Icon
@@ -1923,7 +1924,7 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
         aria-modal="true"
         aria-label="Choice: pick a challenge"
       >
-        <div className={styles.window}>
+        <div className={styles.window} data-edge-window="Challenge">
           <header className={styles.banner}>
             <span className={styles.bannerSide}>
               <Icon name="split" size={20} color="#FFF6EC" strokeWidth={2.5} />
@@ -2028,6 +2029,20 @@ function ButtonSection({
     }
   }
   const reasons = presses.map((p) => validateAction(state, p.action) ?? undefined);
+  const oddsBody = odds ? (
+    <>
+      <span className={styles.oddsHead}>THE ODDS, EACH PULL</span>
+      {odds.map((o) => (
+        <span key={o.label} className={styles.oddsRow}>
+          <span className={styles.oddsPct}>{o.pct}%</span>
+          {o.label}
+        </span>
+      ))}
+    </>
+  ) : null;
+  // Phase 10.6: the odds float in the stage's top layer, so the window can't cut them off.
+  const oddsTip = useTooltip(oddsBody, { className: styles.oddsFloat });
+  const floatOdds = !!odds && !oddsTip.inline;
   // When nothing here can be pressed, say why in words (a limit says it on its own).
   const offWhy =
     presses.length > 0 && reasons.every(Boolean) && reasons[0] !== 'No presses left.'
@@ -2045,7 +2060,7 @@ function ButtonSection({
         ))}
       </div>
       <div className={styles.pressWrap}>
-        <div className={styles.buttons}>
+        <div className={styles.buttons} {...(floatOdds ? oddsTip.anchor : {})}>
           {presses.length === 0 && (
             <span className={styles.resNone}>
               {card.buttons?.some((b) => b.kind === 'revealConnected')
@@ -2070,17 +2085,12 @@ function ButtonSection({
           })}
         </div>
         {offWhy && <p className={styles.pressOff}>{offWhy}</p>}
-        {odds && (
+        {odds && !floatOdds && (
           <div className={styles.odds} role="tooltip">
-            <span className={styles.oddsHead}>THE ODDS, EACH PULL</span>
-            {odds.map((o) => (
-              <span key={o.label} className={styles.oddsRow}>
-                <span className={styles.oddsPct}>{o.pct}%</span>
-                {o.label}
-              </span>
-            ))}
+            {oddsBody}
           </div>
         )}
+        {floatOdds && oddsTip.tip}
       </div>
     </div>
   );

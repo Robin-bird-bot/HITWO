@@ -17,6 +17,9 @@ import { openCard, revealCardOn } from '../challenges/reveal';
 import { ITEMS, findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
 import { changeWeather } from '../weather';
+import { craftableItems } from '../../content/items';
+import { dealCards } from '../scavenge/deal';
+import { scavengeSetup } from '../scavenge/setup';
 import { revealWonder, wonderTile } from '../wonders/wonders';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { runNightEvent } from '../night/nightEvents';
@@ -152,6 +155,60 @@ export function applyDebug(state: GameState, op: DebugOp): void {
         kind: 'debug',
         note: `${hiker.name}'s slot ${op.slot + 1} is ${op.pick} today`,
       });
+      break;
+    }
+    case 'edgeScavenge': {
+      // The edge test: a scavenge with exactly this many cards, on any tile.
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const setup = scavengeSetup(state, hiker);
+      const nodes = setup.nodes.length
+        ? setup.nodes
+        : [{ type: 'forest' as const, revealed: true }];
+      delete state.crafting;
+      state.scavenge = {
+        hikerId: hiker.id,
+        tileId: hiker.tileId,
+        cards: dealCards(state.rng, { ...setup, nodes, count: op.count }),
+        luck: setup.luck,
+        bonuses: setup.bonuses,
+        rngBefore: [...state.rng] as typeof state.rng,
+      };
+      pushEvent(state, { kind: 'debug', note: `Edge test: a scavenge with ${op.count} cards` });
+      break;
+    }
+    case 'edgeCraft': {
+      // The edge test: a craft deal with this many cards.
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      const pool = craftableItems('tool', 1);
+      delete state.scavenge;
+      state.crafting = {
+        hikerId: hiker.id,
+        type: 'tool',
+        options: Array.from({ length: op.count }, (_, i) => ({
+          itemId: pool[i % Math.max(1, pool.length)]?.id ?? 'shovel',
+          quality: 3 as const,
+        })),
+        paid: [],
+      };
+      pushEvent(state, { kind: 'debug', note: `Edge test: a craft deal with ${op.count} cards` });
+      break;
+    }
+    case 'setDifficulty':
+      state.difficulty = op.difficulty;
+      pushEvent(state, {
+        kind: 'debug',
+        note: `Difficulty: ${op.difficulty} (from the next section)`,
+      });
+      break;
+    case 'addShelter': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker || ITEMS[op.itemId]?.type !== 'shelter') return;
+      const item = makeItem(state, op.itemId, { prefix: 'debug' });
+      item.deploymentsLeft = Math.max(0, Math.round(op.deployments));
+      hiker.inventory.bag.push(item);
+      pushEvent(state, { kind: 'debug', note: `${ITEMS[op.itemId]?.name} for ${hiker.name}` });
       break;
     }
     case 'nextDeal': {

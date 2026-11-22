@@ -97,6 +97,7 @@ export function Workbench({
           hiker={crafter}
           simple
           cardWidth={150}
+          room={560}
           onTake={(index, node) =>
             dispatch({ type: 'craftTake', index, ...(node ? { node } : {}) })
           }

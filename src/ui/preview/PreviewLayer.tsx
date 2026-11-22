@@ -4,7 +4,7 @@
  * pointer away; pinned ones (a long-press or a click) stay until a tap
  * anywhere or Esc. Put it inside the Stage, around the game.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '../stage/fitStage';
 import { useStage } from '../stage/StageContext';
 import { ItemCard } from '../items/ItemCard';
@@ -13,6 +13,7 @@ import { BALANCE } from '../../config/balance';
 import { CARD_H, CARD_W, HikerCard } from '../hikers/HikerCard';
 import { TraitHover } from '../traits/TraitHover';
 import { PreviewContext, type PreviewApi, type PreviewContent } from './preview';
+import { placePopup } from '../layout/placePopup';
 import styles from './PreviewLayer.module.css';
 
 /**
@@ -41,6 +42,16 @@ interface Shown {
 export function PreviewLayer({ children }: { children: ReactNode }) {
   const fit = useStage();
   const [shown, setShown] = useState<Shown | null>(null);
+  // Its real size once it's drawn (Phase 10.6): placed from that, never cut off.
+  const box = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState<{ for: Shown; w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!shown || !el) return;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    setMeasured((m) => (m && m.for === shown && m.w === w && m.h === h ? m : { for: shown, w, h }));
+  }, [shown]);
 
   const api = useMemo<PreviewApi>(
     () => ({
@@ -90,7 +101,8 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
   let card: ReactNode = null;
   let place: { left: number; top: number } | null = null;
   if (shown) {
-    const size = SIZE[shown.content.kind];
+    const guess = SIZE[shown.content.kind];
+    const size = measured?.for === shown ? measured : guess;
     // The anchor in stage pixels.
     const a = {
       left: (shown.rect.left - fit.left) / fit.scale,
@@ -98,12 +110,10 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
       top: (shown.rect.top - fit.top) / fit.scale,
       bottom: (shown.rect.bottom - fit.top) / fit.scale,
     };
-    // Beside it, on whichever side has room; level with its middle.
-    const right = a.right + GAP;
-    const left = right + size.w <= STAGE_WIDTH - GAP ? right : Math.max(GAP, a.left - GAP - size.w);
-    const middle = (a.top + a.bottom) / 2 - size.h / 2;
-    const top = Math.min(STAGE_HEIGHT - GAP - size.h, Math.max(GAP, middle));
-    place = { left, top };
+    // Beside it, on whichever side has room, level with its middle; then nudged
+    // inside the game screen (Phase 10.6: never cut off).
+    const p = placePopup(a, size, { w: STAGE_WIDTH, h: STAGE_HEIGHT }, 'right', GAP);
+    place = { left: p.left, top: p.top };
     const c = shown.content;
     // A hiker card lifts to the middle of the screen instead.
     if (c.kind === 'hiker') {
@@ -135,7 +145,14 @@ export function PreviewLayer({ children }: { children: ReactNode }) {
         <div
           className={styles.preview}
           data-pinned={shown.pinned || undefined}
-          style={{ left: place.left, top: place.top, width: SIZE[shown.content.kind].w }}
+          ref={box}
+          style={{
+            left: place.left,
+            top: place.top,
+            width: SIZE[shown.content.kind].w,
+            // Hidden for the one frame before its real size is known.
+            visibility: measured?.for === shown ? 'visible' : 'hidden',
+          }}
           role="dialog"
           aria-label={
             shown.content.kind === 'trait'

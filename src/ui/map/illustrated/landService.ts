@@ -30,6 +30,8 @@ export interface LandRequest {
 }
 
 const IDLE: LandStatus = { status: 'idle' };
+/** The give-up timer ticks every 250 ms; one tick never counts more than this. */
+const TICK_MAX = 500;
 const statuses = new Map<string, LandStatus>();
 const listeners = new Set<() => void>();
 let currentKey: string | undefined;
@@ -152,13 +154,16 @@ export function requestLand(req: LandRequest): void {
   const work = w ? viaWorker(w, req, fail) : onMain(req, fail);
   const giveUp = MAP_STYLE.budget.giveUpSeconds * 1000;
   // The 6 s only count while the page is on screen: a background tab runs slowly on purpose.
+  // Each tick counts at most TICK_MAX, so a late tick (a throttled tab, or the page busy for a
+  // moment) can't add a long gap that the worker spent waiting, not working.
   let timer: ReturnType<typeof setInterval> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     let spent = 0;
     let last = performance.now();
     timer = setInterval(() => {
       const now = performance.now();
-      if (typeof document === 'undefined' || !document.hidden) spent += now - last;
+      if (typeof document === 'undefined' || !document.hidden)
+        spent += Math.min(now - last, TICK_MAX);
       last = now;
       if (spent < giveUp) return;
       clearInterval(timer);

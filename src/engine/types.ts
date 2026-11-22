@@ -992,6 +992,13 @@ export type DebugOp =
   | { kind: 'setDaily'; hikerId: HikerId; slot: number; pick: string }
   /** The next scavenge deals these card types first, where they can happen. */
   | { kind: 'nextDeal'; types: ScavengeCardType[] }
+  /** The edge test (Phase 10.6): open a scavenge or a craft with this many cards. */
+  | { kind: 'edgeScavenge'; hikerId: HikerId; count: number }
+  | { kind: 'edgeCraft'; hikerId: HikerId; count: number }
+  /** The difficulty for the next section made (Phase 10.6). */
+  | { kind: 'setDifficulty'; difficulty: DifficultyId }
+  /** Add a shelter to a hiker's pack with this many deployments (Phase 10.6). */
+  | { kind: 'addShelter'; hikerId: HikerId; itemId: ItemId; deployments: number }
   /** Gives a hiker a condition, by the usual rules (Wet again makes Soaked). */
   | {
       kind: 'addCondition';

@@ -37,6 +37,7 @@ import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from 
 import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard, type ScavCardProps } from './ScavCard';
 import { usePreview, withPreview } from '../preview/preview';
+import { fitCardRow, rowWidth } from '../layout/fitCardRow';
 import styles from './ScavengeWindow.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 
@@ -129,6 +130,7 @@ export function ScavengeWindow({
       <div
         ref={windowRef}
         className={styles.window}
+        data-edge-window="Scavenge"
         role="dialog"
         aria-modal="true"
         aria-label="Scavenge"
@@ -187,7 +189,11 @@ export function ScavengeWindow({
 
         {open ? (
           <>
-            <div className={styles.cards} data-count={open.cards.length}>
+            <div
+              className={styles.cards}
+              data-count={open.cards.length}
+              style={{ maxWidth: rowWidth(cardFit(open.cards.length), CARD + 20, CARD_GAP) }}
+            >
               {open.cards.map((c, i) =>
                 c.taken ? (
                   <div key={i} className={styles.taken} aria-label="Taken">
@@ -305,11 +311,18 @@ export function ScavengeWindow({
   );
 }
 
-/** Cards shrink a little when a Dog or Forager gets extra ones. */
+/** A scavenge card's normal size, the gap between cards, and the room for the row (the window's inside). */
+const CARD = 196;
+const CARD_GAP = 18;
+const ROW_ROOM = 916;
+
+/**
+ * Cards that don't fit (a Dog, a Forager, every bonus at once) shrink evenly
+ * down to 80%, then wrap onto a second row (Phase 10.6): never clipped.
+ */
+const cardFit = (count: number) => fitCardRow(count, CARD + 20, CARD_GAP, ROW_ROOM);
 function cardSize(count: number): number {
-  if (count <= 4) return 196;
-  if (count === 5) return 166;
-  return 140;
+  return Math.floor(CARD * cardFit(count).scale);
 }
 
 function takeLabel(card: ScavengeCard, picks: ResourceId[], item: ItemId | null): string {

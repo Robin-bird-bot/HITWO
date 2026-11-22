@@ -920,6 +920,13 @@ export const BALANCE = {
 
   /** Screen timings (Nov 14 update). */
   ui: {
+    /**
+     * Nothing cut off (Phase 10.6): a card row that doesn't fit shrinks evenly
+     * down to this scale, then wraps onto another row. TODO(wyatt): [80%].
+     */
+    cardRowMinScale: 0.8,
+    /** Tooltips and hover windows keep this far from the game screen's edges (px). TODO(wyatt): [8 px]. */
+    popupMargin: 8,
     /** Hovering a card or item this long (ms) opens its preview. TODO(wyatt): [400 ms]. */
     previewHoverMs: 400,
     /** A long-press on a phone: this long (ms) opens the preview instead of a tap. */
