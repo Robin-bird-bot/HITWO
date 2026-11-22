@@ -1,5 +1,5 @@
 import { Icon } from '../icons/Icon';
-import { MAP_VIEW, ZOOM, zoomAt, type Bounds, type Camera } from './mapLayout';
+import { MAP_VIEW, ZOOM, zoomAt, type Bounds, type Camera, minZoomOf } from './mapLayout';
 import styles from './MapView.module.css';
 
 interface MapControlsProps {
@@ -68,7 +68,7 @@ export function MapControls({
         className={styles.control}
         aria-label="Zoom out"
         title="Zoom out"
-        disabled={camera.zoom <= ZOOM.min}
+        disabled={camera.zoom <= minZoomOf(bounds) + 1e-6}
         onClick={() => onCamera(zoomAt(camera, 1 / ZOOM.step, CENTER, bounds))}
       >
         <Icon name="minus" size={20} />

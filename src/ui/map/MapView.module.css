@@ -844,9 +844,14 @@
   pointer-events: none;
 }
 
-/* The illustrated map (Phase 10.5): plain paper beyond the land, so panning never finds an edge. */
+/*
+ * The illustrated map: the paper sheet lies on a wood table (Phase 10.6; the
+ * table image is set inline and moves with the camera). The vignette darkens
+ * the table toward the screen's edges, under the sheet.
+ */
 .viewport[data-style='illustrated'] {
-  background: #eee5cb;
+  background-color: #5c3b26;
+  box-shadow: inset 0 0 220px rgba(0, 0, 0, 0.35);
 }
 
 /* The illustrated map's hex (Phase 10.5): an SVG over the tile, its edge allowed past the box. */

@@ -52,9 +52,11 @@ export const useMapDebug = (): MapDebug => useSyncExternalStore(subscribe, mapDe
 export const paintOverridden = (d: MapDebug): boolean => !!d.reveal;
 
 /** What the land canvas itself needs: the paint overrides and the mask view. */
-export function landDebugOf(d: MapDebug): LandDebug {
+export function landDebugOf(d: MapDebug, wholeMap = false): LandDebug {
+  // The debug panel's paint tools win over Show whole map while they're on.
+  const reveal = d.reveal ?? (wholeMap ? ('whole' as const) : undefined);
   return {
-    ...(d.reveal ? { reveal: d.reveal } : {}),
+    ...(reveal ? { reveal } : {}),
     ...(d.replay ? { replay: d.replay } : {}),
     ...(d.view === 'mask' ? { view: 'mask' as const } : {}),
   };

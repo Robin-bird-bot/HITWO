@@ -6,6 +6,13 @@
   pointer-events: none;
 }
 
+/* The sheet's fold lines (Phase 10.6): faint, over the land and the margin. */
+.fold {
+  position: absolute;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
 /* "Drawing the map…": over the map while the land is made on the main thread. */
 .drawing {
   position: absolute;
@@ -128,80 +135,22 @@
 
 /* ── Map furniture (stage pixels, fixed to the screen) ── */
 
-.compass {
+/* The corner pieces, printed on the map (world pixels). */
+.corner {
   position: absolute;
-  left: 1130px;
-  top: 78px;
-  width: 90px;
-  height: 100px;
-  z-index: 2;
+  z-index: 1;
+  overflow: visible;
   pointer-events: none;
 }
 
-.compassN {
+.cornerTitle {
   font-family: var(--font-pixel);
-  font-size: 14px;
-}
-
-.titleBox {
-  position: absolute;
-  left: 330px;
-  top: 84px;
-  z-index: 2;
-  padding: 10px 16px;
-  background: #f4edda;
-  border: 2px solid #1d2220;
-  border-radius: 4px;
-  box-shadow:
-    inset 0 0 0 3px #f4edda,
-    inset 0 0 0 4.5px #1d2220,
-    0 6px 16px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  pointer-events: none;
-}
-
-.title {
-  font-family: var(--font-pixel);
-  font-size: 26px;
   letter-spacing: 0.08em;
-  line-height: 1;
-  color: #1d2220;
 }
 
-.subtitle {
+.cornerSub {
   font-family: var(--font-pixel);
-  font-size: 11px;
   letter-spacing: 0.1em;
-  color: #5e5648;
-}
-
-.scale {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 3px;
-}
-
-.scaleBar {
-  display: flex;
-  height: 6px;
-  border: 1.5px solid #1d2220;
-}
-
-.scaleBar span {
-  flex: 1;
-}
-
-.scaleBar span:nth-child(odd) {
-  background: #1d2220;
-}
-
-.scaleText {
-  font-size: 11px;
-  color: #5e5648;
 }
 
 .legendButton {

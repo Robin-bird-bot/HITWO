@@ -4,15 +4,16 @@
  *
  * - **Place names** in Fraunces italic with a cream halo, each one showing
  *   only once the paint covers its spot, fading in with it.
- * - **Map furniture**, fixed to the screen: a compass rose, a title box
- *   ("MEADOW", "SECTION I · TIER I · DAY 3") with a scale bar, and a Legend
- *   button that opens the line legend.
+ * - **The corner pieces**, printed on the map (map-corners update): the
+ *   section box ("MEADOW", "SECTION I · TIER I", a scale bar) in the land's
+ *   bottom-left corner and the compass rose in its top-right.
+ * - **The Legend button**, fixed to the screen, opening the line legend.
  */
 import { useState } from 'react';
-import { MAP_STYLE } from '../../../config/mapStyle';
+import { MAP_STYLE, u } from '../../../config/mapStyle';
 import type { BiomeId } from '../../../engine';
-import { ROW_STEP } from '../mapLayout';
 import type { Place } from './land/features';
+import { cornerBoxes } from './land/corners';
 import { pathStrokes } from './pathLook';
 import styles from './Illustrated.module.css';
 
@@ -57,41 +58,11 @@ const BIOME_TITLE: Record<BiomeId, string> = {
 const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 const roman = (n: number) => ROMAN[n] ?? String(n);
 
-export function MapFurniture({
-  biome,
-  sectionIndex,
-  tier,
-  day,
-  zoom,
-  hikerColors,
-}: {
-  biome: BiomeId;
-  sectionIndex: number;
-  tier: number;
-  day: number;
-  zoom: number;
-  hikerColors: readonly string[];
-}) {
+/** The Legend button, fixed to the screen (the compass and section box are on the map now). */
+export function MapFurniture({ hikerColors }: { hikerColors: readonly string[] }) {
   const [legend, setLegend] = useState(false);
-  // The scale bar: one move (a row of the trail) at this zoom.
-  const move = Math.round(ROW_STEP * zoom);
   return (
     <>
-      <Compass />
-      <div className={styles.titleBox} aria-label="Map title">
-        <span className={styles.title}>{BIOME_TITLE[biome]}</span>
-        <span className={styles.subtitle}>
-          SECTION {roman(sectionIndex + 1)} · TIER {roman(tier)} · DAY {day}
-        </span>
-        <div className={styles.scale}>
-          <div className={styles.scaleBar} style={{ width: move }}>
-            <span />
-            <span />
-            <span />
-          </div>
-          <span className={styles.scaleText}>one move</span>
-        </div>
-      </div>
       <button
         type="button"
         className={styles.legendButton}
@@ -105,33 +76,147 @@ export function MapFurniture({
   );
 }
 
-function Compass() {
-  const arm = (r: number) =>
-    `M0 -${r} L6 -6 L0 0 Z M0 ${r} L-6 6 L0 0 Z M${r} 0 L6 6 L0 0 Z M-${r} 0 L-6 -6 L0 0 Z`;
-  const dark = (r: number) =>
-    `M0 -${r} L-6 -6 L0 0 Z M0 ${r} L6 6 L0 0 Z M${r} 0 L6 -6 L0 0 Z M-${r} 0 L-6 6 L0 0 Z`;
+const INK = '#1D2220';
+const CREAM = '#F4EDDA';
+
+/**
+ * The section box (bottom left) and the compass rose (top right), printed on
+ * the map: they pan and zoom with it, the same over paint or pencil.
+ */
+export function MapCorners({
+  land,
+  biome,
+  sectionIndex,
+  tier,
+}: {
+  land: { x0: number; y0: number; width: number; height: number };
+  biome: BiomeId;
+  sectionIndex: number;
+  tier: number;
+}) {
+  const { section, compass } = cornerBoxes(land);
+  const k = u(1);
+  const bw = section.x1 - section.x0;
+  const bh = section.y1 - section.y0;
+  const size = compass.x1 - compass.x0;
+  const R = size / 2;
+  const cx = compass.x0 + R;
+  const cy = compass.y1 - R;
+  const point = (deg: number, len: number, half: number) => {
+    const a = (deg * Math.PI) / 180;
+    const tip = [Math.sin(a) * len, -Math.cos(a) * len];
+    const l = [Math.sin(a - Math.PI / 2) * half, -Math.cos(a - Math.PI / 2) * half];
+    const r = [Math.sin(a + Math.PI / 2) * half, -Math.cos(a + Math.PI / 2) * half];
+    return {
+      light: `M${tip[0]} ${tip[1]} L${l[0]} ${l[1]} L0 0 Z`,
+      dark: `M${tip[0]} ${tip[1]} L${r[0]} ${r[1]} L0 0 Z`,
+    };
+  };
+  const longs = [0, 90, 180, 270].map((d) => point(d, R, 8 * k));
+  const shorts = [45, 135, 225, 315].map((d) => point(d, R * 0.55, 5 * k));
+  const block = (bw * 0.6) / 3;
   return (
-    <svg className={styles.compass} viewBox="-45 -55 90 100" aria-label="North is up" role="img">
-      <circle r={24} fill="none" stroke="#F7F1E4" strokeOpacity={0.8} strokeWidth={1.5} />
-      <circle r={20} fill="none" stroke="#F7F1E4" strokeOpacity={0.5} strokeDasharray="2 3" />
-      <g transform="rotate(45) scale(.6)">
-        <path d={arm(34)} fill="#F7F1E4" fillOpacity={0.85} />
-        <path d={dark(34)} fill="#1D2220" fillOpacity={0.6} />
-      </g>
-      <path d={arm(34)} fill="#F7F1E4" />
-      <path d={dark(34)} fill="#1D2220" />
-      <text
-        y={-40}
-        textAnchor="middle"
-        className={styles.compassN}
-        fill="#F7F1E4"
-        stroke="#1D2220"
-        strokeWidth={3}
-        paintOrder="stroke"
+    <>
+      <svg
+        className={styles.corner}
+        style={{ left: section.x0, top: section.y0, width: bw, height: bh }}
+        viewBox={`0 0 ${bw} ${bh}`}
+        aria-label={`${BIOME_TITLE[biome]}, section ${roman(sectionIndex + 1)}, tier ${roman(tier)}`}
+        role="img"
       >
-        N
-      </text>
-    </svg>
+        <rect
+          x={1 * k}
+          y={1 * k}
+          width={bw - 2 * k}
+          height={bh - 2 * k}
+          fill={CREAM}
+          stroke={INK}
+          strokeWidth={2 * k}
+        />
+        <rect
+          x={5 * k}
+          y={5 * k}
+          width={bw - 10 * k}
+          height={bh - 10 * k}
+          fill="none"
+          stroke={INK}
+          strokeWidth={1 * k}
+        />
+        <text
+          x={bw / 2}
+          y={bh * 0.38}
+          textAnchor="middle"
+          className={styles.cornerTitle}
+          style={{ fontSize: 22 * k }}
+          fill={INK}
+        >
+          {BIOME_TITLE[biome]}
+        </text>
+        <text
+          x={bw / 2}
+          y={bh * 0.6}
+          textAnchor="middle"
+          className={styles.cornerSub}
+          style={{ fontSize: 9 * k }}
+          fill="#5E5648"
+        >
+          SECTION {roman(sectionIndex + 1)} · TIER {roman(tier)}
+        </text>
+        {[0, 1, 2].map((i) => (
+          <rect
+            key={i}
+            x={bw * 0.2 + i * block}
+            y={bh * 0.74}
+            width={block}
+            height={5 * k}
+            fill={i % 2 === 0 ? INK : CREAM}
+            stroke={INK}
+            strokeWidth={1 * k}
+          />
+        ))}
+      </svg>
+      <svg
+        className={styles.corner}
+        style={{ left: compass.x0, top: compass.y0, width: size, height: compass.y1 - compass.y0 }}
+        viewBox={`${compass.x0} ${compass.y0} ${size} ${compass.y1 - compass.y0}`}
+        aria-label="North is up"
+        role="img"
+      >
+        <g transform={`translate(${cx} ${cy})`}>
+          <circle r={R * 0.7} fill="none" stroke={INK} strokeWidth={1 * k} />
+          {[...shorts, ...longs].map((p, i) => (
+            <g key={i}>
+              <path
+                d={p.light}
+                fill={CREAM}
+                stroke={INK}
+                strokeWidth={0.8 * k}
+                strokeLinejoin="round"
+              />
+              <path
+                d={p.dark}
+                fill={INK}
+                stroke={INK}
+                strokeWidth={0.8 * k}
+                strokeLinejoin="round"
+              />
+            </g>
+          ))}
+          <text
+            y={-R - 4 * k}
+            textAnchor="middle"
+            className={styles.cornerTitle}
+            style={{ fontSize: 14 * k }}
+            fill={INK}
+            stroke={CREAM}
+            strokeWidth={3 * k}
+            paintOrder="stroke"
+          >
+            N
+          </text>
+        </g>
+      </svg>
+    </>
   );
 }
 

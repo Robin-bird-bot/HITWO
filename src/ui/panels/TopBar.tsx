@@ -11,7 +11,13 @@ import { AbundanceBar } from './AbundanceBar';
 import type { IconName } from '../icons/paths';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { resetWindowLayout } from '../windows/windowLayout';
-import { MAP_STYLE_SETTING, MAP_STYLES, useMapStyle } from '../map/mapStyleSetting';
+import {
+  MAP_STYLE_SETTING,
+  MAP_STYLES,
+  WHOLE_MAP_SETTING,
+  useMapStyle,
+  useWholeMap,
+} from '../map/mapStyleSetting';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weather/weatherLook';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
@@ -188,6 +194,7 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
   const mode = useUiMode();
   const warnings = useTraitWarnings();
   const mapStyle = useMapStyle();
+  const wholeMap = useWholeMap();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -265,6 +272,19 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
               ))}
             </div>
             <span className={styles.small}>{MAP_STYLES.find((m) => m.id === mapStyle)?.text}</span>
+            {mapStyle === 'illustrated' && (
+              <label className={styles.switchRow}>
+                <input
+                  type="checkbox"
+                  checked={wholeMap}
+                  onChange={(e) => WHOLE_MAP_SETTING.set(e.target.checked ? 'on' : 'off')}
+                />
+                <span>
+                  Show whole map
+                  <span className={styles.small}> · Paints all the land. Tiles stay hidden.</span>
+                </span>
+              </label>
+            )}
           </div>
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
             Reset window layout

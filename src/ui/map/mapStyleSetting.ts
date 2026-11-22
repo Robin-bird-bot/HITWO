@@ -32,3 +32,17 @@ export const useMapStyle = (): MapStyle => useDeviceSetting(MAP_STYLE_SETTING);
  */
 export const shownMapStyle = (picked: MapStyle, land: { status: string }): MapStyle =>
   picked === 'illustrated' && land.status !== 'failed' ? 'illustrated' : 'classic';
+
+/**
+ * Settings → Map style → Show whole map (Phase 10.6): Illustrated only, off
+ * by default. On, the land is fully painted with every place name shown; tiles,
+ * nodes and challenges still follow the normal reveal rules.
+ */
+export const WHOLE_MAP_SETTING = deviceSetting<'on' | 'off'>(
+  'hike-in-the-woods/show-whole-map',
+  ['on', 'off'],
+  'off',
+);
+
+/** Whether Show whole map is on, re-rendering when it changes. */
+export const useWholeMap = (): boolean => useDeviceSetting(WHOLE_MAP_SETTING) === 'on';

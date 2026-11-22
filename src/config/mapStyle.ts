@@ -129,6 +129,40 @@ export const MAP_STYLE = {
   },
 
   /**
+   * The map edge (Phase 10.6, MapEdge.jpg, reference/topo_edge.py): the land
+   * printed on a cream paper sheet lying on a wood table. The sheet stays
+   * straight (not rotated), so tiles don't move.
+   * TODO(wyatt): margin [40], border lines [12] and [18] in, shadow blur [14]
+   * offset [10, 14] at [55%]; the tear, fold and line numbers are first guesses.
+   */
+  sheet: {
+    margin: 40,
+    borders: [12, 18],
+    line: '#5E5648',
+    lineWidths: [2, 1],
+    tear: 2.5,
+    shadow: { blur: 14, x: 10, y: 14, alpha: 0.55 },
+    fold: { width: 6, alpha: 0.06 },
+  },
+
+  /** The wood table behind the sheet (topo_edge.py → wood()). TODO(wyatt): first guesses. */
+  table: { plank: 118, color: '#8A5B3B', vignette: 0.35 },
+
+  /**
+   * The camera on the illustrated map (Phase 10.6). Zooming out stops once the
+   * whole sheet fits with this share of table around it; panning stops when
+   * the sheet's edge is this far across the view. TODO(wyatt): [8%], [40%].
+   */
+  camera: { fitMargin: 0.08, edgeAt: 0.4 },
+
+  /**
+   * The map's corner pieces (map-corners update): the section box bottom
+   * left and the compass top right, this far in from the land's corners.
+   * TODO(wyatt): inset [20], box [170 × 74], compass [80].
+   */
+  corners: { inset: 20, box: { w: 170, h: 74 }, compass: 80 },
+
+  /**
    * Wind (Phase 10.6): leaves drifting across the land, each crossing in this
    * many seconds and falling this far on the way. TODO(wyatt): all first guesses.
    */
