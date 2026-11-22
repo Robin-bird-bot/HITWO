@@ -29,7 +29,7 @@ const WEATHER = [
   { id: undefined, label: 'Game weather' },
   { id: 'clear', label: 'Clear' },
   { id: 'rain', label: 'Rain' },
-  { id: 'storm', label: 'Storm' },
+  { id: 'wind', label: 'Wind' },
   { id: 'snow', label: 'Snow' },
   { id: 'heatwave', label: 'Heat' },
 ] as const;

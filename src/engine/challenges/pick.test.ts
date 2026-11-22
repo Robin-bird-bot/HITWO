@@ -53,10 +53,9 @@ describe('which cards fit a tile', () => {
     expect(cardFits(card('snow-leopard'), s, anyTile, s.hikers, 3)).toBe(false);
     expect(cardFits(card('snow-leopard'), snowy, anyTile, s.hikers, 3)).toBe(true);
 
-    expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(false);
-    const as = (today: 'storm' | 'heatwave') => ({ ...s, weather: { ...s.weather, today } });
-    expect(cardFits(card('lightning'), as('storm'), anyTile, s.hikers, 3)).toBe(true);
-    expect(cardFits(card('blazing-sun'), as('heatwave'), anyTile, s.hikers, 2)).toBe(true);
+    // Weather no longer picks challenges (Phase 10.6): Lightning and Blazing Sun fit any day.
+    expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(true);
+    expect(cardFits(card('blazing-sun'), s, anyTile, s.hikers, 2)).toBe(true);
   });
 
   it('leaves out cards whose systems aren’t built yet', () => {

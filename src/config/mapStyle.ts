@@ -124,10 +124,15 @@ export const MAP_STYLE = {
     },
     glow: { color: [0.55, 0.32, 0.12], radius: 60 },
     rain: { color: 0.78, gray: 0.22, tint: [0.9, 0.95, 1.02], darken: 0.04 },
-    storm: { darken: 0.1 },
     snow: { above: 0.45, ramp: 0.2 },
     heat: { color: [1.06, 0.98, 0.86], add: [0.04, 0.02, 0] },
   },
+
+  /**
+   * Wind (Phase 10.6): leaves drifting across the land, each crossing in this
+   * many seconds and falling this far on the way. TODO(wyatt): all first guesses.
+   */
+  leaves: { count: 22, seconds: { min: 14, max: 24 }, size: { min: 9, max: 15 }, drop: 140 },
 
   /** The route view (section 11). TODO(wyatt): tiles [25%] fill and [35%] edge, unwalked [25%]. */
   routes: { tileFill: 0.25, tileEdge: 0.35, unwalked: 0.25 },

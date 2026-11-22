@@ -65,7 +65,10 @@ export const SPECIAL_SPACES: readonly SpecialSpace[] = [
 /** Side features attach to a normal tile and add an extra option there. */
 export type SideFeature = 'merchant' | 'trader';
 
-/** What weather did to a node (Phase 6): flooded counts as River; frozen and on fire give nothing. */
+/**
+ * What weather did to a node (Phase 6). Weather no longer changes nodes
+ * (Phase 10.6); this stays for old trail log lines.
+ */
 export type NodeWeatherState = 'flooded' | 'frozen' | 'fire';
 
 export interface TileNode {
@@ -74,8 +77,6 @@ export interface TileNode {
   revealed: boolean;
   /** A Bounty node: extra resources are more likely, at an extra Abundance cost. */
   bounty?: true;
-  /** Changed by the weather, and what it was before, so it goes back when the weather ends. */
-  weather?: { state: NodeWeatherState; was: NodeType };
 }
 
 export interface Tile {
@@ -165,7 +166,8 @@ export interface NightHit {
 
 // ── Weather ────────────────────────────────────────────────────────────────
 
-export type WeatherId = 'clear' | 'rain' | 'storm' | 'snow' | 'heatwave';
+/** Storm and Fog are gone for now; Wind is new (Phase 10.6). */
+export type WeatherId = 'clear' | 'rain' | 'snow' | 'wind' | 'heatwave';
 
 export interface WeatherState {
   today: WeatherId;
@@ -567,6 +569,8 @@ export interface ScavengeCard {
   flipped: boolean;
   /** Already taken, on a scavenge that keeps more than one card (a Sack). */
   taken?: true;
+  /** Turned into the weather's node's resources by the weather (Phase 10.6): shows its icon. */
+  weather?: WeatherId;
 }
 
 /** A line in the scavenge window's bonuses pop-over: what's changing this draw, and why. */
@@ -1019,9 +1023,7 @@ export type DebugOp =
   /** Sets today's weather (it starts today), and whether it holds instead of changing. */
   | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
   /** Skips the grace day, so the weather's hiker effect starts now. */
-  | { kind: 'skipGraceDay' }
   /** Turns a tile's first fitting node flooded, frozen or on fire. */
-  | { kind: 'nodeState'; tileId: TileId; state: NodeWeatherState }
   /** Puts a clothing item on a hiker (equipping arrives in Phase 8). */
   | { kind: 'wearClothes'; hikerId: HikerId }
   /** Tonight's night event: force its tier, creature, and a hit on a hiker. Nothing set clears it. */

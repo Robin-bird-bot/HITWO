@@ -1,18 +1,17 @@
 /**
  * The weather change screen (docs/mockups/Weather.dc.html). Not a pop-up: the
- * whole screen blurs, and the icon, name, effects and Ready sit on the blur.
+ * whole screen blurs, and the icon, name, what it does and Ready sit on the blur.
  *
  * - The animated icon plays once and holds its last frame (WeatherIcon).
- * - The name, how many days it lasts, then its two effects: the hikers' one
- *   "from tomorrow" (the grace day) and the nodes' one "starts now".
- * - Back to Clear shows the sun, "CLEAR SKIES" and no effects.
+ * - The name, how many days it lasts, then one line (Phase 10.6): "Rain: more
+ *   River resources."
+ * - Back to Clear shows the sun, "CLEAR SKIES" and nothing else changes.
  */
 import { useEffect, useRef } from 'react';
+import { ASSETS } from '../../config/assets';
 import { WEATHERS } from '../../content/weather';
 import type { WeatherId } from '../../engine';
-import { Icon } from '../icons/Icon';
 import { WeatherIcon } from './WeatherIcon';
-import { HIKER_EFFECT_ICON, NODE_EFFECT_ART } from './weatherLook';
 import styles from './WeatherScreen.module.css';
 
 export function WeatherScreen({
@@ -28,7 +27,6 @@ export function WeatherScreen({
   const ready = useRef<HTMLButtonElement>(null);
   useEffect(() => ready.current?.focus(), []);
   const def = WEATHERS[weather];
-  const node = def.node && NODE_EFFECT_ART[def.node.kind];
 
   return (
     <div
@@ -47,44 +45,19 @@ export function WeatherScreen({
         <span className={styles.days}>
           {days === 1 ? 'FOR TODAY' : `FOR THE NEXT ${days} DAYS`}
         </span>
-        {(def.hiker || def.node) && (
+        {def.node ? (
           <div className={styles.effects}>
-            {def.hiker && (
-              <div className={styles.effect}>
-                <span className={styles.art}>
-                  <Icon name={HIKER_EFFECT_ICON[def.hiker.kind]} size={30} strokeWidth={2.5} />
-                </span>
-                <div className={styles.words}>
-                  <span className={styles.effectHead}>
-                    <span className={styles.effectName}>{def.hiker.name.toUpperCase()}</span>
-                    <span className={styles.when}>FROM TOMORROW</span>
-                  </span>
-                  <span className={styles.effectText}>{def.hiker.text}</span>
-                </div>
+            <div className={styles.effect}>
+              <span className={styles.art}>
+                <img src={ASSETS.nodes[def.node]} alt="" />
+              </span>
+              <div className={styles.words}>
+                <span className={styles.effectText}>{def.line}</span>
               </div>
-            )}
-            {def.node && (
-              <div className={styles.effect}>
-                <span className={styles.art}>
-                  {node?.image ? (
-                    <img src={node.image} alt="" />
-                  ) : (
-                    <Icon name={node?.icon ?? 'cloud'} size={30} strokeWidth={2.5} />
-                  )}
-                </span>
-                <div className={styles.words}>
-                  <span className={styles.effectHead}>
-                    <span className={styles.effectName}>{def.node.name.toUpperCase()}</span>
-                    <span className={styles.when}>STARTS NOW</span>
-                  </span>
-                  <span className={styles.effectText}>{def.node.text}</span>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
-        )}
-        {!def.hiker && !def.node && (
-          <p className={styles.calm}>No weather effects. A good day to hike.</p>
+        ) : (
+          <p className={styles.calm}>Nothing changes. A good day to hike.</p>
         )}
         <button ref={ready} type="button" className={styles.ready} onClick={onReady}>
           READY

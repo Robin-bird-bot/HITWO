@@ -165,7 +165,7 @@ export {
   type GoalProgress,
   type WonderProgress,
 } from './wonders/wonders';
-export { hikerEffectActive, nodeCounts, nodeGives, weatherDaysLeft } from './weather';
+export { weatherDaysLeft } from './weather';
 export { canHandOver, overBag } from './actions/give';
 export { tilesAhead } from './traits/reveal';
 export { bringReach } from './effects';

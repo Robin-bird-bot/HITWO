@@ -79,23 +79,20 @@ describe('save and load', () => {
     });
   });
 
-  it('upgrades a version 4 save: the trail gets a Wonder on a tile nobody has reached', () => {
+  it('upgrades a version 4 save: the Wonder it gets on a tile nobody has reached becomes a quiet tile (Wonders are off)', () => {
     const v4 = structuredClone(fixtureGame());
     v4.section.tiles.L!.visited = true;
     const loaded = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
-    const withWonder = Object.values(loaded.state.section.tiles).filter((t) => t.wonder);
-    expect(withWonder).toHaveLength(1);
-    const tile = withWonder[0]!;
-    expect(['M', 'R']).toContain(tile.id);
-    expect(tile.nodes).toEqual([]);
-    expect(tile.wonder?.decoys).toBeGreaterThan(0);
-    // The same save always gets the same Wonder.
+    const tiles = Object.values(loaded.state.section.tiles);
+    expect(tiles.some((t) => t.wonder)).toBe(false);
+    const quiet = tiles.filter((t) => t.quiet);
+    expect(quiet).toHaveLength(1);
+    expect(['M', 'R']).toContain(quiet[0]!.id);
+    // The same save always loads the same.
     const again = deserialize(JSON.stringify({ ...v4, saveVersion: 4 }));
-    expect(again.ok && Object.values(again.state.section.tiles).find((t) => t.wonder)).toEqual(
-      tile,
-    );
+    expect(again.ok && again.state.section).toEqual(loaded.state.section);
   });
 
   it('upgrades a version 5 save: the old debug weather becomes today’s, with a forecast', () => {
@@ -104,7 +101,8 @@ describe('save and load', () => {
     const loaded = deserialize(JSON.stringify({ ...v5, saveVersion: 5 }));
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
-    expect(loaded.state.weather.today).toBe('storm');
+    // Storm is gone (Phase 10.6): a stormy day is Rain.
+    expect(loaded.state.weather.today).toBe('rain');
     expect(loaded.state.weather.since).toBe(loaded.state.day);
     expect(loaded.state.weather.ahead.length).toBeGreaterThanOrEqual(3);
     const none = structuredClone(fixtureGame()) as unknown as Record<string, unknown>;

@@ -55,6 +55,7 @@ import { LandCanvas } from '../map/illustrated/LandCanvas';
 import { MapFurniture, PlaceLabels } from '../map/illustrated/IllustratedOverlay';
 import { paintedPlaces } from '../map/illustrated/land/mask';
 import { FieldView, StampBoxes } from '../map/illustrated/MapDebugLayers';
+import { Leaves } from '../map/illustrated/Leaves';
 import { landDebugOf, paintOverridden, useMapDebug } from '../map/illustrated/mapDebug';
 import { landGrade } from '../map/illustrated/grade';
 import { useReducedMotion } from '../app/useReducedMotion';
@@ -1084,6 +1085,9 @@ export function GameScreen({
                         <FieldView result={landReady} view={dbg.view} />
                       )}
                       {dbg.stampBoxes && <StampBoxes result={landReady} />}
+                      {(dbg.grade?.weather ?? state.weather.today) === 'wind' && !reduceMotion && (
+                        <Leaves rect={landReady} />
+                      )}
                     </>
                   ) : undefined
                 }

@@ -91,11 +91,11 @@ export function DayPill({ state }: { state: GameState }) {
             {today.title.toUpperCase()}
           </span>
           <span className={styles.info}>{weatherNote(state)}.</span>
-          {[today.hiker, today.node].map(
+          {[today].map(
             (e) =>
-              e && (
+              e.node && (
                 <span key={e.name} className={styles.info}>
-                  <b>{e.name}:</b> {e.text}
+                  {e.line}
                 </span>
               ),
           )}

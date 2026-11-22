@@ -489,14 +489,6 @@ function ChallengeTools({ state, onApply }: { state: GameState; onApply(action: 
         >
           Hold the weather
         </button>
-        <button
-          type="button"
-          className={styles.button}
-          disabled={state.day > state.weather.since}
-          onClick={() => onApply({ type: 'debug', op: { kind: 'skipGraceDay' } })}
-        >
-          Skip the grace day
-        </button>
         <span className={styles.note}>
           Ahead:{' '}
           {state.weather.ahead
@@ -1062,26 +1054,6 @@ function ConditionEditor({ hikers, onApply }: { hikers: Hiker[]; onApply(action:
         </button>
       </div>
       <div className={styles.row}>
-        <span className={styles.note}>On their tile:</span>
-        {(
-          [
-            ['flooded', 'Flood'],
-            ['frozen', 'Freeze'],
-            ['fire', 'Burn'],
-          ] as const
-        ).map(([state, label]) => (
-          <button
-            key={state}
-            type="button"
-            className={styles.button}
-            onClick={() => {
-              const tileId = hikers.find((h) => h.id === hikerId)?.tileId;
-              if (tileId) onApply({ type: 'debug', op: { kind: 'nodeState', tileId, state } });
-            }}
-          >
-            {label} a node
-          </button>
-        ))}
         <button
           type="button"
           className={styles.button}

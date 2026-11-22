@@ -1,81 +1,73 @@
+/**
+ * Weather (Phase 10.6): Clear, Rain, Snow, Wind and Heatwave, each tied to a
+ * node. The only effect is on scavenging.
+ */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../config/balance';
-import { validateAction } from './applyAction';
-import { cardFits } from './challenges/pick';
-import { CARDS } from '../content/challenges';
-import { addStacks } from './conditions';
+import { WEATHERS, WEATHER_IDS } from '../content/weather';
+import { RESOURCES } from '../content/resources';
 import { seedRng } from './rng';
+import { dealCards, weatherSwap, type DealInput } from './scavenge/deal';
 import { scavengeSetup } from './scavenge/setup';
 import { deserialize, serialize } from './save';
-import { END, fixtureGame, hiker, place, run, toNight } from './test/fixtures';
-import type { GameState, NodeType, WeatherId } from './types';
-import {
-  changeWeather,
-  fillForecast,
-  freshWeather,
-  hikerEffectActive,
-  setNodeState,
-  weatherDaysLeft,
-} from './weather';
+import { END, fixtureGame, hiker, run, toNight } from './test/fixtures';
+import type { GameState, NodeType, ScavengeCard, WeatherId } from './types';
+import { changeWeather, fillForecast, freshWeather, weatherDaysLeft } from './weather';
 
-const ash = (s: GameState) => hiker(s, 'ash');
-const conditionsOf = (s: GameState, id: string) => hiker(s, id).conditions.map((c) => c.id);
-const stacks = (s: GameState, id: string, cond: string) =>
-  hiker(s, id).conditions.find((c) => c.id === cond)?.stacks ?? 0;
+const NODE_OF: Record<Exclude<WeatherId, 'clear'>, NodeType> = {
+  rain: 'river',
+  snow: 'mountain',
+  wind: 'forest',
+  heatwave: 'wildlife',
+};
 
-/** The fixture with today's weather set, held, and its grace day already over. */
-function weathered(
-  today: WeatherId,
-  setup: (s: GameState) => void = () => {},
-  seed = 1,
-): GameState {
+function weathered(today: WeatherId, seed = 1): GameState {
   const s = fixtureGame({ seed });
-  s.rng = seedRng(seed);
   changeWeather(s, today);
-  s.weather.since = s.day - 1;
-  setup(s);
+  s.weather.hold = true;
   return s;
 }
 
-/** Gives the fixture's middle tiles one node each of these types. */
-function nodes(s: GameState, l: NodeType, m: NodeType, r: NodeType): void {
-  s.section.tiles.L!.nodes = [{ type: l, revealed: true }];
-  s.section.tiles.M!.nodes = [{ type: m, revealed: true }];
-  s.section.tiles.R!.nodes = [{ type: r, revealed: true }];
-}
+const nodeOf = (r: string) => RESOURCES.find((x) => x.id === r)?.node;
+
+describe('the kinds', () => {
+  it('are Clear, Rain, Snow, Wind and Heatwave: no Storm or Fog anywhere', () => {
+    expect([...WEATHER_IDS].sort()).toEqual(['clear', 'heatwave', 'rain', 'snow', 'wind']);
+    expect(BALANCE.weather.schedule.odds).not.toHaveProperty('storm');
+    expect(BALANCE.weather.schedule.odds).not.toHaveProperty('fog');
+  });
+
+  it('each is tied to its node, and says so in one line', () => {
+    for (const [id, node] of Object.entries(NODE_OF)) {
+      expect(WEATHERS[id as WeatherId].node).toBe(node);
+    }
+    expect(WEATHERS.rain.line).toBe('Rain: more River resources.');
+    expect(WEATHERS.clear.node).toBeUndefined();
+  });
+});
 
 describe('the schedule and forecast', () => {
   it('is the same for the same seed, starts Clear, and always shows 3 days ahead', () => {
-    expect(freshWeather(7)).toEqual(freshWeather(7));
-    const w = freshWeather(7);
-    expect(w.today).toBe('clear');
-    expect(w.ahead.length).toBeGreaterThanOrEqual(BALANCE.weather.forecastDays);
+    const a = freshWeather(7);
+    expect(a).toEqual(freshWeather(7));
+    expect(a.today).toBe('clear');
+    expect(a.ahead.length).toBeGreaterThanOrEqual(BALANCE.weather.forecastDays);
   });
 
-  it('alternates: Clear for 2–4 days, then a weather for 2–3 days', () => {
+  it('each weather lasts 1–3 days, drawn from the Meadow odds (never Snow yet)', () => {
     const w = freshWeather(3);
-    const days: WeatherId[] = [w.today];
-    while (days.length < 200) {
-      days.push(w.ahead.shift()!);
+    w.ahead = [];
+    const days: WeatherId[] = [];
+    while (days.length < 3000) {
       fillForecast(w);
+      days.push(...w.ahead.splice(0));
     }
-    const runs: { kind: WeatherId; n: number }[] = [];
-    for (const d of days) {
-      const last = runs.at(-1);
-      if (last && last.kind === d) last.n += 1;
-      else runs.push({ kind: d, n: 1 });
-    }
-    // Leave out the first and last runs, which the 200 days cut short.
-    for (const [i, r] of runs.slice(1, -1).entries()) {
-      if (r.kind === 'clear') expect(r.n).toBeGreaterThanOrEqual(2);
-      else expect(r.n).toBeGreaterThanOrEqual(2);
-      if (r.kind === 'clear') expect(r.n).toBeLessThanOrEqual(4);
-      else expect(r.n).toBeLessThanOrEqual(3);
-      // A weather is always followed by Clear.
-      const next = runs[i + 2];
-      if (next && r.kind !== 'clear') expect(next.kind).toBe('clear');
-    }
-    expect(new Set(days)).toEqual(new Set(['clear', 'rain', 'storm', 'snow', 'heatwave']));
+    const share = (k: WeatherId) => days.filter((d) => d === k).length / days.length;
+    expect(share('snow')).toBe(0);
+    expect(share('clear')).toBeGreaterThan(0.3);
+    expect(share('rain')).toBeGreaterThan(0.17);
+    expect(share('wind')).toBeGreaterThan(0.12);
+    expect(share('heatwave')).toBeGreaterThan(0.08);
   });
 
   it('changes at the start of a day, says how long, and loads back the same', () => {
@@ -83,7 +75,6 @@ describe('the schedule and forecast', () => {
     s.weather.ahead = ['rain', 'rain', 'clear'];
     s = run(toNight(s), END);
     expect(s.weather.today).toBe('rain');
-    expect(s.weather.since).toBe(2);
     expect(weatherDaysLeft(s.weather)).toBe(2);
     expect(s.log.find((e) => e.kind === 'weatherChanged')).toMatchObject({
       from: 'clear',
@@ -92,205 +83,86 @@ describe('the schedule and forecast', () => {
     });
     expect(deserialize(serialize(s))).toEqual({ ok: true, state: s });
   });
+});
 
-  it('hiker effects wait out the first full day; node effects don’t', () => {
-    const s = fixtureGame();
-    place(s, 'ash', 'L');
-    changeWeather(s, 'snow');
-    expect(hikerEffectActive(s)).toBe(false);
-    const afternoon = run(s, END);
-    expect(conditionsOf(afternoon, 'ash')).toEqual([]);
-    const tomorrow = run(toNight(s), END);
-    expect(hikerEffectActive(tomorrow)).toBe(true);
-    expect(stacks(tomorrow, 'ash', 'shivering')).toBeGreaterThan(0);
+describe('scavenging, the only effect', () => {
+  it('on a tile with the weather’s node, its resources are likelier', () => {
+    for (const [id, node] of Object.entries(NODE_OF)) {
+      const s = weathered(id as WeatherId);
+      s.section.tiles.L!.nodes = [
+        { type: node, revealed: true },
+        { type: node === 'river' ? 'forest' : 'river', revealed: true },
+      ];
+      s.hikers[0]!.tileId = 'L';
+      const setup = scavengeSetup(s, s.hikers[0]!);
+      expect(setup.nodeWeight?.[node]).toBe(BALANCE.weather.boost);
+      expect(setup.bonuses.some((b) => b.source === WEATHERS[id as WeatherId].name)).toBe(true);
+    }
+    const clear = weathered('clear');
+    expect(scavengeSetup(clear, clear.hikers[0]!).weatherSwap).toBeUndefined();
   });
 
-  it('when the weather ends, nodes go back and Shivering and Burning end', () => {
-    const s = weathered('rain', (g) => nodes(g, 'mountain', 'river', 'forest'));
-    setNodeState(s.section.tiles.L!.nodes[0]!, 'flooded');
-    setNodeState(s.section.tiles.M!.nodes[0]!, 'frozen');
-    addStacks(s, ash(s), 'shivering', 2, 'test');
-    addStacks(s, hiker(s, 'birch'), 'burning', 2, 'test');
-    expect(s.section.tiles.L!.nodes[0]).toMatchObject({ type: 'river' });
-    changeWeather(s, 'clear');
-    expect(s.section.tiles.L!.nodes[0]).toEqual({ type: 'mountain', revealed: true });
-    expect(s.section.tiles.M!.nodes[0]).toEqual({ type: 'river', revealed: true });
-    expect(ash(s).conditions).toEqual([]);
-    expect(hiker(s, 'birch').conditions).toEqual([]);
+  it('on any tile, some resource cards become the weather’s node’s, with the weather’s mark', () => {
+    const input: DealInput = {
+      nodes: [{ type: 'mountain', revealed: true }],
+      abundance: 100,
+      luck: 0,
+      count: 4000,
+      weatherSwap: { weather: 'rain', node: 'river', chance: BALANCE.weather.swapChance },
+    };
+    const cards = dealCards(seedRng(9), input);
+    const swapped = cards.filter((c) => c.weather === 'rain');
+    const share = swapped.length / cards.length;
+    expect(share).toBeGreaterThan(BALANCE.weather.swapChance * 0.6);
+    expect(share).toBeLessThan(BALANCE.weather.swapChance * 1.4);
+    for (const c of swapped) {
+      expect(c.node).toBe('river');
+      for (const r of c.resources ?? []) expect(nodeOf(r)).toBe('river');
+    }
+  });
+
+  it('never swaps caps or item cards', () => {
+    const caps: ScavengeCard = {
+      type: 'caps',
+      rarity: 'common',
+      node: null,
+      caps: 2,
+      flipped: false,
+    };
+    const swap = { weather: 'wind' as const, node: 'forest' as const, chance: 1 };
+    expect(weatherSwap(seedRng(1), caps, swap)).toBe(caps);
   });
 });
 
-describe('hiker effects (after the grace day)', () => {
-  it('Drizzle: no clothes and no shelter makes a hiker Wet, then Soaked', () => {
-    const s = weathered('rain', (g) => {
-      place(g, 'ash', 'L');
-      place(g, 'birch', 'R'); // the campsite is a shelter
-    });
-    const one = run(s, END);
-    expect(conditionsOf(one, 'ash')).toEqual(['wet']);
-    expect(conditionsOf(one, 'birch')).toEqual([]);
-    const two = run(one, END);
-    expect(conditionsOf(two, 'ash')).toContain('soaked');
-  });
-
-  it('Drizzle: clothes keep a hiker dry, and wear them', () => {
-    let worn = 0;
-    for (let seed = 1; seed <= 40; seed++) {
-      const s = weathered(
-        'rain',
-        (g) => {
-          place(g, 'ash', 'L');
-          ash(g).inventory.equipped.body = { uid: 'coat', itemId: 'tier3Clothes' };
-        },
-        seed,
-      );
-      const after = run(s, END);
-      expect(conditionsOf(after, 'ash')).toEqual([]);
-      // Tier III stand-in clothes: 10 days of durability at Quality 3.
-      worn += 10 - (ash(after).inventory.equipped.body?.durability ?? 10);
+describe('no other effects', () => {
+  it('a whole stormy-looking week gives nobody a condition and changes no node', () => {
+    for (const id of WEATHER_IDS) {
+      let s = weathered(id);
+      const nodesBefore = JSON.stringify(Object.values(s.section.tiles).map((t) => t.nodes));
+      for (let i = 0; i < 12; i++) s = run(s, END);
+      expect(s.hikers.every((h) => h.conditions.length === 0)).toBe(true);
+      expect(JSON.stringify(Object.values(s.section.tiles).map((t) => t.nodes))).toBe(nodesBefore);
+      expect(hiker(s, 'ash').stats).toBeDefined();
     }
-    expect(Math.abs(worn / 40 - BALANCE.weather.drizzleWear)).toBeLessThan(0.2);
   });
 
-  it('Static Air: lightning strikes a hiker at full Energy: an injury, and Energy to half', () => {
-    const s = weathered('storm', (g) => {
-      place(g, 'ash', 'L', { energy: 10 });
-      place(g, 'birch', 'L', { energy: 9 });
-    });
-    const after = run(s, END);
-    expect(ash(after).injuries).toBe(1);
-    expect(ash(after).stats.energy).toBe(5);
-    expect(hiker(after, 'birch').injuries).toBe(0);
-  });
-
-  it('Sheer Cold: 3 Shivering, less clothes, company and shelter; below 0 warms up', () => {
-    const s = weathered('snow', (g) => {
-      place(g, 'ash', 'L');
-      place(g, 'birch', 'M');
-      place(g, 'cedar', 'M');
-      place(g, 'dot', 'R'); // the campsite, with nobody else: 3 − 2 = 1
-      hiker(g, 'birch').inventory.equipped.body = { uid: 'coat', itemId: 'tier3Clothes' };
-      addStacks(g, hiker(g, 'cedar'), 'shivering', 2, 'earlier');
-    });
-    const after = run(s, END);
-    expect(stacks(after, 'ash', 'shivering')).toBe(3); // alone, no clothes
-    expect(stacks(after, 'birch', 'shivering')).toBe(1); // 3 − 1 coat − 1 hiker
-    expect(stacks(after, 'cedar', 'shivering')).toBe(4); // 2 + (3 − 1 hiker)
-    expect(stacks(after, 'dot', 'shivering')).toBe(1);
-    // Ash is Frozen at 3.
-    expect(validateAction(after, { type: 'move', hikerId: 'ash', toTileId: 'T' })).toMatch(
-      /Frozen/,
-    );
-
-    // Bundled up with everyone in the shelter: 3 − 1 − 3 − 2 = −3, so it goes down.
-    const warm = weathered('snow', (g) => {
-      for (const id of ['ash', 'birch', 'cedar', 'dot']) place(g, id, 'R');
-      ash(g).inventory.equipped.body = { uid: 'coat', itemId: 'tier3Clothes' };
-      addStacks(g, ash(g), 'shivering', 2, 'earlier');
-    });
-    expect(stacks(run(warm, END), 'ash', 'shivering')).toBe(0);
-  });
-
-  it('Blistering Heat: 1 Burning for each clothing item and each hiker with them', () => {
-    const s = weathered('heatwave', (g) => {
-      place(g, 'ash', 'L');
-      place(g, 'birch', 'M');
-      place(g, 'cedar', 'M');
-      hiker(g, 'birch').inventory.equipped.body = { uid: 'coat', itemId: 'tier3Clothes' };
-    });
-    const after = run(s, END);
-    expect(stacks(after, 'ash', 'burning')).toBe(0);
-    expect(stacks(after, 'birch', 'burning')).toBe(2);
-    expect(stacks(after, 'cedar', 'burning')).toBe(1);
-  });
-});
-
-describe('node effects (from the start)', () => {
-  /** How often a node changed over many seeds, in one phase. */
-  function rate(today: WeatherId, type: NodeType, state: string): number {
-    let changed = 0;
-    const tries = 300;
-    for (let seed = 1; seed <= tries; seed++) {
-      const s = fixtureGame({ seed });
-      s.rng = seedRng(seed);
-      nodes(s, type, 'wildlife', 'wildlife');
-      changeWeather(s, today);
-      const after = run(s, END);
-      if (after.section.tiles.L!.nodes[0]!.weather?.state === state) changed += 1;
-    }
-    return changed / tries;
-  }
-
-  it('Floods, Freezing and Forest Fires each catch about 15% of their nodes a phase', () => {
-    const want = BALANCE.weather.nodeChance;
-    expect(Math.abs(rate('rain', 'mountain', 'flooded') - want)).toBeLessThan(0.06);
-    expect(Math.abs(rate('snow', 'river', 'frozen') - want)).toBeLessThan(0.06);
-    expect(Math.abs(rate('heatwave', 'forest', 'fire') - want)).toBeLessThan(0.06);
-  });
-
-  it('a Flooded node counts as River; Frozen and Fire nodes give nothing', () => {
+  it('an old save’s Storm loads as Rain, and its changed nodes go back', () => {
     const s = fixtureGame();
-    nodes(s, 'mountain', 'river', 'forest');
-    place(s, 'ash', 'L');
-    setNodeState(s.section.tiles.L!.nodes[0]!, 'flooded');
-    expect(scavengeSetup(s, ash(s)).nodes.map((n) => n.type)).toEqual(['river']);
-    setNodeState(s.section.tiles.M!.nodes[0]!, 'frozen');
-    place(s, 'ash', 'M');
-    expect(validateAction(s, { type: 'scavenge', hikerId: 'ash' })).toMatch(/frozen or burned/);
-  });
-
-  it('a Fire node isn’t Forest for challenges, and gives the other nodes +1 Luck', () => {
-    const s = fixtureGame();
-    s.section.tiles.L!.nodes = [
-      { type: 'forest', revealed: true },
-      { type: 'river', revealed: true },
+    const old = JSON.parse(serialize(s)) as Record<string, unknown> & {
+      weather: { today: string; ahead: string[] };
+      section: { tiles: Record<string, { nodes: Record<string, unknown>[] }> };
+    };
+    old.saveVersion = 19;
+    old.weather.today = 'storm';
+    old.weather.ahead = ['storm', 'clear', 'rain'];
+    old.section.tiles.L!.nodes = [
+      { type: 'river', revealed: true, weather: { state: 'flooded', was: 'mountain' } },
     ];
-    place(s, 'ash', 'L');
-    const before = scavengeSetup(s, ash(s)).luck;
-    setNodeState(s.section.tiles.L!.nodes[0]!, 'fire');
-    const after = scavengeSetup(s, ash(s));
-    expect(after.luck).toBe(before + BALANCE.weather.fireLuck);
-    expect(after.nodes.map((n) => n.type)).toEqual(['river']);
-    // A Forest-only challenge no longer fits this tile.
-    const forestOnly = Object.values(CARDS).find(
-      (c) =>
-        c.kind === 'challenge' &&
-        !c.gates?.length &&
-        c.nodes !== 'any' &&
-        c.nodes.length === 1 &&
-        c.nodes[0] === 'forest',
-    );
-    expect(forestOnly).toBeDefined();
-    s.section.tiles.L!.nodes = [{ type: 'forest', revealed: true }];
-    expect(cardFits(forestOnly!, s, s.section.tiles.L!, [ash(s)], forestOnly!.tier)).toBe(true);
-    setNodeState(s.section.tiles.L!.nodes[0]!, 'fire');
-    expect(cardFits(forestOnly!, s, s.section.tiles.L!, [ash(s)], forestOnly!.tier)).toBe(false);
-  });
-
-  it('fire spreads to connected Forest tiles, and burns whoever ends a phase on it', () => {
-    let spread = 0;
-    const tries = 200;
-    for (let seed = 1; seed <= tries; seed++) {
-      const s = weathered('clear', (g) => nodes(g, 'forest', 'forest', 'wildlife'), seed);
-      // Fire on L only; M (Forest) is connected to it. Heatwave rolls new fires too.
-      changeWeather(s, 'heatwave');
-      setNodeState(s.section.tiles.L!.nodes[0]!, 'fire');
-      place(s, 'ash', 'L');
-      const after = run(s, END);
-      if (after.section.tiles.M!.nodes[0]!.weather?.state === 'fire') spread += 1;
-      if (seed === 1) expect(stacks(after, 'ash', 'burning')).toBeGreaterThanOrEqual(1);
-    }
-    // 15% to catch on its own, then 35% to spread: about 45% in all.
-    const p = 1 - (1 - BALANCE.weather.nodeChance) * (1 - BALANCE.weather.fireSpread);
-    expect(Math.abs(spread / tries - p)).toBeLessThan(0.08);
-  });
-
-  it('Thunder makes Wildlife cards much rarer while it storms', () => {
-    const s = weathered('storm');
-    place(s, 'ash', 'L');
-    expect(scavengeSetup(s, ash(s)).nodeWeight?.wildlife).toBe(
-      BALANCE.weather.thunderWildlifeWeight,
-    );
-    expect(scavengeSetup(s, ash(s)).bonuses.map((b) => b.source)).toContain('Thunder');
+    const loaded = deserialize(JSON.stringify(old));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.state.weather.today).toBe('rain');
+    expect(loaded.state.weather.ahead).toEqual(['rain', 'clear', 'rain']);
+    expect(loaded.state.section.tiles.L!.nodes).toEqual([{ type: 'mountain', revealed: true }]);
   });
 });

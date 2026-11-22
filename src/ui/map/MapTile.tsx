@@ -255,15 +255,6 @@ export function MapTile({
   );
 }
 
-const NODE_STATE_LABEL = { flooded: 'Flooded', frozen: 'Frozen', fire: 'Fire' } as const;
-
-/** What a weather-changed node is called on the map, and what it does. */
-const NODE_STATE_WORDS = {
-  flooded: 'Flooded node: counts as River until the rain ends',
-  frozen: 'Frozen node: gives nothing until the snow ends',
-  fire: 'Fire node: gives nothing, +1 Luck to the other nodes here',
-} as const;
-
 function NodeBadge({
   node,
   hiddenBg,
@@ -274,10 +265,7 @@ function NodeBadge({
   /** An unrevealed tile on the illustrated map: a pencil hex with "?". */
   pencil?: boolean;
 }) {
-  const changed = node.weather?.state;
-  const name = changed
-    ? NODE_STATE_WORDS[changed]
-    : `${NODE_NAME[node.type]} node${node.bounty ? ' (Bounty)' : ''}`;
+  const name = `${NODE_NAME[node.type]} node${node.bounty ? ' (Bounty)' : ''}`;
   return (
     <div className={styles.node} title={node.revealed ? name : 'Unknown node'}>
       {node.revealed && node.bounty && <div className={styles.bounty} />}
@@ -289,13 +277,6 @@ function NodeBadge({
         >
           ?
         </div>
-      ) : changed ? (
-        <img
-          className={`${styles.nodeImg} ${styles.nodeState}`}
-          src={ASSETS.nodeStates[changed]}
-          alt={name}
-          draggable={false}
-        />
       ) : node.type === 'caps' ? (
         <div className={styles.nodeCaps}>
           <img src={ASSETS.icons.acornCaps} alt={name} draggable={false} />
@@ -448,9 +429,7 @@ function describeTile(tile: Tile, label: string | null): string {
   if (tile.special) parts.push(SPECIAL_LOOK[tile.special].name);
   if (tile.feature) parts.push(FEATURE_LOOK[tile.feature].name);
   if (tile.shelters?.length) parts.push(`Shelter: ${shelterWords(tile)}`);
-  const known = tile.nodes
-    .filter((n) => n.revealed)
-    .map((n) => (n.weather ? NODE_STATE_LABEL[n.weather.state] : NODE_NAME[n.type]));
+  const known = tile.nodes.filter((n) => n.revealed).map((n) => NODE_NAME[n.type]);
   const hidden = tile.nodes.length - known.length;
   parts.push(
     `${tile.nodes.length} node${tile.nodes.length === 1 ? '' : 's'}` +

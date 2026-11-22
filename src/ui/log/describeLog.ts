@@ -294,7 +294,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         const text =
           e.to === 'clear'
             ? `The ${WEATHERS[e.from].name.toLowerCase()} is over: clear skies.`
-            : `${to.name} for the next ${days}: ${to.node?.name} now, ${to.hiker?.name} from tomorrow.`;
+            : `${to.name} for the next ${days}. ${to.line}`;
         lines.push({ id: e.id, text, tone: 'phase' });
         break;
       }

@@ -60,6 +60,53 @@
   }
 }
 
+/* ── Wind: leaves drifting across the land (world pixels) ── */
+
+.leaves {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.leaf {
+  position: absolute;
+  left: -40px;
+  animation-name: leafDrift;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.leafSpin {
+  display: block;
+  animation: leafSpin 3s ease-in-out infinite alternate;
+  filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.25));
+}
+
+@keyframes leafDrift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--w), var(--drop));
+  }
+}
+
+@keyframes leafSpin {
+  from {
+    transform: rotate(-35deg) translateY(-6px);
+  }
+  to {
+    transform: rotate(40deg) translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leaves {
+    display: none;
+  }
+}
+
 /* ── Place names (world pixels) ── */
 
 .label {

@@ -21,6 +21,9 @@ import {
 import { ItemBack } from './ItemBack';
 import { ItemCard } from '../items/ItemCard';
 import { withPreview, type PreviewHandlers } from '../preview/preview';
+import { Icon } from '../icons/Icon';
+import { WEATHERS } from '../../content/weather';
+import { WEATHER_COLOR, WEATHER_ICON } from '../weather/weatherLook';
 import styles from './ScavCard.module.css';
 
 /** Where 1, 2 or 3 resource icons sit, as fractions of the card: left, top, width. */
@@ -294,6 +297,19 @@ function Front({
           }}
         >
           !
+        </span>
+      )}
+      {card.weather && (
+        <span
+          className={styles.weatherMark}
+          title={`From the ${WEATHERS[card.weather].name.toLowerCase()}`}
+          style={{ width: Math.round(S * 0.18), height: Math.round(S * 0.18) }}
+        >
+          <Icon
+            name={WEATHER_ICON[card.weather]}
+            size={Math.round(S * 0.11)}
+            color={WEATHER_COLOR[card.weather]}
+          />
         </span>
       )}
     </>

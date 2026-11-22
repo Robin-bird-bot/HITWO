@@ -16,7 +16,7 @@ import { pickForTile } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
 import { ITEMS, findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
-import { STATE_FROM, changeWeather, setNodeState } from '../weather';
+import { changeWeather } from '../weather';
 import { revealWonder, wonderTile } from '../wonders/wonders';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { runNightEvent } from '../night/nightEvents';
@@ -328,19 +328,6 @@ export function applyDebug(state: GameState, op: DebugOp): void {
         note: `Weather: ${op.weather}${op.hold ? ', holding' : ''}`,
       });
       break;
-    case 'skipGraceDay':
-      state.weather.since = state.day - 1;
-      pushEvent(state, { kind: 'debug', note: 'Skipped the weather’s grace day' });
-      break;
-    case 'nodeState': {
-      const node = state.section.tiles[op.tileId]?.nodes.find(
-        (n) => !n.weather && n.type === STATE_FROM[op.state],
-      );
-      if (!node) return;
-      setNodeState(node, op.state);
-      pushEvent(state, { kind: 'nodesChanged', state: op.state, tiles: [op.tileId] });
-      break;
-    }
     case 'wearClothes': {
       const hiker = state.hikers.find((h) => h.id === op.hikerId);
       const slot = (['body', 'feet', 'gear'] as const).find((s) => !hiker?.inventory.equipped[s]);

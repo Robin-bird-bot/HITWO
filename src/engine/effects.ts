@@ -980,7 +980,7 @@ function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
   return off;
 }
 
-/** Every source affecting a hiker right now, the weather included (Storm's Thunder). */
+/** Every source affecting a hiker right now, the weather included (its scavenging boost). */
 export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
   const weather = WEATHERS[state.weather?.today ?? 'clear'];
@@ -988,7 +988,7 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
     sources.push({
       id: `weather:${weather.id}`,
       kind: 'weather',
-      name: weather.node?.name ?? weather.name,
+      name: weather.name,
       hooks: weather.hooks,
     });
   }
