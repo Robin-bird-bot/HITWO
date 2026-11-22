@@ -13,6 +13,7 @@
  * A hiker chased onto a tile nobody had reached opens its challenge in the
  * morning (the tile waits in the challenge queue).
  */
+import { difficultyOf } from '../../config/difficulty';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
 import { CONDITIONS } from '../../content/conditions';
@@ -84,6 +85,7 @@ export function hitChance(state: GameState, h: Hiker): number {
   if (low) p += low.add;
   // A Disco Harness on the tile makes everyone there less likely to be hit.
   p *= 1 - nightShield(state, h) / 100;
+  p *= difficultyOf(state).nightEventChanceMultiplier;
   return Math.min(1, p);
 }
 

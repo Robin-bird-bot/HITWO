@@ -600,13 +600,6 @@ export interface Hooks {
   ): void;
   /** Why this hiker won't give or trade items to other hikers (Two Sizes Too Small). */
   keepsItems?(ctx: QueryContext): string | undefined;
-  /** When this hiker moves the group at night, nobody pays the night's extra cost (Rednose). */
-  leadsAtNight?(ctx: QueryContext): boolean;
-  /**
-   * Fog never hides the tiles next to this hiker (Rednose).
-   * TODO(phase-11): Fog isn't built yet; `clearsFog` is the hook for it.
-   */
-  clearsFog?(ctx: QueryContext): boolean;
 }
 
 /** A trait's move that doesn't use the action, and what it does to the cost. */
@@ -1866,21 +1859,6 @@ export function keepsItemsReason(state: GameState, hiker: Hiker): string | undef
     if (reason) return reason;
   }
   return undefined;
-}
-
-/** Does nobody pay the night's extra cost when this hiker moves the group (Rednose)? */
-export function leadsAtNight(state: GameState, hiker: Hiker): boolean {
-  const ctx = queryContext(state, hiker);
-  return effectSourcesFor(state, hiker).some((s) => s.hooks.leadsAtNight?.(ctx));
-}
-
-/**
- * Does Fog stay off the tiles next to this hiker (Rednose)?
- * TODO(phase-11): Fog asks this when it's built.
- */
-export function clearsFog(state: GameState, hiker: Hiker): boolean {
-  const ctx = queryContext(state, hiker);
-  return effectSourcesFor(state, hiker).some((s) => s.hooks.clearsFog?.(ctx));
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────

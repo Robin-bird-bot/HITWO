@@ -4,7 +4,7 @@
  * shown on the debug map page.
  */
 import { BALANCE } from '../../config/balance';
-import { WONDER_BY_ID } from '../../content/wonders';
+import { ENABLE_WONDERS, WONDER_BY_ID } from '../../content/wonders';
 import { LINE_KINDS, NODE_TYPES, type Section, type Tile, type TileId } from '../types';
 
 const cfg = BALANCE.trail;
@@ -108,9 +108,14 @@ export function checkSection(section: Section): string[] {
     for (const t of tiles) if (!reached.has(t.id)) problems.push(`Tile ${t.id} can’t be reached.`);
   }
 
-  // ── The Wonder: exactly one, on a plain middle tile with no nodes ──
+  // ── The Wonder: exactly one, on a plain middle tile with no nodes (none while they're off) ──
   const wonders = tiles.filter((t) => t.wonder);
-  if (wonders.length !== 1) problems.push(`Expected 1 Wonder, found ${wonders.length}.`);
+  const wantWonders = ENABLE_WONDERS ? 1 : 0;
+  if (wonders.length !== wantWonders) {
+    problems.push(
+      `Expected ${wantWonders} Wonder${wantWonders === 1 ? '' : 's'}, found ${wonders.length}.`,
+    );
+  }
   for (const t of wonders) {
     if (t.kind !== 'normal') problems.push(`The ${t.kind} ${t.id} holds the Wonder.`);
     if (t.nodes.length) problems.push(`The Wonder tile ${t.id} has nodes.`);

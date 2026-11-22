@@ -8,7 +8,13 @@
  * reachable from the trailhead and can reach the checkpoint.
  */
 import { BALANCE } from '../../config/balance';
-import { WONDERS } from '../../content/wonders';
+import {
+  DEFAULT_DIFFICULTY,
+  DIFFICULTY,
+  MAX_CHALLENGES_IN_A_ROW,
+  type DifficultyId,
+} from '../../config/difficulty';
+import { ENABLE_WONDERS, WONDERS } from '../../content/wonders';
 import { int, pick, roll, shuffle, weightedPick, type Weighted } from '../rng';
 import {
   LINE_KINDS,
@@ -38,6 +44,13 @@ export interface SectionOptions {
    * passes them when it makes the next section).
    */
   usedWonders?: readonly string[];
+  /** The difficulty: how many rows, and how many plain tiles hold a challenge (Phase 10.6). */
+  difficulty?: DifficultyId;
+}
+
+/** How many middle rows a section has at this difficulty. */
+export function middleRowsFor(difficulty: DifficultyId = DEFAULT_DIFFICULTY): number {
+  return Math.max(1, Math.round(cfg.middleRows * DIFFICULTY[difficulty].sectionRows));
 }
 
 export const tileId = (row: number, col: number): TileId => `r${row}c${col}`;
@@ -58,14 +71,14 @@ const colsOf = (span: RowSpan) => Array.from({ length: span.width }, (_, i) => s
 const centerOf = (span: RowSpan) => span.start + span.width - 1;
 
 /** The cols in each row, from the trailhead (row 0) to the checkpoint. */
-function layoutRows(rng: RngState): number[][] {
+function layoutRows(rng: RngState, middleRows: number): number[][] {
   const rows: number[][] = [[0]];
   let span: RowSpan = EDGE_WIDTH === 2 ? { start: -1, width: 2 } : { start: 1, width: 1 };
   rows.push(colsOf(span));
 
   const w = cfg.widthChangeWeights;
-  for (let r = 1; r < cfg.middleRows; r++) {
-    const rowsAfter = cfg.middleRows - 1 - r;
+  for (let r = 1; r < middleRows; r++) {
+    const rowsAfter = middleRows - 1 - r;
     const center = centerOf(span);
     const towardCenter = (shift: number) =>
       Math.sign(center) === -Math.sign(shift) ? cfg.recenterWeight : 1;
@@ -221,22 +234,90 @@ function placeWonder(rng: RngState, middle: Tile[], used: readonly string[]): vo
 // ── Section ────────────────────────────────────────────────────────────────
 
 /**
- * CHALLENGE_SHARE: below 1, only that share of the plain tiles holds a card;
- * the rest are quiet. Special spaces and the Wonder keep theirs. At 1 nothing
- * changes, and the random numbers aren't touched, so seeds give the same trail.
+ * What each plain tile holds (Phase 10.6). Plain tiles are every middle tile
+ * without a special space. `round(challengeShare × plain)` of them get a
+ * challenge, placed so no path from the trailhead up has more than
+ * MAX_CHALLENGES_IN_A_ROW in a row, if that can be avoided. Then
+ * `opportunitiesPerSection` of the rest get an opportunity, and every other
+ * plain tile is quiet: only scavenging. Special spaces keep working as before.
  */
-function markQuiet(rng: RngState, middle: Tile[], share: number): void {
-  if (share >= 1) return;
+function placeCards(rng: RngState, middle: Tile[], lines: Line[], difficulty: DifficultyId): void {
+  const d = DIFFICULTY[difficulty];
   const plain = middle.filter((t) => !t.special && !t.wonder);
-  const quiet = Math.round(plain.length * (1 - Math.max(0, share)));
-  for (const t of shuffle(rng, plain).slice(0, quiet)) t.quiet = true;
+  const want = Math.round(Math.max(0, Math.min(1, d.challengeShare)) * plain.length);
+  const order = shuffle(rng, plain);
+  const ids = new Set<TileId>();
+  const skipped: Tile[] = [];
+  for (const t of order) {
+    if (ids.size >= want) break;
+    ids.add(t.id);
+    if (longestRun(ids, lines, middle) > MAX_CHALLENGES_IN_A_ROW) {
+      ids.delete(t.id);
+      skipped.push(t);
+    }
+  }
+  // Can't be avoided: fill up with the ones that make a long run.
+  for (const t of skipped) {
+    if (ids.size >= want) break;
+    ids.add(t.id);
+  }
+  const rest = shuffle(
+    rng,
+    plain.filter((t) => !ids.has(t.id)),
+  );
+  const opportunities = Math.min(d.opportunitiesPerSection, rest.length);
+  rest.forEach((t, i) => {
+    if (i < opportunities) t.opportunity = true;
+    else t.quiet = true;
+  });
+}
+
+/**
+ * The longest run of challenge tiles in a row along a path that only goes up
+ * or sideways (the way from the trailhead to the checkpoint).
+ */
+export function longestRun(
+  ids: ReadonlySet<TileId>,
+  lines: readonly Line[],
+  tiles: readonly Tile[],
+): number {
+  const row = new Map(tiles.map((t) => [t.id, t.row]));
+  const next = new Map<TileId, TileId[]>();
+  const link = (from: TileId, to: TileId) => {
+    if (!ids.has(from) || !ids.has(to)) return;
+    const ra = row.get(from);
+    const rb = row.get(to);
+    if (ra === undefined || rb === undefined || rb < ra) return;
+    next.set(from, [...(next.get(from) ?? []), to]);
+  };
+  for (const l of lines) {
+    link(l.a, l.b);
+    link(l.b, l.a);
+  }
+  let best = 0;
+  const seen = new Set<TileId>();
+  const walk = (id: TileId, length: number) => {
+    best = Math.max(best, length);
+    for (const n of next.get(id) ?? []) {
+      if (seen.has(n)) continue;
+      seen.add(n);
+      walk(n, length + 1);
+      seen.delete(n);
+    }
+  };
+  for (const id of ids) {
+    seen.add(id);
+    walk(id, 1);
+    seen.delete(id);
+  }
+  return best;
 }
 
 export function generateSection(
   rng: RngState,
-  { biome, tier, usedWonders = [] }: SectionOptions,
+  { biome, tier, usedWonders = [], difficulty = DEFAULT_DIFFICULTY }: SectionOptions,
 ): Section {
-  const rows = layoutRows(rng);
+  const rows = layoutRows(rng, middleRowsFor(difficulty));
   const lastRow = rows.length - 1;
   const tiles: Record<TileId, Tile> = {};
   const middle: Tile[] = [];
@@ -253,8 +334,9 @@ export function generateSection(
   const lines = makeLines(rng, rows);
   for (const tile of middle) decorate(rng, tile, biome);
   addSideFeatures(rng, middle);
-  placeWonder(rng, middle, usedWonders);
-  markQuiet(rng, middle, BALANCE.challenges.share[biome] ?? 1);
+  // Wonders are switched off for now (Phase 10.6).
+  if (ENABLE_WONDERS) placeWonder(rng, middle, usedWonders);
+  placeCards(rng, middle, lines, difficulty);
 
   return {
     biome,

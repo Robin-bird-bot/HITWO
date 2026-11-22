@@ -10,6 +10,7 @@
  */
 import { BALANCE } from '../../config/balance';
 import { CARDS, CHALLENGES } from '../../content/challenges';
+import { ENABLE_WONDERS } from '../../content/wonders';
 import { skipsChallenges } from '../effects';
 import { pushEvent } from '../log';
 import { pick } from '../rng';
@@ -62,7 +63,8 @@ export function revealTile(
   leaderId?: HikerId,
 ): void {
   // A Wonder never draws a card: landing there reveals it, even mid-challenge.
-  if (state.section.tiles[tileId]?.wonder) {
+  // Wonders are switched off for now (Phase 10.6).
+  if (ENABLE_WONDERS && state.section.tiles[tileId]?.wonder) {
     revealWonder(state, tileId);
     return;
   }
@@ -191,7 +193,9 @@ export function openNext(state: GameState): void {
  */
 export function revealCardOn(state: GameState, tileId: TileId, cause: string): string | undefined {
   const tile = state.section.tiles[tileId];
-  if (tile?.wonder) return revealWonder(state, tileId, cause) ? tile.wonder.id : undefined;
+  if (ENABLE_WONDERS && tile?.wonder) {
+    return revealWonder(state, tileId, cause) ? tile.wonder.id : undefined;
+  }
   if (!tile || tile.visited || !triggers(state, tileId)) return undefined;
   // Picked already but not shown (a Security Camera): show it now.
   if (tile.revealedCard?.hidden) {

@@ -2,6 +2,7 @@
  * The shape of the whole game. Everything here is plain JSON data so a game
  * can be saved, loaded, replayed and compared in tests.
  */
+import type { DifficultyId } from '../config/difficulty';
 import type { StationThemeId } from './station/types';
 import type { WonderPick, WonderState } from './wonders/types';
 
@@ -111,8 +112,10 @@ export interface Tile {
     /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
     hidden?: true;
   };
-  /** No card here: CHALLENGE_SHARE left it empty, or a Fire Flower burned it away. */
+  /** No card here: a quiet tile (Phase 10.6 difficulty), or a Fire Flower burned it away. */
   quiet?: true;
+  /** A plain tile that holds an opportunity, not a challenge (Phase 10.6 difficulty). */
+  opportunity?: true;
   /** What scouting found out, shown on the map: a card or not, and maybe its kind and tier. */
   scan?: { has: boolean; kind?: 'challenge' | 'opportunity' | 'trial'; tier?: number };
   /** Shelters placed on this tile, by a hiker or Ruins. */
@@ -1510,6 +1513,8 @@ export interface GameState {
    * the trail log says "Found …" once for each.
    */
   foundPlaces?: string[];
+  /** The difficulty (Phase 10.6): always Medium for now; the debug panel can switch it. */
+  difficulty?: DifficultyId;
   /** A Present opened by a Choosy hiker: the items to pick 1 from. Everything else waits for it. */
   presentPick?: PresentPick;
   /** The last day anyone in the party opened a Present (Holiday Spirit). */

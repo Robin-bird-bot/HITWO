@@ -9,6 +9,7 @@
  *   Choice offers two challenges.
  */
 import { BALANCE } from '../../config/balance';
+import { difficultyOf } from '../../config/difficulty';
 import { CHALLENGES, OPPORTUNITIES, TRIALS } from '../../content/challenges';
 import { weightedPick } from '../rng';
 import { nodeCounts } from '../weather';
@@ -29,7 +30,11 @@ const MAX_TIER: Tier = 3;
 
 /** Why a card can't be played at all yet, if anything (a system that isn't built). */
 export function notPlayableYet(card: CardDef): string | undefined {
-  if (card.kind === 'trial') return card.goal.kind === 'off' ? card.goal.waitingOn : undefined;
+  if (card.kind === 'trial') {
+    // Trials are switched off for now (Phase 10.6), Rocco's included.
+    if (card.enabled === false) return 'Trials are switched off for now.';
+    return card.goal.kind === 'off' ? card.goal.waitingOn : undefined;
+  }
   return card.waitingOn;
 }
 
@@ -101,7 +106,7 @@ function pickOne(
 
 /** The tier a tile's card plays at, before Challenge spaces. */
 export function tileTier(state: GameState, tile: Tile): number {
-  return state.section.tier + (tile.tierBonus ?? 0);
+  return state.section.tier + (tile.tierBonus ?? 0) + difficultyOf(state).challengeTierOffset;
 }
 
 /**
@@ -148,15 +153,11 @@ export function pickForTile(
     return { cardId: first, tier, scale, ...(second ? { alternative: second } : {}) };
   }
 
-  const { challenge, trial, opportunity } = BALANCE.challenges.mix;
-  const trialsFull = (state.trials?.length ?? 0) >= BALANCE.challenges.maxTrials;
-  const kind = weightedPick<ChallengeKind>(rng, [
-    { item: 'challenge', weight: challenge },
-    { item: 'trial', weight: trialsFull ? 0 : trial },
-    { item: 'opportunity', weight: opportunity },
-  ]);
-  // If nothing of that kind fits here, fall back to a challenge, then an opportunity.
-  for (const k of [kind, 'challenge', 'opportunity'] as ChallengeKind[]) {
+  // A plain tile (Phase 10.6): what the section placed there. An opportunity
+  // tile only draws opportunities; a challenge tile falls back to an
+  // opportunity only if no challenge fits its nodes.
+  const kinds: ChallengeKind[] = tile.opportunity ? ['opportunity'] : ['challenge', 'opportunity'];
+  for (const k of kinds) {
     const id = pickOne(rng, k, state, tile, onTile, tier);
     if (id)
       return { cardId: id, tier, scale: k === 'opportunity' ? opportunityScale(base) : scale };

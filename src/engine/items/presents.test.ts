@@ -525,19 +525,14 @@ describe('the holiday Morale traits', () => {
   });
 });
 
-describe('Rednose', () => {
-  it('moving the group at night: nobody pays the extra night cost', () => {
+describe('Rednose (no effect for now, Phase 10.6)', () => {
+  it('moving the group at night costs the same as without it', () => {
     const night = (traits: string[]) => {
       let s = party({ birch: traits });
       while (s.phase !== 'night') s = run(s, END);
       return moveAllCost(s, 'birch', 'L', ['cedar', 'dot'])!;
     };
-    const plain = night([]);
-    const rednose = night(['rednose']);
-    const extra = BALANCE.night.moveExtraAppetite;
-    expect(rednose[0]!.cost.appetite).toBe(plain[0]!.cost.appetite - extra);
-    expect(rednose[1]!.cost.appetite).toBe(plain[1]!.cost.appetite - extra);
-    expect(rednose[2]!.cost.appetite).toBe(plain[2]!.cost.appetite - extra);
+    expect(night(['rednose'])).toEqual(night([]));
   });
 
   it('by day, and moving alone, nothing changes', () => {

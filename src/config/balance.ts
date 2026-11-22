@@ -447,8 +447,8 @@ export const BALANCE = {
 
   /** Challenges, opportunities and Trials (docs/design/04-challenges.md). */
   challenges: {
-    /** What a new tile gets (Wyatt, Nov 5: 70 / 20 / 10). */
-    mix: { challenge: 70, trial: 20, opportunity: 10 },
+    // What each plain tile holds is decided when the section is made, by the
+    // difficulty (src/config/difficulty.ts, Phase 10.6). Trials are switched off.
     /**
      * A challenge one tier above its own has its ranges scaled by this
      * (Wyatt, Nov 5: ×1.5). Backwards ranges (Dangerous Current) shrink.
@@ -473,13 +473,6 @@ export const BALANCE = {
      * trailhead and the checkpoint.
      */
     noCardOn: [] as readonly SpecialSpace[],
-    /**
-     * CHALLENGE_SHARE: the share of each biome's plain tiles (no special space,
-     * no Wonder) that hold a card. 1 means every one, as before. Below 1, the
-     * rest are quiet, and the scouting tools are worth more. Special spaces
-     * and Wonders always keep theirs. TODO(wyatt): try lowering it.
-     */
-    share: { meadow: 1, temperateRainforest: 1, alpine: 1 } as Record<BiomeId, number>,
     /**
      * On a Challenge space, each passing hiker gets one of these at random: an
      * item, Lucky for 1 day, or the XP again. TODO(wyatt): first guess.

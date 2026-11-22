@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { ITEMS, TIER_3_ITEMS } from '../../content';
-import { WONDER_BY_ID, WONDERS } from '../../content/wonders';
+import { ENABLE_WONDERS, WONDER_BY_ID, WONDERS } from '../../content/wonders';
 import { validateAction } from '../applyAction';
 import { revealableFrom, unrevealedTiles } from '../challenges/buttons';
 import { revealCardOn } from '../challenges/reveal';
@@ -43,7 +43,8 @@ const accomplish = (picks: Record<HikerId, WonderPick>): Action => ({
   picks,
 });
 
-describe('Wonder tiles', () => {
+// Wonders are switched off for now (Phase 10.6); these run again when they're back.
+describe.skipIf(!ENABLE_WONDERS)('Wonder tiles', () => {
   it('every section gets exactly one, on a plain tile with no nodes', () => {
     const seen = new Set<string>();
     for (let seed = 1; seed <= 300; seed++) {
@@ -82,7 +83,8 @@ describe('Wonder tiles', () => {
   });
 });
 
-describe('revealing a Wonder', () => {
+// Wonders are switched off for now (Phase 10.6); these run again when they're back.
+describe.skipIf(!ENABLE_WONDERS)('revealing a Wonder', () => {
   it('landing there reveals it: 3 goals that can be met now, and 3 Tier III items, never a card', () => {
     for (let seed = 1; seed <= 20; seed++) {
       const s = withWonder('fort-rock', (g) => {

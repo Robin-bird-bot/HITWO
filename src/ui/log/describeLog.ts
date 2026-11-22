@@ -7,7 +7,7 @@ import { CARDS, CONDITIONS, ITEMS } from '../../content';
 import { presentName } from '../../content/items/presents';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
 import { WEATHERS } from '../../content/weather';
-import { WONDER_BY_ID } from '../../content/wonders';
+import { ENABLE_WONDERS, WONDER_BY_ID } from '../../content/wonders';
 import {
   paidCause,
   type BiomeId,
@@ -711,6 +711,8 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         break;
       }
       case 'wonderRevealed': {
+        // Wonders are switched off for now (Phase 10.6): their lines don't show.
+        if (!ENABLE_WONDERS) break;
         const name = WONDER_BY_ID[e.wonderId]?.name ?? 'a Wonder';
         lines.push({
           id: e.id,
@@ -720,6 +722,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         break;
       }
       case 'wonderAccomplished': {
+        if (!ENABLE_WONDERS) break;
         const def = WONDER_BY_ID[e.wonderId];
         const parts = Object.entries(e.picks).map(([id, pick]) => {
           const r = def?.rewards[pick.reward];

@@ -95,12 +95,14 @@ function ch(input: ChallengeInput): ChallengeDef {
   } as ChallengeDef;
 }
 
+/** Every Trial is switched off for now (Phase 10.6), Rocco Raccoon's included. */
 function trial(input: TrialInput): TrialDef {
   return {
     art: true,
     ...input,
     id: slug(input.name),
     kind: 'trial',
+    enabled: false,
     description: DESCRIPTION,
     descriptionPlaceholder: true,
   } as TrialDef;

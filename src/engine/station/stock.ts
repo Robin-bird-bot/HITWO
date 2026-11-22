@@ -255,6 +255,7 @@ export function openStation(state: GameState): StationVisit {
     biome: biomes[nextIndex] ?? biomes[biomes.length - 1] ?? 'meadow',
     tier: Math.min(nextIndex + 1, 3),
     usedWonders: state.usedWonders ?? [],
+    ...(state.difficulty ? { difficulty: state.difficulty } : {}),
   });
   return { checkpoint, themeId: theme.id, ...rollStock(state, theme, checkpoint), next };
 }
