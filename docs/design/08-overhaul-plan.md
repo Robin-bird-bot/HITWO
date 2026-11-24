@@ -102,6 +102,8 @@ Numbers in \[brackets\] are first guesses.
 
 ## Challenges and opportunities (Phase 10.8)
 
+> Minigame look, the party GPS and the pop-up are in `10-minigames.md`.
+
 **Decided**
 
 - **Fewer challenges, each one fun.** Most challenges become short minigames, built from a small library of base games. Each base game gets several "skins": the same game, set up differently for different challenges.

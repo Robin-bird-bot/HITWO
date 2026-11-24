@@ -23,6 +23,7 @@ import { GameScreen } from './ui/game/GameScreen';
 import { Stage } from './ui/stage/Stage';
 import { describeSave } from './ui/title/describeSave';
 import { TitleScreen } from './ui/title/TitleScreen';
+import { MinigameTesting } from './ui/minigames/MinigameTesting';
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -36,7 +37,7 @@ const NOTICES: Record<LoadFailure, string | null> = {
 export function App() {
   const hash = useHash();
   const game = useGame();
-  const [screen, setScreen] = useState<'title' | 'select' | 'game'>('title');
+  const [screen, setScreen] = useState<'title' | 'select' | 'game' | 'minigames'>('title');
   /** The party a new hike will start with, waiting for "replace my saved hike?". */
   const [pending, setPending] = useState<readonly HikerSetup[] | null>(null);
 
@@ -107,6 +108,15 @@ export function App() {
     );
   }
 
+  // Minigame testing (Phase 10.8): its own screen, which never touches the saved hike.
+  if (screen === 'minigames') {
+    return (
+      <Stage>
+        <MinigameTesting onBack={() => setScreen('title')} />
+      </Stage>
+    );
+  }
+
   const problem = gameStore.loadProblem;
   return (
     <Stage>
@@ -115,6 +125,7 @@ export function App() {
         notice={!game && problem ? NOTICES[problem] : null}
         onContinue={() => setScreen('game')}
         onNewHike={() => setScreen('select')}
+        onMinigames={() => setScreen('minigames')}
         {...(debugEnabled()
           ? {
               testPicker: <TestHikerPicker onStart={(ids) => startAsking(testHikers(ids))} />,

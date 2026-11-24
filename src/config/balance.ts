@@ -995,6 +995,60 @@ export const BALANCE = {
     maxEvents: 200,
   },
 
+  /**
+   * Minigames (Phase 10.8, docs/design/10-minigames.md): the party GPS and
+   * Bearrels. TODO(wyatt): every number here is a first guess.
+   */
+  minigames: {
+    gps: {
+      /** The GPS lifts over this long (with a small overshoot), and lowers over this. */
+      liftMs: 600,
+      lowerMs: 400,
+      /** Lifted, the screen is as large as fits, up to this share of the window width. */
+      maxScreenWidth: 0.88,
+      /** On a phone in landscape, the screen gets at least this share of the height. */
+      phoneScreenHeight: 0.8,
+      /** The stage counts as a phone when it's drawn smaller than this. */
+      phoneBelowScale: 0.6,
+      /** The pop-up behind dims to this brightness. */
+      dim: 0.35,
+    },
+    bearrels: {
+      barrels: { min: 3, max: 6, default: 3 },
+      rounds: { min: 1, max: 5, default: 3 },
+      shots: { min: 1, max: 2, default: 1 },
+      hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
+      /** The barrel row (scene units: 1280 × 720). */
+      rowX: [150, 1130] as const,
+      barrelTop: 418,
+      maxBarrelWidth: 150,
+      /** Barrel width = min(max, 980 ÷ (barrels − 1) × this). */
+      widthShare: 0.7,
+      heightRatio: 1.06,
+      /** Hikers behind a barrel: their scale alone, two, and three or four. */
+      hikerScale: { one: 1.05, two: 0.8, more: 0.6 },
+      hikerSpacing: 76,
+      headAbove: 56,
+      timing: {
+        slideMs: 250,
+        bearUpMs: 450,
+        sweepMs: 1400,
+        holdMs: 300,
+        fireMs: 450,
+        flashInMs: 60,
+        flashOutMs: 400,
+        secondShotMs: 600,
+        duckMs: 500,
+        betweenRoundsMs: 700,
+      },
+      /** The red flash's strength, and with reduced motion. */
+      flash: 0.4,
+      softFlash: 0.2,
+      /** A hit hiker tips over this far (degrees). */
+      tipDegrees: -24,
+    },
+  },
+
   /** Screen timings (Nov 14 update). */
   ui: {
     /**

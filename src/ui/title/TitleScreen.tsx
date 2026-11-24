@@ -9,6 +9,8 @@ interface TitleScreenProps {
   notice?: string | null;
   onContinue(): void;
   onNewHike(): void;
+  /** The Minigame testing tab (Phase 10.8): always shown for now. */
+  onMinigames?(): void;
   /** Dev only: a picker for a hike with test hikers (Phase 10a). */
   testPicker?: ReactNode;
 }
@@ -18,6 +20,7 @@ export function TitleScreen({
   notice,
   onContinue,
   onNewHike,
+  onMinigames,
   testPicker,
 }: TitleScreenProps) {
   return (
@@ -58,6 +61,11 @@ export function TitleScreen({
         ) : (
           <button type="button" className={styles.newHike} onClick={onNewHike} autoFocus>
             New Hike
+          </button>
+        )}
+        {onMinigames && (
+          <button type="button" className={styles.plain} onClick={onMinigames}>
+            Minigame testing
           </button>
         )}
         {notice && (

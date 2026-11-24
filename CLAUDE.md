@@ -18,6 +18,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/07-characters.md` | The classes, the Plush family, every character and the new traits that came from them. **Source of truth for characters.** |
 | `docs/design/08-overhaul-plan.md` | The gameplay overhaul (Phases 10.6–10.8 and the Phase 12 UI ideas). **Wins over the older design docs where Phase 10.6 changed them.** |
 | `docs/design/09-hikers.md` | Skill Trails, party XP, morale types and the first 6 hikers' trees (Phase 10.7). The trees as data are in `docs/design/skill-trails/`. **Source of truth for hikers; wins over 07 and 08 where they disagree.** |
+| `docs/design/10-minigames.md` | The challenge pop-up, the party GPS, the minigame art style (look C), Bearrels and the Minigame testing tab (Phase 10.8). |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |
