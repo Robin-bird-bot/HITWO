@@ -401,6 +401,8 @@ export interface ItemInstance {
   quality?: 1 | 2 | 3 | 4 | 5;
   /** Tools: uses left. */
   usesLeft?: number;
+  /** Tools: carries The Proper Way's extra use (counted in usesLeft), lost when it leaves that pack. */
+  extraUse?: true;
   /** Food: bites left. */
   bitesLeft?: number;
   /** Shelters (Phase 10.6): times it can still be set up (full when missing). */
@@ -673,6 +675,8 @@ export interface PendingCraft {
   options: { itemId: ItemId; quality?: 1 | 2 | 3 | 4 | 5 }[];
   /** Extra durability for clothes (Engineering Vest). */
   durability?: number;
+  /** Food: Appetite added to every bite (Garbage Connoisseur's swaps; Phase 10.7). */
+  biteMod?: number;
   /** What was paid, for the log. */
   paid: PaidSlot[];
 }
@@ -702,6 +706,8 @@ export interface ScavengeRecord {
   hikerId: HikerId;
   tileId: TileId;
   nodes: NodeType[];
+  /** The phase it was in (Copydog's "earlier this phase"; Phase 10.7). Older records have none. */
+  phase?: Phase;
 }
 
 // ── Challenges, opportunities and Trials ───────────────────────────────────
@@ -1239,6 +1245,8 @@ export type GameEventBody =
   | { kind: 'blueprintFound'; hikerId: HikerId; itemId: ItemId; cause: string }
   /** A hiker taught another a blueprint, for Morale. */
   | { kind: 'taught'; hikerId: HikerId; toId: HikerId; itemId: ItemId; morale: number }
+  /** Blueprints learned all at once (Family Cookbook, Toy Chest: Phase 10.7). */
+  | { kind: 'blueprints'; hikerId: HikerId; itemIds: ItemId[]; cause: string }
   /** A named place on the illustrated map was painted for the first time. */
   | { kind: 'found'; name: string }
   /** A hiker wrapped a Present (Gift Wrapper). */
@@ -1344,6 +1352,8 @@ export type GameEventBody =
       dropped?: true;
       /** The card was Empty: it gave nothing. */
       empty?: true;
+      /** Kept at once as the cards were dealt (MBA III); the hiker still takes another. */
+      kept?: true;
     }
   | { kind: 'ability'; hikerId: HikerId; abilityId: string; choice?: string }
   /** `node` only in logs from before the one bar (save v13 and older). */

@@ -160,16 +160,21 @@ export function moveAllCost(
 
   // Puller: the mover pays Energy instead of their Appetite for the group move.
   // TODO(wyatt): a flat 1 Energy in place of all of the mover's Appetite (the doc's open question).
+  // Leash Puller (Phase 10.7): nobody in the group pays Appetite either.
   const pull = pullsGroup(state, mover);
   const moverCost = pull
     ? { ...own, appetite: 0, energy: own.energy + pull.energy }
     : withTrailShoes(state, mover, { ...own, appetite: moverAppetite });
   return [
-    { hikerId: mover.id, cost: moverCost, share: own.appetite },
-    ...brought.map((b) => ({
-      hikerId: b.id,
-      cost: withTrailShoes(state, b, crossingCost(state, b, mover, crossing, 'brought')),
-      share: shares.get(b.id) ?? 0,
-    })),
+    { hikerId: mover.id, cost: moverCost, share: pull ? 0 : own.appetite },
+    ...brought.map((b) => {
+      const cost = crossingCost(state, b, mover, crossing, 'brought');
+      const free = pull?.everyone;
+      return {
+        hikerId: b.id,
+        cost: free ? { ...cost, appetite: 0 } : withTrailShoes(state, b, cost),
+        share: free ? 0 : (shares.get(b.id) ?? 0),
+      };
+    }),
   ];
 }

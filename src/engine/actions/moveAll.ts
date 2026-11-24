@@ -1,9 +1,10 @@
 import { ownerLeft } from '../items/shelters';
-import { revealTile } from '../challenges/reveal';
+import { opensOnArrival, revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveAllCost } from '../costs';
 import {
   bringReach,
+  broughtWaivers,
   canActReason,
   effectSourcesFor,
   fireMove,
@@ -82,7 +83,10 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   if (!line || !costs) throw new Error('applyMoveAll: not adjacent');
 
   const from = mover.tileId;
-  const firstHere = !state.section.tiles[action.toTileId]?.visited;
+  const target = state.section.tiles[action.toTileId];
+  const firstHere = !target?.visited;
+  // A card still waiting on a visited tile opens too (a Prepper went there alone).
+  const opens = !!target && opensOnArrival(target);
   // A Move All paints the line in the mover's color, if nobody crossed it first (Phase 10.5).
   line.walkedBy ??= mover.id;
   const group = [mover, ...action.bring.map((id) => mustFindHiker(state, id))];
@@ -91,13 +95,20 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   const keep = effectSourcesFor(state, mover).find((s) =>
     s.hooks.broughtKeepAction?.(action.bring.length, ctx),
   );
+  // Leash Puller II and III (off), Experienced Traveler II: each brought hiker's own roll.
+  const waivers = new Map(
+    group.filter((h) => h !== mover).map((h) => [h.id, broughtWaivers(state, mover, h)] as const),
+  );
   for (const h of group) {
     h.cameFrom = h.tileId;
     h.tileId = action.toTileId;
     // Their own trait can keep their action too (Follower).
-    const keeps = h === mover ? undefined : (keep ?? keepsActionWhenBrought(state, h));
+    const keeps =
+      h === mover
+        ? undefined
+        : (keep?.name ?? waivers.get(h.id)?.keepAction ?? keepsActionWhenBrought(state, h)?.name);
     if (keeps) {
-      pushEvent(state, { kind: 'freeAction', hikerId: h.id, cause: keeps.name });
+      pushEvent(state, { kind: 'freeAction', hikerId: h.id, cause: keeps });
       continue;
     }
     spendAction(state, h);
@@ -119,6 +130,20 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   // Just Around the Next Corner: each hiker's part of the move may cost no Appetite.
   // Rolled once they've arrived, since it depends on where they are.
   let freed = 0;
+  // A brought hiker whose roll came up: their part of the move costs no Appetite.
+  for (const c of costs) {
+    const by = waivers.get(c.hikerId)?.appetite;
+    if (!by || (c.share ?? 0) + c.cost.appetite <= 0) continue;
+    freed += c.share ?? 0;
+    c.share = 0;
+    c.cost = { ...c.cost, appetite: 0 };
+    pushEvent(state, {
+      kind: 'trait',
+      hikerId: c.hikerId,
+      trait: by,
+      text: `${mustFindHiker(state, c.hikerId).name}’s part of the move cost no Appetite.`,
+    });
+  }
   for (const c of costs) {
     const part = (c.share ?? 0) + (c.hikerId === mover.id ? 0 : c.cost.appetite);
     if (part <= 0) continue;
@@ -159,5 +184,5 @@ export function applyMoveAll(state: GameState, action: MoveAllAction): void {
   checkInArrivals(state, arrived, action.toTileId);
   // The first hikers to land on a tile trigger its card.
   // The leader is remembered: Alpha Dog takes the harm of a challenge they lead the group into.
-  if (firstHere) revealTile(state, action.toTileId, arrived, undefined, mover.id);
+  if (opens) revealTile(state, action.toTileId, arrived, undefined, mover.id);
 }

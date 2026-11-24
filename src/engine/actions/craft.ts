@@ -13,7 +13,7 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted, countFoodCrafted } from '../counters';
 import { foodAppetiteEstimate } from '../items/foodValue';
-import { computeCost, fireCraft, fireAction, wrapsPresents } from '../effects';
+import { computeCost, fireCraft, fireAction, recipeSubs, wrapsPresents } from '../effects';
 import { bagSlots } from '../inventory';
 import {
   autoPay,
@@ -28,6 +28,7 @@ import {
   paymentReason,
   rollTrinketRecipe,
   spend,
+  swapsIn,
   CRAFT_TYPES,
 } from '../items/craft';
 import { earnFreeMove } from '../items/freeMoves';
@@ -114,6 +115,10 @@ export function applyCraft(state: GameState, action: CraftAction): void {
   const hiker = mustFindHiker(state, action.hikerId);
   const slots = slotsFor(state, hiker, action).filter((s): s is PaidSlot => !!s);
   const setup = craftSetup(state, hiker, action.itemType);
+  // Garbage Connoisseur: each resource swapped in changes every bite's Appetite.
+  const recipe = craftRecipe(state, hiker, action.itemType, action.blueprint);
+  const subs = recipeSubs(state, hiker, action.itemType);
+  const biteMod = subs && recipe ? subs.perSwap * swapsIn(recipe, slots) : 0;
   if (!atWorkbench(state, hiker)) spendAction(state, hiker);
   spend(state, slots);
 
@@ -124,6 +129,7 @@ export function applyCraft(state: GameState, action: CraftAction): void {
       durability: setup.durability,
       paid: slots,
       ...(action.node ? { node: action.node } : {}),
+      ...(biteMod ? { biteMod } : {}),
     });
     return;
   }
@@ -132,6 +138,7 @@ export function applyCraft(state: GameState, action: CraftAction): void {
     type: action.itemType,
     options: dealCraft(state, action.itemType, craftTier(state, hiker, action.itemType), setup),
     ...(setup.durability ? { durability: setup.durability } : {}),
+    ...(biteMod ? { biteMod } : {}),
     paid: slots,
   };
   // Nothing at all could be dealt (no items of the type): the craft ends with nothing.
@@ -159,6 +166,7 @@ export function applyCraftTake(state: GameState, action: TakeAction): void {
     durability: open.durability ?? 0,
     paid: open.paid,
     ...(action.node ? { node: action.node } : {}),
+    ...(open.biteMod ? { biteMod: open.biteMod } : {}),
   });
 }
 
@@ -168,7 +176,14 @@ function finishCraft(
   hiker: Hiker,
   itemId: ItemId,
   quality: Quality | undefined,
-  how: { blueprint: boolean; durability: number; paid: PaidSlot[]; node?: NodeType },
+  how: {
+    blueprint: boolean;
+    durability: number;
+    paid: PaidSlot[];
+    node?: NodeType;
+    /** Food: Appetite added to every bite (Garbage Connoisseur's swaps). */
+    biteMod?: number;
+  },
 ): void {
   const def = ITEMS[itemId];
   if (!def) return;
@@ -182,6 +197,7 @@ function finishCraft(
     item.durability += how.durability;
     item.maxDurability = item.durability;
   }
+  if (def.type === 'food' && how.biteMod) item.appetiteMod = (item.appetiteMod ?? 0) + how.biteMod;
   hiker.inventory.bag.push(item);
   // Only items with their own recipe have a blueprint to learn (not trinkets).
   const learned = !!def.recipe && !knowsBlueprint(hiker, itemId);

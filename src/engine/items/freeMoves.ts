@@ -23,8 +23,8 @@ export interface FreeMove {
   /** Shoes: which pair. */
   itemId?: ItemId;
   uid?: string;
-  /** A trait's free move: its name and how its use is counted. */
-  trait?: { source: string; key: string; per: TraitFreeMove['per'] };
+  /** A trait's free move: its name and how its use is counted (never, for an unlimited one). */
+  trait?: { source: string; key: string; per: TraitFreeMove['per']; unlimited?: true };
   /** Appetite off the move (Infinity: all of it). */
   discount: number;
   /** Extra Appetite the move costs (Fast). */
@@ -45,7 +45,12 @@ export function freeMoveFor(
   const shoes = shoesFreeMove(state, hiker);
   const traits: FreeMove[] = toTileId
     ? traitFreeMoves(state, hiker, hiker.tileId, toTileId).map(({ source, move }) => ({
-        trait: { source, key: move.key, per: move.per },
+        trait: {
+          source,
+          key: move.key,
+          per: move.per,
+          ...(move.unlimited ? { unlimited: true as const } : {}),
+        },
         discount: move.discount === 'all' ? Infinity : (move.discount ?? 0),
         extra: move.extra ?? 0,
         wear: 0,
@@ -76,7 +81,7 @@ function shoesFreeMove(state: GameState, hiker: Hiker): FreeMove | undefined {
 /** Uses up the free move: shoes take their extra wear, and the log says it was free. */
 export function spendFreeMove(state: GameState, hiker: Hiker, free: FreeMove): void {
   if (free.trait) {
-    tally(state, hiker, free.trait.key, 1, free.trait.per);
+    if (!free.trait.unlimited) tally(state, hiker, free.trait.key, 1, free.trait.per);
     pushEvent(state, { kind: 'freeAction', hikerId: hiker.id, cause: free.trait.source });
     return;
   }

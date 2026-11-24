@@ -75,6 +75,25 @@ export function applyScavenge(state: GameState, action: ScavengeAction): void {
     ...(state.debugDeal?.length ? { forceTypes: state.debugDeal } : {}),
   });
   delete state.debugDeal;
+  // MBA III (Phase 10.7): Caps cards are kept at once, and the hiker still takes another card.
+  if (setup.autoKeep) {
+    for (const card of cards) {
+      if (card.type !== 'caps' || card.empty || !card.caps) continue;
+      card.flipped = true;
+      card.taken = true;
+      const caps = gainCaps(state, card.caps);
+      pushEvent(state, {
+        kind: 'scavenge',
+        hikerId: hiker.id,
+        tileId: hiker.tileId,
+        card: card.type,
+        resources: [],
+        caps,
+        kept: true,
+      });
+    }
+    if (cards.every((c) => c.taken)) cards.push(dealCard(state.rng, setup));
+  }
   state.scavenge = {
     hikerId: hiker.id,
     tileId: hiker.tileId,
@@ -324,7 +343,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     nodes.push(card.node);
   }
   if (card.node2) nodes.push(card.node2);
-  state.scavengedToday.push({ hikerId: hiker.id, tileId: open.tileId, nodes });
+  state.scavengedToday.push({ hikerId: hiker.id, tileId: open.tileId, nodes, phase: state.phase });
 
   pushEvent(state, {
     kind: 'scavenge',

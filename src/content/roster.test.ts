@@ -425,7 +425,8 @@ describe('starting a run with real hikers', () => {
     expect(mom!.inventory.bag[0]?.quality).toBeGreaterThanOrEqual(1);
     expect(mom!.blueprints).toHaveLength(1);
     expect(ITEMS[mom!.blueprints![0]!]?.tier).toBe(1);
-    expect(gdog!.blueprints).toHaveLength(2);
+    // 2 from her bag, and 3 from Family Cookbook, her first tree's start (Phase 10.7).
+    expect(gdog!.blueprints).toHaveLength(5);
     expect(
       gdog!.blueprints!.every((id) => ITEMS[id]?.type === 'food' && ITEMS[id]?.tier === 1),
     ).toBe(true);

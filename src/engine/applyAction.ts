@@ -66,6 +66,7 @@ import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './acti
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
 import { applyLearn, applyToggle, validateLearn, validateToggle } from './actions/trails';
+import { syncExtraUses } from './items/properWay';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
 import { applyMerchantBuy, applyTrade, validateMerchantBuy, validateTrade } from './station/trail';
@@ -401,6 +402,8 @@ export function applyAction(state: GameState, action: Action): GameState {
   scoutAround(draft);
   // The XP row rule: a hiker who moved forward starts their new row now.
   noteXpRows(draft);
+  // The Proper Way: tools in that hiker's pack carry an extra use (Phase 10.7).
+  syncExtraUses(draft);
   // Nobody left on the trail and someone checked in: the station opens (or the summit).
   if (readyToLeave(draft)) finishSection(draft);
   // The last active hiker passed out or abandoned, or the summit: the hike is over.

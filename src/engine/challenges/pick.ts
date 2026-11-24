@@ -101,6 +101,17 @@ function pickOne(
   );
 }
 
+/** Another challenge of this tier for a tile, not one of `exclude` (Rule Changer's swap). */
+export function pickChallengeAt(
+  state: GameState,
+  rng: RngState,
+  tile: Tile,
+  tier: Tier,
+  exclude: readonly string[],
+): string | undefined {
+  return pickOne(rng, 'challenge', state, tile, [], tier, exclude);
+}
+
 /** The tier a tile's card plays at, before Challenge spaces. */
 export function tileTier(state: GameState, tile: Tile): number {
   return state.section.tier + (tile.tierBonus ?? 0) + difficultyOf(state).challengeTierOffset;
