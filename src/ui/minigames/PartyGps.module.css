@@ -1,0 +1,197 @@
+/* The party GPS (Phase 10.8). Stage pixels. */
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.gps {
+  position: relative;
+  flex: none;
+  border-radius: 64px;
+  background: linear-gradient(180deg, #f6cb3a 0%, #e2a91e 100%);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -4px 0 rgba(120, 70, 0, 0.35);
+  pointer-events: auto;
+  /* Lowered: below the pop-up, small. */
+  transform: translateY(70%) scale(0.5);
+  opacity: 0;
+  transition:
+    transform var(--lower-ms) cubic-bezier(0.55, 0, 0.75, 0.3),
+    opacity var(--lower-ms) ease-in;
+}
+
+/* Lifted: up with a small overshoot. */
+.layer[data-shown] .gps {
+  transform: none;
+  opacity: 1;
+  transition:
+    transform var(--lift-ms) cubic-bezier(0.34, 1.32, 0.64, 1),
+    opacity calc(var(--lift-ms) * 0.4) ease-out;
+}
+
+/* Reduced motion: a fade at full size. */
+.layer[data-reduced] .gps {
+  transform: none;
+  transition: opacity var(--lower-ms) ease;
+}
+
+.antenna {
+  position: absolute;
+  right: 70px;
+  top: -34px;
+  width: 64px;
+  height: 46px;
+  border-radius: 12px 12px 4px 4px;
+  background: #1c201e;
+  z-index: -1;
+}
+
+.topButtons {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -9px;
+  z-index: -1;
+}
+
+.topButtons > span {
+  position: absolute;
+  top: 0;
+  width: 70px;
+  height: 14px;
+  border-radius: 6px 6px 0 0;
+  background: #1c201e;
+}
+
+.topButtons > span:first-child {
+  left: 90px;
+}
+
+.topButtons > span:last-child {
+  right: 150px;
+}
+
+.face {
+  position: absolute;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  border-radius: 52px;
+  background: #1c201e;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex: none;
+}
+
+.dpad {
+  fill: #2d332f;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.6));
+}
+
+.buttonYellow,
+.buttonDark {
+  display: block;
+  border-radius: 50%;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.5);
+}
+
+.buttonYellow {
+  background: radial-gradient(circle at 35% 30%, #ffe27a, #f2bd20 60%, #c68f10);
+  transform: translateX(8px);
+}
+
+.buttonDark {
+  background: radial-gradient(circle at 35% 30%, #4a514c, #2b302d 70%);
+  transform: translateX(-12px);
+}
+
+.middle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+}
+
+.bezel {
+  border-radius: 18px;
+  background: #0b0d0c;
+  box-shadow:
+    0 0 0 2px #050606,
+    0 0 26px rgba(255, 170, 80, 0.22);
+}
+
+.screen {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #2a0a18;
+}
+
+.viewport {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+}
+
+/* Faint scanlines: a 6% dark line every 3 px. */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.06) 0,
+    rgba(0, 0, 0, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* A faint glass sheen in the top-left corner. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 22%,
+    transparent 38%
+  );
+}
+
+/* A soft inner shadow. */
+.inner {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+  border-radius: inherit;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: #f2bd20;
+}

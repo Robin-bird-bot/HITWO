@@ -1,0 +1,439 @@
+/* Bearrels on the GPS screen (Phase 10.8). Screen pixels: a 1280 × 720 view. */
+
+.game {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: #fff1d6;
+  user-select: none;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* A short screen shake when someone is hit. */
+.game[data-shake] .scene {
+  animation: shake 0.32s ease-in-out;
+}
+
+@keyframes shake {
+  20% {
+    transform: translate(-10px, 4px);
+  }
+  40% {
+    transform: translate(9px, -5px);
+  }
+  60% {
+    transform: translate(-6px, 3px);
+  }
+  80% {
+    transform: translate(4px, -2px);
+  }
+}
+
+/* ── Scene pieces ── */
+
+.bear {
+  transform-box: view-box;
+  transition: transform var(--bear-ms) cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+.hiker {
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transition:
+    transform var(--slide-ms) ease-out,
+    opacity 0.4s ease;
+}
+
+.tip {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.35s ease-in,
+    opacity 0.35s ease;
+}
+
+/* Hit: tipped over, dropped a little, faded to 40%. */
+.hiker[data-state='hit'] .tip {
+  transform: rotate(var(--tip)) translateY(14px);
+  opacity: 0.4;
+}
+
+.barrel[data-clickable] {
+  cursor: pointer;
+}
+
+.barrel[data-shaking] {
+  transform-box: view-box;
+  animation: barrelShake 0.4s ease-in-out;
+}
+
+@keyframes barrelShake {
+  25% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(3deg) translateY(-4px);
+  }
+  75% {
+    transform: rotate(-2deg);
+  }
+}
+
+.burst {
+  animation: burst 0.6s ease-out forwards;
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.crosshair {
+  pointer-events: none;
+}
+
+/* ── The red flash: in fast, out slower, with a thick inner border ── */
+
+.flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(229, 72, 58, var(--flash));
+  box-shadow: inset 0 0 0 18px rgba(229, 72, 58, 0.85);
+  opacity: 0;
+  animation:
+    flashIn var(--in) ease-out forwards,
+    flashOut var(--out) ease-in var(--in) forwards;
+}
+
+.flash[data-soft] {
+  box-shadow: none;
+}
+
+@keyframes flashIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes flashOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ── The in-game UI ── */
+
+.pill {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 23px;
+  background: rgba(42, 10, 24, 0.72);
+  color: #fff1d6;
+  font-weight: 700;
+  font-size: 24px;
+  white-space: nowrap;
+}
+
+.round {
+  left: 22px;
+  top: 18px;
+}
+
+.prompt {
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  font-size: 26px;
+  transition: background-color 0.2s ease;
+}
+
+.prompt[data-bad] {
+  background: rgba(200, 50, 40, 0.92);
+}
+
+.shots {
+  right: 22px;
+  top: 18px;
+  padding: 0 14px;
+}
+
+.tokens {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  border-radius: 18px;
+  background: rgba(42, 10, 24, 0.72);
+}
+
+.token {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #fff1d6;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.token:disabled {
+  cursor: default;
+}
+
+.face {
+  position: relative;
+  display: block;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--c);
+}
+
+.portrait {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+/* Selected: lifts a little and glows in the hiker's color. */
+.token[data-selected] {
+  transform: translateY(-8px);
+}
+
+.token[data-selected] .face {
+  box-shadow:
+    0 0 0 4px var(--c),
+    0 0 18px 4px var(--c);
+}
+
+/* Out: grey, with a red X. */
+.token[data-out] {
+  opacity: 0.6;
+}
+
+.token[data-out] .portrait {
+  filter: grayscale(1) brightness(0.7);
+}
+
+.token[data-out] .face {
+  box-shadow: 0 0 0 4px #6f6a60;
+}
+
+.x {
+  position: absolute;
+  inset: 6px;
+}
+
+.x::before,
+.x::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 100%;
+  margin: -25px 0 0 -4px;
+  border-radius: 4px;
+  background: #e5483a;
+  transform: rotate(45deg);
+}
+
+.x::after {
+  transform: rotate(-45deg);
+}
+
+.badge {
+  position: absolute;
+  right: -8px;
+  bottom: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff1d6;
+  color: #2a0a18;
+  font-size: 15px;
+  box-shadow: 0 0 0 3px var(--c);
+}
+
+.tokenName {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.ready {
+  position: absolute;
+  right: 20px;
+  bottom: 22px;
+  height: 64px;
+  padding: 0 34px;
+  border: none;
+  border-radius: 14px;
+  background: #fff1d6;
+  color: #2a0a18;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 -5px 0 #d9b98a;
+  cursor: pointer;
+}
+
+.ready:disabled {
+  background: rgba(255, 241, 214, 0.22);
+  color: rgba(255, 241, 214, 0.5);
+  box-shadow: none;
+  cursor: default;
+}
+
+.token:focus-visible .face,
+.ready:focus-visible {
+  outline: 4px solid #e9b44c;
+  outline-offset: 4px;
+}
+
+/* ── Results ── */
+
+.results {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(42, 10, 24, 0.55);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 520px;
+  padding: 26px 30px 28px;
+  border-radius: 20px;
+  background: #fbf4e2;
+  color: #2a2420;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.cardTitle {
+  margin: 0 0 6px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 20px;
+}
+
+.rowPortrait {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+}
+
+.rowName {
+  font-weight: 700;
+  flex: 1;
+}
+
+.rowState {
+  font-size: 17px;
+  font-weight: 700;
+  color: #3f8a57;
+}
+
+.rowState[data-hit] {
+  color: #c8423a;
+}
+
+.cardButtons {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.continue,
+.again {
+  flex: 1;
+  height: 60px;
+  border-radius: 12px;
+  font-family: var(--font-body);
+  font-size: 21px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.continue {
+  border: none;
+  background: #c8423a;
+  color: #fbf4e2;
+}
+
+.again {
+  border: 2px solid #2a2420;
+  background: transparent;
+  color: #2a2420;
+}
+
+.continue:focus-visible,
+.again:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 3px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bear,
+  .hiker,
+  .tip {
+    transition-duration: 0.01ms;
+  }
+
+  .game[data-shake] .scene,
+  .barrel[data-shaking] {
+    animation: none;
+  }
+}

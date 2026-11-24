@@ -1,0 +1,369 @@
+/* The Minigame testing tab (Phase 10.8, 1-testing-tab.jpg). Stage pixels. */
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(120, 150, 90, 0.35), transparent 60%), #2a3326;
+}
+
+.window {
+  display: flex;
+  flex-direction: column;
+  width: 1380px;
+  height: 880px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #f2e4c4;
+  color: #2a2420;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  height: 78px;
+  padding: 0 26px;
+  flex: none;
+  background: #c8423a;
+  box-shadow: inset 0 -6px 0 #8e2a24;
+}
+
+.back,
+.spacer {
+  width: 220px;
+}
+
+.back {
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: #fbf4e2;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.back:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.title {
+  flex: 1;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: #fbf4e2;
+}
+
+.body {
+  display: flex;
+  gap: 54px;
+  padding: 34px 40px 36px;
+  min-height: 0;
+  flex: 1;
+}
+
+.label {
+  display: block;
+  margin: 0 0 10px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: #8e5a30;
+}
+
+/* ── The list ── */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 330px;
+  flex: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 62px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: #2a2420;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item[data-active] {
+  background: #213628;
+  color: #f2e4c4;
+}
+
+.item[data-soon] {
+  border: 2px dashed #d8c39a;
+  color: #a89880;
+  cursor: default;
+}
+
+.itemWords {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemName {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.itemSub {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* ── The detail ── */
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 34px;
+}
+
+.description {
+  margin: 6px 0 28px;
+  font-size: 16px;
+  color: #4a3f36;
+}
+
+.settings {
+  display: flex;
+  gap: 56px;
+  margin-bottom: 26px;
+}
+
+.setting {
+  display: flex;
+  flex-direction: column;
+}
+
+.hint {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #6a5a4a;
+}
+
+.stepper,
+.choice {
+  display: flex;
+  height: 54px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 2px solid #2a2420;
+}
+
+.stepper > button {
+  width: 58px;
+  border: none;
+  background: #e5d3a6;
+  color: #2a2420;
+  font-size: 26px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.stepper > button:disabled {
+  color: #b9a888;
+  cursor: default;
+}
+
+.stepper > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 86px;
+  background: #f7ecd2;
+  font-family: var(--font-pixel);
+  font-size: 24px;
+}
+
+.choice > button {
+  width: 80px;
+  border: none;
+  background: #f7ecd2;
+  color: #2a2420;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.choice > button[data-on] {
+  background: #213628;
+  color: #f2e4c4;
+}
+
+.stepper > button:focus-visible,
+.choice > button:focus-visible,
+.hiker:focus-visible,
+.item:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: -3px;
+}
+
+.hikersBlock {
+  margin-bottom: 22px;
+}
+
+.hikers {
+  display: flex;
+  gap: 30px;
+}
+
+.hiker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: #2a2420;
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.hiker[data-on] {
+  opacity: 1;
+}
+
+.hiker:disabled {
+  cursor: default;
+}
+
+.portrait {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px #d8c39a;
+}
+
+.hiker[data-on] .portrait {
+  box-shadow: 0 0 0 4px var(--c);
+}
+
+.hikerName {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.hiker[data-on] .dot {
+  background: var(--c);
+}
+
+.note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #6a5a4a;
+}
+
+/* ── Preview and Test it ── */
+
+.previewRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 30px;
+  margin-top: auto;
+}
+
+.preview {
+  position: relative;
+  width: 480px;
+  height: 270px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 4px solid #1d2220;
+  flex: none;
+}
+
+.previewScene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.previewPill {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  padding: 3px 9px;
+  border-radius: 10px;
+  background: rgba(42, 10, 24, 0.72);
+  color: #fff1d6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.testBox {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-left: auto;
+  width: 300px;
+}
+
+.testNote {
+  margin: 0;
+  font-size: 14px;
+  color: #4a3f36;
+}
+
+.test {
+  height: 80px;
+  border: none;
+  border-radius: 14px;
+  background: #c8423a;
+  color: #fbf4e2;
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  letter-spacing: 0.16em;
+  box-shadow: inset 0 -6px 0 #8e2a24;
+  cursor: pointer;
+}
+
+.test:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.test:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 3px;
+}

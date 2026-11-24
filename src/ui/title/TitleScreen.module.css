@@ -178,3 +178,27 @@
   font-family: var(--font-pixel);
   letter-spacing: 0.05em;
 }
+
+/* A plain link-like button: the Minigame testing tab (Phase 10.8). */
+.plain {
+  margin-top: 4px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #c9c2b2;
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.plain:hover {
+  color: #f1eadb;
+}
+
+.plain:focus-visible {
+  outline: 2px solid #e9b44c;
+  outline-offset: 2px;
+}
