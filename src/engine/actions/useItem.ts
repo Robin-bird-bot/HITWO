@@ -41,7 +41,7 @@ import {
   readCopy,
 } from '../traits/levelUp';
 import { canAddSlot } from '../traits/slots';
-import { gainXp, levelReached, xpForLevel } from '../xp';
+import { gainXp, partyOf, xpForLevel } from '../xp';
 import { cureInjuries, shiftStat, statMax, changeStat } from '../stats';
 import type {
   Action,
@@ -468,8 +468,8 @@ export function applyUse(state: GameState, action: UseAction): void {
     details.push(`maximum ${STAT_NAME[stat]} now ${statMax(state, target, stat)}`);
   }
   if (use.levelXp) {
-    // A share of what the next level takes, rolled (60–100% by default).
-    const level = levelReached(target);
+    // A share of what the party's next level takes, rolled (60–100% by default).
+    const level = partyOf(state).level;
     const step = xpForLevel(level + 1) - xpForLevel(level);
     const { min, max } = BALANCE.items.diplomaXp;
     const share = min + nextFloat(state.rng) * (max - min);

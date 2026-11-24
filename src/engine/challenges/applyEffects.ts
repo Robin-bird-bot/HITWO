@@ -306,7 +306,7 @@ function applyToHiker(
     }
     case 'xp': {
       const n = amount(e.delta, ctx);
-      if (e.lose) loseXp(h, n);
+      if (e.lose) loseXp(state, h, n);
       else gainXp(state, h, n, 'reward', cause);
       return;
     }

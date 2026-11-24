@@ -9,13 +9,13 @@ import { TRAITS } from './traits';
 describe('test hikers (Nov 20 update, section 7)', () => {
   it('are the 11 from the update, each with traits that exist and fit their slots', () => {
     expect(TEST_HIKERS.map((h) => h.name)).toEqual([
-      'Test Tank',
+      'Test Leader',
       'Test Hardy',
       'Test Scavenger',
       'Test Crafter',
       'Test Scout',
       'Test Support',
-      'Test Moneymaker',
+      'Test Merchant',
       'Test Cat',
       'Test Plush',
       'Test Duo',
@@ -44,7 +44,7 @@ describe('test hikers (Nov 20 update, section 7)', () => {
   it('start a hike like any hiker, keeping their classes, settings and Duo', () => {
     const s = createGame({ seed: 4, hikers: TEST_HIKERS.slice(0, 4) });
     expect(s.hikers.map((h) => h.classes)).toEqual([
-      ['tank'],
+      ['leader'],
       ['hardy'],
       ['scavenger'],
       ['crafter'],
@@ -78,7 +78,7 @@ describe('saves from before Phase 10a (v14 → v15)', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     const [first, birch] = loaded.state.hikers;
-    expect(first?.classes).toEqual(['tank']);
+    expect(first?.classes).toEqual(['leader']);
     expect(birch?.classes).toEqual([]);
     expect(first?.slots[0]).toMatchObject({ traitId: 'finder', setting: { x: 'river' } });
     expect(first?.slots[1]).toMatchObject({ traitId: 'leader' });

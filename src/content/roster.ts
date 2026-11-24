@@ -10,6 +10,7 @@
  */
 import type { HikerSetup, StartingBag } from '../engine/newGame';
 import type { ClassId, Family, SlotType, TraitSetting } from '../engine/types';
+import { DESIGNED_HIKERS } from './trails/trees';
 
 /** Real-life families, for the selection screen's Family sort ("household" in code). */
 export type HouseholdId = 'elmers' | 'brooks' | 'sherman' | 'leichty' | 'holiday' | 'other';
@@ -20,6 +21,11 @@ export interface RosterHiker extends HikerSetup {
   title?: string;
   /** One of the 10 available from the start. */
   starter?: true;
+  /**
+   * Locked (Phase 10.7): only the hikers with Skill Trails can be picked. A
+   * locked hiker keeps their data as it is until their trees come (10.7b).
+   */
+  locked?: true;
   /** A variant: the hiker it's a version of. */
   variantOf?: string;
   /** How hard they are to play well, 1–10. Never shown in the game. */
@@ -65,55 +71,61 @@ const items = (...ids: string[]): StartingBag => ({ items: ids });
 /** In the roster's order: the 10 starters first, then families, then the variants. */
 const ENTRIES: RosterHiker[] = [
   // ── Starters (07-characters.md, "Roster") ──
-  hiker('wyatt', 'Wyatt', 'human', ['jack'], {
+  hiker('wyatt', 'Wyatt', 'human', ['naturalist', 'daredevil', 'smith'], {
     title: 'Rain Hiker',
     starter: true,
-    slots: slots('U quirky', 'U ruleChanger', 'M rainLover', 'M thrillSeekerMorale'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 7,
     portrait: 'wyatt',
     startingBag: items('rainJacket'),
   }),
-  hiker('mom', 'Mom', 'human', ['crafter', 'support'], {
+  hiker('mom', 'Mom', 'human', ['support', 'merchant', 'trekker'], {
     title: 'Doesn’t Like Photos',
     starter: true,
-    slots: slots('U dogMom', 'U handy', 'M wanderlust'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 3,
     portrait: 'mom',
     startingBag: { items: ['dogFood'], blueprints: { count: 1, tier: 1 } },
   }),
-  hiker('ellie', 'Ellie', 'dog', ['support', 'entertainer'], {
+  hiker('ellie', 'Ellie', 'dog', ['chef', 'scavenger', 'entertainer'], {
     title: 'Fluffy Not Fat',
     starter: true,
-    slots: slots('U loud', 'U singer', 'T/U fluffy', 'M bossy'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 5,
     portrait: 'ellie',
     startingBag: items('mysteryMeat'),
   }),
-  hiker('finn', 'Finn', 'dog', ['tank'], {
+  hiker('finn', 'Finn', 'dog', ['leader', 'follower', 'scavenger'], {
     title: 'The Follower',
     starter: true,
-    slots: slots('T leashPuller', 'T follower', 'M extrovert'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 2,
     portrait: 'finn',
     startingBag: items('leash'),
   }),
-  hiker('gdog', 'Gdog', 'human', ['crafter', 'support'], {
+  hiker('gdog', 'Gdog', 'human', ['chef', 'tailor', 'trekker'], {
     title: 'The Tiny',
     starter: true,
-    slots: slots('U artisanCook', 'U lovinglyMade', 'M misophonia'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 4,
     portrait: 'gdog',
     startingBag: { blueprints: { count: 2, tier: 1, type: 'food' } },
   }),
-  hiker('grandpaWink', 'Grandpa Wink', 'human', ['tank'], {
+  hiker('grandpaWink', 'Grandpa Wink', 'human', ['leader', 'architect', 'packer'], {
     title: 'Always Prepared',
     starter: true,
-    slots: slots('T strongWalker', 'T justAroundTheNextCorner', 'M slowAndSteady'),
+    // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.
+    slots: [],
     difficulty: 5,
     portrait: 'wink',
     startingBag: items('hikingStick'),
   }),
-  hiker('cody', 'Cody', 'dog', ['tank'], {
+  hiker('cody', 'Cody', 'dog', ['leader'], {
     title: 'The King Red',
     starter: true,
     slots: slots('T alphaDog', 'T humanFood', 'M alpha'),
@@ -122,7 +134,7 @@ const ENTRIES: RosterHiker[] = [
     // Phase 10.6: dillRolls is switched off, so Trail Mix (Quality rolls as before).
     startingBag: items('trailMix'),
   }),
-  hiker('grandpaSherman', 'Grandpa Sherman', 'human', ['tank', 'jack'], {
+  hiker('grandpaSherman', 'Grandpa Sherman', 'human', ['leader', 'jack'], {
     title: 'Probably Trespassing',
     starter: true,
     // Location (Beach): +1 on a River node, −1 on a Mountain node.
@@ -170,7 +182,7 @@ const ENTRIES: RosterHiker[] = [
     portrait: 'hershal',
     startingBag: items('postcard'),
   }),
-  hiker('sinjon', 'Sinjon', 'dog', ['tank'], {
+  hiker('sinjon', 'Sinjon', 'dog', ['leader'], {
     title: 'Tough and Fluff',
     slots: slots('T fluffArmor', 'U wise', 'M alpha'),
     difficulty: 2,
@@ -211,7 +223,7 @@ const ENTRIES: RosterHiker[] = [
   }),
 
   // ── Cats ──
-  hiker('loki', 'Loki', 'cat', ['tank'], {
+  hiker('loki', 'Loki', 'cat', ['leader'], {
     title: 'The Mean',
     slots: slots('T leader', 'T stoic', 'M bossy'),
     difficulty: 5,
@@ -350,7 +362,7 @@ const ENTRIES: RosterHiker[] = [
     portrait: 'prepared-wink',
     startingBag: items('tent', 'binoculars', 'scanner'),
   }),
-  hiker('graduateMom', 'Graduate Mom', 'human', ['moneymaker'], {
+  hiker('graduateMom', 'Graduate Mom', 'human', ['merchant'], {
     variantOf: 'mom',
     slots: slots('U mba', 'U nonNonProfit', 'U frugal', 'M wanderlust'),
     difficulty: 5,
@@ -364,7 +376,7 @@ const ENTRIES: RosterHiker[] = [
     portrait: 'showqueen-gdog',
     startingBag: items('fancyAttire'),
   }),
-  hiker('wywee', 'Wywee', 'human', ['tank', 'support'], {
+  hiker('wywee', 'Wywee', 'human', ['leader', 'support'], {
     variantOf: 'wyatt',
     slots: slots('T easyMode', 'T supportive', 'M rainLover'),
     difficulty: 2,
@@ -400,7 +412,7 @@ const ENTRIES: RosterHiker[] = [
     portrait: 'grinch',
     startingBag: { presents: 1 },
   }),
-  hiker('redolf', 'Redolf', 'dog', ['tank', 'scout'], {
+  hiker('redolf', 'Redolf', 'dog', ['leader', 'scout'], {
     title: 'The Rednose Retriever',
     variantOf: 'cody',
     households: ['holiday'],
@@ -482,7 +494,14 @@ function householdsOf(h: RosterHiker): HouseholdId[] {
 export const ROSTER: readonly RosterHiker[] = ENTRIES.map((h) => ({
   ...h,
   households: householdsOf(h),
+  ...(DESIGNED_HIKERS.includes(h.id) ? {} : { locked: true as const }),
 }));
+
+/** Can this hiker be picked? Only the hikers with Skill Trails, for now. */
+export const isPlayable = (id: string): boolean => {
+  const h = ROSTER_BY_ID.get(id);
+  return !!h && !h.locked;
+};
 
 export const ROSTER_BY_ID: ReadonlyMap<string, RosterHiker> = new Map(ROSTER.map((h) => [h.id, h]));
 
@@ -500,10 +519,12 @@ export function blockedBy(party: readonly string[], id: string): string | undefi
 }
 
 export const canJoin = (party: readonly string[], id: string): boolean =>
-  !party.includes(id) && !blockedBy(party, id);
+  isPlayable(id) && !party.includes(id) && !blockedBy(party, id);
 
 /**
  * A new hike's party until the player picks one (the debug panel's "new
  * game"): the first four starters. TODO(wyatt): first guess.
  */
-export const DEFAULT_PARTY: readonly RosterHiker[] = ROSTER.filter((h) => h.starter).slice(0, 4);
+export const DEFAULT_PARTY: readonly RosterHiker[] = ROSTER.filter(
+  (h) => h.starter && !h.locked,
+).slice(0, 4);

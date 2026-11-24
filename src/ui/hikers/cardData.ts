@@ -5,6 +5,11 @@
  * - **Front:** the name and "TITLE", the role tabs (main first), one badge
  *   per slot (an open slot is a dashed diamond), and the starting bag.
  * - **Back:** the same, with one row per slot spelling each trait out.
+ *
+ * Phase 10.7: a designed hiker's card shows their 3 trees' classes as tabs,
+ * the 3 Tier 1 traits they can start with, and on the back the 3 trees with
+ * their traits. Every other hiker is locked: a black silhouette, "Locked",
+ * and nothing else.
  */
 import { CLASS_COLORS, CLASS_NAMES } from '../../content/classes';
 import { ITEMS } from '../../content/items';
@@ -14,6 +19,9 @@ import type { StartingBag } from '../../engine/newGame';
 import type { TraitSlot } from '../../engine/types';
 import { initials, kindWord, SLOT_WORD, type BadgeInfo } from '../traits/badges';
 import { familyIcon, type FamilyIcon } from './portraitArt';
+import { TREES_BY_HIKER, type HikerTrees } from '../../content/trails/trees';
+import { stepText } from '../../content/trails/traits';
+import { stepBadge } from '../trails/stepLook';
 
 export interface CardRole {
   id: string;
@@ -50,6 +58,18 @@ export interface HikerCardData {
   rows: CardRow[];
   /** "Dog Food + 1 random Tier 1 blueprint". */
   bag: string;
+  /** Locked (Phase 10.7): only the silhouette and "Locked" show. */
+  locked: boolean;
+  /** A designed hiker's 3 trees, for the back (Phase 10.7). */
+  trees?: CardTree[];
+}
+
+export interface CardTree {
+  id: string;
+  /** "Leader Trail". */
+  name: string;
+  color: string;
+  steps: { stepId: string; name: string; text: string; upgrade: boolean }[];
 }
 
 /** An open slot on a card: filled on a level-up. */
@@ -88,7 +108,62 @@ function slotTrait(slot: TraitSlot) {
   };
 }
 
+/** A locked hiker's card: nothing but the silhouette and the word. */
+function lockedCard(hiker: RosterHiker): HikerCardData {
+  return {
+    id: hiker.id,
+    name: 'Locked',
+    label: 'A locked hiker.',
+    family: familyIcon(hiker),
+    variant: false,
+    roles: [],
+    mainColor: CLASS_COLORS.jack,
+    badges: [],
+    rows: [],
+    bag: '',
+    locked: true,
+  };
+}
+
+/** A designed hiker's card: tree classes, Tier 1 badges, and the trees on the back. */
+function trailCard(hiker: RosterHiker, trees: HikerTrees): HikerCardData {
+  const roles = trees.trees.map((t) => ({
+    id: t.cls,
+    name: CLASS_NAMES[t.cls].toUpperCase(),
+    color: CLASS_COLORS[t.cls],
+  }));
+  const roleWords = trees.trees.map((t) => CLASS_NAMES[t.cls]).join(', ');
+  return {
+    id: hiker.id,
+    name: hiker.name,
+    label: `${hiker.name}${hiker.title ? `, ${hiker.title}` : ''}. ${roleWords}.`,
+    ...(hiker.title ? { title: `"${hiker.title.toUpperCase().replace(/’/g, "'")}"` } : {}),
+    family: familyIcon(hiker),
+    variant: !!hiker.variantOf,
+    roles,
+    mainColor: roles[0]?.color ?? CLASS_COLORS.jack,
+    badges: trees.trees.map((t, i) => stepBadge(t.steps[0].id, i)),
+    rows: [],
+    bag: bagWords(hiker.startingBag),
+    locked: false,
+    trees: trees.trees.map((t) => ({
+      id: t.id,
+      name: t.name,
+      color: CLASS_COLORS[t.cls],
+      steps: t.steps.map((step) => ({
+        stepId: step.id,
+        name: step.name,
+        text: stepText(step),
+        upgrade: step.step === 'upgrade',
+      })),
+    })),
+  };
+}
+
 export function hikerCardData(hiker: RosterHiker): HikerCardData {
+  if (hiker.locked) return lockedCard(hiker);
+  const trees = TREES_BY_HIKER.get(hiker.id);
+  if (trees) return trailCard(hiker, trees);
   const roles = (hiker.classes ?? []).map((id) => ({
     id,
     name: CLASS_NAMES[id].toUpperCase(),
@@ -147,6 +222,7 @@ export function hikerCardData(hiker: RosterHiker): HikerCardData {
     badges,
     rows,
     bag: bagWords(hiker.startingBag),
+    locked: false,
   };
 }
 

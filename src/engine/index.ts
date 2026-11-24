@@ -38,7 +38,20 @@ export {
   readCopy,
   replaceableSlots,
 } from './traits/levelUp';
-export { levelForXp, levelReached, onXpRow, xpForLevel } from './xp';
+export { levelForXp, levelReached, onXpRow, partyOf, xpForLevel } from './xp';
+export {
+  canSpendNow,
+  hasLearned,
+  heldTraits,
+  holdsToggle,
+  learnReason,
+  rootStep,
+  SPEND_WHEN,
+  stepCost,
+  toggleOn,
+  treesOf,
+  unlockLevel,
+} from './trails';
 export { dailyPickName } from './traits/daily';
 export {
   actionLosses,

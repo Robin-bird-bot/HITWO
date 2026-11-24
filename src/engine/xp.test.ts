@@ -58,32 +58,34 @@ describe('levels', () => {
     expect(s.hikers.every((h) => h.level === 0 && h.xp === 0 && !h.pendingLevels)).toBe(true);
   });
 
-  it('a level reached waits for the camp step', () => {
-    // Ash has a slot, so there's something to offer.
-    let s = party({ ash: { traits: ['leader'] } });
-    gain(s, 'ash', 25);
-    expect(hiker(s, 'ash')).toMatchObject({ xp: 25, level: 0, pendingLevels: 1 });
-    expect(s.log.some((e) => e.kind === 'levelReached' && e.level === 1)).toBe(true);
-    // Not mid-day: the window opens the next morning.
-    s = run(s, END);
+  it('every hiker’s XP fills one party bar, and each party level gives a point at once', () => {
+    let s = party();
+    gain(s, 'ash', 12);
+    gain(s, 'birch', 13);
+    expect(s.party).toEqual({ xp: 25, level: 1, points: BALANCE.trails.pointsPerLevel });
+    expect(s.log.some((e) => e.kind === 'partyLevel' && e.level === 1)).toBe(true);
+    // Hikers no longer level up on their own: nothing waits for the camp step.
+    expect(hiker(s, 'ash')).toMatchObject({ xp: 12, level: 0 });
+    expect(hiker(s, 'ash').pendingLevels).toBeUndefined();
+    s = nextMorning(run(s, END));
     expect(s.traitPick).toBeUndefined();
-    s = nextMorning(s);
-    expect(s.traitPick).toMatchObject({ hikerId: 'ash', source: 'levelUp', level: 1 });
-    expect(validateAction(s, move('birch', 'L'))).toBe('Pick from the level-up first.');
+    expect(validateAction(s, move('birch', 'L'))).toBeNull();
   });
 
-  it('two levels at once wait as two level-ups', () => {
+  it('two party levels at once give two points', () => {
     const s = party();
     gain(s, 'ash', 55);
-    expect(hiker(s, 'ash').pendingLevels).toBe(2);
+    expect(s.party).toMatchObject({ level: 2, points: 2 * BALANCE.trails.pointsPerLevel });
   });
 
-  it('losing XP keeps the levels already reached', () => {
+  it('losing XP takes it from the party bar and keeps the levels reached', () => {
     const s = party();
     gain(s, 'ash', 25);
-    expect(loseXp(hiker(s, 'ash'), 10)).toBe(10);
-    expect(hiker(s, 'ash')).toMatchObject({ xp: 15, pendingLevels: 1 });
-    expect(loseXp(hiker(s, 'ash'), 99)).toBe(15);
+    expect(loseXp(s, hiker(s, 'ash'), 10)).toBe(10);
+    expect(s.party).toMatchObject({ xp: 15, level: 1 });
+    expect(hiker(s, 'ash').xp).toBe(15);
+    expect(loseXp(s, hiker(s, 'ash'), 99)).toBe(15);
+    expect(s.party?.xp).toBe(0);
   });
 });
 

@@ -27,7 +27,8 @@ const hikerNamed = (name: string): RosterHiker => {
   return h;
 };
 const CLASS_IDS: Record<string, string> = {
-  tank: 'tank',
+  tank: 'leader',
+  leader: 'leader',
   hardy: 'hardy',
   scavenger: 'scavenger',
   crafter: 'crafter',
@@ -35,7 +36,8 @@ const CLASS_IDS: Record<string, string> = {
   support: 'support',
   jack: 'jack',
   entertainer: 'entertainer',
-  moneymaker: 'moneymaker',
+  moneymaker: 'merchant',
+  merchant: 'merchant',
 };
 const classesFrom = (text: string) =>
   clean(text)
@@ -145,6 +147,11 @@ describe('the roster matches 07-characters.md', () => {
     expect(hikers.length).toBe(33);
     for (const d of hikers) {
       const h = hikerNamed(d.name);
+      // Phase 10.7: the 6 designed hikers have Skill Trails instead (09-hikers.md wins).
+      if (!h.locked) {
+        expect(h.slots, d.name).toEqual([]);
+        continue;
+      }
       expect(h.classes, d.name).toEqual(d.classes);
       expect(
         h.slots.map((s) => s.type),
@@ -361,13 +368,22 @@ describe('the roster’s rules', () => {
       ['wywee', 'wyatt'],
     ] as const) {
       expect(ROSTER_BY_ID.get(variant)?.variantOf, variant).toBe(base);
-      expect(canJoin([base], variant), variant).toBe(false);
-      expect(canJoin([variant], base), variant).toBe(false);
+      expect(blockedBy([base], variant), variant).toBe(base);
+      expect(blockedBy([variant], base), variant).toBe(variant);
     }
     // Two variants of the same hiker can't join together either.
-    expect(canJoin(['grammyClause'], 'showqueenGdog')).toBe(false);
-    expect(canJoin(['grinch'], 'noseworkEllie')).toBe(false);
-    expect(canJoin(['grinch'], 'cody')).toBe(true);
+    expect(blockedBy(['grammyClause'], 'showqueenGdog')).toBe('grammyClause');
+    expect(blockedBy(['grinch'], 'noseworkEllie')).toBe('grinch');
+    expect(blockedBy(['grinch'], 'cody')).toBeUndefined();
+  });
+
+  it('Phase 10.7: only the 6 hikers with Skill Trails can join; everyone else is locked', () => {
+    const open = ROSTER.filter((h) => !h.locked).map((h) => h.id);
+    expect(open.sort()).toEqual(['ellie', 'finn', 'gdog', 'grandpaWink', 'mom', 'wyatt']);
+    expect(canJoin([], 'cody')).toBe(false);
+    expect(canJoin([], 'finn')).toBe(true);
+    expect(canJoin(['finn'], 'finn')).toBe(false);
+    expect(DEFAULT_PARTY.every((h) => !h.locked)).toBe(true);
   });
 
   it('the renames: Prepared Wink and Showqueen Gdog, with the trait names kept', () => {

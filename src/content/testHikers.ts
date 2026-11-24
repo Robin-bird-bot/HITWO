@@ -13,11 +13,11 @@ const test = (
 export const TEST_HIKERS: readonly CharacterDef[] = [
   test({
     id: 'test-tank',
-    name: 'Test Tank',
+    name: 'Test Leader',
     initials: 'TK',
     color: '#E2683C',
     family: 'human',
-    classes: ['tank'],
+    classes: ['leader'],
     slots: [
       { type: 'T', traitId: 'leader' },
       { type: 'T', traitId: 'puller' },
@@ -97,11 +97,11 @@ export const TEST_HIKERS: readonly CharacterDef[] = [
   }),
   test({
     id: 'test-moneymaker',
-    name: 'Test Moneymaker',
+    name: 'Test Merchant',
     initials: 'MM',
     color: '#D9A441',
     family: 'human',
-    classes: ['moneymaker'],
+    classes: ['merchant'],
     slots: [
       { type: 'U', traitId: 'charismatic' },
       { type: 'U', traitId: 'frugal' },
@@ -115,7 +115,7 @@ export const TEST_HIKERS: readonly CharacterDef[] = [
     initials: 'CT',
     color: '#A06CC9',
     family: 'cat',
-    classes: ['tank', 'support'],
+    classes: ['leader', 'support'],
     slots: [
       { type: 'T', traitId: 'leader' },
       { type: 'U', traitId: 'mouser' },

@@ -396,3 +396,69 @@
   line-height: 1.2;
   color: #ffffff;
 }
+
+/* ── Phase 10.7 ── */
+
+/* A locked hiker: the portrait as a black silhouette. */
+.silhouette {
+  filter: brightness(0);
+  opacity: 0.85;
+}
+
+.lockedName {
+  color: #6f6a60;
+  letter-spacing: 2px;
+}
+
+/* A designed hiker's back: 3 trees, each a column of 3 trait names in its class color. */
+.trees {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  min-height: 0;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 5px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c) 16%, #1d2220);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent);
+  min-width: 0;
+}
+
+.treeName {
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  line-height: 1.1;
+  color: color-mix(in srgb, var(--c) 70%, #f1eadb);
+  margin-bottom: 2px;
+}
+
+.treeStep {
+  display: block;
+  font-family: 'Edit Undo', monospace;
+  font-size: 11px;
+  line-height: 1.15;
+  color: #f1eadb;
+  cursor: help;
+  overflow-wrap: anywhere;
+}
+
+.treeTier {
+  display: inline-block;
+  min-width: 16px;
+  margin-right: 3px;
+  color: color-mix(in srgb, var(--c) 75%, #f1eadb);
+  font-size: 9px;
+}
+
+.treeUp {
+  margin-left: 3px;
+  font-size: 8px;
+  color: #e9b44c;
+}

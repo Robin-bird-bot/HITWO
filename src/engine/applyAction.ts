@@ -65,6 +65,7 @@ import { applySubmitToInjury, validateSubmitToInjury } from './actions/injure';
 import { applyPutOn, applyTakeOff, validatePutOn, validateTakeOff } from './actions/dress';
 import { applyPickUp, applyPutDown, validatePickUp, validatePutDown } from './actions/carry';
 import { applyUseAbility, validateUseAbility } from './actions/useAbility';
+import { applyLearn, applyToggle, validateLearn, validateToggle } from './actions/trails';
 import { endPhase } from './dayLoop';
 import { isHikeOver } from './health';
 import { applyMerchantBuy, applyTrade, validateMerchantBuy, validateTrade } from './station/trail';
@@ -100,6 +101,7 @@ const STATION_STEPS = new Set<Action['type']>([
   'wrapPresent',
   'teach',
   'restAndGo',
+  'learnStep',
   'debug',
 ]);
 
@@ -152,6 +154,10 @@ export function validateAction(state: GameState, action: Action): string | null 
     return 'Pick an item from the Present first.';
   }
   switch (action.type) {
+    case 'learnStep':
+      return validateLearn(state, action) ?? null;
+    case 'toggleTrait':
+      return validateToggle(state, action) ?? null;
     case 'move':
       return validateMove(state, action) ?? null;
     case 'moveAll':
@@ -377,6 +383,12 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'pickTrait':
       applyPick(draft, action);
+      break;
+    case 'learnStep':
+      applyLearn(draft, action);
+      break;
+    case 'toggleTrait':
+      applyToggle(draft, action);
       break;
     case 'endPhase':
       endPhase(draft);

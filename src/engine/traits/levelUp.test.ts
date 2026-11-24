@@ -25,7 +25,7 @@ function game(ash: Who = {}, seed = 1): GameState {
     {
       ...fixtureHiker('ash'),
       family: ash.family ?? 'human',
-      classes: ash.classes ?? ['tank'],
+      classes: ash.classes ?? ['leader'],
       slots: (ash.slots ?? [{ type: 'T' }, { type: 'U' }, { type: 'M' }]).map((s) => ({
         type: s.type,
         traitId: s.traitId ?? null,
@@ -89,14 +89,14 @@ describe('what can be offered', () => {
   });
 
   it('Trail and Utility from the classes, Jack and general traits, with at most 1 from any class', () => {
-    const who: Who = { classes: ['tank'], slots: [{ type: 'T' }, { type: 'U' }] };
+    const who: Who = { classes: ['leader'], slots: [{ type: 'T' }, { type: 'U' }] };
     let outside = 0;
     for (const offer of offers(who, 1, 200)) {
       const out = offer.filter((o) => {
         if (o.kind !== 'trait') return false;
         const def = TRAITS[o.traitId]!;
         const cls = classesOf(def);
-        return !isGeneral(def) && !cls.includes('jack') && !cls.includes('tank');
+        return !isGeneral(def) && !cls.includes('jack') && !cls.includes('leader');
       });
       expect(out.length).toBeLessThanOrEqual(L.anyClass);
       outside += out.length;
@@ -108,7 +108,7 @@ describe('what can be offered', () => {
   it('Morale traits come up less often than Trail or Utility ones', () => {
     // A Test Tank's slots: T, T, T/U and M.
     const who: Who = {
-      classes: ['tank'],
+      classes: ['leader'],
       slots: [{ type: 'T' }, { type: 'T' }, { type: 'T/U' }, { type: 'M' }],
     };
     const t = traitsIn(offers(who, 1, 300));
@@ -119,7 +119,7 @@ describe('what can be offered', () => {
   });
 
   it('only the family version that fits', () => {
-    const tank: Who = { classes: ['tank'], slots: [{ type: 'T' }, { type: 'T' }] };
+    const tank: Who = { classes: ['leader'], slots: [{ type: 'T' }, { type: 'T' }] };
     const dog = traitsIn(offers({ ...tank, family: 'dog' }, 2, 200)).map((d) => d.id);
     const human = traitsIn(offers(tank, 2, 200)).map((d) => d.id);
     expect(dog).toContain('leashPuller');
@@ -246,15 +246,12 @@ describe('taking a level-up', () => {
     expect(ash(s).slots[0]?.daily?.day).toBe(s.day);
   });
 
-  it('opens at the camp step with real options', () => {
+  it('Phase 10.7: no level-up opens at the camp step any more (party XP instead)', () => {
     let s = game({ slots: [{ type: 'W' }, { type: 'W' }] });
     gainXp(s, ash(s), 20, 'challenge', 'test');
     s = run(toNight(s), END);
-    expect(s.traitPick?.options).toHaveLength(3);
-    const first = s.traitPick!.options[0]!;
-    s = run(s, take(0));
-    expect(ash(s).level).toBe(1);
-    if (first.kind === 'trait') expect(ash(s).slots[0]?.traitId).toBe(first.traitId);
+    expect(s.traitPick).toBeUndefined();
+    expect(s.party).toMatchObject({ level: 1 });
   });
 
   it('the debug panel opens one now, at a chosen tier', () => {
@@ -337,33 +334,19 @@ describe('the level-up screen', () => {
     expect(ash(s).slots).toHaveLength(4);
     expect(ash(s).slots.at(-1)).toEqual({ type: 'U/M', traitId: null });
   });
-
-  it('two hikers leveling come one after another, in party order', () => {
-    let s = game({ slots: [{ type: 'W' }, { type: 'W' }] });
-    hiker(s, 'birch').slots.push({ type: 'W', traitId: null });
-    gainXp(s, ash(s), 20, 'challenge', 'test');
-    gainXp(s, hiker(s, 'birch'), 20, 'challenge', 'test');
-    s = run(toNight(s), END);
-    expect(s.traitPick?.hikerId).toBe('ash');
-    s = run(s, keep);
-    expect(s.traitPick?.hikerId).toBe('birch');
-    s = run(s, keep);
-    expect(s.traitPick).toBeUndefined();
-    expect([ash(s).level, hiker(s, 'birch').level]).toEqual([1, 1]);
-  });
 });
 
 describe('where an option comes from (its card’s tag)', () => {
   const def = (id: string) => TRAITS[id]!;
 
   it('the hiker’s own role, Jack, or a wild card from another class', () => {
-    const s = game({ classes: ['scout', 'tank'] });
+    const s = game({ classes: ['scout', 'leader'] });
     const scoutTrait = Object.values(TRAITS).find(
       (d) =>
         d.type !== 'M' &&
         !d.kind &&
         classesOf(d).includes('scout') &&
-        !classesOf(d).includes('tank'),
+        !classesOf(d).includes('leader'),
     );
     const otherTrait = Object.values(TRAITS).find(
       (d) =>
@@ -371,7 +354,7 @@ describe('where an option comes from (its card’s tag)', () => {
         !isGeneral(d) &&
         (d.kind === undefined || d.kind === 'normal') &&
         classesOf(d).length > 0 &&
-        !classesOf(d).some((c) => ['scout', 'tank', 'jack'].includes(c)),
+        !classesOf(d).some((c) => ['scout', 'leader', 'jack'].includes(c)),
     );
     expect(scoutTrait && optionSource(ash(s), scoutTrait)).toBe('scout');
     expect(otherTrait && optionSource(ash(s), otherTrait)).toBe('any');
@@ -387,7 +370,7 @@ describe('where an option comes from (its card’s tag)', () => {
 });
 
 describe('saves', () => {
-  it('a v15 save: levels start at 0, and XP already earned waits for camp', () => {
+  it('a v15 save: levels start at 0, and XP already earned goes into the party bar', () => {
     const s = game();
     place(s, 'ash', 'L');
     const old = JSON.parse(serialize(s));
@@ -398,8 +381,9 @@ describe('saves', () => {
     const loaded = deserialize(JSON.stringify(old));
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
-    expect(loaded.state.hikers[0]).toMatchObject({ level: 0, xp: 55, pendingLevels: 2 });
-    expect(loaded.state.hikers[1]?.pendingLevels).toBeUndefined();
+    expect(loaded.state.hikers[0]).toMatchObject({ level: 0, xp: 55 });
+    expect(loaded.state.hikers[0]?.pendingLevels).toBeUndefined();
+    expect(loaded.state.party).toMatchObject({ xp: 55, level: 2, points: 2 });
   });
 
   it('an open level-up survives a reload', () => {

@@ -33,11 +33,13 @@ import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
 import { revealAhead, tilesAhead } from './traits/reveal';
 import { gainXp } from './xp';
+import { toggleOn } from './trails';
 import { rollWishLists } from './items/wishLists';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
   Action,
+  ClassArea,
   ConditionInstance,
   ConditionUnit,
   EquipSlot,
@@ -584,6 +586,8 @@ export interface Hooks {
   // ── Holiday hikers (Nov 20 update; src/engine/items/presents.ts) ──
   /** A new run began: everyone in the party hears of it once (Gift Wrapper rolls the wish lists). */
   onRunStart?(ctx: EffectContext): void;
+  /** A Skill Trails step that gives something gives it when learned (Family Cookbook, Packed Toolbox). */
+  onLearn?(ctx: EffectContext): void;
   /** Crafts only Presents, with Gift Wrapper's recipes (Gift Wrapper). */
   wrapsPresents?(ctx: QueryContext): boolean;
   /** How much more likely each item type is in the Presents this hiker opens (Toy Maker, Treat Sniffer). */
@@ -699,6 +703,10 @@ export interface TraitDef {
   tagTeam?: readonly [odd: string, even: string];
   /** A rule the game doesn't have yet, that this trait needs (Sit by the Fire). */
   waitsOn?: string;
+  /** A Skill Trails trait (Phase 10.7): its tree's area. Brain Fog reads it. */
+  area?: ClassArea;
+  /** A toggle (Leash Puller): its hooks when on and when off. Every toggle starts on. */
+  toggle?: { on: Hooks; off: Hooks };
 }
 
 /** A slot's trait as it works today: a daily trait as today's pick, with its setting. */
@@ -993,6 +1001,23 @@ function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
   return off;
 }
 
+/**
+ * Is this trait switched off by a condition? A Skill Trails trait goes by its
+ * area: Brain Fog's "Utility traits" are the Utility (Loop) trees' traits.
+ * TODO(wyatt): Movement and Resources traits keep working under Brain Fog.
+ */
+function suppressed(def: TraitDef, off: ReadonlySet<TraitType>): boolean {
+  if (!off.size) return false;
+  if (def.area) return def.area === 'utility' && off.has('U');
+  return off.has(def.type);
+}
+
+/** A trait's hooks on this hiker: a toggle's on or off hooks, else its own (with its setting). */
+function heldHooks(hiker: Hiker, runs: TraitDef, setting: TraitSetting): Hooks {
+  if (runs.toggle) return toggleOn(hiker, runs.id) ? runs.toggle.on : runs.toggle.off;
+  return traitHooks(runs, setting);
+}
+
 /** Every source affecting a hiker right now, the weather included (its scavenging boost). */
 export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
@@ -1052,13 +1077,13 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
   for (const slot of hiker.slots) {
     // An unknown id (content removed since the save) is skipped, not fatal.
     const trait = workingTrait(state, slot);
-    if (!trait || off.has(trait.def.type)) continue;
+    if (!trait || suppressed(trait.def, off)) continue;
     const { runs, setting } = trait;
     sources.push({
       id: `trait:${trait.def.id}`,
       kind: 'trait',
       name: trait.name,
-      hooks: traitHooks(runs, setting),
+      hooks: heldHooks(hiker, runs, setting),
       ability: runs.ability,
     });
   }
@@ -1079,7 +1104,9 @@ function traitFlag(
   return hiker.slots.some((slot) => {
     const trait = workingTrait(state, slot);
     return (
-      !!trait && !off.has(trait.def.type) && !!traitHooks(trait.runs, trait.setting)[flag]?.(ctx)
+      !!trait &&
+      !suppressed(trait.def, off) &&
+      !!heldHooks(hiker, trait.runs, trait.setting)[flag]?.(ctx)
     );
   });
 }

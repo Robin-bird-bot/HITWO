@@ -4,7 +4,7 @@ import { TRAITS } from '../../content/traits';
 import { validateAction } from '../applyAction';
 import { makeItem } from '../items/make';
 import type { HikerSetup } from '../newGame';
-import { END, fixtureGame, fixtureHiker, hiker, run, toNight } from '../test/fixtures';
+import { END, fixtureGame, fixtureHiker, hiker, run } from '../test/fixtures';
 import type { Action, Family, GameState, SlotType } from '../types';
 import { xpForLevel } from '../xp';
 
@@ -161,14 +161,15 @@ describe('Instruction Manual', () => {
   });
 });
 
-describe('a Diploma’s level-up', () => {
-  it('opens at the next camp step', () => {
+describe('a Diploma', () => {
+  it('fills most of the way to the party’s next level (Phase 10.7)', () => {
     let s = game({ slots: [{ type: 'W' }] });
-    hiker(s, 'ash').xp = xpForLevel(1) - 1;
     s = run(s, trinket(s, 'diploma'));
-    expect(hiker(s, 'ash').pendingLevels).toBe(1);
+    const xp = s.party?.xp ?? 0;
+    const { min, max } = BALANCE.items.diplomaXp;
+    expect(xp).toBeGreaterThanOrEqual(Math.ceil(xpForLevel(1) * min));
+    expect(xp).toBeLessThanOrEqual(Math.ceil(xpForLevel(1) * max));
+    expect(hiker(s, 'ash').pendingLevels).toBeUndefined();
     expect(s.traitPick).toBeUndefined();
-    s = run(toNight(s), END);
-    expect(s.traitPick?.hikerId).toBe('ash');
   });
 });

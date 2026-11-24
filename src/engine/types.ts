@@ -194,31 +194,81 @@ export type TraitType = 'T' | 'U' | 'M';
  * What a slot holds: one type, either of two, any (W), or a Duo's Tag Team
  * trait (`tag`), which only a Tag Team trait fits.
  */
-export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W' | 'tag';
+/**
+ * `trail`: a learned Skill Trails trait (Phase 10.7). A designed hiker has no
+ * slots to fill: their `slots` list what their trees give them, kept in step
+ * with `trails` by src/engine/trails.ts. Nothing can be put in one by hand.
+ */
+export type SlotType = TraitType | 'T/U' | 'T/M' | 'U/M' | 'W' | 'tag' | 'trail';
 export const SLOT_TYPES: readonly SlotType[] = ['T', 'U', 'M', 'T/U', 'T/M', 'U/M', 'W', 'tag'];
 
-/** What a character is good at (07-characters.md, "Classes"). A hiker has 1 or 2. */
+/**
+ * What a character is good at (09-hikers.md, "Names and classes"; Phase 10.7).
+ * A designed hiker's classes are their 3 trees' classes, in tree order. Tank
+ * is now Leader, Guardian is Watcher and Moneymaker is Merchant.
+ */
 export type ClassId =
-  | 'tank'
-  | 'hardy'
+  | 'leader'
+  | 'follower'
+  | 'scout'
+  | 'trekker'
   | 'scavenger'
   | 'crafter'
-  | 'scout'
+  | 'chef'
+  | 'smith'
+  | 'tailor'
+  | 'architect'
+  | 'packer'
+  | 'naturalist'
+  | 'merchant'
   | 'support'
-  | 'jack'
   | 'entertainer'
-  | 'moneymaker';
+  | 'hardy'
+  | 'watcher'
+  | 'daredevil'
+  | 'jack';
+/** In area order: Movement, Resources, Utility. */
 export const CLASS_IDS: readonly ClassId[] = [
-  'tank',
-  'hardy',
+  'leader',
+  'follower',
+  'scout',
+  'trekker',
   'scavenger',
   'crafter',
-  'scout',
+  'chef',
+  'smith',
+  'tailor',
+  'architect',
+  'packer',
+  'naturalist',
+  'merchant',
   'support',
-  'jack',
   'entertainer',
-  'moneymaker',
+  'hardy',
+  'watcher',
+  'daredevil',
+  'jack',
 ];
+
+/**
+ * Morale types (09-hikers.md; Phase 10.7): one per hiker, checked at the end
+ * of every phase for +1, −1 or nothing. They replace the Morale traits.
+ */
+export type MoraleTypeId =
+  'extrovert' | 'introvert' | 'ambivert' | 'foody' | 'energetic' | 'wanderlust' | 'homebody';
+export const MORALE_TYPE_IDS: readonly MoraleTypeId[] = [
+  'extrovert',
+  'introvert',
+  'ambivert',
+  'foody',
+  'energetic',
+  'wanderlust',
+  'homebody',
+];
+
+/** A class's area: what its tree is named for (Leader Trail, Merchant Path, Daredevil Loop). */
+export type ClassArea = 'movement' | 'resources' | 'utility';
+export const CLASS_AREAS: readonly ClassArea[] = ['movement', 'resources', 'utility'];
 
 /**
  * A trait's setting, stored with it on the hiker: a node ([Node] Finder,
@@ -447,6 +497,16 @@ export interface Hiker {
   slots: TraitSlot[];
   conditions: ConditionInstance[];
   inventory: Inventory;
+  /**
+   * Skill Trails (Phase 10.7): the steps learned, in order, and the toggles
+   * switched off (by trait id; every toggle starts on). Only the designed
+   * hikers have it.
+   */
+  trails?: { learned: string[]; off?: string[] };
+  /** Their morale type, checked at the end of every phase (Phase 10.7). */
+  moraleType?: MoraleTypeId;
+  /** The last phase they moved, walking or brought along (Wanderlust, Homebody). */
+  moved?: { day: number; phase: Phase };
   /** Has used their action this phase. */
   acted: boolean;
   /** Has slept this night. */
@@ -465,8 +525,9 @@ export interface Hiker {
   /** The tile this hiker last moved from (Tourist Trap sends them back). */
   cameFrom?: TileId;
   abilityUses: Record<string, AbilityUse>;
+  /** XP this hiker earned. Since Phase 10.7 it all goes into the party bar too. */
   xp: number;
-  /** Levels taken so far. Hikers start at level 0 (Wyatt, Nov 20). */
+  /** The old system's levels (before Phase 10.7). Hikers no longer level up on their own. */
   level: number;
   /** Levels reached that still wait for the camp step to be picked. */
   pendingLevels?: number;
@@ -800,6 +861,10 @@ export type Action =
   /** Night only: keeps watch, so hikers on this tile are safe from tonight's night event. */
   | { type: 'keepWatch'; hikerId: HikerId }
   | { type: 'useAbility'; hikerId: HikerId; abilityId: string; choice?: string }
+  /** Skill Trails (free): learn a step for party points, at night or at a ranger station. */
+  | { type: 'learnStep'; hikerId: HikerId; stepId: string }
+  /** Switch a toggle trait on or off (free, on the hiker's turn; Leash Puller). */
+  | { type: 'toggleTrait'; hikerId: HikerId; traitId: TraitId }
   /** Deals the scavenge cards, face down. Nothing is paid until a card is taken. */
   | { type: 'scavenge'; hikerId: HikerId }
   | { type: 'scavengeFlip'; cards: number[] }
@@ -984,6 +1049,11 @@ export type DebugOp =
   | { kind: 'refillUses'; hikerId: HikerId }
   /** XP and levels: sets them outright (no level-ups). */
   | { kind: 'setXp'; hikerId: HikerId; xp: number; level?: number }
+  /** Skill Trails (Phase 10.7): party XP, a point, every step for a hiker, a morale type. */
+  | { kind: 'partyXp'; xp: number }
+  | { kind: 'partyPoints'; points: number }
+  | { kind: 'learnAll'; hikerId: HikerId }
+  | { kind: 'setMoraleType'; hikerId: HikerId; moraleType: MoraleTypeId }
   /** Opens a level-up for the hiker right now, with options of this tier. */
   | { kind: 'levelUpNow'; hikerId: HikerId; tier: 1 | 2 | 3 }
   /** Moves the day number to the next odd or even day (Tag Team), keeping the phase. */
@@ -1328,6 +1398,12 @@ export type GameEventBody =
   | { kind: 'xp'; hikerId: HikerId; xp: number; cause: string; none?: 'row' }
   /** A hiker reached a level: it waits for the camp step. */
   | { kind: 'levelReached'; hikerId: HikerId; level: number }
+  /** The party reached a level (Phase 10.7): "Party level 3! +1 point". */
+  | { kind: 'partyLevel'; level: number; points: number }
+  /** A hiker learned a Skill Trails step (or started with it). */
+  | { kind: 'learned'; hikerId: HikerId; stepId: string; cost: number; start?: true }
+  /** A toggle trait switched on or off. */
+  | { kind: 'toggled'; hikerId: HikerId; traitId: TraitId; on: boolean }
   /** A level-up or a trinket gave a trait or a slot (and maybe replaced a trait). */
   | {
       kind: 'traitGained';
@@ -1515,6 +1591,14 @@ export interface StationVisit {
   scout?: TileId[];
 }
 
+export interface PartyXp {
+  xp: number;
+  /** Party levels reached so far. */
+  level: number;
+  /** Points not spent yet. */
+  points: number;
+}
+
 export interface GameState {
   saveVersion: number;
   seed: number;
@@ -1525,6 +1609,11 @@ export interface GameState {
   sectionIndex: number;
   section: Section;
   hikers: Hiker[];
+  /**
+   * Party XP (Phase 10.7): every hiker's XP fills one bar. Each party level
+   * gives points to spend on any hiker's Skill Trails.
+   */
+  party?: PartyXp;
   /** The ranger station visit, once everyone has checked in. */
   station?: StationVisit;
   /** Every check-in so far, for the score (Phase 13). */

@@ -30,8 +30,7 @@ const NOTICES: Record<LoadFailure, string | null> = {
   empty: null,
   corrupt: 'Your saved hike couldn’t be read, so it can’t be continued. Start a new hike below.',
   tooNew: 'Your saved hike is from a newer version of the game. Reload the page to get it.',
-  unsupported:
-    'Your saved hike is from an older version of the game that can’t be loaded any more.',
+  unsupported: 'This run is from an older version and can’t continue. Start a new hike below.',
 };
 
 export function App() {

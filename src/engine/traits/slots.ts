@@ -18,6 +18,8 @@ const HOLDS: Readonly<Record<SlotType, readonly TraitType[]>> = {
   'U/M': ['U', 'M'],
   W: ['T', 'U', 'M'],
   tag: [],
+  // A Skill Trails slot is filled by learning a step, never by hand.
+  trail: [],
 };
 
 /** The trait types a slot type can hold. */

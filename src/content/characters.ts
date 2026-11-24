@@ -23,7 +23,7 @@ export const STARTING_PARTY: readonly CharacterDef[] = [
   {
     id: 'hiker-1',
     name: 'Hiker 1',
-    classes: ['tank'],
+    classes: ['leader'],
     family: 'human',
     placeholder: true,
     color: '#E2683C',

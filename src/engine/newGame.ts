@@ -6,6 +6,7 @@ import { makePresent } from './items/presents';
 import { scoutAround } from './traits/reveal';
 import { rollDailyTraits } from './traits/daily';
 import { noteXpRows } from './xp';
+import { startTrails, treesOf } from './trails';
 import { freshCounters } from './counters';
 import { BALANCE } from '../config/balance';
 import { freshAbundance } from './abundance';
@@ -64,6 +65,11 @@ export interface HikerSetup {
   startingBag?: StartingBag;
   /** Their party color. Without one, their spot's: 1 orange, 2 blue, 3 yellow, 4 purple. */
   color?: string;
+  /**
+   * Skill Trails (Phase 10.7): the tree whose Tier 1 trait a designed hiker
+   * starts with (the first tree when left out).
+   */
+  start?: string;
 }
 
 export interface NewGameOptions {
@@ -147,9 +153,15 @@ export function createGame({
     scavengedToday: [],
     usedCards: [],
     counters: freshCounters(),
+    party: { xp: 0, level: 0, points: 0 },
     nextEventId: 1,
     log: [],
   };
+  // Skill Trails: each designed hiker's starting trait (a gift gives its things now).
+  hikers.forEach((setup, i) => {
+    const h = state.hikers[i];
+    if (h && treesOf(h)) startTrails(state, h, setup.start);
+  });
   hikers.forEach((setup, i) => {
     const h = state.hikers[i];
     if (h && setup.startingBag) giveStartingBag(state, h, setup.startingBag);

@@ -10,6 +10,7 @@ import { MORALE_TRAITS } from './morale';
 import { SPECIAL_TRAITS } from './special';
 import { TRAIL_TRAITS } from './trail';
 import { UTILITY_TRAITS } from './utility';
+import { TREE_TRAITS } from '../trails/traits';
 
 export const TRAIT_LIST: readonly TraitDef[] = [
   ...TRAIL_TRAITS,
@@ -18,6 +19,7 @@ export const TRAIT_LIST: readonly TraitDef[] = [
   ...FAMILY_TRAITS,
   ...SPECIAL_TRAITS,
   ...HOLIDAY_TRAITS,
+  ...TREE_TRAITS,
 ];
 
 export const TRAITS: Readonly<Record<string, TraitDef>> = Object.fromEntries(
