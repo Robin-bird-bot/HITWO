@@ -238,3 +238,28 @@ export function cardFor(hikerId: string): HikerCardData | undefined {
   cache.set(hikerId, data);
   return data;
 }
+
+const startCache = new Map<string, HikerCardData>();
+
+/**
+ * A BY STARTING TRAIT card (Phase 10.7): the hiker with one start, so it
+ * shows that tree's class alone and the one trait it starts with.
+ */
+export function cardForStart(hikerId: string, start: string): HikerCardData | undefined {
+  const key = `${hikerId}:${start}`;
+  const hit = startCache.get(key);
+  if (hit) return hit;
+  const data = cardFor(hikerId);
+  const at = data?.trees?.findIndex((t) => t.id === start) ?? -1;
+  if (!data || at < 0) return data;
+  const role = data.roles[at];
+  const badge = data.badges[at];
+  const card: HikerCardData = {
+    ...data,
+    roles: role ? [role] : [],
+    mainColor: role?.color ?? data.mainColor,
+    badges: badge ? [{ ...badge, slot: 0 }] : [],
+  };
+  startCache.set(key, card);
+  return card;
+}

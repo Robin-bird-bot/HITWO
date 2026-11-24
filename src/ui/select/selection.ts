@@ -9,9 +9,13 @@
  * - No cloning: a variant can't join with its base hiker or another of
  *   their variants.
  * - A hike starts with 1 to 4 hikers.
+ * - Phase 10.7: only unlocked hikers can be placed, and each designed hiker
+ *   needs a starting trait (one of their trees' Tier 1) before the hike
+ *   starts. The pick can change until then.
  */
 import { PARTY_COLORS } from '../../content/partyColors';
-import { blockedBy, ROSTER, ROSTER_BY_ID } from '../../content/roster';
+import { blockedBy, isPlayable, ROSTER, ROSTER_BY_ID } from '../../content/roster';
+import { TREES_BY_HIKER } from '../../content/trails/trees';
 import type { HikerSetup } from '../../engine/newGame';
 
 export const SPOTS = 4;
@@ -29,7 +33,28 @@ export const spotOf = (party: Party, id: string): number => party.indexOf(id);
 
 export const count = (party: Party): number => members(party).length;
 
-export const canStart = (party: Party): boolean => count(party) >= 1 && count(party) <= SPOTS;
+/** Each hiker's starting tree (a tree id), picked in their spot. */
+export type Starts = Readonly<Record<string, string>>;
+
+/** A hiker in the party with trees but no starting trait picked yet. */
+export const needsStart = (id: string, starts: Starts): boolean =>
+  TREES_BY_HIKER.has(id) && !starts[id];
+
+export const canStart = (party: Party, starts: Starts = {}): boolean =>
+  count(party) >= 1 &&
+  count(party) <= SPOTS &&
+  !members(party).some((id) => needsStart(id, starts));
+
+/** RANDOM: a random start for every hiker in the party who has none yet. */
+export function randomStarts(party: Party, starts: Starts, rand: () => number): Starts {
+  const next = { ...starts };
+  for (const id of members(party)) {
+    const trees = TREES_BY_HIKER.get(id)?.trees;
+    if (!trees || next[id]) continue;
+    next[id] = trees[Math.floor(rand() * trees.length)]?.id ?? trees[0].id;
+  }
+  return next;
+}
 
 /**
  * Who keeps this hiker out (a variant's base or another version of them),
@@ -46,7 +71,7 @@ export function blocker(
 
 /** Whether `id` can go in `spot`: from the list, or moved from another spot. */
 export function canPlace(party: Party, id: string, spot: number): boolean {
-  if (spot < 0 || spot >= SPOTS || !ROSTER_BY_ID.has(id)) return false;
+  if (spot < 0 || spot >= SPOTS || !ROSTER_BY_ID.has(id) || !isPlayable(id)) return false;
   const from = spotOf(party, id);
   if (from >= 0) return true; // moving within the party never adds anyone
   return !blocker(party, id, [spot]);
@@ -94,20 +119,21 @@ export function fillRandom(party: Party, rand: () => number): Party {
   const next = [...party];
   for (let spot = 0; spot < SPOTS; spot++) {
     if (next[spot]) continue;
-    const open = ROSTER.filter((h) => !next.includes(h.id) && !blocker(next, h.id)).map(
-      (h) => h.id,
-    );
+    const open = ROSTER.filter(
+      (h) => !h.locked && !next.includes(h.id) && !blocker(next, h.id),
+    ).map((h) => h.id);
     if (!open.length) break;
     next[spot] = open[Math.floor(rand() * open.length)] ?? open[0] ?? null;
   }
   return next;
 }
 
-/** The run's hikers, in spot order, each in their spot's color. */
-export function startingParty(party: Party): HikerSetup[] {
+/** The run's hikers, in spot order, each in their spot's color, with their starting trait. */
+export function startingParty(party: Party, starts: Starts = {}): HikerSetup[] {
   return party.flatMap((id, spot) => {
-    const hiker = id ? ROSTER_BY_ID.get(id) : undefined;
-    return hiker ? [{ ...hiker, color: PARTY_COLORS[spot] }] : [];
+    const hiker = id && isPlayable(id) ? ROSTER_BY_ID.get(id) : undefined;
+    const start = id ? starts[id] : undefined;
+    return hiker ? [{ ...hiker, color: PARTY_COLORS[spot], ...(start ? { start } : {}) }] : [];
   });
 }
 

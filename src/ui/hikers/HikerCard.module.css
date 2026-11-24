@@ -399,10 +399,13 @@
 
 /* ── Phase 10.7 ── */
 
-/* A locked hiker: the portrait as a black silhouette. */
+/* A locked hiker: the portrait as a black silhouette against a greyed backdrop. */
 .silhouette {
+  filter: grayscale(1) brightness(0.62);
+}
+
+.silhouette img {
   filter: brightness(0);
-  opacity: 0.85;
 }
 
 .lockedName {

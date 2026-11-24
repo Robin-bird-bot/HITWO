@@ -28,7 +28,7 @@ import { PreviewContext, usePreview, withPreview } from '../preview/preview';
 import { BADGE_COLORS } from '../traits/badges';
 import { TraitBadge } from '../traits/TraitBadge';
 import { traitIconUrl } from '../traits/traitIcons';
-import { cardFor, type CardRow, type CardTree, type HikerCardData } from './cardData';
+import { cardFor, cardForStart, type CardRow, type CardTree, type HikerCardData } from './cardData';
 import styles from './HikerCard.module.css';
 import { useFit } from './fitText';
 import { FamilyMark, HikerPortrait } from './HikerPortrait';
@@ -52,6 +52,7 @@ export function HikerCard({
   className,
   rootProps,
   children,
+  start,
 }: {
   /** A roster id. */
   hikerId: string;
@@ -72,10 +73,12 @@ export function HikerCard({
   rootProps?: HTMLAttributes<HTMLDivElement> & Record<`data-${string}`, unknown>;
   /** Drawn over the card, unscaled (tags like IN PARTY). */
   children?: ReactNode;
+  /** BY STARTING TRAIT (Phase 10.7): show only this tree's class and starting trait. */
+  start?: string | undefined;
 }) {
   const [own, setOwn] = useState(defaultFlipped);
   const flipped = side ? side === 'back' : (flippedProp ?? own);
-  const data = cardFor(hikerId);
+  const data = start ? cardForStart(hikerId, start) : cardFor(hikerId);
   const preview = usePreview(!side && lift && flipped ? { kind: 'hiker', hikerId } : null);
   const liftSoon = useLiftSoon(hikerId);
   if (!data) return null;

@@ -30,7 +30,14 @@ import type { HikerId, ResourceId } from '../../engine';
 export type DragPayload =
   | { kind: 'hiker'; hikerId: HikerId }
   /** `copy`: which list group it came from (Mom shows twice when sorted by family). */
-  | { kind: 'pick'; hikerId: string; spot: number | null; copy?: string }
+  | {
+      kind: 'pick';
+      hikerId: string;
+      spot: number | null;
+      copy?: string;
+      /** BY STARTING TRAIT: the tree this card starts with (Phase 10.7). */
+      start?: string;
+    }
   /** A level-up option card; `placed`: picked up again from the slot it was put in. */
   | { kind: 'levelOption'; option: number; placed?: true }
   | { kind: 'item'; hikerId: HikerId; itemUid: string }
