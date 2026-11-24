@@ -60,7 +60,7 @@ export function fullDurability(def: ItemDef, quality: Quality | undefined): numb
   return valueAt(def.durability ?? table, quality);
 }
 
-/** What a full item of this Quality has: uses (tools), bites (food) or durability (clothes). */
+/** What a full item of this Quality has: uses (tools), bites (food), durability (clothes, worn trinkets). */
 export function fullCounters(
   def: ItemDef,
   quality: Quality | undefined,
@@ -68,6 +68,8 @@ export function fullCounters(
   if (def.type === 'tool') return { usesLeft: valueAt(def.uses ?? 1, quality) };
   if (def.type === 'food') return { bitesLeft: valueAt(def.bites ?? 1, quality) };
   if (def.type === 'clothes') return { durability: fullDurability(def, quality) };
+  // A trinket that wears out (Phase 10.7).
+  if (def.lasts) return { durability: def.lasts };
   return {};
 }
 

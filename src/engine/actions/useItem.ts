@@ -329,6 +329,7 @@ export function validateUse(state: GameState, action: UseAction): string | undef
   if (!item) return `${user.name} doesn’t have that.`;
   const def = ITEMS[item.itemId];
   const use = def?.use;
+  if (def?.retired) return `The ${def.name} is retired: it doesn’t do anything now.`;
   if (!def || !use) {
     return `${def?.name ?? 'That item'} can’t be used yet.${def?.notYet ? ` ${def.notYet}` : ''}`;
   }

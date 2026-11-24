@@ -9,7 +9,7 @@
  */
 import { countSleep } from './counters';
 import { countdownAtCamp } from './health';
-import { wearAtCamp } from './items/wear';
+import { wearAtCamp, wearTrinkets } from './items/wear';
 import { tickBoosts } from './items/boosts';
 import { openNext } from './challenges/reveal';
 import { runNightEvent } from './night/nightEvents';
@@ -23,7 +23,7 @@ import { advanceWeather } from './weather';
 import { changeStat } from './stats';
 import type { GameState, Hiker } from './types';
 import { rollDailyTraits } from './traits/daily';
-import { openLevelUp } from './traits/levelUp';
+import { checkMoraleTypes } from './morale';
 
 /** Active hikers who still have their action this phase. The UI warns before ending the phase. */
 export function hikersWhoHaventActed(state: GameState): Hiker[] {
@@ -33,6 +33,10 @@ export function hikersWhoHaventActed(state: GameState): Hiker[] {
 export function endPhase(state: GameState): void {
   // Trials are judged first: Jogger needs to know who acted this phase.
   checkTrials(state);
+  // Morale types (Phase 10.7), while this phase's moves still count.
+  checkMoraleTypes(state);
+  // Trinkets that wear every phase (Merit Badge).
+  wearTrinkets(state);
   for (const h of state.hikers) h.acted = false;
   // Conditions that act each phase (Soaked, Allergies, Burning cooling off), then the tick.
   for (const h of state.hikers) if (h.status === 'active') firePhaseEnd(state, h, state.phase);
@@ -106,6 +110,4 @@ export function startNewDay(state: GameState): void {
   firePhaseStart(state);
   // A hiker chased onto a new tile in the night: its challenge opens now.
   openNext(state);
-  // Levels reached since the last camp: the first level-up opens (one at a time).
-  openLevelUp(state);
 }

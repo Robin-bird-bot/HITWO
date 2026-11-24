@@ -466,8 +466,9 @@ describe('Mom: Trekker Trail (Experienced Traveler)', () => {
       'mom-trekker-t2',
       'mom-trekker-t3',
     );
+    s = toNight(s);
     place(s, 'mom', 'T', { morale: 5 });
-    s = run(toNight(s), moveAll('ellie', 'L', 'mom'));
+    s = run(s, moveAll('ellie', 'L', 'mom'));
     expect(stat(s, 'mom', 'appetite')).toBe(10);
     expect(stat(s, 'ellie', 'appetite')).toBe(10 - 2);
     expect(stat(s, 'mom', 'morale')).toBe(6);

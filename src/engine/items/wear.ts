@@ -41,7 +41,10 @@ export function loseDurability(
   /** Spent on purpose (a challenge's cost): it comes off this item, with no Umbrella or saves. */
   { spent = false }: { spent?: boolean } = {},
 ): number {
-  if (n <= 0 || ITEMS[item.itemId]?.type !== 'clothes') return 0;
+  const kind = ITEMS[item.itemId];
+  // Clothes, and trinkets that wear out (Phase 10.7).
+  if (n <= 0 || !kind || (kind.type !== 'clothes' && !kind.lasts)) return 0;
+  if (kind.type === 'trinket') return wearTrinket(state, hiker, item, n, cause);
   // An Umbrella takes what the hiker's other clothes would lose.
   const umbrella = spent
     ? undefined
@@ -115,4 +118,40 @@ export function wearAtCamp(state: GameState): void {
     for (const item of wornClothes(h))
       loseDurability(state, h, item, BALANCE.items.campWear, 'a day’s wear');
   }
+}
+
+/** Trinkets that wear every phase (Merit Badge; Phase 10.7) lose 1 durability; at 0 they're gone. */
+export function wearTrinkets(state: GameState): void {
+  for (const h of state.hikers) {
+    if (h.status === 'abandoned') continue;
+    for (const item of [...h.inventory.bag]) {
+      const def = ITEMS[item.itemId];
+      if (def?.wear === 'phase' && !def.retired) loseDurability(state, h, item, 1, def.name);
+    }
+  }
+}
+
+/** A trinket that wears out loses durability; at 0 it's thrown away. */
+function wearTrinket(
+  state: GameState,
+  hiker: Hiker,
+  item: ItemInstance,
+  n: number,
+  cause: string,
+): number {
+  const def = ITEMS[item.itemId];
+  const before = item.durability ?? def?.lasts ?? 1;
+  item.durability = Math.max(0, before - n);
+  if (item.durability === 0) {
+    removeItem(hiker, item.uid);
+    noteGone(state, item.itemId);
+    pushEvent(state, {
+      kind: 'itemGone',
+      hikerId: hiker.id,
+      itemId: item.itemId,
+      why: 'worn',
+      cause,
+    });
+  }
+  return before - item.durability;
 }

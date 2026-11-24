@@ -507,8 +507,6 @@ export interface Hiker {
   trails?: { learned: string[]; off?: string[] };
   /** Their morale type, checked at the end of every phase (Phase 10.7). */
   moraleType?: MoraleTypeId;
-  /** The last phase they moved, walking or brought along (Wanderlust, Homebody). */
-  moved?: { day: number; phase: Phase };
   /** Has used their action this phase. */
   acted: boolean;
   /** Has slept this night. */

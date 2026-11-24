@@ -919,6 +919,17 @@ export interface ItemDef {
   deployments?: number;
   /** Trinkets: used up when used, or works while carried. */
   trinket?: 'use' | 'keep';
+  /**
+   * A trinket that wears out (Phase 10.7): its durability, which ticks down
+   * every phase or each time it takes effect. At 0 it's thrown away.
+   */
+  lasts?: number;
+  wear?: 'phase' | 'effect';
+  /**
+   * Retired (Phase 10.7): trinkets that gave or swapped traits. They're never
+   * offered, and one already in a pack does nothing.
+   */
+  retired?: true;
   /** Its own recipe, used once the hiker knows its blueprint. */
   recipe?: Recipe;
   /** Only from finds, shops or events. */
@@ -1098,18 +1109,20 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
       hooks: itemHooks(def, item),
     });
   }
-  // Keep trinkets work while carried (Postcard, Textbook). TODO(wyatt): two of the same count once.
+  // Keep trinkets work while carried (Postcard, Textbook, Field Notebook). A retired one does
+  // nothing. TODO(wyatt): two of the same count once.
   const kept = new Set<ItemId>();
   for (const item of hiker.inventory.bag) {
     const def = ITEMS[item.itemId];
-    if (def?.trinket !== 'keep' || !def.hooks || kept.has(item.itemId)) continue;
+    if (def?.trinket !== 'keep' || def.retired || kept.has(item.itemId)) continue;
+    if (!def.hooks && !def.hooksAt) continue;
     kept.add(item.itemId);
     sources.push({
       id: `item:${item.uid}`,
       kind: 'item',
       itemId: item.itemId,
       name: def.name,
-      hooks: def.hooks,
+      hooks: itemHooks(def, item),
     });
   }
   for (const c of hiker.conditions) {
