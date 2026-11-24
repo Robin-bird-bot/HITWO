@@ -1226,7 +1226,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 - **The first challenges and opportunities** built from them: prepare by spending resources or items, stakes that fit the challenge, party size that matters, penalties that reach past the tile.
 - Trials come back only if they fit the new challenges.
 
-### Phase 10.8, step 1: Minigame testing and Bearrels (now)
+### Phase 10.8, step 1: Minigame testing and Bearrels (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-bearrels-test.md`. Mockups in `docs/mockups/minigames/`; mockups 5 and 6 are for the GPS layout only, and the chosen art style is look C, mockup 7 and the frames. Bearrels' scene parts are in `public/assets/minigames/bearrels/`, and the Bear Country poster in `public/assets/posters/`.)
 
@@ -1280,6 +1280,29 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - the bear ducks over 500 ms;
   - there's a 700 ms pause after a round's last shot before the bear ducks.
 - **Not done:** Prepare, real stakes (Injury, Luck), challenge XP, other minigames, sound files (hooks only), and the GPS's D-pad and buttons.
+
+### Phase 10.8, step 1b: Bearrels styles, the vertical GPS and drag-and-drop (now)
+
+(New in the Nov 24 follow-up: `docs/UPDATE-2026-11-24-bearrels-styles.md`. The design is the revised `docs/design/10-minigames.md`, which replaces the first version. New mockups in `docs/mockups/minigames/`: `1-playing-earthy-pixel.jpg` to `8-testing-tab-reference.jpg`. The pixel sprites are in `public/assets/minigames/bearrels/pixel-earth/` and `pixel-teal/`; the `_reference-*.png` frames stay in `assets/` only.)
+
+**Goal:** Wyatt compares three art styles in the actual game and picks one. Everything from step 1 stays: the framework, the pop-up, the testing tab, and Bearrels' rules and flow.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **The vertical GPS:** the body rebuilt upright with a 3:4 screen, sitting in the middle of the pop-up. Before Start it loops a demo of Bearrels about every [6 s] (a ghost finger drags a hiker to a barrel, the bear pops up and fires; sometimes a hit, sometimes a miss), with a "▶ PREVIEW" pill and "Watch, then press Start". It can't be played.
+2. **Turn and zoom:** on Start the GPS turns 90° clockwise and moves to the center while it scales up over [700 ms], until the landscape screen is as large as fits, up to [92%] of the window width and [86%] of its height. The pop-up dims to about [35%]. On Continue it turns back upright and shrinks over [500 ms]. Reduced motion: a crossfade, no spin. Every minigame now plays at **4:3**.
+3. **Three art styles:** Earthy pixel (default) and Teal pixel draw at 280 × 210 from the sprites, placed exactly as each style's `layout.json` says, scaled up nearest-neighbor; Silhouette is the step 1 SVG parts at 4:3 (viewBox `0 -120 1280 960`, plus the sky and ground strips). Effects are drawn in code over any style. One scene model, three renderers: switching styles redraws the scene and changes nothing in the game.
+4. **Drag-and-drop:** press a token or a placed hiker and move more than [6 px]; the portrait lifts and follows the pointer, the barrel under it lights up (hit area: the barrel, the space above it, and [12 px] around). Drop on a barrel: the hiker slides in over [250 ms]. Drop anywhere else: the portrait flies back over [200 ms]. No dragging while the bear is up. Tap, then tap and the keyboard stay. The placing prompt becomes "Drag a hiker to a barrel". Every future minigame lets the player drag anything they place or move.
+5. **Testing tab:** an **Art style** setting (three buttons, above the others) that the preview follows, remembered with the other settings. While playing in test mode, a small **Style** button outside the GPS screen and the **S** key cycle the style live.
+
+**Tests**
+- Each style draws 3 to 6 barrels in the right places (matching `layout.json`), and the UI never covers a barrel.
+- Switching styles mid-round keeps every hiker's barrel, the round, and who is out.
+- Dragging: dropping on a barrel places the hiker; dropping elsewhere returns them; no drag while the bear is up; tap, then tap still works.
+- The GPS ends up landscape and filling most of the window at desktop size and on a phone in landscape; reduced motion uses the crossfade.
+
+**Done when:** all three styles play from the testing tab through the turned GPS, the style switches mid-game, drag-and-drop works with mouse and touch, and the tests above pass.
 
 ### Phase 10.8, next steps (outline only)
 

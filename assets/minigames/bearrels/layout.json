@@ -1,14 +1,48 @@
 {
-  "viewBox": [
+  "viewBox_16x9": [
+    0,
+    0,
     1280,
     720
   ],
+  "viewBox_4x3": [
+    0,
+    -120,
+    1280,
+    960
+  ],
+  "extend_for_4x3": {
+    "sky": {
+      "rect": [
+        0,
+        -120,
+        1280,
+        130
+      ],
+      "fill": "#FCE6BE"
+    },
+    "ground": {
+      "rect": [
+        0,
+        700,
+        1280,
+        140
+      ],
+      "fill": "#4A1428"
+    }
+  },
   "barrelTop": 418,
   "rowX": [
     150,
     1130
   ],
-  "barrelWidth": "min(168, rowSpan/(n-1)*0.74)",
+  "barrelWidth": "min(150, 980/(n-1)*0.7); a single barrel is 150 wide at x 640",
+  "barrelHeight": "width*1.06",
+  "hikers": {
+    "scale": "1.05 alone, 0.8 for two, 0.6 for three or four, times min(1, width/150)",
+    "spacing": "76*scale",
+    "headCenterY": "barrelTop - 56*scale"
+  },
   "hikerColors": {
     "finn": "#E2683C",
     "ellie": "#4A8FD4",
@@ -46,5 +80,6 @@
     "bird": "#7A2433",
     "cream": "#FFF1D6",
     "red": "#E5483A"
-  }
+  },
+  "note": "The SVG parts are in art/bearrels/ from the previous update. This file replaces that layout.json (its barrelWidth line was out of date)."
 }
