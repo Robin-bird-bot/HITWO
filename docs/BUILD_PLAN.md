@@ -1258,6 +1258,29 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Done when:** Bearrels plays from the testing tab, through the pop-up and the lifted GPS, at desktop size and on a phone in landscape, and the tests above pass.
 
+**Phase 10.8 step 1 notes (built Nov 24)**
+- **What's playable:**
+  - Main menu → **Minigame testing**: pick Bearrels' barrels, rounds, shots and hikers (remembered on this device), see the preview, then **Test it**.
+  - That opens the Bear Country pop-up (no Prepare), then Start lifts the party GPS and Bearrels plays: placing, the bear, the crosshair, hits and misses, and the results card.
+  - Continue lowers the GPS; the pop-up shows "1 safe, 2 hit" with Back to testing and Play again.
+  - Touch, mouse or keyboard; reduced motion; desktop and phone in landscape.
+- **What I interpreted:**
+  - **Barrel width:** the doc's formula (max 150, ×0.7). `layout.json` says 168 and ×0.74; the doc wins.
+  - **Scene parts:** the bear, barrels, hikers and crosshair are drawn in code from Wyatt's SVG shapes, so each hiker's rim light and bandana can use their color. The background is Wyatt's file.
+  - **Colors in test mode** come from `layout.json` (Finn orange, Ellie blue, Mom yellow, Wyatt green, Gdog purple, Wink teal). In a run, the hiker's party color will be used.
+  - **Wink is "Wink"** on the minigame screens (the art's name), not "Grandpa Wink".
+  - **Later rounds:** nobody is picked automatically, since everyone left is still placed. The prompt reads "Move anyone, then Ready", and Enter or Space presses Ready.
+  - **The crosshair** sweeps left to right, then back, slowing onto its barrel (one pass each way, over the whole 1.4 s).
+  - **A second shot** says "Again…" while it aims.
+  - **The pop-up after a game** also shows "Safe" or "Hit in round N" under each hiker's portrait.
+  - **The phone layout** kicks in when the screen is drawn smaller than 0.6 of its size (`gps.phoneBelowScale`).
+  - **Prepare options** for Bear Country are the mockup's, kept as placeholders. They're not shown in test mode and do nothing yet.
+- **Timings added** (all in `BALANCE.minigames.bearrels.timing`, `TODO(wyatt)`): the doc gives the rest; I picked these:
+  - the fire frame shows for 450 ms;
+  - the bear ducks over 500 ms;
+  - there's a 700 ms pause after a round's last shot before the bear ducks.
+- **Not done:** Prepare, real stakes (Injury, Luck), challenge XP, other minigames, sound files (hooks only), and the GPS's D-pad and buttons.
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.
