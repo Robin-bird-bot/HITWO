@@ -1178,6 +1178,35 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Done when:** a run with any of the 6 starts with a chosen trait, grows through Skill Trails with party points, morale types tick each phase, the two trinkets work and wear out, every other hiker is locked, and the tests above pass.
 
+**Phase 10.7 notes (built Nov 23)**
+- **What's playable:**
+  - Pick from Finn, Ellie, Wyatt, Mom, Gdog and Wink (everyone else is a locked silhouette), each with a starting trait; or use BY STARTING TRAIT.
+  - Every hiker's XP fills the party bar; each party level gives a point. Learn steps at night or at a ranger station.
+  - All 54 steps work, Leash Puller switches on the hiker frame, and Rule Changer's tile is picked on the map.
+  - Morale types check at the end of every phase, with a forecast on the Morale bar.
+  - Field Notebook and Merit Badge wear out.
+- **Rules I had to interpret:**
+  - **Being brought along** covers both the leader's Appetite for that hiker and the hiker's own extras (a muddy line, the night). Leash Puller on frees both for everyone; 2 Energy still comes on top of any Energy a steep line costs.
+  - **Never Alone** works on Finn's own Move, not when he leads a Move All.
+  - **Copydog's "last"** means every other hiker on his tile has already acted this phase.
+  - **Fur Trade** uses Ellie's own Fur, and its "No limit" is once per action (it takes her action).
+  - **Agility Class** picks a Dog on Mom's tile who has already acted.
+  - **Rule Changer** swaps within the card's own tier. III lists every tile nobody has reached, including quiet ones, so it never shows which hold a challenge.
+  - **Brain Fog** ("Utility traits don't work") switches off only the Utility trees' (Loop) traits.
+  - **Grants:** the recipe steps give Tier 1 blueprints of that type, skipping ones already known. With the starting bag, Gdog can start with 5 food recipes (2 from her bag, 3 from Family Cookbook). Packed Toolbox's tools need room in Wink's pack; there's no overflow choice yet, so a tool that doesn't fit is skipped with a log line.
+  - **The Proper Way:** the extra use is added to the tool's uses while it's in Wink's pack and taken off when it leaves (a tool down to its last, extra use breaks when handed on).
+  - **Old saves:** the 6 keep their first tree's Tier 1 (no gift is given again), and the party level comes from everyone's XP, with its points unspent. A locked or placeholder hiker in a run in progress keeps their old traits. Nothing says "can't continue".
+  - **Craft tiers:** everyone crafts Tier 1 (`startTier` 1), so "can craft Tier 2/3" is new for that hiker. But any basic craft already deals a card one tier higher 10% of the time (`items.craft.higher`).
+  - **Uses per section:** abilities that reset each section now say "section", not "biome".
+- **Switched off:**
+  - per-hiker level-ups and the level-up screen (the code stays, unreachable; the debug panel's old level-up tools still exist for test hikers);
+  - slots and trait swapping for the 6;
+  - Old Photo, Family Photo, Cherished Photo and Instruction Manual (retired: never offered, and "Retired." in a pack);
+  - the Morale traits for the 6 (they have morale types instead).
+  - The older trinkets (Postcard, Textbook, Wallet, Diploma, the serums) keep working and don't wear out. Diploma's XP now goes by the party's next level.
+- **Placeholder icons:** 14 traits and the 7 morale type symbols (see `docs/ASSETS.md`); Field Notebook and Merit Badge have no art.
+- **Saves:** version 21.
+
 ---
 
 ## Phase 10.7b: Trees for the other hikers (later, design first)
