@@ -14,7 +14,7 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS, craftableItems, isOffered } from '../../content/items';
 import { BASIC_RECIPES, TRINKET_RESOURCES } from '../../content/items/basicRecipes';
 import { RESOURCES } from '../../content/resources';
-import { craftModifiers, traitCraftTier, type CraftModifier } from '../effects';
+import { craftModifiers, recipeSubs, traitCraftTier, type CraftModifier } from '../effects';
 import type { Recipe, RecipePart } from './recipe';
 import { hikersOnTile } from '../map';
 import { pick, roll, seedRng, shuffle } from '../rng';
@@ -109,14 +109,34 @@ export function craftRecipe(
   type: ItemTypeName,
   blueprint?: ItemId,
 ): Recipe | undefined {
-  if (blueprint) return ITEMS[blueprint]?.recipe;
-  return basicRecipe(state, type, craftTier(state, hiker, type));
+  const recipe = blueprint
+    ? ITEMS[blueprint]?.recipe
+    : basicRecipe(state, type, craftTier(state, hiker, type));
+  return recipe && withSubs(recipe, recipeSubs(state, hiker, type));
+}
+
+/** A part naming one of the swappable resources also takes what can stand in for it. */
+function withSubs(recipe: Recipe, subs: ReturnType<typeof recipeSubs>): Recipe {
+  if (!subs) return recipe;
+  return recipe.map((part) =>
+    part.ids?.some((id) => subs.for.includes(id)) ? { ...part, subs: subs.with } : part,
+  );
+}
+
+/** How many resources stood in for others in a paid recipe (Garbage Connoisseur). */
+export function swapsIn(recipe: Recipe, slots: readonly (PaidSlot | null)[]): number {
+  const parts = spaceParts(recipe);
+  return slots.filter((slot, k) => {
+    const part = recipe[parts[k] ?? 0];
+    return !!slot && !!part?.subs?.includes(slot.resource) && !part.ids?.includes(slot.resource);
+  }).length;
 }
 
 const nodeOf = (id: ResourceId) => RESOURCES.find((r) => r.id === id)?.node;
 
 /** Whether a resource can go in a part of a recipe. */
 export function fitsPart(part: RecipePart, id: ResourceId): boolean {
+  if (part.subs?.includes(id)) return true;
   if (part.ids) return part.ids.includes(id);
   if (part.any) return true;
   const node = nodeOf(id);
@@ -172,7 +192,12 @@ export function autoPay(state: GameState, crafter: Hiker, recipe: Recipe): (Paid
       const best = [...(enough.length ? enough : part.ids)].sort(
         (a, b) => Math.min(own(b), part.n) - Math.min(own(a), part.n) || total(b) - total(a),
       )[0];
-      filled[i] = Array.from({ length: part.n }, () => take((id) => id === best));
+      // Stand-ins (Garbage Connoisseur) only fill what the named resource can't.
+      filled[i] = Array.from(
+        { length: part.n },
+        () =>
+          take((id) => id === best) ?? (part.subs ? take((id) => !!part.subs?.includes(id)) : null),
+      );
     } else {
       filled[i] = Array.from({ length: part.n }, () => take((id) => fitsPart(part, id)));
     }
@@ -208,10 +233,14 @@ export function paymentReason(
       return `${giver.name} doesn’t have that many.`;
     }
   }
-  // A key part is 2 (or more) of the same resource (Wyatt, Nov 13).
+  // A key part is 2 (or more) of the same resource (Wyatt, Nov 13). Stand-ins can mix in.
   for (const [i, part] of recipe.entries()) {
     if (!part.ids || part.ids.length < 2) continue;
-    const kinds = new Set(slots.filter((_, k) => parts[k] === i).map((s) => s?.resource));
+    const kinds = new Set(
+      slots
+        .filter((s, k) => parts[k] === i && !!s && !part.subs?.includes(s.resource))
+        .map((s) => s?.resource),
+    );
     if (kinds.size > 1) return 'The key resource has to be all the same one.';
   }
   return undefined;

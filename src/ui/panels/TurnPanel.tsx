@@ -287,7 +287,10 @@ export function Abilities({
                   style={{ background: color }}
                   aria-expanded={choices ? choosing === id : undefined}
                   onClick={() =>
-                    choices ? setChoosing(choosing === id ? null : id) : onAbility(id)
+                    // Tile choices (Rule Changer) are picked on the map instead.
+                    choices && !ability.tileChoices
+                      ? setChoosing(choosing === id ? null : id)
+                      : onAbility(id)
                   }
                 >
                   USE
@@ -338,7 +341,7 @@ export function Abilities({
   );
 }
 
-const PER = { day: 'DAY', phase: 'PHASE', biome: 'BIOME' };
+const PER = { day: 'DAY', phase: 'PHASE', biome: 'SECTION' };
 
 /**
  * Picking resources for an ability (Spare Parts): any of the 16, repeats

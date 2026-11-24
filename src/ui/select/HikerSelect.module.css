@@ -624,3 +624,70 @@
 .ghost {
   rotate: 5deg;
 }
+
+/* ── Phase 10.7 ── */
+
+/* A locked card: no lift, no pointer, slightly dimmed. */
+.cellCard[data-locked] {
+  cursor: default;
+  opacity: 0.8;
+}
+
+/* A spot's starting trait: 3 buttons; until one is picked, a gold hint pulses. */
+.pickHint {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 9px;
+  border-radius: 11px;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  animation: pickPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pickPulse {
+  50% {
+    box-shadow: 0 0 10px rgba(233, 180, 76, 0.8);
+  }
+}
+
+.startOption {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.startOption:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.startOption[data-picked] {
+  background: rgba(233, 180, 76, 0.16);
+  box-shadow: inset 0 0 0 2px #e9b44c;
+}
+
+.startOption[data-other] {
+  opacity: 0.45;
+}
+
+.startOption:focus-visible {
+  outline: 2px solid #e9b44c;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickHint {
+    animation: none;
+  }
+}

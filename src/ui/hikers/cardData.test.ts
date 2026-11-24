@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { CLASS_COLORS } from '../../content/classes';
 import { ROSTER } from '../../content/roster';
 import { CLASS_IDS } from '../../engine/types';
-import { bagWords, cardFor, type HikerCardData } from './cardData';
+import { bagWords, cardFor, hikerCardData, type HikerCardData } from './cardData';
 import { HikerCard } from './HikerCard';
 
 const card = (id: string): HikerCardData => {
@@ -13,83 +13,91 @@ const card = (id: string): HikerCardData => {
   return c;
 };
 
-describe('role colors', () => {
-  it('every role has the color from the plan', () => {
+describe('class colors', () => {
+  it('every class has the color from 09-hikers.md', () => {
     expect(CLASS_COLORS).toEqual({
-      tank: '#DC3B44',
-      hardy: '#E27A2B',
+      leader: '#DC3B44',
+      follower: '#E8806A',
+      scout: '#3E8FC9',
+      trekker: '#B0473A',
       scavenger: '#93A33A',
       crafter: '#3A7752',
-      scout: '#3E8FC9',
+      chef: '#6E8F2E',
+      smith: '#A0703A',
+      tailor: '#2C7C86',
+      architect: '#6E7A3E',
+      packer: '#8A6A3E',
+      naturalist: '#4E9A7A',
+      merchant: '#1FA39A',
       support: '#F0AB35',
-      jack: '#5F7487',
       entertainer: '#D675EF',
-      moneymaker: '#1FA39A',
+      hardy: '#E27A2B',
+      watcher: '#4A5FA8',
+      daredevil: '#B23A48',
+      jack: '#5F7487',
     });
     expect(Object.keys(CLASS_COLORS).sort()).toEqual([...CLASS_IDS].sort());
   });
 });
 
 describe('the front', () => {
-  it('Finn: name, title in capitals and quotes, one role, three badges', () => {
+  it('Finn: name, title, his 3 trees’ classes, and the 3 traits he can start with', () => {
     const finn = card('finn');
     expect(finn.name).toBe('Finn');
     expect(finn.title).toBe('"THE FOLLOWER"');
-    expect(finn.roles).toEqual([{ id: 'tank', name: 'TANK', color: '#DC3B44' }]);
+    expect(finn.roles.map((r) => [r.name, r.color])).toEqual([
+      ['LEADER', '#DC3B44'],
+      ['FOLLOWER', '#E8806A'],
+      ['SCAVENGER', '#93A33A'],
+    ]);
     expect(finn.mainColor).toBe('#DC3B44');
     expect(finn.family).toBe('dog');
-    expect(finn.variant).toBe(false);
-    expect(finn.badges.map((b) => [b.name, b.type, b.shape])).toEqual([
-      ['Leash Puller', 'T', 'diamond'],
-      ['Follower', 'T', 'diamond'],
-      ['Extrovert', 'M', 'diamond'],
+    expect(finn.locked).toBe(false);
+    // A toggle is a square, the rest diamonds, each in its class color.
+    expect(finn.badges.map((b) => [b.name, b.shape, b.color])).toEqual([
+      ['Leash Puller', 'square', '#DC3B44'],
+      ['Whatcha Up To?', 'diamond', '#E8806A'],
+      ['Copydog', 'diamond', '#93A33A'],
     ]);
   });
 
-  it('two roles get split tabs, main on the left', () => {
-    expect(card('ellie').roles.map((r) => [r.name, r.color])).toEqual([
-      ['SUPPORT', '#F0AB35'],
-      ['ENTERTAINER', '#D675EF'],
+  it('a usable trait is a circle', () => {
+    expect(card('wyatt').badges.find((b) => b.name === 'Rule Changer')?.shape).toBe('circle');
+    expect(card('ellie').badges.find((b) => b.name === 'Singer')?.shape).toBe('circle');
+  });
+
+  it('the back lists the 3 trees with their 3 traits each', () => {
+    const ellie = card('ellie');
+    expect(ellie.trees?.map((t) => t.name)).toEqual([
+      'Chef Path',
+      'Scavenger Path',
+      'Entertainer Loop',
     ]);
-    expect(card('ellie').mainColor).toBe('#F0AB35');
+    expect(ellie.trees?.[2]?.steps.map((s) => [s.name, s.upgrade])).toEqual([
+      ['Singer', false],
+      ['Loud', false],
+      ['Singer II', true],
+    ]);
   });
 
-  it('a usable trait is a circle; the rest are diamonds', () => {
-    const wyatt = card('wyatt');
-    const ruleChanger = wyatt.badges.find((b) => b.traitId === 'ruleChanger');
-    expect(ruleChanger?.shape).toBe('circle');
-    expect(wyatt.rows.find((r) => r.traitId === 'ruleChanger')?.usable).toBe(true);
+  it('a locked hiker shows nothing but “Locked”', () => {
+    const cody = card('cody');
+    expect(cody).toMatchObject({ name: 'Locked', locked: true, roles: [], badges: [], bag: '' });
+    expect(cody.title).toBeUndefined();
   });
 
-  it('an open slot is OPEN, filled on a level-up', () => {
-    const brutus = card('brutus');
-    const open = brutus.badges.find((b) => b.shape === 'empty');
-    expect(open).toMatchObject({
+  it('the old cards (for the locked hikers’ later trees): an open slot, a setting', () => {
+    const unlocked = (id: string) => {
+      const h = ROSTER.find((x) => x.id === id)!;
+      const rest = { ...h };
+      delete rest.locked;
+      return hikerCardData(rest);
+    };
+    expect(unlocked('brutus').badges.find((b) => b.shape === 'empty')).toMatchObject({
       name: 'Open slot',
       kindWord: 'Trail or Utility slot',
-      text: 'Filled on a level-up.',
     });
-    expect(brutus.rows.filter((r) => r.open)).toEqual([
-      { name: 'Open slot', text: 'Filled on a level-up.', usable: false, open: true },
-    ]);
-  });
-
-  it('a trait with a setting is named with it', () => {
-    const sherman = card('grandpaSherman');
-    expect(sherman.rows.at(-1)?.name).toBe('Location (River / Mountain)');
-    expect(sherman.rows.at(-1)?.text).toContain('River');
-  });
-
-  it('no title yet: no title line (Ben, Mindy and the variants)', () => {
-    expect(card('ben').title).toBeUndefined();
-    expect(card('followerFinn').title).toBeUndefined();
-    expect(card('followerFinn').variant).toBe(true);
-    // Wywee and the holiday hikers are variants too: the star shows next to the family icon.
-    for (const id of ['wywee', 'grammyClause', 'lelf', 'grinch', 'redolf']) {
-      expect(card(id).variant, id).toBe(true);
-    }
-    expect(card('grinch').title).toBe('"THE GRUMPY"');
-    expect(card('bossGracie').family).toBe('duo');
+    expect(unlocked('grandpaSherman').rows.at(-1)?.name).toBe('Location (River / Mountain)');
   });
 
   it('titles use a plain apostrophe, for the pixel font', () => {
@@ -103,26 +111,25 @@ describe('the starting bag in words', () => {
     expect(card('ellie').bag).toBe('Mystery Meat');
     expect(card('mom').bag).toBe('Dog Food + 1 random Tier 1 blueprint');
     expect(card('gdog').bag).toBe('2 random Tier 1 food blueprints');
-    expect(card('muffin').bag).toBe('1 random Tier 1 tool blueprint');
-    expect(card('ellieDevourer').bag).toBe('2 Dog Food');
-    expect(card('preparedWink').bag).toBe('Tent + Binoculars + Scanner');
-    expect(card('grammyClause').bag).toBe('2 Presents');
-    expect(card('grinch').bag).toBe('Present');
-    expect(card('lelf').bag).toBe('1 random Tier 1 tool blueprint');
+    expect(bagWords({ items: ['dogFood', 'dogFood'] })).toBe('2 Dog Food');
+    expect(bagWords({ presents: 2 })).toBe('2 Presents');
     expect(bagWords({})).toBe('');
   });
 });
 
 describe('every hiker', () => {
-  it('has a card with a badge and a row for each slot, roles and a bag', () => {
+  it('a designed hiker has 3 classes, 3 badges and 3 trees; everyone else is locked', () => {
     for (const h of ROSTER) {
       const c = card(h.id);
-      expect(c.badges, h.id).toHaveLength(h.slots.length);
-      expect(c.rows, h.id).toHaveLength(h.slots.length);
-      expect(c.roles.length, h.id).toBeGreaterThan(0);
-      expect(c.bag, h.id).not.toBe('');
-      for (const row of c.rows) {
-        expect(row.text, `${h.id} ${row.name}`).not.toMatch(/undefined|\[X\]|\[Y\]|\[Node\]/);
+      if (h.locked) {
+        expect(c.locked, h.id).toBe(true);
+        continue;
+      }
+      expect(c.roles, h.id).toHaveLength(3);
+      expect(c.badges, h.id).toHaveLength(3);
+      expect(c.trees, h.id).toHaveLength(3);
+      for (const t of c.trees ?? []) {
+        for (const step of t.steps) expect(step.text, `${h.id} ${step.name}`).not.toMatch(/\[|\]/);
       }
     }
   });
@@ -132,24 +139,29 @@ describe('the card', () => {
   const html = (props: Parameters<typeof HikerCard>[0]) =>
     renderToStaticMarkup(createElement(HikerCard, props));
 
-  it('the front: name, title, roles, badges with names, the STARTING BAG tab', () => {
+  it('the front: name, title, class tabs, starting traits with names, the STARTING BAG tab', () => {
     const out = html({ hikerId: 'finn' });
     expect(out).toContain('FINN');
     expect(out).toContain('&quot;THE FOLLOWER&quot;');
-    expect(out).toContain('TANK');
+    expect(out).toContain('LEADER');
     expect(out).toContain('LEASH PULLER');
     expect(out).toContain('STARTING BAG');
     expect(out).toContain('aria-pressed="false"');
   });
 
-  it('the back: every trait spelled out, USABLE tags, open slots and the bag bar', () => {
+  it('the back: the 3 trees and the bag bar', () => {
     const wyatt = html({ hikerId: 'wyatt', side: 'back' });
-    expect(wyatt).toContain('USABLE');
+    expect(wyatt).toContain('Naturalist Path');
+    expect(wyatt).toContain('Rule Changer III');
     expect(wyatt).toContain('RAIN JACKET');
-    const brutus = html({ hikerId: 'brutus', side: 'back' });
-    expect(brutus).toContain('OPEN SLOT');
-    expect(brutus).toContain('Filled on a level-up.');
-    expect(brutus).not.toContain('STARTING BAG');
+  });
+
+  it('a locked card: no button, no name, no back', () => {
+    const out = html({ hikerId: 'cody' });
+    expect(out).toContain('LOCKED');
+    expect(out).not.toContain('role="button"');
+    expect(out).not.toContain('CODY');
+    expect(out).not.toContain('STARTING BAG');
   });
 
   it('starts turned over when asked, and draws nothing for an unknown hiker', () => {

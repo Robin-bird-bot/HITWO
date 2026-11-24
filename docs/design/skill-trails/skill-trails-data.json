@@ -1,0 +1,785 @@
+{
+  "_about": "Phase 10.7 Skill Trails data for the first 6 hikers. Field names are a suggestion: fit them to the repo's data format. Text is player-facing. [Brackets] are first guesses: move them to balance.ts with TODO(wyatt).",
+  "kinds": {
+    "passive": "Always on. Diamond badge.",
+    "usable": "Button with limited uses. Round badge.",
+    "toggle": "On or off until switched. Square badge, filled when on, outlined when off. Text shows 'On:' and 'Off:'.",
+    "grant": "Gives something once when learned (recipes, items). Diamond badge. If picked at the start of a run, show startText."
+  },
+  "steps": {
+    "new": "Full-size badge.",
+    "upgrade": "Smaller badge of the trait it upgrades, arrow on top, II/III tag. Replaces that trait; 'changed' lists what to show in yellow."
+  },
+  "classColors": {
+    "leader": "#DC3B44",
+    "follower": "#E8806A",
+    "scout": "#3E8FC9",
+    "trekker": "#B0473A",
+    "scavenger": "#93A33A",
+    "crafter": "#3A7752",
+    "chef": "#6E8F2E",
+    "smith": "#A0703A",
+    "tailor": "#2C7C86",
+    "architect": "#6E7A3E",
+    "packer": "#8A6A3E",
+    "naturalist": "#4E9A7A",
+    "merchant": "#1FA39A",
+    "support": "#F0AB35",
+    "entertainer": "#D675EF",
+    "hardy": "#E27A2B",
+    "watcher": "#4A5FA8",
+    "daredevil": "#B23A48",
+    "jack": "#5F7487"
+  },
+  "classAreas": {
+    "leader": "movement",
+    "follower": "movement",
+    "scout": "movement",
+    "trekker": "movement",
+    "scavenger": "resources",
+    "crafter": "resources",
+    "chef": "resources",
+    "smith": "resources",
+    "tailor": "resources",
+    "architect": "resources",
+    "packer": "resources",
+    "naturalist": "resources",
+    "merchant": "resources",
+    "support": "utility",
+    "entertainer": "utility",
+    "hardy": "utility",
+    "watcher": "utility",
+    "daredevil": "utility",
+    "jack": "utility"
+  },
+  "hikers": [
+    {
+      "hiker": "finn",
+      "moraleType": "extrovert",
+      "trees": [
+        {
+          "id": "finn-leader",
+          "area": "movement",
+          "name": "Leader Trail",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Leash Puller",
+              "step": "new",
+              "kind": "toggle",
+              "on": "Finn's Move All costs him 2 Energy instead of any Appetite.",
+              "off": "Nothing.",
+              "id": "finn-leader-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Leash Puller II",
+              "step": "upgrade",
+              "kind": "toggle",
+              "on": "Finn's Move All costs him 2 Energy instead of any Appetite.",
+              "off": "Each hiker Finn brings along with Move All has a [25%] chance to cost no Appetite and not use their action.",
+              "changed": [
+                "off"
+              ],
+              "id": "finn-leader-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Leash Puller III",
+              "step": "upgrade",
+              "kind": "toggle",
+              "on": "Finn's Move All costs him 2 Energy instead of any Appetite.",
+              "off": "Each hiker brought along has a [50%] chance to cost no Appetite. Finn can bring hikers who already acted, and nobody loses an action.",
+              "changed": [
+                "off: 50%",
+                "off: bring hikers who already acted",
+                "off: nobody loses an action"
+              ],
+              "id": "finn-leader-t3"
+            }
+          ],
+          "class": "leader"
+        },
+        {
+          "id": "finn-follower",
+          "area": "movement",
+          "name": "Follower Trail",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Whatcha Up To?",
+              "step": "new",
+              "kind": "passive",
+              "text": "Being brought along by a Move All costs Finn no Appetite.",
+              "id": "finn-follower-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Whatcha Up To? II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Being brought along by a Move All costs Finn no Appetite and doesn't use his action.",
+              "changed": [
+                "doesn't use his action"
+              ],
+              "id": "finn-follower-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Never Alone",
+              "step": "new",
+              "kind": "passive",
+              "text": "Moving onto a tile where another hiker already is costs Finn no action and no Appetite.",
+              "id": "finn-follower-t3"
+            }
+          ],
+          "class": "follower"
+        },
+        {
+          "id": "finn-scavenger",
+          "area": "resources",
+          "name": "Scavenger Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Copydog",
+              "step": "new",
+              "kind": "passive",
+              "text": "When Finn scavenges, he gets 1 more of the resource he keeps for each hiker who scavenged his tile earlier this phase.",
+              "id": "finn-scavenger-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Copydog II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Finn gets 1 more of the resource he keeps for each hiker who scavenged his tile earlier this phase. If he's the first to scavenge it, he sees 2 more cards.",
+              "changed": [
+                "first: 2 more cards"
+              ],
+              "id": "finn-scavenger-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Copydog III",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Finn gets 1 more of the resource he keeps for each hiker who scavenged his tile earlier this phase. Scavenging first costs him no Appetite, and he sees 2 more cards when he scavenges last.",
+              "changed": [
+                "first: no Appetite",
+                "2 more cards when last"
+              ],
+              "note": "First and last are on Finn's tile this phase. Alone, he is both first and last.",
+              "id": "finn-scavenger-t3"
+            }
+          ],
+          "class": "scavenger"
+        }
+      ]
+    },
+    {
+      "hiker": "ellie",
+      "moraleType": "foody",
+      "trees": [
+        {
+          "id": "ellie-chef",
+          "area": "resources",
+          "name": "Chef Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Garbage Connoisseur",
+              "step": "new",
+              "kind": "passive",
+              "text": "When crafting food, Ellie can use Metal, Stone or Flint in place of Meat, Fish or Mushroom. Each one swapped in makes every bite give 1 less Appetite.",
+              "id": "ellie-chef-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Garbage Connoisseur II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Swapped-in resources no longer lower the Appetite.",
+              "changed": [
+                "no longer lower"
+              ],
+              "id": "ellie-chef-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Garbage Connoisseur III",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Each swapped-in resource adds 1 Appetite to every bite instead.",
+              "changed": [
+                "adds 1 Appetite per bite"
+              ],
+              "id": "ellie-chef-t3"
+            }
+          ],
+          "class": "chef"
+        },
+        {
+          "id": "ellie-scavenger",
+          "area": "resources",
+          "name": "Scavenger Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Furrager",
+              "step": "new",
+              "kind": "passive",
+              "text": "Fur is much more likely when Ellie scavenges.",
+              "params": {
+                "furWeight": "[x3]"
+              },
+              "id": "ellie-scavenger-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Furrager II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Fur she finds comes as x2 or x3, and she has a small chance to find Fur on tiles without a Wildlife node.",
+              "params": {
+                "x2": "[50%]",
+                "x3": "[50%]",
+                "offNodeFurChance": "[10%] per card"
+              },
+              "changed": [
+                "x2 or x3",
+                "Fur anywhere"
+              ],
+              "id": "ellie-scavenger-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Fur Trade",
+              "step": "new",
+              "kind": "grant",
+              "text": "Ellie learns a recipe: 3 Fur for 1 resource of her choice. It takes her action, like crafting. No limit.",
+              "id": "ellie-scavenger-t3"
+            }
+          ],
+          "class": "scavenger"
+        },
+        {
+          "id": "ellie-entertainer",
+          "area": "utility",
+          "name": "Entertainer Loop",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Singer",
+              "step": "new",
+              "kind": "usable",
+              "text": "For 1 Energy, every hiker on Ellie's tile gains 1 Morale.",
+              "uses": "1 per day",
+              "id": "ellie-entertainer-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Loud",
+              "step": "new",
+              "kind": "passive",
+              "text": "When Ellie Keeps Watch, it also covers the tiles next to her.",
+              "id": "ellie-entertainer-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Singer II",
+              "step": "upgrade",
+              "kind": "usable",
+              "text": "Every hiker on Ellie's tile and the tiles next to her gains 2 Morale. No Energy.",
+              "uses": "1 per day",
+              "changed": [
+                "2 Morale",
+                "tiles next to her",
+                "no Energy"
+              ],
+              "id": "ellie-entertainer-t3"
+            }
+          ],
+          "class": "entertainer"
+        }
+      ]
+    },
+    {
+      "hiker": "mom",
+      "moraleType": "wanderlust",
+      "trees": [
+        {
+          "id": "mom-support",
+          "area": "utility",
+          "name": "Support Loop",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Dog Mom",
+              "step": "new",
+              "kind": "passive",
+              "text": "When a Dog scavenges on Mom's tile, she gains a random resource from one of the tile's nodes.",
+              "id": "mom-support-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Agility Class",
+              "step": "new",
+              "kind": "usable",
+              "text": "For 1 Energy, a Dog on Mom's tile gets another action this phase.",
+              "uses": "1 per day",
+              "id": "mom-support-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Agility Class II",
+              "step": "upgrade",
+              "kind": "usable",
+              "text": "A Dog on Mom's tile gets another action this phase. No Energy.",
+              "uses": "1 per day",
+              "changed": [
+                "no Energy"
+              ],
+              "id": "mom-support-t3"
+            }
+          ],
+          "class": "support"
+        },
+        {
+          "id": "mom-merchant",
+          "area": "resources",
+          "name": "Merchant Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "MBA",
+              "step": "new",
+              "kind": "passive",
+              "text": "Caps are more likely when Mom scavenges.",
+              "params": {
+                "capsWeight": "[x2]"
+              },
+              "id": "mom-merchant-t1"
+            },
+            {
+              "tier": 2,
+              "name": "MBA II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Caps are more likely, and Caps cards she finds give 2 more Caps.",
+              "changed": [
+                "+2 Caps per card"
+              ],
+              "id": "mom-merchant-t2"
+            },
+            {
+              "tier": 3,
+              "name": "MBA III",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Caps cards in her scavenge are kept automatically, and she still picks another card.",
+              "changed": [
+                "Caps kept automatically"
+              ],
+              "id": "mom-merchant-t3"
+            }
+          ],
+          "class": "merchant"
+        },
+        {
+          "id": "mom-trekker",
+          "area": "movement",
+          "name": "Trekker Trail",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Experienced Traveler",
+              "step": "new",
+              "kind": "passive",
+              "text": "Moving alone has a [25%] chance to cost Mom no Appetite.",
+              "id": "mom-trekker-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Experienced Traveler II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Moving alone: [50%]. Being brought along by a Move All: a [25%] chance to cost no Appetite.",
+              "changed": [
+                "50%",
+                "brought along 25%"
+              ],
+              "id": "mom-trekker-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Experienced Traveler III",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Moving alone: [50%]. Being brought along never costs Mom Appetite, and she gains 1 Morale each time she moves.",
+              "changed": [
+                "brought along: never",
+                "+1 Morale per move"
+              ],
+              "id": "mom-trekker-t3"
+            }
+          ],
+          "class": "trekker"
+        }
+      ]
+    },
+    {
+      "hiker": "gdog",
+      "moraleType": "ambivert",
+      "trees": [
+        {
+          "id": "gdog-chef",
+          "area": "resources",
+          "name": "Chef Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Family Cookbook",
+              "step": "new",
+              "kind": "grant",
+              "text": "Learn 3 random food recipes.",
+              "startText": "Start with 3 random food recipes.",
+              "id": "gdog-chef-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Artisan Chef",
+              "step": "new",
+              "kind": "passive",
+              "text": "Gdog can craft Tier 2 food, and sees 1 more card when crafting food.",
+              "id": "gdog-chef-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Master Chef",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "She can craft Tier 3 food, and sees 2 more cards when crafting food.",
+              "changed": [
+                "Tier 3",
+                "2 more cards"
+              ],
+              "id": "gdog-chef-t3"
+            }
+          ],
+          "class": "chef"
+        },
+        {
+          "id": "gdog-tailor",
+          "area": "resources",
+          "name": "Tailor Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Clothing Catalogue",
+              "step": "new",
+              "kind": "grant",
+              "text": "Learn 3 random clothes recipes.",
+              "startText": "Start with 3 random clothes recipes.",
+              "id": "gdog-tailor-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Artisan Seamstress",
+              "step": "new",
+              "kind": "passive",
+              "text": "Gdog can craft Tier 2 clothes, and sees 1 more card when crafting clothes.",
+              "id": "gdog-tailor-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Master Seamstress",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "She can craft Tier 3 clothes, and sees 2 more cards when crafting clothes.",
+              "changed": [
+                "Tier 3",
+                "2 more cards"
+              ],
+              "id": "gdog-tailor-t3"
+            }
+          ],
+          "class": "tailor"
+        },
+        {
+          "id": "gdog-trekker",
+          "area": "movement",
+          "name": "Trekker Trail",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Short",
+              "step": "new",
+              "kind": "passive",
+              "text": "Moving alone costs Gdog 1 less Appetite. -1 item slot.",
+              "id": "gdog-trekker-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Short II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Moving alone costs Gdog 1 less Appetite. Being brought along by a Move All costs her 1 less Appetite too, and the item slot comes back.",
+              "changed": [
+                "brought along: -1 Appetite",
+                "slot back"
+              ],
+              "id": "gdog-trekker-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Homemade",
+              "step": "new",
+              "kind": "passive",
+              "text": "When crafting, Gdog sees 1 more card and has +1 Luck.",
+              "id": "gdog-trekker-t3"
+            }
+          ],
+          "class": "trekker"
+        }
+      ]
+    },
+    {
+      "hiker": "wink",
+      "moraleType": "ambivert",
+      "trees": [
+        {
+          "id": "wink-leader",
+          "area": "movement",
+          "name": "Leader Trail",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Lead the Way",
+              "step": "new",
+              "kind": "passive",
+              "text": "Hikers Wink brings along with Move All don't use their action.",
+              "id": "wink-leader-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Lead the Way II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "Hikers Wink brings along don't use their action, and his Move All costs 1 less Appetite in total.",
+              "changed": [
+                "-1 Appetite in total"
+              ],
+              "id": "wink-leader-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Just Around the Next Corner",
+              "step": "new",
+              "kind": "passive",
+              "text": "Within 3 tiles of the checkpoint, each hiker in Wink's Move All has a [50%] chance to cost no Appetite.",
+              "id": "wink-leader-t3"
+            }
+          ],
+          "class": "leader"
+        },
+        {
+          "id": "wink-architect",
+          "area": "resources",
+          "name": "Architect Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Floor Plans",
+              "step": "new",
+              "kind": "grant",
+              "text": "Learn 3 random shelter recipes.",
+              "startText": "Start with 3 random shelter recipes.",
+              "id": "wink-architect-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Artisan Architect",
+              "step": "new",
+              "kind": "passive",
+              "text": "Wink can craft Tier 2 shelters, and sees 1 more card when crafting shelters.",
+              "id": "wink-architect-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Master Architect",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "He can craft Tier 3 shelters, and sees 2 more cards when crafting shelters.",
+              "changed": [
+                "Tier 3",
+                "2 more cards"
+              ],
+              "id": "wink-architect-t3"
+            }
+          ],
+          "class": "architect"
+        },
+        {
+          "id": "wink-packer",
+          "area": "resources",
+          "name": "Packer Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Packed Toolbox",
+              "step": "new",
+              "kind": "grant",
+              "text": "Gain 2 random Tier 1 tools.",
+              "startText": "Start with 2 random Tier 1 tools.",
+              "id": "wink-packer-t1"
+            },
+            {
+              "tier": 2,
+              "name": "The Proper Way",
+              "step": "new",
+              "kind": "passive",
+              "text": "Tools in Wink's pack have 1 more use. The extra use is lost if the tool is traded away.",
+              "id": "wink-packer-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Prepper",
+              "step": "new",
+              "kind": "passive",
+              "text": "Wink doesn't set off challenges that are already revealed (by anyone). The challenge stays for the others.",
+              "note": "Moving onto that tile with other hikers: they do the challenge, Wink sits it out (no reward, no penalty). Moving there alone: nothing happens and the challenge stays.",
+              "id": "wink-packer-t3"
+            }
+          ],
+          "class": "packer"
+        }
+      ]
+    },
+    {
+      "hiker": "wyatt",
+      "moraleType": "energetic",
+      "trees": [
+        {
+          "id": "wyatt-naturalist",
+          "area": "resources",
+          "name": "Naturalist Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Rain Lover",
+              "step": "new",
+              "kind": "passive",
+              "text": "During any weather (not Clear), Wyatt has +1 Luck and sees 1 more card when scavenging.",
+              "id": "wyatt-naturalist-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Rain Lover II",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "During weather, +2 Luck and 1 more card when scavenging.",
+              "changed": [
+                "+2 Luck"
+              ],
+              "id": "wyatt-naturalist-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Rain Lover III",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "During weather, +2 Luck, 1 more card when scavenging, and all XP Wyatt earns is doubled.",
+              "changed": [
+                "XP doubled"
+              ],
+              "id": "wyatt-naturalist-t3"
+            }
+          ],
+          "class": "naturalist"
+        },
+        {
+          "id": "wyatt-daredevil",
+          "area": "utility",
+          "name": "Daredevil Loop",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Rule Changer",
+              "step": "new",
+              "kind": "usable",
+              "text": "Swap a revealed Tier 1 challenge on a tile next to Wyatt for another random Tier 1 challenge.",
+              "uses": "1 per section",
+              "id": "wyatt-daredevil-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Rule Changer II",
+              "step": "upgrade",
+              "kind": "usable",
+              "text": "Swap a revealed Tier 1 or 2 challenge on any tile for another random one of the same tier.",
+              "uses": "2 per section",
+              "changed": [
+                "Tier 1 or 2",
+                "any tile",
+                "twice"
+              ],
+              "id": "wyatt-daredevil-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Rule Changer III",
+              "step": "upgrade",
+              "kind": "usable",
+              "text": "Remove the challenge from any tile, even one nobody has revealed. If there's no challenge there, the use is wasted.",
+              "uses": "2 per section",
+              "changed": [
+                "remove instead of swap",
+                "unrevealed tiles"
+              ],
+              "id": "wyatt-daredevil-t3"
+            }
+          ],
+          "class": "daredevil"
+        },
+        {
+          "id": "wyatt-smith",
+          "area": "resources",
+          "name": "Smith Path",
+          "steps": [
+            {
+              "tier": 1,
+              "name": "Toy Chest",
+              "step": "new",
+              "kind": "grant",
+              "text": "Learn 3 random tool recipes.",
+              "startText": "Start with 3 random tool recipes.",
+              "id": "wyatt-smith-t1"
+            },
+            {
+              "tier": 2,
+              "name": "Artisan Smith",
+              "step": "new",
+              "kind": "passive",
+              "text": "Wyatt can craft Tier 2 tools, and sees 1 more card when crafting tools.",
+              "id": "wyatt-smith-t2"
+            },
+            {
+              "tier": 3,
+              "name": "Master Smith",
+              "step": "upgrade",
+              "kind": "passive",
+              "text": "He can craft Tier 3 tools, and sees 2 more cards when crafting tools.",
+              "changed": [
+                "Tier 3",
+                "2 more cards"
+              ],
+              "id": "wyatt-smith-t3"
+            }
+          ],
+          "class": "smith"
+        }
+      ]
+    }
+  ]
+}

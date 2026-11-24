@@ -222,7 +222,9 @@
 }
 
 .badges {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 6px;
 }
 

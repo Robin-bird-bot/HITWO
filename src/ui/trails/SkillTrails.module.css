@@ -1,0 +1,547 @@
+/*
+ * The Skill Trails window (docs/mockups/skill-trails/skill-trails-window.jpg,
+ * look A). Stage pixels. Trail colors come in as --c.
+ */
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 11, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 60;
+}
+
+.full {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+}
+
+.window {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #121614;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 60px rgba(0, 0, 0, 0.6);
+  color: #f1eadb;
+}
+
+.window[data-full] {
+  border-radius: 0;
+}
+
+/* ── Header ── */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  box-sizing: border-box;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(18, 22, 20, 0.95);
+  flex: none;
+}
+
+.portrait {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  letter-spacing: 0.12em;
+  color: #f1eadb;
+}
+
+.hikerName {
+  font-family: var(--font-pixel);
+  font-size: 16px;
+}
+
+.party {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.partyFace {
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+
+.partyFace[aria-selected='false'] {
+  opacity: 0.6;
+}
+
+.partyFace:hover,
+.partyFace:focus-visible {
+  opacity: 1;
+}
+
+.partyPortrait {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.level {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  width: 200px;
+  margin-left: 18px;
+}
+
+.levelWord {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #e9b44c;
+}
+
+.levelTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.levelTrack > span {
+  display: block;
+  height: 100%;
+  background: #e9b44c;
+}
+
+.levelPoints {
+  font-size: 14px;
+  color: #c9c2b2;
+}
+
+.levelPoints b {
+  color: #e9b44c;
+}
+
+.close {
+  width: 44px;
+  height: 44px;
+  margin-left: 12px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #c9c2b2;
+  font-size: 24px;
+  cursor: pointer;
+  flex: none;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f1eadb;
+}
+
+/* ── The map ── */
+
+.body {
+  display: flex;
+  flex: none;
+}
+
+.map {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgba(233, 180, 76, 0.08), transparent 60%), #151a18;
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+}
+
+.contour {
+  fill: none;
+  stroke: rgba(241, 234, 219, 0.06);
+  stroke-width: 1.2;
+}
+
+.trunk {
+  fill: none;
+  stroke: #e9b44c;
+  stroke-width: 5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 5px rgba(233, 180, 76, 0.6));
+}
+
+.trail {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.trail[data-state='learned'] {
+  stroke: var(--c);
+  filter: drop-shadow(0 0 6px var(--c));
+}
+
+.trail[data-state='open'] {
+  stroke: var(--c);
+  stroke-dasharray: 12 10;
+  opacity: 0.9;
+  animation: march 1.8s linear infinite;
+}
+
+.trail[data-state='notYet'] {
+  stroke: #3a4440;
+  stroke-dasharray: 9 9;
+}
+
+/* The dashes move slowly up the trail. */
+@keyframes march {
+  to {
+    stroke-dashoffset: -44;
+  }
+}
+
+.trailhead {
+  fill: #e9b44c;
+  stroke: #121614;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 6px rgba(233, 180, 76, 0.7));
+}
+
+.trailheadWord {
+  position: absolute;
+  transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #e9b44c;
+}
+
+.treeName {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 34px;
+  white-space: nowrap;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Steps ── */
+
+.step {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  transform: translate(-50%, -36px);
+  cursor: pointer;
+}
+
+.step[data-upgrade] {
+  transform: translate(-50%, -28px);
+}
+
+.step:focus-visible {
+  outline: none;
+}
+
+.step:focus-visible .label,
+.step[data-selected] .label {
+  box-shadow: 0 0 0 2px #e9b44c;
+}
+
+/* An upgrade's small arrow on top. */
+.arrow {
+  width: 0;
+  height: 0;
+  margin-bottom: -2px;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 9px solid var(--c);
+}
+
+.step[data-state='notYet'] .arrow {
+  border-bottom-color: #3a4440;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 12px 6px;
+  border-radius: 8px;
+  background: rgba(18, 22, 20, 0.9);
+  white-space: nowrap;
+}
+
+.stepName {
+  font-size: 17px;
+  font-weight: 700;
+  color: #f1eadb;
+}
+
+.stepWord {
+  font-size: 13px;
+  color: #9c9585;
+}
+
+.step[data-state='notYet'] .stepName {
+  color: #9c9585;
+}
+
+.cost,
+.need {
+  padding: 2px 10px;
+  border-radius: 9px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.cost {
+  background: #e9b44c;
+  color: #1d2220;
+}
+
+.need {
+  background: rgba(58, 68, 64, 0.9);
+  color: #9c9585;
+}
+
+/* The badge: diamond, circle or rounded square, in the class color. */
+.icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--s);
+  height: var(--s);
+  flex: none;
+}
+
+.face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78%;
+  height: 78%;
+  background: var(--fill);
+  box-shadow: 0 0 0 3px var(--c);
+}
+
+.icon[data-shape='diamond'] .face {
+  width: 70%;
+  height: 70%;
+  border-radius: 18%;
+  transform: rotate(45deg);
+}
+
+.icon[data-shape='diamond'] .face > * {
+  transform: rotate(-45deg);
+}
+
+.icon[data-shape='circle'] .face {
+  width: 88%;
+  height: 88%;
+  border-radius: 50%;
+}
+
+.icon[data-shape='square'] .face {
+  border-radius: 22%;
+}
+
+.icon[data-dim] .face {
+  box-shadow: 0 0 0 3px #3a4440;
+}
+
+.icon[data-dim] .art {
+  background-color: #4b5550;
+}
+
+.art {
+  width: 92%;
+  height: 92%;
+  background-color: var(--c);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.icon[data-dim] svg {
+  stroke: #4b5550;
+}
+
+.tag {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  min-width: 22px;
+  height: 16px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  background: var(--c);
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #121614;
+}
+
+.step[data-state='learned'] .icon {
+  filter: drop-shadow(0 0 8px var(--c));
+}
+
+/* Can learn now: the badge pulses gently. */
+.step[data-state='open'] .icon {
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    filter: drop-shadow(0 0 10px var(--c));
+    transform: scale(1.06);
+  }
+}
+
+/* ── Side panel ── */
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 36px 26px 26px;
+  box-sizing: border-box;
+  background: #121614;
+  flex: none;
+}
+
+.sideName {
+  margin: 14px 0 0;
+  font-size: 27px;
+  font-weight: 700;
+  color: #f1eadb;
+}
+
+.sideTree {
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 19px;
+}
+
+.sideText {
+  margin-top: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+}
+
+.text {
+  margin: 0 0 14px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: #f1eadb;
+}
+
+.changed {
+  color: #e9b44c;
+}
+
+.learnBox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.why {
+  font-size: 14px;
+  line-height: 1.35;
+  color: #c9c2b2;
+}
+
+.learn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 62px;
+  border: none;
+  border-radius: 14px;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+}
+
+.learn span {
+  font-family: var(--font-body);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.learn:disabled {
+  background: rgba(233, 180, 76, 0.22);
+  color: rgba(241, 234, 219, 0.45);
+  cursor: default;
+}
+
+.learned {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 62px;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 2px rgba(127, 194, 155, 0.6);
+  color: #7fc29b;
+  font-family: var(--font-pixel);
+  font-size: 17px;
+  letter-spacing: 0.14em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trail[data-state='open'],
+  .step[data-state='open'] .icon {
+    animation: none;
+  }
+}

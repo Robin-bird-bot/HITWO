@@ -138,6 +138,8 @@ Numbers in \[brackets\] are first guesses.
 
 ## Hikers (Phase 10.7)
 
+> Phase 10.7 replaced traits, classes and leveling for the first 6 hikers. See `09-hikers.md`, which wins where they disagree.
+
 **Decided**
 
 - Each hiker starts with **1 trait, picked from a short list** for that hiker (Grandpa Sherman: Trespasser or Tank Butt), plus their **morale type**. Traits are fewer but much stronger.
@@ -155,12 +157,16 @@ Numbers in \[brackets\] are first guesses.
 
 ## Trinkets (Phase 10.7)
 
+> Phase 10.7 replaced traits, classes and leveling for the first 6 hikers. See `09-hikers.md`, which wins where they disagree.
+
 **Decided:** trinkets no longer give or swap traits. They just sit in a pack and work on their own. They don't need to be equipped, and they wear out like clothes: their durability ticks down every phase, or each time they take effect, depending on the trinket.
 
 - Example: double XP from every scavenge while it's in your pack.
 - Example: extra XP each time you pass a challenge.
 
 ## Morale types (Phase 10.7)
+
+> Phase 10.7 replaced traits, classes and leveling for the first 6 hikers. See `09-hikers.md`, which wins where they disagree.
 
 **Decided:** morale becomes simple and consistent. Each hiker gets one morale type:
 

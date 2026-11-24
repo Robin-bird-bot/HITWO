@@ -18,11 +18,15 @@ import {
   type Hiker,
   type SlotType,
   type TraitDef,
+  type ClassId,
+  toggleOn,
   workingNow,
 } from '../../engine';
 import type { ForecastView } from './forecastView';
+import { shade, stepBadge } from '../trails/stepLook';
 
 export type BadgeState = 'on' | 'ready' | 'used' | 'during' | 'empty';
+export type BadgeShape = 'diamond' | 'circle' | 'square' | 'empty';
 
 export interface BadgeStatus {
   text: string;
@@ -42,7 +46,7 @@ export interface BadgeInfo {
   /** "Trail · Tier II", "Morale", "Utility · Special". */
   kindWord: string;
   text: string;
-  shape: 'diamond' | 'circle' | 'empty';
+  shape: BadgeShape;
   state: BadgeState;
   /** A usable trait's uses left and per period, when it has a set number. */
   usesLeft?: number;
@@ -57,6 +61,14 @@ export interface BadgeInfo {
   morale?: { delta: number; when: 'now' | 'tomorrow' };
   /** Trait warnings: whether this trait's condition holds right now (Focused: alone). */
   working?: boolean;
+  /** Skill Trails (Phase 10.7): the class color, in place of the type's. */
+  color?: string;
+  /** An upgrade's tag: II or III. */
+  tag?: 'II' | 'III';
+  /** No icon file yet: the class glyph in place of initials. */
+  glyph?: ClassId;
+  /** A toggle (a rounded square): filled when on, outlined when off. */
+  toggle?: { on: boolean; canSwitch: boolean };
 }
 
 const TYPE_WORD = { T: 'Trail', U: 'Utility', M: 'Morale' } as const;
@@ -71,9 +83,10 @@ export const SLOT_WORD: Readonly<Record<SlotType, string>> = {
   'U/M': 'Utility or Morale',
   W: 'Wild',
   tag: 'Tag Team',
+  trail: 'Skill Trails',
 };
-const THIS = { phase: 'this phase', day: 'today', biome: 'this biome' } as const;
-const BACK = { phase: 'next phase', day: 'tomorrow', biome: 'in the next biome' } as const;
+const THIS = { phase: 'this phase', day: 'today', biome: 'this section' } as const;
+const BACK = { phase: 'next phase', day: 'tomorrow', biome: 'in the next section' } as const;
 
 /** "Trail · Tier II", "Morale", "Utility · Special". */
 export function kindWord(def: TraitDef): string {
@@ -141,18 +154,21 @@ export function traitBadges(state: GameState, hiker: Hiker, view?: ForecastView)
       };
     }
     const { def, runs } = working;
-    const base: BadgeInfo = {
-      slot: i,
-      slotType: slot.type,
-      traitId: def.id,
-      name: working.name,
-      type: def.type,
-      kindWord: kindWord(def),
-      text: working.text,
-      shape: 'diamond',
-      state: 'on',
-      initials: initials(working.name),
-    };
+    const base: BadgeInfo =
+      slot.type === 'trail'
+        ? trailBase(state, hiker, def.id, i)
+        : {
+            slot: i,
+            slotType: slot.type,
+            traitId: def.id,
+            name: working.name,
+            type: def.type,
+            kindWord: kindWord(def),
+            text: working.text,
+            shape: 'diamond',
+            state: 'on',
+            initials: initials(working.name),
+          };
     // What it is today, for one that changes each morning (Nosework's node, Moody's mood).
     const today = slot.daily?.day === state.day ? slot.daily.pick : undefined;
     if (def.daily && def.daily !== 'trait' && today) {
@@ -193,7 +209,7 @@ export function traitBadges(state: GameState, hiker: Hiker, view?: ForecastView)
     const finite = Number.isFinite(ability.limit.uses);
     const usable: BadgeInfo = {
       ...base,
-      shape: 'circle',
+      shape: base.shape === 'square' ? 'square' : 'circle',
       abilityId: ability.id,
       ...(finite ? { usesLeft: available.usesLeft, usesMax: ability.limit.uses } : {}),
     };
@@ -225,6 +241,29 @@ export function traitBadges(state: GameState, hiker: Hiker, view?: ForecastView)
   });
 }
 
+/**
+ * A Skill Trails trait's badge (Phase 10.7): its class color, shape, tag and
+ * glyph, and for a toggle whether it's on and can be switched now.
+ */
+function trailBase(state: GameState, hiker: Hiker, traitId: string, slot: number): BadgeInfo {
+  const base = stepBadge(traitId, slot);
+  if (base.shape !== 'square') return base;
+  const on = toggleOn(hiker, traitId);
+  const canSwitch = hiker.status === 'active' && !blockingWindow(state);
+  return {
+    ...base,
+    toggle: { on, canSwitch },
+    status: {
+      text: on ? 'On now. Click to switch it off.' : 'Off now. Click to switch it on.',
+      tone: 'info',
+    },
+  };
+}
+
+/** Something open that a toggle waits for: a scavenge, a craft, a challenge, a pick. */
+export const blockingWindow = (state: GameState): boolean =>
+  !!(state.scavenge || state.crafting || state.challenge || state.presentPick || state.traitPick);
+
 /** Ring and middle colors by type; grey for a used-up trait (the mockup's). */
 export const BADGE_COLORS = {
   T: { ring: '#F2B950', fill: '#8A6320' },
@@ -236,5 +275,8 @@ export const BADGE_COLORS = {
 /** Trait warnings: a Morale badge's middle before a gain or a loss (the mockup's). */
 export const WARNING_FILL = { gain: '#3F8A57', loss: '#B4472F' } as const;
 
-export const badgeColors = (b: BadgeInfo) =>
-  b.state === 'used' || !b.type ? BADGE_COLORS.used : BADGE_COLORS[b.type];
+export const badgeColors = (b: BadgeInfo): { ring: string; fill: string } => {
+  if (b.state === 'used') return BADGE_COLORS.used;
+  if (b.color) return { ring: b.color, fill: shade(b.color, 0.42) };
+  return b.type ? BADGE_COLORS[b.type] : BADGE_COLORS.used;
+};

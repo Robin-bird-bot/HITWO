@@ -21,7 +21,8 @@ describe('the item list (03-items.md)', () => {
     expect(count('clothes')).toBe(36);
     expect(count('food')).toBe(36);
     expect(count('shelter')).toBe(10);
-    expect(count('trinket')).toBe(12);
+    // 12 from the doc, plus the Phase 10.7 Field Notebook and Merit Badge.
+    expect(count('trinket')).toBe(14);
     for (const suggested of ['flashlight', 'rope', 'woolBeanie', 'hotCocoa', 'igloo']) {
       expect(ITEMS[suggested]).toBeUndefined();
     }
@@ -39,9 +40,15 @@ describe('the item list (03-items.md)', () => {
     }
   });
 
-  it('has art for every item but the three marked "none yet"', () => {
+  it('has art for every item but the three marked "none yet" and the Phase 10.7 trinkets', () => {
     const missing = TABLE_ITEMS.filter((i) => !i.art).map((i) => i.id);
-    expect(missing.sort()).toEqual(['energyDrink', 'pumpkinPie', 'ring']);
+    expect(missing.sort()).toEqual([
+      'energyDrink',
+      'fieldNotebook',
+      'meritBadge',
+      'pumpkinPie',
+      'ring',
+    ]);
     // The game's copies of the art (public/assets/items).
     const files = new Set(
       Object.keys(import.meta.glob('/public/assets/items/*.png')).map((p) =>

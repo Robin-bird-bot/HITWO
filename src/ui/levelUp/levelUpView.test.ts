@@ -32,7 +32,7 @@ function game(
 ): GameState {
   const ash: HikerSetup = {
     ...fixtureHiker('ash'),
-    classes: ['tank'],
+    classes: ['leader'],
     slots: slots.map((s) => ({ type: s.type, traitId: s.traitId ?? null })),
   };
   const s = fixtureGame({ seed: 3, hikers: [ash, fixtureHiker('birch')] });
@@ -61,16 +61,16 @@ const classOf = (id: string, cls: string) =>
 
 describe('option cards', () => {
   it('a trait from one of the hiker’s roles: tagged with the role, in its color', () => {
-    const def = classTrait('tank', 'scout');
+    const def = classTrait('leader', 'scout');
     const card = optionCard(ash(game([])), trait(def.id));
     expect(card.name).toBe(def.name.toUpperCase());
-    expect(card.source).toEqual({ label: 'TANK', color: CLASS_COLORS.tank });
+    expect(card.source).toEqual({ label: 'LEADER', color: CLASS_COLORS.leader });
     expect(card.ring).toBe('#F2B950');
     expect(card.fill).toBe('#8A6320');
   });
 
   it('a trait from another class is a wild card', () => {
-    const def = classTrait('scout', 'tank');
+    const def = classTrait('scout', 'leader');
     expect(optionCard(ash(game([])), trait(def.id)).source).toEqual(ANY_CLASS);
     expect(ANY_CLASS.label).toBe('WILD CARD · ANY CLASS');
   });

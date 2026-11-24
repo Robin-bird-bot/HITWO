@@ -33,6 +33,8 @@ const NODE_NAME: Record<NodeType, string> = {
  * the item was made with (Birkenstocks), or "its node" on a blank card.
  */
 export function itemText(def: ItemDef, quality?: Quality, node?: NodeType): string {
+  // A trinket that gave or swapped traits (Phase 10.7).
+  if (def.retired) return 'Retired.';
   const value = (key: string) =>
     def.values?.[key] !== undefined ? valueAt(def.values[key], quality) : undefined;
   const text = def.text.replace(

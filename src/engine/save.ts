@@ -12,6 +12,7 @@ import { WONDERS } from '../content/wonders';
 import { STARTING_PARTY } from '../content/characters';
 import { PARTY_COLORS } from '../content/partyColors';
 import { TEST_HIKERS } from '../content/testHikers';
+import { TREES_BY_HIKER } from '../content/trails/trees';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
 import { shelterDeployments } from './items/shelters';
@@ -27,7 +28,7 @@ import {
 import { freshWeather } from './weather';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -83,7 +84,38 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 10.6 (Simplify): Storm is gone, weather no longer changes nodes,
   // Wonders are off, and shelters are carried and set up.
   19: (save) => simplify(save),
+  // Phase 10.7 (Skill Trails): party XP, trees and morale types for the 6 designed
+  // hikers. Anyone else in a run keeps their old traits (they no longer level up).
+  20: (save) => skillTrails(save),
 };
+
+function skillTrails(save: SaveData): SaveData {
+  const hikers = Array.isArray(save.hikers) ? (save.hikers as SaveData[]) : [];
+  let xp = 0;
+  const upgraded = hikers.map((h) => {
+    const trees = typeof h.characterId === 'string' ? TREES_BY_HIKER.get(h.characterId) : undefined;
+    xp += typeof h.xp === 'number' ? h.xp : 0;
+    const rest = { ...h };
+    delete rest.pendingLevels;
+    if (!trees) return rest;
+    const first = trees.trees[0].steps[0].id;
+    return {
+      ...rest,
+      classes: trees.trees.map((t) => t.cls),
+      trails: { learned: [first] },
+      slots: [{ type: 'trail', traitId: first }],
+      moraleType: trees.moraleType,
+    };
+  });
+  const level = levelForXp(xp);
+  const next: SaveData = {
+    ...save,
+    hikers: upgraded,
+    party: { xp, level, points: level * BALANCE.trails.pointsPerLevel },
+  };
+  delete next.traitPick;
+  return next;
+}
 
 /** Storm days become Rain (Phase 10.6). */
 const noStorm = (w: unknown): unknown => (w === 'storm' ? 'rain' : w);

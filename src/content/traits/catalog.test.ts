@@ -22,7 +22,8 @@ function tableRows(heading: string, nth = 0): string[][] {
 
 const TIER: Record<string, number> = { I: 1, II: 2, III: 3 };
 const norm = (n: string) => n.replace(/[’']/g, '’').toLowerCase();
-const byName = new Map(TRAIT_LIST.map((t) => [norm(t.name), t]));
+// The old system's traits (02 and 07): Skill Trails steps (Phase 10.7) reuse some names.
+const byName = new Map(TRAIT_LIST.filter((t) => !t.area).map((t) => [norm(t.name), t]));
 
 /** Doc names that are several traits, or written differently from the trait's own name. */
 const SPLITS: Record<string, string[]> = {
@@ -159,7 +160,7 @@ describe('classes (07-characters.md)', () => {
   });
 
   it('gives family versions their group’s classes, and Strong and Backtracker none', () => {
-    expect(classesOf(TRAITS.leashPuller!)).toEqual(['tank']);
+    expect(classesOf(TRAITS.leashPuller!)).toEqual(['leader']);
     expect(classesOf(TRAITS.humanFood!)).toEqual(['hardy']);
     expect(isGeneral(TRAITS.strong!)).toBe(true);
     expect(isGeneral(TRAITS.backtracker!)).toBe(true);

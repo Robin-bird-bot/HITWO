@@ -141,7 +141,9 @@ describe('scavenging: taking a card', () => {
     expect(ash.inventory.resources.wood).toBe(2);
     expect(after.abundance).toBe(BALANCE.abundance.start - 2);
     expect(after.scavenge).toBeUndefined();
-    expect(after.scavengedToday).toEqual([{ hikerId: 'ash', tileId: 'L', nodes: ['forest'] }]);
+    expect(after.scavengedToday).toEqual([
+      { hikerId: 'ash', tileId: 'L', nodes: ['forest'], phase: 'morning' },
+    ]);
     expect(after.log.find((e) => e.kind === 'scavenge')).toMatchObject({
       hikerId: 'ash',
       card: 'x2',

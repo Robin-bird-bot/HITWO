@@ -33,6 +33,7 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `Ic.dc.html` | Stroke icon set (SVG paths), including binoculars, chat, trendUp and trendDown for the station |
 | `Px.dc.html` | Old pixel icon component (unused) |
 | `illustrated-map/` (Phase 10.5) | JPEG boards for the illustrated map: `MapTopDown.jpg` (the chosen look, mid-run), `MapTrailLines.jpg` (path types, walked colors, the route view), `MapTileLooks.jpg` (look **A, dark glass**, is chosen), `MapLayers.jpg` (the land layer by layer, and the stamp kit), `MapIdeas.jpg` (night, rain, snow) `MapTilted.jpg` (not built) and `MapEdge.jpg` (Phase 10.6: the paper map on a wood table, with the section box and compass printed in its corners). `look/` has full-size renders of the land on its own to match, plus `edge-table.jpg` (the chosen edge) and `edge-clouds.jpg` (the edge Wyatt didn't pick, for comparison). Made by the prototype in `docs/design/illustrated-map/reference/` |
+| `skill-trails/` (Phase 10.7) | JPEG boards for the Skill Trails window: `skill-trails-window.jpg` (look **A, trail map**, the chosen one) and `skill-trails-legend.jpg` (badge shapes, new trait or upgrade, the three trail states, and the morale types with the Morale bar forecast) |
 
 **Geometry from `Main.dc.html`**
 - Hexes are 112×128.

@@ -11,11 +11,11 @@
 import { BALANCE } from '../../config/balance';
 import { CARDS, CHALLENGES } from '../../content/challenges';
 import { ENABLE_WONDERS } from '../../content/wonders';
-import { skipsChallenges } from '../effects';
+import { hikerHas, skipsChallenges } from '../effects';
 import { pushEvent } from '../log';
 import { pick } from '../rng';
 import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
-import { notPlayableYet, pickForTile, type Picked } from './pick';
+import { notPlayableYet, pickChallengeAt, pickForTile, type Picked } from './pick';
 import { rollCard } from './rolls';
 import { revealWonder } from '../wonders/wonders';
 import { pickTrialTargets } from './trials';
@@ -84,7 +84,11 @@ export function revealTile(
   const tile = state.section.tiles[tileId];
   // A Trespasser's day: no card triggers for them, and they aren't part of one (Phase 10a).
   // TODO(wyatt): a tile a Trespasser lands on alone never triggers its card.
-  const here = hikersHere(state, tileId, hikerIds).filter((h) => !skipsChallenges(state, h));
+  // Prepper (Phase 10.7): a card already shown waits for the others; alone, it stays.
+  const shown = !!tile && cardShown(tile);
+  const here = hikersHere(state, tileId, hikerIds).filter(
+    (h) => !skipsChallenges(state, h) && !(shown && hikerHas(state, h, 'skipsRevealed')),
+  );
   if (!tile || !here.length) return;
 
   // A card revealed early (Old Firewatch Tower): it opens now, with its numbers rolled now.
@@ -217,6 +221,50 @@ export function revealCardOn(state: GameState, tileId: TileId, cause: string): s
   }
   pushEvent(state, { kind: 'revealedCard', tileId, cardId: picked.cardId, cause });
   return picked.cardId;
+}
+
+/**
+ * Does landing here open a card? A tile nobody has reached, or one whose shown
+ * card is still waiting: a Prepper landed there alone (Phase 10.7).
+ */
+export const opensOnArrival = (tile: { visited?: boolean; revealedCard?: { hidden?: true } }) =>
+  !tile.visited || cardShown(tile);
+
+/**
+ * Rule Changer (Phase 10.7): a tile's shown challenge becomes another random
+ * challenge of the same tier.
+ */
+export function swapChallenge(state: GameState, tileId: TileId, cause: string): void {
+  const tile = state.section.tiles[tileId];
+  const card = tile?.revealedCard;
+  if (!tile || !card || card.hidden) return;
+  const next = pickChallengeAt(state, state.rng, tile, card.tier, [card.cardId]);
+  if (!next) return;
+  tile.revealedCard = { cardId: next, tier: card.tier, scale: card.scale };
+  if (!state.usedCards.includes(next)) state.usedCards.push(next);
+  pushEvent(state, { kind: 'revealedCard', tileId, cardId: next, cause });
+}
+
+/** Does this tile nobody has reached hold a challenge: shown, picked, or still to be drawn? */
+export function holdsChallenge(state: GameState, tileId: TileId): boolean {
+  const tile = state.section.tiles[tileId];
+  if (!tile || tile.visited || !triggers(state, tileId)) return false;
+  if (tile.revealedCard) return CHALLENGES.some((c) => c.id === tile.revealedCard?.cardId);
+  if (tile.special === 'opportunity') return false;
+  if (tile.special === 'challenge' || tile.special === 'choice') return true;
+  return !tile.opportunity;
+}
+
+/**
+ * Rule Changer III: the tile's challenge is gone (it becomes quiet). A tile
+ * with none is left as it was. Either way nothing says which it was.
+ */
+export function removeChallenge(state: GameState, tileId: TileId): void {
+  const tile = state.section.tiles[tileId];
+  if (!tile || !holdsChallenge(state, tileId)) return;
+  tile.quiet = true;
+  delete tile.revealedCard;
+  delete tile.scan;
 }
 
 /** Is this tile's early card shown on the map (not just picked by a scouting tool)? */

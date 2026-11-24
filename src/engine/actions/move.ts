@@ -1,5 +1,5 @@
 import { ownerLeft } from '../items/shelters';
-import { revealTile } from '../challenges/reveal';
+import { opensOnArrival, revealTile } from '../challenges/reveal';
 import { noteArrival } from '../challenges/trials';
 import { moveCost } from '../costs';
 import { canActReason, fireMove } from '../effects';
@@ -49,7 +49,10 @@ export function applyMove(state: GameState, action: MoveAction): void {
   if (!line || !cost) throw new Error('applyMove: not adjacent');
 
   const from = hiker.tileId;
-  const firstHere = !state.section.tiles[action.toTileId]?.visited;
+  const target = state.section.tiles[action.toTileId];
+  const firstHere = !target?.visited;
+  // A card still waiting on a visited tile opens too (a Prepper went there alone).
+  const opens = !!target && opensOnArrival(target);
   // Worked out before they leave, as the cost was (Stalker looks at who's there now).
   const free = freeMoveFor(state, hiker, action.toTileId);
   hiker.cameFrom = from;
@@ -85,5 +88,5 @@ export function applyMove(state: GameState, action: MoveAction): void {
   // On the checkpoint, they check in (with anyone they carry).
   checkInArrivals(state, [hiker.id, ...carried], hiker.tileId);
   // The first hiker to land on a tile triggers its card.
-  if (firstHere) revealTile(state, hiker.tileId, [hiker.id, ...carried]);
+  if (opens) revealTile(state, hiker.tileId, [hiker.id, ...carried]);
 }

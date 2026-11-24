@@ -124,7 +124,17 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Illustrated map stamps (Phase 10.5):** Wyatt's painted versions of the 12 placeholder stamps in `public/assets/map/stamps/`, with the same file names.
 - **Wind (Phase 10.6):** the animated Wind icon is a placeholder drawn in code (three curved gusts, `src/ui/weather/WeatherIcon.tsx`), and so is its small stroke icon. The wood table, the paper sheet and the map's corner pieces are drawn in code too.
 - **Holiday trait icons:** the 14 holiday traits (`gift-wrapper.png`, `down-the-chimney.png`, `checking-it-twice.png`, `wreck-the-halls.png` and the rest, named after the trait). Their badges show initials until they arrive.
-- **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now).
+- **Skill Trails icons (Phase 10.7):** 14 traits have no icon yet. Their badges show a placeholder: the badge shape in the class color with a small class glyph drawn in code (`src/ui/trails/glyphPaths.ts`). Name each file after the trait in lowercase with dashes, and an upgrade uses its first version's file:
+  - Finn: Never Alone (`never-alone.png`).
+  - Ellie: Garbage Connoisseur (I–III), Furrager (I–II), Fur Trade.
+  - Mom: Agility Class (I–II).
+  - Gdog: Family Cookbook, Clothing Catalogue, Homemade.
+  - Wink: Lead the Way (I–II), Floor Plans, Packed Toolbox, The Proper Way, Prepper.
+  - Wyatt: Toy Chest.
+  - The rest reuse the old traits' icons: Leash Puller (`puller`), Whatcha Up To? (`follower`), Copydog, Singer, Loud, Dog Mom, MBA, Experienced Traveler (`wanderlust`), Short, Just Around the Next Corner, Rain Lover, Rule Changer, and the Artisan and Master steps (`artisan-cook`/`master-cook` for Chef, `-tailor` for Seamstress, `-architect`, and `-crafter` for Smith).
+- **Morale type symbols (Phase 10.7):** the 7 types (Extrovert, Introvert, Ambivert, Foody, Energetic, Wanderlust, Homebody) use placeholder line symbols drawn in code (`src/ui/trails/glyphPaths.ts`), from the legend board.
+- **Class glyphs (Phase 10.7):** the 19 small class glyphs in placeholder badges are drawn in code too.
+- **Item art:** the Pumpkin Pie, Energy Drink and Ring (they show their type icon for now), and the Phase 10.7 trinkets Field Notebook and Merit Badge (names are placeholders too).
 - **Special-space icons:** the mockups use simple stroke icons (`docs/mockups/Ic.dc.html` has the SVG paths).
 - **Biome layers:** a rainforest foreground, and alpine snow and rock layers in the flat style.
 - **Ranger station (Phase 9):** the stone fireplace (`src/ui/station/fireplace-stones.svg` and CSS flames), the hanging sign, the counter and the brass caps plaque are drawn in code. The specials (Cement Mixer, Scout Report, Taxi Service) and the shop's blueprint squares use stroke icons. Wyatt may want to paint any of them.

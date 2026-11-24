@@ -6,7 +6,7 @@ import { RESOURCES } from '../../content/resources';
 import {
   clothesOf,
   itemText,
-  levelReached,
+  partyOf,
   qualityOf,
   readCopy,
   statMax,
@@ -39,6 +39,7 @@ export const SLOT_WORDS: Record<SlotType, string> = {
   'U/M': 'Utility or Morale slot',
   W: 'Wild slot (any trait)',
   tag: 'Tag Team slot',
+  trail: 'Skill Trails trait',
 };
 
 /**
@@ -114,7 +115,7 @@ export function whatItDoes(
     );
   }
   if (use.levelXp) {
-    const level = levelReached(target);
+    const level = partyOf(state).level;
     const step = xpForLevel(level + 1) - xpForLevel(level);
     const { min, max } = BALANCE.items.diplomaXp;
     out.push(`+${Math.ceil(step * min)} to ${Math.ceil(step * max)} XP`);

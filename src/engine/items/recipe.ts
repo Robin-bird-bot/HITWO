@@ -14,6 +14,12 @@ export interface RecipePart {
   nodes?: readonly NodeType[];
   /** Any resource. */
   any?: true;
+  /**
+   * Resources this crafter may use in place of `ids` (Garbage Connoisseur:
+   * Metal, Stone or Flint for Meat, Fish or Mushroom). Each one swapped in can
+   * change the food's Appetite.
+   */
+  subs?: readonly ResourceId[];
 }
 
 export type Recipe = readonly RecipePart[];

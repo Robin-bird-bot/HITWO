@@ -138,6 +138,9 @@ export const BALANCE = {
     postcardXp: { checkpoint: 5, challenge: 1 },
     /** The Textbook's extra XP for every scavenge and craft. */
     textbookXp: 1,
+    /** Phase 10.7 trinkets (names are placeholders). TODO(wyatt): first guesses. */
+    fieldNotebook: { durability: 5, xpPercent: 100 },
+    meritBadge: { durability: 8, xp: 3 },
     /** A Planter can't add a node to a tile that already has this many. */
     maxNodes: 3,
     /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
@@ -571,6 +574,80 @@ export const BALANCE = {
     craft: [1, 2, 4, 8],
     luckyDraw: 2,
     fire: 1,
+  },
+
+  /**
+   * Skill Trails and party XP (09-hikers.md; Phase 10.7). Every hiker's XP
+   * fills one party bar, on the xp.levelAt curve above for now.
+   * TODO(wyatt): every number here is a first guess.
+   */
+  trails: {
+    /** Points each party level gives. */
+    pointsPerLevel: 1,
+    /** What a step costs, unless the step sets its own: Tier 2, Tier 3, and another tree's Tier 1. */
+    cost: { tier2: 1, tier3: 2, openTree: 2 },
+    /** The party level each tier needs (Tier 1: any). */
+    unlockLevel: { 2: 2, 3: 4 },
+    /** The steps' own numbers, by trait. */
+    leashPuller: {
+      /** On: Finn's Move All costs him this much Energy instead of any Appetite. */
+      energy: 2,
+      /** Off (II, III): each hiker brought along may cost no Appetite. */
+      offChance: { 2: 0.25, 3: 0.5 },
+    },
+    copydog: { cards: 2 },
+    furrager: {
+      /** Fur is this much more likely. */
+      furWeight: 3,
+      /** II: a Fur card comes as ×2 this often, else ×3. */
+      x2: 0.5,
+      /** II: each card's chance to be Fur on a tile with no Wildlife node. */
+      offNodeChance: 0.1,
+    },
+    furTrade: { fur: 3 },
+    singer: { energy: 1, morale: 1, moraleII: 2 },
+    agilityClass: { energy: 1 },
+    mba: { capsWeight: 2, capsBonus: 2 },
+    experiencedTraveler: {
+      /** Moving alone: no Appetite this often (I, II, III). */
+      alone: { 1: 0.25, 2: 0.5, 3: 0.5 },
+      /** Being brought along: no Appetite this often (II; III never pays). */
+      brought: { 2: 0.25 },
+      /** III: Morale each time she moves. */
+      morale: 1,
+    },
+    /** Recipe steps (Family Cookbook, Clothing Catalogue, Floor Plans, Toy Chest). */
+    recipes: 3,
+    /** Artisan and Master steps: more cards when crafting that type. */
+    artisanCards: 1,
+    masterCards: 2,
+    short: { discount: 1, slots: -1 },
+    homemade: { cards: 1, luck: 1 },
+    leadTheWay: { discount: 1 },
+    justAroundTheNextCorner: { tiles: 3, chance: 0.5 },
+    packedToolbox: { tools: 2 },
+    properWay: { uses: 1 },
+    rainLover: { luck: { 1: 1, 2: 2, 3: 2 }, cards: 1, xpPercent: 100 },
+    ruleChanger: { uses: { 1: 1, 2: 2, 3: 2 } },
+    garbageConnoisseur: {
+      /** Appetite per bite for each resource swapped in (I, II, III). */
+      perSwap: { 1: -1, 2: 0, 3: 1 },
+    },
+  },
+
+  /**
+   * Morale types (09-hikers.md; Phase 10.7): checked at the end of every
+   * phase for +1, −1 or nothing. Counts include the hiker. TODO(wyatt).
+   */
+  moraleTypes: {
+    change: 1,
+    /** Extrovert +1 and Introvert −1 at this many hikers on the tile or more. */
+    crowd: 3,
+    /** Ambivert: +1 with 2 or 3 on the tile; −1 alone or at this many or more. */
+    bigGroup: 4,
+    /** Foody (Appetite) and Energetic (Energy): +1 at this or more, −1 at the low mark or less. */
+    high: 7,
+    low: 3,
   },
 
   /** Level-up offers (01-design-doc.md, "Leveling"; 02, "Trait rules"). */

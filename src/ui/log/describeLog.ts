@@ -3,6 +3,7 @@
  * A move and the stat costs that follow it become one line:
  * "Hiker 1 moved to Creek (−1 Appetite)."
  */
+import { MORALE_TYPES } from '../../content/moraleTypes';
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
 import { presentName } from '../../content/items/presents';
 import { NIGHT_CREATURE_BY_ID } from '../../content/nightEvents';
@@ -69,6 +70,8 @@ function listNames(names: string[]): string {
 }
 
 type StatEvent = Extract<GameEvent, { kind: 'stat' }>;
+
+const MORALE_TYPE_NAMES = new Set(Object.values(MORALE_TYPES).map((t) => t.name));
 
 const UNIT_WORD = { phases: 'phase', days: 'day', nights: 'night' } as const;
 
@@ -272,6 +275,15 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
             .map((p) => `${signed(p.to - p.from, p.stat)} (${p.cause.toLowerCase()})`)
             .join(', ');
           lines.push({ id: e.id, text: `${name(e.hikerId)}: ${text}.`, tone: 'drain' });
+          break;
+        }
+        // A morale type at the end of a phase (Phase 10.7): "Finn +1 Morale (Extrovert)."
+        if (e.stat === 'morale' && MORALE_TYPE_NAMES.has(e.cause)) {
+          lines.push({
+            id: e.id,
+            text: `${name(e.hikerId)} ${signed(e.to - e.from, e.stat)} (${e.cause}).`,
+            tone: 'drain',
+          });
           break;
         }
         lines.push({

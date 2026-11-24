@@ -11,6 +11,9 @@
  *   (sorting.ts), under a ribbon per group. A click flips a card; Enter or a
  *   double-click adds it to the first empty spot. Cards in the party dim with
  *   IN PARTY; variants kept out by no cloning dim too, with who's in the way.
+ * - Phase 10.7: locked hikers are silhouettes that can't be picked. A
+ *   designed hiker in a spot shows their 3 starting traits: pick one (it can
+ *   change until START). BY STARTING TRAIT lists each hiker once per start.
  */
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { PARTY_COLORS } from '../../content/partyColors';
@@ -26,6 +29,8 @@ import { HikerPortrait } from '../hikers/HikerPortrait';
 import { Icon } from '../icons/Icon';
 import { PreviewLayer } from '../preview/PreviewLayer';
 import { TraitBadge } from '../traits/TraitBadge';
+import type { BadgeInfo } from '../traits/badges';
+import type { CardTree } from '../hikers/cardData';
 import styles from './HikerSelect.module.css';
 import {
   add,
@@ -34,14 +39,19 @@ import {
   canStart,
   EMPTY_PARTY,
   fillRandom,
+  members,
+  needsStart,
   place,
+  randomStarts,
   remove,
   spotOf,
   startingParty,
   startLabel,
   type Party,
+  type Starts,
 } from './selection';
 import {
+  cardKey,
   FILTERS,
   HIKER_SORT,
   sortHikers,
@@ -83,6 +93,11 @@ function SelectScreen({
   onBack(): void;
 }) {
   const [party, setParty] = useState<Party>(EMPTY_PARTY);
+  const [starts, setStarts] = useState<Starts>({});
+  /** A card from BY STARTING TRAIT brings its start along. */
+  const withStart = (hikerId: string, start?: string) => {
+    if (start) setStarts((s) => ({ ...s, [hikerId]: start }));
+  };
   const [filter, setFilter] = useState<FilterId>('all');
   const sort = useDeviceSetting(HIKER_SORT);
   const groups = useMemo(() => sortHikers(ROSTER, sort, filter), [sort, filter]);
@@ -96,7 +111,9 @@ function SelectScreen({
   const spots = useDrop('spot', {
     accepts: (p, arg) => p.kind === 'pick' && canPlace(party, p.hikerId, Number(arg)),
     onDrop: (p, arg) => {
-      if (p.kind === 'pick') setParty((q) => place(q, p.hikerId, Number(arg)));
+      if (p.kind !== 'pick') return;
+      setParty((q) => place(q, p.hikerId, Number(arg)));
+      withStart(p.hikerId, p.start);
     },
   });
   // Out of a spot and dropped anywhere else: out of the party.
@@ -106,7 +123,10 @@ function SelectScreen({
       if (p.kind === 'pick') setParty((q) => remove(q, spotOf(q, p.hikerId)));
     },
   });
-  const addHiker = (id: string) => setParty((q) => add(q, id));
+  const addHiker = (id: string, start?: string) => {
+    setParty((q) => add(q, id));
+    withStart(id, start);
+  };
   const removing =
     picking?.spot !== null && picking?.spot !== undefined && drag?.hover?.id === 'away';
 
@@ -127,15 +147,24 @@ function SelectScreen({
           type="button"
           className={styles.random}
           disabled={!party.includes(null)}
-          onClick={() => setParty((q) => fillRandom(q, Math.random))}
+          onClick={() => {
+            const next = fillRandom(party, Math.random);
+            setParty(next);
+            setStarts((s) => randomStarts(next, s, Math.random));
+          }}
         >
           RANDOM
         </button>
         <button
           type="button"
           className={styles.start}
-          disabled={!canStart(party)}
-          onClick={() => onStart(startingParty(party))}
+          disabled={!canStart(party, starts)}
+          title={
+            members(party).some((id) => needsStart(id, starts))
+              ? 'Pick a starting trait for each hiker first.'
+              : undefined
+          }
+          onClick={() => onStart(startingParty(party, starts))}
         >
           {startLabel(party)}
         </button>
@@ -152,6 +181,8 @@ function SelectScreen({
             hovered={drag?.hover?.id === 'spot' && drag.hover.arg === String(i)}
             dropProps={spots.props(String(i))}
             onRemove={() => setParty((q) => remove(q, i))}
+            start={id ? starts[id] : undefined}
+            onPickStart={(tree) => id && setStarts((s) => ({ ...s, [id]: tree }))}
           />
         ))}
       </div>
@@ -199,6 +230,7 @@ function SelectScreen({
             key={group.key}
             group={group}
             party={party}
+            starts={starts}
             lifted={picking?.spot === null ? picking : null}
             showDifficulty={showDifficulty}
             onAdd={addHiker}
@@ -211,10 +243,10 @@ function SelectScreen({
 }
 
 /** The card under the pointer while dragging, tilted a little. */
-function Ghost({ hikerId }: { hikerId: string }) {
+function Ghost({ hikerId, start }: { hikerId: string; start?: string | undefined }) {
   return (
     <div className={styles.ghost}>
-      <HikerCard hikerId={hikerId} side="front" scale={GHOST_SCALE} />
+      <HikerCard hikerId={hikerId} start={start} side="front" scale={GHOST_SCALE} />
     </div>
   );
 }
@@ -223,16 +255,18 @@ function Ghost({ hikerId }: { hikerId: string }) {
 function Group({
   group,
   party,
+  starts,
   lifted,
   showDifficulty,
   onAdd,
 }: {
   group: HikerGroup;
   party: Party;
+  starts: Starts;
   /** The list card being dragged, if any. */
-  lifted: { hikerId: string; copy?: string } | null;
+  lifted: { hikerId: string; copy?: string; start?: string } | null;
   showDifficulty: boolean;
-  onAdd(id: string): void;
+  onAdd(id: string, start?: string): void;
 }) {
   return (
     <section className={styles.group} aria-label={group.ribbon?.label ?? 'Hikers'}>
@@ -240,11 +274,16 @@ function Group({
       <div className={styles.grid}>
         {group.hikers.map((h) => (
           <ListCard
-            key={h.id}
+            key={cardKey(h)}
             hikerId={h.id}
+            start={h.start}
+            locked={!!h.locked}
             copy={group.key}
             party={party}
-            lifted={lifted?.hikerId === h.id && lifted.copy === group.key}
+            starts={starts}
+            lifted={
+              lifted?.hikerId === h.id && lifted.copy === group.key && lifted.start === h.start
+            }
             difficulty={showDifficulty ? h.difficulty : undefined}
             onAdd={onAdd}
           />
@@ -266,25 +305,56 @@ function RibbonBar({ ribbon }: { ribbon: Ribbon }) {
 
 function ListCard({
   hikerId,
+  start,
+  locked,
   copy,
   party,
+  starts,
   lifted,
   difficulty,
   onAdd,
 }: {
   hikerId: string;
+  /** BY STARTING TRAIT: the tree this card starts with. */
+  start: string | undefined;
+  /** Locked (Phase 10.7): a silhouette that can't be picked, flipped or dragged. */
+  locked: boolean;
   /** Which group this copy is in (Mom shows in two families). */
   copy: string;
   party: Party;
+  starts: Starts;
   /** Being dragged: a dashed outline stays in its place. */
   lifted: boolean;
   /** Debug only: the hidden difficulty, in the corner. */
   difficulty: number | undefined;
-  onAdd(id: string): void;
+  onAdd(id: string, start?: string): void;
 }) {
-  const drag = useDrag({ kind: 'pick', hikerId, spot: null, copy }, <Ghost hikerId={hikerId} />);
+  const drag = useDrag(
+    locked ? null : { kind: 'pick', hikerId, spot: null, copy, ...(start ? { start } : {}) },
+    locked ? null : <Ghost hikerId={hikerId} start={start} />,
+  );
   const spot = spotOf(party, hikerId);
-  const inWay = spot < 0 ? blocker(party, hikerId) : undefined;
+  const inWay = spot < 0 && !locked ? blocker(party, hikerId) : undefined;
+  // BY STARTING TRAIT: once the hiker is in, their other starts grey out.
+  const otherStart = spot >= 0 && !!start && starts[hikerId] !== start;
+  if (locked) {
+    return (
+      <div className={styles.cell}>
+        <div className={styles.cellCard} data-locked>
+          <HikerCard hikerId={hikerId} scale={LIST_SCALE} />
+        </div>
+        {difficulty !== undefined && (
+          <span
+            className={styles.difficulty}
+            data-difficulty={difficulty}
+            title="Hidden difficulty"
+          >
+            {difficulty}
+          </span>
+        )}
+      </div>
+    );
+  }
   return (
     <div className={styles.cell}>
       <div
@@ -294,12 +364,13 @@ function ListCard({
       >
         <HikerCard
           hikerId={hikerId}
+          start={start}
           scale={LIST_SCALE}
-          onEnter={() => onAdd(hikerId)}
-          rootProps={{ ...drag, onDoubleClick: () => onAdd(hikerId) }}
+          onEnter={() => onAdd(hikerId, start)}
+          rootProps={{ ...drag, onDoubleClick: () => onAdd(hikerId, start) }}
         />
       </div>
-      {spot >= 0 && (
+      {spot >= 0 && !otherStart && (
         <span className={styles.tag} style={{ background: PARTY_COLORS[spot] }}>
           IN PARTY
         </span>
@@ -323,9 +394,14 @@ function Spot({
   hovered,
   dropProps,
   onRemove,
+  start,
+  onPickStart,
 }: {
   index: number;
   hikerId: string | null;
+  /** The tree whose Tier 1 this hiker starts with (Phase 10.7). */
+  start: string | undefined;
+  onPickStart(tree: string): void;
   /** A card is being dragged: every spot glows. */
   dragging: boolean;
   /** This spot's hiker is the one being dragged. */
@@ -362,6 +438,7 @@ function Spot({
               aspect={360 / 204}
               className={styles.spotPicture}
             />
+            {data.trees && !start && <span className={styles.pickHint}>PICK A STARTING TRAIT</span>}
             <span className={styles.bagChip}>
               <span className={styles.bagWord}>BAG</span>
               {data.bag.toUpperCase()}
@@ -388,13 +465,23 @@ function Spot({
               </span>
             ))}
           </div>
-          <div className={styles.spotBadges}>
-            {data.badges.map((b) => (
-              <span key={b.slot} className={styles.spotBadge} style={{ width: colW }}>
-                <TraitBadge badge={b} size="card" showName as="span" />
-              </span>
-            ))}
-          </div>
+          {data.trees ? (
+            <StartPicker
+              trees={data.trees}
+              badges={data.badges}
+              start={start}
+              colW={colW}
+              onPick={onPickStart}
+            />
+          ) : (
+            <div className={styles.spotBadges}>
+              {data.badges.map((b) => (
+                <span key={b.slot} className={styles.spotBadge} style={{ width: colW }}>
+                  <TraitBadge badge={b} size="card" showName as="span" />
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className={styles.empty}>
@@ -405,6 +492,59 @@ function Spot({
         </div>
       )}
       {hovered && <div className={styles.dropHere}>{data ? 'DROP TO SWAP' : 'DROP TO ADD'}</div>}
+    </div>
+  );
+}
+
+/**
+ * A designed hiker's starting trait (Phase 10.7): their 3 trees' Tier 1
+ * traits, one to pick. Until one is picked a gold hint says so; the pick can
+ * change until the hike starts.
+ */
+function StartPicker({
+  trees,
+  badges,
+  start,
+  colW,
+  onPick,
+}: {
+  trees: readonly CardTree[];
+  badges: readonly BadgeInfo[];
+  start: string | undefined;
+  colW: number;
+  onPick(tree: string): void;
+}) {
+  return (
+    <div
+      className={styles.spotBadges}
+      data-picking={!start || undefined}
+      role="radiogroup"
+      aria-label="Starting trait"
+    >
+      {trees.map((t, i) => {
+        const b = badges[i];
+        if (!b) return null;
+        const picked = start === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={picked}
+            className={styles.startOption}
+            data-picked={picked || undefined}
+            data-other={(!!start && !picked) || undefined}
+            style={{ width: colW }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPick(t.id);
+            }}
+          >
+            <TraitBadge badge={b} size="card" showName as="span" passClick />
+          </button>
+        );
+      })}
     </div>
   );
 }

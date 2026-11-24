@@ -11,6 +11,7 @@
  *
  * T–L normal, T–M steep, T–R paved, L–M muddy, M–R rough, and L/M/R–C normal.
  */
+import { ROSTER_BY_ID } from '../../content/roster';
 import { applyAction } from '../applyAction';
 import { createGame, type HikerSetup } from '../newGame';
 import type { Action, GameState, Hiker, HikerId, Section, Stats, TileId } from '../types';
@@ -134,4 +135,40 @@ export function toNight(state: GameState): GameState {
   let s = run(state, END);
   while (s.phase !== 'night') s = run(s, END);
   return s;
+}
+
+/**
+ * A designed hiker from the roster (Phase 10.7), with Skill Trails: started
+ * with the Tier 1 of `start` (a tree id; the first tree when left out). No
+ * starting bag, so tests begin with an empty pack.
+ */
+export function trailHiker(id: HikerId, start?: string): HikerSetup {
+  const r = ROSTER_BY_ID.get(id);
+  if (!r) throw new Error(`No roster hiker ${id}`);
+  return {
+    id: r.id,
+    name: r.name,
+    family: r.family,
+    slots: [],
+    classes: r.classes ?? [],
+    characterId: r.characterId,
+    ...(start ? { start } : {}),
+  };
+}
+
+/** The fixture trail with designed hikers: `['finn', 'finn-follower']` or just `'ellie'`. */
+export function trailGame(
+  hikers: readonly (HikerId | readonly [HikerId, string])[],
+  options: Omit<FixtureOptions, 'hikers'> = {},
+): GameState {
+  return fixtureGame({
+    ...options,
+    hikers: hikers.map((h) => (typeof h === 'string' ? trailHiker(h) : trailHiker(h[0], h[1]))),
+  });
+}
+
+/** Test setup only: the party has this level and these points to spend. */
+export function givePoints(state: GameState, level: number, points: number): GameState {
+  state.party = { xp: 0, level, points };
+  return state;
 }

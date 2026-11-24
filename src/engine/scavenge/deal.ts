@@ -54,6 +54,12 @@ export interface DealInput {
    * weather's node's resources instead, even on a tile without that node.
    */
   weatherSwap?: { weather: WeatherId; node: NodeType; chance: number };
+  /** Caps cards give this many more (MBA II; Phase 10.7). */
+  capsBonus?: number;
+  /** Each resource card's chance to become this resource, on a tile without its node (Furrager II). */
+  resourceSwap?: { resource: ResourceId; chance: number };
+  /** A card of only this resource comes as ×2 (this often) or ×3 (Furrager II). */
+  multiply?: { resource: ResourceId; x2: number };
 }
 
 interface Spot {
@@ -123,10 +129,46 @@ const resourcesOf = (node: NodeType) => RESOURCES.filter((r) => r.node === node)
 const ALL = RESOURCES.map((r) => r.id);
 
 export function dealCard(rng: RngState, input: DealInput, forced?: ScavengeCardType): ScavengeCard {
-  const card = dealContents(rng, input, forced);
+  const card = withCapsBonus(dealContents(rng, input, forced), input.capsBonus);
   // A card the debug panel asked for is never Empty, so it can be tried.
   if (forced && card.type === forced) return card;
-  return maybeEmpty(rng, weatherSwap(rng, card, input.weatherSwap), input);
+  const swapped = resourceSwap(rng, weatherSwap(rng, card, input.weatherSwap), input);
+  return maybeEmpty(rng, multiplied(rng, swapped, input.multiply), input);
+}
+
+/** MBA II: a Caps card gives more. */
+function withCapsBonus(card: ScavengeCard, bonus = 0): ScavengeCard {
+  if (bonus > 0 && card.caps !== undefined) card.caps += bonus;
+  return card;
+}
+
+const RESOURCE_NODE = new Map(RESOURCES.map((r) => [r.id, r.node]));
+
+/**
+ * Furrager II (Phase 10.7): on a tile without the resource's node, each
+ * resource card may become one of that resource.
+ */
+function resourceSwap(rng: RngState, card: ScavengeCard, input: DealInput): ScavengeCard {
+  const swap = input.resourceSwap;
+  const node = swap && RESOURCE_NODE.get(swap.resource);
+  if (!swap || !node || !isResourceCard(card.type)) return card;
+  if (input.nodes.some((n) => n.type === node) || !roll(rng, swap.chance)) return card;
+  const out: ScavengeCard = { ...card, type: 'resource', node, resources: [swap.resource] };
+  delete out.node2;
+  delete out.pick;
+  return out;
+}
+
+/** Furrager II: a card of only Fur comes as ×2 or ×3. */
+function multiplied(rng: RngState, card: ScavengeCard, m: DealInput['multiply']): ScavengeCard {
+  const r = card.resources;
+  if (!m || !r?.length || !r.every((x) => x === m.resource)) return card;
+  const n = roll(rng, m.x2) ? 2 : 3;
+  return {
+    ...card,
+    type: n === 2 ? 'x2' : 'x3',
+    resources: Array.from({ length: n }, () => m.resource),
+  };
 }
 
 /**

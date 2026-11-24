@@ -30,6 +30,8 @@ export interface ScavengeSetup extends Omit<DealInput, 'forceTypes'> {
   keeps: number;
   /** Cards the hiker can reroll in this scavenge (Glasses). */
   rerolls: number;
+  /** Caps cards are kept at once, and the hiker still takes another (MBA III). */
+  autoKeep?: true;
 }
 
 export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
@@ -45,11 +47,19 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
   const resourceWeight: Partial<Record<ResourceId, number>> = {};
   const extraCards: { type: ScavengeCardType; node: NodeType }[] = [];
   let dropChance = 0;
+  let capsBonus = 0;
+  let autoKeep: true | undefined;
+  let resourceSwap: DealInput['resourceSwap'];
+  let multiply: DealInput['multiply'];
   let keeps = 0;
   let rerolls = 0;
   let adjacent = false;
   for (const m of mods) {
     if (m.adjacentNodes) adjacent = true;
+    capsBonus += m.capsBonus ?? 0;
+    if (m.autoKeep) autoKeep = true;
+    resourceSwap ??= m.resourceSwap;
+    multiply ??= m.multiply;
     dropChance = Math.max(dropChance, m.dropChance ?? 0);
     keeps += m.keep ?? 0;
     rerolls += m.rerolls ?? 0;
@@ -111,6 +121,10 @@ export function scavengeSetup(state: GameState, hiker: Hiker): ScavengeSetup {
     typeWeight,
     nodeTypeWeight,
     ...weatherSwapFor(state),
+    ...(capsBonus ? { capsBonus } : {}),
+    ...(resourceSwap ? { resourceSwap } : {}),
+    ...(multiply ? { multiply } : {}),
+    ...(autoKeep ? { autoKeep } : {}),
     bonuses,
     bonusOffers,
     dropChance,

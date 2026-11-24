@@ -85,6 +85,59 @@
   box-shadow: 0 0 0 3px var(--ring);
 }
 
+/* A rounded square: a toggle (Phase 10.7). Filled when on, outlined when off. */
+.shape[data-shape='square'] .face {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.badge[data-size='large'] .shape[data-shape='square'] .face {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.shape[data-off] .face {
+  background: transparent;
+  opacity: 0.75;
+}
+
+/* An upgrade's II or III, on the badge's corner. */
+.tierTag {
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  min-width: 14px;
+  height: 11px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  background: var(--ring);
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  line-height: 11px;
+  text-align: center;
+  box-shadow: 0 0 0 1.5px #1d2220;
+}
+
+.badge[data-size='card'] .tierTag,
+.badge[data-size='large'] .tierTag {
+  height: 15px;
+  min-width: 20px;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+/* A class glyph in place of an icon not painted yet. */
+.glyph {
+  width: 70%;
+  height: 70%;
+  flex: none;
+}
+
 /*
  * On a hiker card (sizes for a 300-wide card): a 50 px box, a 35 px diamond
  * or a 42 px circle with a 3 px ring, and the name in tiny capitals.
@@ -108,6 +161,13 @@
 .badge[data-size='card'] .shape[data-shape='circle'] .face {
   width: 42px;
   height: 42px;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+.badge[data-size='card'] .shape[data-shape='square'] .face {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   box-shadow: 0 0 0 3px var(--ring);
 }
 

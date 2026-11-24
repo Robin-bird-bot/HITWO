@@ -7,7 +7,14 @@ import { CLASS_IDS } from '../../engine/types';
 import type { StorageLike } from '../../store/autosave';
 import { SHOW_DIFFICULTY } from '../debug/debugFlags';
 import { HikerSelect } from './HikerSelect';
-import { HIKER_SORT, sortHikers, traitCount, type HikerGroup } from './sorting';
+import {
+  cardKey,
+  HIKER_SORT,
+  SKILL_TRAILS_COLOR,
+  sortHikers,
+  traitCount,
+  type HikerGroup,
+} from './sorting';
 
 const ids = (g: HikerGroup | undefined) => g?.hikers.map((h) => h.id) ?? [];
 const ribbons = (groups: HikerGroup[]) =>
@@ -134,37 +141,78 @@ describe('FAMILY', () => {
 describe('CLASS', () => {
   const groups = sortHikers(ROSTER, 'class');
 
-  it('by main role, in role order, in the role’s color, by name inside', () => {
-    expect(groups.map((g) => g.key)).toEqual([...CLASS_IDS]);
+  it('by main class, in class order, in the class’s color; unlocked first, then by name', () => {
+    const order = groups.map((g) => g.key);
+    expect(order).toEqual(CLASS_IDS.filter((c) => order.includes(c)));
     for (const g of groups) {
       expect(g.ribbon?.color).toBe(CLASS_COLORS[g.key as keyof typeof CLASS_COLORS]);
       expect(g.hikers.every((h) => h.classes?.[0] === g.key)).toBe(true);
-      const names = g.hikers.map((h) => h.name);
-      expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, 'en')));
+      const open = g.hikers.filter((h) => !h.locked);
+      expect(g.hikers.slice(0, open.length)).toEqual(open);
+      const names = (list: RosterHiker[]) => list.map((h) => h.name);
+      expect(names(open)).toEqual([...names(open)].sort((a, b) => a.localeCompare(b, 'en')));
     }
-    expect(groups[0]?.ribbon?.label).toBe('TANK');
-    // Ellie is Support and Entertainer: only her main role counts.
-    expect(ids(groups.find((g) => g.key === 'support'))).toContain('ellie');
+    expect(groups[0]?.ribbon?.label).toBe('LEADER');
+    // Ellie is Chef, Scavenger and Entertainer: only her first tree's class counts.
+    expect(ids(groups.find((g) => g.key === 'chef'))).toContain('ellie');
     expect(ids(groups.find((g) => g.key === 'entertainer'))).not.toContain('ellie');
   });
 });
 
+describe('locked hikers', () => {
+  it('go to the end of each group', () => {
+    for (const sort of ['default', 'family', 'class', 'traits', 'difficulty'] as const) {
+      for (const g of sortHikers(ROSTER, sort)) {
+        const firstLocked = g.hikers.findIndex((h) => h.locked);
+        if (firstLocked < 0) continue;
+        expect(
+          g.hikers.slice(firstLocked).every((h) => h.locked),
+          `${sort} ${g.key}`,
+        ).toBe(true);
+      }
+    }
+  });
+});
+
+describe('BY STARTING TRAIT', () => {
+  it('each designed hiker 3 times, once per tree, each with that class alone; no locked hikers', () => {
+    const groups = sortHikers(ROSTER, 'default', 'start');
+    const cards = groups.flatMap((g) => g.hikers);
+    expect(cards).toHaveLength(18);
+    expect(cards.every((h) => !h.locked)).toBe(true);
+    const finn = cards.filter((h) => h.id === 'finn');
+    expect(finn.map((h) => [h.start, h.classes])).toEqual([
+      ['finn-leader', ['leader']],
+      ['finn-follower', ['follower']],
+      ['finn-scavenger', ['scavenger']],
+    ]);
+    expect(new Set(cards.map(cardKey)).size).toBe(18);
+  });
+
+  it('sorted by class, each card sits under its tree’s class', () => {
+    const groups = sortHikers(ROSTER, 'class', 'start');
+    expect(ids(groups.find((g) => g.key === 'scavenger')).sort()).toEqual(['ellie', 'finn']);
+  });
+});
+
 describe('TRAITS', () => {
-  it('3 TRAITS and 4 TRAITS; open slots don’t count', () => {
+  it('the hikers with Skill Trails first, then 3 TRAITS and 4 TRAITS; open slots don’t count', () => {
     const groups = sortHikers(ROSTER, 'traits');
     expect(groups.map((g) => [g.ribbon?.label, g.ribbon?.color])).toEqual([
+      ['SKILL TRAILS', SKILL_TRAILS_COLOR],
       ['3 TRAITS', '#5C7FA3'],
       ['4 TRAITS', '#3F5C82'],
     ]);
+    expect(groups[0]?.hikers).toHaveLength(6);
     // Brutus has 4 slots, one of them open.
-    expect(ids(groups[0])).toContain('brutus');
+    expect(ids(groups[1])).toContain('brutus');
     expect(traitCount(ROSTER.find((h) => h.id === 'brutus') as RosterHiker)).toBe(3);
   });
 
   it('any other count gets the dark ribbon', () => {
-    const finn = ROSTER.find((h) => h.id === 'finn') as RosterHiker;
-    const two: RosterHiker = { ...finn, id: 'two', slots: finn.slots.slice(0, 2) };
-    const groups = sortHikers([finn, two], 'traits');
+    const cody = ROSTER.find((h) => h.id === 'cody') as RosterHiker;
+    const two: RosterHiker = { ...cody, id: 'two', slots: cody.slots.slice(0, 2) };
+    const groups = sortHikers([cody, two], 'traits');
     expect(groups.map((g) => [g.ribbon?.label, g.ribbon?.color, g.ribbon?.count])).toEqual([
       ['2 TRAITS', '#2E4766', '1 HIKER'],
       ['3 TRAITS', '#5C7FA3', '1 HIKER'],
@@ -196,7 +244,8 @@ describe('DIFFICULTY', () => {
   });
 
   it('inside a band, by rating, then by name', () => {
-    expect(ids(groups[0]).slice(0, 4)).toEqual(['anni', 'finn', 'sinjon', 'wywee']);
+    // Unlocked first (Finn, Mom), then the locked ones by rating and name.
+    expect(ids(groups[0]).slice(0, 5)).toEqual(['finn', 'mom', 'anni', 'sinjon', 'wywee']);
     expect(ids(groups[3])).toEqual(['bossGracie', 'pepper']);
   });
 });

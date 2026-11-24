@@ -311,7 +311,7 @@ describe('Trespasser', () => {
     });
     s = run(s, use('ash', 'trespasser'), move('ash', 'L'));
     expect(s.challenge).toBeUndefined();
-    expect(validateAction(s, use('ash', 'trespasser'))).toBe('Trespasser is used up this biome.');
+    expect(validateAction(s, use('ash', 'trespasser'))).toBe('Trespasser is used up this section.');
   });
 
   it('moved with the group, they aren’t part of the challenge', () => {

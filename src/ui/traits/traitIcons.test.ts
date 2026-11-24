@@ -18,11 +18,16 @@ describe('trait icon files', () => {
   /** The holiday hikers' traits: no art yet, so their badges show initials (holiday-hikers-2). */
   const AWAITING_ART = HOLIDAY_TRAITS.map((d) => d.id);
 
-  it('every trait has an icon file, except the holiday traits still waiting for art', () => {
-    const missing = TRAIT_LIST.filter((def) => !ON_DISK.includes(iconFile(def))).map((d) => d.id);
+  it('every trait has an icon file, except the holiday traits and new Skill Trails steps', () => {
+    // Skill Trails steps with no icon yet draw their class glyph (Phase 10.7; Wyatt is painting them).
+    const missing = TRAIT_LIST.filter((def) => !ON_DISK.includes(iconFile(def)))
+      .filter((d) => !d.area)
+      .map((d) => d.id);
     expect(missing).toEqual(AWAITING_ART);
     for (const def of TRAIT_LIST) {
-      if (!AWAITING_ART.includes(def.id)) expect(traitIconUrl(def.id)).toBeDefined();
+      if (!AWAITING_ART.includes(def.id) && ON_DISK.includes(iconFile(def))) {
+        expect(traitIconUrl(def.id)).toBeDefined();
+      }
     }
     // When Wyatt sends them, they're named after the trait.
     expect(iconFile(TRAITS.giftWrapper!)).toBe('gift-wrapper');

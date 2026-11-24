@@ -13,7 +13,9 @@ import {
   members,
   place,
   remove,
+  randomStarts,
   startingParty,
+  type Starts,
   startLabel,
   type Party,
 } from './selection';
@@ -21,12 +23,40 @@ import {
 const party = (...ids: (string | null)[]): Party => [...ids, null, null, null, null].slice(0, 4);
 
 describe('starting a hike', () => {
+  const all: Starts = {
+    finn: 'finn-leader',
+    mom: 'mom-support',
+    wyatt: 'wyatt-smith',
+    ellie: 'ellie-chef',
+  };
+
   it('works with 1, 2, 3 or 4 hikers, and not with none', () => {
-    expect(canStart(EMPTY_PARTY)).toBe(false);
-    expect(canStart(party('finn'))).toBe(true);
-    expect(canStart(party('finn', 'mom'))).toBe(true);
-    expect(canStart(party('finn', null, 'mom', 'wyatt'))).toBe(true);
-    expect(canStart(party('finn', 'mom', 'wyatt', 'ellie'))).toBe(true);
+    expect(canStart(EMPTY_PARTY, all)).toBe(false);
+    expect(canStart(party('finn'), all)).toBe(true);
+    expect(canStart(party('finn', 'mom'), all)).toBe(true);
+    expect(canStart(party('finn', null, 'mom', 'wyatt'), all)).toBe(true);
+    expect(canStart(party('finn', 'mom', 'wyatt', 'ellie'), all)).toBe(true);
+  });
+
+  it('Phase 10.7: every hiker needs a starting trait first; RANDOM picks one for those without', () => {
+    expect(canStart(party('finn', 'mom'), { finn: 'finn-leader' })).toBe(false);
+    const starts = randomStarts(party('finn', 'mom'), { finn: 'finn-scavenger' }, () => 0.99);
+    expect(starts).toEqual({ finn: 'finn-scavenger', mom: 'mom-trekker' });
+    expect(canStart(party('finn', 'mom'), starts)).toBe(true);
+    const hikers = startingParty(party('finn', 'mom'), starts);
+    expect(hikers.map((h) => h.start)).toEqual(['finn-scavenger', 'mom-trekker']);
+    const game = createGame({ seed: 2, hikers });
+    expect(game.hikers[0]?.trails?.learned).toEqual(['finn-scavenger-t1']);
+  });
+
+  it('locked hikers can’t be placed, and RANDOM never picks one', () => {
+    expect(canPlace(EMPTY_PARTY, 'cody', 0)).toBe(false);
+    expect(add(EMPTY_PARTY, 'cody')).toEqual(EMPTY_PARTY);
+    for (let seed = 1; seed <= 30; seed++) {
+      const rng = seedRng(seed);
+      const p = fillRandom(EMPTY_PARTY, () => nextFloat(rng));
+      expect(members(p).every((id) => !ROSTER.find((h) => h.id === id)?.locked)).toBe(true);
+    }
   });
 
   it('the run gets the hikers in spot order, each in their spot color, with their bags', () => {
@@ -80,7 +110,7 @@ describe('dropping on the spots', () => {
 });
 
 describe('no cloning', () => {
-  it('a variant can’t join with its base hiker or another of their variants', () => {
+  it('a variant can’t join with its base hiker or another of their variants (and they’re locked)', () => {
     const withFinn = party('finn');
     expect(blocker(withFinn, 'followerFinn')).toBe('finn');
     expect(canPlace(withFinn, 'followerFinn', 1)).toBe(false);
@@ -89,21 +119,12 @@ describe('no cloning', () => {
     expect(blocker(party('followerFinn'), 'finn')).toBe('followerFinn');
   });
 
-  it('but one can take the place of the other', () => {
-    expect(canPlace(party('finn', 'mom'), 'followerFinn', 0)).toBe(true);
-    expect(place(party('finn', 'mom'), 'followerFinn', 0)).toEqual([
-      'followerFinn',
-      'mom',
-      null,
-      null,
-    ]);
-  });
-
   it('RANDOM fills the empty spots, keeps the picks, and never clones', () => {
     for (let seed = 1; seed <= 200; seed++) {
       const rng = seedRng(seed);
       const p = fillRandom(party(null, 'finn'), () => nextFloat(rng));
       const ids = members(p);
+      // Only 6 can be picked, so RANDOM fills from those.
       expect(ids).toHaveLength(4);
       expect(p[1]).toBe('finn');
       expect(new Set(ids.map(baseOf)).size).toBe(4);

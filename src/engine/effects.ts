@@ -8,6 +8,7 @@
  */
 import { BALANCE } from '../config/balance';
 import { FAMILIES, ITEMS, TRAITS } from '../content';
+import { isOffered } from '../content/items';
 import { CONDITIONS } from '../content/conditions';
 import { WEATHERS } from '../content/weather';
 import { tagTeamSide } from '../content/traits/special';
@@ -18,7 +19,7 @@ import {
   shortenCondition,
   takeCondition,
 } from './conditions';
-import { revealCardOn } from './challenges/reveal';
+import { removeChallenge, revealCardOn, swapChallenge } from './challenges/reveal';
 import { makeItem } from './items/make';
 import { bagSlots } from './inventory';
 import { pushEvent } from './log';
@@ -33,11 +34,13 @@ import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
 import { revealAhead, tilesAhead } from './traits/reveal';
 import { gainXp } from './xp';
+import { toggleOn } from './trails';
 import { rollWishLists } from './items/wishLists';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
 import type {
   Action,
+  ClassArea,
   ConditionInstance,
   ConditionUnit,
   EquipSlot,
@@ -178,6 +181,14 @@ export interface ScavengeModifier {
   addCards?: { type: ScavengeCardType; node: NodeType }[];
   /** Also draw from the revealed nodes of the tiles next to this one (Eagle Eye). */
   adjacentNodes?: true;
+  /** Caps cards give this many more caps (MBA II). */
+  capsBonus?: number;
+  /** Cards of this kind are kept at once, and the hiker still takes another (MBA III). */
+  autoKeep?: 'caps';
+  /** Each resource card has this chance to become one of this resource, unless the tile has its node (Furrager II). */
+  resourceSwap?: { resource: ResourceId; chance: number };
+  /** A card of only this resource comes as ×2 (this often) or ×3 (Furrager II). */
+  multiply?: { resource: ResourceId; x2: number };
 }
 
 /** A hiker about to craft an item of this type on a tile. */
@@ -294,6 +305,12 @@ export interface EffectContext extends QueryContext {
   gainCaps(n: number, cause: string): void;
   /** Picks a new card for a tile whose card is shown (Rule Changer). */
   rerollCard(tileId: TileId, cause: string): void;
+  /** Swaps a tile's revealed challenge for another random one of its tier (Rule Changer). */
+  swapChallenge(tileId: TileId, cause: string): void;
+  /** Takes the challenge off a tile nobody has reached, if it has one (Rule Changer III). */
+  removeChallenge(tileId: TileId, cause: string): void;
+  /** Learns up to `count` random blueprints of a type and tier the hiker doesn't know (Family Cookbook). */
+  learnBlueprints(hiker: Hiker, type: ItemType, tier: number, count: number, cause: string): void;
   /** Uses up the hiker's action for this phase (Good Boy gives his away). */
   useAction(hiker: Hiker): void;
   /** Sends a bag item to another hiker anywhere on the map, if it fits (Down the Chimney). */
@@ -462,12 +479,25 @@ export interface Hooks {
   onBiomeStart?(ctx: EffectContext): void;
   /** No card triggers for this hiker now (Trespasser's day). */
   skipsChallenges?(ctx: QueryContext): boolean;
+  /** Doesn't set off a challenge already revealed, by anyone (Prepper): it stays for the others. */
+  skipsRevealed?(ctx: QueryContext): boolean;
+  /** Tools in this hiker's pack have 1 more use, lost if the tool leaves it (The Proper Way). */
+  extraToolUse?(ctx: QueryContext): boolean;
+  /**
+   * Resources this hiker can use in place of others when crafting a type
+   * (Garbage Connoisseur), and the Appetite each one swapped in adds to
+   * every bite of food made with it.
+   */
+  recipeSubs?(
+    type: ItemType,
+    ctx: QueryContext,
+  ): { for: readonly ResourceId[]; with: readonly ResourceId[]; perSwap: number } | undefined;
   /** Keeping watch also guards tiles this many lines away (Lookout). */
   watchReach?(ctx: QueryContext): number;
   /** Move All can also bring hikers this many tiles away (Sherpa). */
   bringReach?(ctx: QueryContext): number;
   /** Moving the group costs this much Energy instead of the mover's Appetite (Puller). */
-  pullsGroup?(ctx: QueryContext): number | undefined;
+  pullsGroup?(ctx: QueryContext): number | { energy: number; everyone: true } | undefined;
   /** Has the positive conditions of everyone on the tile (Susceptible). */
   borrowsPositive?(ctx: QueryContext): boolean;
   /** Everyone on the tile has this hiker's positive conditions (Transparent). */
@@ -561,6 +591,17 @@ export interface Hooks {
    * no Appetite (Just Around the Next Corner). Asked once for each hiker in the group.
    */
   waiveForGroup?(e: { payerId: HikerId }, ctx: EffectContext): boolean;
+  /**
+   * The hiker leading a Move All, for each hiker they bring: a chance that
+   * hiker costs no Appetite, and maybe keeps their action (Leash Puller II
+   * and III, off). Rolls now.
+   */
+  broughtWaive?(
+    e: { hikerId: HikerId },
+    ctx: EffectContext,
+  ): { appetite?: true; keepAction?: true } | undefined;
+  /** This hiker, brought along by a Move All: a chance it costs them no Appetite (Experienced Traveler II). Rolls now. */
+  waiveWhenBrought?(ctx: EffectContext): boolean;
   /** Move All can bring hikers who've already acted (Tank Butt). */
   bringsActed?(ctx: QueryContext): boolean;
   /** A challenge on this hiker's tile costs this much less of each thing it asks (Easy Mode). */
@@ -584,6 +625,8 @@ export interface Hooks {
   // ── Holiday hikers (Nov 20 update; src/engine/items/presents.ts) ──
   /** A new run began: everyone in the party hears of it once (Gift Wrapper rolls the wish lists). */
   onRunStart?(ctx: EffectContext): void;
+  /** A Skill Trails step that gives something gives it when learned (Family Cookbook, Packed Toolbox). */
+  onLearn?(ctx: EffectContext): void;
   /** Crafts only Presents, with Gift Wrapper's recipes (Gift Wrapper). */
   wrapsPresents?(ctx: QueryContext): boolean;
   /** How much more likely each item type is in the Presents this hiker opens (Toy Maker, Treat Sniffer). */
@@ -611,6 +654,8 @@ export interface TraitFreeMove {
   discount?: number | 'all';
   /** Extra Appetite the move costs (Fast). */
   extra?: number;
+  /** Never used up: every move it fits is free (Never Alone). */
+  unlimited?: true;
 }
 
 export type EventHookName = 'onStartOfDay' | 'onEndOfDay' | 'onSleep';
@@ -635,6 +680,10 @@ export interface AbilityDef {
   resourcePick?: number;
   /** Used in the scavenge window to reroll a card (Gambler), not from the Abilities panel. */
   scavengeReroll?: true;
+  /** Uses the hiker's action, like crafting (Fur Trade). */
+  usesAction?: true;
+  /** Its choices are tiles: they can be picked on the map too (Rule Changer). */
+  tileChoices?: true;
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
   apply(ctx: EffectContext, choice: string | undefined): void;
 }
@@ -699,6 +748,10 @@ export interface TraitDef {
   tagTeam?: readonly [odd: string, even: string];
   /** A rule the game doesn't have yet, that this trait needs (Sit by the Fire). */
   waitsOn?: string;
+  /** A Skill Trails trait (Phase 10.7): its tree's area. Brain Fog reads it. */
+  area?: ClassArea;
+  /** A toggle (Leash Puller): its hooks when on and when off. Every toggle starts on. */
+  toggle?: { on: Hooks; off: Hooks };
 }
 
 /** A slot's trait as it works today: a daily trait as today's pick, with its setting. */
@@ -866,6 +919,17 @@ export interface ItemDef {
   deployments?: number;
   /** Trinkets: used up when used, or works while carried. */
   trinket?: 'use' | 'keep';
+  /**
+   * A trinket that wears out (Phase 10.7): its durability, which ticks down
+   * every phase or each time it takes effect. At 0 it's thrown away.
+   */
+  lasts?: number;
+  wear?: 'phase' | 'effect';
+  /**
+   * Retired (Phase 10.7): trinkets that gave or swapped traits. They're never
+   * offered, and one already in a pack does nothing.
+   */
+  retired?: true;
   /** Its own recipe, used once the hiker knows its blueprint. */
   recipe?: Recipe;
   /** Only from finds, shops or events. */
@@ -993,6 +1057,23 @@ function suppressedTraitTypes(hiker: Hiker): Set<TraitType> {
   return off;
 }
 
+/**
+ * Is this trait switched off by a condition? A Skill Trails trait goes by its
+ * area: Brain Fog's "Utility traits" are the Utility (Loop) trees' traits.
+ * TODO(wyatt): Movement and Resources traits keep working under Brain Fog.
+ */
+function suppressed(def: TraitDef, off: ReadonlySet<TraitType>): boolean {
+  if (!off.size) return false;
+  if (def.area) return def.area === 'utility' && off.has('U');
+  return off.has(def.type);
+}
+
+/** A trait's hooks on this hiker: a toggle's on or off hooks, else its own (with its setting). */
+function heldHooks(hiker: Hiker, runs: TraitDef, setting: TraitSetting): Hooks {
+  if (runs.toggle) return toggleOn(hiker, runs.id) ? runs.toggle.on : runs.toggle.off;
+  return traitHooks(runs, setting);
+}
+
 /** Every source affecting a hiker right now, the weather included (its scavenging boost). */
 export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[] {
   const sources = thresholdSources(hiker);
@@ -1028,18 +1109,20 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
       hooks: itemHooks(def, item),
     });
   }
-  // Keep trinkets work while carried (Postcard, Textbook). TODO(wyatt): two of the same count once.
+  // Keep trinkets work while carried (Postcard, Textbook, Field Notebook). A retired one does
+  // nothing. TODO(wyatt): two of the same count once.
   const kept = new Set<ItemId>();
   for (const item of hiker.inventory.bag) {
     const def = ITEMS[item.itemId];
-    if (def?.trinket !== 'keep' || !def.hooks || kept.has(item.itemId)) continue;
+    if (def?.trinket !== 'keep' || def.retired || kept.has(item.itemId)) continue;
+    if (!def.hooks && !def.hooksAt) continue;
     kept.add(item.itemId);
     sources.push({
       id: `item:${item.uid}`,
       kind: 'item',
       itemId: item.itemId,
       name: def.name,
-      hooks: def.hooks,
+      hooks: itemHooks(def, item),
     });
   }
   for (const c of hiker.conditions) {
@@ -1052,13 +1135,13 @@ export function effectSourcesFor(state: GameState, hiker: Hiker): EffectSource[]
   for (const slot of hiker.slots) {
     // An unknown id (content removed since the save) is skipped, not fatal.
     const trait = workingTrait(state, slot);
-    if (!trait || off.has(trait.def.type)) continue;
+    if (!trait || suppressed(trait.def, off)) continue;
     const { runs, setting } = trait;
     sources.push({
       id: `trait:${trait.def.id}`,
       kind: 'trait',
       name: trait.name,
-      hooks: traitHooks(runs, setting),
+      hooks: heldHooks(hiker, runs, setting),
       ability: runs.ability,
     });
   }
@@ -1079,7 +1162,9 @@ function traitFlag(
   return hiker.slots.some((slot) => {
     const trait = workingTrait(state, slot);
     return (
-      !!trait && !off.has(trait.def.type) && !!traitHooks(trait.runs, trait.setting)[flag]?.(ctx)
+      !!trait &&
+      !suppressed(trait.def, off) &&
+      !!heldHooks(hiker, trait.runs, trait.setting)[flag]?.(ctx)
     );
   });
 }
@@ -1336,6 +1421,23 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
         pushEvent(state, { kind: 'trait', hikerId: self.id, trait: cause, text: `+${got} caps.` });
       }
     },
+    swapChallenge: (tileId, cause) => swapChallenge(state, tileId, cause),
+    removeChallenge: (tileId) => removeChallenge(state, tileId),
+    learnBlueprints: (hiker, type, tier, count, cause) => {
+      const known = new Set(hiker.blueprints ?? []);
+      const pool = Object.values(ITEMS).filter(
+        (d) => d.type === type && d.tier === tier && !!d.recipe && isOffered(d) && !known.has(d.id),
+      );
+      const learned: ItemId[] = [];
+      for (let i = 0; i < count && pool.length; i++) {
+        const at = int(state.rng, 0, pool.length - 1);
+        const [def] = pool.splice(at, 1);
+        if (def) learned.push(def.id);
+      }
+      if (!learned.length) return;
+      hiker.blueprints = [...known, ...learned];
+      pushEvent(state, { kind: 'blueprints', hikerId: hiker.id, itemIds: learned, cause });
+    },
     rerollCard: (tileId, cause) => {
       const tile = state.section.tiles[tileId];
       if (!tile?.revealedCard) return;
@@ -1576,7 +1678,7 @@ export function fireTileSleep(state: GameState, sleeper: Hiker): void {
 export function hikerHas(
   state: GameState,
   hiker: Hiker,
-  hook: 'bringsActed' | 'takesGroupHarm' | 'ignoresBadFood',
+  hook: 'bringsActed' | 'takesGroupHarm' | 'ignoresBadFood' | 'skipsRevealed' | 'extraToolUse',
 ): boolean {
   const ctx = queryContext(state, hiker);
   return effectSourcesFor(state, hiker).some((s) => s.hooks[hook]?.(ctx));
@@ -1643,7 +1745,9 @@ export function traitFreeMoves(
   const out: { source: string; move: TraitFreeMove }[] = [];
   for (const source of effectSourcesFor(state, hiker)) {
     const move = source.hooks.freeMove?.({ fromTileId, toTileId }, ctx);
-    if (move && ctx.used(hiker, move.key, move.per) === 0) out.push({ source: source.name, move });
+    if (move && (move.unlimited || ctx.used(hiker, move.key, move.per) === 0)) {
+      out.push({ source: source.name, move });
+    }
   }
   return out;
 }
@@ -1701,11 +1805,53 @@ export const bringReach = (state: GameState, hiker: Hiker) => mostOf(state, hike
 export function pullsGroup(
   state: GameState,
   hiker: Hiker,
-): { energy: number; source: string } | undefined {
+): { energy: number; source: string; everyone: boolean } | undefined {
   const ctx = queryContext(state, hiker);
   for (const s of effectSourcesFor(state, hiker)) {
-    const energy = s.hooks.pullsGroup?.(ctx);
-    if (energy !== undefined) return { energy, source: s.name };
+    const pull = s.hooks.pullsGroup?.(ctx);
+    if (pull === undefined) continue;
+    // Leash Puller: nobody in the group pays Appetite, not just the leader.
+    return typeof pull === 'number'
+      ? { energy: pull, source: s.name, everyone: false }
+      : { energy: pull.energy, source: s.name, everyone: true };
+  }
+  return undefined;
+}
+
+/**
+ * The leader's chance that a hiker they bring costs no Appetite (Leash
+ * Puller II and III, off), and the hiker's own (Experienced Traveler II).
+ * Rolls now, once per brought hiker.
+ */
+export function broughtWaivers(
+  state: GameState,
+  leader: Hiker,
+  brought: Hiker,
+): { appetite?: string; keepAction?: string } {
+  const out: { appetite?: string; keepAction?: string } = {};
+  const lctx = effectContext(state, leader);
+  for (const s of effectSourcesFor(state, leader)) {
+    const w = s.hooks.broughtWaive?.({ hikerId: brought.id }, lctx);
+    if (w?.appetite) out.appetite ??= s.name;
+    if (w?.keepAction) out.keepAction ??= s.name;
+  }
+  const own = effectContext(state, brought);
+  for (const s of effectSourcesFor(state, brought)) {
+    if (!out.appetite && s.hooks.waiveWhenBrought?.(own)) out.appetite = s.name;
+  }
+  return out;
+}
+
+/** What a hiker can use in place of other resources when crafting this type (Garbage Connoisseur). */
+export function recipeSubs(
+  state: GameState,
+  hiker: Hiker,
+  type: ItemType,
+): { for: readonly ResourceId[]; with: readonly ResourceId[]; perSwap: number } | undefined {
+  const ctx = queryContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) {
+    const subs = s.hooks.recipeSubs?.(type, ctx);
+    if (subs) return subs;
   }
   return undefined;
 }

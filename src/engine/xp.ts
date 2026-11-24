@@ -13,13 +13,16 @@
  * - Then others hear of it (Wise, VR Headset). XP they pass on is plain: no
  *   bonuses, and it isn't passed on again.
  *
- * Levels need 20, 50, 90, 140, 200 and 270 XP in all, each 10 more than the
- * last. A level reached waits for the camp step (src/engine/traits/levelUp.ts).
+ * Party XP (Phase 10.7, 09-hikers.md): every hiker's XP fills one party bar.
+ * Party levels need 20, 50, 90, 140, 200 and 270 XP in all, each 10 more than
+ * the last (today's per-hiker curve, for now), and each one gives points to
+ * spend on Skill Trails (src/engine/trails.ts). Hikers no longer level up on
+ * their own.
  */
 import { BALANCE } from '../config/balance';
 import { effectContext, effectSourcesFor, queryContext, type XpModifier } from './effects';
 import { pushEvent } from './log';
-import type { GameState, Hiker, XpSource } from './types';
+import type { GameState, Hiker, PartyXp, XpSource } from './types';
 
 const X = BALANCE.xp;
 
@@ -47,8 +50,28 @@ export function levelForXp(xp: number): number {
   return level;
 }
 
-/** The level a hiker has reached: levels taken, plus any waiting for the camp step. */
+/** The level a hiker reached in the old system (before Phase 10.7). */
 export const levelReached = (h: Hiker): number => h.level + (h.pendingLevels ?? 0);
+
+/** The party's bar: XP, the level reached and the points not spent yet. */
+export const partyOf = (state: Readonly<GameState>): PartyXp =>
+  state.party ?? { xp: 0, level: 0, points: 0 };
+
+/**
+ * Adds XP to the party bar. Each level it reaches gives its points at once,
+ * with a "Party level 3! +1 point" event.
+ */
+export function addPartyXp(state: GameState, xp: number): void {
+  const party = (state.party ??= { xp: 0, level: 0, points: 0 });
+  party.xp += Math.max(0, xp);
+  const reached = levelForXp(party.xp);
+  while (party.level < reached) {
+    party.level += 1;
+    const points = BALANCE.trails.pointsPerLevel;
+    party.points += points;
+    pushEvent(state, { kind: 'partyLevel', level: party.level, points });
+  }
+}
 
 /** Where a hiker is for the row rule: a new section or a row further on starts today. */
 export function noteXpRow(state: GameState, h: Hiker): void {
@@ -123,8 +146,8 @@ function withBonuses(
 }
 
 /**
- * A hiker gains XP (see the top of this file). Returns what they gained.
- * Levels it reaches wait for the camp step.
+ * A hiker gains XP (see the top of this file). Returns what they gained,
+ * which goes into the party bar.
  */
 export function gainXp(
   state: GameState,
@@ -144,13 +167,8 @@ export function gainXp(
   if (xp <= 0) return 0;
   hiker.xp += xp;
   if (!quiet || xp !== base) pushEvent(state, { kind: 'xp', hikerId: hiker.id, xp, cause });
-
-  // A level reached waits for the camp step.
-  const reached = levelForXp(hiker.xp);
-  while (levelReached(hiker) < reached) {
-    hiker.pendingLevels = (hiker.pendingLevels ?? 0) + 1;
-    pushEvent(state, { kind: 'levelReached', hikerId: hiker.id, level: levelReached(hiker) });
-  }
+  // It all goes into the party bar.
+  addPartyXp(state, xp);
 
   // Others hear of it (Wise passes some on; a VR Headset picks some up).
   if (source !== 'shared' && source !== 'debug') {
@@ -166,9 +184,11 @@ export function gainXp(
   return xp;
 }
 
-/** Takes XP away (a night event, a card). Levels already reached stay. */
-export function loseXp(hiker: Hiker, n: number): number {
-  const lost = Math.min(hiker.xp, Math.max(0, n));
-  hiker.xp -= lost;
+/** Takes XP away from the party bar (a night event, a card). Levels already reached stay. */
+export function loseXp(state: GameState, hiker: Hiker, n: number): number {
+  const party = partyOf(state);
+  const lost = Math.min(party.xp, Math.max(0, n));
+  if (state.party) state.party.xp -= lost;
+  hiker.xp = Math.max(0, hiker.xp - lost);
   return lost;
 }

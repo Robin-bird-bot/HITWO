@@ -1,40 +1,102 @@
 /**
- * Classes (07-characters.md, "Classes"): what a character is good at. A
- * level-up's Trail and Utility options come from the hiker's classes, from
- * Jack traits and from general traits. Morale traits have no class and are
- * open to everyone (except the special ones). Family versions (Leash Puller,
- * Human Food, Copydog, Copycat) share their group's classes.
+ * Classes (09-hikers.md, "Names and classes"; Phase 10.7): what a character
+ * is good at, in 3 areas. A designed hiker's 3 trees are 3 classes.
+ *
+ * TRAITS_BY_CLASS is the old system's (07-characters.md): the classes of the
+ * old traits, which the locked hikers still have. Family versions (Leash
+ * Puller, Human Food, Copydog, Copycat) share their group's classes.
  */
 import type { TraitDef } from '../engine/effects';
-import type { ClassId } from '../engine/types';
+import type { ClassArea, ClassId } from '../engine/types';
 
 export const CLASS_NAMES: Readonly<Record<ClassId, string>> = {
-  tank: 'Tank',
-  hardy: 'Hardy',
+  leader: 'Leader',
+  follower: 'Follower',
+  scout: 'Scout',
+  trekker: 'Trekker',
   scavenger: 'Scavenger',
   crafter: 'Crafter',
-  scout: 'Scout',
+  chef: 'Chef',
+  smith: 'Smith',
+  tailor: 'Tailor',
+  architect: 'Architect',
+  packer: 'Packer',
+  naturalist: 'Naturalist',
+  merchant: 'Merchant',
   support: 'Support',
-  jack: 'Jack',
   entertainer: 'Entertainer',
-  moneymaker: 'Moneymaker',
+  hardy: 'Hardy',
+  watcher: 'Watcher',
+  daredevil: 'Daredevil',
+  jack: 'Jack',
 };
 
 /**
- * Role colors (Phase 10b, mockups/HikerCards.png): the role banner on hiker
- * cards and the Class sort's ribbons. "Roles" on screen, classes in code.
+ * Class colors (09-hikers.md): the class tabs on hiker cards, the Class
+ * sort's ribbons and each tree's trail in Skill Trails. Smith, Tailor,
+ * Architect and the other new ones are first guesses. TODO(wyatt).
  */
 export const CLASS_COLORS: Readonly<Record<ClassId, string>> = {
-  tank: '#DC3B44',
-  hardy: '#E27A2B',
+  leader: '#DC3B44',
+  follower: '#E8806A',
+  scout: '#3E8FC9',
+  trekker: '#B0473A',
   scavenger: '#93A33A',
   crafter: '#3A7752',
-  scout: '#3E8FC9',
+  chef: '#6E8F2E',
+  smith: '#A0703A',
+  tailor: '#2C7C86',
+  architect: '#6E7A3E',
+  packer: '#8A6A3E',
+  naturalist: '#4E9A7A',
+  merchant: '#1FA39A',
   support: '#F0AB35',
-  jack: '#5F7487',
   entertainer: '#D675EF',
-  moneymaker: '#1FA39A',
+  hardy: '#E27A2B',
+  watcher: '#4A5FA8',
+  daredevil: '#B23A48',
+  jack: '#5F7487',
 };
+
+/** Each class's area (09-hikers.md): Movement, Resources or Utility. */
+export const CLASS_AREA: Readonly<Record<ClassId, ClassArea>> = {
+  leader: 'movement',
+  follower: 'movement',
+  scout: 'movement',
+  trekker: 'movement',
+  scavenger: 'resources',
+  crafter: 'resources',
+  chef: 'resources',
+  smith: 'resources',
+  tailor: 'resources',
+  architect: 'resources',
+  packer: 'resources',
+  naturalist: 'resources',
+  merchant: 'resources',
+  support: 'utility',
+  entertainer: 'utility',
+  hardy: 'utility',
+  watcher: 'utility',
+  daredevil: 'utility',
+  jack: 'utility',
+};
+
+/** What each area calls its trees: Leader Trail, Merchant Path, Daredevil Loop. */
+export const AREA_WORD: Readonly<Record<ClassArea, string>> = {
+  movement: 'Trail',
+  resources: 'Path',
+  utility: 'Loop',
+};
+
+export const AREA_NAMES: Readonly<Record<ClassArea, string>> = {
+  movement: 'Movement',
+  resources: 'Resources',
+  utility: 'Utility',
+};
+
+/** "Leader Trail", "Merchant Path", "Daredevil Loop". */
+export const treeName = (cls: ClassId): string =>
+  `${CLASS_NAMES[cls]} ${AREA_WORD[CLASS_AREA[cls]]}`;
 
 const CRAFTING_TIERS = ['Cook', 'Crafter', 'Architect', 'Tailor'].flatMap((t) => [
   `artisan${t}`,
@@ -42,8 +104,8 @@ const CRAFTING_TIERS = ['Cook', 'Crafter', 'Architect', 'Tailor'].flatMap((t) =>
 ]);
 
 /** "Existing traits by class (first pass)". A trait can be in two classes. */
-export const TRAITS_BY_CLASS: Readonly<Record<ClassId, readonly string[]>> = {
-  tank: [
+export const TRAITS_BY_CLASS: Readonly<Partial<Record<ClassId, readonly string[]>>> = {
+  leader: [
     'leader',
     'puller',
     'mule',
@@ -126,7 +188,7 @@ export const TRAITS_BY_CLASS: Readonly<Record<ClassId, readonly string[]>> = {
     'teacher',
   ],
   entertainer: ['singer', 'liberal', 'wise'],
-  moneymaker: ['charismatic', 'frugal', 'nonNonProfit', 'thrifty', 'mba', 'squirrely'],
+  merchant: ['charismatic', 'frugal', 'nonNonProfit', 'thrifty', 'mba', 'squirrely'],
   // TODO(wyatt): Follower isn't in the table; Jack is a first guess.
   jack: ['dayNapper', 'closer', 'dreamAlchemist', 'lapPet', 'follower'],
 };

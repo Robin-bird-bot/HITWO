@@ -28,7 +28,7 @@ import { PreviewContext, usePreview, withPreview } from '../preview/preview';
 import { BADGE_COLORS } from '../traits/badges';
 import { TraitBadge } from '../traits/TraitBadge';
 import { traitIconUrl } from '../traits/traitIcons';
-import { cardFor, type CardRow, type HikerCardData } from './cardData';
+import { cardFor, cardForStart, type CardRow, type CardTree, type HikerCardData } from './cardData';
 import styles from './HikerCard.module.css';
 import { useFit } from './fitText';
 import { FamilyMark, HikerPortrait } from './HikerPortrait';
@@ -52,6 +52,7 @@ export function HikerCard({
   className,
   rootProps,
   children,
+  start,
 }: {
   /** A roster id. */
   hikerId: string;
@@ -72,15 +73,35 @@ export function HikerCard({
   rootProps?: HTMLAttributes<HTMLDivElement> & Record<`data-${string}`, unknown>;
   /** Drawn over the card, unscaled (tags like IN PARTY). */
   children?: ReactNode;
+  /** BY STARTING TRAIT (Phase 10.7): show only this tree's class and starting trait. */
+  start?: string | undefined;
 }) {
   const [own, setOwn] = useState(defaultFlipped);
   const flipped = side ? side === 'back' : (flippedProp ?? own);
-  const data = cardFor(hikerId);
+  const data = start ? cardForStart(hikerId, start) : cardFor(hikerId);
   const preview = usePreview(!side && lift && flipped ? { kind: 'hiker', hikerId } : null);
   const liftSoon = useLiftSoon(hikerId);
   if (!data) return null;
 
   const box = { width: CARD_W * scale, height: CARD_H * scale };
+  // A locked hiker (Phase 10.7): a silhouette and "Locked". Nothing to flip, hover or pick.
+  if (data.locked) {
+    return (
+      <div
+        className={className ? `${styles.card} ${className}` : styles.card}
+        style={box}
+        aria-label="Locked hiker"
+        data-locked
+      >
+        <div className={styles.scaler} style={{ transform: `scale(${scale})` }}>
+          <div className={styles.static}>
+            <Locked data={data} />
+          </div>
+        </div>
+        {children}
+      </div>
+    );
+  }
   const inner = (
     <div className={styles.scaler} style={{ transform: `scale(${scale})` }}>
       {side ? (
@@ -249,7 +270,66 @@ function Front({ data }: { data: HikerCardData }) {
   );
 }
 
+/** A locked hiker: the portrait as a black silhouette, and "LOCKED". */
+function Locked({ data }: { data: HikerCardData }) {
+  return (
+    <>
+      <div className={styles.window}>
+        <HikerPortrait
+          hikerId={data.id}
+          view="window"
+          aspect={CARD_W / 250}
+          className={`${styles.portrait} ${styles.silhouette}`}
+        />
+      </div>
+      <div className={styles.nameBand}>
+        <span className={`${styles.name} ${styles.lockedName}`} style={{ fontSize: 30 }}>
+          LOCKED
+        </span>
+      </div>
+    </>
+  );
+}
+
+/** A designed hiker's back (Phase 10.7): the 3 trees, each with its 3 traits' names. */
+function TreesBack({ data, trees }: { data: HikerCardData; trees: readonly CardTree[] }) {
+  return (
+    <>
+      <div className={styles.strip}>
+        <HikerPortrait
+          hikerId={data.id}
+          view="strip"
+          aspect={CARD_W / 84}
+          className={styles.portrait}
+        />
+      </div>
+      <div className={styles.nameBandBack}>
+        <FitLine text={data.name.toUpperCase()} size={30} className={styles.nameBack} />
+      </div>
+      <Roles data={data} top={118} />
+      <div className={styles.backBody}>
+        <div className={styles.trees}>
+          {trees.map((t) => (
+            <div key={t.id} className={styles.tree} style={{ '--c': t.color } as CSSProperties}>
+              <span className={styles.treeName}>{t.name}</span>
+              {t.steps.map((step, i) => (
+                <span key={step.stepId} className={styles.treeStep} title={step.text}>
+                  <span className={styles.treeTier}>{['I', 'II', 'III'][i]}</span>
+                  {step.name}
+                  {step.upgrade && <span className={styles.treeUp}>▲</span>}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className={styles.bagBar}>{data.bag.toUpperCase()}</div>
+      </div>
+    </>
+  );
+}
+
 function Back({ data }: { data: HikerCardData }) {
+  if (data.trees) return <TreesBack data={data} trees={data.trees} />;
   const dense = data.rows.length >= 4;
   return (
     <>
