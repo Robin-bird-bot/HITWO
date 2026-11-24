@@ -1086,9 +1086,9 @@ Numbers in [brackets] are first guesses: in `balance.ts` (or `mapStyle.ts` besid
 
 ---
 
-## Phase 10.6: Simplify (now)
+## Phase 10.6: Simplify (done)
 
-(New in the Nov 21 updates: `docs/UPDATE-2026-11-21-phase-10.6-simplify.md` and its add-on `docs/UPDATE-2026-11-21-map-corners.md`. The first step of the overhaul in `docs/design/08-overhaul-plan.md`, which wins over the older design docs where they disagree. Only its "Phase 10.6" section is built here.)
+(Built with the map corners add-on. New in the Nov 21 updates: `docs/UPDATE-2026-11-21-phase-10.6-simplify.md` and its add-on `docs/UPDATE-2026-11-21-map-corners.md`. The first step of the overhaul in `docs/design/08-overhaul-plan.md`, which wins over the older design docs where they disagree. Only its "Phase 10.6" section is built here.)
 
 **Goal:** fewer systems, each easier to follow. A difficulty setup (always Medium for now) decides how many plain tiles have a challenge; Wonders and Trials are gone; weather only changes what scavenging finds; nine foods; shelters you carry and set up. Plus two illustrated-map follow-ups and a fix so no card or tooltip is ever cut off.
 
@@ -1147,20 +1147,49 @@ Numbers in [brackets] are first guesses: in `balance.ts` or the new `difficulty.
 
 ---
 
-## Phase 10.7: Hikers (next, design first)
+## Phase 10.7: Hikers (now)
 
-(Outline only, from `docs/design/08-overhaul-plan.md`. Wyatt will send the design; don't build before it arrives.)
+(New in the Nov 23 update: `docs/UPDATE-2026-11-23-phase-10.7-hikers.md`. The design is `docs/design/09-hikers.md`, which wins over `07-characters.md` and `08-overhaul-plan.md` where they disagree; the trees as data are in `docs/design/skill-trails/skill-trails-data.json`, and the window and legend boards in `docs/mockups/skill-trails/`.)
 
-- **One starting trait** per hiker, picked from a short list for that hiker, plus their morale type. Fewer traits, but much stronger.
-- **Skill trees** instead of swapping traits: three routes per hiker (**Movement, Resources, Utility**), each 3 tiers deep, fairly unique per hiker.
-- **Party XP:** one shared bar; each party level-up gives points for any hiker's tree. Tiers unlock by party level.
-- **Morale types:** Extrovert, Introvert, Ambivert, Foody, Energetic, Wanderlust, Homebody.
-- **New trinkets** that work from the pack and wear out, instead of giving or swapping traits.
-- Rednose gets its rework here.
+**Goal:** replace trait slots and per-hiker level-ups with **Skill Trails**. Every hiker has 3 trees (one per class), picks 1 starting trait, and grows with **party XP**. Morale becomes a **morale type**. Trinkets work from the pack and wear out. Only Finn, Ellie, Wyatt, Mom, Gdog and Wink are playable.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+- **Lock every other hiker:** a locked card on the selection screen (blacked-out silhouette of the portrait, "Locked", no classes, traits, stats or back; hover and click do nothing). They can't be picked by clicking, random team, saved or last-used teams or the debug panel; a saved team drops them. Their data stays as it is, with `locked: true`. Locked cards sort to the end of each group.
+- **Classes:** Tank → **Leader**, Guardian → **Watcher** everywhere. New **Smith** (tools), **Tailor** (clothes) and **Architect** (shelters); Crafter stays for general crafting. 19 classes in 3 areas (Movement, Resources, Utility) with the colors in `09-hikers.md`; sorting by class groups them by area. A hiker's classes are their 3 trees' classes, in tree order.
+- **The old trait system goes (for the 6):** no trait slots, swapping, per-hiker level-ups or level-up picks. Their starting traits become their trees (old traits that are now trees keep their icons; Wanderlust is now Experienced Traveler). Anything else that read slots or hiker levels reads the new data or is switched off.
+- **Party XP:** every hiker's XP fills one bar. Party level uses today's XP curve [for now]; each level gives [1] point. The top bar shows the level, the bar and "N points to spend". Spend only at night or at a ranger station (the window still opens to plan, with Learn greyed out). Tier 2 step [1] point, Tier 3 step [2], another tree's Tier 1 [2]; Tier 2 needs party level [2], Tier 3 [4]; a step needs the one below it. Steps can carry their own `cost`. A toast on level-up; with points unspent, Skill Trails opens full screen at the start of the next night or on reaching a station.
+- **Trees:** the 6 hikers' 18 trees and 54 steps, with the effects in `09-hikers.md` ("Rules that need care" first). Kinds: always on, usable (uses per day or per section), toggle (Leash Puller: a free switch on the hiker frame, starts on) and gives something ("Start with …" at the start of a run). Upgrades replace the trait they upgrade (one badge, II/III tag). New traits without an icon get a placeholder in the class color with the class glyph.
+- **The Skill Trails window** (`skill-trails-window.jpg`, look A; `skill-trails-legend.jpg`): opens from each hiker frame and card, full screen after a level-up. Header with portrait, party portraits, level bar, points, close. A dark topographic map with three class-colored trails from one trailhead; badges by kind; states Learned / Can learn now / Not yet. A narrow side panel with the selected trait's text (On/Off for toggles, changes in yellow for upgrades) and Learn. Reduced motion: no moving dashes or pulses.
+- **Selection screen:** each designed hiker's card shows 3 class tabs; the back shows the 3 trees. Picking a hiker asks for the starting trait (3 small cards), changeable until the run starts. New filter **By starting trait**: each designed hiker 3 times, once per tree; picking one greys out their other two.
+- **Morale types:** one per hiker (Finn Extrovert, Ellie Foody, Wyatt Energetic, Mom Wanderlust, Gdog Ambivert, Wink Ambivert), checked at the end of every phase for +1, −1 or nothing. The type's symbol on the name banner (placeholder, hover for the rule); the Morale bar shows the forecast (green next pip, red-outlined last pip, or "?"). A log line per change.
+- **Trinkets:** no more giving or swapping traits (those trinkets are switched off; one already in a pack does nothing and reads "Retired"). A trinket works from the pack with durability that ticks per phase or per effect, thrown away at 0. Two first ones: [Field Notebook] (scavenging XP doubled, [5] durability, −1 per doubling) and [Merit Badge] (+[3] XP per challenge passed, [8] durability, −1 per phase), in the pools as Tier [2].
+- **Saves:** a new version. A run in progress migrates if it's easy (each of the 6 keeps their first tree's Tier 1; party level from total XP); otherwise "This run is from an older version and can't continue."
+- **Debug panel:** +100 party XP, +1 point, Learn everything for this hiker.
+
+**Tests**
+- One per step (54), with the stacking cases: two Move All cost cuts, Copydog alone (first and last), Prepper with and without others, Rule Changer III on an empty tile.
+- Party XP: one bar, levels, points, costs, unlocks, spending only at night or a station.
+- Morale types: each type's +1, −1 and nothing, at the end of every phase.
+- Locked hikers can't be picked any way; saved teams drop them.
+- Trinkets: durability per phase and per effect; retired trinkets do nothing.
+- Save migration.
+
+**Done when:** a run with any of the 6 starts with a chosen trait, grows through Skill Trails with party points, morale types tick each phase, the two trinkets work and wear out, every other hiker is locked, and the tests above pass.
 
 ---
 
-## Phase 10.8: Challenges and opportunities (after 10.7, design first)
+## Phase 10.7b: Trees for the other hikers (later, design first)
+
+(Outline only. Wyatt will send the design.)
+
+- Trees for the locked hikers, in new shapes: long trails of 4 tiers, steps you can buy more than once, steps that give an item, per-step costs, and duos.
+- Each hiker is unlocked as their trees land.
+
+---
+
+## Phase 10.8: Challenges and opportunities (next after 10.7, design first)
 
 (Outline only, from `docs/design/08-overhaul-plan.md`.)
 

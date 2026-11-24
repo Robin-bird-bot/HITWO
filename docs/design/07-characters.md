@@ -1,5 +1,7 @@
 # Characters
 
+> Phase 10.7 replaced traits, classes and leveling for the first 6 hikers. See `09-hikers.md`, which wins where they disagree.
+
 The roster: each character's classes, trait slots and starting traits, plus new traits that came from their personalities. Numbers in \[brackets\] are first guesses.
 
 ## Roster
