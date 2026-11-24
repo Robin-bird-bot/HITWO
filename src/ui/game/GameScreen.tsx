@@ -17,6 +17,7 @@ import {
   hikersOnTile,
   hikersWhoHaventActed,
   atLastSection,
+  abilitiesFor,
   isHikeOver,
   resourceCount,
   isAccomplished,
@@ -156,6 +157,9 @@ import {
   groupMoveTargets,
 } from './groupTurn';
 import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
+import { SkillTrails } from '../trails/SkillTrails';
+import { PartyLevel, PartyToast } from '../trails/PartyLevel';
+import { usePartyToast, useSkillTrails } from '../trails/useSkillTrails';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
@@ -170,7 +174,9 @@ type Mode =
   | { kind: 'watch' }
   | { kind: 'tend' }
   /** A map tool waiting for its tile (a Scanner, a Paver…). */
-  | { kind: 'tool'; itemUid: string };
+  | { kind: 'tool'; itemUid: string }
+  /** A usable trait waiting for its tile (Rule Changer; Phase 10.7). */
+  | { kind: 'abilityTile'; abilityId: string };
 
 /** What abandoning the hike means for this hiker: they go for good, with everything they carry. */
 function abandonMessage(state: GameState, h: Hiker): string {
@@ -362,6 +368,8 @@ export function GameScreen({
   const [flies, setFlies] = useState<Fly[]>([]);
   // A map tool's tile, waiting for the player to say yes.
   const [toolTile, setToolTile] = useState<TileId | null>(null);
+  /** Rule Changer's tile, waiting for "Yes, use it". */
+  const [abilityTileId, setAbilityTileId] = useState<TileId | null>(null);
   // Scouting just done: the map plays its sweep and numbers for a few seconds.
   const [fx, setFx] = useState<ScoutFx[]>([]);
   useEffect(() => {
@@ -417,6 +425,13 @@ export function GameScreen({
   const [weatherShown, setWeatherShown] = useWeatherChange(state);
   // The night event window, when something hit the party at camp.
   const [nightShown, setNightShown] = useNightEvent(state);
+  // Skill Trails (Phase 10.7): a window from a hiker frame, full screen at night with points.
+  const [trailsOpen, setTrailsOpen] = useSkillTrails(state);
+  const partyToast = usePartyToast(state);
+  const openTrails = (hikerId?: HikerId) =>
+    setTrailsOpen({ hikerId: hikerId ?? selected?.id ?? hikers[0]?.id ?? '', full: false });
+  const toggleTrait = (hikerId: HikerId, traitId: string) =>
+    dispatch({ type: 'toggleTrait', hikerId, traitId });
   // Predator Bait: tiles that just got easier, shown in blue until a few seconds
   // after the pop-up closes (Wyatt, Nov 6).
   const easier = useEasierTiles(state, !!state.challenge || !!result);
@@ -713,18 +728,28 @@ export function GameScreen({
   // Tactical: a hiker picks a tile ahead to see, before anything else (Phase 10a).
   const tacticalId = state.tacticalPicks?.[0];
   const tactical = tacticalId ? hikers.find((h) => h.id === tacticalId) : undefined;
+  // A usable trait's tiles (Rule Changer): its choices, all open.
+  const abilityTile =
+    selected && mode.kind === 'abilityTile'
+      ? abilitiesFor(state, selected).find((a) => a.ability.id === mode.abilityId)
+      : undefined;
   const targets = tactical
     ? tilesAhead(state).map((tileId) => ({ tileId, reason: null }))
-    : selected && toolMap
-      ? mapTargets(state, selected, toolMap).map((tileId) => {
-          const a = toolAction(tileId);
-          return { tileId, reason: a ? validateAction(state, a) : 'Nothing to use.' };
-        })
-      : group.length > 1 && groupAsk?.kind === 'move'
-        ? groupMoveTargets(state, group)
-        : selected && selected.status === 'active' && mode.kind !== 'sleep' && mode.kind !== 'watch'
-          ? moveTargets(state, selected, moveMode)
-          : [];
+    : abilityTile
+      ? (abilityTile.choices ?? []).map((c) => ({ tileId: c.id, reason: null }))
+      : selected && toolMap
+        ? mapTargets(state, selected, toolMap).map((tileId) => {
+            const a = toolAction(tileId);
+            return { tileId, reason: a ? validateAction(state, a) : 'Nothing to use.' };
+          })
+        : group.length > 1 && groupAsk?.kind === 'move'
+          ? groupMoveTargets(state, group)
+          : selected &&
+              selected.status === 'active' &&
+              mode.kind !== 'sleep' &&
+              mode.kind !== 'watch'
+            ? moveTargets(state, selected, moveMode)
+            : [];
   // Dragging a hiker: the tiles they can be dropped on.
   const draggedId = drag?.payload.kind === 'hiker' ? drag.payload.hikerId : null;
   // A grouped hiker carries the group: anywhere one of them can go.
@@ -922,14 +947,26 @@ export function GameScreen({
   const crafterHiker = crafter ? state.hikers.find((h) => h.id === crafter) : undefined;
   const wrapper = !!crafterHiker && wrapsPresents(state, crafterHiker);
 
-  const onAbility = (abilityId: string, choice?: string) =>
-    selected &&
-    dispatch({
+  const onAbility = (abilityId: string, choice?: string) => {
+    if (!selected) return false;
+    // Its choices are tiles: pick one on the map (Rule Changer).
+    const found = abilitiesFor(state, selected).find((a) => a.ability.id === abilityId);
+    if (!choice && found?.ability.tileChoices) {
+      if (!found.choices?.length) {
+        setNote(`There’s nothing for ${found.ability.label} to do right now.`);
+        return false;
+      }
+      setMode({ kind: 'abilityTile', abilityId });
+      setNote(`${found.ability.label}: pick a tile on the map.`);
+      return false;
+    }
+    return dispatch({
       type: 'useAbility',
       hikerId: selected.id,
       abilityId,
       ...(choice ? { choice } : {}),
     });
+  };
 
   const waiting = hikersWhoHaventActed(state);
   const abandoning = confirmAbandon ? hikers.find((h) => h.id === confirmAbandon) : undefined;
@@ -1155,11 +1192,13 @@ export function GameScreen({
                 onTileClick={(tileId) =>
                   tactical
                     ? dispatch({ type: 'tactical', hikerId: tactical.id, tileId })
-                    : toolMap
-                      ? setToolTile(tileId)
-                      : group.length > 1 && groupAsk?.kind === 'move'
-                        ? setGroupAsk({ kind: 'move', tileId })
-                        : setPendingTile(tileId)
+                    : abilityTile
+                      ? setAbilityTileId(tileId)
+                      : toolMap
+                        ? setToolTile(tileId)
+                        : group.length > 1 && groupAsk?.kind === 'move'
+                          ? setGroupAsk({ kind: 'move', tileId })
+                          : setPendingTile(tileId)
                 }
                 onEmptyClick={() => group.length && clearGroup()}
                 order={orderNumbers(group)}
@@ -1222,6 +1261,11 @@ export function GameScreen({
                   <DayPill state={state} />
                   <GoalPill />
                   <CapsPill state={state} />
+                  <PartyLevel
+                    state={state}
+                    onOpen={() => openTrails()}
+                    style={{ left: 184, top: 16 }}
+                  />
                   <MenuButton onTitle={onQuit} />
                   <SimpleParty
                     state={state}
@@ -1236,6 +1280,8 @@ export function GameScreen({
                     onAbandon={setConfirmAbandon}
                     onInjure={setConfirmInjure}
                     onUseTrait={useTrait}
+                    onTrails={openTrails}
+                    onToggleTrait={toggleTrait}
                   />
                   {selected && (
                     <SimpleTurn
@@ -1270,6 +1316,11 @@ export function GameScreen({
                   <DayBar state={state} />
                   <ObjectiveCard />
                   <AbundanceCard state={state} />
+                  <PartyLevel
+                    state={state}
+                    onOpen={() => openTrails()}
+                    style={{ left: 1240, top: 110 }}
+                  />
                   <MenuButton onTitle={onQuit} />
                   <PartyPanel
                     state={state}
@@ -1284,6 +1335,8 @@ export function GameScreen({
                     onAbandon={setConfirmAbandon}
                     onInjure={setConfirmInjure}
                     onUseTrait={useTrait}
+                    onTrails={openTrails}
+                    onToggleTrait={toggleTrait}
                   />
                   {selected && (
                     <TurnPanel
@@ -1454,6 +1507,17 @@ export function GameScreen({
                   onAction={dispatch}
                 />
               )}
+              {trailsOpen && !nightShown && !weatherShown && (
+                <SkillTrails
+                  state={state}
+                  hikerId={trailsOpen.hikerId}
+                  full={trailsOpen.full}
+                  onPickHiker={(id) => setTrailsOpen({ ...trailsOpen, hikerId: id })}
+                  onAction={dispatch}
+                  onClose={() => setTrailsOpen(null)}
+                />
+              )}
+              {partyToast && <PartyToast text={partyToast} />}
               {/* Opening a Present (and Choosy's pick), or smashing one. */}
               {!state.station && <PresentFx state={state} onAction={dispatch} />}
               {wonderOpen && !state.challenge && !state.scavenge && !result && (
@@ -1477,6 +1541,27 @@ export function GameScreen({
                 />
               )}
 
+              {abilityTileId && abilityTile && selected && (
+                <ConfirmDialog
+                  title={`Use ${abilityTile.ability.label}?`}
+                  message={`On ${
+                    abilityTile.choices?.find((c) => c.id === abilityTileId)?.label ??
+                    (section.tiles[abilityTileId]
+                      ? tileName(section.tiles[abilityTileId])
+                      : 'that tile')
+                  }. ${abilityTile.usesLeft - 1} use${abilityTile.usesLeft - 1 === 1 ? '' : 's'} left this section after this.`}
+                  confirmLabel="Yes, use it"
+                  cancelLabel="Not now"
+                  onCancel={() => setAbilityTileId(null)}
+                  onConfirm={() => {
+                    const id = abilityTileId;
+                    setAbilityTileId(null);
+                    setMode({ kind: 'idle' });
+                    setNote(undefined);
+                    onAbility(abilityTile.ability.id, id);
+                  }}
+                />
+              )}
               {toolTile && toolItem && (
                 <ConfirmDialog
                   title={`Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'}?`}

@@ -1,6 +1,7 @@
 import { rollTrailShop } from '../station/trail';
 import { openLevelUpFor } from '../traits/levelUp';
-import { levelForXp } from '../xp';
+import { addPartyXp, levelForXp } from '../xp';
+import { hasLearned, learnStep, treesOf } from '../trails';
 import { STATION_THEME_BY_ID } from '../../content/stations';
 import { noteGone } from '../items/gone';
 import { checkInArrivals } from '../station/checkIn';
@@ -115,6 +116,38 @@ export function applyDebug(state: GameState, op: DebugOp): void {
         kind: 'debug',
         note: `Set ${hiker.name} to ${hiker.xp} XP, level ${hiker.level}${pending ? ` (${pending} to pick at camp)` : ''}`,
       });
+      break;
+    }
+    // Skill Trails (Phase 10.7).
+    case 'partyXp': {
+      addPartyXp(state, Math.max(0, Math.floor(op.xp)));
+      pushEvent(state, { kind: 'debug', note: `+${op.xp} party XP` });
+      break;
+    }
+    case 'partyPoints': {
+      const party = (state.party ??= { xp: 0, level: 0, points: 0 });
+      party.points = Math.max(0, party.points + Math.floor(op.points));
+      pushEvent(state, { kind: 'debug', note: `+${op.points} point${op.points === 1 ? '' : 's'}` });
+      break;
+    }
+    case 'learnAll': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      const trees = hiker && treesOf(hiker);
+      if (!hiker || !trees) return;
+      // Every step, in tree order, without points (a gift gives its things).
+      for (const tree of trees.trees) {
+        for (const step of tree.steps) {
+          if (!hasLearned(hiker, step.id)) learnStep(state, hiker, step.id, { start: true });
+        }
+      }
+      pushEvent(state, { kind: 'debug', note: `${hiker.name} learned every step` });
+      break;
+    }
+    case 'setMoraleType': {
+      const hiker = state.hikers.find((h) => h.id === op.hikerId);
+      if (!hiker) return;
+      hiker.moraleType = op.moraleType;
+      pushEvent(state, { kind: 'debug', note: `${hiker.name} is ${op.moraleType} now` });
       break;
     }
     case 'levelUpNow': {

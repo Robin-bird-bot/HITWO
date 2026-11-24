@@ -40,6 +40,7 @@ import { TestHikerPicker, TraitTools } from './DebugTraits';
 import { MapLookTools } from './MapLookTools';
 import { EdgeTest } from './EdgeTest';
 import { SimplifyTools } from './DebugSimplify';
+import { TrailsTools } from './DebugTrails';
 import styles from './DebugPanel.module.css';
 import { useBacktickToggle } from './useBacktickToggle';
 
@@ -190,6 +191,7 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
 
       <MapLookTools state={state} />
 
+      <TrailsTools state={state} onApply={run} />
       <SimplifyTools state={state} onApply={run} />
 
       <EdgeTest state={state} onApply={run} />

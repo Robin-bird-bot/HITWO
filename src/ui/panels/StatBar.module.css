@@ -61,3 +61,42 @@
 .number[data-level='critical'] {
   color: #e5624a;
 }
+
+/* The Morale forecast (Phase 10.7, skill-trails-legend.jpg). */
+.gain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: #7fc29b;
+  box-shadow: 0 0 6px #7fc29b;
+  animation: forecastGlow 1.8s ease-in-out infinite;
+}
+
+.loss {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border-radius: 2px;
+  border: 1.5px solid #e5624a;
+}
+
+.unknown {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  line-height: 1;
+  color: #c9c2b2;
+}
+
+@keyframes forecastGlow {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gain {
+    animation: none;
+  }
+}

@@ -1,0 +1,157 @@
+/* Phase 10.7: the morale type mark, its tip, and the party level pill. Stage pixels. */
+
+.moraleMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: rgba(205, 166, 238, 0.12);
+  cursor: help;
+  flex: none;
+}
+
+.moraleMark:focus-visible {
+  outline: 2px solid #e9b44c;
+  outline-offset: 2px;
+}
+
+.tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 240px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(29, 34, 32, 0.96);
+  box-shadow:
+    0 0 0 1px rgba(205, 166, 238, 0.5),
+    0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.tipName {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  color: #cda6ee;
+  letter-spacing: 0.06em;
+}
+
+.tipText {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #f1eadb;
+}
+
+.partyPill {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 18px;
+  background: rgba(29, 34, 32, 0.9);
+  box-shadow: 0 0 0 1px rgba(233, 180, 76, 0.35);
+  color: #f1eadb;
+  cursor: pointer;
+}
+
+.partyPill:hover {
+  box-shadow: 0 0 0 2px #e9b44c;
+}
+
+.partyWord {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #e9b44c;
+}
+
+.partyTrack {
+  width: 70px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.13);
+  overflow: hidden;
+}
+
+.partyTrack > span {
+  display: block;
+  height: 100%;
+  background: #e9b44c;
+}
+
+.partyPoints {
+  padding: 2px 8px;
+  border-radius: 9px;
+  background: #e9b44c;
+  color: #1d2220;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  top: 120px;
+  transform: translateX(-50%);
+  padding: 12px 22px;
+  border-radius: 14px;
+  background: rgba(29, 34, 32, 0.95);
+  box-shadow:
+    0 0 0 2px #e9b44c,
+    0 10px 30px rgba(0, 0, 0, 0.5);
+  color: #e9b44c;
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  z-index: 55;
+  animation: toastIn 0.35s ease-out;
+  pointer-events: none;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.trailsButton,
+.trailsWide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 22px;
+  min-width: 22px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 6px;
+  background: rgba(233, 180, 76, 0.14);
+  color: #e9b44c;
+  cursor: pointer;
+  flex: none;
+}
+
+.trailsWide {
+  margin-left: auto;
+  padding: 0 10px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.trailsButton:hover,
+.trailsWide:hover {
+  background: rgba(233, 180, 76, 0.28);
+}

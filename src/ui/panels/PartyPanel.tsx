@@ -4,7 +4,7 @@
  */
 import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
-import { type GameState, type Hiker, type HikerId } from '../../engine';
+import { moraleForecast, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { ConditionPill, ConditionRow } from '../conditions/ConditionBadges';
 import { injuryLook, thresholdLooks, timedLooks } from '../conditions/hikerConditions';
@@ -28,6 +28,8 @@ import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
 import { AtRiskTag } from '../traits/AtRiskTag';
 import { useTraitView } from '../traits/forecastView';
+import { MoraleTypeMark } from '../trails/MoraleTypeMark';
+import { TrailsButton } from '../trails/TrailsButton';
 
 interface PartyPanelProps {
   state: GameState;
@@ -45,6 +47,10 @@ interface PartyPanelProps {
   onInjure?(id: HikerId): void;
   /** A usable trait's badge was tapped: open the Abilities panel at it. */
   onUseTrait?(id: HikerId, abilityId: string): void;
+  /** Open this hiker's Skill Trails (Phase 10.7). */
+  onTrails?(id: HikerId): void;
+  /** A toggle trait's badge was clicked: switch it (Leash Puller). */
+  onToggleTrait?(id: HikerId, traitId: string): void;
 }
 
 export function PartyPanel({
@@ -54,6 +60,8 @@ export function PartyPanel({
   onAbandon,
   onInjure,
   onUseTrait,
+  onTrails,
+  onToggleTrait,
   order = {},
   picking = false,
   onPicking,
@@ -92,6 +100,8 @@ export function PartyPanel({
             {...(onAbandon ? { onAbandon } : {})}
             {...(onInjure ? { onInjure } : {})}
             {...(onUseTrait ? { onUseTrait } : {})}
+            {...(onTrails ? { onTrails } : {})}
+            {...(onToggleTrait ? { onToggleTrait } : {})}
           />
         ))}
       </div>
@@ -113,6 +123,8 @@ function HikerCard({
   onAbandon,
   onInjure,
   onUseTrait,
+  onTrails,
+  onToggleTrait,
   drop,
   turn,
 }: {
@@ -120,6 +132,8 @@ function HikerCard({
   hiker: Hiker;
   selected: boolean;
   onUseTrait?(id: HikerId, abilityId: string): void;
+  onTrails?(id: HikerId): void;
+  onToggleTrait?(id: HikerId, traitId: string): void;
   onSelect(id: HikerId, add?: boolean): void;
   onAbandon?(id: HikerId): void;
   onInjure?(id: HikerId): void;
@@ -161,6 +175,7 @@ function HikerCard({
         <div className={styles.info}>
           <div className={styles.nameRow}>
             <span className={styles.name}>{h.name.toUpperCase()}</span>
+            {h.moraleType && <MoraleTypeMark type={h.moraleType} />}
             {h.injuries > 0 && (
               <span
                 className={styles.cardPips}
@@ -175,6 +190,7 @@ function HikerCard({
             <span className={styles.tag} style={{ background: tagColors.bg, color: tagColors.fg }}>
               {tag}
             </span>
+            {onTrails && h.trails && <TrailsButton onClick={() => onTrails(h.id)} />}
             <button
               type="button"
               className={styles.chevron}
@@ -198,7 +214,14 @@ function HikerCard({
             </span>
           )}
           {hikerBars(state, h).map((b) => (
-            <StatBar key={b.stat} stat={b.stat} value={b.value} max={b.max} ticks />
+            <StatBar
+              key={b.stat}
+              stat={b.stat}
+              value={b.value}
+              max={b.max}
+              ticks
+              forecast={b.stat === 'morale' ? moraleForecast(state, h) : undefined}
+            />
           ))}
           <ConditionPills hiker={h} />
           {/* Icons only here; the details show them with their names. */}
@@ -208,6 +231,9 @@ function HikerCard({
                 badges={traitBadges(state, h, traitView.view ?? undefined)}
                 {...(onUseTrait
                   ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) }
+                  : {})}
+                {...(onToggleTrait
+                  ? { onToggle: (traitId: string) => onToggleTrait(h.id, traitId) }
                   : {})}
               />
             </span>
@@ -222,6 +248,8 @@ function HikerCard({
           {...(onAbandon ? { onAbandon } : {})}
           {...(onInjure ? { onInjure } : {})}
           {...(onUseTrait ? { onUseTrait } : {})}
+          {...(onTrails ? { onTrails } : {})}
+          {...(onToggleTrait ? { onToggleTrait } : {})}
         />
       )}
     </div>
@@ -250,10 +278,14 @@ export function Details({
   onAbandon,
   onInjure,
   onUseTrait,
+  onTrails,
+  onToggleTrait,
 }: {
   state: GameState;
   hiker: Hiker;
   onUseTrait?(id: HikerId, abilityId: string): void;
+  onTrails?(id: HikerId): void;
+  onToggleTrait?(id: HikerId, traitId: string): void;
   /** Asks to confirm abandoning the hike for this hiker (kept away from the action grid). */
   onAbandon?(id: HikerId): void;
   /** Asks to confirm taking an injury on purpose, for a hiker who's stuck (Wyatt, Nov 14). */
@@ -302,10 +334,19 @@ export function Details({
 
       <div className={styles.section}>
         <div className={styles.sectionHead}>
-          <span className={styles.label}>TRAIT SLOTS</span>
-          <span className={styles.statNote}>
-            {filled} filled · {h.slots.length} of {MAX_SLOTS} max
-          </span>
+          {h.trails ? (
+            <>
+              <span className={styles.label}>TRAITS</span>
+              {onTrails && <TrailsButton onClick={() => onTrails(h.id)} wide />}
+            </>
+          ) : (
+            <>
+              <span className={styles.label}>TRAIT SLOTS</span>
+              <span className={styles.statNote}>
+                {filled} filled · {h.slots.length} of {MAX_SLOTS} max
+              </span>
+            </>
+          )}
         </div>
         {/* Informative view: each badge with its name under it. */}
         <span className={styles.badges} onClick={(e) => e.stopPropagation()}>
@@ -313,34 +354,48 @@ export function Details({
             badges={traitBadges(state, h, traitView.view ?? undefined)}
             showNames
             {...(onUseTrait ? { onUse: (abilityId: string) => onUseTrait(h.id, abilityId) } : {})}
+            {...(onToggleTrait
+              ? { onToggle: (traitId: string) => onToggleTrait(h.id, traitId) }
+              : {})}
           />
         </span>
       </div>
 
-      <div className={styles.xp}>
-        <span className={styles.level}>LV {xp.level}</span>
-        <div className={styles.track}>
-          <div
-            style={{
-              width: `${Math.min(100, ((xp.xp - xp.from) / Math.max(1, xp.next - xp.from)) * 100)}%`,
-              background: '#CDA6EE',
-            }}
-          />
-        </div>
+      {h.trails ? (
         <span className={styles.statNote}>
-          {xp.xp}/{xp.next} XP
+          {h.xp} XP earned for the party.{' '}
+          {xp.rowXp
+            ? 'Crafting and lucky finds give XP here today.'
+            : 'No XP for crafting or finds on this row.'}
         </span>
-      </div>
-      {xp.waiting > 0 && (
-        <span className={styles.levelWaiting}>
-          Level {xp.level + xp.waiting} reached: pick a trait at the next camp.
-        </span>
+      ) : (
+        <>
+          <div className={styles.xp}>
+            <span className={styles.level}>LV {xp.level}</span>
+            <div className={styles.track}>
+              <div
+                style={{
+                  width: `${Math.min(100, ((xp.xp - xp.from) / Math.max(1, xp.next - xp.from)) * 100)}%`,
+                  background: '#CDA6EE',
+                }}
+              />
+            </div>
+            <span className={styles.statNote}>
+              {xp.xp}/{xp.next} XP
+            </span>
+          </div>
+          {xp.waiting > 0 && (
+            <span className={styles.levelWaiting}>
+              Level {xp.level + xp.waiting} reached: pick a trait at the next camp.
+            </span>
+          )}
+          <span className={styles.statNote}>
+            {xp.rowXp
+              ? 'Crafting and lucky finds give XP here today.'
+              : 'No XP for crafting or finds on this row.'}
+          </span>
+        </>
       )}
-      <span className={styles.statNote}>
-        {xp.rowXp
-          ? 'Crafting and lucky finds give XP here today.'
-          : 'No XP for crafting or finds on this row.'}
-      </span>
 
       <div className={styles.lastResorts}>
         {onInjure && h.status === 'active' && (

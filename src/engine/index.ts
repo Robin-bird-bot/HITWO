@@ -39,6 +39,7 @@ export {
   replaceableSlots,
 } from './traits/levelUp';
 export { levelForXp, levelReached, onXpRow, partyOf, xpForLevel } from './xp';
+export { moraleForecast, type MoraleForecast as MoraleTypeForecast } from './morale';
 export {
   canSpendNow,
   hasLearned,

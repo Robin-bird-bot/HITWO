@@ -6,7 +6,7 @@
 import { useRef, useState } from 'react';
 import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
-import { type GameState, type Hiker, type HikerId } from '../../engine';
+import { moraleForecast, type GameState, type Hiker, type HikerId } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { FAMILY_LOOK, carryNote, hikerBars } from '../panels/hikerInfo';
 import { Panel } from '../panels/Panel';
@@ -25,6 +25,7 @@ import { traitBadges } from '../traits/badges';
 import { TraitBadgeRow } from '../traits/TraitBadge';
 import { AtRiskTag } from '../traits/AtRiskTag';
 import { useTraitView } from '../traits/forecastView';
+import { MoraleTypeMark } from '../trails/MoraleTypeMark';
 
 interface SimplePartyProps {
   state: GameState;
@@ -42,6 +43,10 @@ interface SimplePartyProps {
   onInjure?(id: HikerId): void;
   /** A usable trait's badge was tapped: open the Abilities panel at it. */
   onUseTrait?(id: HikerId, abilityId: string): void;
+  /** Open this hiker's Skill Trails (Phase 10.7). */
+  onTrails?(id: HikerId): void;
+  /** A toggle trait's badge was clicked: switch it (Leash Puller). */
+  onToggleTrait?(id: HikerId, traitId: string): void;
 }
 
 const POPOUT_HEIGHT = 470;
@@ -53,6 +58,8 @@ export function SimpleParty({
   onAbandon,
   onInjure,
   onUseTrait,
+  onTrails,
+  onToggleTrait,
   order = {},
   picking = false,
   onPicking,
@@ -114,6 +121,10 @@ export function SimpleParty({
               {...(onUseTrait
                 ? { onUseTrait: (abilityId: string) => onUseTrait(h.id, abilityId) }
                 : {})}
+              {...(onTrails ? { onTrails: () => onTrails(h.id) } : {})}
+              {...(onToggleTrait
+                ? { onToggleTrait: (traitId: string) => onToggleTrait(h.id, traitId) }
+                : {})}
             />
           ))}
         </div>
@@ -162,6 +173,15 @@ export function SimpleParty({
                   },
                 }
               : {})}
+            {...(onTrails
+              ? {
+                  onTrails: (id: HikerId) => {
+                    setOpen(null);
+                    onTrails(id);
+                  },
+                }
+              : {})}
+            {...(onToggleTrait ? { onToggleTrait } : {})}
           />
         </Popout>
       )}
@@ -182,6 +202,8 @@ function HikerCard({
   selected,
   onClick,
   onUseTrait,
+  onTrails,
+  onToggleTrait,
   drop,
   turn,
 }: {
@@ -190,6 +212,8 @@ function HikerCard({
   selected: boolean;
   onClick(card: HTMLElement, add: boolean): void;
   onUseTrait?(abilityId: string): void;
+  onTrails?(): void;
+  onToggleTrait?(traitId: string): void;
   drop?: DropProps;
   /** Its place in the group's turn order. */
   turn?: number;
@@ -239,6 +263,7 @@ function HikerCard({
       <span className={styles.cardBody}>
         <span className={styles.nameRow}>
           <span className={styles.name}>{h.name.toUpperCase()}</span>
+          {h.moraleType && <MoraleTypeMark type={h.moraleType} />}
           <span className={styles.family} title={family.label.toLowerCase()}>
             <Icon name={family.icon} size={11} strokeWidth={2.25} />
           </span>
@@ -265,6 +290,7 @@ function HikerCard({
             showNumber
             ticks={b.stat !== 'morale'}
             size="regular"
+            forecast={b.stat === 'morale' ? moraleForecast(state, h) : undefined}
           />
         ))}
         <ConditionDots hiker={h} />
@@ -274,7 +300,32 @@ function HikerCard({
             badges={traitBadges(state, h, traitView.view ?? undefined)}
             as="span"
             {...(onUseTrait ? { onUse: onUseTrait } : {})}
+            {...(onToggleTrait ? { onToggle: onToggleTrait } : {})}
           />
+          {/* Skill Trails: inside the card's button, so a plain mark (the details have a real button). */}
+          {onTrails && h.trails && (
+            <span
+              className={styles.trailsMark}
+              title="Skill Trails"
+              aria-hidden="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTrails();
+              }}
+            >
+              <svg
+                width={14}
+                height={14}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.4}
+                strokeLinecap="round"
+              >
+                <path d="M12 22V14M12 14C12 10 6 10 6 4M12 14C12 10 18 10 18 4M12 14V4" />
+              </svg>
+            </span>
+          )}
         </span>
       </span>
     </button>

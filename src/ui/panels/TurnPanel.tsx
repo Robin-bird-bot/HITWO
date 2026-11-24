@@ -287,7 +287,10 @@ export function Abilities({
                   style={{ background: color }}
                   aria-expanded={choices ? choosing === id : undefined}
                   onClick={() =>
-                    choices ? setChoosing(choosing === id ? null : id) : onAbility(id)
+                    // Tile choices (Rule Changer) are picked on the map instead.
+                    choices && !ability.tileChoices
+                      ? setChoosing(choosing === id ? null : id)
+                      : onAbility(id)
                   }
                 >
                   USE

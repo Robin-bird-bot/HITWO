@@ -444,7 +444,7 @@
 
 .treeStep {
   display: block;
-  font-family: 'Edit Undo', monospace;
+  font-family: var(--font-pixel);
   font-size: 11px;
   line-height: 1.15;
   color: #f1eadb;

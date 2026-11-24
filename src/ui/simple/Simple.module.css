@@ -412,3 +412,21 @@
   display: block;
   margin-top: 4px;
 }
+
+/* Skill Trails (Phase 10.7): the trail-fork mark at the end of the badge row. */
+.trailsMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  border-radius: 6px;
+  background: rgba(233, 180, 76, 0.14);
+  color: #e9b44c;
+  cursor: pointer;
+}
+
+.trailsMark:hover {
+  background: rgba(233, 180, 76, 0.28);
+}
