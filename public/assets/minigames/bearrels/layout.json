@@ -1,0 +1,50 @@
+{
+  "viewBox": [
+    1280,
+    720
+  ],
+  "barrelTop": 418,
+  "rowX": [
+    150,
+    1130
+  ],
+  "barrelWidth": "min(168, rowSpan/(n-1)*0.74)",
+  "hikerColors": {
+    "finn": "#E2683C",
+    "ellie": "#4A8FD4",
+    "mom": "#EBC04A",
+    "wyatt": "#6FBF5A",
+    "gdog": "#B06BD0",
+    "wink": "#3FB8B0"
+  },
+  "shapes": {
+    "finn": "dog-floppy",
+    "ellie": "dog-fluffy",
+    "mom": "hat",
+    "wyatt": "messy",
+    "gdog": "curly",
+    "wink": "bald"
+  },
+  "inks": {
+    "sky0": "#FCE6BE",
+    "sky1": "#F8C68A",
+    "sky2": "#F39A5E",
+    "sun": "#FFF1D6",
+    "cloud": "#FFF6E4",
+    "l1": "#F6A86C",
+    "l2": "#F08A4B",
+    "l3": "#E2683C",
+    "l4": "#C8423A",
+    "l5": "#9C2F3A",
+    "rock": "#6E1F35",
+    "ground": "#4A1428",
+    "ground2": "#3A0F22",
+    "sil": "#2A0A18",
+    "bear": "#3A0F22",
+    "rim": "#FFB36E",
+    "hoop": "#5A1A30",
+    "bird": "#7A2433",
+    "cream": "#FFF1D6",
+    "red": "#E5483A"
+  }
+}

@@ -117,6 +117,12 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
   - navy pine rows: 270, 271.
 - The ranger station uses 265, 266 and 271 (game copies in `public/assets/backgrounds/`). Ask Wyatt which others to use. For example, Alpine could be 263 → 261 → 269 → 268, and the Rainforest could add 266 or 264.
 
+## Minigames (Phase 10.8)
+
+- **Bearrels' scene parts** (`public/assets/minigames/bearrels/`, originals in `assets/minigames/bearrels/`): the background, the bear (hidden, up, fire; each with the rock), a barrel, one silhouette per hiker (Finn, Ellie, Mom, Wyatt, Gdog, Wink), the crosshair, and `layout.json` (positions, hiker colors, inks). The game draws the bear, barrels, hikers and crosshair in code from the same shapes, so each hiker can be rim-lit in their own color; the background is used as the file.
+- **Posters** (`public/assets/posters/`, 1200 × 1800): `bear-country.png`. Wyatt is painting the rest; a challenge without one shows a plain cream panel.
+- **The party GPS** is drawn in CSS and SVG: no image files.
+
 ## Still missing
 
 - **Bigger icon:** a hi-res mushroom.

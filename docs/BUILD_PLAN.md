@@ -1147,7 +1147,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` or the new `difficulty.
 
 ---
 
-## Phase 10.7: Hikers (now)
+## Phase 10.7: Hikers (done)
 
 (New in the Nov 23 update: `docs/UPDATE-2026-11-23-phase-10.7-hikers.md`. The design is `docs/design/09-hikers.md`, which wins over `07-characters.md` and `08-overhaul-plan.md` where they disagree; the trees as data are in `docs/design/skill-trails/skill-trails-data.json`, and the window and legend boards in `docs/mockups/skill-trails/`.)
 
@@ -1209,22 +1209,59 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 ---
 
-## Phase 10.7b: Trees for the other hikers (later, design first)
+## Phase 10.7b: Trees for the other hikers (on hold)
 
-(Outline only. Wyatt will send the design.)
+(On hold while challenges are built, so the core loop works and the current 6 hikers can be tested. Outline only; Wyatt will send the design.)
 
 - Trees for the locked hikers, in new shapes: long trails of 4 tiers, steps you can buy more than once, steps that give an item, per-step costs, and duos.
 - Each hiker is unlocked as their trees land.
 
 ---
 
-## Phase 10.8: Challenges and opportunities (next after 10.7, design first)
+## Phase 10.8: Challenges and opportunities
 
-(Outline only, from `docs/design/08-overhaul-plan.md`.)
+(From `docs/design/08-overhaul-plan.md`. How minigames look and play, the party GPS and the challenge pop-up are in `docs/design/10-minigames.md`.)
 
 - **The minigame library:** a few base games (Barrels, Snake, Minefield, Memory, Puzzle, Reaction, Timing, Trivia, Jumping, Dodging), each with several skins, all playable with taps on a phone.
 - **The first challenges and opportunities** built from them: prepare by spending resources or items, stakes that fit the challenge, party size that matters, penalties that reach past the tile.
 - Trials come back only if they fit the new challenges.
+
+### Phase 10.8, step 1: Minigame testing and Bearrels (now)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-bearrels-test.md`. Mockups in `docs/mockups/minigames/`; mockups 5 and 6 are for the GPS layout only, and the chosen art style is look C, mockup 7 and the frames. Bearrels' scene parts are in `public/assets/minigames/bearrels/`, and the Bear Country poster in `public/assets/posters/`.)
+
+**Goal:** the parts every challenge minigame will use, and the first game, Bearrels, playable from a new **Minigame testing** tab on the main menu.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **Minigame framework:** a registry of minigames, each with an id, a name, a base game, a settings schema (ranges and defaults) and a `run` that mounts into the GPS screen and resolves with a result (who was safe, who was hit and in which round). Independent of runs and saves, so the testing tab and real challenges share it.
+2. **The challenge pop-up:** a cream window with a red banner (challenge and tier, the name between two game-icon diamonds, who takes part), the poster on the left (2:3, cream mat, dark keyline), and on the right the flavor line, The game, Prepare (up to 3 option cards; hidden in test mode), If hit, On this tile and a big red Start. After a game, the result line plus Continue (test mode: Back to testing and Play again).
+3. **The party GPS:** a yellow landscape handheld in CSS and SVG ("TRAILMATE", a D-pad and two buttons as decoration) with a 16:9 screen (scanlines, inner shadow, glass sheen, warm glow). On Start it lifts from below the pop-up and scales up over [600 ms] with a small overshoot, until the screen is as large as fits, up to [88%] of the window width (on a phone in landscape at least [80%] of the height). The pop-up dims to about [35%] with a light blur. It lowers in [400 ms]. Reduced motion: it fades in at full size.
+4. **Bearrels** (look C, layered silhouettes; each hiker rim-lit in their own color):
+   - Settings: 3 to 6 barrels [3], 1 to 4 hikers [Finn, Ellie, Mom], 1 to 5 rounds [3], 1 or 2 shots per round [1] (never the same barrel twice in a round).
+   - Each round: pick a hiker, then a barrel (several can share one); Ready once everyone still in is placed. The bear pops up [450 ms], the crosshair sweeps and settles [1.4 s], a [300 ms] hold, then it fires. A hit takes out everyone behind that barrel for the rest of the game, with a red flash ([60 ms] in, [400 ms] out), a shake, the hikers tipping over, and their tokens greyed with a red X; an empty barrel is "Missed!". A second shot follows [600 ms] later on a different barrel. The game ends after the last round or once everyone is out, with a results card ("1 safe, 2 hit").
+   - Barrels evenly spaced from x [150] to [1130]; width min([150], 980 ÷ (barrels − 1) × [0.7]); top at y [418]. Hikers behind a barrel at scale [1.05] alone, [0.8] for two, [0.6] for three or four.
+   - Controls: tap a token, a barrel, Ready; keyboard 1–4, ← →, Enter or Space. Reduced motion: no shake, a softer flash, the crosshair jumps straight to its barrel. Sound hooks only.
+5. **The Minigame testing tab** on the main menu: the minigame list (Bearrels, and four "coming soon"), Bearrels' settings (steppers, shot buttons, hiker toggles), a live preview, and **Test it**, which opens the Bear Country pop-up in test mode. Settings are remembered on this device. Nothing touches the save.
+
+**Not in this step:** Prepare options, real stakes (Injury, Luck), challenge XP, other minigames, sound files, and the GPS's D-pad and buttons.
+
+**Tests**
+- Barrel layout for 3 to 6 barrels: positions, widths, and no overlap with the token bar.
+- With 2 shots, a round never hits the same barrel twice.
+- A hit takes out everyone behind that barrel; hikers who are out can't be selected or placed.
+- The game ends early when everyone is out.
+- Ready stays off until every hiker still in is placed.
+- The keyboard flow works end to end.
+- Test mode never changes save data.
+
+**Done when:** Bearrels plays from the testing tab, through the pop-up and the lifted GPS, at desktop size and on a phone in landscape, and the tests above pass.
+
+### Phase 10.8, next steps (outline only)
+
+- More minigames, added to the testing tab one at a time.
+- Then hooking minigames into real challenges, with Prepare and stakes.
 
 ---
 
