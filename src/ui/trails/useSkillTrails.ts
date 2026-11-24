@@ -20,8 +20,20 @@ const spendKey = (state: GameState): string | null =>
       ? `night-${state.day}`
       : null;
 
+/** Opens Skill Trails from outside the game screen (the debug panel's edge test). */
+export const OPEN_TRAILS_EVENT = 'hike-in-the-woods/open-skill-trails';
+
 export function useSkillTrails(state: GameState) {
   const [open, setOpen] = useState<TrailsOpen | null>(null);
+  const firstId = state.hikers.find((h) => h.status !== 'abandoned' && !!treesOf(h))?.id;
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const full = !!(e as CustomEvent<{ full?: boolean }>).detail?.full;
+      if (firstId) setOpen({ hikerId: firstId, full });
+    };
+    window.addEventListener(OPEN_TRAILS_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_TRAILS_EVENT, onOpen);
+  }, [firstId]);
   const key = spendKey(state);
   const [seen, setSeen] = useState(key);
   if (key !== seen) {

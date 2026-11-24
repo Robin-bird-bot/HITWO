@@ -1319,7 +1319,7 @@ export function GameScreen({
                   <PartyLevel
                     state={state}
                     onOpen={() => openTrails()}
-                    style={{ left: 1240, top: 110 }}
+                    style={{ left: 470, top: 86 }}
                   />
                   <MenuButton onTitle={onQuit} />
                   <PartyPanel

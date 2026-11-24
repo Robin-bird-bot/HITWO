@@ -48,7 +48,7 @@ describe('usable badge states', () => {
     expect(badges(s)[0]).toMatchObject({
       state: 'used',
       usesLeft: 0,
-      status: { text: 'Used. Back in the next biome.', tone: 'used' },
+      status: { text: 'Used. Back in the next section.', tone: 'used' },
     });
     // Not back the next day: it's once per biome.
     s = run(toNight(s), END);

@@ -190,7 +190,6 @@ function HikerCard({
             <span className={styles.tag} style={{ background: tagColors.bg, color: tagColors.fg }}>
               {tag}
             </span>
-            {onTrails && h.trails && <TrailsButton onClick={() => onTrails(h.id)} />}
             <button
               type="button"
               className={styles.chevron}
@@ -236,6 +235,7 @@ function HikerCard({
                   ? { onToggle: (traitId: string) => onToggleTrait(h.id, traitId) }
                   : {})}
               />
+              {onTrails && h.trails && <TrailsButton onClick={() => onTrails(h.id)} />}
             </span>
           )}
         </div>

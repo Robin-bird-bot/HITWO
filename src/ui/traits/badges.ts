@@ -85,8 +85,8 @@ export const SLOT_WORD: Readonly<Record<SlotType, string>> = {
   tag: 'Tag Team',
   trail: 'Skill Trails',
 };
-const THIS = { phase: 'this phase', day: 'today', biome: 'this biome' } as const;
-const BACK = { phase: 'next phase', day: 'tomorrow', biome: 'in the next biome' } as const;
+const THIS = { phase: 'this phase', day: 'today', biome: 'this section' } as const;
+const BACK = { phase: 'next phase', day: 'tomorrow', biome: 'in the next section' } as const;
 
 /** "Trail · Tier II", "Morale", "Utility · Special". */
 export function kindWord(def: TraitDef): string {

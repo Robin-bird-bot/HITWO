@@ -9,6 +9,7 @@ import { CHALLENGES } from '../../content/challenges';
 import { BALANCE } from '../../config/balance';
 import type { Action, GameState } from '../../engine';
 import { edgeCheck } from './edgeCheck';
+import { OPEN_TRAILS_EVENT } from '../trails/useSkillTrails';
 import styles from './DebugPanel.module.css';
 
 /** The most scavenge cards: 3, +1 each for a Dog, Dog Whisperer, Forager, Thumb and a Yurt; 1 spare. */
@@ -44,10 +45,6 @@ export function EdgeTest({ state, onApply }: { state: GameState; onApply(action:
           },
         ]
       : []),
-    {
-      label: 'Level-up (Tier 3)',
-      action: { type: 'debug', op: { kind: 'levelUpNow', hikerId: hiker.id, tier: 3 } },
-    },
   ];
   return (
     <section className={styles.group}>
@@ -64,6 +61,22 @@ export function EdgeTest({ state, onApply }: { state: GameState; onApply(action:
             }}
           >
             {s.label}
+          </button>
+        ))}
+        {/* Phase 10.7: Skill Trails in place of the old level-up screen. */}
+        {(['window', 'full screen'] as const).map((how) => (
+          <button
+            key={how}
+            type="button"
+            className={styles.button}
+            onClick={() => {
+              setResult(null);
+              window.dispatchEvent(
+                new CustomEvent(OPEN_TRAILS_EVENT, { detail: { full: how === 'full screen' } }),
+              );
+            }}
+          >
+            Skill Trails · {how}
           </button>
         ))}
       </div>

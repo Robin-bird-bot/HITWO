@@ -341,7 +341,7 @@ export function Abilities({
   );
 }
 
-const PER = { day: 'DAY', phase: 'PHASE', biome: 'BIOME' };
+const PER = { day: 'DAY', phase: 'PHASE', biome: 'SECTION' };
 
 /**
  * Picking resources for an ability (Spare Parts): any of the 16, repeats

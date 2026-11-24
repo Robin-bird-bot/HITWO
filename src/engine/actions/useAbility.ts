@@ -12,7 +12,7 @@ import {
 
 type UseAbilityAction = Extract<Action, { type: 'useAbility' }>;
 
-const PERIOD_WORDS = { day: 'today', phase: 'this phase', biome: 'this biome' } as const;
+const PERIOD_WORDS = { day: 'today', phase: 'this phase', biome: 'this section' } as const;
 
 /** Using an ability is a free action: it doesn't use the hiker's phase. */
 export function validateUseAbility(state: GameState, action: UseAbilityAction): string | undefined {

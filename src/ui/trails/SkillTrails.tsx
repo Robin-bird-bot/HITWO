@@ -135,7 +135,11 @@ export function SkillTrails({
         </header>
 
         <div className={styles.body} style={{ height: mapH }}>
-          <div className={styles.map} style={{ width: mapW, height: mapH }}>
+          <div
+            className={styles.map}
+            style={{ width: mapW, height: mapH }}
+            data-edge-window="Skill Trails"
+          >
             <svg className={styles.svg} width={mapW} height={mapH} aria-hidden="true">
               <defs>
                 {view.map((t, i) => (
@@ -273,6 +277,7 @@ function StepBadge({
     <button
       type="button"
       className={styles.step}
+      data-edge-card={step.step.name}
       data-state={step.state}
       data-selected={selected || undefined}
       data-upgrade={upgrade || undefined}
