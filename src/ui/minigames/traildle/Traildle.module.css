@@ -14,8 +14,8 @@
 .board {
   position: absolute;
   top: 24px;
-  width: 148px;
   height: 110px;
+  overflow: hidden;
   box-sizing: border-box;
   border: 0.75px solid #3c4e2f;
   border-radius: 2px;
@@ -29,6 +29,51 @@
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* The rows: clipped to the board, scrolled when they don't all fit. */
+.rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.more {
+  position: absolute;
+  left: 50%;
+  top: 9px;
+  margin: 0;
+  font-size: 3.2px;
+  transform: translateX(-50%);
+}
+
+.scrollButtons {
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scrollButtons > button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0.5px solid #1d2918;
+  border-radius: 1px;
+  background: #bac995;
+  color: #1d2918;
+  font-size: 3px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scrollButtons > button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .cell {
@@ -89,14 +134,14 @@
 }
 
 /* The current guess. */
+/* The guess's big signs, scaled by --big (0.85 for 7 or 8 signs). */
 .signSlot {
   position: absolute;
   top: 139px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  width: 24px;
+  gap: calc(var(--big, 1) * 2px);
 }
 
 .arrow,
@@ -114,13 +159,13 @@
 }
 
 .arrow > img {
-  width: 8px;
-  height: 7px;
+  width: calc(var(--big, 1) * 8px);
+  height: calc(var(--big, 1) * 7px);
 }
 
 .sign > img {
-  width: 24px;
-  height: 20px;
+  width: calc(var(--big, 1) * 24px);
+  height: calc(var(--big, 1) * 20px);
 }
 
 .sign[data-selected]::after {
@@ -138,7 +183,7 @@
   align-items: center;
   justify-content: center;
   font-family: var(--font-pixel);
-  font-size: 9px;
+  font-size: calc(var(--big, 1) * 9px);
   color: #d3dfaf;
 }
 

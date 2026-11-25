@@ -55,6 +55,20 @@ export type MinigameSetting =
       hint: string;
     }
   | {
+      /**
+       * A number in a range, or "auto" (the tier's or the default value,
+       * `autoValue`, shown in the hint). Stepping below the minimum gives Auto.
+       */
+      kind: 'autoRange';
+      id: string;
+      label: string;
+      min: number;
+      max: number;
+      step?: number;
+      autoValue: number;
+      hint: string;
+    }
+  | {
       /** A few named options, such as Auto, On and Off ("Auto" uses the tier's value). */
       kind: 'pick';
       id: string;

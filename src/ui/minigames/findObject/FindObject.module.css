@@ -8,7 +8,7 @@
   touch-action: none;
 }
 
-.field[data-mode='dark'] {
+.field[data-dark] {
   cursor: none;
 }
 
@@ -137,6 +137,15 @@
   transform: rotate(40deg);
 }
 
+.roundBox {
+  position: absolute;
+  right: 52px;
+  top: 4px;
+  width: 52px;
+  height: 22px;
+  font-size: 6px;
+}
+
 .clock {
   position: absolute;
   right: 4px;
@@ -175,6 +184,28 @@
   padding: 0 6px;
 }
 
+.lineToken {
+  position: relative;
+  display: inline-flex;
+}
+
+/* At risk right now: a small warning mark. */
+.risk {
+  position: absolute;
+  right: -2px;
+  top: -3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: #e9b44c;
+  color: #1d2918;
+  font-size: 4.5px;
+  line-height: 1;
+}
+
 .note,
 .tier {
   position: absolute;
@@ -184,7 +215,7 @@
 
 .note {
   left: 90px;
-  bottom: 13px;
+  bottom: 9px;
 }
 
 .tier {
@@ -202,23 +233,38 @@
 }
 
 .introCard {
-  gap: 8px;
-  padding: 8px 12px;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 190px;
+  padding: 14px 18px;
   font-size: 7px;
 }
 
-.introKind {
-  display: flex;
-  align-items: center;
-  gap: 3px;
+.introTitle {
+  font-size: 8px;
 }
 
-.introKind > img {
-  width: 16px;
-  height: 16px;
-  padding: 1px;
-  border-radius: 1px;
+.introFind {
+  font-size: 6px;
+  color: #bac995;
+}
+
+.introSnacks {
+  display: flex;
+  gap: 4px;
+}
+
+.introSnacks > img {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 1.5px;
   background: #bac995;
+}
+
+.introSmall {
+  font-size: 4.2px;
+  color: #a0b37d;
 }
 
 .srOnly {

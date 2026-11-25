@@ -3,11 +3,16 @@
  * of trail snacks pops up; find the ones you're asked for before time runs
  * out. Pure and seeded.
  *
- * One target per hiker. Each find keeps the next hiker in line safe: with k
- * found, the first k hikers pass. A wrong click costs time. Still on Tier I,
- * Windy on Tier II (everything drifts and wraps around), Dark on Tier III (a
- * flashlight follows the pointer, and only what's in its light can be seen
- * and picked).
+ * - **Rounds** (3 by default): round 1 asks for one target per hiker still
+ *   in, each later round one more.
+ * - **Finding a target** checks a slot showing that same snack (the first
+ *   unchecked one of that kind). A wrong click costs time.
+ * - **End of a round:** each target still unfound puts one hiker out, from
+ *   the back of the line, for the rest of the game. Hikers still in at the
+ *   end pass.
+ * - **Modes:** Still (Tier I), Windy (Tier II: everything drifts and wraps
+ *   around), Dark (a flashlight follows the pointer: only what's in its
+ *   light can be seen and picked), and Dark + windy (Tier III: both).
  */
 import { BALANCE } from '../../config/balance';
 import { int, nextFloat, seedRng, shuffle } from '../../engine/rng';
@@ -18,7 +23,10 @@ import type { MinigameResult } from '../types';
 const F = BALANCE.minigames.findObject;
 
 export type Tier = 1 | 2 | 3;
-export type Mode = 'still' | 'windy' | 'dark';
+export type Mode = 'still' | 'windy' | 'dark' | 'darkWindy';
+
+export const isWindy = (m: Mode): boolean => m === 'windy' || m === 'darkWindy';
+export const isDark = (m: Mode): boolean => m === 'dark' || m === 'darkWindy';
 
 /** The 12 trail snacks (art/find-object/snacks/<name>.png, 16 × 16). Only their shapes differ. */
 export const SNACKS = [
@@ -54,29 +62,46 @@ export interface Item {
 
 export interface FindObjectOptions {
   tier: Tier;
-  /** The testing tab's override: Auto (the tier's) or a mode. */
+  /** The testing tab's overrides: "auto" uses the tier's (or the default) value. */
   mode: 'auto' | Mode;
+  rounds?: 'auto' | number;
+  secPerTarget?: 'auto' | number;
+  extraSecPerRound?: 'auto' | number;
 }
 
 export interface FindObjectState {
   tier: Tier;
   mode: Mode;
   order: string[];
-  /** The FIND list, one per hiker; which ones are found doesn't matter, only how many. */
+  rounds: number;
+  /** 1-based. */
+  round: number;
+  /** The hikers still in, in line order. */
+  line: string[];
+  /** Hikers who went out, and the round they went out in. */
+  out: Record<string, number>;
+  /** This round's FIND slots, and which are checked. */
   targets: Snack[];
-  found: number;
+  found: boolean[];
   items: Item[];
-  /** Windy: which way the wind blows. */
+  /** Windy: which way the wind blows this round. */
   wind: 1 | -1;
+  secPerTarget: number;
+  extraSecPerRound: number;
   timeTotal: number;
   timeLeft: number;
-  over: boolean;
+  /** Playing a round; a round just ended (`lost` went out); or the game is over. */
+  phase: 'playing' | 'roundOver' | 'over';
+  lost: string[];
   rng: RngState;
 }
 
 /** The mode a game plays in: the tier's, unless the testing tab says otherwise. */
 export const modeFor = (o: FindObjectOptions): Mode =>
   o.mode === 'auto' ? F.tiers[o.tier].mode : o.mode;
+
+const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
+  typeof v === 'number' ? v : fallback;
 
 /** How much of a snack's area another one covers. */
 function overlapShare(a: { x: number; y: number }, b: { x: number; y: number }): number {
@@ -85,25 +110,35 @@ function overlapShare(a: { x: number; y: number }, b: { x: number; y: number }):
   return (w * h) / (SNACK_SIZE * SNACK_SIZE);
 }
 
-/** The targets: all the same snack on Tier I; from Tier II a mix of 2 ("2 grapes and 2 oranges"). */
-function pickTargets(rng: RngState, tier: Tier, count: number): Snack[] {
-  const kinds = tier >= F.mixFromTier && count >= 2 ? F.mixKinds : 1;
-  const snacks = shuffle(rng, SNACKS).slice(0, kinds);
-  return Array.from({ length: count }, (_, i) => snacks[Math.floor((i * kinds) / count)]!);
+/** How many kinds of snack a round's targets can be. */
+export function kindsFor(tier: Tier, round: number): number {
+  const k = F.kinds[tier];
+  return round >= k.fromRound ? k.more : k.start;
 }
 
-export function newFindObject(
-  options: FindObjectOptions,
-  order: readonly string[],
-  seed: number,
-): FindObjectState {
-  const rng = seedRng(seed);
-  const mode = modeFor(options);
-  const n = Math.max(1, order.length);
-  const tier = F.tiers[options.tier];
-  const targets = pickTargets(rng, options.tier, n);
-  const others = SNACKS.filter((s) => !targets.includes(s));
-  const distractors = tier.distractors + F.extraDistractorsPerHiker * (n - 1);
+/** How many targets a round asks for: one per hiker still in, plus one more each round. */
+export const targetsFor = (hikersIn: number, round: number): number =>
+  Math.max(1, hikersIn) + F.extraTargetsPerRound * (round - 1);
+
+/** The clock for a round: the extra seconds, plus seconds per target. */
+export const timeFor = (
+  s: Pick<FindObjectState, 'secPerTarget' | 'extraSecPerRound'>,
+  targets: number,
+) => s.extraSecPerRound + s.secPerTarget * targets;
+
+/** Sets up a round: its targets (split as evenly as possible over its kinds), distractors and clock. */
+function startRound(s: FindObjectState, round: number): FindObjectState {
+  const rng = [...s.rng] as RngState;
+  const count = targetsFor(s.line.length, round);
+  const kinds = Math.min(kindsFor(s.tier, round), count);
+  const snacks = shuffle(rng, SNACKS).slice(0, kinds);
+  const targets = Array.from({ length: count }, (_, i) => snacks[Math.floor((i * kinds) / count)]!);
+  const others = SNACKS.filter((x) => !targets.includes(x));
+  const tier = F.tiers[s.tier];
+  const distractors =
+    tier.distractors +
+    F.extraDistractorsPerHiker * Math.max(0, s.line.length - 1) +
+    F.extraDistractorsPerRound * (round - 1);
   const wanted: { snack: Snack; target: boolean }[] = [
     ...targets.map((snack) => ({ snack, target: true })),
     ...Array.from({ length: distractors }, () => ({
@@ -111,8 +146,8 @@ export function newFindObject(
       target: false,
     })),
   ];
-  // Place them: inside the field (and off the edges, except in Windy), overlapping no more than the tier allows.
-  const margin = mode === 'windy' ? 0 : F.edgeMargin;
+  // Inside the field (and off the edges, except in the windy modes), overlapping no more than the tier allows.
+  const margin = isWindy(s.mode) ? 0 : F.edgeMargin;
   const placed: Item[] = [];
   for (const w of shuffle(rng, wanted)) {
     let spot = { x: 0, y: 0 };
@@ -127,29 +162,86 @@ export function newFindObject(
     }
     placed.push({ ...w, x: Math.round(spot.x), y: Math.round(spot.y), found: false });
   }
-  const time = F.timeSec + F.extraSecPerTarget * (n - 1);
+  const time = timeFor(s, count);
   return {
-    tier: options.tier,
-    mode,
-    order: [...order],
+    ...s,
+    rng,
+    round,
     targets,
-    found: 0,
+    found: targets.map(() => false),
     items: placed,
     wind: nextFloat(rng) < 0.5 ? -1 : 1,
     timeTotal: time,
     timeLeft: time,
-    over: false,
-    rng,
+    phase: 'playing',
+    lost: [],
   };
 }
 
+export function newFindObject(
+  options: FindObjectOptions,
+  order: readonly string[],
+  seed: number,
+): FindObjectState {
+  return startRound(
+    {
+      tier: options.tier,
+      mode: modeFor(options),
+      order: [...order],
+      rounds: Math.max(1, Math.round(orAuto(options.rounds, F.rounds))),
+      round: 1,
+      line: [...order],
+      out: {},
+      targets: [],
+      found: [],
+      items: [],
+      wind: 1,
+      secPerTarget: orAuto(options.secPerTarget, F.secPerTarget),
+      extraSecPerRound: orAuto(options.extraSecPerRound, F.extraSecPerRound),
+      timeTotal: 0,
+      timeLeft: 0,
+      phase: 'playing',
+      lost: [],
+      rng: seedRng(seed),
+    },
+    1,
+  );
+}
+
+/** Targets still to find this round. */
+export const leftToFind = (s: FindObjectState): number => s.found.filter((f) => !f).length;
+
+/** The hikers who'd go out if the clock ran out now: one per target left, from the back of the line. */
+export function atRisk(s: FindObjectState): string[] {
+  const n = Math.min(leftToFind(s), s.line.length);
+  return n > 0 ? s.line.slice(-n) : [];
+}
+
 /**
- * Where a snack is `t` seconds after the clock starts. Windy: drifting
- * sideways with a small bob, coming back in on the other side; otherwise
- * where it started.
+ * The round ends: each target still unfound puts one hiker out, from the
+ * back of the line. Then another round, or the end of the game.
+ */
+function endRound(s: FindObjectState): FindObjectState {
+  const lost = atRisk(s);
+  const out = { ...s.out };
+  for (const id of lost) out[id] = s.round;
+  const line = s.line.filter((id) => !lost.includes(id));
+  const over = line.length === 0 || s.round >= s.rounds;
+  return { ...s, out, line, lost, phase: over ? 'over' : 'roundOver' };
+}
+
+/** After a round's result: the next round. */
+export function nextRound(s: FindObjectState): FindObjectState {
+  return s.phase === 'roundOver' ? startRound(s, s.round + 1) : s;
+}
+
+/**
+ * Where a snack is `t` seconds after the round's clock starts. In the windy
+ * modes it drifts sideways with a small bob, coming back in on the other
+ * side; otherwise it stays where it started.
  */
 export function positionAt(s: FindObjectState, item: Item, t: number): { x: number; y: number } {
-  if (s.mode !== 'windy') return { x: item.x, y: item.y };
+  if (!isWindy(s.mode)) return { x: item.x, y: item.y };
   const span = WIDTH + SNACK_SIZE;
   const raw = item.x + s.wind * F.wind.speed * t + SNACK_SIZE;
   const x = (((raw % span) + span) % span) - SNACK_SIZE;
@@ -165,8 +257,8 @@ export function inLight(at: { x: number; y: number }, light: { x: number; y: num
 }
 
 /**
- * The snack under a point (the one drawn on top), or none. In the dark only
- * snacks inside the light count. Snacks already found are gone.
+ * The snack under a point (the one drawn on top), or none. In the dark modes
+ * only snacks inside the light count. Snacks already found are gone.
  */
 export function itemAt(
   s: FindObjectState,
@@ -184,48 +276,58 @@ export function itemAt(
       point.y >= at.y &&
       point.y < at.y + SNACK_SIZE;
     if (!hit) continue;
-    if (s.mode === 'dark' && (!light || !inLight(at, light))) return null;
+    if (isDark(s.mode) && (!light || !inLight(at, light))) return null;
     return i;
   }
   return null;
 }
 
 /**
- * A click or tap on the field. A target: it's found, and the next hiker in
- * line is safe. Anything else under the pointer: it costs 2 seconds.
- * Nothing there: nothing happens.
+ * A click or tap on the field. A target: it's found, and the first unchecked
+ * slot showing that same snack gets the check. Anything else under the
+ * pointer: it costs 2 seconds. Nothing there: nothing happens.
  */
 export function click(
   s: FindObjectState,
   point: { x: number; y: number },
   t: number,
   light?: { x: number; y: number },
-): { state: FindObjectState; outcome: 'found' | 'wrong' | 'none'; index: number | null } {
-  if (s.over) return { state: s, outcome: 'none', index: null };
+): {
+  state: FindObjectState;
+  outcome: 'found' | 'wrong' | 'none';
+  index: number | null;
+  slot?: number;
+} {
+  if (s.phase !== 'playing') return { state: s, outcome: 'none', index: null };
   const i = itemAt(s, point, t, light);
   if (i === null) return { state: s, outcome: 'none', index: null };
   const item = s.items[i]!;
   if (!item.target) {
     const timeLeft = Math.max(0, s.timeLeft - F.wrongClickSec);
-    return { state: { ...s, timeLeft, over: timeLeft <= 0 }, outcome: 'wrong', index: i };
+    const next = { ...s, timeLeft };
+    return { state: timeLeft <= 0 ? endRound(next) : next, outcome: 'wrong', index: i };
   }
+  const slot = s.targets.findIndex((snack, k) => snack === item.snack && !s.found[k]);
+  const found = s.found.map((f, k) => f || k === slot);
   const items = s.items.map((it, k) => (k === i ? { ...it, found: true } : it));
-  const found = s.found + 1;
+  const next = { ...s, items, found };
   return {
-    state: { ...s, items, found, over: found >= s.targets.length },
+    state: found.every(Boolean) ? endRound(next) : next,
     outcome: 'found',
     index: i,
+    slot,
   };
 }
 
-/** Time passes on the clock; at 0 it's over. */
+/** Time passes on the clock; at 0 the round ends. */
 export function tick(s: FindObjectState, seconds: number): FindObjectState {
-  if (s.over) return s;
+  if (s.phase !== 'playing') return s;
   const timeLeft = Math.max(0, s.timeLeft - seconds);
-  return { ...s, timeLeft, over: timeLeft <= 0 };
+  const next = { ...s, timeLeft };
+  return timeLeft <= 0 ? endRound(next) : next;
 }
 
-/** With k targets found, the first k hikers in line pass and the rest fail. */
+/** Hikers still in at the end pass; hikers who went out fail. */
 export function result(s: FindObjectState): MinigameResult {
-  return passFailResult(s.order, (id) => s.order.indexOf(id) < s.found);
+  return passFailResult(s.order, (id) => s.out[id] === undefined);
 }

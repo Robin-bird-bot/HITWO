@@ -143,9 +143,23 @@ describe('the minigame list', () => {
   it('the puzzle games: Tier (I, II, III), Hikers, and their overrides, where Auto uses the tier', () => {
     const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
     expect(ids(TRAILDLE)).toEqual(['tier', 'hikers', 'signs', 'timer']);
-    expect(ids(FIND_OBJECT)).toEqual(['tier', 'hikers', 'mode']);
+    expect(ids(FIND_OBJECT)).toEqual([
+      'tier',
+      'hikers',
+      'mode',
+      'rounds',
+      'secPerTarget',
+      'extraSec',
+    ]);
     expect(ids(REMEMBER_PATH)).toEqual(['tier', 'hikers']);
-    expect(ids(FIND_PATH)).toEqual(['tier', 'hikers', 'fog']);
+    expect(ids(FIND_PATH)).toEqual(['tier', 'hikers', 'fog', 'hide']);
+    // Auto-or-number settings: "auto" by default, numbers kept in range.
+    expect(defaultSettings(FIND_OBJECT)).toMatchObject({ rounds: 'auto', secPerTarget: 'auto' });
+    expect(cleanSettings(FIND_OBJECT, { rounds: 9, extraSec: -3 }, TEST_HIKERS)).toMatchObject({
+      rounds: 5,
+      extraSec: 0,
+      secPerTarget: 'auto',
+    });
     expect(defaultSettings(TRAILDLE)).toEqual({
       tier: 1,
       hikers: ['finn', 'ellie', 'mom'],

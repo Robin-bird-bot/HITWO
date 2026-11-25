@@ -1,35 +1,42 @@
 /**
  * Find the Object on the GPS (docs/design/11-minigames-puzzles.md, section 3;
- * docs/mockups/minigames/puzzles/3-find-object-still.png to 5-…-dark.png), in
- * scene units (320 × 240).
+ * docs/mockups/minigames/puzzles/3- to 5-find-object-*.png, 11-…-dark-windy.png
+ * and 12-…-round-card.png), in scene units (320 × 240).
  *
- * A card names the targets for 1.5 s, then the field appears and the clock
- * starts. Click or tap a target: it pops, its FIND slot gets a check, and
- * the next hiker in line is safe. A wrong click costs 2 s (the snack flashes
- * red, the clock shakes). It ends when every target is found or time runs
- * out: the first k hikers in line pass.
+ * Each round opens with a card ("ROUND 2 OF 3", "FIND 4", the snacks), then
+ * the field appears and the clock starts. Click or tap a target: it pops,
+ * and a slot showing that same snack gets a check. A wrong click costs 2 s
+ * (the snack flashes red, the clock shakes). When the round ends, each
+ * target still unfound puts one hiker out from the back of the line; the
+ * line shows who's at risk right now.
  *
- * Still, Windy (everything drifts sideways and wraps around, with a small
- * bob and a few wind streaks) or Dark (a flashlight follows the pointer; on
- * touch it follows the finger, and a tap picks what's under it).
+ * Still, Windy (everything drifts and wraps around, with wind streaks), Dark
+ * (a flashlight follows the pointer; on touch it follows the finger and a
+ * tap picks what's under it), or Dark + windy.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
+  atRisk,
   click,
+  isDark,
+  isWindy,
+  leftToFind,
   newFindObject,
+  nextRound,
   positionAt,
   result,
   SNACK_SIZE,
   tick,
   type Mode,
 } from '../../../minigames/findObject/logic';
+import type { MinigameSettings } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
-import { toScene } from '../sceneCoords';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
+import { toScene } from '../sceneCoords';
 import ui from '../gpsUi.module.css';
 import styles from './FindObject.module.css';
 
@@ -40,7 +47,19 @@ const MODE_LINE: Record<Mode, string> = {
   still: 'Still',
   windy: 'Windy: everything drifts sideways',
   dark: 'Dark: a flashlight follows the pointer',
+  darkWindy: 'Dark + windy',
 };
+const MODES: readonly Mode[] = ['still', 'windy', 'dark', 'darkWindy'];
+
+/** A number setting, or "auto". */
+const numberOr = (settings: MinigameSettings, id: string): 'auto' | number => {
+  const v = settings[id];
+  return typeof v === 'number' ? v : 'auto';
+};
+
+/** "Finn", "Finn and Mom", "Finn, Mom and Ellie". */
+const listNames = (names: readonly string[]) =>
+  names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 
 export function FindObject({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const reduced = useReducedMotion();
@@ -50,16 +69,16 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
     newFindObject(
       {
         tier: tierOf(settings),
-        mode:
-          modeSetting === 'still' || modeSetting === 'windy' || modeSetting === 'dark'
-            ? modeSetting
-            : 'auto',
+        mode: (MODES as readonly string[]).includes(modeSetting) ? (modeSetting as Mode) : 'auto',
+        rounds: numberOr(settings, 'rounds'),
+        secPerTarget: numberOr(settings, 'secPerTarget'),
+        extraSecPerRound: numberOr(settings, 'extraSec'),
       },
       hikers.map((h) => h.id),
       seed,
     ),
   );
-  /** The intro card, then the field: seconds since the clock started. */
+  /** The round's card, then the field: seconds since the round's clock started. */
   const [intro, setIntro] = useState(!still);
   const [t, setT] = useState(0);
   const [light, setLight] = useState<{ x: number; y: number }>({ x: 160, y: 120 });
@@ -68,16 +87,17 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
   const [shake, setShake] = useState(0);
   const press = useRef<{ x: number; y: number } | null>(null);
   const reported = useRef(false);
+  const byId = (id: string) => hikers.find((h) => h.id === id)!;
 
-  // The intro card, then the clock.
+  // The round's card, then the clock.
   useEffect(() => {
     if (!intro) return;
     const id = window.setTimeout(() => setIntro(false), F.introMs);
     return () => window.clearTimeout(id);
   }, [intro]);
 
-  // The clock (and the wind): a frame loop while playing.
-  const running = !intro && !game.over && !still;
+  // The clock (and the wind): a frame loop while a round is on.
+  const running = !intro && game.phase === 'playing' && !still;
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -91,20 +111,33 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
     return () => cancelAnimationFrame(frame);
   }, [running]);
 
+  // A round ended: a moment to see who went out, then the next round's card.
+  useEffect(() => {
+    if (game.phase !== 'roundOver' || still) return;
+    const id = window.setTimeout(() => {
+      setGame((s) => nextRound(s));
+      setT(0);
+      setPopped([]);
+      setFlash(null);
+      setIntro(true);
+    }, 1800);
+    return () => window.clearTimeout(id);
+  }, [game.phase, still]);
+
   // The end: a moment to see it, then the results.
   useEffect(() => {
-    if (!game.over || still || reported.current) return;
+    if (game.phase !== 'over' || still || reported.current) return;
     const id = window.setTimeout(() => {
       reported.current = true;
       onDone(result(game));
-    }, 700);
+    }, 1800);
     return () => window.clearTimeout(id);
   }, [game, still, onDone]);
 
   const pickAt = (clientX: number, clientY: number) => {
     if (!running) return;
     const p = toScene(sceneRef.current, clientX, clientY);
-    const out = click(game, p, t, game.mode === 'dark' ? p : undefined);
+    const out = click(game, p, t, isDark(game.mode) ? p : undefined);
     setGame(out.state);
     if (out.outcome === 'found' && out.index !== null) setPopped((list) => [...list, out.index!]);
     if (out.outcome === 'wrong' && out.index !== null) {
@@ -124,38 +157,47 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
     const start = press.current;
     press.current = null;
     if (!start) return;
-    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < F.light.tapPx)
+    if (Math.hypot(e.clientX - start.x, e.clientY - start.y) < F.light.tapPx) {
       pickAt(e.clientX, e.clientY);
+    }
   };
 
-  const dark = game.mode === 'dark';
+  const dark = isDark(game.mode);
   const radius = F.light.diameter / 2;
-  const kinds = [...new Set(game.targets)];
+  const left = leftToFind(game);
+  const risk = game.phase === 'playing' ? atRisk(game) : [];
+  const inGame = game.line.length;
+  const riskLine =
+    left === 0
+      ? 'All found'
+      : `${left} left to find: ${risk.length === inGame ? `all ${inGame}` : risk.length} hiker${risk.length === 1 ? '' : 's'} at risk`;
+  const showField = !intro && game.phase === 'playing';
 
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div
         className={styles.field}
         data-mode={game.mode}
+        data-dark={dark || undefined}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
       >
-        {game.mode === 'windy' && !intro && (
+        {isWindy(game.mode) && showField && (
           <div className={styles.streaks} data-wind={game.wind} aria-hidden="true">
             {[40, 78, 112, 150, 188].map((y, i) => (
               <span key={y} style={{ top: y, animationDelay: `${-i * 1.3}s` }} />
             ))}
           </div>
         )}
-        {!intro &&
+        {showField &&
           game.items.map((item, i) => {
             const at = positionAt(game, item, t);
             const gone = item.found && (reduced || !popped.includes(i));
             if (gone) return null;
             return (
               <img
-                key={i}
+                key={`${game.round}-${i}`}
                 className={`${ui.sprite} ${styles.snack}`}
                 data-pop={item.found || undefined}
                 src={snack(item.snack)}
@@ -166,7 +208,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
               />
             );
           })}
-        {flash && !intro && game.items[flash.index] && (
+        {flash && showField && game.items[flash.index] && (
           <span
             key={flash.n}
             className={styles.wrong}
@@ -178,7 +220,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
             aria-hidden="true"
           />
         )}
-        {dark && !intro && (
+        {dark && showField && (
           <div
             className={styles.dark}
             style={{
@@ -189,14 +231,17 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
         )}
       </div>
 
-      {/* FIND: a slot per target, checked as they're found. */}
+      {/* FIND: a slot per target, checked when that snack is found. */}
       <div className={`${ui.box} ${styles.find}`}>
         <span className={styles.findWord}>FIND</span>
         {game.targets.map((name, i) => (
-          <span key={i} className={styles.slot} data-found={i < game.found || undefined}>
+          <span key={i} className={styles.slot} data-found={game.found[i] || undefined}>
             <img className={ui.sprite} src={snack(name)} alt={name} draggable={false} />
           </span>
         ))}
+      </div>
+      <div className={`${ui.box} ${styles.roundBox}`}>
+        R {game.round}/{game.rounds}
       </div>
       <div
         key={shake}
@@ -207,38 +252,74 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
         {clock(game.timeLeft)}
       </div>
 
-      {/* The line: each find keeps the next hiker safe. */}
+      {/* The line, front first; the ones at risk right now are marked. */}
       <div className={`${ui.box} ${styles.line}`}>
-        {hikers.map((h, i) => (
-          <HikerToken
-            key={h.id}
-            hiker={h}
-            size={14}
-            state={
-              i < game.found ? 'safe' : game.over ? 'out' : i === game.found ? 'current' : 'waiting'
-            }
-          />
+        {game.order.map((id) => (
+          <span key={id} className={styles.lineToken}>
+            <HikerToken
+              hiker={byId(id)}
+              size={14}
+              state={game.out[id] !== undefined ? 'out' : 'waiting'}
+            />
+            {risk.includes(id) && (
+              <span className={styles.risk} aria-label="at risk">
+                !
+              </span>
+            )}
+          </span>
         ))}
       </div>
-      <p className={`${ui.muted} ${styles.note}`}>In order: each find keeps the next hiker safe</p>
+      {game.phase === 'playing' && !intro && (
+        <p className={`${ui.muted} ${styles.note}`} style={{ bottom: 19 }}>
+          {riskLine}
+        </p>
+      )}
+      <p className={`${ui.muted} ${styles.note}`}>
+        Each target left at the end puts one hiker out, from the back
+      </p>
       <p className={`${ui.muted} ${styles.tier}`}>
         Tier {ROMAN[game.tier]} · {MODE_LINE[game.mode]}
       </p>
 
-      {intro && (
+      {intro && game.phase === 'playing' && (
         <div className={styles.intro} role="status">
           <div className={`${ui.box} ${styles.introCard}`}>
-            <span>FIND</span>
-            {kinds.map((name) => (
-              <span key={name} className={styles.introKind}>
-                {game.targets.filter((x) => x === name).length} ×
-                <img className={ui.sprite} src={snack(name)} alt={name} draggable={false} />
-              </span>
-            ))}
+            <span className={styles.introTitle}>
+              ROUND {game.round} OF {game.rounds}
+            </span>
+            <span className={styles.introFind}>FIND {game.targets.length}</span>
+            <span className={styles.introSnacks}>
+              {game.targets.map((name, i) => (
+                <img key={i} className={ui.sprite} src={snack(name)} alt={name} draggable={false} />
+              ))}
+            </span>
+            {game.round > 1 && <span className={styles.introSmall}>One more than last round</span>}
+            <span className={styles.introSmall}>
+              {listNames(game.line.map((id) => byId(id).name))}{' '}
+              {game.line.length === 1 ? 'is' : 'are'} still in
+            </span>
           </div>
         </div>
       )}
-      <span className={styles.srOnly}>{`${game.found} of ${game.targets.length} found`}</span>
+      {(game.phase === 'roundOver' || game.phase === 'over') && (
+        <div className={styles.intro} role="status">
+          <div className={`${ui.box} ${styles.introCard}`}>
+            <span className={styles.introTitle}>
+              {game.lost.length
+                ? `${game.targets.length - game.found.filter(Boolean).length} missed`
+                : 'All found'}
+            </span>
+            <span className={styles.introSmall}>
+              {game.lost.length
+                ? `${listNames(game.lost.map((id) => byId(id).name))} ${game.lost.length === 1 ? 'is' : 'are'} out`
+                : 'Everyone stays in'}
+            </span>
+          </div>
+        </div>
+      )}
+      <span
+        className={styles.srOnly}
+      >{`${game.found.filter(Boolean).length} of ${game.targets.length} found`}</span>
     </PixelScreen>
   );
 }

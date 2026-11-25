@@ -23,10 +23,11 @@ import {
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
+  BELOW,
   currentHiker,
+  isNext,
   newRememberPath,
   nextHiker,
-  nextTo,
   result,
   sameTile,
   step,
@@ -59,6 +60,24 @@ function rangerLook(
   return { file: dr > 0 ? 'ranger-down.png' : 'ranger-up.png', mirror: frame % 2 === 1 };
 }
 
+/**
+ * The ranger's route in tile units (rows = the strip just below the grid):
+ * from below the middle, along under the grid to the start tile's column,
+ * up into it, along the path, and off the top edge.
+ */
+function rangerRoute(path: readonly Tile[], cols: number, rows: number): Tile[] {
+  const start = path[0];
+  if (!start) return [];
+  const route: Tile[] = [{ c: (cols - 1) / 2, r: rows }];
+  let c = route[0]!.c;
+  while (c !== start.c) {
+    c = start.c > c ? Math.floor(c) + 1 : Math.ceil(c) - 1;
+    route.push({ c, r: rows });
+  }
+  route.push(...path, { c: path.at(-1)!.c, r: -1 });
+  return route;
+}
+
 export function RememberPath({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const tier = tierOf(settings);
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -69,8 +88,10 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       seed,
     ),
   );
-  /** The ranger's walk: which tile he's on (−1 before he appears; past the end, he's off the top). */
+  /** The ranger's walk along his route (−1 before he appears; past the end, he's gone). */
   const [walk, setWalk] = useState(still ? 3 : -1);
+  /** Below the grid: the column the hiker's token is under (the middle to start with). */
+  const [belowCol, setBelowCol] = useState((game.cols - 1) / 2);
   const [wrong, setWrong] = useState<{ tile: Tile; n: number } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
@@ -84,8 +105,16 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
     return c >= 0 && c < game.cols && r >= 0 && r < game.rows ? { c, r } : null;
   };
 
-  // Watch: the ranger walks the path one tile at a time, then off the top.
+  /**
+   * The ranger's route: he appears below the grid's middle, walks along under
+   * it to his column, steps up into the start tile, walks the path, and walks
+   * off the top edge.
+   */
+  const route = rangerRoute(game.path, game.cols, game.rows);
+
+  // Watch: the ranger walks his route one step at a time.
   const watching = game.phase === 'watch' && !still;
+  const steps = route.length;
   useEffect(() => {
     if (!watching) return;
     const stepMs = R.tiers[tier].stepMs;
@@ -93,13 +122,13 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
     const id = window.setInterval(() => {
       i += 1;
       setWalk(i);
-      if (i > game.path.length + 1) {
+      if (i > steps) {
         window.clearInterval(id);
         setGame((s) => watched(s));
       }
     }, stepMs);
     return () => window.clearInterval(id);
-  }, [watching, game.path, tier]);
+  }, [watching, game.path, steps, tier]);
 
   /** A hiker made it or is out: a moment to read it, then the next hiker (or the results). */
   const finishHiker = (text: string, after: typeof game) => {
@@ -108,6 +137,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       const next = nextHiker(after);
       setMessage(null);
       setWalk(-1);
+      setBelowCol((next.cols - 1) / 2);
       setGame(next);
       if (next.phase === 'over') onDone(result(next));
     }, 900);
@@ -130,17 +160,24 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
     if (out.failed) finishHiker(`${name} is out`, out.state);
   };
 
-  // The arrow keys.
+  // The arrow keys. Below the grid, ← → slide the token along under it and ↑ steps in.
   useEffect(() => {
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
-      const at = game.path[game.pos];
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[
         e.key
       ];
-      if (!d || !at || game.phase !== 'repeat') return;
+      if (!d || game.phase !== 'repeat') return;
       e.preventDefault();
-      tryStep({ c: at.c + d[0]!, r: at.r + d[1]! });
+      if (game.pos === BELOW) {
+        if (d[0]) {
+          const to = d[0] < 0 ? Math.ceil(belowCol) - 1 : Math.floor(belowCol) + 1;
+          setBelowCol(Math.max(0, Math.min(game.cols - 1, to)));
+        } else if (d[1]! < 0) tryStep({ c: Math.round(belowCol), r: game.rows - 1 });
+        return;
+      }
+      const at = game.path[game.pos];
+      if (at) tryStep({ c: at.c + d[0]!, r: at.r + d[1]! });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -150,27 +187,18 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
   const onMove = (e: ReactPointerEvent) => {
     if (dragging !== e.pointerId) return;
     const tile = tileAt(toScene(sceneRef.current, e.clientX, e.clientY));
-    const at = game.path[game.pos];
-    if (tile && at && !sameTile(tile, at) && nextTo(tile, at)) tryStep(tile);
+    if (tile && isNext(game, tile)) tryStep(tile);
   };
   const onTileUp = (tile: Tile) => {
     if (dragging === null) tryStep(tile);
   };
 
   const center = (t: Tile) => ({ x: left + t.c * TILE + TILE / 2, y: top + t.r * TILE + TILE / 2 });
-  const start = game.path[0];
-  // The ranger: on his tile, or one row above the top as he walks off.
-  const rangerTile =
-    walk < 0
-      ? undefined
-      : walk < game.path.length
-        ? game.path[walk]
-        : game.path.at(-1) && { c: game.path.at(-1)!.c, r: -1 };
-  const look = rangerTile && rangerLook(game.path[walk - 1] ?? game.path.at(-1), rangerTile, walk);
+  // The ranger: on his route, and gone once he has walked off the top.
+  const rangerTile = walk >= 0 && walk < route.length ? route[walk] : route.at(-1);
+  const look = rangerTile && rangerLook(route[walk - 1] ?? route[0], rangerTile, Math.max(0, walk));
   const prints =
-    game.phase === 'watch'
-      ? [walk - 1, walk - 2].filter((i) => i >= 0 && i < game.path.length)
-      : [];
+    game.phase === 'watch' ? [walk - 1, walk - 2].filter((i) => i >= 0 && i < route.length) : [];
   const lit = game.phase === 'repeat' ? game.path.slice(0, game.pos + 1) : [];
   const at = game.path[game.pos];
   const done = (id: string): TokenState =>
@@ -191,7 +219,9 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       {game.phase === 'repeat' ? (
         <>
           <p className={`${ui.text} ${styles.lines}`}>
-            Drag along the trail, or tap one tile at a time.
+            {game.pos === BELOW
+              ? `${who ? byId(who).name : ''} starts below the grid. Step into the bottom-row tile where the ranger came in.`
+              : 'Drag along the trail, or tap one tile at a time.'}
           </p>
           <p className={`${ui.text} ${styles.name}`}>{who ? byId(who).name : ''}</p>
           <span className={styles.strikes}>
@@ -203,7 +233,9 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
         </>
       ) : (
         <>
-          <p className={`${ui.text} ${styles.lines}`}>The ranger walks the trail. Remember it.</p>
+          <p className={`${ui.text} ${styles.lines}`}>
+            The ranger comes in from below, walks the trail and walks off the top. Remember it.
+          </p>
           <p className={`${ui.text} ${styles.tierLine}`}>
             Tier {ROMAN[tier]}
             <br />
@@ -266,14 +298,18 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
             );
           }),
         )}
-        {start && game.phase === 'watch' && (
-          <span
-            className={styles.startMark}
-            style={{ left: start.c * TILE + 3, top: start.r * TILE + 3 }}
-          />
-        )}
+        {game.phase === 'repeat' &&
+          game.pos === BELOW &&
+          !message &&
+          Array.from({ length: game.cols }, (_, c) => (
+            <span
+              key={`b${c}`}
+              className={styles.startMark}
+              style={{ left: c * TILE + 3, top: (game.rows - 1) * TILE + 3 }}
+            />
+          ))}
         {prints.map((i, k) => {
-          const t = game.path[i]!;
+          const t = route[i]!;
           return (
             <img
               key={`p${i}`}
@@ -297,7 +333,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
         )}
       </div>
 
-      {rangerTile && look && game.phase === 'watch' && (
+      {rangerTile && look && game.phase === 'watch' && walk >= 0 && (
         <img
           className={`${ui.sprite} ${styles.ranger}`}
           src={ranger(look.file)}
@@ -308,16 +344,23 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
               left: left + rangerTile.c * TILE,
               top: top + rangerTile.r * TILE,
               transform: look.mirror ? 'scaleX(-1)' : undefined,
-              opacity: walk > game.path.length ? 0 : 1,
+              opacity: walk >= route.length - 1 ? 0 : 1,
               '--step-ms': `${R.tiers[tier].stepMs}ms`,
             } as CSSProperties
           }
         />
       )}
-      {game.phase === 'repeat' && at && who && (
+      {game.phase === 'repeat' && who && (at || game.pos === BELOW) && (
         <span
           className={styles.token}
-          style={{ left: center(at).x - 10, top: center(at).y - 10 }}
+          style={
+            at
+              ? { left: center(at).x - 10, top: center(at).y - 10 }
+              : {
+                  left: left + belowCol * TILE + TILE / 2 - 10,
+                  top: top + game.rows * TILE + 6,
+                }
+          }
           onPointerDown={(e) => {
             (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
             setDragging(e.pointerId);

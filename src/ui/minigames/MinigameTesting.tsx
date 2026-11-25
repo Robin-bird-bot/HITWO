@@ -121,7 +121,13 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
 
             <div className={styles.settings}>
               {active.settings
-                .filter((s) => s.kind === 'range' || s.kind === 'choice' || s.kind === 'pick')
+                .filter(
+                  (s) =>
+                    s.kind === 'range' ||
+                    s.kind === 'choice' ||
+                    s.kind === 'pick' ||
+                    s.kind === 'autoRange',
+                )
                 .map((s) => (
                   <Setting key={s.id} setting={s} settings={settings} onChange={update} />
                 ))}
@@ -186,6 +192,40 @@ function Setting({
 }) {
   if (s.kind === 'hikers' || s.kind === 'style') return null;
   const given = settings[s.id];
+  if (s.kind === 'autoRange') {
+    // Auto, then min to max: − below the minimum goes back to Auto.
+    const step = s.step ?? 1;
+    const auto = typeof given !== 'number';
+    const value = auto ? null : given;
+    const set = (v: number | 'auto') => onChange({ ...settings, [s.id]: v });
+    return (
+      <div className={styles.setting}>
+        <span className={styles.label}>{s.label.toUpperCase()}</span>
+        <div className={styles.stepper} role="group" aria-label={s.label}>
+          <button
+            type="button"
+            aria-label={`Less ${s.label.toLowerCase()}`}
+            disabled={auto}
+            onClick={() => set(value === null || value - step < s.min ? 'auto' : value - step)}
+          >
+            −
+          </button>
+          <span aria-live="polite" data-auto={auto || undefined}>
+            {auto ? 'AUTO' : value}
+          </span>
+          <button
+            type="button"
+            aria-label={`More ${s.label.toLowerCase()}`}
+            disabled={value !== null && value >= s.max}
+            onClick={() => set(value === null ? s.min : Math.min(s.max, value + step))}
+          >
+            +
+          </button>
+        </div>
+        <span className={styles.hint}>{s.hint}</span>
+      </div>
+    );
+  }
   if (s.kind === 'pick') {
     const value = typeof given === 'string' ? given : s.default;
     return (

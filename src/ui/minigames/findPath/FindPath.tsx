@@ -20,6 +20,7 @@ import {
   isVisible,
   key,
   knownTrailEnd,
+  trailTo,
   newFindPath,
   pick,
   result,
@@ -44,18 +45,21 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
   const reduced = useReducedMotion();
   const sceneRef = useRef<HTMLDivElement>(null);
   const fogSetting = pickOf(settings, 'fog');
+  const hideSetting = pickOf(settings, 'hide');
   const [game, setGame] = useState(() =>
     newFindPath(
       {
         tier: tierOf(settings),
         fog: fogSetting === 'on' || fogSetting === 'off' ? fogSetting : 'auto',
+        hide: hideSetting === 'everything' ? 'everything' : 'trail',
       },
       hikers.map((h) => h.id),
       seed,
     ),
   );
-  /** Where the token is drawn: it walks the known trail at the start of a turn. */
-  const [shown, setShown] = useState(game.pos);
+  /** Where the token is drawn, along the trail it has walked (it walks the known trail at the start of a turn). */
+  const walked = trailTo(game, game.at);
+  const [shown, setShown] = useState(walked.length - 1);
   const [bang, setBang] = useState<Tile | null>(null);
   const [energy, setEnergy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -66,7 +70,7 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
   const who = currentHiker(game);
   const left = 312 - game.cols * TILE;
   const top = (240 - game.rows * TILE) / 2 + 4;
-  const busy = shown !== game.pos || game.over || still;
+  const busy = shown !== walked.length - 1 || game.over || still;
 
   // The end: a moment to see it, then the results.
   useEffect(() => {
@@ -99,6 +103,8 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
     if (busy) return;
     const out = pick(game, tile);
     if (out.outcome === 'ignored') return;
+    // The self-check: a trail tile must never show as trees (Phase 10.8 step 2b).
+    if (out.fixed) console.error('Find the Path: the way forward was marked as trees; fixed.');
     const next = out.state;
     setGame(next);
     if (next.revealed && next.revealed.pick === next.picks) {
@@ -110,9 +116,10 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
       setEnergy(true);
       window.setTimeout(() => setEnergy(false), 1600);
     }
-    // A new turn: the next hiker starts at the trailhead and walks the known trail.
-    if (currentHiker(next) !== who || next.over) walkTo(0, next.pos);
-    else setShown(next.pos);
+    // A new turn: the next hiker starts at the trailhead (and walks the trail, once someone is through).
+    const end = trailTo(next, next.at).length - 1;
+    if (currentHiker(next) !== who || next.over) walkTo(0, end);
+    else setShown(end);
   };
 
   // ← ↑ → pick the tile that way.
@@ -120,10 +127,9 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
-      const at = game.trail[game.pos];
-      if (!d || !at) return;
+      if (!d) return;
       e.preventDefault();
-      tryPick({ c: at.c + d[0]!, r: at.r + d[1]! });
+      tryPick({ c: game.at.c + d[0]!, r: game.at.r + d[1]! });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -138,12 +144,12 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
 
   const open = busy ? [] : choices(game);
   const center = (t: Tile) => ({ x: t.c * TILE + TILE / 2, y: t.r * TILE + TILE / 2 });
-  const at = game.trail[Math.min(shown, game.trail.length - 1)]!;
+  const at = walked[Math.min(shown, walked.length - 1)] ?? game.at;
   const visible = (t: Tile) => isVisible(game, t);
-  // The trail line: along the known trail from the trailhead; in fog, only to tiles still visible.
-  const end = knownTrailEnd(game);
-  const segments = game.trail.slice(1, end + 1).flatMap((b, i) => {
-    const a = game.trail[i]!;
+  // The trail line: along the uncovered trail from the trailhead; in fog, only to tiles still visible.
+  const known = trailTo(game, knownTrailEnd(game));
+  const segments = known.slice(1).flatMap((b, i) => {
+    const a = known[i]!;
     return !game.fog || visible(b) ? [{ a, b, i }] : [];
   });
   const tokenState = (id: string): TokenState =>
@@ -155,7 +161,15 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
           ? 'current'
           : 'waiting';
   const finished = game.order.filter((id) => !game.line.includes(id));
-  const note = hikers.reduce((n, h) => n.replaceAll(h.id, h.name), game.note).toUpperCase();
+  const named = hikers.reduce((n, h) => n.replaceAll(h.id, h.name), game.note);
+  const note = (
+    game.justHidden && who ? `${named}. ${byId(who).name} starts at the trailhead.` : named
+  ).toUpperCase();
+  const rule = game.justHidden
+    ? game.hide === 'everything'
+      ? 'Everything is hidden again.'
+      : 'The trail is hidden again. The trees stay.'
+    : 'The trail goes up, left or right. Never down.';
 
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
@@ -209,7 +223,7 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
         className={`${ui.text} ${styles.rule}`}
         style={{ left, width: game.cols * TILE, top: top - 7 }}
       >
-        The trail goes up, left or right. Never down.
+        {rule}
       </p>
       <div
         className={styles.grid}

@@ -87,6 +87,26 @@ const HIKERS: MinigameSetting = {
   default: B.hikers.default,
 };
 
+/** A number setting that can also be "Auto" (the tier's or default value). */
+const autoRange = (
+  id: string,
+  label: string,
+  min: number,
+  max: number,
+  autoValue: number,
+  unit: string,
+  step = 1,
+): MinigameSetting => ({
+  kind: 'autoRange',
+  id,
+  label,
+  min,
+  max,
+  step,
+  autoValue,
+  hint: `Auto (${autoValue}${unit}), or ${min} to ${max}${unit}`,
+});
+
 /** An override: "Auto" uses the tier's value. */
 const override = (
   id: string,
@@ -141,7 +161,25 @@ export const FIND_OBJECT: MinigameInfo = {
       ['still', 'Still'],
       ['windy', 'Windy'],
       ['dark', 'Dark'],
+      ['darkWindy', 'Dark + windy'],
     ]),
+    autoRange('rounds', 'Rounds', 1, 5, BALANCE.minigames.findObject.rounds, ''),
+    autoRange(
+      'secPerTarget',
+      'Seconds per target',
+      1,
+      8,
+      BALANCE.minigames.findObject.secPerTarget,
+      ' s',
+    ),
+    autoRange(
+      'extraSec',
+      'Extra seconds per round',
+      0,
+      20,
+      BALANCE.minigames.findObject.extraSecPerRound,
+      ' s',
+    ),
   ],
 };
 
@@ -162,7 +200,21 @@ export const FIND_PATH: MinigameInfo = {
   description: 'Take turns finding the hidden trail through the forest.',
   status: 'ready',
   lineUp: true,
-  settings: [TIER, HIKERS, override('fog', 'Fog', ON_OFF)],
+  settings: [
+    TIER,
+    HIKERS,
+    override('fog', 'Fog', ON_OFF),
+    {
+      kind: 'pick',
+      id: 'hide',
+      label: 'Hide after a run-out',
+      options: [
+        { id: 'trail', label: 'Trail only' },
+        { id: 'everything', label: 'Everything' },
+      ],
+      default: 'trail',
+    },
+  ],
 };
 
 const soon = (id: string, name: string, baseGame: string): MinigameInfo => ({
@@ -192,7 +244,9 @@ export const MINIGAME_BY_ID: ReadonlyMap<string, MinigameInfo> = new Map(
 
 /** Each setting at its default. */
 export function defaultSettings(info: MinigameInfo): MinigameSettings {
-  return Object.fromEntries(info.settings.map((s) => [s.id, s.default]));
+  return Object.fromEntries(
+    info.settings.map((s) => [s.id, s.kind === 'autoRange' ? 'auto' : s.default]),
+  );
 }
 
 /**
@@ -215,6 +269,12 @@ function cleanOne(
   value: unknown,
   allowedHikers: readonly string[],
 ): MinigameSettingValue {
+  if (s.kind === 'autoRange') {
+    if (value === 'auto' || typeof value !== 'number' || !Number.isFinite(value)) return 'auto';
+    const step = s.step ?? 1;
+    const snapped = s.min + Math.round((value - s.min) / step) * step;
+    return Math.min(s.max, Math.max(s.min, snapped));
+  }
   if (s.kind === 'style' || s.kind === 'pick') {
     return typeof value === 'string' && s.options.some((o) => o.id === value) ? value : s.default;
   }

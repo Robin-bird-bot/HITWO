@@ -1099,33 +1099,53 @@ export const BALANCE = {
       twoCodeExtraGuesses: 1,
       /** The testing tab's Timer "On" on a tier without a timer (Tier I): my guess. */
       timerOnSec: 180,
+      /**
+       * Fitting the boards (fixes update): small signs up to this wide, rows up
+       * to this tall and never shorter than this (the board scrolls instead);
+       * the big signs shrink to this for 7 or 8 signs (scene units).
+       */
+      fit: { maxSign: 16, maxRow: 13, minRow: 9, bigSignScale: 0.85, bigSignsFrom: 7 },
     },
 
     /** Find the Object: find the named trail snacks in a crowd. */
     findObject: {
       tiers: {
-        1: { mode: 'still', distractors: 14, overlap: 0 },
-        2: { mode: 'windy', distractors: 20, overlap: 0.25 },
-        3: { mode: 'dark', distractors: 24, overlap: 0.25 },
+        1: { mode: 'still', distractors: 16, overlap: 0 },
+        2: { mode: 'windy', distractors: 22, overlap: 0.25 },
+        3: { mode: 'darkWindy', distractors: 26, overlap: 0.25 },
       } as Readonly<
         Record<
           1 | 2 | 3,
-          { mode: 'still' | 'windy' | 'dark'; distractors: number; overlap: number }
+          {
+            mode: 'still' | 'windy' | 'dark' | 'darkWindy';
+            distractors: number;
+            overlap: number;
+          }
         >
       >,
-      /** More distractors for each hiker after the first. */
+      /** Rounds in a game (testing tab: 1 to 5); each later round asks for this many more targets. */
+      rounds: 3,
+      extraTargetsPerRound: 1,
+      /** More distractors for each hiker after the first, and for each round after the first. */
       extraDistractorsPerHiker: 3,
-      /** Seconds on the clock, plus this many for each target after the first. */
-      timeSec: 10,
-      extraSecPerTarget: 4,
+      extraDistractorsPerRound: 4,
+      /**
+       * How many kinds of snack the targets can be: `start` at first, then
+       * `more` from round `fromRound`.
+       */
+      kinds: {
+        1: { start: 1, more: 2, fromRound: 2 },
+        2: { start: 2, more: 3, fromRound: 3 },
+        3: { start: 2, more: 3, fromRound: 3 },
+      } as Readonly<Record<1 | 2 | 3, { start: number; more: number; fromRound: number }>>,
+      /** The clock each round: these seconds, plus these for each target (testing tab: 0 to 20, and 1 to 8). */
+      extraSecPerRound: 3,
+      secPerTarget: 3,
       /** A wrong click costs this many seconds. */
       wrongClickSec: 2,
-      /** The card naming the targets shows this long before the clock starts. */
+      /** The card naming each round's targets shows this long before the clock starts. */
       introMs: 1500,
-      /** From Tier II the targets can be a mix of this many snacks. */
-      mixFromTier: 2,
-      mixKinds: 2,
-      /** Snacks keep this far from the screen's edges (scene units), except in Windy. */
+      /** Snacks keep this far from the screen's edges (scene units), except in the windy modes. */
       edgeMargin: 4,
       /** Windy: drift (units a second) and a small bob (units, every this many ms). */
       wind: { speed: 12, bob: 2, bobEveryMs: 1500 },

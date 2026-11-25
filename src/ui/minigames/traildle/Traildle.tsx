@@ -14,7 +14,7 @@
  * selected sign and moves on); a digit typed while pointing at a sign;
  * clicking a sign; ← →; Backspace; Enter.
  */
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { asset } from '../../../config/assets';
 import { g } from '../../../minigames/greens';
 import {
@@ -33,6 +33,7 @@ import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
+import { BOARD, bigSigns, boardLayout, followRow } from './layout';
 import styles from './Traildle.module.css';
 
 const art = (f: string) => asset(`minigames/traildle/${f}`);
@@ -143,8 +144,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
   const two = game.boards.length > 1;
   const knowledge = game.boards.map(digitKnowledge);
   const guessNo = Math.min(game.guessCount + 1, game.guessesAllowed);
-  const signPitch = 28;
-  const signsLeft = (320 - (game.signs * signPitch - 4)) / 2;
+  const big = bigSigns(game.signs);
 
   return (
     <PixelScreen measure={!still}>
@@ -169,7 +169,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
           key={b.hikerId}
           board={b}
           hiker={byId(b.hikerId)}
-          left={two ? (i === 0 ? 8 : 164) : 86}
+          place={two ? BOARD.two[i]! : BOARD.one}
           signs={game.signs}
           rows={game.guessesAllowed}
           reveal={game.phase !== 'playing'}
@@ -178,9 +178,13 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
 
       {/* The guess: big signs, an arrow above and below each. */}
       {cur.map((d, i) => {
-        const x = signsLeft + i * signPitch;
+        const x = big.left + i * big.pitch;
         return (
-          <div key={i} className={styles.signSlot} style={{ left: x }}>
+          <div
+            key={i}
+            className={styles.signSlot}
+            style={{ left: x, width: big.w, '--big': big.scale } as CSSProperties}
+          >
             <button
               type="button"
               className={styles.arrow}
@@ -293,57 +297,114 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
   );
 }
 
-/** One hiker's board: their name, past guesses with marks, and empty rows for the guesses left. */
+/**
+ * One hiker's board: their name, past guesses with marks, and empty rows for
+ * the guesses left. The signs and rows are sized from the board's space; if
+ * rows would get too small, the board scrolls (wheel, drag, or ▲ ▼), always
+ * following the newest guess.
+ */
 function BoardView({
   board,
   hiker,
-  left,
+  place,
   signs,
   rows,
   reveal,
 }: {
   board: Board;
   hiker: { id: string; name: string; color: string; art: string };
-  left: number;
+  place: { left: number; width: number };
   signs: number;
   rows: number;
   reveal: boolean;
 }) {
-  // Small signs as big as fit: 148 × 110 board, under its 16-unit header.
-  const cell = Math.min(13, Math.floor(100 / rows) - 1, Math.floor(130 / signs) - 3);
-  const pitchX = cell + 3;
-  const pitchY = cell + 1;
-  const x0 = (148 - (signs * pitchX - 3)) / 2;
+  const fit = boardLayout(signs, rows, place.width);
+  const used = board.rows.length;
+  const follow = followRow(used, rows, fit.visibleRows);
+  // A scroll the player made holds until the next guess.
+  const [scrolled, setScrolled] = useState<{ at: number; first: number } | null>(null);
+  const first = fit.scroll && scrolled?.at === used ? scrolled.first : follow;
+  const maxFirst = rows - fit.visibleRows;
+  const scrollTo = (n: number) =>
+    setScrolled({ at: used, first: Math.max(0, Math.min(maxFirst, n)) });
+  const drag = useRef<{ y: number; first: number } | null>(null);
   return (
-    <div className={styles.board} style={{ left }} data-solved={board.solved || undefined}>
+    <div
+      className={styles.board}
+      style={{ left: place.left, width: place.width }}
+      data-solved={board.solved || undefined}
+    >
       <span className={styles.boardHead}>
         <HikerToken hiker={hiker} size={10} state={board.solved ? 'safe' : 'waiting'} />
         <span className={ui.text} style={{ fontSize: 4.5 }}>
           {possessive(hiker.name)}
         </span>
       </span>
-      {Array.from({ length: rows }, (_, r) => {
-        const row = board.rows[r];
-        return Array.from({ length: signs }, (_, c) => {
-          const mark: Mark | undefined = row?.marks[c];
-          return (
-            <span
-              key={`${r},${c}`}
-              className={styles.cell}
-              data-mark={mark ?? (row ? undefined : 'empty')}
-              style={{
-                left: x0 + c * pitchX,
-                top: 17 + r * pitchY,
-                width: cell,
-                height: cell,
-                fontSize: cell * 0.55,
-              }}
-            >
-              {row ? row.guess[c] : ''}
-            </span>
-          );
-        });
-      })}
+      <div
+        className={styles.rows}
+        style={{ top: BOARD.header, height: fit.visibleRows * fit.rowH }}
+        onWheel={fit.scroll ? (e) => scrollTo(first + Math.sign(e.deltaY)) : undefined}
+        onPointerDown={fit.scroll ? (e) => (drag.current = { y: e.clientY, first }) : undefined}
+        onPointerMove={
+          fit.scroll
+            ? (e) => {
+                if (!drag.current) return;
+                const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                const perRow = r.height / fit.visibleRows;
+                scrollTo(drag.current.first - Math.round((e.clientY - drag.current.y) / perRow));
+              }
+            : undefined
+        }
+        onPointerUp={() => (drag.current = null)}
+        onPointerLeave={() => (drag.current = null)}
+      >
+        {Array.from({ length: rows }, (_, r) => {
+          const row = board.rows[r];
+          if (r < first || r >= first + fit.visibleRows) return null;
+          return Array.from({ length: signs }, (_, c) => {
+            const mark: Mark | undefined = row?.marks[c];
+            return (
+              <span
+                key={`${r},${c}`}
+                className={styles.cell}
+                data-mark={mark ?? (row ? undefined : 'empty')}
+                style={{
+                  left: fit.x0 + c * fit.pitchX,
+                  top: (r - first) * fit.rowH,
+                  width: fit.cellW,
+                  height: fit.cellH,
+                  fontSize: Math.min(fit.cellW, fit.cellH) * 0.6,
+                }}
+              >
+                {row ? row.guess[c] : ''}
+              </span>
+            );
+          });
+        })}
+      </div>
+      {fit.scroll && first > 0 && (
+        <span className={`${ui.muted} ${styles.more}`}>▲ {first} MORE</span>
+      )}
+      {fit.scroll && (
+        <span className={styles.scrollButtons}>
+          <button
+            type="button"
+            aria-label="Scroll up"
+            onClick={() => scrollTo(first - 1)}
+            disabled={first <= 0}
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            aria-label="Scroll down"
+            onClick={() => scrollTo(first + 1)}
+            disabled={first >= maxFirst}
+          >
+            ▼
+          </button>
+        </span>
+      )}
       {board.solved && <span className={`${ui.box} ${styles.found}`}>FOUND</span>}
       {reveal && !board.solved && (
         <span className={`${ui.box} ${styles.found}`} data-missed="">

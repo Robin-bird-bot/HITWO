@@ -72,6 +72,19 @@ export function makePath(
   return Array.from({ length: rows }, (_, i) => ({ c, r: rows - 1 - i }));
 }
 
+/** Each hiker starts below the grid, in the middle. */
+export const BELOW = -1;
+
+/**
+ * Whether a tile is next to where the hiker is. Below the grid, every
+ * bottom-row tile counts as next to them.
+ */
+export function isNext(s: RememberPathState, tile: Tile): boolean {
+  if (s.pos === BELOW) return tile.r === s.rows - 1 && tile.c >= 0 && tile.c < s.cols;
+  const at = s.path[s.pos];
+  return !!at && nextTo(at, tile);
+}
+
 export interface RememberPathState {
   tier: Tier;
   cols: number;
@@ -80,7 +93,7 @@ export interface RememberPathState {
   /** Whose turn it is (index in the order). */
   current: number;
   path: Tile[];
-  /** How far along the path the current hiker is (0 is the start tile). */
+  /** How far along the path the current hiker is: −1 below the grid (where they start), 0 the start tile. */
   pos: number;
   strikesLeft: number;
   /** The ranger walks the path; the hiker repeats it; everyone is done. */
@@ -98,7 +111,7 @@ function forHiker(s: RememberPathState, index: number): RememberPathState {
     rng,
     current: index,
     path: makePath(rng, s.cols, s.rows, tier.length),
-    pos: 0,
+    pos: BELOW,
     strikesLeft: tier.strikes,
     phase: 'watch',
   };
@@ -118,7 +131,7 @@ export function newRememberPath(
       order: [...order],
       current: 0,
       path: [],
-      pos: 0,
+      pos: BELOW,
       strikesLeft: t.strikes,
       phase: 'watch',
       results: {},
@@ -137,7 +150,9 @@ export const currentHiker = (s: RememberPathState): string | undefined => s.orde
 /**
  * The hiker steps onto a tile. Next on the path: they move there (and pass
  * at the end). Another tile next to them: a strike, and they stay put (the
- * last strike fails them). A tile that isn't next to them: ignored.
+ * last strike fails them). A tile that isn't next to them: ignored. From
+ * below the grid, the first step is into the bottom row: the start tile is
+ * right, any other bottom-row tile is a strike.
  */
 export function step(
   s: RememberPathState,
@@ -148,8 +163,7 @@ export function step(
   passed?: boolean;
   failed?: boolean;
 } {
-  const at = s.path[s.pos];
-  if (s.phase !== 'repeat' || !at || !nextTo(at, tile)) return { state: s, outcome: 'ignored' };
+  if (s.phase !== 'repeat' || !isNext(s, tile)) return { state: s, outcome: 'ignored' };
   const who = currentHiker(s)!;
   const next = s.path[s.pos + 1];
   if (next && sameTile(next, tile)) {

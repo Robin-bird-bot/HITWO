@@ -231,6 +231,10 @@
   cursor: default;
 }
 
+.stepper > span[data-auto] {
+  font-size: 16px;
+}
+
 .stepper > span {
   display: flex;
   align-items: center;
