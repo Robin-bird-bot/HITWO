@@ -12,12 +12,14 @@
  */
 import type { RngState } from '../../engine/types';
 import type { ClaudePart } from './attacks/claudesIdeas';
+import type { MonsterPart } from './attacks/monster';
 import type { Box, Side } from './geometry';
 import type { Point, Shape } from './shapes';
 
 export type Tier = 1 | 2 | 3;
 
-export type AnimalId = 'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'stampede';
+export type AnimalId =
+  'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'stampede' | 'monster';
 
 /** Who's attacking: an animal (never the Stampede itself), or the Stampede's own moose herd. */
 export type Attacker = Exclude<AnimalId, 'stampede'> | 'herd';
@@ -35,11 +37,14 @@ export type AttackId =
   | 'bite'
   | 'jab'
   | 'poke'
+  | 'wave'
   | 'pounce'
+  | 'stalk'
   | 'acorns'
   | 'bombs'
+  | 'fire'
   // Claude's ideas
-  | 'roar'
+  | 'shout'
   | 'hug'
   | 'honey'
   | 'xSlash'
@@ -48,7 +53,21 @@ export type AttackId =
   | 'landingSwipe'
   | 'pinecones'
   | 'scurry'
-  | 'herd';
+  | 'herd'
+  | 'hands'
+  | 'wisps'
+  | 'runes'
+  | 'ritual'
+  | 'eye'
+  | 'darkness';
+
+/**
+ * What an attack does to the box (design section 6, "Pacing and overlaps"):
+ * an **area** attack covers a big part of it, a **missile** flies or pokes,
+ * and a **changer** changes the box for a while. Only one area and one
+ * changer run at a time; missiles stack.
+ */
+export type AttackKind = 'area' | 'missile' | 'changer';
 
 export interface PartBase {
   id: number;
@@ -111,19 +130,52 @@ export interface PokePart extends PartBase {
   speed: number;
 }
 
-/** A row of claw marks crossing the box, straight or swinging around a pivot. */
+/** A row of claw marks swinging around a pivot, like a paw swiping; each claw on its own radius. */
 export interface ClawsPart extends PartBase {
   kind: 'claws';
   count: number;
   spacing: number;
   length: number;
   thickness: number;
-  path:
-    | { type: 'line'; x: number; y: number; vx: number; vy: number }
-    /** Around (cx, cy) at radius r, from angle a0, turning w radians a second. */
-    | { type: 'arc'; cx: number; cy: number; r: number; a0: number; w: number };
+  /** Around (cx, cy) at radius r (the middle claw's), from angle a0, turning w radians a second. */
+  path: { cx: number; cy: number; r: number; a0: number; w: number };
   /** When the row has crossed. */
   endAt: number;
+}
+
+/** A wave: the sword slides along a wall, its blade dipping into the box and out again. */
+export interface WavePart extends PartBase {
+  kind: 'wave';
+  side: 'top' | 'bottom';
+  /** Which way it slides (1 is to the right), and how fast. */
+  dir: 1 | -1;
+  speed: number;
+  /** The deepest dip (share of the box's depth), the length of one dip, and where in it it starts. */
+  depth: number;
+  wavelength: number;
+  phase: number;
+  /** How far ahead (in seconds) its path shows. */
+  aheadSec: number;
+}
+
+/** One hop of a stalk: its aim shows, it hops, lands, and crouches. */
+export interface StalkHop {
+  aimAt: number;
+  hopAt: number;
+  landAt: number;
+  /** Where it lands: where the sprite is when the aim shows. */
+  to?: Point;
+}
+
+/** The bobcat stalking: it comes in at an edge and hops at the sprite a few times, then leaves. */
+export interface StalkPart extends PartBase {
+  kind: 'stalk';
+  start: Point;
+  hops: StalkHop[];
+  /** When it leaves, how long that takes, and where it goes (just outside the nearest wall). */
+  leaveAt: number;
+  leaveSec: number;
+  exit?: Point;
 }
 
 /** A bite: jaws open around a zone, then snap shut; a hit only at the snap (`activeAt`). */
@@ -208,7 +260,10 @@ export type Part =
   | BombPart
   | ShrapnelPart
   | CrumbsPart
-  | ClaudePart;
+  | WavePart
+  | StalkPart
+  | ClaudePart
+  | MonsterPart;
 
 export type PartKind = Part['kind'];
 
@@ -231,6 +286,11 @@ export interface PartRules<P extends Part> {
   update?(p: P, w: World): { part: P; spawn?: Part[] };
   /** Where it can hit, for a step from `t0` to the world's time (none while it warns). */
   shapes(p: P, w: World, t0: number): Shape[];
+  /**
+   * What "Show hitboxes" outlines, when that's more than what hits this
+   * step (the Eye's gaze only hits after a while, but it's dangerous all along).
+   */
+  outline?(p: P, w: World, t0: number): Shape[];
   /** Whether it's finished and can go. */
   done(p: P, w: World): boolean;
 }
@@ -239,8 +299,8 @@ export interface PartRules<P extends Part> {
 export interface Tweak {
   speed?: number;
   warnSec?: number;
-  /** Never a double row (Bear with a Sword's claws). */
-  noDouble?: true;
+  /** Sometimes a row of Claws comes in on top (Bear with a Sword's sword attacks). */
+  withClaws?: true;
 }
 
 /** What an attack sees when it starts. */
@@ -251,7 +311,7 @@ export interface AttackCtx {
   box: Box;
   pos: Point;
   rng: RngState;
-  /** The tier's speed (×1.0, ×1.2, ×1.4). */
+  /** The tier's speed (×1.0, ×1.2, ×1.4; more for the Woods Monster on Tier III). */
   speed: number;
   round: number;
   nextId(): number;
@@ -272,8 +332,11 @@ export interface AttackDef {
   id: AttackId;
   /** Shown in the testing tab. */
   name: string;
+  kind: AttackKind;
   /** Marked Claude's idea in the design: Wyatt keeps or cuts it after playing. */
   claudesIdea?: true;
+  /** Only in the Woods Monster's second half (Darkness). */
+  secondHalf?: true;
   start(ctx: AttackCtx): AttackStart;
 }
 
@@ -282,12 +345,31 @@ export interface Round {
   no: number;
   attacker: Attacker;
   attack: AttackId;
+  kind: AttackKind;
   endsAt: number | 'parts';
+  /** A changer stops holding up the next attack once its warning is over. */
+  calmAt: number;
+}
+
+/** The box moving or changing size: from one box to another, starting at a time, over this long. */
+export interface BoxMove {
+  from: Box;
+  to: Box;
+  at: number;
+  sec: number;
 }
 
 export interface DodgeState {
   animal: AnimalId;
+  /** The tier the attacks play at (the Woods Monster plays one up), and the one the HUD shows. */
   tier: Tier;
+  hudTier: Tier;
+  /** The Woods Monster on Tier III: faster, more overlaps, one more at once. */
+  boost: boolean;
+  /** The attacks' speed, the chance the next attack overlaps, and the most at once. */
+  speed: number;
+  overlapChance: number;
+  maxAtOnce: number;
   /** The testing tab's Attack picker: all, or only this one. */
   only: AttackId | 'all';
   /** Whether Claude's ideas are in. */
@@ -305,20 +387,27 @@ export interface DodgeState {
   lengthSec: number;
   /** Seconds played. */
   time: number;
-  /** The box now, and where it's easing to. */
+  /** The box now, and how it's moving (where it's heading: `boxMove.to`). */
   box: Box;
-  boxTarget: Box;
+  boxMove: BoxMove;
+  /** The sword bear's shrunk box is on (a changer: no bear hug meanwhile). */
+  shrunk: boolean;
+  /** The Woods Monster on Tier III: the second half has started (the box shrinks, Darkness can come). */
+  secondHalf: boolean;
   /** The sprite's middle. */
   pos: Point;
   parts: Part[];
-  /** The attack (or two, overlapping in the Stampede) being played. */
+  /** The attacks being played (more than one when they overlap). */
   rounds: Round[];
   /** The last few attacks, for "never the same twice in a row". */
   history: { attacker: Attacker; attack: AttackId }[];
-  /** When the next round starts (none while one is on). */
+  /**
+   * When the next attack starts: during the current one (an overlap), or
+   * none while waiting for the running attacks to end (then the tier's gap).
+   */
   nextAttackAt: number | null;
-  /** Stampede, Tier III: a second attack is due to overlap at this time. */
-  overlapAt?: number;
+  /** When attacks started, and whether each overlapped another (for tests and tuning). */
+  starts: { at: number; attack: AttackId; overlapped: boolean }[];
   /** Who's attacking now, for the heads above the box. */
   showing: Attacker[];
   nextId: number;

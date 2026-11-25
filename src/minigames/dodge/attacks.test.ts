@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { ANIMAL_IDS, attackChoices, boxFor, pool } from './animals';
+import { ANIMAL_IDS, attackChoices, boxFor, playTier, pool } from './animals';
 import { edges } from './geometry';
 import { ATTACKS } from './library';
 import { effectiveBox, hitShapes, newDodge, step, type DodgeState } from './logic';
@@ -54,7 +54,7 @@ function partsSeen(s0: DodgeState, input?: (t: number) => { x: number; y: number
 }
 
 const ids = (animal: AnimalId, tier: Tier, ideas = true) =>
-  [...new Set(pool(animal, tier, ideas).map((e) => e.attack))].sort();
+  [...new Set(pool(animal, playTier(animal, tier), ideas).map((e) => e.attack))].sort();
 
 describe('what each animal uses, by tier', () => {
   it.each([
@@ -62,17 +62,25 @@ describe('what each animal uses, by tier', () => {
     ['bees', 2, ['cross', 'diagonal', 'lane', 'zigzag']],
     ['bees', 3, ['aimed', 'cross', 'diagonal', 'lane', 'zigzag']],
     ['bear', 1, ['bite', 'claws']],
-    ['bear', 2, ['bite', 'claws', 'hug', 'roar']],
-    ['bear', 3, ['bite', 'claws', 'honey', 'hug', 'roar']],
-    ['swordBear', 1, ['claws', 'jab', 'poke', 'sweep']],
-    ['swordBear', 3, ['claws', 'jab', 'poke', 'sweep', 'thrown', 'xSlash']],
-    ['bobcat', 1, ['claws', 'pounce']],
-    ['bobcat', 2, ['claws', 'dash', 'pounce']],
-    ['bobcat', 3, ['claws', 'dash', 'landingSwipe', 'pounce']],
+    ['bear', 2, ['bite', 'claws', 'hug', 'shout']],
+    ['bear', 3, ['bite', 'claws', 'honey', 'hug', 'shout']],
+    ['swordBear', 1, ['claws', 'jab', 'poke', 'sweep', 'wave']],
+    ['swordBear', 3, ['claws', 'jab', 'poke', 'sweep', 'thrown', 'wave', 'xSlash']],
+    ['bobcat', 1, ['claws', 'pounce', 'stalk']],
+    ['bobcat', 2, ['claws', 'dash', 'pounce', 'stalk']],
+    ['bobcat', 3, ['claws', 'dash', 'landingSwipe', 'pounce', 'stalk']],
     ['squirrels', 1, ['acorns', 'bombs', 'pinecones']],
     ['squirrels', 2, ['acorns', 'bombs', 'pinecones', 'scurry']],
+    // The Woods Monster plays one tier up; Darkness also waits for Tier III's second half.
+    ['monster', 1, ['eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
+    ['monster', 3, ['darkness', 'eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
   ] as const)('%s on Tier %i', (animal, tier, expected) => {
     expect(ids(animal, tier)).toEqual([...expected].sort());
+  });
+
+  it('the Woods Monster’s attacks are never in the Stampede', () => {
+    const his = new Set(ids('monster', 3));
+    for (const tier of TIERS) expect(ids('stampede', tier).some((a) => his.has(a))).toBe(false);
   });
 
   it('the Stampede has every animal’s attacks at the tier, plus Herd rush', () => {
@@ -96,7 +104,7 @@ describe('what each animal uses, by tier', () => {
     }
     // And in play, none of their parts ever show up.
     const claude = new Set([
-      'ring',
+      'shout',
       'hug',
       'drop',
       'puddle',
@@ -105,17 +113,26 @@ describe('what each animal uses, by tier', () => {
       'dash',
       'pinecone',
       'scurry',
+      'nut',
       'herd',
+      'hand',
+      'wisp',
+      'beam',
+      'ritual',
+      'eye',
+      'dark',
     ]);
-    const seen = partsSeen(many('stampede', 3, { ideas: false }));
-    expect(seen.length).toBeGreaterThan(20);
-    expect(seen.some((p) => claude.has(p.kind))).toBe(false);
+    for (const animal of ['stampede', 'monster'] as const) {
+      const seen = partsSeen(many(animal, 3, { ideas: false }));
+      expect(seen.length).toBeGreaterThan(20);
+      expect(seen.some((p) => claude.has(p.kind))).toBe(false);
+    }
   });
 
   it('the testing tab lists each attack once, with the tier it opens on', () => {
     const bear = attackChoices('bear', 1, true);
-    expect(bear.map((c) => c.id)).toEqual(['claws', 'bite', 'roar', 'hug', 'honey']);
-    expect(bear.find((c) => c.id === 'roar')).toMatchObject({
+    expect(bear.map((c) => c.id)).toEqual(['claws', 'bite', 'shout', 'hug', 'honey']);
+    expect(bear.find((c) => c.id === 'shout')).toMatchObject({
       unlocked: false,
       from: 2,
       claudesIdea: true,
@@ -124,6 +141,11 @@ describe('what each animal uses, by tier', () => {
     const stampede = attackChoices('stampede', 3, true).map((c) => c.id);
     expect(new Set(stampede).size).toBe(stampede.length);
     expect(stampede).toContain('herd');
+    // The Woods Monster plays one up: on Tier I, Tier II's attacks are open; Darkness needs Tier III.
+    const monster = attackChoices('monster', 2, true);
+    expect(monster.filter((c) => !c.unlocked).map((c) => c.id)).toEqual(['darkness']);
+    expect(monster.find((c) => c.id === 'darkness')).toMatchObject({ from: 3 });
+    expect(attackChoices('monster', 3, true).every((c) => c.unlocked)).toBe(true);
   });
 });
 
@@ -146,14 +168,16 @@ describe('the Attack picker', () => {
   });
 
   it('an attack the animal can’t make at the tier plays as All', () => {
-    expect(many('bear', 1, { attack: 'roar' }).only).toBe('all');
-    expect(many('bear', 2, { attack: 'roar' }).only).toBe('roar');
-    expect(many('bear', 2, { attack: 'roar', ideas: false }).only).toBe('all');
+    expect(many('bear', 1, { attack: 'shout' }).only).toBe('all');
+    expect(many('bear', 2, { attack: 'shout' }).only).toBe('shout');
+    expect(many('bear', 2, { attack: 'shout', ideas: false }).only).toBe('all');
     expect(many('bees', 3, { attack: 'claws' }).only).toBe('all');
+    expect(many('monster', 2, { attack: 'darkness' }).only).toBe('all');
+    expect(many('monster', 3, { attack: 'darkness' }).only).toBe('darkness');
   });
 
   it('never the same attack twice in a row, unless it’s the only one', () => {
-    for (const animal of ['bear', 'bobcat', 'squirrels', 'swordBear'] as const) {
+    for (const animal of ['bear', 'bobcat', 'squirrels', 'swordBear', 'monster'] as const) {
       const order: AttackId[] = [];
       play(many(animal, 3), (s, prev) => {
         if (s.roundNo !== prev.roundNo) order.push(s.history.at(-1)!.attack);
@@ -171,6 +195,8 @@ describe('warnings', () => {
     claws: D.claws.bobcat.warnSec,
     pounce: D.pounce.feintRealSec,
     swing: D.sword.warnMinSec,
+    stalk: D.warnMinSec,
+    hand: D.hands.crackSec,
   };
   it.each(ANIMAL_IDS.flatMap((a) => TIERS.map((t) => [a, t] as const)))(
     '%s on Tier %i: every attack warns first, never under the minimum',
@@ -316,13 +342,18 @@ describe('the Wild Predator Stampede', () => {
     const attackers: string[] = [];
     play(many('stampede', 2), (s, prev) => {
       if (s.roundNo !== prev.roundNo) {
-        const who = s.rounds[0]!.attacker;
+        const who = s.rounds.at(-1)!.attacker;
         attackers.push(who);
-        expect(s.showing).toEqual([who]);
-        expect(s.boxTarget.w).toBeCloseTo(
-          who === 'swordBear' && s.shrunkFor > 0 ? D.sword.shrunk[0] : boxFor(who).w,
-        );
-        expect(s.boxTarget.cy).toBeCloseTo(boxFor(who).cy);
+        expect(s.showing).toContain(who);
+        if (s.starts.at(-1)!.overlapped) {
+          // Overlapping: the box stays where it was going.
+          expect(s.boxMove.to).toEqual(prev.boxMove.to);
+        } else {
+          expect(s.boxMove.to.w).toBeCloseTo(
+            who === 'swordBear' && s.shrunk ? D.sword.shrunk[0] : boxFor(who).w,
+          );
+          expect(s.boxMove.to.cy).toBeCloseTo(boxFor(who).cy);
+        }
       }
     });
     expect(new Set(attackers).size).toBeGreaterThan(3);
@@ -331,25 +362,22 @@ describe('the Wild Predator Stampede', () => {
     }
   });
 
-  it('on Tier III two attacks from two animals sometimes overlap, and never below it', () => {
-    const overlaps = (tier: Tier) => {
-      let n = 0;
-      for (let seed = 1; seed <= 4; seed++) {
-        play(
-          newDodge({ animal: 'stampede', tier, lives: 3, lengthSec: 60 }, FOUR, seed),
-          (s, prev) => {
-            if (s.rounds.length === 2 && prev.rounds.length !== 2) {
-              n++;
-              expect(s.rounds[0]!.attacker).not.toBe(s.rounds[1]!.attacker);
-              expect(s.showing).toHaveLength(2);
-            }
-          },
-        );
-      }
-      return n;
-    };
-    expect(overlaps(3)).toBeGreaterThan(0);
-    expect(overlaps(2)).toBe(0);
+  it('overlapping attacks usually come from another animal', () => {
+    let overlaps = 0;
+    let others = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      play(
+        newDodge({ animal: 'stampede', tier: 3, lives: 3, lengthSec: 60 }, FOUR, seed),
+        (s, prev) => {
+          if (s.roundNo === prev.roundNo || !s.starts.at(-1)!.overlapped) return;
+          overlaps++;
+          const who = s.rounds.at(-1)!.attacker;
+          if (prev.rounds.every((r) => r.attacker !== who)) others++;
+        },
+      );
+    }
+    expect(overlaps).toBeGreaterThan(10);
+    expect(others / overlaps).toBeGreaterThan(0.6);
   });
 
   it('with the Attack picker on Herd rush (only one animal), there are no overlaps', () => {
@@ -373,9 +401,10 @@ describe('a fuzz run', () => {
       const end = play(newDodge({ animal, tier, ideas, lives: 3 }, FOUR, 11), (s) => {
         expect(Number.isFinite(s.pos.x) && Number.isFinite(s.pos.y)).toBe(true);
         for (const sh of hitShapes(s)) {
-          expect(Object.values(sh).every((v) => typeof v === 'string' || Number.isFinite(v))).toBe(
-            true,
+          const values = Object.values(sh).flatMap((v) =>
+            Array.isArray(v) ? v.flatMap((q: { x: number; y: number }) => [q.x, q.y]) : [v],
           );
+          expect(values.every((v) => typeof v === 'string' || Number.isFinite(v))).toBe(true);
         }
       });
       expect(end.over).toBe(true);

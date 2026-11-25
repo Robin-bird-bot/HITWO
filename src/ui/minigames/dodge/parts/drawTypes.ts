@@ -1,18 +1,28 @@
 /**
- * How Dodge draws its parts: each kind of part can draw on three layers,
+ * How Dodge draws its parts: each kind of part can draw on these layers,
  * all in scene units (320 × 240):
  *
- * - `svg`: inside the box, under the sprite (warnings, shadows, rings, puddles);
+ * - `svg` and `under`: inside the box, under the sprite (warnings, shadows,
+ *   waves, puddles, the sweep's hatching);
  * - `over`: inside the box, over the sprite (bees, claws, acorns, blades);
- * - `outside`: on the whole screen, not clipped (the "!" marks, arrows, the
- *   squirrels popping up, the sweep's sword).
+ * - `outside`: on the whole screen, not clipped, under the HUDs (the
+ *   squirrels popping up, the sweep's sword, the thrown sword, wisps);
+ * - `warn`: the "!" marks and warning arrows, on their own layer above
+ *   everything, so nothing ever covers them (Bang and Arrow keep them clear
+ *   of the HUDs and the screen's edges).
+ *
+ * In the dark (the Woods Monster's Darkness), the box's warnings (what a part
+ * draws on `svg` and `under` before it starts) are drawn again above it.
  */
 import type { ReactNode } from 'react';
 import { asset } from '../../../../config/assets';
-import type { Box, Part } from '../../../../minigames/dodge/logic';
+import type { AnimalId, Box, Part, Point } from '../../../../minigames/dodge/logic';
 
 export interface DrawCtx {
   time: number;
+  animal: AnimalId;
+  /** The sprite's middle. */
+  pos: Point;
   /** The box as it is now (squeezed by a hug, if one is on), and its walls. */
   box: Box;
   left: number;
@@ -29,7 +39,10 @@ export interface PartDrawing<P extends Part> {
   under?(p: P, c: DrawCtx): ReactNode;
   over?(p: P, c: DrawCtx): ReactNode;
   outside?(p: P, c: DrawCtx): ReactNode;
+  warn?(p: P, c: DrawCtx): ReactNode;
 }
+
+export type Layer = 'svg' | 'under' | 'over' | 'outside' | 'warn';
 
 export type DrawTable<K extends Part['kind']> = {
   [Kind in K]: PartDrawing<Extract<Part, { kind: Kind }>>;

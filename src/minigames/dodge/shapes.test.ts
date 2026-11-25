@@ -30,16 +30,45 @@ describe('hit shapes', () => {
     expect(touches(zone, { x: 42.5, y: 28.5 }, 3)).toBe(false);
   });
 
-  it('a ring band with a gap the sprite can slip through', () => {
-    // Gap pointing straight down, 26 wide.
-    const ring: Shape = { kind: 'ring', cx: 0, cy: 0, r: 50, half: 1, gapAt: Math.PI / 2, gap: 26 };
-    expect(touches(ring, { x: 0, y: 50 }, 3)).toBe(false);
-    expect(touches(ring, { x: 9, y: 49.2 }, 3)).toBe(false);
-    expect(touches(ring, { x: 12, y: 48.5 }, 3)).toBe(true);
-    expect(touches(ring, { x: 50, y: 0 }, 3)).toBe(true);
-    // Off the band.
-    expect(touches(ring, { x: 0, y: -40 }, 3)).toBe(false);
-    expect(touches(ring, { x: 0, y: -46 }, 3)).toBe(true);
+  it('an arc band: only within its angle, and round at its ends', () => {
+    // Pointing straight down, 40° wide, radius 50.
+    const wave: Shape = {
+      kind: 'arc',
+      cx: 0,
+      cy: 0,
+      r: 50,
+      half: 1,
+      at: Math.PI / 2,
+      spread: (40 * Math.PI) / 180,
+    };
+    expect(touches(wave, { x: 0, y: 50 }, 3)).toBe(true);
+    expect(touches(wave, { x: 0, y: 53.9 }, 3)).toBe(true);
+    expect(touches(wave, { x: 0, y: 55 }, 3)).toBe(false);
+    // 20° off straight down is its edge; 30° is clear of it.
+    const at = (deg: number) => ({
+      x: 50 * Math.cos(((90 - deg) * Math.PI) / 180),
+      y: 50 * Math.sin(((90 - deg) * Math.PI) / 180),
+    });
+    expect(touches(wave, at(19), 3)).toBe(true);
+    expect(touches(wave, at(30), 3)).toBe(false);
+    // Behind the mouth: nothing.
+    expect(touches(wave, { x: 0, y: -50 }, 3)).toBe(false);
+  });
+
+  it('a triangle: inside, near an edge, and clear', () => {
+    const flame: Shape = {
+      kind: 'triangle',
+      points: [
+        { x: 0, y: 100 },
+        { x: 10, y: 100 },
+        { x: 5, y: 40 },
+      ],
+    };
+    expect(touches(flame, { x: 5, y: 90 }, 3)).toBe(true);
+    expect(touches(flame, { x: 5, y: 38 }, 3)).toBe(true);
+    expect(touches(flame, { x: 5, y: 35 }, 3)).toBe(false);
+    expect(touches(flame, { x: 14, y: 95 }, 3)).toBe(false);
+    expect(touches(flame, { x: 12, y: 98 }, 3)).toBe(true);
   });
 
   it('angles wrap the short way round', () => {

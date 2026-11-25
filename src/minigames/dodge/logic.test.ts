@@ -171,7 +171,15 @@ describe('controls', () => {
     s = run(s, 3, { x: 1, y: 1 });
     const corner = s.pos;
     expect(corner.x).toBeLessThanOrEqual(s.box.cx + s.box.w / 2 - 5 + 1e-9);
-    s = { ...s, boxTarget: { ...s.box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] } };
+    s = {
+      ...s,
+      boxMove: {
+        from: s.box,
+        to: { ...s.box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] },
+        at: s.time,
+        sec: D.boxEaseSec,
+      },
+    };
     s = run(s, 1, { x: 1, y: 1 });
     expect(s.box.w).toBeCloseTo(D.sword.shrunk[0]);
     expect(s.pos.x).toBeLessThanOrEqual(s.box.cx + s.box.w / 2 - 5 + 1e-9);

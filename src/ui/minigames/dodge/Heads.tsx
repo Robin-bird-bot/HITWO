@@ -1,9 +1,10 @@
 /**
  * The animal above the box (docs/design/12-minigames-dodge.md, sections 3
- * and 7 to 11; mockups 1, 4 and 7 to 9): one head, placed as in its
- * mockup, or the Stampede's row of heads with a frame on whoever is
- * attacking.
+ * and 7 to 12; mockups 1, 4, 7 to 9 and 14): one head, placed as in its
+ * mockup; the Stampede's row of heads with a frame on whoever is attacking;
+ * or the Woods Monster with a hooded cultist and a candle on each side.
  */
+import { CANDLES } from '../../../minigames/dodge/attacks/monster';
 import type { AnimalId, Attacker } from '../../../minigames/dodge/logic';
 import ui from '../gpsUi.module.css';
 import styles from './Dodge.module.css';
@@ -20,7 +21,14 @@ const HEADS: Readonly<
   swordBear: { file: 'bear-head.png', w: 39, h: 34, x: 140, y: 28 },
   bobcat: { file: 'bobcat-head.png', w: 30, h: 28, x: 145, y: 40 },
   squirrels: { file: 'squirrel-head.png', w: 30, h: 26, x: 145, y: 36 },
+  monster: { file: 'monster-head.png', w: 40, h: 34, x: 140, y: 36 },
 };
+
+/** The Woods Monster's cultists beside the box (cultist.png, 12 × 15, drawn as in mockup 14). */
+const CULTISTS = [
+  { x: 20, y: 60 },
+  { x: 283, y: 60 },
+] as const;
 
 /** The Stampede's row: each animal at about 3/4 size (the bee at 2×), and the moose for Herd rush. */
 const ROW: readonly { who: Attacker[]; file: string; w: number; h: number }[] = [
@@ -59,13 +67,34 @@ export function Heads({
   if (animal !== 'stampede') {
     const h = HEADS[animal];
     return (
-      <img
-        className={`${ui.sprite} ${styles.animal}`}
-        src={art(h.file)}
-        alt=""
-        draggable={false}
-        style={{ left: h.x, top: h.y, width: h.w, height: h.h }}
-      />
+      <>
+        <img
+          className={`${ui.sprite} ${styles.animal}`}
+          src={art(h.file)}
+          alt=""
+          draggable={false}
+          style={{ left: h.x, top: h.y, width: h.w, height: h.h }}
+        />
+        {animal === 'monster' &&
+          CULTISTS.map((c, k) => (
+            <span key={k}>
+              <img
+                className={`${ui.sprite} ${styles.animal}`}
+                src={art('cultist.png')}
+                alt=""
+                draggable={false}
+                style={{ left: c.x, top: c.y, width: 17, height: 21 }}
+              />
+              <img
+                className={`${ui.sprite} ${styles.animal}`}
+                src={art('candle.png')}
+                alt=""
+                draggable={false}
+                style={{ left: CANDLES[k]!.x - 3, top: CANDLES[k]!.y - 2, width: 6, height: 11 }}
+              />
+            </span>
+          ))}
+      </>
     );
   }
   const row = ROW.filter((r) => ideas || !r.who.includes('herd'));

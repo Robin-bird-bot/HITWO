@@ -171,11 +171,12 @@ describe('the minigame list', () => {
     for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
     }
-    // Dodge: Animal, Attack, Include Claude's ideas, Show hitboxes, Tier, Hikers, Lives (1 to 3),
-    // Length (10 to 60 s) and Switch every (3 to 10 s).
+    // Dodge: Animal, Attack, Overlaps, Include Claude's ideas, Show hitboxes, Tier, Hikers,
+    // Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
     expect(ids(DODGE)).toEqual([
       'animal',
       'attack',
+      'overlaps',
       'ideas',
       'hitboxes',
       'tier',
@@ -187,6 +188,7 @@ describe('the minigame list', () => {
     expect(defaultSettings(DODGE)).toMatchObject({
       animal: 'bees',
       attack: 'all',
+      overlaps: 'auto',
       ideas: 'on',
       hitboxes: 'off',
       lives: 'auto',
@@ -205,7 +207,7 @@ describe('the minigame list', () => {
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
-  it('Dodge’s Animal and Attack: six animals; the Attack list follows the Animal, the Tier and Claude’s ideas', () => {
+  it('Dodge’s Animal and Attack: seven animals; the Attack list follows the Animal, the Tier and Claude’s ideas', () => {
     const animal = DODGE.settings.find((s) => s.id === 'animal');
     const attack = DODGE.settings.find((s) => s.id === 'attack');
     if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
@@ -218,6 +220,7 @@ describe('the minigame list', () => {
       'Bobcat',
       'Squirrel Army',
       'Wild Predator Stampede',
+      'Woods Monster',
     ]);
     expect(animal.menu && attack.menu).toBe(true);
     const open = (settings: Record<string, string | number>) =>
@@ -226,21 +229,36 @@ describe('the minigame list', () => {
       'all',
       'claws',
       'bite',
-      'roar (closed)',
+      'shout (closed)',
       'hug (closed)',
       'honey (closed)',
     ]);
     expect(open({ animal: 'bear', tier: 3, ideas: 'off' })).toEqual(['all', 'claws', 'bite']);
     expect(attack.optionsFor({ animal: 'bear', tier: 2, ideas: 'on' })[3]).toMatchObject({
-      label: 'Roar · Claude’s idea',
+      label: 'Shout · Claude’s idea',
     });
     expect(attack.optionsFor({ animal: 'bear', tier: 1, ideas: 'on' })[3]?.label).toBe(
-      'Roar · Claude’s idea · from Tier II',
+      'Shout · Claude’s idea · from Tier II',
     );
+    // The Woods Monster plays one tier up: on Tier I only Darkness (Tier III's second half) is closed.
+    expect(open({ animal: 'monster', tier: 1, ideas: 'on' })).toEqual([
+      'all',
+      'fire',
+      'hands',
+      'wisps',
+      'runes',
+      'ritual',
+      'eye',
+      'darkness (closed)',
+    ]);
+    expect(open({ animal: 'monster', tier: 1, ideas: 'off' })).toEqual(['all', 'fire']);
     // A remembered attack is kept while the animal changes; one no animal uses goes back to All.
-    expect(cleanSettings(DODGE, { animal: 'bobcat', attack: 'roar' }, TEST_HIKERS).attack).toBe(
-      'roar',
+    expect(cleanSettings(DODGE, { animal: 'bobcat', attack: 'shout' }, TEST_HIKERS).attack).toBe(
+      'shout',
     );
+    expect(cleanSettings(DODGE, { attack: 'roar' }, TEST_HIKERS).attack).toBe('all');
+    expect(cleanSettings(DODGE, { overlaps: 'sometimes' }, TEST_HIKERS).overlaps).toBe('auto');
+    expect(cleanSettings(DODGE, { overlaps: 'on' }, TEST_HIKERS).overlaps).toBe('on');
     expect(cleanSettings(DODGE, { attack: 'fireball' }, TEST_HIKERS).attack).toBe('all');
     expect(cleanSettings(DODGE, { animal: 'dragon' }, TEST_HIKERS).animal).toBe('bees');
   });
