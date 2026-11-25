@@ -19,6 +19,7 @@ import {
   type Rank,
 } from './animals';
 import { CLAW_TIP, clawsAt, clawShape, clawTurn } from './attacks/bear';
+import { armAt, glareBeam, monsterEyes } from './attacks/monster';
 import { stalkAt } from './attacks/bobcat';
 import { edges, HUD, markSpot, SCREEN, type Box } from './geometry';
 import { ATTACKS } from './library';
@@ -638,17 +639,17 @@ describe('the Woods Monster', () => {
     }
   });
 
-  it('The Eye only hits after the sprite stays in its gaze a moment', () => {
-    // Standing still under the eye: hits come, but never twice within the hold.
+  it('Glare only hits after the sprite stays in a beam a moment', () => {
+    // Standing still while the beams sweep: hits come, but never twice within the hold.
     let hits = 0;
     let last = -Infinity;
     play(
-      newDodge({ animal: 'monster', tier: 1, attack: 'eye', lives: 3, lengthSec: 20 }, FOUR, 3),
+      newDodge({ animal: 'monster', tier: 1, attack: 'glare', lives: 3, lengthSec: 20 }, FOUR, 3),
       (s, prev) => {
         const n = Object.values(s.hits).reduce((a, b) => a + b, 0);
         const was = Object.values(prev.hits).reduce((a, b) => a + b, 0);
         if (n > was) {
-          expect(s.time - last).toBeGreaterThan(D.eye.holdSec);
+          expect(s.time - last).toBeGreaterThan(D.glare.holdSec);
           last = s.time;
           hits++;
         }
@@ -656,6 +657,83 @@ describe('the Woods Monster', () => {
       () => ({ x: 0, y: 0 }),
     );
     expect(hits).toBeGreaterThan(0);
+  });
+
+  it('Glare: his eyes warn first, then a beam from each eye sweeps across in opposite directions, crossing in the middle', () => {
+    const glares = partsSeen(
+      newDodge({ animal: 'monster', tier: 3, attack: 'glare', lives: 99, lengthSec: 12 }, FOUR, 4),
+    ).filter((p): p is Extract<Part, { kind: 'glare' }> => p.kind === 'glare');
+    expect(glares.length).toBeGreaterThan(1);
+    const eyes = monsterEyes();
+    for (const p of glares) {
+      expect(p.activeAt - p.warnAt).toBeCloseTo(D.glare.warnSec);
+      expect(p.eyes).toEqual(eyes);
+      // Opposite directions: one goes left to right, the other right to left.
+      expect(Math.sign(p.to[0] - p.from[0])).toBe(-Math.sign(p.to[1] - p.from[1]));
+      expect(p.from[0]).toBeCloseTo(p.to[1]);
+      const box = boxFor('monster');
+      const mid = (t: number, k: 0 | 1) => {
+        const b = glareBeam(p, box, t, k);
+        if (b.kind !== 'triangle') throw new Error('a beam is a triangle');
+        expect(b.points[2].x - b.points[1].x).toBeCloseTo(D.glare.floorWidth);
+        return (b.points[1].x + b.points[2].x) / 2;
+      };
+      const half = p.activeAt + p.sweepSec / 2;
+      expect(mid(half, 0)).toBeCloseTo(mid(half, 1));
+      expect(mid(half, 0)).toBeCloseTo(box.cx);
+    }
+  });
+
+  it('Long arms: four thrusts taking turns between the arms, each winding up aimed at the sprite first', () => {
+    const arms = partsSeen(
+      newDodge({ animal: 'monster', tier: 3, attack: 'arms', lives: 99, lengthSec: 10 }, FOUR, 6),
+    ).filter((p): p is Extract<Part, { kind: 'arm' }> => p.kind === 'arm');
+    const byRound = new Map<number, Extract<Part, { kind: 'arm' }>[]>();
+    for (const a of arms) byRound.set(a.round, [...(byRound.get(a.round) ?? []), a]);
+    expect(byRound.size).toBeGreaterThan(0);
+    for (const list of byRound.values()) {
+      expect(list).toHaveLength(D.arms.thrusts);
+      list.sort((a, b) => a.warnAt - b.warnAt);
+      list.forEach((a, k) => {
+        expect(a.activeAt - a.warnAt).toBeCloseTo(D.arms.windSec);
+        expect(a.grabAt - a.activeAt).toBeCloseTo(D.arms.thrustSec);
+        expect(a.pullAt - a.grabAt).toBeCloseTo(D.arms.grabSec);
+        expect(a.endAt - a.pullAt).toBeCloseTo(D.arms.pullSec);
+        if (k) {
+          // Alternating arms; the next winds up as the last one thrusts, and an arm is back before its next turn.
+          expect(a.side).toBe(-list[k - 1]!.side);
+          expect(a.warnAt).toBeGreaterThanOrEqual(list[k - 1]!.activeAt - 1e-9);
+          if (k >= 2) expect(a.warnAt).toBeGreaterThanOrEqual(list[k - 2]!.endAt - 1e-9);
+        }
+      });
+    }
+  });
+
+  it('Long arms: the thrust reaches where the sprite was as the wind-up started, and hits there', () => {
+    let s = newDodge(
+      { animal: 'monster', tier: 3, attack: 'arms', lives: 99, lengthSec: 10 },
+      FOUR,
+      8,
+    );
+    let checked = 0;
+    for (let i = 0; i < 60 * 6; i++) {
+      const prev = s;
+      s = step(s, DT, { x: 0, y: 0 });
+      for (const p of s.parts) {
+        if (p.kind !== 'arm') continue;
+        const was = prev.parts.find((q) => q.id === p.id);
+        if (p.target && was?.kind === 'arm' && !was.target) {
+          expect(p.target).toEqual(prev.pos);
+          expect(s.time).toBeGreaterThanOrEqual(p.warnAt);
+        }
+        if (p.target && s.time > p.grabAt && s.time < p.pullAt) {
+          expect(armAt(p, s.time).hand).toEqual(p.target);
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(5);
+    expect(Object.values(s.hits).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
   });
 });
 
@@ -694,11 +772,13 @@ describe('the portraits', () => {
     return { w: word(16), h: word(20) };
   };
 
-  it('their sizes match the art, in both styles, blink frames included', () => {
-    for (const style of ['solid', 'solid-red']) {
-      for (const p of Object.values(PORTRAITS)) {
-        expect(size(`${style}/${p.file}.png`)).toEqual({ w: p.w, h: p.h });
-        expect(size(`${style}/${p.file}-blink.png`)).toEqual({ w: p.w, h: p.h });
+  it('their sizes match the art (Solid + red only), blink and bob frames included', () => {
+    expect(Object.keys(files).every((f) => f.includes('/solid-red/'))).toBe(true);
+    const flying = Object.keys(D.portraits.float);
+    for (const [who, p] of Object.entries(PORTRAITS)) {
+      const frames = flying.includes(who) ? ['', '-blink'] : ['', '-blink', '-bob', '-bob-blink'];
+      for (const f of frames) {
+        expect(size(`solid-red/${p.file}${f}.png`)).toEqual({ w: p.w, h: p.h });
       }
     }
   });

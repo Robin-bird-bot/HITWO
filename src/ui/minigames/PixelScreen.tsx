@@ -18,15 +18,17 @@ export const PixelScreen = forwardRef<
     measure?: boolean;
     children: ReactNode;
     className?: string;
+    /** No green behind it: laid over another screen (the end screen over the game). */
+    transparent?: boolean;
   }
->(function PixelScreen({ measure = true, children, className }, sceneRef) {
+>(function PixelScreen({ measure = true, children, className, transparent = false }, sceneRef) {
   const outer = useRef<HTMLDivElement>(null);
   const frame = usePixelFrame(outer, measure);
   return (
     <div
       ref={outer}
       className={`${styles.screen} ${className ?? ''}`}
-      style={{ background: SCREEN_GREEN }}
+      style={transparent ? undefined : { background: SCREEN_GREEN }}
     >
       <div
         className={styles.frame}

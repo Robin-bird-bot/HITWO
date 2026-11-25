@@ -19,6 +19,7 @@ import { weightedPick } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { isTier, type Tier } from '../types';
 import type { Box } from './geometry';
+import type { Point } from './shapes';
 import { ATTACKS, playsAt, ranksOf, type Rank } from './library';
 import type { AnimalId, AttackId, Attacker, Tweak } from './types';
 
@@ -99,7 +100,7 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     id: 'monster',
     name: 'Woods Monster',
     hud: 'Woods monster',
-    attacks: plain('fire', 'hands', 'wisps', 'runes', 'ritual', 'eye', 'darkness'),
+    attacks: plain('fire', 'arms', 'hands', 'wisps', 'runes', 'ritual', 'glare', 'darkness'),
   },
 };
 
@@ -269,6 +270,19 @@ export const PORTRAITS: Readonly<
   monster: { file: 'woods-monster', w: 65, h: 56 },
   cultist: { file: 'cultist', w: 33, h: 38 },
 };
+
+/** The Woods Monster's eyes in his portrait (the red pupils of woods-monster.png), where Glare fires from. */
+export const MONSTER_EYES: readonly { x: number; y: number }[] = [
+  { x: 25.5, y: 27.5 },
+  { x: 38.5, y: 27.5 },
+];
+
+/** Where a portrait sits at rest: its top-left on screen (centered at x 160, a gap above its box). */
+export function portraitAt(who: Attacker | 'cultist', over: Attacker = 'monster'): Point {
+  const p = PORTRAITS[who];
+  const box = boxFor(who === 'cultist' ? over : who);
+  return { x: 160 - p.w / 2, y: box.cy - box.h / 2 - D.portraits.gap - p.h };
+}
 
 /**
  * An attacker's box: its size and its middle on screen. Its portrait sits

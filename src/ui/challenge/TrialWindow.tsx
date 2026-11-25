@@ -4,6 +4,7 @@
  * replace the cost, and "Got it" starts the countdown. Opened again from a
  * countdown chip, it shows the same card read-only, with who's done so far.
  */
+import { tierLabel } from '../../minigames/types';
 import { useEffect, useRef } from 'react';
 import { ASSETS, cardArt } from '../../config/assets';
 import { CARDS } from '../../content';
@@ -26,7 +27,6 @@ import { Drift, Face } from './ChallengeWindow';
 import styles from './ChallengeWindow.module.css';
 import trialStyles from './TrialWindow.module.css';
 
-const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
 const PARTY_GOALS = ['together', 'apart', 'abundance'];
 
 interface TrialView {
@@ -167,7 +167,7 @@ function TrialWindow({
           <header className={styles.banner}>
             <span className={styles.bannerSide}>
               <Icon name="sign" size={20} color="#FFF6EC" strokeWidth={2.5} />
-              TRIAL · TIER {TIER_WORD[view.tier]}
+              TRIAL · TIER {tierLabel(view.tier)}
             </span>
             <span className={styles.titleRow}>
               {nodes.map((n) => (

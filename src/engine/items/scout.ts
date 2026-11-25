@@ -14,6 +14,7 @@
  * - Fire Flower: the card on an adjacent tile is gone.
  * - Poo Bag: the card on an adjacent tile drops a tier.
  */
+import { tierLabel } from '../../minigames/types';
 import { ITEMS } from '../../content/items';
 import { bringCarried, carryMoveReason } from '../actions/carry';
 import { enterTile, tileEntryReason } from '../actions/common';
@@ -180,7 +181,7 @@ export function applyMapUse(
       const seen = peekTile(state, tile.id);
       tile.scan = seen;
       scout([tile.id]);
-      return seen.has ? `a Tier ${'I'.repeat(seen.tier ?? 1)} ${seen.kind}` : 'nothing there';
+      return seen.has ? `a Tier ${tierLabel(seen.tier ?? 1)} ${seen.kind}` : 'nothing there';
     }
     case 'countAround': {
       const ids = around(state, hiker);

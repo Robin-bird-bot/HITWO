@@ -13,6 +13,7 @@
  * - The window can be dragged by its banner (2a). Nothing is spent until
  *   Continue.
  */
+import { tierLabel } from '../../minigames/types';
 import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { CARDS, CONDITIONS, ITEMS } from '../../content';
@@ -100,8 +101,6 @@ interface ChallengeWindowProps {
 }
 
 type PressAction = Extract<Action, { type: 'pressButton' }>;
-
-const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
 
 /** Who a card asks for, in the banner. */
 const SCOPE_WORD = {
@@ -231,7 +230,7 @@ function ChallengeBody({
                   color="#FFF6EC"
                   strokeWidth={2.5}
                 />
-                {typeLabel} · TIER {TIER_WORD[open.tier]}
+                {typeLabel} · TIER {tierLabel(open.shownTier ?? open.tier)}
               </span>
               <span className={styles.titleRow}>
                 {nodes.map((n) => (
@@ -1928,7 +1927,7 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
           <header className={styles.banner}>
             <span className={styles.bannerSide}>
               <Icon name="split" size={20} color="#FFF6EC" strokeWidth={2.5} />
-              CHOICE SPACE · TIER {TIER_WORD[open.tier]}
+              CHOICE SPACE · TIER {tierLabel(open.shownTier ?? open.tier)}
             </span>
             <span className={styles.titleRow}>
               <h2 className={styles.title}>PICK ONE</h2>

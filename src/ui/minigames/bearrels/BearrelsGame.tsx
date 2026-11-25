@@ -8,7 +8,8 @@
  * it fires: anyone behind that barrel is out (a red flash, a shake, the
  * hikers tip over), or "Missed!". With 2 shots the second follows on a
  * different barrel. The bear ducks, and the next round starts with everyone
- * where they were. After the last round, or once everyone is out, a results card.
+ * where they were. After the last round, or once everyone is out, the shared
+ * end screen (the play stage shows it).
  *
  * The version only changes how the scene is drawn (./Scene.tsx): switching it
  * mid-round keeps every hiker's barrel, the round and who is out.
@@ -54,7 +55,6 @@ import {
 import type { MinigameHiker, MinigameResult } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerPortrait } from '../../hikers/HikerPortrait';
-import { ResultsCard } from '../ResultsCard';
 import { playSound } from '../sound';
 import { usePixelFrame } from '../usePixelFrame';
 import { BearrelsScene } from './Scene';
@@ -111,7 +111,7 @@ export function BearrelsGame({
   style: ArtStyle;
   hikers: readonly MinigameHiker[];
   seed: number;
-  /** Continue on the results card: who was safe and who was hit. */
+  /** It's over: who was safe and who was hit (the end screen comes next). */
   onDone(result: MinigameResult): void;
 }) {
   const reduced = useReducedMotion();
@@ -119,7 +119,6 @@ export function BearrelsGame({
   const rootRef = useRef<HTMLDivElement>(null);
   const tokenRefs = useRef(new Map<string, HTMLElement>());
   const frame = usePixelFrame(rootRef);
-  const [round, setRound] = useState(0);
   const [game, setGame] = useState(() => newGame(settings, ids, seed));
   const n = game.settings.barrels;
   const [bear, setBear] = useState<BearPose>('hidden');
@@ -239,6 +238,7 @@ export function BearrelsGame({
     setBusy(false);
     if (s.phase === 'over') {
       setResults(true);
+      onDone(result(s));
       return;
     }
     setPrompt({ text: MOVE });
@@ -366,19 +366,6 @@ export function BearrelsGame({
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  const playAgain = () => {
-    const next = round + 1;
-    setRound(next);
-    setGame(newGame(settings, ids, seed + next * 7919));
-    setBear('hidden');
-    setCross(null);
-    setTipped([]);
-    setGone([]);
-    setPrompt({ text: PICK });
-    setResults(false);
-    setKeys(false);
-  };
-
   const dragging = press?.dragging ? press : null;
   const lifted = dragging?.id ?? fly?.id ?? null;
   const model: SceneModel = {
@@ -395,7 +382,6 @@ export function BearrelsGame({
     smoke,
     arriving,
   };
-  const ended = result(game);
   const ghost = dragging
     ? { id: dragging.id, x: dragging.x, y: dragging.y, flying: false }
     : fly
@@ -547,14 +533,6 @@ export function BearrelsGame({
         </div>
       )}
 
-      {results && (
-        <ResultsCard
-          result={ended}
-          hikers={hikers}
-          onContinue={() => onDone(ended)}
-          onPlayAgain={playAgain}
-        />
-      )}
       <span className={styles.srOnly}>{stillIn(game).length} still in</span>
     </div>
   );

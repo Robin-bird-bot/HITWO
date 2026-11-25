@@ -1,10 +1,12 @@
 /**
  * Sleeping Bear (docs/design/14-minigames-trail-blocks.md, section 6):
- * caught after the grace, safe during a stir, the clock, fake-outs, and
- * crossing.
+ * caught after the grace, safe during a stir, the clock (smooth, stopped
+ * while he's awake, earned back while moving during a stir), fake-outs,
+ * crossing, and a "walk only while he sleeps" player crossing on every tier.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { TIERS } from '../types';
 import { newSleepingBear, result, tick, type SleepingBearState } from './logic';
 
 const SB = BALANCE.minigames.sleepingBear;
@@ -74,9 +76,60 @@ describe('the bear', () => {
 });
 
 describe('the clock and crossing', () => {
-  it.each([1, 2, 3] as const)('Tier %i: the clock is the time per hiker × hikers', (tier) => {
+  it.each(TIERS)('Tier %i: the clock is the time per hiker × hikers', (tier) => {
     expect(newSleepingBear({ tier }, THREE, 1).clock).toBe(SB.tiers[tier].secPerHiker * 3);
   });
+
+  it('counts down smoothly, by each step’s time, while he sleeps', () => {
+    let s = { ...newSleepingBear({ tier: 1 }, THREE, 2), bearLeft: 999 };
+    for (const dt of [1 / 60, 1 / 30, 0.1, 1 / 120]) {
+      const before = s.clock;
+      s = tick(s, dt, false);
+      expect(s.clock).toBeCloseTo(before - dt, 9);
+    }
+  });
+
+  it('stops while he’s awake and while a caught hiker is sent off', () => {
+    const awake = {
+      ...newSleepingBear({ tier: 1 }, THREE, 2),
+      bear: 'awake' as const,
+      bearLeft: 1,
+    };
+    expect(run(awake, 0.8, false).clock).toBe(awake.clock);
+    const roar = {
+      ...newSleepingBear({ tier: 1 }, THREE, 2),
+      bear: 'roar' as const,
+      bearLeft: 0.9,
+    };
+    expect(run(roar, 0.8, false).clock).toBe(roar.clock);
+  });
+
+  it('goes up while the hiker keeps moving during a stir, and down while they stand still', () => {
+    const s0 = {
+      ...newSleepingBear({ tier: 1 }, THREE, 2),
+      bear: 'stir' as const,
+      bearLeft: 0.6,
+      clock: 10,
+    };
+    expect(run(s0, 0.5, true).clock).toBeCloseTo(10 + 0.5 * SB.stirEarnRate, 1);
+    expect(run(s0, 0.5, false).clock).toBeCloseTo(10 - 0.5, 1);
+    // Never past where it started.
+    expect(run({ ...s0, clock: s0.total - 0.1 }, 0.5, true).clock).toBe(s0.total);
+  });
+
+  it.each(TIERS)(
+    'Tier %i: a hiker who walks only while he sleeps (and stops the moment he stirs) always crosses in time',
+    (tier) => {
+      for (const n of [1, 2, 3, 4]) {
+        for (let seed = 1; seed <= 25; seed++) {
+          let s = newSleepingBear({ tier }, ['finn', 'mom', 'ellie', 'wyatt'].slice(0, n), seed);
+          for (let i = 0; i < 60 * 120 && !s.over; i++) s = tick(s, DT, s.bear === 'asleep');
+          expect(s.over).toBe(true);
+          expect(Object.values(s.status).every((x) => x === 'across')).toBe(true);
+        }
+      }
+    },
+  );
 
   it('walking the whole path while he sleeps crosses, and the next hiker goes', () => {
     const s0 = { ...newSleepingBear({ tier: 1 }, THREE, 3), bearLeft: 999 };

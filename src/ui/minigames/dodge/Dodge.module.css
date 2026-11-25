@@ -387,3 +387,25 @@
   height: 240px;
   pointer-events: none;
 }
+
+/* Glare's warning: a red ring flashing around each of the Woods Monster's eyes. */
+.eyeRing {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* A drawing over the whole screen, in scene units (the long arms, Glare's edges). */
+.full {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
+}

@@ -68,7 +68,8 @@ export type AttackId =
   | 'wisps'
   | 'runes'
   | 'ritual'
-  | 'eye'
+  | 'glare'
+  | 'arms'
   | 'darkness';
 
 /**

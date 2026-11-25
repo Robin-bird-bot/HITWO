@@ -1,11 +1,13 @@
 /**
- * What the turned GPS plays (docs/design/11-minigames-puzzles.md, "Line up"
- * and "Results"): for a puzzle game with 2 or more hikers, Line up first;
- * then the game with the hikers in that order; then the shared results card
- * ("2 passed, 1 failed"). Play again goes back to Line up, starting from the
- * last order. Bearrels plays its own rounds and results.
+ * What the turned GPS plays (docs/design/11-minigames-puzzles.md, "Line up";
+ * 16-challenge-end-screen.md): for a puzzle game with 2 or more hikers, Line
+ * up first; then the game with the hikers in that order; then the shared end
+ * screen (Challenge Passed or Challenge Failed). A tap there turns the GPS
+ * back, and the pop-up shows how it went (with Play again in test mode).
+ * Bearrels plays its own rounds, then the same end screen.
  */
 import { useState } from 'react';
+import { endInfo } from '../../minigames/catalog';
 import { needsLineUp } from '../../minigames/lineup';
 import type {
   MinigameHiker,
@@ -13,8 +15,8 @@ import type {
   MinigameResult,
   MinigameSettings,
 } from '../../minigames/types';
+import { EndScreen } from './EndScreen';
 import { LineUp } from './LineUp';
-import { ResultsCard } from './ResultsCard';
 import { PUZZLES, RUNNERS } from './runners';
 
 export function PlayStage({
@@ -33,11 +35,26 @@ export function PlayStage({
   const lineUp = !!info.lineUp && needsLineUp(hikers.length);
   const [step, setStep] = useState<'lineup' | 'game'>(lineUp ? 'lineup' : 'game');
   const [order, setOrder] = useState<string[]>(() => hikers.map((h) => h.id));
-  const [round, setRound] = useState(0);
   const [result, setResult] = useState<MinigameResult | null>(null);
+  const end = endInfo(info, settings);
 
   const Own = RUNNERS[info.id];
-  if (Own) return <Own settings={settings} hikers={hikers} seed={seed} onDone={onDone} />;
+  if (Own)
+    return (
+      <>
+        <Own settings={settings} hikers={hikers} seed={seed} onDone={setResult} />
+        {result && (
+          <EndScreen
+            result={result}
+            hikers={hikers}
+            subtitle={end.subtitle}
+            thing={end.thing}
+            seed={seed}
+            onContinue={() => onDone(result)}
+          />
+        )}
+      </>
+    );
   const Game = PUZZLES[info.id];
   if (!Game) return null;
 
@@ -56,23 +73,15 @@ export function PlayStage({
   }
   return (
     <>
-      <Game
-        key={round}
-        settings={settings}
-        hikers={ordered}
-        seed={seed + round * 7919}
-        onDone={setResult}
-      />
+      <Game settings={settings} hikers={ordered} seed={seed} onDone={setResult} />
       {result && (
-        <ResultsCard
+        <EndScreen
           result={result}
           hikers={ordered}
+          subtitle={end.subtitle}
+          thing={end.thing}
+          seed={seed}
           onContinue={() => onDone(result)}
-          onPlayAgain={() => {
-            setResult(null);
-            setRound((r) => r + 1);
-            setStep(lineUp ? 'lineup' : 'game');
-          }}
         />
       )}
     </>

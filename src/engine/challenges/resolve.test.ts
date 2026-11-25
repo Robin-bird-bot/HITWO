@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { tileTier } from './pick';
 import { BALANCE } from '../../config/balance';
 import { validateAction } from '../applyAction';
 import { deserialize, serialize } from '../save';
@@ -46,7 +47,13 @@ describe('opening a challenge', () => {
       });
       if (!s.challenge) continue;
       opens += 1;
-      expect(s.challenge).toMatchObject({ tileId: 'L', hikerIds: ['ash'], tier: 1 });
+      const rolled = tileTier(s, s.section.tiles.L!);
+      expect(s.challenge).toMatchObject({
+        tileId: 'L',
+        hikerIds: ['ash'],
+        tier: Math.min(3, rolled),
+        shownTier: rolled,
+      });
       expect(s.usedCards).toContain(s.challenge.cardId);
       expect(validateAction(s, { type: 'move', hikerId: 'birch', toTileId: 'M' })).toBe(
         'Finish the challenge first.',

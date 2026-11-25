@@ -17,47 +17,48 @@
 
 .tree {
   position: absolute;
-  left: 118px;
-  top: 22px;
-  width: 84px;
-  height: 160px;
+  left: 107.5px;
+  top: -40px;
+  width: 105px;
+  height: 237px;
 }
 
-/* Cleared: the tree tips over to the left and fades into the log and stump. */
+/* Cleared: the tree tips over to the left around its base, then drops out of view. */
 .felled {
-  transform-origin: 30% 100%;
-  animation: tipOver 0.9s ease-in forwards;
+  transform-origin: 50% 100%;
+  animation:
+    tipOver 0.6s ease-in forwards,
+    dropOut 0.5s ease-in 0.6s forwards;
 }
 
 @keyframes tipOver {
   to {
-    transform: rotate(-82deg);
+    rotate: -90deg;
+  }
+}
+
+@keyframes dropOut {
+  to {
+    translate: 0 60px;
     opacity: 0;
   }
 }
 
-.cleared {
+/* The stump left at the tree's base. */
+.stump {
   position: absolute;
-  left: 10px;
-  top: 112px;
-  width: 300px;
-  height: 70px;
-  opacity: 0;
-  animation: fadeIn 0.5s ease-out 0.6s forwards;
-}
-
-@keyframes fadeIn {
-  to {
-    opacity: 1;
-  }
+  left: 139px;
+  top: 176px;
+  width: 42px;
+  height: 21px;
 }
 
 .rocks {
   position: absolute;
-  left: 30px;
-  top: 66px;
-  width: 260px;
-  height: 112px;
+  left: 46px;
+  top: 22px;
+  width: 228px;
+  height: 168px;
 }
 
 .chips {
@@ -147,20 +148,40 @@
   }
 }
 
-/* The hiker's arm and tool, bottom right; the sleeve layer on top. */
-.arm {
+/* The tool (160 × 124) at (160, 72); the axe on the left is the same frames mirrored at (0, 72). */
+.tool {
   position: absolute;
   left: 160px;
+  top: 72px;
   width: 160px;
   height: 124px;
   pointer-events: none;
+  animation: slideIn 0.1s ease-out;
 }
 
-.arm > img {
+.tool[data-side='left'] {
+  left: 0;
+  transform: scaleX(-1);
+  animation-name: slideInLeft;
+}
+
+.tool > img {
   position: absolute;
   inset: 0;
   width: 160px;
   height: 124px;
+}
+
+@keyframes slideIn {
+  from {
+    translate: 40px 0;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    translate: -40px 0;
+  }
 }
 
 /* Chop Tree and River Flood: the strip above the energy bar. */
@@ -199,6 +220,12 @@
   height: 9px;
   margin-left: -0.5px;
   background: #f4f8dc;
+}
+
+/* Frozen where the last swing stopped it: a small light frame. */
+.marker[data-frozen] {
+  outline: 0.75px solid #f4f8dc;
+  outline-offset: 1.5px;
 }
 
 .marker::before {
@@ -242,6 +269,11 @@
   right: 1.5px;
   bottom: 0;
   opacity: 0.85;
+}
+
+.powerFill[data-frozen] {
+  outline: 0.75px solid #f4f8dc;
+  outline-offset: 1px;
 }
 
 .hold {
@@ -318,7 +350,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .felled,
-  .cleared,
+  .tool,
   .chips,
   .splash,
   .waves {

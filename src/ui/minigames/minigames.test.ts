@@ -23,6 +23,9 @@ import {
   TRAIL_BLOCKS,
   TRAIL_MAP,
   WHACKOON,
+  CROSSING,
+  TRAIN,
+  RAFTING,
 } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
@@ -143,6 +146,9 @@ describe('the minigame list', () => {
         'Movement and dodging',
         [
           ['Dodge', 'ready'],
+          ['Crossing', 'ready'],
+          ['Train!', 'ready'],
+          ['Rafting', 'ready'],
           ['Ants Are Marching', 'soon'],
           ['Cracked Bridge', 'soon'],
         ],
@@ -181,13 +187,34 @@ describe('the minigame list', () => {
     expect(MINIGAMES.some((m) => m.id === 'trailMemory')).toBe(false);
   });
 
+  it('the lane games’ settings: Crossing’s version, lives and time; Train!’s lives, clock and fog; Rafting’s distance', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((x) => x.id);
+    expect(ids(CROSSING)).toEqual(['version', 'tier', 'hikers', 'lives', 'time']);
+    expect(ids(TRAIN)).toEqual(['tier', 'hikers', 'lives', 'survive', 'fog']);
+    expect(ids(RAFTING)).toEqual(['tier', 'hikers', 'distance']);
+    const version = CROSSING.settings[0];
+    if (version?.kind !== 'pick') throw new Error('Version is a pick');
+    expect(version.options.map((o) => o.label)).toEqual([
+      'Road Crossing',
+      'River Crossing',
+      'Critter Crossing',
+      'Mixed',
+    ]);
+    expect([CROSSING, TRAIN, RAFTING].every((m) => m.category === 'move' && m.lineUp)).toBe(true);
+    expect(cleanSettings(TRAIN, { fog: 'thick', survive: 70 }, TEST_HIKERS)).toMatchObject({
+      fog: 'auto',
+      survive: 60,
+    });
+    expect(cleanSettings(RAFTING, { distance: 2550 }, TEST_HIKERS).distance).toBe(2600);
+  });
+
   it('the new challenges’ settings: Trail Blocks’ version and hit quality, fake-outs and skunks', () => {
     const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
     expect(ids(TRAIL_BLOCKS)).toEqual(['version', 'tier', 'hikers', 'quality']);
     expect(ids(SLEEPING_BEAR)).toEqual(['tier', 'hikers', 'fakeOuts']);
-    expect(ids(WHACKOON)).toEqual(['tier', 'hikers', 'mode', 'skunks']);
-    expect(defaultSettings(WHACKOON)).toMatchObject({ mode: 'colors', skunks: 'auto' });
-    expect(cleanSettings(WHACKOON, { mode: 'teams' }, TEST_HIKERS).mode).toBe('colors');
+    // Whackoon is everyone at once, in colors (the Mode setting is gone).
+    expect(ids(WHACKOON)).toEqual(['tier', 'hikers', 'skunks']);
+    expect(defaultSettings(WHACKOON)).toMatchObject({ skunks: 'auto' });
     const version = TRAIL_BLOCKS.settings[0];
     if (version?.kind !== 'pick') throw new Error('Version is a pick');
     expect(version.options.map((o) => o.label)).toEqual([
@@ -319,7 +346,6 @@ describe('the minigame list', () => {
       'level',
       'ideas',
       'hitboxes',
-      'portrait',
       'motion',
       'tier',
       'hikers',
@@ -334,7 +360,6 @@ describe('the minigame list', () => {
       level: 'auto',
       ideas: 'on',
       hitboxes: 'off',
-      portrait: 'solid',
       motion: 'on',
       lives: 'auto',
       length: 'auto',
@@ -409,16 +434,24 @@ describe('the minigame list', () => {
     expect(open({ animal: 'monster', tier: 1, ideas: 'on' })).toEqual([
       'all',
       'fire',
+      'arms',
       'hands',
       'wisps',
       'runes',
       'ritual',
-      'eye',
+      'glare',
       'darkness',
     ]);
-    expect(open({ animal: 'monster', tier: 1, ideas: 'off' })).toEqual(['all', 'fire']);
+    // Long arms are Wyatt's, and Glare isn't marked Claude's idea any more.
+    expect(open({ animal: 'monster', tier: 1, ideas: 'off' })).toEqual([
+      'all',
+      'fire',
+      'arms',
+      'glare',
+    ]);
     expect(cleanSettings(DODGE, { level: 'hard' }, TEST_HIKERS).level).toBe('auto');
-    expect(cleanSettings(DODGE, { portrait: 'solidRed' }, TEST_HIKERS).portrait).toBe('solidRed');
+    // The Portrait style setting is gone (Solid + red only).
+    expect(DODGE.settings.some((x) => x.id === 'portrait')).toBe(false);
     // A remembered attack is kept while the animal changes; one no animal uses goes back to All.
     expect(cleanSettings(DODGE, { animal: 'bobcat', attack: 'shout' }, TEST_HIKERS).attack).toBe(
       'shout',

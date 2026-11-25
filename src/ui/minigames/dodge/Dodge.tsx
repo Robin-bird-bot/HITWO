@@ -6,9 +6,9 @@
  * - **Top:** the animal's name, a SURVIVE bar emptying as time runs down,
  *   and the tier.
  * - **The animal's portrait** above the box (in the Stampede, whoever is
- *   attacking; the Woods Monster with his two cultists), in the Portrait
- *   style setting's colors (P switches it while playing); **the box** below
- *   it, where the party's sprite (tinted in the active hiker's color) dodges.
+ *   attacking; the Woods Monster with his two cultists, and his long arms
+ *   reaching out from behind his head); **the box** below it, where the
+ *   party's sprite (tinted in the active hiker's color) dodges.
  * - **Attacks** are drawn in layers: warnings and shadows under the sprite,
  *   attacks over it, squirrels and swords outside the box, and every "!" and
  *   warning arrow on top of everything (the HUDs included), so none is ever
@@ -48,7 +48,8 @@ import ui from '../gpsUi.module.css';
 import { Hitboxes } from './Hitboxes';
 import { PartsLayer } from './parts/drawParts';
 import { art, type DrawCtx } from './parts/drawTypes';
-import { Portraits, type PortraitStyle } from './Portraits';
+import { Portraits } from './Portraits';
+import { floatOffset } from './portraitMotion';
 import { useTinted } from './tint';
 import styles from './Dodge.module.css';
 
@@ -86,10 +87,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       seed,
     ),
   );
-  // The portraits: their style (P switches it while playing) and motion.
-  const [portrait, setPortrait] = useState<PortraitStyle>(
-    pickOf(settings, 'portrait') === 'solidRed' ? 'solid-red' : 'solid',
-  );
+  // The portraits' motion (the float, the idle bob and the blink).
   const motion = pickOf(settings, 'motion') !== 'off';
   const keys = useRef(new Set<string>());
   const stick = useRef<{ id: number; start: Point; now: Point; startScene: Point } | null>(null);
@@ -116,10 +114,6 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       'D',
     ]);
     const down = (e: KeyboardEvent) => {
-      if ((e.key === 'p' || e.key === 'P') && !e.repeat) {
-        setPortrait((p) => (p === 'solid' ? 'solid-red' : 'solid'));
-        return;
-      }
       if (!watched.has(e.key)) return;
       e.preventDefault();
       keys.current.add(e.key);
@@ -224,6 +218,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
     bottom: boxTop + box.h,
     beeFrame,
     reduced,
+    portraitDy: motion && !reduced && animal === 'monster' ? floatOffset('monster', game.time) : 0,
   };
 
   // The Woods Monster's Darkness: how dark the box is now.
@@ -252,13 +247,15 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         </div>
         <div className={`${ui.box} ${styles.tier}`}>TIER {TIER_LABELS[game.hudTier]}</div>
 
+        {/* The Woods Monster's long arms reach out from behind his head. */}
+        <PartsLayer parts={game.parts} layer="behind" ctx={ctx} />
         <Portraits
           animal={animal}
           showing={game.showing}
-          style={portrait}
           motion={motion && !reduced}
           time={game.time}
           seed={seed}
+          glaring={game.parts.some((p) => p.kind === 'glare' && game.time < p.activeAt)}
         />
 
         {/* The box: everything inside it is clipped to it, drawn in scene units. */}

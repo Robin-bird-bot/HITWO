@@ -1,15 +1,19 @@
 /**
  * Trail Blocks on the GPS (docs/design/14-minigames-trail-blocks.md, section
  * 2; mockups 1-chop-tree.png to 4-clear-animals.png), in scene units
- * (320 × 240): a first-person view of the obstacle on the trail, the active
- * hiker's arm with the tool (the sleeve in their color), the work bar at the
- * top and the energy bar at the bottom.
+ * (320 × 240): a first-person view of the obstacle on the trail (Wyatt's
+ * pine and rock pile), the tool swinging by itself with a wash of the active
+ * hiker's color, the work bar at the top and the energy bar at the bottom.
  *
  * - Chop Tree and River Flood: a marker sweeps across the strip above the
- *   energy bar; click, tap or press Space to swing.
+ *   energy bar; click, tap or press Space to swing. In Chop Tree the axe is
+ *   in the hand on the side the marker is heading.
  * - Mine Rockslide: hold (mouse, finger or Space) to fill the tall bar on
  *   the left; let go in the green zone.
- * - Clearing Animals: click when the shrinking circle's edge is in the ring.
+ * - Clearing Animals: click when the solid circle's edge is in the ring;
+ *   every try is somewhere new.
+ * - After a swing, the marker (or the power, or the circle) holds where it
+ *   stopped for a moment in a light frame.
  */
 import { TIER_LABELS } from '../../../minigames/types';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
@@ -19,7 +23,9 @@ import { g } from '../../../minigames/greens';
 import {
   activeHiker,
   animalsLeft,
+  axeSide,
   circleRadius,
+  frozen,
   markerAt,
   newTrailBlocks,
   powerAt,
@@ -35,7 +41,7 @@ import {
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
-import { tintKey, useTintedArt } from '../tintArt';
+import { useWashedArt, washKey } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './TrailBlocks.module.css';
@@ -45,12 +51,12 @@ const FIXED = 1 / 120;
 const file = (f: string) => `minigames/trail-blocks/${f}`;
 const art = (f: string) => asset(file(f));
 
-/** Each version's tool frames: ready, then the two swing frames. */
-const TOOL: Readonly<Record<Version, { frames: [string, string, string]; y: number }>> = {
-  chop: { frames: ['axe-ready', 'axe-raised', 'axe-strike'], y: 72 },
-  rockslide: { frames: ['pickaxe-ready', 'pickaxe-raised', 'pickaxe-strike'], y: 72 },
-  river: { frames: ['bucket-ready', 'bucket-scoop', 'bucket-toss'], y: 58 },
-  animals: { frames: ['whistle-hold', 'whistle-blow', 'whistle-blow'], y: 72 },
+/** Each version's tool frames (160 × 124, at (160, 72)): ready, then the two swing frames. */
+const TOOL: Readonly<Record<Version, readonly [string, string, string]>> = {
+  chop: ['axe-ready', 'axe-raised', 'axe-strike'],
+  rockslide: ['pickaxe-ready', 'pickaxe-raised', 'pickaxe-strike'],
+  river: ['bucket-ready', 'bucket-scoop', 'bucket-toss'],
+  animals: ['whistle-hold', 'whistle-blow', 'whistle-blow'],
 };
 
 /** The crowd on the trail (Clearing Animals): who stands where (top-left), as in mockup 4. */
@@ -81,9 +87,8 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
   const holding = useRef(false);
   const reported = useRef(false);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
-  const tool = TOOL[version];
-  const toolFiles = tool.frames.map((f) => file(`${f}-sleeve.png`));
-  const sleeves = useTintedArt(
+  const toolFiles = TOOL[version].map((f) => file(`${f}.png`));
+  const washes = useWashedArt(
     toolFiles,
     hikers.map((h) => h.color),
   );
@@ -170,6 +175,8 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
 
   // What the tool shows: a swing goes ready → raised → strike → ready.
   const since = game.lastSwing ? game.time - game.lastSwing.at : 99;
+  const side = version === 'chop' ? axeSide(game) : 'right';
+  const still$ = frozen(game);
   const frame = since < 0.12 ? 1 : since < B.swingSec ? 2 : 0;
   const who = activeHiker(game);
   const color = (who ? byId(who) : hikers.at(-1))?.color ?? '#d3dfaf';
@@ -207,16 +214,17 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
           (done ? (
             <>
               <img
-                className={`${ui.sprite} ${styles.tree} ${styles.felled}`}
-                src={art('tree-4.png')}
+                className={`${ui.sprite} ${styles.stump}`}
+                src={art('tree-stump.png')}
                 alt=""
                 draggable={false}
               />
               <img
-                className={`${ui.sprite} ${styles.cleared}`}
-                src={art('tree-cleared.png')}
+                className={`${ui.sprite} ${styles.tree} ${styles.felled}`}
+                src={art('tree-4.png')}
                 alt=""
                 draggable={false}
+                style={{ animationDuration: `${B.tipSec}s, 0.5s` }}
               />
             </>
           ) : (
@@ -285,32 +293,39 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
               );
             })}
             <svg className={styles.sky} viewBox="0 0 320 240" aria-hidden="true">
+              {/* The solid circle under the ring, then the ring (G7 with light edges). */}
+              {!done && game.phase !== 'out' && (
+                <circle cx={game.ring.x} cy={game.ring.y} r={circleRadius(game)} fill={g(2)} />
+              )}
               <circle
-                cx={B.animals.ring.x}
-                cy={B.animals.ring.y}
+                cx={game.ring.x}
+                cy={game.ring.y}
                 r={B.animals.ring.r}
                 fill="none"
-                stroke="#d3dfaf"
-                strokeOpacity={0.85}
+                stroke={g(7)}
+                strokeOpacity={0.9}
                 strokeWidth={B.animals.thickness[tier]}
               />
-              <circle
-                cx={B.animals.ring.x}
-                cy={B.animals.ring.y}
-                r={B.animals.ring.r}
-                fill="none"
-                stroke="#1d2918"
-                strokeWidth={0.4}
-                strokeDasharray="1.5 1.5"
-              />
-              {!done && game.phase !== 'out' && (
+              {[-1, 1].map((k) => (
                 <circle
-                  cx={B.animals.ring.x}
-                  cy={B.animals.ring.y}
-                  r={circleRadius(game)}
+                  key={k}
+                  cx={game.ring.x}
+                  cy={game.ring.y}
+                  r={B.animals.ring.r + (k * B.animals.thickness[tier]) / 2}
                   fill="none"
-                  stroke="#111a10"
-                  strokeWidth={1}
+                  stroke={g(9)}
+                  strokeWidth={0.5}
+                />
+              ))}
+              {still$ && (
+                <circle
+                  cx={game.ring.x}
+                  cy={game.ring.y}
+                  r={circleRadius(game) + 1.5}
+                  fill="none"
+                  stroke={g(9)}
+                  strokeWidth={0.75}
+                  strokeDasharray="2 1.5"
                 />
               )}
             </svg>
@@ -325,21 +340,18 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
           </>
         )}
 
-        {/* The hiker's arm with the tool; the sleeve in their color. */}
+        {/* The tool, swinging by itself, washed with the active hiker's color.
+            The axe is in the hand on the side the marker is heading. */}
         {!done && (
-          <span className={styles.arm} style={{ top: tool.y }}>
+          <span
+            key={side}
+            className={styles.tool}
+            data-side={side}
+            style={{ animationDuration: `${B.axeSlideSec}s` }}
+          >
             <img
               className={ui.sprite}
-              src={art(`${tool.frames[frame]}.png`)}
-              alt=""
-              draggable={false}
-            />
-            <img
-              className={ui.sprite}
-              src={
-                sleeves[tintKey(toolFiles[frame]!, color)] ??
-                art(`${tool.frames[frame]}-sleeve.png`)
-              }
+              src={washes[washKey(toolFiles[frame]!, color)] ?? art(`${TOOL[version][frame]}.png`)}
               alt=""
               draggable={false}
             />
@@ -376,7 +388,11 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
                   ),
                 )
               )}
-              <span className={styles.marker} style={{ left: `${markerAt(game) * 100}%` }} />
+              <span
+                className={styles.marker}
+                data-frozen={still$ || undefined}
+                style={{ left: `${markerAt(game) * 100}%` }}
+              />
             </span>
           </div>
         )}
@@ -393,6 +409,7 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
                 />
                 <span
                   className={styles.powerFill}
+                  data-frozen={still$ || undefined}
                   style={{ height: `${powerAt(game) * 100}%`, background: color }}
                 />
               </span>
