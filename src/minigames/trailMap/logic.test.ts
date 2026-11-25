@@ -1,10 +1,13 @@
 /**
  * Trail Map (docs/design/13-minigames-puzzles-2.md, section 6): every board
- * can be solved and none start solved; locked tiles; lighting; the two modes.
+ * can be solved and none start solved, signs on the first hiker's trail;
+ * locked tiles; lighting; passing only when everything is connected at once.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { TIERS } from '../types';
 import {
+  allConnected,
   BASE,
   E,
   gateCell,
@@ -14,6 +17,7 @@ import {
   openings,
   pieceFor,
   S,
+  signsReached,
   solved,
   timeUp,
   turn,
@@ -58,27 +62,37 @@ describe('pieces', () => {
 });
 
 describe('making a board', () => {
-  const cases = ([1, 2, 3] as Tier[]).flatMap((tier) =>
+  const cases = TIERS.flatMap((tier) =>
     [1, 2, 3, 4].flatMap((hikers) => [1, 2, 3, 4, 5, 6].map((seed) => [tier, hikers, seed])),
   ) as [Tier, number, number][];
 
   it.each(cases)(
-    'Tier %i, %i hikers, seed %i: solvable, and nobody starts connected',
+    'Tier %i, %i hikers, seed %i: solvable with every sign on the first trail, and nobody starts connected',
     (tier, n, seed) => {
       const s = newTrailMap({ tier }, HIKERS.slice(0, n), seed);
       expect(s.size).toBe(T.tiers[tier].size);
+      expect(s.signs).toHaveLength(T.tiers[tier].signs);
       expect(lighting(s).connected.size).toBe(0);
-      expect(lighting(solve(s)).connected.size).toBe(n);
-      // Trailheads are on different tiles from each other and from the exit.
+      const solved$ = solve(s);
+      const lit = lighting(solved$);
+      expect(lit.connected.size).toBe(n);
+      expect(signsReached(solved$)).toHaveLength(s.signs.length);
+      expect(allConnected(solved$)).toBe(true);
+      // Trailheads are on different tiles from each other and from the exit; no sign is on one.
       const cells = [s.exit, ...Object.values(s.heads)].map((g) => {
         const c = gateCell(g, s.size);
         return c.r * s.size + c.c;
       });
       expect(new Set(cells).size).toBe(cells.length);
+      for (const sign of s.signs) {
+        expect(cells).not.toContain(sign);
+        expect(s.tiles[sign]!.needs).toBeDefined();
+        expect(lit.litBy[HIKERS[0]!]!.has(sign)).toBe(true);
+      }
     },
   );
 
-  it.each([1, 2, 3] as Tier[])(
+  it.each(TIERS)(
     'Tier %i: locked tiles are solution tiles, turned right, and never turn',
     (tier) => {
       for (let seed = 1; seed <= 10; seed++) {
@@ -93,6 +107,15 @@ describe('making a board', () => {
       }
     },
   );
+
+  it('the Signs setting, and fewer signs when they can’t all fit', () => {
+    expect(newTrailMap({ tier: 1, signs: 2 }, ['finn'], 1).signs).toHaveLength(2);
+    expect(newTrailMap({ tier: 5, signs: 0 }, ['finn'], 1).signs).toHaveLength(0);
+    // A 4 × 4 with four hikers and three signs still makes a board.
+    const tight = newTrailMap({ tier: 1, signs: 3 }, HIKERS, 4);
+    expect(tight.signs.length).toBeLessThanOrEqual(3);
+    expect(allConnected(solve(tight))).toBe(true);
+  });
 
   it('the Grid and Time settings change the size and the clock', () => {
     expect(newTrailMap({ tier: 1, size: 7 }, ['finn'], 1).size).toBe(7);
@@ -135,54 +158,41 @@ describe('lighting', () => {
   });
 });
 
-describe('the modes', () => {
-  it('One at a time: a hiker passes the moment they connect, and later turns don’t undo it', () => {
-    for (let seed = 1; seed <= 8; seed++) {
-      let s = newTrailMap({ tier: 2, mode: 'one' }, HIKERS.slice(0, 3), seed);
-      const order = s.tiles.flatMap((t, i) => (t.needs !== undefined && !t.locked ? [i] : []));
-      let passedAt = -1;
-      for (const cell of order) {
-        s = fix(s, cell);
-        const { connected } = lighting(s);
-        for (const id of connected) expect(s.through[id]).toBe(true);
-        if (passedAt < 0 && Object.keys(s.through).length) passedAt = cell;
+describe('passing', () => {
+  it.each([1, 3, 5] as Tier[])(
+    'Tier %i: nobody passes until every trailhead and every sign are connected at once',
+    (tier) => {
+      for (let seed = 1; seed <= 8; seed++) {
+        let s = newTrailMap({ tier }, HIKERS.slice(0, 2), seed);
+        const order = s.tiles.flatMap((t, i) => (t.needs !== undefined && !t.locked ? [i] : []));
+        for (const cell of order) {
+          if (s.over) break;
+          s = fix(s, cell);
+          expect(Object.keys(s.through).length).toBe(allConnected(s) ? 2 : 0);
+        }
+        expect(s.over).toBe(true);
+        expect(result(s).safe).toEqual(HIKERS.slice(0, 2));
       }
-      expect(s.over).toBe(true);
-      expect(Object.keys(s.through).sort()).toEqual(['ellie', 'finn', 'mom']);
-      // Breaking a trail afterward keeps the passes.
-      const after = s.over ? { ...s, over: false } : s;
-      const cell = order.find((c) => s.tiles[c]!.piece !== 'cross')!;
-      const broken = turn(after, cell, 1);
-      expect(Object.keys(broken.through)).toHaveLength(3);
-      expect(result(broken).safe).toHaveLength(3);
-    }
+    },
+  );
+
+  it('a sign not reached holds everyone back, even with every trailhead connected', () => {
+    const s = solve(newTrailMap({ tier: 1 }, ['finn'], 2));
+    expect(lighting(s).connected.has('finn')).toBe(true);
+    const dark = s.tiles.findIndex((_, i) => !lighting(s).lit.has(i));
+    const blocked: TrailMapState = { ...s, signs: [dark] };
+    expect(allConnected(blocked)).toBe(false);
+    const cell = s.tiles.findIndex((t) => !t.locked && t.needs === undefined);
+    expect(turn(blocked, cell, 1).over).toBe(false);
   });
 
-  it('Together: nobody passes until every trail is connected at once', () => {
-    for (let seed = 1; seed <= 8; seed++) {
-      let s = newTrailMap({ tier: 1, mode: 'together' }, HIKERS.slice(0, 2), seed);
-      const order = s.tiles.flatMap((t, i) => (t.needs !== undefined && !t.locked ? [i] : []));
-      for (const cell of order) {
-        s = fix(s, cell);
-        const all = lighting(s).connected.size === 2;
-        expect(Object.keys(s.through).length).toBe(all ? 2 : 0);
-      }
-      expect(s.over).toBe(true);
-    }
-  });
-
-  it('when time runs out, whoever isn’t through fails', () => {
-    let s = newTrailMap({ tier: 1, mode: 'one' }, HIKERS.slice(0, 2), 3);
-    const finnTrail = s.tiles.flatMap((t, i) => (t.needs !== undefined && !t.locked ? [i] : []));
-    // Solve until exactly one is through.
-    for (const cell of finnTrail) {
-      if (Object.keys(s.through).length) break;
-      s = fix(s, cell);
-    }
+  it('when time runs out first, everyone fails', () => {
+    let s = newTrailMap({ tier: 2 }, HIKERS.slice(0, 2), 3);
+    const tiles = s.tiles.flatMap((t, i) => (t.needs !== undefined && !t.locked ? [i] : []));
+    s = fix(s, tiles[0]!);
     const done = timeUp(s);
     expect(done.over).toBe(true);
-    const r = result(done);
-    expect(r.safe.length + r.hit.length).toBe(2);
-    expect(r.safe).toEqual(Object.keys(s.through));
+    expect(result(done).safe).toEqual([]);
+    expect(result(done).hit).toHaveLength(2);
   });
 });

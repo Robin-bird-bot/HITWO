@@ -36,6 +36,7 @@ import { MinigameIcon } from './MinigameIcon';
 import { BearrelsScene, ScaledScreen } from './bearrels/Scene';
 import { MinigameFlow } from './MinigameFlow';
 import { PREVIEWS } from './runners';
+import { tierOf } from './puzzleProps';
 import {
   browserStorage,
   readTestingSettings,
@@ -51,8 +52,7 @@ function challengeFor(
 ): MinigameChallenge | undefined {
   if (info.status !== 'ready') return undefined;
   if (info.id === 'bearrels') return BEAR_COUNTRY;
-  const t = settings.tier;
-  return testChallenge(info, t === 2 || t === 3 ? t : 1);
+  return testChallenge(info, tierOf(settings));
 }
 
 const picked = (s: MinigameSettings, id: string): readonly string[] => {

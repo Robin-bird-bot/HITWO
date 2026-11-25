@@ -3,16 +3,18 @@
  * 2; mockups 3-memory-preview.png to 5-memory-tier-3.png), in scene units
  * (320 × 240). Cards are 22 × 26 at 1.5×.
  *
- * Every card shows for the preview, then they flip over; on Tiers II and
- * III some swap places (sliding, with a line between them). Flip a card by
- * tap or click (or the arrow keys and Space). A match stays up with a dark
- * frame; a miss shows a red frame, then flips back. The side panel shows the
- * misses left and each hiker's sets left.
+ * Every card shows for the preview, then they flip over; from Tier II some
+ * swap places (sliding, with a line between them). Flip a card by tap or
+ * click (or the arrow keys and Space). A match stays up with a dark frame;
+ * a miss shows a red frame, then flips back. The side panel shows the clock
+ * (a bar and the time, with "+5 S" or "−2 S" beside it when a match or a
+ * miss changes it; mockup 9-memory-clock.png) and each hiker's sets left.
  */
 import { useEffect, useRef, useState } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
+  clockRuns,
   flip,
   newMemory,
   nextSwap,
@@ -20,12 +22,11 @@ import {
   resolveMiss,
   result,
   setsLeft,
-  timeUp,
+  tick,
 } from '../../../minigames/memory/logic';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
 import { snackKey, useSnackTints } from './tintSnack';
@@ -34,6 +35,8 @@ import styles from './MemoryPuzzle.module.css';
 const ME = BALANCE.minigames.memory;
 const CARD = { w: 33, h: 39, gap: 5 } as const;
 const art = (f: string) => asset(`minigames/memory/${f}`);
+const FIXED = 1 / 60;
+const num = (v: unknown): 'auto' | number => (typeof v === 'number' ? v : 'auto');
 
 export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const tier = tierOf(settings);
@@ -44,20 +47,17 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
       {
         tier,
         match: match === 'pairs' || match === 'threes' ? match : 'auto',
-        misses: typeof settings.misses === 'number' ? settings.misses : 'auto',
         swaps: swaps === 'on' || swaps === 'off' ? swaps : 'auto',
-        timer:
-          settings.timer === 'off'
-            ? 'off'
-            : typeof settings.timer === 'number'
-              ? settings.timer
-              : 'auto',
+        preview: num(settings.preview),
+        time: num(settings.time),
+        matchBonus: num(settings.matchBonus),
+        missCost: num(settings.missCost),
       },
       hikers.map((h) => h.id),
       seed,
     ),
   );
-  const previewSec = typeof settings.preview === 'number' ? settings.preview : ME.previewSec;
+  const previewSec = game.previewSec;
   /** The swap sliding now (its two positions), shown with a line between them. */
   const [sliding, setSliding] = useState<[number, number] | null>(null);
   const [cursor, setCursor] = useState<number | null>(null);
@@ -94,8 +94,25 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
     return () => window.clearTimeout(id);
   }, [game.phase, still]);
 
-  const running = !still && game.phase !== 'over' && game.phase !== 'preview';
-  const left = useCountdown(game.timeSec, running, () => setGame((s) => timeUp(s)));
+  // The clock: fixed steps, as fast as the screen draws, after the preview.
+  const running = !still && clockRuns(game);
+  useEffect(() => {
+    if (!running) return;
+    let last = performance.now();
+    let spare = 0;
+    let frame = requestAnimationFrame(function loop(now) {
+      spare = Math.min(0.25, spare + (now - last) / 1000);
+      last = now;
+      const steps = Math.floor(spare / FIXED);
+      spare -= steps * FIXED;
+      if (steps > 0) setGame((s) => tick(s, steps * FIXED));
+      frame = requestAnimationFrame(loop);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [running]);
+  const left = game.timeLeft;
+  const note =
+    game.clockNote && game.elapsed - game.clockNote.at < ME.clockNoteSec ? game.clockNote : null;
 
   // The end: a moment to see it, then the results.
   useEffect(() => {
@@ -152,12 +169,14 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
       : game.phase === 'swaps' || sliding
         ? 'Watch: cards are swapping places.'
         : game.phase === 'miss'
-          ? 'Not a match: one miss gone.'
+          ? game.missSec > 0
+            ? `Not a match: −${game.missSec} s.`
+            : 'Not a match.'
           : game.phase === 'over'
             ? game.matched.every(Boolean)
               ? 'All matched!'
-              : 'Out of misses or time.'
-            : `Each color is a hiker’s ${word}. Find them before the misses run out.`;
+              : 'Out of time.'
+            : `Each color is a hiker’s ${word}. A match adds time.${game.missSec > 0 ? ' A miss takes some away.' : ''}`;
 
   return (
     <PixelScreen measure={!still}>
@@ -166,21 +185,31 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
       <p className={`${ui.text} ${panel.lines}`} style={{ top: 28 }}>
         {help}
       </p>
-      <p className={`${ui.muted} ${panel.label}`} style={{ top: 70 }}>
-        MISSES LEFT
+      <p className={`${ui.muted} ${panel.label}`} style={{ top: 78 }}>
+        TIME
       </p>
-      <span className={styles.misses} style={{ top: 76 }}>
-        {Array.from({ length: game.misses }, (_, i) => (
-          <span key={i} data-used={i >= game.missesLeft || undefined} />
-        ))}
+      <span className={panel.timeBar} style={{ top: 84 }}>
+        <span style={{ width: `${Math.min(1, left / game.timeSec) * 100}%` }} />
       </span>
-      <p className={`${ui.muted} ${panel.label}`} style={{ top: 94 }}>
+      <p
+        className={`${ui.text} ${panel.timeText}`}
+        style={{ top: 97 }}
+        data-low={left <= 10 || undefined}
+      >
+        {clock(left)}
+      </p>
+      {note && (
+        <span key={note.at} className={panel.note} style={{ top: 94 }} role="status">
+          {note.sec > 0 ? `+${note.sec} S` : `−${-note.sec} S`}
+        </span>
+      )}
+      <p className={`${ui.muted} ${panel.label}`} style={{ top: 114 }}>
         {word.toUpperCase()}
       </p>
       {game.order.map((id, k) => {
         const n = setsLeft(game, id);
         return (
-          <span key={id} className={styles.who} style={{ top: 100 + k * 15 }}>
+          <span key={id} className={styles.who} style={{ top: 120 + k * 15 }}>
             <HikerToken
               hiker={byId(id)}
               size={11}
@@ -192,15 +221,6 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
           </span>
         );
       })}
-      {left !== null && (
-        <div
-          className={`${ui.box} ${panel.clock}`}
-          style={{ top: 166 }}
-          data-low={left <= 10 || undefined}
-        >
-          {clock(left)}
-        </div>
-      )}
 
       {/* A swap: a line between the two cards as they slide. */}
       {sliding && (

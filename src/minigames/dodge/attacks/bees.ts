@@ -1,9 +1,15 @@
 /**
- * Bees (docs/design/12-minigames-dodge.md, section 5), as five attacks in
- * the library: Lane, Cross, Diagonal and Zigzag (Tier II and up), and Aimed
- * (Tier III). Each bee shows a "!" where it'll come into the box before it
- * flies in; bees leave the box on the far side and are gone. In a Lane or a
- * Cross, each bee starts at its own small delay, so the row comes in ragged.
+ * Bees (docs/design/12-minigames-dodge.md, section 5), as attacks in the
+ * library. Which ones play goes by level (balance `bees.levels`), since bees
+ * are the Tier I animal and have to start easiest:
+ * - **Easy:** One at a time (aimed, slow, well apart) and Pairs.
+ * - **Level 1:** One at a time (closer together) and a small staggered Lane.
+ * - **Level 2:** Lane, Cross (both staggered) and Zigzag.
+ * - **Level 3:** full rows (Lane and Cross with every bee at once), Diagonal
+ *   and the Aimed swarm.
+ *
+ * Each bee shows a "!" where it'll come into the box before it flies in;
+ * bees leave the box on the far side and are gone.
  */
 import { BALANCE } from '../../../config/balance';
 import { int, nextFloat } from '../../../engine/rng';
@@ -49,7 +55,10 @@ function laneBee(
   };
 }
 
-/** Lanes across the box with one gap lane, each bee starting at its own delay (staggered). */
+/**
+ * Lanes across the box with one gap lane, each bee starting at its own
+ * delay up to `stagger` (a full row, all at once, when it's 0).
+ */
 function laneWave(
   ctx: AttackCtx,
   rng: RngState,
@@ -57,19 +66,30 @@ function laneWave(
   bees: number,
   at: number,
   speed: number,
+  stagger: number,
 ): BeePart[] {
   const lanes = bees + 1;
   const gap = int(rng, 0, lanes - 1);
   const out: BeePart[] = [];
   for (let k = 0; k < lanes; k++) {
     if (k === gap) continue;
-    const delay = between(rng, 0, D.bees.staggerSec);
+    const delay = stagger > 0 ? between(rng, 0, stagger) : 0;
     out.push(laneBee(ctx, ctx.box, side, (k + 0.5) / lanes, at + delay, speed));
   }
   return out;
 }
 
-/** The next round starts the tier's gap after the last bee sets off (as in step 3). */
+/** A bee from a random edge point, aimed at the sprite as it launches. */
+function aimedBee(ctx: AttackCtx, warnAt: number, speed: number): BeePart {
+  const side = SIDES[int(ctx.rng, 0, 3)]!;
+  const bee = laneBee(ctx, ctx.box, side, 0.1 + nextFloat(ctx.rng) * 0.8, warnAt, speed);
+  return { ...bee, aimSpeed: speed };
+}
+
+/** The level's Lane numbers (Easy uses Level 1's). */
+const laneOf = (ctx: AttackCtx) => D.bees.lane[ctx.level];
+
+/** The next round starts the level's gap after the last bee sets off (as in step 3). */
 const wave = (bees: BeePart[]): AttackStart => ({
   parts: bees,
   endsAt: Math.max(...bees.map((b) => b.activeAt)),
@@ -77,14 +97,48 @@ const wave = (bees: BeePart[]): AttackStart => ({
 
 const beeSpeed = (ctx: AttackCtx) => D.bees.speed * ctx.speed;
 
+export const SINGLE: AttackDef = {
+  id: 'single',
+  name: 'One at a time',
+  kind: 'missile',
+  start(ctx) {
+    // One by one from random edge points, each aimed at the sprite; slower on Easy.
+    const S = D.bees.single;
+    const n = int(ctx.rng, S.bees[0], S.bees[1]);
+    const every = ctx.easy ? S.everySec[0] : S.everySec[1];
+    const speed = ctx.easy ? S.easySpeed : beeSpeed(ctx);
+    return wave(Array.from({ length: n }, (_, k) => aimedBee(ctx, ctx.time + k * every, speed)));
+  },
+};
+
+export const PAIRS: AttackDef = {
+  id: 'pairs',
+  name: 'Pairs',
+  kind: 'missile',
+  start(ctx) {
+    // Two bees from one side in lanes far apart, one after the other.
+    const P = D.bees.pairs;
+    const side = SIDES[int(ctx.rng, 0, 3)]!;
+    const first = between(ctx.rng, 0.15, 0.85 - P.apart);
+    const lanes = nextFloat(ctx.rng) < 0.5 ? [first, first + P.apart] : [first + P.apart, first];
+    return wave(
+      lanes.map((along, k) =>
+        laneBee(ctx, ctx.box, side, along, ctx.time + k * P.everySec, beeSpeed(ctx)),
+      ),
+    );
+  },
+};
+
 export const LANE: AttackDef = {
   id: 'lane',
   name: 'Lane',
   kind: 'missile',
   start(ctx) {
+    // Staggered below Level 3; a full row at Level 3.
+    const L = laneOf(ctx);
     const side = SIDES[int(ctx.rng, 0, 3)]!;
-    const n = int(ctx.rng, D.bees.lane[0], D.bees.lane[1]);
-    return wave(laneWave(ctx, ctx.rng, side, n, ctx.time, beeSpeed(ctx)));
+    const n = int(ctx.rng, L.bees[0], L.bees[1]);
+    return wave(laneWave(ctx, ctx.rng, side, n, ctx.time, beeSpeed(ctx), L.staggerSec));
   },
 };
 
@@ -93,23 +147,19 @@ export const CROSS: AttackDef = {
   name: 'Cross',
   kind: 'missile',
   start(ctx) {
-    const a = laneWave(
-      ctx,
-      ctx.rng,
-      'left',
-      int(ctx.rng, D.bees.cross[0], D.bees.cross[1]),
-      ctx.time,
-      beeSpeed(ctx),
-    );
-    const c = laneWave(
-      ctx,
-      ctx.rng,
-      'top',
-      int(ctx.rng, D.bees.cross[0], D.bees.cross[1]),
-      ctx.time,
-      beeSpeed(ctx),
-    );
-    return wave([...a, ...c]);
+    // Staggered as a Lane at Level 2; full rows at Level 3.
+    const stagger = laneOf(ctx).staggerSec;
+    const row = (side: Side) =>
+      laneWave(
+        ctx,
+        ctx.rng,
+        side,
+        int(ctx.rng, D.bees.cross[0], D.bees.cross[1]),
+        ctx.time,
+        beeSpeed(ctx),
+        stagger,
+      );
+    return wave([...row('left'), ...row('top')]);
   },
 };
 
@@ -174,30 +224,24 @@ export const ZIGZAG: AttackDef = {
 
 export const AIMED: AttackDef = {
   id: 'aimed',
-  name: 'Aimed',
+  name: 'Aimed swarm',
   kind: 'missile',
   start(ctx) {
-    // From random edge points, aimed at the sprite when each launches.
-    const n = D.bees.aimed.bees;
+    // All at once from random edge points, each aimed at the sprite.
     const speed = beeSpeed(ctx);
-    return wave(
-      Array.from({ length: n }, (_, k) => {
-        const side = SIDES[int(ctx.rng, 0, 3)]!;
-        const bee = laneBee(
-          ctx,
-          ctx.box,
-          side,
-          0.1 + nextFloat(ctx.rng) * 0.8,
-          ctx.time + k * D.bees.aimed.staggerSec,
-          speed,
-        );
-        return { ...bee, aimSpeed: speed };
-      }),
-    );
+    return wave(Array.from({ length: D.bees.aimed.bees }, () => aimedBee(ctx, ctx.time, speed)));
   },
 };
 
-export const BEE_ATTACKS: readonly AttackDef[] = [LANE, CROSS, DIAGONAL, ZIGZAG, AIMED];
+export const BEE_ATTACKS: readonly AttackDef[] = [
+  SINGLE,
+  PAIRS,
+  LANE,
+  CROSS,
+  DIAGONAL,
+  ZIGZAG,
+  AIMED,
+];
 
 /** Where a bee is now (it flies once its warning is over). */
 export function beeAt(bee: BeePart, time: number): Point {

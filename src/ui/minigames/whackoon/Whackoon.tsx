@@ -1,28 +1,45 @@
 /**
  * Whackoon on the GPS (docs/design/14-minigames-trail-blocks.md, section 4;
- * mockup 6-whackoon.png), in scene units (320 × 240): raccoons pop out of
- * trash cans at a campsite; click or tap one to whack it with the frying
- * pan (the cursor). Skunks are decoys: a whacked skunk sprays a fog over the
- * cans and takes time off the turn. The bottom bar shows the team's total
- * against the target and each hiker's whacks.
+ * mockups 6-whackoon.png and 7-whackoon-colors.png), in scene units
+ * (320 × 240): raccoons pop out of trash cans at a campsite; click or tap
+ * one to whack it with the frying pan (the cursor). Skunks are decoys: a
+ * whacked skunk sprays a fog over the cans and takes time off the clock.
+ *
+ * - **Colors** (the default): each raccoon's bandit mask is in a hiker's
+ *   color. The bottom bar shows each hiker's squares filling with whacks on
+ *   their color, and DONE. A done hiker's raccoons still pop up: whacking
+ *   one does nothing, and the pan rests for a moment.
+ * - **Turns:** the top shows whose turn it is; the bottom bar shows the
+ *   team's total against the target and each hiker's whacks.
  */
+import { TIER_LABELS } from '../../../minigames/types';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
-import { newWhackoon, result, tick, turnHiker, whack } from '../../../minigames/whackoon/logic';
+import {
+  isDone,
+  newWhackoon,
+  result,
+  tick,
+  turnHiker,
+  whack,
+} from '../../../minigames/whackoon/logic';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
 import { playSound } from '../sound';
+import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Whackoon.module.css';
 
 const W = BALANCE.minigames.whackoon;
-const ROMAN = ['', 'I', 'II', 'III'];
 const FIXED = 1 / 120;
-const art = (f: string) => asset(`minigames/whackoon/${f}`);
+const file = (f: string) => `minigames/whackoon/${f}`;
+const art = (f: string) => asset(file(f));
+/** The bandit masks, tinted in each hiker's color (Colors mode). */
+const MASKS = ['raccoon-up-mask.png', 'raccoon-peek-mask.png', 'raccoon-bonk-mask.png'].map(file);
 /** The cans' rows (their tops) and columns (their middles), as in the design. */
 const ROWS = [62, 110, 158];
 const COLS: Readonly<Record<number, readonly number[]>> = {
@@ -35,7 +52,11 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   const skunks = pickOf(settings, 'skunks');
   const [game, setGame] = useState(() =>
     newWhackoon(
-      { tier, skunks: skunks === 'on' || skunks === 'off' ? skunks : 'auto' },
+      {
+        tier,
+        mode: pickOf(settings, 'mode') === 'turns' ? 'turns' : 'colors',
+        skunks: skunks === 'on' || skunks === 'off' ? skunks : 'auto',
+      },
       hikers.map((h) => h.id),
       seed,
     ),
@@ -44,6 +65,11 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   const [pan, setPan] = useState<{ x: number; y: number; at: number } | null>(null);
   const reported = useRef(false);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
+  const colors = game.mode === 'colors';
+  const tints = useTintedArt(
+    colors ? MASKS : [],
+    hikers.map((h) => h.color),
+  );
   const cols = COLS[game.cols] ?? COLS[3]!;
   const spot = (i: number) => ({ x: cols[i % game.cols]!, y: ROWS[Math.floor(i / game.cols)]! });
 
@@ -94,7 +120,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
     if (i < 0) return;
     const out = whack(game, i);
     if (out.outcome === 'bonk') playSound('pop');
-    if (out.outcome === 'spray') playSound('miss');
+    if (out.outcome === 'spray' || out.outcome === 'wasted') playSound('miss');
     setGame(out.state);
   };
   const onMove = (e: ReactPointerEvent) => {
@@ -106,6 +132,15 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   const who = turnHiker(game);
   const fogged = game.time < game.fogUntil;
   const swinging = pan && game.time - pan.at < 0.15;
+  const resting = game.time < game.panUntil;
+  const done = colors ? game.order.filter((id) => isDone(game, id)) : [];
+  const names = done.map((id) => byId(id).name.toUpperCase());
+  const hint =
+    !colors || game.over || !done.length
+      ? null
+      : done.length === 1
+        ? `${names[0]} IS DONE. SKIP ${names[0]}’S RACCOONS.`
+        : `${names.slice(0, -1).join(', ')} AND ${names.at(-1)} ARE DONE. SKIP THEIR RACCOONS.`;
 
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
@@ -133,6 +168,8 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
                 : peek
                   ? 'raccoon-peek.png'
                   : 'raccoon-up.png';
+          const color = m?.color ? byId(m.color)?.color : undefined;
+          const mask = frame && color ? file(frame.replace('.png', '-mask.png')) : null;
           return (
             <span key={i}>
               {frame && (
@@ -140,7 +177,23 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
                   className={`${ui.sprite} ${styles.critter}`}
                   data-peek={peek || undefined}
                   src={art(frame)}
-                  alt={m?.kind === 'skunk' ? 'A skunk' : 'A raccoon'}
+                  alt={
+                    m?.kind === 'skunk'
+                      ? 'A skunk'
+                      : m?.color
+                        ? `A raccoon in ${byId(m.color)?.name}’s color`
+                        : 'A raccoon'
+                  }
+                  draggable={false}
+                  style={{ left: c.x - 18, top: c.y - 12 }}
+                />
+              )}
+              {mask && color && tints[tintKey(mask, color)] && (
+                <img
+                  className={`${ui.sprite} ${styles.critter}`}
+                  data-peek={peek || undefined}
+                  src={tints[tintKey(mask, color)]}
+                  alt=""
                   draggable={false}
                   style={{ left: c.x - 18, top: c.y - 12 }}
                 />
@@ -187,10 +240,13 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
           </span>
         )}
 
-        {/* The frying pan. */}
+        {hint && <p className={`${ui.text} ${styles.hint}`}>{hint}</p>}
+
+        {/* The frying pan (resting for a moment after a wasted whack). */}
         {pan && running && (
           <img
             className={`${ui.sprite} ${styles.pan}`}
+            data-resting={resting || undefined}
             src={art(swinging ? 'pan-whack.png' : 'pan-ready.png')}
             alt=""
             draggable={false}
@@ -200,24 +256,66 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
 
         {game.over && (
           <span className={`${hud.pop} ${styles.big}`} style={{ left: 160, top: 100 }}>
-            {game.team >= game.target ? 'TEAM DID IT!' : 'NOT ENOUGH'}
+            {colors
+              ? game.order.every((id) => isDone(game, id))
+                ? 'EVERYONE DONE!'
+                : 'TIME’S UP'
+              : game.team >= game.target
+                ? 'TEAM DID IT!'
+                : 'NOT ENOUGH'}
           </span>
         )}
 
-        {/* The top HUD: whose turn, and its time. */}
+        {/* The top HUD: the clock (Colors), or whose turn and its time (Turns). */}
         <div className={`${ui.box} ${hud.name}`}>WHACKOON</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>
-            {who ? `${byId(who).name.toUpperCase()} ${Math.ceil(game.turnLeft)}S` : 'DONE'}
+            {colors
+              ? 'TIME'
+              : who
+                ? `${byId(who).name.toUpperCase()} ${Math.ceil(game.turnLeft)}S`
+                : 'DONE'}
           </span>
           <span className={hud.bar}>
-            <span style={{ width: `${(Math.max(0, game.turnLeft) / W.turnSec) * 100}%` }} />
+            <span style={{ width: `${(Math.max(0, game.turnLeft) / game.clockSec) * 100}%` }} />
           </span>
         </div>
-        <div className={`${ui.box} ${hud.tier}`}>TIER {ROMAN[tier]}</div>
+        <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 
-        {/* The team's total and each hiker's whacks. */}
-        <div className={`${ui.box} ${hud.panel}`}>
+        {/* Colors: each hiker's squares, filled by whacks on their color. */}
+        {colors && (
+          <div className={`${ui.box} ${hud.panel}`}>
+            <span className={styles.hikers}>
+              {game.order.map((id) => {
+                const h = byId(id);
+                const got = Math.min(game.colorTarget, game.whacks[id] ?? 0);
+                return (
+                  <span key={id} className={styles.who}>
+                    <HikerToken hiker={h} size={10} state={isDone(game, id) ? 'safe' : undefined} />
+                    <span className={styles.whoWords}>
+                      <span>
+                        {h.name.toUpperCase()}
+                        {isDone(game, id) && <span className={styles.doneWord}> DONE</span>}
+                      </span>
+                      <span className={styles.squares} aria-label={`${got} of ${game.colorTarget}`}>
+                        {Array.from({ length: game.colorTarget }, (_, k) => (
+                          <span
+                            key={k}
+                            style={k < got ? { background: h.color } : undefined}
+                            data-on={k < got || undefined}
+                          />
+                        ))}
+                      </span>
+                    </span>
+                  </span>
+                );
+              })}
+            </span>
+          </div>
+        )}
+
+        {/* Turns: the team's total and each hiker's whacks. */}
+        <div className={`${ui.box} ${hud.panel}`} style={colors ? { display: 'none' } : undefined}>
           <span className={styles.team}>
             <span>TEAM</span>
             <span className={styles.teamCount}>

@@ -18,11 +18,11 @@ import { BALANCE } from '../../config/balance';
 import { int, nextFloat, seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const F = BALANCE.minigames.findObject;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 export type Mode = 'still' | 'windy' | 'dark' | 'darkWindy';
 
 export const isWindy = (m: Mode): boolean => m === 'windy' || m === 'darkWindy';
@@ -116,9 +116,12 @@ export function kindsFor(tier: Tier, round: number): number {
   return round >= k.fromRound ? k.more : k.start;
 }
 
-/** How many targets a round asks for: one per hiker still in, plus one more each round. */
-export const targetsFor = (hikersIn: number, round: number): number =>
-  Math.max(1, hikersIn) + F.extraTargetsPerRound * (round - 1);
+/**
+ * How many targets a round asks for: one per hiker still in, plus one more
+ * each round, plus the tier's extra (Tiers IV and V).
+ */
+export const targetsFor = (hikersIn: number, round: number, tier: Tier = 1): number =>
+  Math.max(1, hikersIn) + F.extraTargetsPerRound * (round - 1) + F.tiers[tier].extraTargets;
 
 /** The clock for a round: the extra seconds, plus seconds per target. */
 export const timeFor = (
@@ -129,7 +132,7 @@ export const timeFor = (
 /** Sets up a round: its targets (split as evenly as possible over its kinds), distractors and clock. */
 function startRound(s: FindObjectState, round: number): FindObjectState {
   const rng = [...s.rng] as RngState;
-  const count = targetsFor(s.line.length, round);
+  const count = targetsFor(s.line.length, round, s.tier);
   const kinds = Math.min(kindsFor(s.tier, round), count);
   const snacks = shuffle(rng, SNACKS).slice(0, kinds);
   const targets = Array.from({ length: count }, (_, i) => snacks[Math.floor((i * kinds) / count)]!);
@@ -196,8 +199,8 @@ export function newFindObject(
       found: [],
       items: [],
       wind: 1,
-      secPerTarget: orAuto(options.secPerTarget, F.secPerTarget),
-      extraSecPerRound: orAuto(options.extraSecPerRound, F.extraSecPerRound),
+      secPerTarget: orAuto(options.secPerTarget, F.tiers[options.tier].secPerTarget),
+      extraSecPerRound: orAuto(options.extraSecPerRound, F.tiers[options.tier].extraSecPerRound),
       timeTotal: 0,
       timeLeft: 0,
       phase: 'playing',
@@ -243,17 +246,24 @@ export function nextRound(s: FindObjectState): FindObjectState {
 export function positionAt(s: FindObjectState, item: Item, t: number): { x: number; y: number } {
   if (!isWindy(s.mode)) return { x: item.x, y: item.y };
   const span = WIDTH + SNACK_SIZE;
-  const raw = item.x + s.wind * F.wind.speed * t + SNACK_SIZE;
+  const raw = item.x + s.wind * F.tiers[s.tier].windSpeed * t + SNACK_SIZE;
   const x = (((raw % span) + span) % span) - SNACK_SIZE;
   const y = item.y + F.wind.bob * Math.sin((2 * Math.PI * t * 1000) / F.wind.bobEveryMs);
   return { x, y };
 }
 
+/** Dark: the flashlight's size at a tier. */
+export const lightDiameter = (tier: Tier): number => F.tiers[tier].light;
+
 /** Dark: whether a snack's middle is inside the flashlight's circle. */
-export function inLight(at: { x: number; y: number }, light: { x: number; y: number }): boolean {
+export function inLight(
+  at: { x: number; y: number },
+  light: { x: number; y: number },
+  tier: Tier = 1,
+): boolean {
   const cx = at.x + SNACK_SIZE / 2;
   const cy = at.y + SNACK_SIZE / 2;
-  return Math.hypot(cx - light.x, cy - light.y) <= F.light.diameter / 2;
+  return Math.hypot(cx - light.x, cy - light.y) <= lightDiameter(tier) / 2;
 }
 
 /**
@@ -276,7 +286,7 @@ export function itemAt(
       point.y >= at.y &&
       point.y < at.y + SNACK_SIZE;
     if (!hit) continue;
-    if (isDark(s.mode) && (!light || !inLight(at, light))) return null;
+    if (isDark(s.mode) && (!light || !inLight(at, light, s.tier))) return null;
     return i;
   }
   return null;

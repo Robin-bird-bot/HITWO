@@ -4,7 +4,13 @@
  * how it reports the result. `still` draws a frame that can't be played (the
  * pop-up's GPS preview and the testing tab's thumbnail).
  */
-import type { MinigameHiker, MinigameResult, MinigameSettings } from '../../minigames/types';
+import {
+  isTier,
+  type MinigameHiker,
+  type MinigameResult,
+  type MinigameSettings,
+  type Tier,
+} from '../../minigames/types';
 
 export interface PuzzleRunProps {
   settings: MinigameSettings;
@@ -15,10 +21,10 @@ export interface PuzzleRunProps {
   still?: boolean;
 }
 
-/** The tier setting: 1, 2 or 3. */
-export function tierOf(settings: MinigameSettings): 1 | 2 | 3 {
+/** The tier setting: 1 to 5 (I to V). */
+export function tierOf(settings: MinigameSettings): Tier {
   const t = settings.tier;
-  return t === 2 || t === 3 ? t : 1;
+  return isTier(t) ? t : 1;
 }
 
 /** A pick setting's value ("auto" when unset). */

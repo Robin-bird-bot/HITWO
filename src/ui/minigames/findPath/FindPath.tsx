@@ -11,6 +11,7 @@
  * out once the group's attempts are gone. Without fog, each turn starts by
  * walking the known trail; in fog only the last 2 picks stay visible.
  */
+import { TIER_LABELS } from '../../../minigames/types';
 import { useEffect, useRef, useState } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
@@ -37,7 +38,6 @@ import styles from './FindPath.module.css';
 
 const P = BALANCE.minigames.findPath;
 const TILE = 32;
-const ROMAN = ['', 'I', 'II', 'III'];
 const tileArt = (f: string) => asset(`minigames/forest-tiles/${f}`);
 const same = (a: Tile, b: Tile) => a.c === b.c && a.r === b.r;
 
@@ -211,7 +211,9 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
         ))}
       </div>
       {note && <p className={`${ui.text} ${styles.note}`}>{note}</p>}
-      {game.fog && <div className={`${ui.box} ${styles.fogBox}`}>FOG: TIER {ROMAN[game.tier]}</div>}
+      {game.fog && (
+        <div className={`${ui.box} ${styles.fogBox}`}>FOG: TIER {TIER_LABELS[game.tier]}</div>
+      )}
       {energy && (
         <div className={`${ui.box} ${styles.energy}`} role="status">
           +{P.energy} ENERGY: {game.energy ? byId(game.energy).name : ''}

@@ -56,14 +56,6 @@
   position: absolute;
 }
 
-.bzz {
-  position: absolute;
-  left: 184px;
-  top: 43px;
-  margin: 0;
-  font-size: 4px;
-}
-
 /* The box: dark inside, with a light double border. */
 .box {
   position: absolute;
@@ -319,24 +311,6 @@
   height: 0.8px;
   background: #d3dfaf;
   pointer-events: none;
-}
-
-/* The Stampede's row of heads: a frame on whoever is attacking. */
-.headSlot {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  border: 0.75px solid transparent;
-  border-radius: 3px;
-  opacity: 0.75;
-  transition: border-color 0.2s;
-}
-
-.headSlot[data-on] {
-  border-color: #1d2918;
-  opacity: 1;
 }
 
 /* Show hitboxes (testing). */

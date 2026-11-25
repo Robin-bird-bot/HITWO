@@ -15,11 +15,11 @@
  * shows it. Test mode never changes the save.
  */
 import { BALANCE } from '../config/balance';
-import type { MinigameResult, Pay } from './types';
+import type { MinigameResult, Pay, Tier } from './types';
 
 const P = BALANCE.minigames.passing;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 
 const isEmpty = (p: Pay | undefined) =>
   !p || (!p.energy && !p.resources && !(p.conditions && p.conditions.length));

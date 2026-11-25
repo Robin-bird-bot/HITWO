@@ -19,6 +19,9 @@ import type {
 
 type PartialStats = Partial<Record<StatName, number>>;
 
+/** A minigame's challenge tier, I to V (docs/design/15-challenge-tiers.md). */
+type MgTier = 1 | 2 | 3 | 4 | 5;
+
 /**
  * How often each line kind appears.
  * TODO(wyatt): first guess. Per-biome weights (mud in the Rainforest) come in Phase 11.
@@ -1075,7 +1078,7 @@ export const BALANCE = {
 
     /*
      * The puzzle minigames (Phase 10.8 step 2, docs/design/11-minigames-puzzles.md).
-     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I to V.
      */
 
     /** Traildle: guess hidden digit codes on trail signs, two codes at once at most. */
@@ -1084,9 +1087,13 @@ export const BALANCE = {
         1: { signs: [3, 4], guesses: 6, repeats: false, timerSec: null },
         2: { signs: [5, 6], guesses: 7, repeats: true, timerSec: 180 },
         3: { signs: [7, 8], guesses: 8, repeats: true, timerSec: 120 },
+        // Tiers IV and V (fallback rule, 15-challenge-tiers.md): timer ×0.85 and ×0.7, guesses the
+        // same. The codes can't grow past 8 (the board and the Signs setting stop there). TODO(wyatt).
+        4: { signs: [8, 8], guesses: 8, repeats: true, timerSec: 102 },
+        5: { signs: [8, 8], guesses: 8, repeats: true, timerSec: 84 },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             signs: readonly [number, number];
             guesses: number;
@@ -1109,17 +1116,77 @@ export const BALANCE = {
 
     /** Find the Object: find the named trail snacks in a crowd. */
     findObject: {
+      /**
+       * By tier: the mode, distractors and overlap; the seconds per target
+       * and per round (when Auto), the wind's speed, the flashlight's size,
+       * and more targets every round. Tiers I to III use the old single
+       * values; IV and V follow the fallback rule (15-challenge-tiers.md):
+       * times ×0.85 and ×0.7, speed ×1.15 and ×1.3, the light ×0.85 and ×0.7,
+       * +1 and +2 targets. TODO(wyatt).
+       */
       tiers: {
-        1: { mode: 'still', distractors: 16, overlap: 0 },
-        2: { mode: 'windy', distractors: 22, overlap: 0.25 },
-        3: { mode: 'darkWindy', distractors: 26, overlap: 0.25 },
+        1: {
+          mode: 'still',
+          distractors: 16,
+          overlap: 0,
+          secPerTarget: 3,
+          extraSecPerRound: 3,
+          windSpeed: 12,
+          light: 42,
+          extraTargets: 0,
+        },
+        2: {
+          mode: 'windy',
+          distractors: 22,
+          overlap: 0.25,
+          secPerTarget: 3,
+          extraSecPerRound: 3,
+          windSpeed: 12,
+          light: 42,
+          extraTargets: 0,
+        },
+        3: {
+          mode: 'darkWindy',
+          distractors: 26,
+          overlap: 0.25,
+          secPerTarget: 3,
+          extraSecPerRound: 3,
+          windSpeed: 12,
+          light: 42,
+          extraTargets: 0,
+        },
+        4: {
+          mode: 'darkWindy',
+          distractors: 26,
+          overlap: 0.25,
+          secPerTarget: 2.55,
+          extraSecPerRound: 2.55,
+          windSpeed: 13.8,
+          light: 35.7,
+          extraTargets: 1,
+        },
+        5: {
+          mode: 'darkWindy',
+          distractors: 26,
+          overlap: 0.25,
+          secPerTarget: 2.1,
+          extraSecPerRound: 2.1,
+          windSpeed: 15.6,
+          light: 29.4,
+          extraTargets: 2,
+        },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             mode: 'still' | 'windy' | 'dark' | 'darkWindy';
             distractors: number;
             overlap: number;
+            secPerTarget: number;
+            extraSecPerRound: number;
+            windSpeed: number;
+            light: number;
+            extraTargets: number;
           }
         >
       >,
@@ -1137,8 +1204,10 @@ export const BALANCE = {
         1: { start: 1, more: 2, fromRound: 2 },
         2: { start: 2, more: 3, fromRound: 3 },
         3: { start: 2, more: 3, fromRound: 3 },
-      } as Readonly<Record<1 | 2 | 3, { start: number; more: number; fromRound: number }>>,
-      /** The clock each round: these seconds, plus these for each target (testing tab: 0 to 20, and 1 to 8). */
+        4: { start: 2, more: 3, fromRound: 3 },
+        5: { start: 2, more: 3, fromRound: 3 },
+      } as Readonly<Record<MgTier, { start: number; more: number; fromRound: number }>>,
+      /** The testing tab's defaults for the clock each round (0 to 20, and 1 to 8); Auto uses the tier's. */
       extraSecPerRound: 3,
       secPerTarget: 3,
       /** A wrong click costs this many seconds. */
@@ -1147,10 +1216,10 @@ export const BALANCE = {
       introMs: 1500,
       /** Snacks keep this far from the screen's edges (scene units), except in the windy modes. */
       edgeMargin: 4,
-      /** Windy: drift (units a second) and a small bob (units, every this many ms). */
-      wind: { speed: 12, bob: 2, bobEveryMs: 1500 },
-      /** Dark: the flashlight's size and soft edge (scene units); a touch moving less than this (px) is a tap. */
-      light: { diameter: 42, softEdge: 8, tapPx: 6 },
+      /** Windy: a small bob (units, every this many ms); the drift speed is the tier's. */
+      wind: { bob: 2, bobEveryMs: 1500 },
+      /** Dark: the flashlight's soft edge (scene units; its size is the tier's); a touch moving less than this (px) is a tap. */
+      light: { softEdge: 8, tapPx: 6 },
     },
 
     /** Remember the Path: watch the ranger, then walk his path from memory. */
@@ -1159,9 +1228,13 @@ export const BALANCE = {
         1: { cols: 5, rows: 4, length: [5, 6], strikes: 3, stepMs: 500 },
         2: { cols: 6, rows: 5, length: [7, 8], strikes: 2, stepMs: 450 },
         3: { cols: 7, rows: 5, length: [9, 10], strikes: 1, stepMs: 400 },
+        // Tiers IV and V (fallback rule): +1 and +2 steps, the ranger ×1.15 and ×1.3 as fast,
+        // strikes the same; the grid stays 7 × 5. TODO(wyatt).
+        4: { cols: 7, rows: 5, length: [10, 11], strikes: 1, stepMs: 348 },
+        5: { cols: 7, rows: 5, length: [11, 12], strikes: 1, stepMs: 308 },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             cols: number;
             rows: number;
@@ -1180,17 +1253,22 @@ export const BALANCE = {
     /** Find the Path: take turns guessing a hidden trail, one step at a time. */
     findPath: {
       tiers: {
-        1: { cols: 5, rows: 5, fog: false },
-        2: { cols: 6, rows: 6, fog: false },
-        3: { cols: 7, rows: 7, fog: true },
-      } as Readonly<Record<1 | 2 | 3, { cols: number; rows: number; fog: boolean }>>,
+        1: { cols: 5, rows: 5, fog: false, revealChance: 0.35 },
+        2: { cols: 6, rows: 6, fog: false, revealChance: 0.35 },
+        3: { cols: 7, rows: 7, fog: true, revealChance: 0.35 },
+        // Tiers IV and V (fallback rule, my judgment): a bigger grid doesn't fit the screen, so the
+        // chance a wrong pick reveals another tile shrinks like a window, ×0.85 and ×0.7. TODO(wyatt).
+        4: { cols: 7, rows: 7, fog: true, revealChance: 0.3 },
+        5: { cols: 7, rows: 7, fog: true, revealChance: 0.25 },
+      } as Readonly<
+        Record<MgTier, { cols: number; rows: number; fog: boolean; revealChance: number }>
+      >,
       /** Tries for each hiker, each turn. */
       triesPerTurn: 3,
       /** Group attempts: this many, plus this many for each hiker after the first. */
       attempts: 2,
       attemptsPerExtraHiker: 1,
-      /** The chance a wrong pick also reveals another tile nobody has picked, and how long its "!" shows. */
-      revealChance: 0.35,
+      /** How long the "!" shows on a tile a wrong pick revealed (the chance is the tier's). */
       revealMarkMs: 1000,
       /** Making a trail: each step goes up about this often, otherwise left or right. */
       upChance: 0.45,
@@ -1207,7 +1285,7 @@ export const BALANCE = {
 
     /*
      * New challenges, step 1 (Phase 10.8 step 5, docs/design/14-minigames-trail-blocks.md).
-     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I to V.
      */
 
     /**
@@ -1216,7 +1294,7 @@ export const BALANCE = {
      * energy by tier, and the challenge stays on the tile, face up.
      */
     passing: {
-      nobodyEnergy: { 1: 1, 2: 1, 3: 2 } as Readonly<Record<1 | 2 | 3, number>>,
+      nobodyEnergy: { 1: 1, 2: 1, 3: 2, 4: 2, 5: 2 } as Readonly<Record<MgTier, number>>,
     },
 
     /** Trail Blocks: a first-person timing game in four versions, sharing an energy bar of each hiker's chunk. */
@@ -1233,7 +1311,9 @@ export const BALANCE = {
         1: { base: 50, perHiker: 25 },
         2: { base: 60, perHiker: 30 },
         3: { base: 70, perHiker: 35 },
-      } as Readonly<Record<1 | 2 | 3, { base: number; perHiker: number }>>,
+        4: { base: 80, perHiker: 40 },
+        5: { base: 90, perHiker: 45 },
+      } as Readonly<Record<MgTier, { base: number; perHiker: number }>>,
       /** A good swing does this much work by accuracy; a perfect one (the best share of the zone) does this. */
       good: [8, 14] as const,
       perfect: 16,
@@ -1242,19 +1322,19 @@ export const BALANCE = {
       swingSec: 0.35,
       /** Chop Tree: one pass of the marker across the bar, and each green zone (a share of the bar). */
       chop: {
-        passSec: { 1: 1.2, 2: 1.0, 3: 0.8 } as Readonly<Record<1 | 2 | 3, number>>,
-        zone: { 1: 0.16, 2: 0.12, 3: 0.09 } as Readonly<Record<1 | 2 | 3, number>>,
+        passSec: { 1: 1.2, 2: 1.0, 3: 0.8, 4: 0.7, 5: 0.6 } as Readonly<Record<MgTier, number>>,
+        zone: { 1: 0.16, 2: 0.12, 3: 0.09, 4: 0.08, 5: 0.07 } as Readonly<Record<MgTier, number>>,
       },
       /** Mine Rockslide: the power bar fills to the top this fast; the green zone is this tall. */
       rockslide: {
-        fillSec: { 1: 1.0, 2: 0.85, 3: 0.7 } as Readonly<Record<1 | 2 | 3, number>>,
-        zone: { 1: 0.24, 2: 0.18, 3: 0.13 } as Readonly<Record<1 | 2 | 3, number>>,
+        fillSec: { 1: 1.0, 2: 0.85, 3: 0.7, 4: 0.6, 5: 0.55 } as Readonly<Record<MgTier, number>>,
+        zone: { 1: 0.24, 2: 0.18, 3: 0.13, 4: 0.11, 5: 0.1 } as Readonly<Record<MgTier, number>>,
       },
       /** River Flood: this many spots, each this wide, on a bar crossed this fast. The water's top goes from here down to here. */
       river: {
-        spots: { 1: 4, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
-        spot: { 1: 0.1, 2: 0.08, 3: 0.06 } as Readonly<Record<1 | 2 | 3, number>>,
-        passSec: { 1: 1.3, 2: 1.1, 3: 0.9 } as Readonly<Record<1 | 2 | 3, number>>,
+        spots: { 1: 4, 2: 4, 3: 5, 4: 5, 5: 6 } as Readonly<Record<MgTier, number>>,
+        spot: { 1: 0.1, 2: 0.08, 3: 0.06, 4: 0.055, 5: 0.05 } as Readonly<Record<MgTier, number>>,
+        passSec: { 1: 1.3, 2: 1.1, 3: 0.9, 4: 0.8, 5: 0.7 } as Readonly<Record<MgTier, number>>,
         waterTop: [128, 196] as const,
       },
       /**
@@ -1266,8 +1346,8 @@ export const BALANCE = {
       animals: {
         ring: { x: 160, y: 64, r: 26 },
         startScale: 2.2,
-        shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0 } as Readonly<Record<1 | 2 | 3, number>>,
-        thickness: { 1: 10, 2: 8, 3: 6 } as Readonly<Record<1 | 2 | 3, number>>,
+        shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0, 4: 0.9, 5: 0.8 } as Readonly<Record<MgTier, number>>,
+        thickness: { 1: 10, 2: 8, 3: 6, 4: 5, 5: 4 } as Readonly<Record<MgTier, number>>,
         weakReach: 5,
         weakWork: 4,
         crowd: 8,
@@ -1280,9 +1360,11 @@ export const BALANCE = {
         1: { asleep: [2.5, 4.5], stirSec: 0.9, awake: [1.5, 2.5], fakeOut: 0, secPerHiker: 9 },
         2: { asleep: [2, 4], stirSec: 0.7, awake: [1.5, 2.5], fakeOut: 0.3, secPerHiker: 8 },
         3: { asleep: [1.5, 3.5], stirSec: 0.5, awake: [1.5, 2.5], fakeOut: 0.4, secPerHiker: 7 },
+        4: { asleep: [1.2, 3], stirSec: 0.45, awake: [1.5, 2.5], fakeOut: 0.45, secPerHiker: 6.5 },
+        5: { asleep: [1, 2.5], stirSec: 0.4, awake: [1.5, 2.5], fakeOut: 0.5, secPerHiker: 6 },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             asleep: readonly [number, number];
             stirSec: number;
@@ -1309,19 +1391,64 @@ export const BALANCE = {
     /** Whackoon: whack-a-mole with raccoons in trash cans; skunks are decoys. */
     whackoon: {
       tiers: {
-        1: { cols: 3, upSec: 1.0, everySec: 0.7, maxUp: 2, skunks: 0, targetPerHiker: 8 },
-        2: { cols: 3, upSec: 0.8, everySec: 0.55, maxUp: 3, skunks: 0.15, targetPerHiker: 9 },
-        3: { cols: 4, upSec: 0.6, everySec: 0.45, maxUp: 3, skunks: 0.25, targetPerHiker: 10 },
+        1: {
+          cols: 3,
+          upSec: 1.0,
+          everySec: 0.7,
+          maxUp: 2,
+          skunks: 0,
+          targetPerHiker: 8,
+          colorTarget: 5,
+        },
+        2: {
+          cols: 3,
+          upSec: 0.8,
+          everySec: 0.55,
+          maxUp: 3,
+          skunks: 0.15,
+          targetPerHiker: 9,
+          colorTarget: 6,
+        },
+        3: {
+          cols: 4,
+          upSec: 0.6,
+          everySec: 0.45,
+          maxUp: 3,
+          skunks: 0.25,
+          targetPerHiker: 10,
+          colorTarget: 7,
+        },
+        4: {
+          cols: 4,
+          upSec: 0.55,
+          everySec: 0.4,
+          maxUp: 3,
+          skunks: 0.3,
+          targetPerHiker: 11,
+          colorTarget: 8,
+        },
+        5: {
+          cols: 4,
+          upSec: 0.5,
+          everySec: 0.35,
+          maxUp: 4,
+          skunks: 0.35,
+          targetPerHiker: 12,
+          colorTarget: 9,
+        },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             cols: number;
             upSec: number;
             everySec: number;
             maxUp: number;
             skunks: number;
+            /** Turns mode: the team's target, per hiker. */
             targetPerHiker: number;
+            /** Colors mode: whacks each hiker needs on their own color. */
+            colorTarget: number;
           }
         >
       >,
@@ -1335,22 +1462,34 @@ export const BALANCE = {
       /** The testing tab's Skunks "On" on Tier I uses Tier II's chance. A failed team loses this much energy each. */
       skunksOn: 0.15,
       failEnergy: 1,
+      /**
+       * Colors mode (the default, Nov 25): one shared clock of this much per
+       * hiker; whacking a done hiker's raccoon does nothing, and the pan
+       * can't swing again for this long.
+       */
+      colorSecPerHiker: 8,
+      donePauseSec: 0.5,
     },
 
     /*
      * The third batch of minigames (Phase 10.8 step 4, docs/design/13-minigames-puzzles-2.md).
-     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I to V.
      */
 
     /** Trail Map: turn trail tiles to connect each hiker's trailhead to the exit. */
     trailMap: {
+      /** By tier: the grid, the time, the trail signs to connect (Nov 25) and the locked tiles. */
       tiers: {
-        1: { size: 4, timeSec: 60, locked: 0 },
-        2: { size: 5, timeSec: 75, locked: 2 },
-        3: { size: 6, timeSec: 90, locked: 3 },
-      } as Readonly<Record<1 | 2 | 3, { size: number; timeSec: number; locked: number }>>,
+        1: { size: 4, timeSec: 45, signs: 0, locked: 0 },
+        2: { size: 5, timeSec: 55, signs: 1, locked: 2 },
+        3: { size: 6, timeSec: 70, signs: 2, locked: 3 },
+        4: { size: 6, timeSec: 60, signs: 2, locked: 3 },
+        5: { size: 6, timeSec: 55, signs: 3, locked: 4 },
+      } as Readonly<
+        Record<MgTier, { size: number; timeSec: number; signs: number; locked: number }>
+      >,
       /** More time for each hiker after the first. */
-      extraSecPerHiker: 20,
+      extraSecPerHiker: 15,
       /** The tiles that aren't on a solution trail: how often each piece (they add up to 1). */
       fill: { straight: 0.3, corner: 0.35, tee: 0.2, end: 0.1, cross: 0.05 },
       /** A tile turns this fast; a hiker's token walks the trail this fast (a tile). */
@@ -1360,26 +1499,84 @@ export const BALANCE = {
 
     /** Memory Puzzle: match snack cards, each set in its hiker's color. */
     memory: {
+      /**
+       * By tier (Nov 25): no miss limit, only the clock. A match adds time;
+       * from Tier II a miss takes some away (once per try).
+       */
       tiers: {
-        1: { cols: 4, rows: 4, setSize: 2, swaps: 0, swapsPerMiss: 0, misses: 6, timerSec: null },
-        2: { cols: 5, rows: 4, setSize: 2, swaps: 2, swapsPerMiss: 0, misses: 5, timerSec: 90 },
-        3: { cols: 6, rows: 4, setSize: 3, swaps: 4, swapsPerMiss: 1, misses: 4, timerSec: 75 },
+        1: {
+          cols: 4,
+          rows: 4,
+          setSize: 2,
+          previewSec: 1,
+          swaps: 0,
+          swapsPerMiss: 0,
+          timeSec: 40,
+          matchSec: 5,
+          missSec: 0,
+        },
+        2: {
+          cols: 5,
+          rows: 4,
+          setSize: 2,
+          previewSec: 1,
+          swaps: 2,
+          swapsPerMiss: 0,
+          timeSec: 45,
+          matchSec: 4,
+          missSec: 1,
+        },
+        3: {
+          cols: 6,
+          rows: 4,
+          setSize: 3,
+          previewSec: 1,
+          swaps: 4,
+          swapsPerMiss: 1,
+          timeSec: 55,
+          matchSec: 4,
+          missSec: 2,
+        },
+        4: {
+          cols: 6,
+          rows: 4,
+          setSize: 3,
+          previewSec: 0.8,
+          swaps: 6,
+          swapsPerMiss: 1,
+          timeSec: 50,
+          matchSec: 3,
+          missSec: 3,
+        },
+        5: {
+          cols: 6,
+          rows: 4,
+          setSize: 3,
+          previewSec: 0.6,
+          swaps: 8,
+          swapsPerMiss: 1,
+          timeSec: 45,
+          matchSec: 3,
+          missSec: 4,
+        },
       } as Readonly<
         Record<
-          1 | 2 | 3,
+          MgTier,
           {
             cols: number;
             rows: number;
             setSize: 2 | 3;
+            previewSec: number;
             swaps: number;
             swapsPerMiss: number;
-            misses: number;
-            timerSec: number | null;
+            timeSec: number;
+            matchSec: number;
+            missSec: number;
           }
         >
       >,
-      /** Every card shows face up this long first (testing tab: 0.5 to 5 s). */
-      previewSec: 1,
+      /** The "+5 S" or "−2 S" by the clock shows this long. */
+      clockNoteSec: 1,
       /** Each swap slides this long. A miss stays up this long before it flips back. */
       swapSec: 0.4,
       missShowSec: 0.8,
@@ -1389,13 +1586,36 @@ export const BALANCE = {
 
     /** Picture Puzzle: rebuild pictures from stacked piles; two hikers share one tray. */
     picturePuzzle: {
+      /**
+       * By tier: the grid, the piles, the seconds per piece, and the time a
+       * piece adds the first time it lands in its own spot (Nov 25).
+       */
       tiers: {
-        1: { grid: 4, piles: 6, secPerPiece: 3 },
-        2: { grid: 4, piles: 5, secPerPiece: 3 },
-        3: { grid: 5, piles: 4, secPerPiece: 2.5 },
-      } as Readonly<Record<1 | 2 | 3, { grid: 4 | 5; piles: number; secPerPiece: number }>>,
-      /** The pictures (art/picture-puzzle/picture-<name>.png, 120 × 120). A game never repeats one. */
-      pictures: ['bear', 'peaks', 'oak', 'camp'] as const,
+        1: { grid: 4, piles: 6, secPerPiece: 3, rightSpotSec: 3 },
+        2: { grid: 4, piles: 5, secPerPiece: 3, rightSpotSec: 2 },
+        3: { grid: 5, piles: 4, secPerPiece: 2.5, rightSpotSec: 2 },
+        4: { grid: 5, piles: 4, secPerPiece: 2.2, rightSpotSec: 1.5 },
+        5: { grid: 6, piles: 4, secPerPiece: 2, rightSpotSec: 1 },
+      } as Readonly<
+        Record<
+          MgTier,
+          { grid: 4 | 5 | 6; piles: number; secPerPiece: number; rightSpotSec: number }
+        >
+      >,
+      /**
+       * Wyatt's photos (art/picture-puzzle/picture-<name>.png, 120 × 120,
+       * tinted into the GPS greens). A game never repeats one.
+       */
+      pictures: [
+        'lake-island',
+        'mountain-lake',
+        'green-valley',
+        'foggy-forest',
+        'canyon-trail',
+        'rocky-butte',
+      ] as const,
+      /** The "+2 S" over a piece shows this long. */
+      bonusNoteSec: 1,
       /** Tier I: a piece dropped in its right spot locks; Tier I shows a thumbnail. */
       lockCorrectUpTo: 1,
       thumbnailUpTo: 1,
@@ -1407,8 +1627,10 @@ export const BALANCE = {
         1: { cols: 8, rows: 6, holes: 4, timerSec: null },
         2: { cols: 9, rows: 7, holes: 6, timerSec: 180 },
         3: { cols: 10, rows: 8, holes: 8, timerSec: 150 },
+        4: { cols: 10, rows: 8, holes: 9, timerSec: 135 },
+        5: { cols: 11, rows: 8, holes: 10, timerSec: 120 },
       } as Readonly<
-        Record<1 | 2 | 3, { cols: number; rows: number; holes: number; timerSec: number | null }>
+        Record<MgTier, { cols: number; rows: number; holes: number; timerSec: number | null }>
       >,
       /** Wyatt's rule: this many more holes for each hiker (testing tab: 0 to 4). */
       holesPerHiker: 2,
@@ -1419,33 +1641,58 @@ export const BALANCE = {
     /**
      * Dodge (Phase 10.8 steps 3, 3b and 3c, docs/design/12-minigames-dodge.md):
      * one party sprite dodges an animal's attacks in a box. Attacks come from
-     * a shared library; an animal is a box, a head and a list of attacks.
-     * TODO(wyatt): every number is a first guess, by attack and tier. Sizes,
-     * places and distances are in scene units (320 × 240), speeds in units a
-     * second. "From" is the first tier an attack or variant shows up on.
+     * a shared library; an animal is a box, a portrait and a list of attacks.
+     * TODO(wyatt): every number is a first guess, by attack, tier and level.
+     * Sizes, places and distances are in scene units (320 × 240), speeds in
+     * units a second.
+     *
+     * Tiers and levels (Nov 25): each challenge tier (I to V) picks which
+     * animals show up and at what level (Easy, 1, 2 or 3). In the attack
+     * numbers below, the keys 1, 2 and 3 are Levels 1, 2 and 3 (what used to
+     * be Tiers I to III), and "from" is the first level an attack or variant
+     * shows up on. Easy (Bees and Squirrel Army only) has its own numbers.
      */
     dodge: {
       /**
-       * By tier: the length, the attack speed, the gap after the attacks end
-       * before the next one, the chance the next attack overlaps the current
-       * one, and the most attacks at once.
+       * By tier: the length, the chance the next attack overlaps the current
+       * one, and the most attacks at once. Wyatt's call: no overlaps below
+       * Tier V.
        */
       tiers: {
-        1: { lengthSec: 20, speed: 1.0, gapSec: 0.8, overlapChance: 0.3, maxAtOnce: 2 },
-        2: { lengthSec: 25, speed: 1.2, gapSec: 0.6, overlapChance: 0.5, maxAtOnce: 2 },
-        3: { lengthSec: 30, speed: 1.4, gapSec: 0.4, overlapChance: 0.7, maxAtOnce: 3 },
+        1: { lengthSec: 20, overlapChance: 0, maxAtOnce: 1 },
+        2: { lengthSec: 25, overlapChance: 0, maxAtOnce: 1 },
+        3: { lengthSec: 30, overlapChance: 0, maxAtOnce: 1 },
+        4: { lengthSec: 30, overlapChance: 0, maxAtOnce: 1 },
+        5: { lengthSec: 35, overlapChance: 0.6, maxAtOnce: 3 },
       } as Readonly<
-        Record<
-          1 | 2 | 3,
-          {
-            lengthSec: number;
-            speed: number;
-            gapSec: number;
-            overlapChance: number;
-            maxAtOnce: number;
-          }
-        >
+        Record<MgTier, { lengthSec: number; overlapChance: number; maxAtOnce: number }>
       >,
+      /** By level (0 is Easy): the attack speed, and the gap after the attacks end before the next one. */
+      levels: {
+        0: { speed: 0.85, gapSec: 1.0 },
+        1: { speed: 1.0, gapSec: 0.8 },
+        2: { speed: 1.2, gapSec: 0.6 },
+        3: { speed: 1.4, gapSec: 0.5 },
+      } as Readonly<Record<0 | 1 | 2 | 3, { speed: number; gapSec: number }>>,
+      /**
+       * Who shows up at each tier, and at what level (0 is Easy). The Woods
+       * Monster comes from the night monster event, from Tier III.
+       */
+      roster: {
+        1: { bees: 0, squirrels: 0 },
+        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1 },
+        3: { bees: 2, squirrels: 2, bobcat: 2, bear: 2, swordBear: 2, stampede: 2, monster: 3 },
+        4: { bees: 3, squirrels: 3, bobcat: 3, bear: 3, swordBear: 3, stampede: 3, monster: 3 },
+        5: { bees: 3, squirrels: 3, bobcat: 3, bear: 3, swordBear: 3, stampede: 3, monster: 3 },
+      } as Readonly<Record<MgTier, Readonly<Partial<Record<string, 0 | 1 | 2 | 3>>>>>,
+      /** How common each animal is when one is picked at random for a tier (not the Woods Monster). */
+      weights: {
+        1: { bees: 60, squirrels: 40 },
+        2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25 },
+        3: { bees: 5, squirrels: 10, bobcat: 25, bear: 25, swordBear: 20, stampede: 15 },
+        4: { bees: 5, squirrels: 10, bobcat: 20, bear: 25, swordBear: 20, stampede: 20 },
+        5: { bees: 5, squirrels: 10, bobcat: 20, bear: 25, swordBear: 20, stampede: 20 },
+      } as Readonly<Record<MgTier, Readonly<Partial<Record<string, number>>>>>,
       /** An overlapping attack starts this far into the current one (from, to). */
       overlapAfterSec: [0.3, 0.8] as const,
       /** The box keeps at least this far from both HUDs, so warnings fit outside it. */
@@ -1489,13 +1736,11 @@ export const BALANCE = {
         >
       >,
       /**
-       * The first tier each attack shows up on (1 when not listed). The
-       * attacks marked Claude's idea are in attacks/claudesIdeas.ts.
+       * The first level each attack shows up on (1 when not listed). The
+       * attacks marked Claude's idea are in attacks/claudesIdeas.ts. The
+       * bees' patterns go by `bees.levels` instead.
        */
       unlocks: {
-        diagonal: 2,
-        zigzag: 2,
-        aimed: 3,
         shout: 2,
         hug: 2,
         honey: 3,
@@ -1508,15 +1753,17 @@ export const BALANCE = {
       } as Readonly<Partial<Record<string, 1 | 2 | 3>>>,
       /**
        * Wild Predator Stampede: this much longer than the tier's length by
-       * default, and no animal more than this many times in a row. Its
-       * overlaps follow the tier's pacing above.
+       * default, and no animal more than this many times in a row. Every
+       * attack plays at the Stampede's level (never Easy); overlaps follow
+       * the tier above.
        */
       stampede: { extraSec: 10, maxSameAnimal: 2 },
       /**
-       * The Woods Monster (boss): he plays one tier up, and on Tier III adds
-       * this much speed, these overlap-chance points and one more attack at
-       * once. He lasts this long by default. On Tier III his second half
-       * shrinks the box to this over this long.
+       * The Woods Monster (boss, Nov 25): always Level 3. At Tier V he
+       * overlaps attacks and gets his boss boost: this much speed, these
+       * overlap-chance points and one more attack at once. He lasts this
+       * long by default. His second half always comes, shrinking the box to
+       * this over this long.
        */
       monster: {
         lengthSec: 40,
@@ -1529,17 +1776,42 @@ export const BALANCE = {
         speed: 80,
         /** The two frames swap this often. */
         frameSec: 0.1,
-        /** Lane: this many bees, with one gap lane. Cross: this many per lane. */
-        lane: [4, 6] as const,
+        /**
+         * The patterns at each level (0 is Easy), Nov 25: bees are the Tier I
+         * animal, so they start easiest. Full rows only at Level 3.
+         */
+        levels: {
+          0: ['single', 'pairs'],
+          1: ['single', 'lane'],
+          2: ['lane', 'cross', 'zigzag'],
+          3: ['lane', 'cross', 'diagonal', 'aimed'],
+        } as Readonly<Record<0 | 1 | 2 | 3, readonly string[]>>,
+        /**
+         * One at a time: this many bees from random edge points, each aimed at
+         * the sprite as it launches, this far apart (Easy, Level 1). On Easy
+         * they fly this fast; at Level 1, at the bees' speed (my reading).
+         */
+        single: { bees: [6, 8] as const, everySec: { 0: 0.8, 1: 0.6 }, easySpeed: 55 },
+        /** Pairs (Easy): two bees from one side in lanes this far apart (a share of the side, my guess), this far apart in time. */
+        pairs: { apart: 0.5, everySec: 0.6 },
+        /**
+         * Lane: this many bees with one gap lane, each starting up to this
+         * much later than the first, by level (Level 3: a full row, all at
+         * once). Cross: this many per lane, staggered as Lane (Level 2) or in
+         * full rows (Level 3).
+         */
+        lane: {
+          1: { bees: [3, 4], staggerSec: 0.6 },
+          2: { bees: [4, 6], staggerSec: 0.45 },
+          3: { bees: [4, 6], staggerSec: 0 },
+        } as Readonly<Record<1 | 2 | 3, { bees: readonly [number, number]; staggerSec: number }>>,
         cross: [3, 4] as const,
-        /** Lane and Cross: each bee in a row starts up to this much later than the first. */
-        staggerSec: 0.45,
         /** Diagonal: this many bees, this far apart, starting this far apart in time. */
         diagonal: { bees: 5, spacing: 20, staggerSec: 0.12 },
         /** Zigzag: this many bees, swinging this far, this many times a second. */
         zigzag: { bees: 2, amplitude: 28, perSec: 1.2 },
-        /** Aimed: this many bees, launched this far apart in time. */
-        aimed: { bees: 4, staggerSec: 0.3 },
+        /** Aimed swarm (Level 3): this many bees at once from random edges, aimed at the sprite. */
+        aimed: { bees: 4 },
       },
       /** Bear with a Sword's sweep (unchanged), and its shrinking box on Tier III. */
       sword: {
@@ -1696,6 +1968,8 @@ export const BALANCE = {
         radius: 3,
         crumbsSec: 0.3,
         count: { 1: 2, 2: 3, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
+        /** Easy (Nov 25): one acorn at a time, this fast, breaking on this bounce. */
+        easy: { count: 1, speed: 55, breakOn: 2 },
       },
       /**
        * Acorn bombs (Squirrel Army): lobbed over the top edge (this high, my
@@ -1714,6 +1988,8 @@ export const BALANCE = {
         count: { 1: [1, 1], 2: [2, 2], 3: [2, 3] } as Readonly<
           Record<1 | 2 | 3, readonly [number, number]>
         >,
+        /** Easy (Nov 25): one bomb, sitting still, with a longer fuse and a smaller blast. */
+        easy: { count: 1, fuseSec: 2.2, radius: 20 },
       },
       /**
        * Shrapnel (Tier III): from a bomb's blast and from a breaking acorn, in
@@ -1786,6 +2062,8 @@ export const BALANCE = {
       /** Pinecone rain: this many columns, falling (gravity, one bounce), then rolling off (my guesses). */
       pinecones: {
         columns: [3, 5] as const,
+        /** Easy (Nov 25): fewer columns. */
+        easyColumns: [2, 3] as const,
         radius: 4,
         gravity: 260,
         bounce: 0.45,
@@ -1874,7 +2152,21 @@ export const BALANCE = {
        * long (my guesses). Staying in it this long is a hit.
        */
       eye: { spreadDeg: 24, sweepDeg: 100, sweepSec: 3, holdSec: 0.3 },
-      /** Darkness (Tier III, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
+      /**
+       * The portraits above the box (section 3, round 3): the bottom sits this
+       * far above the box's top at the start; if the top would go above this
+       * line, the box moves down instead. They blink every so often (from,
+       * to) for this long, and bob up this far and back every this long.
+       */
+      portraits: {
+        gap: 6,
+        minTop: 24,
+        blinkEverySec: [3, 5] as const,
+        blinkSec: 0.15,
+        bob: 1,
+        bobSec: 0.5,
+      },
+      /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },
     },
   },

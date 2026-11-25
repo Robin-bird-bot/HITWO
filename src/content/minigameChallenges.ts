@@ -5,11 +5,13 @@
  * in a later step; for now the Minigame testing tab opens them.
  */
 import { asset } from '../config/assets';
+import type { Tier } from '../minigames/types';
 
 export interface MinigameChallenge {
   id: string;
   name: string;
-  tier: 1 | 2 | 3;
+  /** I to V (the minigames' tiers, 15-challenge-tiers.md). */
+  tier: Tier;
   /** Who takes part ("WHOLE PARTY"), top right of the banner. */
   who: string;
   /** In italic, under the poster (none for a test challenge). */
@@ -33,7 +35,7 @@ export interface MinigameChallenge {
  */
 export function testChallenge(
   game: { id: string; name: string; baseGame: string; description: string },
-  tier: 1 | 2 | 3,
+  tier: Tier,
 ): MinigameChallenge {
   return {
     id: `test-${game.id}`,

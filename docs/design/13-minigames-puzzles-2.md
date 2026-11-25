@@ -1,5 +1,12 @@
 # Minigames, batch 3: Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice
 
+**Revised November 25 (after Wyatt played them).** What changed:
+- **Five tiers:** every table now runs to Tier V (Tiers IV and V are harder versions).
+- **Trail Map** was too easy: less time, every hiker must be connected at the same time (no more One at a time mode), and trail signs to connect from Tier II.
+- **Memory Puzzle** was way too hard: no miss limit. It runs on a clock, a match adds time, and from Tier II a miss takes some away.
+- **Picture Puzzle** was a bit hard: a piece placed in its right spot adds time. Wyatt's own photos replace the placeholders, tinted into the GPS greens.
+- **Thin Ice:** great as is. It only gains Tiers IV and V.
+
 Four more puzzle and memory games for Phase 10.8. They plug into the same framework as the others (`10-minigames.md`, `11-minigames-puzzles.md`): the challenge pop-up, the party GPS, the shared **Line up** step, per-hiker results and the testing tab.
 
 **Test version:**
@@ -28,12 +35,13 @@ Turn trail tiles to connect each trailhead to the exit. See `mockups/1-trail-map
 - **The turn itself:** quick, about [0.12 s], with a small click.
 
 ### The board
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Grid **(setting)** | [4 × 4] | [5 × 5] | [6 × 6] |
-| Time **(setting)** | [60 s] | [75 s] | [90 s] |
-| Extra time per hiker after the first | +[20 s] | +[20 s] | +[20 s] |
-| Locked tiles (can't turn, marked with a stake) | 0 | [2] | [3] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Grid **(setting)** | [4 × 4] | [5 × 5] | [6 × 6] | [6 × 6] | [6 × 6] |
+| Time **(setting)** | [45 s] | [55 s] | [70 s] | [60 s] | [55 s] |
+| Extra time per hiker after the first | +[15 s] | +[15 s] | +[15 s] | +[15 s] | +[15 s] |
+| Trail signs to connect | 0 | [1] | [2] | [2] | [3] |
+| Locked tiles (can't turn, marked with a stake) | 0 | [2] | [3] | [3] | [4] |
 
 - **Trailheads:** one per hiker, on the outside edge next to an edge tile, shown as that hiker's token. The trail must enter that tile from the edge side.
 - **The exit:** one gap on the edge, marked with an arrow and "EXIT". Never on the same side as a trailhead when that can be avoided.
@@ -46,17 +54,21 @@ Turn trail tiles to connect each trailhead to the exit. See `mockups/1-trail-map
 5. Turn every tile a random amount. If any trailhead is already connected, turn again.
 6. Locked tiles are picked only from solution tiles, and are locked in their correct direction.
 
+### Trail signs (new, Tier II and up)
+- **What they are:** extra stops the trail has to reach as well as the exit. A sign is a tile with a small trail-sign post on it (`art/trail-map/trail-sign.png`, 16 × 16, drawn over the tile at 2×).
+- **Reached:** a sign tile counts as reached when it's lit, connected to a trailhead. Its post switches to `trail-sign-lit.png`.
+- **Placing them:** when making the board (step 2 above), route the first hiker's solution trail through every sign on its way to the exit: trailhead → sign 1 → sign 2 → exit, still without repeating tiles. Signs are never on an edge tile next to a trailhead or the exit.
+- **Side panel:** SIGNS 1 / 2 and HIKERS 1 / 3. See `mockups/8-trail-map-signs.png`.
+
 ### Lighting up
 - After every turn, trace from each trailhead through tiles whose openings line up.
 - Every tile reached uses its `-lit` version, and the exit lights up when it's reached.
 - A trail that's connected to the exit gets small footprints along it.
 
-### More hikers (Mode, a setting)
-- **One at a time** (default): as soon as a hiker's trailhead connects to the exit, their token walks the trail ([0.15 s] a tile) and they're through. They pass.
-  - Later turns may break their trail; that's fine.
-  - Keep going until everyone's through or the time runs out.
-- **Together:** every trailhead must connect to the exit at the same moment. Then everyone walks out together and passes.
-- **Running out of time:** hikers who aren't through fail. In Together mode, everyone fails unless all were connected.
+### Passing (changed: everyone together)
+- **Every hiker's trailhead and every sign** must be connected to the exit **at the same moment**. Then everyone walks out together and passes. The One at a time mode is gone.
+- **Running out of time:** everyone fails, unless all were connected at once.
+- **One hiker:** the same rule, with one trailhead.
 - No Line up is needed; trailheads are placed at random.
 
 ---
@@ -73,27 +85,29 @@ Flip cards to find matching snacks. See `mockups/3-memory-preview.png`, `4-memor
 - **Dealing:** sets go to the hikers in turn, so the split is as even as possible (8 pairs for 3 hikers = 3, 3, 2).
 
 ### The board
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Grid | [4 × 4] | [5 × 4] | [6 × 4] |
-| Match **(setting)** | pairs | pairs | sets of 3 |
-| Preview **(setting)** | [1 s] | [1 s] | [1 s] |
-| Swaps after the preview | none | [2] | [4], plus [1] after every miss |
-| Misses allowed **(setting)** | [6] | [5] | [4] |
-| Timer **(setting)** | none | [90 s] | [75 s] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Grid | [4 × 4] | [5 × 4] | [6 × 4] | [6 × 4] | [6 × 4] |
+| Match **(setting)** | pairs | pairs | sets of 3 | sets of 3 | sets of 3 |
+| Preview **(setting)** | [1 s] | [1 s] | [1 s] | [0.8 s] | [0.6 s] |
+| Swaps after the preview | none | [2] | [4], plus [1] after every miss | [6], plus [1] | [8], plus [1] |
+| Time **(setting)** | [40 s] | [45 s] | [55 s] | [50 s] | [45 s] |
+| A match adds | +[5 s] | +[4 s] | +[4 s] | +[3 s] | +[3 s] |
+| A miss takes away | nothing | [1 s] | [2 s] | [3 s] | [4 s] |
 
-**Misses:** Wyatt suggested about 3. The first flip of each card is a blind guess, though, so with 8 pairs even perfect memory usually misses more than 3. These numbers start higher, and the setting goes down to 1.
+**Changed:** there's no miss limit any more, only the clock. Wyatt found the misses way too hard.
+- Show "+5 S" or "−2 S" by the clock for a moment when time changes. See `mockups/9-memory-clock.png`.
 
 ### Play
 1. **Preview:** every card shows face up for the preview time, then they all flip over.
 2. **Swaps (Tiers II and III):** cards visibly slide and trade places, one swap at a time ([0.4 s] each), so a sharp player can follow them.
 3. **Flipping:** flip one card at a time by tap or click (or the arrow keys and Space).
    - When 2 (or 3) are face up and they all match, they stay up with a dark frame.
-   - If they don't match, they stay up for [0.8 s] with a red frame, then flip back, and the group loses a miss.
+   - If they don't match, they stay up for [0.8 s] with a red frame, then flip back. From Tier II, the clock loses time.
 4. **The end:**
    - when every set is matched, everyone passes;
-   - when the misses or the time run out, each hiker who still has an unmatched set fails, and hikers whose sets are all matched pass.
-- **The side panel** shows the misses left (squares) and each hiker's sets left.
+   - when the time runs out, each hiker who still has an unmatched set fails, and hikers whose sets are all matched pass.
+- **The side panel** shows the clock (a bar and the time) and each hiker's sets left.
 - No Line up is needed.
 
 ---
@@ -102,16 +116,17 @@ Flip cards to find matching snacks. See `mockups/3-memory-preview.png`, `4-memor
 Rebuild a picture from pieces stacked in a tray. With two hikers there are two pictures and one shared tray. See `mockups/6-picture-puzzle.png`.
 
 ### Pictures and pieces
-- **Pictures:** `art/picture-puzzle/picture-*.png`, 120 × 120 each (placeholders cut from the Bearrels scenes: bear, peaks, oak, camp). A game never repeats a picture.
+- **Pictures (new):** Wyatt's own photos, cut square and tinted into the GPS greens with a light LCD-style dither: `art/picture-puzzle/picture-lake-island.png`, `-mountain-lake`, `-green-valley`, `-foggy-forest`, `-canyon-trail` and `-rocky-butte`, 120 × 120 each. They replace the old placeholders (bear, peaks, oak, camp), which can be deleted. A game never repeats a picture. See `mockups/11-picture-photos-all.png`.
 - **Pieces:** square cuts of the picture.
   - [4 × 4] on Tiers I and II: 30 units each.
-  - [5 × 5] on Tier III: 24 units each.
-- **Grid (setting):** 4 × 4 or 5 × 5.
+  - [5 × 5] on Tiers III and IV: 24 units each.
+  - [6 × 6] on Tier V: 20 units each.
+- **Grid (setting):** 4 × 4, 5 × 5 or 6 × 6.
 
 ### Layout
 - **One picture:** one empty grid near the top, centered. On Tier I a small thumbnail of the finished picture sits in the corner **(setting: On or Off)**.
 - **Two pictures:** two grids side by side, each labeled with its hiker ("FINN'S PICTURE").
-- **The tray** runs along the bottom with [6] piles on Tier I, [5] on Tier II and [4] on Tier III. Fewer piles means taller stacks.
+- **The tray** runs along the bottom with [6] piles on Tier I, [5] on Tier II and [4] on Tiers III to V. Fewer piles means taller stacks.
   - All the pieces are shuffled into the piles, from both pictures when there are two.
   - Only the top piece of each pile shows. Offset edges below it show how deep the pile is, with a count ("x4").
 
@@ -128,7 +143,9 @@ Rebuild a picture from pieces stacked in a tray. With two hikers there are two p
 
 ### Hikers and time
 - **Pairs:** hikers play in pairs in line-up order: 1 and 2 together, then 3 and 4 (with 3 hikers: 1 and 2, then 3 alone).
-- **Time (setting):** [3 s] per piece on Tiers I and II, [2.5 s] on Tier III. That's 48 s for one 4 × 4 picture, and 96 s for two.
+- **Time (setting):** [3 s] per piece on Tiers I and II, [2.5 s] on Tier III, [2.2 s] on Tier IV and [2 s] on Tier V. That's 48 s for one 4 × 4 picture, and 96 s for two.
+- **Time bonus (new):** the first time a piece lands in its own spot, the clock gains time: +[3 s] on Tier I, +[2 s] on Tiers II and III, +[1.5 s] on Tier IV, +[1 s] on Tier V. Show "+2 S" over the piece. Each piece earns it only once, so moving a piece out and back in doesn't add more. See `mockups/10-picture-photos.png`.
+  - This also hints which pieces are right on Tiers II and up. That's fine: Wyatt wants it a bit easier.
 - **Running out of time:** a hiker whose picture isn't finished fails.
 
 ---
@@ -137,11 +154,11 @@ Rebuild a picture from pieces stacked in a tray. With two hikers there are two p
 Minesweeper on a frozen lake: the "mines" are holes in the ice. Map them without falling in. See `mockups/7-thin-ice.png`.
 
 ### The ice
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Grid **(setting)** | [8 × 6] | [9 × 7] | [10 × 8] |
-| Holes | [4] + 2 per hiker | [6] + 2 per hiker | [8] + 2 per hiker |
-| Timer **(setting)** | none | [3:00] | [2:30] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Grid **(setting)** | [8 × 6] | [9 × 7] | [10 × 8] | [10 × 8] | [11 × 8] |
+| Holes | [4] + 2 per hiker | [6] + 2 per hiker | [8] + 2 per hiker | [9] + 2 per hiker | [10] + 2 per hiker |
+| Timer **(setting)** | none | [3:00] | [2:30] | [2:15] | [2:00] |
 
 The 2 holes per hiker are Wyatt's rule, and a setting.
 
@@ -166,7 +183,7 @@ The 2 holes per hiker are Wyatt's rule, and a setting.
   - the hole stays open, and the next hiker in line steps up;
   - the ice doesn't reset.
 - **Winning:** when every safe cell is checked, every hiker still in passes.
-- **Ending early:** if everyone falls in, the game ends. On Tiers II and III it also ends when the timer runs out, and hikers still in fail.
+- **Ending early:** if everyone falls in, the game ends. From Tier II it also ends when the timer runs out, and hikers still in fail.
 - **Line up:** yes. It decides who steps first.
 
 ---
@@ -174,9 +191,9 @@ The 2 holes per hiker are Wyatt's rule, and a setting.
 ## 5. Testing tab
 - **Group the game list by category:** Movement and dodging, Puzzle and logic, Memory, Search, Reaction and timing, Guess and luck. Use the category table in the design doc.
 - **Add the four games**, each with **Tier** and **Hikers**, plus:
-  - **Trail Map:** Mode (Auto, One at a time, Together), Grid (Auto, 4 to 7), Time (Auto, Off, or 20 to 180 s);
-  - **Memory Puzzle:** Match (Auto, Pairs, Threes), Preview (0.5 to 5 s), Misses (1 to 10), Swaps (Auto, Off, On), Timer (Auto, Off, or 30 to 180 s);
-  - **Picture Puzzle:** Grid (4 × 4, 5 × 5), Thumbnail (Auto, On, Off), Seconds per piece (1 to 6);
+  - **Trail Map:** Grid (Auto, 4 to 7), Time (Auto, Off, or 20 to 180 s), Signs (Auto, 0 to 3). The Mode setting is gone;
+  - **Memory Puzzle:** Match (Auto, Pairs, Threes), Preview (0.5 to 5 s), Swaps (Auto, Off, On), Time (Auto, or 20 to 180 s), Match bonus (Auto, 0 to 10 s), Miss cost (Auto, 0 to 10 s). The Misses setting is gone;
+  - **Picture Puzzle:** Grid (Auto, 4 × 4, 5 × 5, 6 × 6), Thumbnail (Auto, On, Off), Seconds per piece (1 to 6), Right-spot bonus (Auto, 0 to 5 s), Picture (Random, or any one photo);
   - **Thin Ice:** Grid (Auto, or 6 × 5 to 12 × 9), Holes per hiker (0 to 4), Timer (Auto, Off, or 60 to 300 s).
 - **Same flow as the other games:** the pop-up in test mode, Start, the GPS turns and zooms, Line up where the game uses it, the game, the results.
 - Test mode never touches the save.
@@ -186,20 +203,21 @@ The 2 holes per hiker are Wyatt's rule, and a setting.
   - every board can be solved, and none start solved;
   - locked tiles are in their correct direction;
   - lighting follows only openings that line up on both tiles;
-  - One at a time passes a hiker the moment they connect, and later turns don't undo the pass;
-  - Together passes only when all are connected at once.
+  - it passes only when every trailhead and every sign are connected to the exit at the same moment;
+  - every board with signs can be solved, with each sign on a solution trail.
 - **Memory Puzzle:**
   - sets split evenly among hikers;
   - the same snack in two colors counts as two sets;
-  - a miss is counted once per failed try;
+  - a match adds time and, from Tier II, a miss takes time away, once per try;
   - swaps never lose a card;
-  - when misses run out, exactly the hikers with unmatched sets fail;
+  - when time runs out, exactly the hikers with unmatched sets fail;
   - sets of 3 need all 3.
 - **Picture Puzzle:**
   - pieces from both pictures share the piles;
   - only top pieces can be taken;
   - pieces can go back onto a pile;
   - a picture passes only when every piece is in its own spot;
+  - the right-spot bonus is given once per piece, never twice;
   - Tier I clicks correct pieces into place and later tiers don't.
 - **Thin Ice:**
   - the first tap is never a hole and opens a patch;

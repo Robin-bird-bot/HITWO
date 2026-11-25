@@ -1,27 +1,5 @@
 /* Memory Puzzle (3-memory-preview.png to 5-memory-tier-3.png), in scene units (320 × 240). */
 
-.misses {
-  position: absolute;
-  left: 7px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  width: 72px;
-}
-
-.misses > span {
-  width: 8px;
-  height: 8px;
-  box-sizing: border-box;
-  border: 0.75px solid #1d2918;
-  border-radius: 1px;
-  background: #1d2918;
-}
-
-.misses > span[data-used] {
-  background: #859a66;
-}
-
 .who {
   position: absolute;
   left: 7px;

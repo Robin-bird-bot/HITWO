@@ -1,14 +1,16 @@
 /**
  * Trail Map on the GPS (docs/design/13-minigames-puzzles-2.md, section 1;
- * mockups 1-trail-map.png and 2-trail-map-hikers.png), in scene units
- * (320 × 240). Tiles are the 16-px trail pieces at 2× (smaller on a 7 × 7).
+ * mockups 1-trail-map.png, 2-trail-map-hikers.png and 8-trail-map-signs.png),
+ * in scene units (320 × 240). Tiles are the 16-px trail pieces at 2×
+ * (smaller on a 7 × 7), and trail signs stand on some tiles from Tier II.
  *
  * - Tap or click a tile to turn it clockwise; right-click or Shift + click
  *   turns it back. The arrow keys move a cursor, and Space turns its tile.
  * - Tiles connected to a trailhead light up; a trail that reaches the exit
  *   gets footprints.
- * - One at a time: a hiker whose trail connects walks it and is through.
- *   Together: everyone walks out once every trail is connected.
+ * - A sign's post lights up when its tile is lit. Once every trailhead and
+ *   every sign are connected at the same moment, everyone walks out
+ *   together. The side panel counts the signs and hikers connected now.
  */
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { asset } from '../../../config/assets';
@@ -18,15 +20,15 @@ import {
   lighting,
   newTrailMap,
   result,
+  signsReached,
   timeUp,
   trailOrder,
   turn,
   type Gate,
-  type Mode,
 } from '../../../minigames/trailMap/logic';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
-import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
+import { clock, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
@@ -40,15 +42,14 @@ const numberOr = <A extends string>(v: unknown, auto: A): A | number =>
 
 export function TrailMap({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const tier = tierOf(settings);
-  const modePick = pickOf(settings, 'mode');
   const time = settings.time === 'off' ? 'off' : numberOr(settings.time, 'auto');
   const [game, setGame] = useState(() =>
     newTrailMap(
       {
         tier,
         size: numberOr(settings.grid, 'auto'),
-        mode: (modePick === 'together' ? 'together' : 'one') as Mode,
         time,
+        signs: numberOr(settings.signs, 'auto'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -68,6 +69,7 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
   const left = 96 + Math.floor((214 - n * tile) / 2);
   const top = Math.floor((240 - n * tile) / 2) + 2;
   const { lit, connected } = lighting(game);
+  const reached = new Set(signsReached(game));
   const running = !game.over && !still;
 
   const left$ = useCountdown(game.timeSec, running, () => {
@@ -117,13 +119,7 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
         ...ws,
         ...Object.fromEntries(newly.map((id) => [id, { route: trailOrder(next, id), step: 0 }])),
       }));
-      setMessage(
-        next.over
-          ? next.mode === 'together' || newly.length > 1
-            ? 'Everyone’s through!'
-            : `${byId(newly[0]!).name} made it. Everyone’s through!`
-          : `${newly.map((id) => byId(id).name).join(' and ')} made it`,
-      );
+      setMessage(newly.length > 1 ? 'Everyone’s through!' : `${byId(newly[0]!).name} made it!`);
     }
     setGame(next);
   };
@@ -187,31 +183,27 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
       {/* The left panel. */}
       <div className={`${ui.box} ${panel.head}`}>TRAIL MAP</div>
       <p className={`${ui.text} ${panel.lines}`} style={{ top: 28 }}>
-        Tap a tile to turn it. Connect {hikers.length > 1 ? 'each trailhead' : 'the trailhead'} to
-        the exit.
+        Tap a tile to turn it. Connect {hikers.length > 1 ? 'every trailhead' : 'the trailhead'}
+        {game.signs.length ? ' and every sign' : ''} to the exit
+        {hikers.length > 1 || game.signs.length ? ', all at the same time.' : '.'}
       </p>
-      <p className={`${ui.text} ${panel.lines}`} style={{ top: 62 }}>
-        Connected tiles light up. Right-click turns back.
+      {game.signs.length > 0 && (
+        <p className={`${ui.text} ${panel.label}`} style={{ top: 82 }}>
+          SIGNS {reached.size} / {game.signs.length}
+        </p>
+      )}
+      <p className={`${ui.text} ${panel.label}`} style={{ top: game.signs.length ? 91 : 82 }}>
+        HIKERS {game.order.filter((id) => connected.has(id)).length} / {game.order.length}
       </p>
       <div
         className={`${ui.box} ${panel.clock}`}
-        style={{ top: 92 }}
+        style={{ top: 108 }}
         data-low={(left$ !== null && left$ <= 10) || undefined}
       >
         {left$ === null ? 'NO CLOCK' : clock(left$)}
       </div>
-      {hikers.length > 1 && (
-        <>
-          <p className={`${ui.muted} ${panel.label}`} style={{ top: 120 }}>
-            MODE
-          </p>
-          <p className={`${ui.text} ${panel.lines}`} style={{ top: 126 }}>
-            {game.mode === 'together' ? 'Together: every trail at once' : 'One at a time'}
-          </p>
-        </>
-      )}
       {message && (
-        <div className={`${ui.box} ${panel.message}`} style={{ top: 150 }} role="status">
+        <div className={`${ui.box} ${panel.message}`} style={{ top: 134 }} role="status">
           {message}
         </div>
       )}
@@ -270,6 +262,14 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
                 transitionDuration: `${T.turnSec}s`,
               }}
             />
+            {game.signs.includes(cell) && (
+              <img
+                className={`${ui.sprite} ${styles.sign}`}
+                src={art(reached.has(cell) ? 'trail-sign-lit.png' : 'trail-sign.png')}
+                alt={reached.has(cell) ? 'A trail sign, reached' : 'A trail sign'}
+                draggable={false}
+              />
+            )}
             {prints.has(cell) && (
               <span className={styles.print} aria-hidden="true">
                 <span />

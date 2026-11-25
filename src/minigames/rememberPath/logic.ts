@@ -13,11 +13,11 @@ import { BALANCE } from '../../config/balance';
 import { int, seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const R = BALANCE.minigames.rememberPath;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 
 /** A tile: column, and row (0 is the top row). */
 export interface Tile {

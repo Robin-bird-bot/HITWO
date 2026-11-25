@@ -546,7 +546,7 @@ export const DASH: AttackDef = {
     const path: Point[] = [{ x: at.x - dir.x * out, y: at.y - dir.y * out }];
     const passes: number[] = [];
     const bounces: Point[] = [];
-    const n = DA.passes[ctx.tier];
+    const n = DA.passes[ctx.level];
     for (let k = 0; k < n; k++) {
       const far = { x: at.x + dir.x * 1e-6, y: at.y + dir.y * 1e-6 };
       const d = rayToWall(box, far, dir);
@@ -624,7 +624,7 @@ export const PINECONES: AttackDef = {
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
-    const n = count(ctx.rng, PC.columns);
+    const n = count(ctx.rng, ctx.easy ? PC.easyColumns : PC.columns);
     const xs = columns(ctx.rng, ctx.box, n, PC.radius + 4);
     const parts = xs.map((x, k): PineconePart => {
       const warnAt = ctx.time + k * PC.staggerSec;
@@ -748,7 +748,7 @@ export const SCURRY: AttackDef = {
           start,
           dir: coin(ctx.rng) ? 1 : -1,
           speed: SC.speed * ctx.speed,
-          throwEvery: SC.nuts.everySec[ctx.tier],
+          throwEvery: SC.nuts.everySec[ctx.level],
           nutSpeed: SC.nuts.speed * ctx.speed,
         },
       ],
@@ -827,7 +827,7 @@ export const HERD: AttackDef = {
   start(ctx) {
     const e = edges(ctx.box);
     const lanes = Math.max(2, Math.floor(ctx.box.h / HR.lane));
-    const gaps = Math.min(lanes - 1, HR.gaps[ctx.tier]);
+    const gaps = Math.min(lanes - 1, HR.gaps[ctx.level]);
     const all = Array.from({ length: lanes }, (_, k) => e.top + ((k + 0.5) * ctx.box.h) / lanes);
     const open = new Set<number>();
     while (open.size < gaps)

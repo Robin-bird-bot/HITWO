@@ -17,11 +17,11 @@ import { BALANCE } from '../../config/balance';
 import { seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const I = BALANCE.minigames.thinIce;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 
 export interface ThinIceState {
   tier: Tier;

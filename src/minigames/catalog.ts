@@ -8,18 +8,23 @@
  */
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
-import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal } from './dodge/animals';
+import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal, rankFor } from './dodge/animals';
 import { VERSIONS as TRAIL_BLOCK_VERSIONS } from './trailBlocks/logic';
 import {
   CATEGORIES,
+  isTier,
+  TIER_LABELS,
+  TIERS,
   type MinigameInfo,
   type MinigameSetting,
   type MinigameSettings,
   type MinigameSettingValue,
   type PickOption,
+  type Tier,
 } from './types';
 
 const B = BALANCE.minigames.bearrels;
+const FO = BALANCE.minigames.findObject;
 
 export const BEARRELS: MinigameInfo = {
   id: 'bearrels',
@@ -74,16 +79,20 @@ export const BEARRELS: MinigameInfo = {
   ],
 };
 
-/** Tier I, II or III: the puzzle games' main setting. */
+/** Tier I to V (15-challenge-tiers.md): every game's main setting. IV and V are harder versions of III. */
 const TIER: MinigameSetting = {
   kind: 'choice',
   id: 'tier',
   label: 'Tier',
-  options: [1, 2, 3],
-  labels: ['I', 'II', 'III'],
+  options: [...TIERS],
+  labels: TIERS.map((t) => TIER_LABELS[t]),
   default: 1,
-  hint: 'Harder each tier',
+  hint: 'Harder each tier. IV and V are harder versions of III',
 };
+
+/** "the tier's: 20, 25, 30, 30 or 35" (a value for each tier, for a setting's hint). */
+const byTier = (f: (t: Tier) => string | number) =>
+  `the tier's: ${TIERS.slice(0, -1).map(f).join(', ')} or ${f(5)}`;
 
 const HIKERS: MinigameSetting = {
   kind: 'hikers',
@@ -175,22 +184,26 @@ export const FIND_OBJECT: MinigameInfo = {
       ['dark', 'Dark'],
       ['darkWindy', 'Dark + windy'],
     ]),
-    autoRange('rounds', 'Rounds', 1, 5, BALANCE.minigames.findObject.rounds, ''),
+    autoRange('rounds', 'Rounds', 1, 5, FO.rounds, ''),
     autoRange(
       'secPerTarget',
       'Seconds per target',
       1,
       8,
-      BALANCE.minigames.findObject.secPerTarget,
+      FO.secPerTarget,
       ' s',
+      1,
+      `${byTier((t) => FO.tiers[t].secPerTarget)} s`,
     ),
     autoRange(
       'extraSec',
       'Extra seconds per round',
       0,
       20,
-      BALANCE.minigames.findObject.extraSecPerRound,
+      FO.extraSecPerRound,
       ' s',
+      1,
+      `${byTier((t) => FO.tiers[t].extraSecPerRound)} s`,
     ),
   ],
 };
@@ -233,22 +246,31 @@ export const FIND_PATH: MinigameInfo = {
 
 const DG = BALANCE.minigames.dodge;
 
-/** Dodge's attacks for the Attack picker: All, then each one the animal uses (greyed out until its tier). */
+/** The Level setting's value: Auto, Easy, or a numbered level. */
+export function dodgeLevelPick(settings: MinigameSettings): 'auto' | 'easy' | 1 | 2 | 3 {
+  const v = settings.level;
+  return v === 'easy' ? 'easy' : v === '1' ? 1 : v === '2' ? 2 : v === '3' ? 3 : 'auto';
+}
+
+/**
+ * Dodge's attacks for the Attack picker: All, then each one the animal uses
+ * (greyed out, with where it plays, when it doesn't play at the level the
+ * tier and the Level setting give).
+ */
 function dodgeAttacks(settings: MinigameSettings): PickOption[] {
   const animal = isAnimal(settings.animal) ? settings.animal : 'bees';
-  const tier = settings.tier === 2 || settings.tier === 3 ? settings.tier : 1;
-  const choices = attackChoices(animal, tier, settings.ideas !== 'off');
+  const tier = isTier(settings.tier) ? settings.tier : 1;
+  const rank = rankFor(animal, tier, dodgeLevelPick(settings));
+  const choices = attackChoices(animal, rank, settings.ideas !== 'off');
   return [
     { id: 'all', label: 'All' },
     ...choices.map((c) => ({
       id: c.id,
-      label: `${c.name}${c.claudesIdea ? ' · Claude’s idea' : ''}${c.unlocked ? '' : ` · from Tier ${ROMAN_TIER[c.from]}`}`,
+      label: `${c.name}${c.claudesIdea ? ' · Claude’s idea' : ''}${c.unlocked ? '' : ` · ${c.where}`}`,
       disabled: !c.unlocked,
     })),
   ];
 }
-
-const ROMAN_TIER = ['', 'I', 'II', 'III'];
 
 /** Every attack any animal uses, once (so a remembered Attack is kept while the Animal changes). */
 const ALL_DODGE_ATTACKS = [
@@ -285,7 +307,7 @@ export const DODGE: MinigameInfo = {
       default: 'all',
       menu: true,
       optionsFor: dodgeAttacks,
-      hint: 'All, or practice one attack at the chosen tier',
+      hint: 'All, or practice one attack at the chosen level',
     },
     {
       kind: 'pick',
@@ -297,7 +319,21 @@ export const DODGE: MinigameInfo = {
         { id: 'on', label: 'On' },
       ],
       default: 'auto',
-      hint: 'Auto uses the tier’s chance. With one attack picked, attacks never overlap',
+      hint: 'Auto: on at Tier V only. With one attack picked, attacks never overlap',
+    },
+    {
+      kind: 'pick',
+      id: 'level',
+      label: 'Level',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'easy', label: 'Easy' },
+        { id: '1', label: '1' },
+        { id: '2', label: '2' },
+        { id: '3', label: '3' },
+      ],
+      default: 'auto',
+      hint: 'Auto uses the tier’s. Easy is for Bees and Squirrel Army (the others play 1)',
     },
     {
       kind: 'pick',
@@ -319,6 +355,28 @@ export const DODGE: MinigameInfo = {
       ],
       default: 'off',
     },
+    {
+      kind: 'pick',
+      id: 'portrait',
+      label: 'Portrait style',
+      options: [
+        { id: 'solid', label: 'Solid' },
+        { id: 'solidRed', label: 'Solid + red' },
+      ],
+      default: 'solid',
+      hint: 'P switches it while playing',
+    },
+    {
+      kind: 'pick',
+      id: 'motion',
+      label: 'Portrait motion',
+      options: [
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'on',
+      hint: 'The blink and the bob',
+    },
     TIER,
     HIKERS,
     autoRange('lives', 'Lives per hiker', 1, 3, DG.lives, ''),
@@ -330,7 +388,7 @@ export const DODGE: MinigameInfo = {
       DG.tiers[1].lengthSec,
       ' s',
       5,
-      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s; Stampede +${DG.stampede.extraSec} s; Woods Monster ${DG.monster.lengthSec} s`,
+      `${byTier((t) => DG.tiers[t].lengthSec)} s; Stampede +${DG.stampede.extraSec} s; Woods Monster ${DG.monster.lengthSec} s`,
     ),
     autoRange('switch', 'Switch every', 3, 10, DG.switchSec, ' s'),
   ],
@@ -342,22 +400,27 @@ const TM = BALANCE.minigames.trailMap;
 const ME = BALANCE.minigames.memory;
 const PP = BALANCE.minigames.picturePuzzle;
 const TI = BALANCE.minigames.thinIce;
-const byTier = (f: (t: 1 | 2 | 3) => string | number) => `the tier's: ${f(1)}, ${f(2)} or ${f(3)}`;
+
+/** Picture Puzzle's photos, by name, for the Picture setting. */
+const PICTURE_NAMES: Readonly<Record<(typeof PP.pictures)[number], string>> = {
+  'lake-island': 'Lake island',
+  'mountain-lake': 'Mountain lake',
+  'green-valley': 'Green valley',
+  'foggy-forest': 'Foggy forest',
+  'canyon-trail': 'Canyon trail',
+  'rocky-butte': 'Rocky butte',
+};
 
 export const TRAIL_MAP: MinigameInfo = {
   id: 'trailMap',
   name: 'Trail Map',
   baseGame: 'Puzzle',
   category: 'puzzle',
-  description: 'Turn the trail tiles to connect each trailhead to the exit.',
+  description: 'Turn the trail tiles to connect every trailhead and sign to the exit at once.',
   status: 'ready',
   settings: [
     TIER,
     HIKERS,
-    override('mode', 'Mode', [
-      ['one', 'One at a time'],
-      ['together', 'Together'],
-    ]),
     autoRange(
       'grid',
       'Grid',
@@ -379,6 +442,16 @@ export const TRAIL_MAP: MinigameInfo = {
       `${byTier((t) => TM.tiers[t].timeSec)} s, +${TM.extraSecPerHiker} s per extra hiker`,
       true,
     ),
+    autoRange(
+      'signs',
+      'Signs',
+      0,
+      3,
+      TM.tiers[1].signs,
+      '',
+      1,
+      byTier((t) => TM.tiers[t].signs),
+    ),
   ],
 };
 
@@ -396,28 +469,46 @@ export const MEMORY: MinigameInfo = {
       ['pairs', 'Pairs'],
       ['threes', 'Threes'],
     ]),
-    autoRange('preview', 'Preview', 0.5, 5, ME.previewSec, ' s', 0.5),
     autoRange(
-      'misses',
-      'Misses',
-      1,
-      10,
-      ME.tiers[1].misses,
-      '',
-      1,
-      byTier((t) => ME.tiers[t].misses),
+      'preview',
+      'Preview',
+      0.5,
+      5,
+      ME.tiers[1].previewSec,
+      ' s',
+      0.5,
+      `${byTier((t) => ME.tiers[t].previewSec)} s`,
     ),
     override('swaps', 'Swaps', ON_OFF),
     autoRange(
-      'timer',
-      'Timer',
-      30,
+      'time',
+      'Time',
+      20,
       180,
-      90,
+      ME.tiers[1].timeSec,
       ' s',
       5,
-      `${byTier((t) => ME.tiers[t].timerSec ?? 'none')} s`,
-      true,
+      `${byTier((t) => ME.tiers[t].timeSec)} s`,
+    ),
+    autoRange(
+      'matchBonus',
+      'Match bonus',
+      0,
+      10,
+      ME.tiers[1].matchSec,
+      ' s',
+      1,
+      `${byTier((t) => ME.tiers[t].matchSec)} s`,
+    ),
+    autoRange(
+      'missCost',
+      'Miss cost',
+      0,
+      10,
+      ME.tiers[1].missSec,
+      ' s',
+      1,
+      `${byTier((t) => ME.tiers[t].missSec)} s`,
     ),
   ],
 };
@@ -436,6 +527,7 @@ export const PICTURE_PUZZLE: MinigameInfo = {
     override('grid', 'Grid', [
       ['4', '4 × 4'],
       ['5', '5 × 5'],
+      ['6', '6 × 6'],
     ]),
     override('thumbnail', 'Thumbnail', ON_OFF),
     autoRange(
@@ -448,6 +540,28 @@ export const PICTURE_PUZZLE: MinigameInfo = {
       0.5,
       `${byTier((t) => PP.tiers[t].secPerPiece)} s`,
     ),
+    autoRange(
+      'rightSpot',
+      'Right-spot bonus',
+      0,
+      5,
+      PP.tiers[1].rightSpotSec,
+      ' s',
+      0.5,
+      `${byTier((t) => PP.tiers[t].rightSpotSec)} s`,
+    ),
+    {
+      kind: 'pick',
+      id: 'picture',
+      label: 'Picture',
+      options: [
+        { id: 'random', label: 'Random' },
+        ...PP.pictures.map((p) => ({ id: p, label: PICTURE_NAMES[p] })),
+      ],
+      default: 'random',
+      menu: true,
+      hint: 'The first hiker’s picture; a second one is always different',
+    },
   ],
 };
 
@@ -559,10 +673,25 @@ export const WHACKOON: MinigameInfo = {
   name: 'Whackoon',
   baseGame: 'Reaction',
   category: 'reaction',
-  description: 'Whack the raccoons in the trash cans. Leave the skunks alone.',
+  description: 'Whack the raccoons in your color. Leave the skunks alone.',
   status: 'ready',
   lineUp: true,
-  settings: [TIER, HIKERS, override('skunks', 'Skunks', ON_OFF)],
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'mode',
+      label: 'Mode',
+      options: [
+        { id: 'colors', label: 'Colors' },
+        { id: 'turns', label: 'Turns' },
+      ],
+      default: 'colors',
+      hint: 'Colors: each hiker whacks their own color. Turns: one at a time',
+    },
+    override('skunks', 'Skunks', ON_OFF),
+  ],
 };
 
 const soon = (

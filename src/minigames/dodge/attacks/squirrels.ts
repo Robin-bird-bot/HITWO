@@ -117,8 +117,9 @@ export const ACORNS: AttackDef = {
   name: 'Rolling acorns',
   kind: 'missile',
   start(ctx) {
-    const speed = A.speed * ctx.speed;
-    const n = A.count[ctx.tier];
+    // Easy: one acorn at a time, slower, breaking sooner.
+    const speed = ctx.easy ? A.easy.speed : A.speed * ctx.speed;
+    const n = ctx.easy ? A.easy.count : A.count[ctx.level];
     const parts: AcornPart[] = [];
     for (let k = 0; k < n; k++) {
       const side = oneOf(ctx.rng, SIDES);
@@ -137,6 +138,7 @@ export const ACORNS: AttackDef = {
         vx: dir.x * speed,
         vy: dir.y * speed,
         bounces: 0,
+        ...(ctx.easy ? { breakOn: A.easy.breakOn } : {}),
       });
     }
     return { parts, endsAt: 'parts' };
@@ -153,7 +155,7 @@ export const ACORN_RULES: PartRules<AcornPart> = {
     const part: AcornPart = { ...p, x: moved.x, y: moved.y, vx: moved.vx, vy: moved.vy };
     if (!moved.wall) return { part };
     part.bounces = p.bounces + 1;
-    if (part.bounces < A.breakOn) return { part };
+    if (part.bounces < (p.breakOn ?? A.breakOn)) return { part };
     // It breaks: crumbs, and (Tier III) shrapnel away from the wall.
     const crumbs: CrumbsPart = {
       kind: 'crumbs',
@@ -166,7 +168,7 @@ export const ACORN_RULES: PartRules<AcornPart> = {
       y: part.y,
     };
     const spawn: Part[] = [crumbs];
-    if (w.tier >= SH.from) {
+    if (w.level >= SH.from) {
       spawn.push(...shrapnel(w, p.round, part, SH.acornPieces, INWARD[moved.wall]));
     }
     return { part: { ...part, done: true }, spawn };
@@ -193,7 +195,10 @@ export const BOMBS: AttackDef = {
   name: 'Acorn bombs',
   kind: 'missile',
   start(ctx) {
-    const n = count(ctx.rng, B.count[ctx.tier]);
+    // Easy: one bomb, sitting still, with a longer fuse and a smaller blast.
+    const n = ctx.easy ? B.easy.count : count(ctx.rng, B.count[ctx.level]);
+    const fuseSec = ctx.easy ? B.easy.fuseSec : B.fuseSec;
+    const radius = ctx.easy ? B.easy.radius : B.radius;
     const e = edges(ctx.box);
     const margin = 16;
     const spots: Point[] = [];
@@ -205,17 +210,17 @@ export const BOMBS: AttackDef = {
           x: between(ctx.rng, e.left + margin, e.right - margin),
           y: between(ctx.rng, e.top + margin, e.bottom - margin),
         };
-        if (spots.every((s) => Math.hypot(s.x - spot.x, s.y - spot.y) > B.radius * 1.3)) break;
+        if (spots.every((s) => Math.hypot(s.x - spot.x, s.y - spot.y) > radius * 1.3)) break;
       }
       spots.push(spot);
     }
-    const rolls = from(ctx, B.rollFrom);
+    const rolls = !ctx.easy && from(ctx, B.rollFrom);
     const landAt = ctx.time + warnFor(B.markSec);
     const parts = spots.map((spot): BombPart => {
       const angle = nextFloat(ctx.rng) * Math.PI * 2;
       return {
         kind: 'bomb',
-        ...base(ctx, ctx.time, landAt + B.fuseSec),
+        ...base(ctx, ctx.time, landAt + fuseSec),
         from: { x: spot.x, y: e.top - 4 },
         x: spot.x,
         y: spot.y,
@@ -223,7 +228,7 @@ export const BOMBS: AttackDef = {
         vy: rolls ? Math.sin(angle) * B.rollSpeed : 0,
         landAt,
         blastSec: B.blastSec,
-        radius: B.radius,
+        radius,
       };
     });
     return { parts, endsAt: 'parts' };
@@ -257,7 +262,7 @@ export const BOMB_RULES: PartRules<BombPart> = {
       const part = { ...p, blasted: true as const };
       return {
         part,
-        spawn: w.tier >= SH.from ? shrapnel(w, p.round, p, SH.bombPieces, null) : [],
+        spawn: w.level >= SH.from ? shrapnel(w, p.round, p, SH.bombPieces, null) : [],
       };
     }
     if (p.blasted || (!p.vx && !p.vy)) return { part: p };

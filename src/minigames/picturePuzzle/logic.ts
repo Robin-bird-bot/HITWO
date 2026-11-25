@@ -11,6 +11,9 @@
  *   one, they swap and the cell's piece goes on top of that pile); a piece
  *   in a grid can move to another cell (swapping) or back onto any pile.
  *   Locked pieces stay put. On Tier I, a piece dropped in its own spot locks.
+ * - **The clock:** seconds per piece × the round's pieces. The first time a
+ *   piece lands in its own spot, the clock gains the right-spot bonus (Nov
+ *   25); moving it out and back in doesn't add more.
  * - **Done:** when every piece of a picture is in its own spot, it locks and
  *   its hiker passes. When the clock runs out, unfinished pictures fail.
  */
@@ -18,11 +21,11 @@ import { BALANCE } from '../../config/balance';
 import { seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const P = BALANCE.minigames.picturePuzzle;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 export type PictureName = (typeof P.pictures)[number];
 
 /** A piece: which of the round's pictures it's from, and its own cell there. */
@@ -36,8 +39,10 @@ export type Spot = { kind: 'pile'; pile: number } | { kind: 'cell'; picture: num
 
 export interface PicturePuzzleState {
   tier: Tier;
-  grid: 4 | 5;
+  grid: 4 | 5 | 6;
   secPerPiece: number;
+  /** What a piece's first landing in its own spot adds to the clock. */
+  rightSpotSec: number;
   order: string[];
   /** The pairs, in order, and which one is playing. */
   rounds: string[][];
@@ -50,8 +55,14 @@ export interface PicturePuzzleState {
   grids: (number | null)[][];
   locked: boolean[];
   done: boolean[];
-  /** This round's clock. */
+  /** This round's clock: what it started at, what's left, and seconds played. */
   timeSec: number;
+  timeLeft: number;
+  elapsed: number;
+  /** This round's pieces that have already earned the right-spot bonus. */
+  bonused: boolean[];
+  /** The last bonus, to show over its piece ("+2 S"), and when (in `elapsed`). */
+  bonusNote?: { sec: number; picture: number; cell: number; at: number };
   results: Record<string, 'passed' | 'failed'>;
   /** Playing; this round is over (between rounds); the game is over. */
   phase: 'play' | 'between' | 'over';
@@ -60,9 +71,15 @@ export interface PicturePuzzleState {
 
 export interface PicturePuzzleOptions {
   tier: Tier;
-  grid?: 'auto' | 4 | 5;
+  grid?: 'auto' | 4 | 5 | 6;
   secPerPiece?: 'auto' | number;
+  rightSpotSec?: 'auto' | number;
+  /** The testing tab's Picture: the first hiker's photo (the others are different ones). */
+  picture?: 'random' | PictureName;
 }
+
+export const isPictureName = (v: unknown): v is PictureName =>
+  (P.pictures as readonly unknown[]).includes(v);
 
 /** Hikers in pairs, in line order. */
 export const pairsOf = (order: readonly string[]): string[][] =>
@@ -96,6 +113,10 @@ function startRound(s: PicturePuzzleState, round: number): PicturePuzzleState {
     locked: pieces.map(() => false),
     done: who.map(() => false),
     timeSec: s.secPerPiece * pieces.length,
+    timeLeft: s.secPerPiece * pieces.length,
+    elapsed: 0,
+    bonused: pieces.map(() => false),
+    bonusNote: undefined,
     phase: 'play',
   };
 }
@@ -107,11 +128,15 @@ export function newPicturePuzzle(
 ): PicturePuzzleState {
   const rng = seedRng(seed);
   const t = P.tiers[options.tier];
-  const names = shuffle(rng, P.pictures);
+  const shuffled = shuffle(rng, P.pictures);
+  // A picked photo goes first; the rest stay shuffled.
+  const first = options.picture && isPictureName(options.picture) ? options.picture : undefined;
+  const names = first ? [first, ...shuffled.filter((n) => n !== first)] : shuffled;
   const base: PicturePuzzleState = {
     tier: options.tier,
-    grid: options.grid === 4 || options.grid === 5 ? options.grid : t.grid,
+    grid: options.grid === 4 || options.grid === 5 || options.grid === 6 ? options.grid : t.grid,
     secPerPiece: typeof options.secPerPiece === 'number' ? options.secPerPiece : t.secPerPiece,
+    rightSpotSec: typeof options.rightSpotSec === 'number' ? options.rightSpotSec : t.rightSpotSec,
     order: [...order],
     rounds: pairsOf(order),
     round: 0,
@@ -122,6 +147,9 @@ export function newPicturePuzzle(
     locked: [],
     done: [],
     timeSec: 0,
+    timeLeft: 0,
+    elapsed: 0,
+    bonused: [],
     results: {},
     phase: 'play',
     rng,
@@ -181,8 +209,28 @@ export function move(s: PicturePuzzleState, from: Spot, to: Spot): PicturePuzzle
   return settle({ ...s, piles, grids });
 }
 
-/** Locks what's right (Tier I: single pieces; any tier: finished pictures) and ends the round when both are done. */
-function settle(s: PicturePuzzleState): PicturePuzzleState {
+/**
+ * Gives the right-spot bonus to every piece in its own spot for the first
+ * time, locks what's right (Tier I: single pieces; any tier: finished
+ * pictures) and ends the round when both are done.
+ */
+function settle(s0: PicturePuzzleState): PicturePuzzleState {
+  let s = s0;
+  const bonused = [...s.bonused];
+  s.grids.forEach((g, picture) =>
+    g.forEach((id, cell) => {
+      if (id === null || bonused[id] || !inOwnSpot(s, id, picture, cell)) return;
+      bonused[id] = true;
+      if (s.rightSpotSec > 0) {
+        s = {
+          ...s,
+          timeLeft: s.timeLeft + s.rightSpotSec,
+          bonusNote: { sec: s.rightSpotSec, picture, cell, at: s.elapsed },
+        };
+      }
+    }),
+  );
+  s = { ...s, bonused };
   const locked = [...s.locked];
   if (s.tier <= P.lockCorrectUpTo) {
     s.grids.forEach((g, picture) =>
@@ -200,6 +248,13 @@ function settle(s: PicturePuzzleState): PicturePuzzleState {
   });
   const finished = done.every(Boolean);
   return { ...s, locked, done, results, phase: finished ? 'between' : s.phase };
+}
+
+/** Time passes on the round's clock; when it runs out, unfinished pictures fail. */
+export function tick(s: PicturePuzzleState, dt: number): PicturePuzzleState {
+  if (s.phase !== 'play') return s;
+  const next = { ...s, timeLeft: Math.max(0, s.timeLeft - dt), elapsed: s.elapsed + dt };
+  return next.timeLeft <= 0 ? timeUp(next) : next;
 }
 
 /** The round's clock ran out: unfinished pictures fail. */

@@ -20,11 +20,11 @@ import { BALANCE } from '../../config/balance';
 import { nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passingResult } from '../passing';
-import type { MinigameResult, Pay } from '../types';
+import type { MinigameResult, Pay, Tier } from '../types';
 
 const SB = BALANCE.minigames.sleepingBear;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 export type Bear = 'asleep' | 'stir' | 'awake' | 'roar';
 export type HikerStatus = 'waiting' | 'sneaking' | 'across' | 'caught' | 'timeout';
 
