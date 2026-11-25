@@ -13,6 +13,13 @@
  * - **Poke-up slide:** the sword slides just outside a wall and stabs in at
  *   every spot along it, each spot warned with a "!". Tier II: from the top
  *   or the bottom. Tier III: both at once, offset.
+ * - **Wave:** the sword slides along the top wall, its blade dipping into
+ *   the box and out again in a smooth wave; its path shows a moment ahead.
+ *   Tier II: along either wall. Tier III: top and bottom at once, half a
+ *   wave out of step, leaving a winding path between them.
+ *
+ * The bear's sword attacks sometimes bring a row of Claws with them (a
+ * tweak in animals.ts; logic.ts adds the row).
  */
 import { BALANCE } from '../../../config/balance';
 import { nextFloat } from '../../../engine/rng';
@@ -40,6 +47,7 @@ import type {
   PartRules,
   PokePart,
   SwingPart,
+  WavePart,
 } from '../types';
 import { base, from, warnFor } from './common';
 
@@ -87,6 +95,7 @@ export function bladeAt(box: Box, side: 'left' | 'right', angle: number): [Point
 export const SWEEP: AttackDef = {
   id: 'sweep',
   name: 'Sword sweep',
+  kind: 'area',
   start(ctx) {
     const s = ctx.state;
     const side = pickSide(s, ctx.rng);
@@ -111,8 +120,13 @@ export const SWEEP: AttackDef = {
       });
       sides.push(other);
     }
+    // The shrinking box is a changer: never while another one (a bear hug) is on.
+    const changerOn = s.rounds.some((r) => r.kind === 'changer');
     const shrink =
-      from(ctx, S.shrinkFrom) && s.shrunkFor <= 0 && nextFloat(ctx.rng) < S.shrinkChance;
+      from(ctx, S.shrinkFrom) &&
+      s.shrunkFor <= 0 &&
+      !changerOn &&
+      nextFloat(ctx.rng) < S.shrinkChance;
     return {
       parts,
       endsAt: Math.max(...parts.map((p) => p.activeAt + p.sweepSec)),
@@ -189,6 +203,7 @@ function lane(ctx: AttackCtx, side: Side, along: number, slanted: boolean): [Poi
 export const JAB: AttackDef = {
   id: 'jab',
   name: 'Sword jab',
+  kind: 'missile',
   start(ctx) {
     const slanted = () => from(ctx, J.diagonalFrom) && coin(ctx.rng);
     const fan = from(ctx, J.fanFrom) && coin(ctx.rng);
@@ -290,6 +305,7 @@ function slide(
 export const POKE: AttackDef = {
   id: 'poke',
   name: 'Poke-up slide',
+  kind: 'missile',
   start(ctx) {
     const forward = coin(ctx.rng);
     if (from(ctx, P.bothFrom)) {
@@ -316,4 +332,98 @@ export const POKE_RULES: PartRules<PokePart> = {
   done: (p, w) => w.time > p.stabAt.at(-1)! + p.stabSec + 0.4,
 };
 
-export const SWORD_ATTACKS: readonly AttackDef[] = [SWEEP, JAB, POKE];
+// ── Wave ───────────────────────────────────────────────────────────────────
+
+const W = D.wave;
+
+/** How far the wave has slid in from the wall it started at, at a time (negative before it comes in). */
+const waveRun = (p: WavePart, time: number): number => (time - p.activeAt) * p.speed;
+
+/** How deep the blade is (units) after sliding `run` units in. */
+export const waveDepth = (p: WavePart, box: Box, run: number): number =>
+  ((p.depth * box.h) / 2) * (1 - Math.cos((2 * Math.PI * run) / p.wavelength + p.phase));
+
+/** Where the sword is (x) after sliding `run` units in. */
+export const waveX = (p: WavePart, box: Box, run: number): number => {
+  const e = edges(box);
+  return p.dir > 0 ? e.left + run : e.right - run;
+};
+
+/** The wall the wave slides along (y), and which way is into the box. */
+export const waveWall = (p: WavePart, box: Box): { y: number; inward: 1 | -1 } => {
+  const e = edges(box);
+  return p.side === 'top' ? { y: e.top, inward: 1 } : { y: e.bottom, inward: -1 };
+};
+
+/** The sword now: where it is along the wall and how deep its tip is, or none while it's outside. */
+export function waveAt(p: WavePart, box: Box, time: number): { x: number; depth: number } | null {
+  const run = waveRun(p, time);
+  if (run < 0 || run > box.w) return null;
+  return { x: waveX(p, box, run), depth: waveDepth(p, box, run) };
+}
+
+/** The tip's path for the next `aheadSec` (from now, or from the wall before it comes in), as points. */
+export function wavePath(p: WavePart, box: Box, time: number): Point[] {
+  const a = Math.max(0, waveRun(p, time));
+  const b = Math.min(box.w, waveRun(p, Math.max(time, p.activeAt) + p.aheadSec));
+  if (b <= a) return [];
+  const wall = waveWall(p, box);
+  const n = Math.max(2, Math.ceil((b - a) / 3));
+  return Array.from({ length: n + 1 }, (_, k) => {
+    const run = a + ((b - a) * k) / n;
+    return { x: waveX(p, box, run), y: wall.y + wall.inward * waveDepth(p, box, run) };
+  });
+}
+
+function wave(ctx: AttackCtx, side: 'top' | 'bottom', dir: 1 | -1, phase: number): WavePart {
+  return {
+    kind: 'wave',
+    ...base(ctx, ctx.time, ctx.time + warnFor(W.aheadSec)),
+    side,
+    dir,
+    speed: W.speed * ctx.speed,
+    depth: W.depth,
+    wavelength: W.wavelength,
+    phase,
+    aheadSec: W.aheadSec,
+  };
+}
+
+export const WAVE: AttackDef = {
+  id: 'wave',
+  name: 'Wave',
+  kind: 'missile',
+  start(ctx) {
+    const dir = coin(ctx.rng) ? 1 : -1;
+    if (from(ctx, W.bothFrom)) {
+      // Top and bottom at once, half a wave out of step.
+      return {
+        parts: [wave(ctx, 'top', dir, 0), wave(ctx, 'bottom', dir, Math.PI)],
+        endsAt: 'parts',
+      };
+    }
+    const side = from(ctx, W.eitherFrom) && coin(ctx.rng) ? 'bottom' : 'top';
+    return { parts: [wave(ctx, side, dir, 0)], endsAt: 'parts' };
+  },
+};
+
+export const WAVE_RULES: PartRules<WavePart> = {
+  shapes(p, w) {
+    const at = waveAt(p, w.box, w.time);
+    if (!at || at.depth < 0.5) return [];
+    const wall = waveWall(p, w.box);
+    return [
+      {
+        kind: 'segment',
+        x1: at.x,
+        y1: wall.y,
+        x2: at.x,
+        y2: wall.y + wall.inward * at.depth,
+        half: S.bladeHalfWidth,
+      },
+    ];
+  },
+  done: (p, w) => waveRun(p, w.time) > w.box.w + 4,
+};
+
+export const SWORD_ATTACKS: readonly AttackDef[] = [SWEEP, JAB, POKE, WAVE];

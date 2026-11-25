@@ -1,15 +1,18 @@
 /**
  * Dodge on the GPS (docs/design/12-minigames-dodge.md; mockups
- * docs/mockups/minigames/dodge/1-bees.png to 9-stampede.png), in scene units
- * (320 × 240).
+ * docs/mockups/minigames/dodge/1-bees.png to 15-woods-monster-ritual.png),
+ * in scene units (320 × 240).
  *
  * - **Top:** the animal's name, a SURVIVE bar emptying as time runs down,
  *   and the tier.
  * - **The animal** above the box (in the Stampede, a row of heads with a
- *   frame on whoever is attacking); **the box** below it, where the party's
- *   sprite (tinted in the active hiker's color) dodges.
+ *   frame on whoever is attacking; the Woods Monster with his two cultists);
+ *   **the box** below it, where the party's sprite (tinted in the active
+ *   hiker's color) dodges.
  * - **Attacks** are drawn in layers: warnings and shadows under the sprite,
- *   attacks over it, and "!" marks, arrows and squirrels outside the box.
+ *   attacks over it, squirrels and swords outside the box, and every "!" and
+ *   warning arrow on top of everything (the HUDs included), so none is ever
+ *   hidden. In the dark, the box's warnings are drawn again over it.
  * - **Bottom:** each hiker with their hearts; the active one outlined, out
  *   ones greyed with a red slash; "NEXT SWITCH IN 2S".
  * - **Show hitboxes** (testing): every hit shape outlined.
@@ -20,6 +23,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { BALANCE } from '../../../config/balance';
 import { ANIMALS, isAnimal } from '../../../minigames/dodge/animals';
+import { darkness } from '../../../minigames/dodge/attacks/monster';
 import {
   effectiveBox,
   hitShapes,
@@ -63,6 +67,8 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const animal: AnimalId = isAnimal(chosen) ? chosen : 'bees';
   const ideas = pickOf(settings, 'ideas') !== 'off';
   const showHitboxes = pickOf(settings, 'hitboxes') === 'on';
+  const overlapPick = pickOf(settings, 'overlaps');
+  const overlaps = overlapPick === 'off' || overlapPick === 'on' ? overlapPick : 'auto';
   const [game, setGame] = useState(() =>
     newDodge(
       {
@@ -70,6 +76,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         tier: tierOf(settings),
         attack: (pickOf(settings, 'attack') || 'all') as AttackId | 'all',
         ideas,
+        overlaps,
         lives: numberOr(settings, 'lives'),
         lengthSec: numberOr(settings, 'length'),
         switchSec: numberOr(settings, 'switch'),
@@ -198,6 +205,8 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const beeFrame = Math.floor(game.time / D.bees.frameSec) % 2 === 0 ? 'bee-1.png' : 'bee-2.png';
   const ctx: DrawCtx = {
     time: game.time,
+    animal,
+    pos: game.pos,
     box,
     left: boxLeft,
     right: boxLeft + box.w,
@@ -206,6 +215,13 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
     beeFrame,
     reduced,
   };
+
+  // The Woods Monster's Darkness: how dark the box is now.
+  const dark = game.parts.reduce(
+    (most, p) => (p.kind === 'dark' ? Math.max(most, darkness(p, game.time)) : most),
+    0,
+  );
+  const light = D.darkness.light;
 
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
@@ -224,7 +240,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             <span style={{ width: `${(left / game.lengthSec) * 100}%` }} />
           </span>
         </div>
-        <div className={`${ui.box} ${styles.tier}`}>TIER {ROMAN[game.tier]}</div>
+        <div className={`${ui.box} ${styles.tier}`}>TIER {ROMAN[game.hudTier]}</div>
 
         <Heads animal={animal} showing={game.showing} beeFrame={beeFrame} ideas={game.ideas} />
 
@@ -255,6 +271,22 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
               />
             )}
             <PartsLayer parts={game.parts} layer="over" ctx={ctx} />
+            {dark > 0 && (
+              <>
+                {/* Dark but for a light around the sprite; the warnings still show. */}
+                <span
+                  className={styles.dark}
+                  style={{
+                    opacity: dark,
+                    background: `radial-gradient(circle at ${game.pos.x}px ${game.pos.y}px, transparent ${light * 0.6}px, rgba(8, 12, 7, 0.97) ${light}px)`,
+                  }}
+                />
+                <svg className={styles.svg} viewBox="0 0 320 240" aria-hidden="true">
+                  <PartsLayer parts={game.parts} layer="svg" ctx={ctx} warningsOnly />
+                </svg>
+                <PartsLayer parts={game.parts} layer="under" ctx={ctx} warningsOnly />
+              </>
+            )}
           </div>
         </div>
         <PartsLayer parts={game.parts} layer="outside" ctx={ctx} />
@@ -304,6 +336,9 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             );
           })}
         </div>
+
+        {/* Every "!" and warning arrow, above everything, so nothing hides them. */}
+        <PartsLayer parts={game.parts} layer="warn" ctx={ctx} />
 
         {joy && (
           <span className={styles.joystick} style={{ left: joy.base.x - 14, top: joy.base.y - 14 }}>

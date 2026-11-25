@@ -1,7 +1,7 @@
 /**
  * Dodge's hit shapes (docs/design/12-minigames-dodge.md, section 6):
- * circles, segments with a thickness, rectangles, ellipses, and ring bands
- * with a gap. Every attack says where it can hit as a list of these, and the
+ * circles, segments with a thickness, rectangles, ellipses, arc bands (a
+ * shout's waves) and triangles (flames, the Eye's gaze). Every attack says where it can hit as a list of these, and the
  * same list drives the hits and the testing tab's "Show hitboxes".
  *
  * The sprite's own hitbox is a circle, so every test is "does this shape
@@ -21,11 +21,12 @@ export type Shape =
   | { kind: 'rect'; x: number; y: number; w: number; h: number }
   | { kind: 'ellipse'; cx: number; cy: number; rx: number; ry: number }
   /**
-   * A ring band: everything within `half` of a circle of radius `r`, except a
-   * gap `gap` units wide (measured along the ring), centered at angle `gapAt`
-   * (radians, 0 pointing right, turning toward down).
+   * An arc band: everything within `half` of a circle of radius `r`, but only
+   * within `spread / 2` of angle `at` (radians, 0 pointing right, turning
+   * toward down).
    */
-  | { kind: 'ring'; cx: number; cy: number; r: number; half: number; gapAt: number; gap: number };
+  | { kind: 'arc'; cx: number; cy: number; r: number; half: number; at: number; spread: number }
+  | { kind: 'triangle'; points: readonly [Point, Point, Point] };
 
 /** The distance from a point to a segment. */
 export function distToSegment(p: Point, a: Point, b: Point): number {
@@ -63,13 +64,45 @@ export function touches(shape: Shape, p: Point, reach: number): boolean {
       const dy = (p.y - shape.cy) / (shape.ry + reach);
       return dx * dx + dy * dy <= 1;
     }
-    case 'ring': {
+    case 'arc': {
       const dist = Math.hypot(p.x - shape.cx, p.y - shape.cy);
       if (Math.abs(dist - shape.r) > shape.half + reach) return false;
       if (dist === 0) return true;
-      // In the gap: the whole circle fits between the gap's ends.
-      const off = angleBetween(Math.atan2(p.y - shape.cy, p.x - shape.cx), shape.gapAt) * dist;
-      return off > shape.gap / 2 - reach;
+      // Within the arc's angle, or close enough to one of its ends.
+      const off = angleBetween(Math.atan2(p.y - shape.cy, p.x - shape.cx), shape.at);
+      if (off <= shape.spread / 2) return true;
+      return arcEnds(shape).some(
+        (end) => Math.hypot(p.x - end.x, p.y - end.y) <= shape.half + reach,
+      );
+    }
+    case 'triangle': {
+      const [a, b, c] = shape.points;
+      if (insideTriangle(p, a, b, c)) return true;
+      return (
+        distToSegment(p, a, b) <= reach ||
+        distToSegment(p, b, c) <= reach ||
+        distToSegment(p, c, a) <= reach
+      );
     }
   }
+}
+
+/** An arc band's two ends (on its middle radius). */
+export function arcEnds(shape: Extract<Shape, { kind: 'arc' }>): [Point, Point] {
+  const end = (a: number) => ({
+    x: shape.cx + shape.r * Math.cos(a),
+    y: shape.cy + shape.r * Math.sin(a),
+  });
+  return [end(shape.at - shape.spread / 2), end(shape.at + shape.spread / 2)];
+}
+
+/** Whether a point is inside a triangle (either winding). */
+export function insideTriangle(p: Point, a: Point, b: Point, c: Point): boolean {
+  const side = (u: Point, v: Point) => (v.x - u.x) * (p.y - u.y) - (v.y - u.y) * (p.x - u.x);
+  const d1 = side(a, b);
+  const d2 = side(b, c);
+  const d3 = side(c, a);
+  const neg = d1 < 0 || d2 < 0 || d3 < 0;
+  const pos = d1 > 0 || d2 > 0 || d3 > 0;
+  return !(neg && pos);
 }

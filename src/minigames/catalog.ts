@@ -278,6 +278,18 @@ export const DODGE: MinigameInfo = {
     },
     {
       kind: 'pick',
+      id: 'overlaps',
+      label: 'Overlaps',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'auto',
+      hint: 'Auto uses the tier’s chance. With one attack picked, attacks never overlap',
+    },
+    {
+      kind: 'pick',
       id: 'ideas',
       label: 'Include Claude’s ideas',
       options: [
@@ -307,7 +319,7 @@ export const DODGE: MinigameInfo = {
       DG.tiers[1].lengthSec,
       ' s',
       5,
-      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s; Stampede +${DG.stampede.extraSec} s`,
+      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s; Stampede +${DG.stampede.extraSec} s; Woods Monster ${DG.monster.lengthSec} s`,
     ),
     autoRange('switch', 'Switch every', 3, 10, DG.switchSec, ' s'),
   ],

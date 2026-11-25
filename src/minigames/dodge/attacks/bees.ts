@@ -1,13 +1,14 @@
 /**
  * Bees (docs/design/12-minigames-dodge.md, section 5), as five attacks in
  * the library: Lane, Cross, Diagonal and Zigzag (Tier II and up), and Aimed
- * (Tier III). Each bee shows a "!" at its entry edge before it flies in;
- * bees leave the box on the far side and are gone. Unchanged from step 3.
+ * (Tier III). Each bee shows a "!" where it'll come into the box before it
+ * flies in; bees leave the box on the far side and are gone. In a Lane or a
+ * Cross, each bee starts at its own small delay, so the row comes in ragged.
  */
 import { BALANCE } from '../../../config/balance';
 import { int, nextFloat } from '../../../engine/rng';
 import type { RngState } from '../../../engine/types';
-import { edges, SIDES, type Box, type Side } from '../geometry';
+import { between, edges, entryMark, SIDES, type Box, type Side } from '../geometry';
 import type { Point } from '../shapes';
 import type { AttackCtx, AttackDef, AttackStart, BeePart, PartRules } from '../types';
 import { warnFor } from './common';
@@ -48,7 +49,7 @@ function laneBee(
   };
 }
 
-/** Lanes across the box with one gap lane. */
+/** Lanes across the box with one gap lane, each bee starting at its own delay (staggered). */
 function laneWave(
   ctx: AttackCtx,
   rng: RngState,
@@ -62,7 +63,8 @@ function laneWave(
   const out: BeePart[] = [];
   for (let k = 0; k < lanes; k++) {
     if (k === gap) continue;
-    out.push(laneBee(ctx, ctx.box, side, (k + 0.5) / lanes, at, speed));
+    const delay = between(rng, 0, D.bees.staggerSec);
+    out.push(laneBee(ctx, ctx.box, side, (k + 0.5) / lanes, at + delay, speed));
   }
   return out;
 }
@@ -78,6 +80,7 @@ const beeSpeed = (ctx: AttackCtx) => D.bees.speed * ctx.speed;
 export const LANE: AttackDef = {
   id: 'lane',
   name: 'Lane',
+  kind: 'missile',
   start(ctx) {
     const side = SIDES[int(ctx.rng, 0, 3)]!;
     const n = int(ctx.rng, D.bees.lane[0], D.bees.lane[1]);
@@ -88,6 +91,7 @@ export const LANE: AttackDef = {
 export const CROSS: AttackDef = {
   id: 'cross',
   name: 'Cross',
+  kind: 'missile',
   start(ctx) {
     const a = laneWave(
       ctx,
@@ -112,6 +116,7 @@ export const CROSS: AttackDef = {
 export const DIAGONAL: AttackDef = {
   id: 'diagonal',
   name: 'Diagonal',
+  kind: 'missile',
   start(ctx) {
     // From a corner to the opposite one, in a staggered line across the path.
     const b = ctx.box;
@@ -138,7 +143,8 @@ export const DIAGONAL: AttackDef = {
           vy: dir.y * speed,
           warnAt,
           activeAt: warnAt + warnFor(),
-          mark: { x: x + dir.x * 3, y: y + dir.y * 3 },
+          // Where this bee's own path comes into the box (the line is wide, so not all at the corner).
+          mark: entryMark(b, { x, y }, dir),
         };
       }),
     );
@@ -148,6 +154,7 @@ export const DIAGONAL: AttackDef = {
 export const ZIGZAG: AttackDef = {
   id: 'zigzag',
   name: 'Zigzag',
+  kind: 'missile',
   start(ctx) {
     const side: Side = nextFloat(ctx.rng) < 0.5 ? 'left' : 'right';
     const n = D.bees.zigzag.bees;
@@ -168,6 +175,7 @@ export const ZIGZAG: AttackDef = {
 export const AIMED: AttackDef = {
   id: 'aimed',
   name: 'Aimed',
+  kind: 'missile',
   start(ctx) {
     // From random edge points, aimed at the sprite when each launches.
     const n = D.bees.aimed.bees;
@@ -221,11 +229,12 @@ export const BEE_RULES: PartRules<BeePart> = {
     return [{ kind: 'circle', x: at.x, y: at.y, r: D.bees.radius }];
   },
   done(p, w) {
-    // Gone once it has flown out of the box (it starts just outside, flying in).
+    // Gone once it has flown out of the box and is heading away (it starts outside, flying in).
     if (w.time - p.activeAt <= 0.3) return false;
     const at = beeAt(p, w.time);
-    return (
-      Math.abs(at.x - w.box.cx) > w.box.w / 2 + 12 || Math.abs(at.y - w.box.cy) > w.box.h / 2 + 12
-    );
+    const dx = at.x - w.box.cx;
+    const dy = at.y - w.box.cy;
+    const away = dx * p.vx + dy * p.vy > 0;
+    return away && (Math.abs(dx) > w.box.w / 2 + 12 || Math.abs(dy) > w.box.h / 2 + 12);
   },
 };

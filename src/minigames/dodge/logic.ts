@@ -8,12 +8,18 @@
  *   is safe for a moment. A hiker with no lives left is out for good; if the
  *   active hiker goes out, the next takes over at once.
  * - Survive until the clock runs out; it ends early if everyone is out.
- * - **Attacks** come from the shared library (library.ts), one round at a
- *   time: picked at random from the animal's list (animals.ts), only what's
- *   unlocked at the tier, never the same attack twice in a row. In the
- *   Stampede the box and the head follow whoever is attacking, no animal
- *   attacks more than twice in a row, and on Tier III two attacks sometimes
- *   overlap.
+ * - **Attacks** come from the shared library (library.ts): picked at random
+ *   from the animal's list (animals.ts), only what's unlocked at the tier,
+ *   never the same attack twice in a row. In the Stampede the box and the
+ *   head follow whoever is attacking, and no animal attacks more than twice
+ *   in a row.
+ * - **Pacing** (section 6): the next attack comes the tier's gap after the
+ *   running ones end, or, with the tier's chance, overlaps the current one.
+ *   Only one area attack and one changer at a time, and never more than the
+ *   tier's most at once. A changer (a bear hug, Darkness) doesn't hold up
+ *   the next attack once its warning is over.
+ * - **The Woods Monster** plays one tier up; on Tier III he's faster still,
+ *   and at half time the box shrinks and Darkness can come.
  * - Every attack warns first. Honey puddles slow the sprite; a bear hug or
  *   a shrinking box pushes it back inside.
  *
@@ -24,9 +30,10 @@ import { int, nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
 import type { MinigameResult } from '../types';
-import { boxFor, isAnimal, pool, type PoolEntry } from './animals';
+import { attackChoices, boxFor, isAnimal, playTier, pool, type PoolEntry } from './animals';
+import { oneClawRow } from './attacks/bear';
 import { puddleShape, squeezed } from './attacks/claudesIdeas';
-import { clampToBox, type Box } from './geometry';
+import { between, clampToBox, coin, type Box } from './geometry';
 import { ATTACKS, rulesFor } from './library';
 import { touches, type Point, type Shape } from './shapes';
 import type {
@@ -34,6 +41,7 @@ import type {
   AttackCtx,
   AttackId,
   Attacker,
+  BoxMove,
   DodgeState,
   Part,
   Round,
@@ -44,7 +52,7 @@ import type {
 export type { AnimalId, AttackId, Attacker, DodgeState, Part, Tier } from './types';
 export type { Box } from './geometry';
 export type { Point, Shape } from './shapes';
-export { clampToBox, SPRITE_HALF } from './geometry';
+export { clampToBox, markSpot, SPRITE_HALF } from './geometry';
 export { beeAt } from './attacks/bees';
 export { swingAngle, swingWarnSec, swordPivot } from './attacks/sword';
 
@@ -57,6 +65,8 @@ export interface DodgeOptions {
   attack?: AttackId | 'all';
   /** Include Claude's ideas (on unless switched off). */
   ideas?: boolean;
+  /** The testing tab's Overlaps: the tier's chance (auto), never, or whenever they fit. */
+  overlaps?: 'auto' | 'off' | 'on';
   /** The testing tab's overrides: "auto" uses the tier's value. */
   lives?: 'auto' | number;
   lengthSec?: 'auto' | number;
@@ -66,17 +76,49 @@ export interface DodgeOptions {
 const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
   typeof v === 'number' ? v : fallback;
 
-/** The length when Auto: the tier's, plus extra for the Stampede. */
+/** The length when Auto: the tier's, plus extra for the Stampede; the Woods Monster's own. */
 export const autoLength = (animal: AnimalId, tier: Tier): number =>
-  D.tiers[tier].lengthSec + (animal === 'stampede' ? D.stampede.extraSec : 0);
+  animal === 'monster'
+    ? D.monster.lengthSec
+    : D.tiers[tier].lengthSec + (animal === 'stampede' ? D.stampede.extraSec : 0);
 
-/** The box an attacker uses (the sword bear's shrinks while `shrunkFor` lasts). */
-function targetBox(attacker: Attacker, shrunkFor: number): Box {
+const sameBox = (a: Box, b: Box) => a.cx === b.cx && a.cy === b.cy && a.w === b.w && a.h === b.h;
+
+/** Whether a changer is on: a running one, or the sword bear's shrunk box. */
+const changerOn = (s: DodgeState): boolean =>
+  s.shrunk || s.rounds.some((r) => r.kind === 'changer');
+
+/**
+ * The box an attacker uses: the sword bear's shrinks while `shrunkFor`
+ * lasts (but never during another changer), and the Woods Monster's in his
+ * second half.
+ */
+function targetBox(attacker: Attacker, s: DodgeState): { box: Box; shrunk: boolean } {
   const box = boxFor(attacker);
-  if (attacker === 'swordBear' && shrunkFor > 0) {
-    return { ...box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] };
+  if (attacker === 'swordBear' && s.shrunkFor > 0 && !s.rounds.some((r) => r.kind === 'changer')) {
+    return { box: { ...box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] }, shrunk: true };
   }
-  return box;
+  if (attacker === 'monster' && s.secondHalf) {
+    return { box: { ...box, w: D.monster.shrunk[0], h: D.monster.shrunk[1] }, shrunk: false };
+  }
+  return { box, shrunk: false };
+}
+
+/** The box at a time as it moves: straight from one to the other. */
+export function boxAt(m: BoxMove, time: number): Box {
+  const u = m.sec > 0 ? Math.max(0, Math.min(1, (time - m.at) / m.sec)) : 1;
+  const mix = (a: number, b: number) => a + (b - a) * u;
+  return {
+    cx: mix(m.from.cx, m.to.cx),
+    cy: mix(m.from.cy, m.to.cy),
+    w: mix(m.from.w, m.to.w),
+    h: mix(m.from.h, m.to.h),
+  };
+}
+
+/** Starts the box moving toward `to` (if it isn't already heading there). */
+function moveBoxTo(s: DodgeState, to: Box, sec: number = D.boxEaseSec): BoxMove {
+  return sameBox(s.boxMove.to, to) ? s.boxMove : { from: { ...s.box }, to, at: s.time, sec };
 }
 
 export function newDodge(
@@ -86,17 +128,38 @@ export function newDodge(
 ): DodgeState {
   const animal: AnimalId = isAnimal(options.animal) ? options.animal : 'bees';
   const ideas = options.ideas ?? true;
+  const hudTier = options.tier;
+  const tier = playTier(animal, hudTier);
+  const boost = animal === 'monster' && hudTier === 3;
   const lives = Math.max(1, Math.round(orAuto(options.lives, D.lives)));
   // A picked attack this animal can't make at this tier plays as All.
   const wanted = options.attack ?? 'all';
   const only =
-    wanted !== 'all' && pool(animal, options.tier, ideas, wanted).length > 0 ? wanted : 'all';
+    wanted !== 'all' &&
+    attackChoices(animal, hudTier, ideas).some((c) => c.id === wanted && c.unlocked)
+      ? wanted
+      : 'all';
   const first: Attacker = animal === 'stampede' ? 'herd' : animal;
-  const box = targetBox(first, 0);
+  const box = boxFor(first);
   const switchSec = orAuto(options.switchSec, D.switchSec);
+  const t = D.tiers[tier];
+  const B = D.monster.boost;
+  // With one attack picked, nothing overlaps: it's there to be studied alone.
+  const overlaps = only !== 'all' ? 'off' : (options.overlaps ?? 'auto');
+  const overlapChance =
+    overlaps === 'off'
+      ? 0
+      : overlaps === 'on'
+        ? 1
+        : Math.min(1, t.overlapChance + (boost ? B.overlapChance : 0));
   return {
     animal,
-    tier: options.tier,
+    tier,
+    hudTier,
+    boost,
+    speed: t.speed * (boost ? B.speed : 1),
+    overlapChance,
+    maxAtOnce: t.maxAtOnce + (boost ? B.maxAtOnce : 0),
     only,
     ideas,
     order: [...order],
@@ -107,15 +170,18 @@ export function newDodge(
     switchSec,
     switchIn: switchSec,
     safeFor: 0,
-    lengthSec: orAuto(options.lengthSec, autoLength(animal, options.tier)),
+    lengthSec: orAuto(options.lengthSec, autoLength(animal, hudTier)),
     time: 0,
     box,
-    boxTarget: box,
+    boxMove: { from: box, to: box, at: 0, sec: 0 },
+    shrunk: false,
+    secondHalf: false,
     pos: { x: box.cx, y: box.cy },
     parts: [],
     rounds: [],
     history: [],
     nextAttackAt: D.firstAttackSec,
+    starts: [],
     showing: animal === 'stampede' ? [] : [animal],
     nextId: 1,
     roundNo: 1,
@@ -186,13 +252,24 @@ export const inHoney = (s: DodgeState): boolean =>
 
 // ── Picking attacks ────────────────────────────────────────────────────────
 
+/** Whether an attack of this kind can start now: one area and one changer at most, under the cap. */
+function fits(s: DodgeState, e: PoolEntry): boolean {
+  const def = ATTACKS[e.attack];
+  if (s.rounds.length >= s.maxAtOnce) return false;
+  if (def.secondHalf && !s.secondHalf) return false;
+  if (def.kind === 'area' && s.rounds.some((r) => r.kind === 'area')) return false;
+  if (def.kind === 'changer' && changerOn(s)) return false;
+  return true;
+}
+
 /**
- * The next attack: from the pool, never the same attack twice in a row
- * (unless it's the only one), and in the Stampede no animal more than twice
- * in a row. An overlap (`notBy`) is always another animal, or none.
+ * The next attack: from the pool, only what fits what's running, never the
+ * same attack twice in a row (unless it's the only one), and in the
+ * Stampede no animal more than twice in a row. An overlap comes from an
+ * animal that isn't attacking yet when one fits.
  */
-function pick(s: DodgeState, rng: RngState, notBy?: Attacker): PoolEntry | undefined {
-  const all = pool(s.animal, s.tier, s.ideas, s.only);
+function pick(s: DodgeState, rng: RngState): PoolEntry | undefined {
+  const all = pool(s.animal, s.tier, s.ideas, s.only).filter((e) => fits(s, e));
   if (!all.length) return undefined;
   const last = s.history.at(-1);
   const recent = s.history.slice(-D.stampede.maxSameAnimal).map((h) => h.attacker);
@@ -202,12 +279,12 @@ function pick(s: DodgeState, rng: RngState, notBy?: Attacker): PoolEntry | undef
     recent.every((a) => a === recent[0])
       ? recent[0]
       : undefined;
+  const busy = new Set(s.rounds.map((r) => r.attacker));
   const tries = [
-    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== tooMany && e.attacker !== notBy,
-    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== notBy,
-    (e: PoolEntry) => e.attacker !== notBy,
-    // An overlap is always two different animals: with no other, there's none.
-    ...(notBy ? [] : [() => true]),
+    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== tooMany && !busy.has(e.attacker),
+    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== tooMany,
+    (e: PoolEntry) => e.attack !== last?.attack,
+    () => true,
   ];
   for (const ok of tries) {
     const list = all.filter(ok);
@@ -216,13 +293,19 @@ function pick(s: DodgeState, rng: RngState, notBy?: Attacker): PoolEntry | undef
   return undefined;
 }
 
-/** Starts a round of an attack: its parts, the box it happens in, and what's remembered. */
-function startRound(s: DodgeState, rng: RngState, entry: PoolEntry, moveBox: boolean): DodgeState {
+/**
+ * Starts a round of an attack: its parts, the box it happens in (the
+ * attacker's, unless other attacks are already running in the current
+ * one), and what's remembered.
+ */
+function startRound(s: DodgeState, rng: RngState, entry: PoolEntry): DodgeState {
   let state = s;
   // The sword bear's shrunk box lasts for a few of its attacks.
   if (entry.attacker === 'swordBear')
     state = { ...state, shrunkFor: Math.max(0, state.shrunkFor - 1) };
-  const box = moveBox ? targetBox(entry.attacker, state.shrunkFor) : state.boxTarget;
+  const alone = !state.rounds.some((r) => r.kind !== 'changer');
+  const overlapped = state.rounds.some((r) => r.kind !== 'changer');
+  const box = alone ? targetBox(entry.attacker, state).box : state.boxMove.to;
   let nextId = state.nextId;
   const ctx: AttackCtx = {
     tier: state.tier,
@@ -230,37 +313,74 @@ function startRound(s: DodgeState, rng: RngState, entry: PoolEntry, moveBox: boo
     box,
     pos: { ...state.pos },
     rng,
-    speed: D.tiers[state.tier].speed,
+    speed: state.speed,
     round: state.roundNo,
     nextId: () => nextId++,
     tweak: entry.tweak,
     state,
   };
-  const started = ATTACKS[entry.attack].start(ctx);
+  const def = ATTACKS[entry.attack];
+  const started = def.start(ctx);
+  const parts = [...started.parts];
+  // Bear with a Sword: sometimes a row of claws comes in on top of a sword attack.
+  if (entry.tweak.withClaws && state.only === 'all' && coin(rng, D.claws.withSword[state.tier])) {
+    parts.push(oneClawRow(ctx, state.time));
+  }
+  const calmAt = Math.min(...parts.filter((p) => !p.child).map((p) => p.activeAt));
   const next: DodgeState = {
     ...state,
     ...started.patch,
-    parts: [...state.parts, ...started.parts],
+    parts: [...state.parts, ...parts],
     rounds: [
       ...state.rounds,
-      { no: state.roundNo, attacker: entry.attacker, attack: entry.attack, endsAt: started.endsAt },
+      {
+        no: state.roundNo,
+        attacker: entry.attacker,
+        attack: entry.attack,
+        kind: def.kind,
+        endsAt: started.endsAt,
+        calmAt: Number.isFinite(calmAt) ? calmAt : state.time,
+      },
     ],
     history: [...state.history, { attacker: entry.attacker, attack: entry.attack }].slice(-6),
+    starts: [...state.starts, { at: state.time, attack: entry.attack, overlapped }],
     nextId,
     roundNo: state.roundNo + 1,
   };
-  const showing = next.rounds.map((r) => r.attacker);
-  return {
-    ...next,
-    showing: [...new Set(showing)],
-    boxTarget: moveBox ? targetBox(entry.attacker, next.shrunkFor) : next.boxTarget,
-  };
+  const showing = [...new Set(next.rounds.map((r) => r.attacker))];
+  if (!alone) return { ...next, showing };
+  const target = targetBox(entry.attacker, next);
+  return { ...next, showing, boxMove: moveBoxTo(next, target.box), shrunk: target.shrunk };
 }
 
 /** Whether a round is over: its time has come, or all its parts are done. */
 function roundOver(s: DodgeState, r: Round): boolean {
   if (r.endsAt !== 'parts') return s.time >= r.endsAt;
   return !s.parts.some((p) => p.round === r.no && !p.child);
+}
+
+/** Whether a round still holds up the next attack (a changer doesn't, once its warning is over). */
+const holdsUp = (s: DodgeState, r: Round) => !(r.kind === 'changer' && s.time >= r.calmAt);
+
+/** Starts the next attack if it's due, then decides when the one after comes. */
+function schedule(s0: DodgeState, rng: RngState): DodgeState {
+  let s = s0;
+  if (s.nextAttackAt === null || s.time < s.nextAttackAt) return s;
+  const entry = pick(s, rng);
+  if (!entry) {
+    // Nothing fits now: wait for the running attacks to end (or, with none, try again after the gap).
+    const waitFor = s.rounds.some((r) => holdsUp(s, r));
+    return { ...s, nextAttackAt: waitFor ? null : s.time + D.tiers[s.tier].gapSec };
+  }
+  s = startRound(s, rng, entry);
+  // The next one overlaps this one (with the chance), or waits until they end.
+  const overlap = s.rounds.length < s.maxAtOnce && nextFloat(rng) < s.overlapChance;
+  return {
+    ...s,
+    nextAttackAt: overlap
+      ? s.time + between(rng, D.overlapAfterSec[0], D.overlapAfterSec[1])
+      : null,
+  };
 }
 
 // ── A step ─────────────────────────────────────────────────────────────────
@@ -284,22 +404,6 @@ function hit(s: DodgeState): DodgeState {
   return next;
 }
 
-/** The box eases toward its target: size and place. */
-function easeBox(box: Box, target: Box, dt: number): Box {
-  const ease = (from: number, to: number) => {
-    const rate = (Math.abs(to - from) / D.boxEaseSec) * dt;
-    return from < to
-      ? Math.min(to, from + Math.max(rate, 60 * dt))
-      : Math.max(to, from - Math.max(rate, 60 * dt));
-  };
-  return {
-    cx: ease(box.cx, target.cx),
-    cy: ease(box.cy, target.cy),
-    w: ease(box.w, target.w),
-    h: ease(box.h, target.h),
-  };
-}
-
 const worldOf = (s: DodgeState, dt: number, rng: RngState, ids: { next: number }): World => ({
   time: s.time,
   dt,
@@ -317,7 +421,10 @@ const worldOf = (s: DodgeState, dt: number, rng: RngState, ids: { next: number }
  */
 export function hitShapes(s: DodgeState, window = 0.15): Shape[] {
   const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
-  return s.parts.flatMap((p) => rulesFor(p).shapes(p, w, s.time - window));
+  return s.parts.flatMap((p) => {
+    const rules = rulesFor(p);
+    return (rules.outline ?? rules.shapes)(p, w, s.time - window);
+  });
 }
 
 /**
@@ -341,8 +448,14 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   }
   s.safeFor = Math.max(0, s.safeFor - dt);
 
-  // The box eases to its size; the sprite moves (slower in honey) and stays inside.
-  s.box = easeBox(s.box, s.boxTarget, dt);
+  // The Woods Monster, Tier III: at half time the woods close in.
+  if (s.animal === 'monster' && s.hudTier === 3 && !s.secondHalf && s.time >= s.lengthSec / 2) {
+    s = { ...s, secondHalf: true };
+    s.boxMove = moveBoxTo(s, targetBox('monster', s).box, D.monster.shrinkSec);
+  }
+
+  // The box moves to its size; the sprite moves (slower in honey) and stays inside.
+  s.box = boxAt(s.boxMove, s.time);
   const len = Math.hypot(input.x, input.y);
   const k = (len > 1 ? 1 / len : 1) * (inHoney(s) ? D.honey.slow : 1);
   s.pos = clampToBox(
@@ -350,32 +463,10 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
     effectiveBox(s),
   );
 
-  // A new round; in the Stampede on Tier III, sometimes a second one overlapping it.
-  if (s.nextAttackAt !== null && s.time >= s.nextAttackAt) {
-    const entry = pick(s, rng);
-    if (entry) {
-      s = startRound({ ...s, rounds: [], nextAttackAt: null }, rng, entry, true);
-      const st = D.stampede;
-      if (
-        s.animal === 'stampede' &&
-        s.tier >= st.overlapFrom &&
-        nextFloat(rng) < st.overlapChance
-      ) {
-        s.overlapAt = s.time + st.overlapAfterSec;
-      }
-    } else {
-      s = { ...s, nextAttackAt: Infinity };
-    }
-  }
-  if (s.overlapAt !== undefined && s.time >= s.overlapAt) {
-    const entry = pick(s, rng, s.rounds[0]?.attacker);
-    s = { ...s };
-    delete s.overlapAt;
-    // The box stays the first animal's while they overlap.
-    if (entry) s = startRound(s, rng, entry, false);
-  }
+  // The next attack, when it's due.
+  s = schedule(s, rng);
 
-  // The parts move (and can make new ones: shrapnel, crumbs, puddles).
+  // The parts move (and can make new ones: shrapnel, crumbs, puddles, nuts).
   const ids = { next: s.nextId };
   const w = worldOf(s, dt, rng, ids);
   const parts: Part[] = [];
@@ -397,19 +488,20 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   // The sprite is pushed back inside if the box moved under it.
   s = { ...s, pos: clampToBox(s.pos, effectiveBox(s)) };
 
-  // The round ends: the next one comes after the tier's gap.
-  if (
-    s.nextAttackAt === null &&
-    s.overlapAt === undefined &&
-    s.rounds.every((r) => roundOver(s, r))
-  ) {
+  // Finished attacks go; once none holds up the next, it comes after the tier's gap.
+  const rounds = s.rounds.filter((r) => !roundOver(s, r));
+  if (rounds.length !== s.rounds.length) s = { ...s, rounds, showing: showingNow(s, rounds) };
+  if (s.nextAttackAt === null && !s.rounds.some((r) => holdsUp(s, r))) {
     s = { ...s, nextAttackAt: s.time + D.tiers[s.tier].gapSec };
   }
-
   // The clock.
   if (s.time >= s.lengthSec) s = { ...s, over: true };
   return s;
 }
+
+/** Who's shown attacking: whoever has a round on, or the last one while none is. */
+const showingNow = (s: DodgeState, rounds: readonly Round[]): Attacker[] =>
+  rounds.length ? [...new Set(rounds.map((r) => r.attacker))] : s.showing;
 
 /** A hiker with lives left passes, with their hits; a hiker who ran out fails. */
 export function result(s: DodgeState): MinigameResult {

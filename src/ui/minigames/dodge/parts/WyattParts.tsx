@@ -1,29 +1,38 @@
 /**
  * Drawing the parts of Wyatt's attacks (docs/design/12-minigames-dodge.md,
- * sections 5 and 6; mockups 1 to 8): bees, the sword's sweep, jabs and
- * poke-ups, claws, the bite, the pounce, acorns, bombs, shrapnel and crumbs.
+ * sections 5 and 6; mockups 1 to 8 and 10 to 12): bees, the sword's sweep,
+ * jabs, poke-ups and the wave, claws, the bite, the pounce and the stalk,
+ * acorns, bombs, shrapnel and crumbs.
  */
-import { clawsAt, clawsEntry, biteOpen } from '../../../../minigames/dodge/attacks/bear';
-import { shadowSize } from '../../../../minigames/dodge/attacks/bobcat';
+import { biteOpen, clawsAt, clawsEntry, clawTurn } from '../../../../minigames/dodge/attacks/bear';
+import { hopFrom, shadowSize, stalkAt } from '../../../../minigames/dodge/attacks/bobcat';
 import { acornStage, bombAt, bombLit } from '../../../../minigames/dodge/attacks/squirrels';
-import { jabDepth, pokeDepth, pokeX } from '../../../../minigames/dodge/attacks/sword';
+import {
+  jabDepth,
+  pokeDepth,
+  pokeX,
+  waveAt,
+  wavePath,
+  waveWall,
+} from '../../../../minigames/dodge/attacks/sword';
 import { beeAt, swingAngle, swordPivot } from '../../../../minigames/dodge/logic';
 import { BALANCE } from '../../../../config/balance';
 import styles from '../Dodge.module.css';
 import { Arrow, Bang, Sprite, Sword } from './Bits';
-import { arcPath, deg, DARK, LIGHT, MID, type DrawTable } from './drawTypes';
+import { arcPath, deg, DARK, LIGHT, MID, pathOf, type DrawTable } from './drawTypes';
 
 const D = BALANCE.minigames.dodge;
-/** claw.png's long axis points up and to the right (9 across, 18 up). */
-const CLAW_AXIS = Math.atan2(-18, 9);
+
 export const WYATT_DRAW: DrawTable<
   | 'bee'
   | 'swing'
   | 'jab'
   | 'poke'
+  | 'wave'
   | 'claws'
   | 'bite'
   | 'pounce'
+  | 'stalk'
   | 'acorn'
   | 'bomb'
   | 'shrapnel'
@@ -35,7 +44,7 @@ export const WYATT_DRAW: DrawTable<
       const at = beeAt(p, c.time);
       return <Sprite file={c.beeFrame} x={at.x} y={at.y} w={10} h={7} flipX={p.vx < 0} />;
     },
-    outside: (p, c) => (c.time < p.activeAt ? <Bang x={p.mark.x} y={p.mark.y} /> : null),
+    warn: (p, c) => (c.time < p.activeAt ? <Bang x={p.mark.x} y={p.mark.y} box={c.box} /> : null),
   },
 
   swing: {
@@ -114,8 +123,10 @@ export const WYATT_DRAW: DrawTable<
       };
       return <Sword x={hilt.x} y={hilt.y} angle={Math.atan2(p.dir.y, p.dir.x)} />;
     },
-    outside: (p, c) =>
-      c.time < p.activeAt ? <Bang x={p.from.x - p.dir.x * 6} y={p.from.y - p.dir.y * 6} /> : null,
+    warn: (p, c) =>
+      c.time < p.activeAt ? (
+        <Bang x={p.from.x - p.dir.x * 6} y={p.from.y - p.dir.y * 6} box={c.box} />
+      ) : null,
   },
 
   poke: {
@@ -130,7 +141,7 @@ export const WYATT_DRAW: DrawTable<
         <Sword x={x} y={tip - up * D.sword.blade} angle={up < 0 ? -Math.PI / 2 : Math.PI / 2} />
       );
     },
-    outside(p, c) {
+    warn(p, c) {
       // The arrow sliding just outside the wall, and a "!" at each stab spot just before it.
       const x = pokeX(p, c.time);
       const y = p.side === 'bottom' ? c.bottom + 5 : c.top - 5;
@@ -145,10 +156,60 @@ export const WYATT_DRAW: DrawTable<
             className={styles.slideLine}
             style={{ left: dir > 0 ? x - 22 : x, top: y - 0.4, width: 22 }}
           />
-          <Arrow x={x} y={y} angle={dir > 0 ? 0 : 180} size={6} />
+          <Arrow x={x} y={y} angle={dir > 0 ? 0 : 180} size={6} box={c.box} />
           {marks.map((mx) => (
-            <Bang key={mx} x={mx} y={markY} />
+            <Bang key={mx} x={mx} y={markY} box={c.box} />
           ))}
+        </>
+      );
+    },
+  },
+
+  wave: {
+    svg(p, c) {
+      // The tip's path, a moment ahead of the sword.
+      const pts = wavePath(p, c.box, c.time);
+      if (pts.length < 2) return null;
+      return (
+        <path
+          d={pathOf(pts)}
+          fill="none"
+          stroke={LIGHT}
+          strokeWidth={0.8}
+          strokeDasharray="0.8 2.4"
+          strokeLinecap="round"
+          opacity={0.9}
+        />
+      );
+    },
+    over(p, c) {
+      const at = waveAt(p, c.box, c.time);
+      if (!at) return null;
+      const wall = waveWall(p, c.box);
+      const tip = wall.y + wall.inward * at.depth;
+      return (
+        <Sword
+          x={at.x}
+          y={tip - wall.inward * D.sword.blade}
+          angle={wall.inward > 0 ? Math.PI / 2 : -Math.PI / 2}
+        />
+      );
+    },
+    warn(p, c) {
+      // The sword's track just outside the wall, with an arrow where it is.
+      const wall = waveWall(p, c.box);
+      const y = wall.y - wall.inward * 5;
+      const run = (c.time - p.activeAt) * p.speed;
+      if (run > c.box.w) return null;
+      const x = Math.max(c.left, Math.min(c.right, p.dir > 0 ? c.left + run : c.right - run));
+      return (
+        <>
+          <span
+            className={styles.slideLine}
+            style={{ left: p.dir > 0 ? x - 22 : x, top: y - 0.4, width: 22 }}
+          />
+          <Arrow x={x} y={y} angle={p.dir > 0 ? 0 : 180} size={6} box={c.box} />
+          {c.time < p.activeAt && <Bang x={x} y={y - wall.inward * 7} box={c.box} />}
         </>
       );
     },
@@ -159,21 +220,6 @@ export const WYATT_DRAW: DrawTable<
       // Faint claw lines where the row will go.
       if (c.time >= p.activeAt) return null;
       const span = p.endAt - p.activeAt;
-      if (p.path.type === 'line') {
-        const { vx, vy } = p.path;
-        return clawsAt(p, p.activeAt).map((cl, k) => (
-          <line
-            key={k}
-            x1={cl.at.x}
-            y1={cl.at.y}
-            x2={cl.at.x + vx * span}
-            y2={cl.at.y + vy * span}
-            stroke={MID}
-            strokeWidth={0.6}
-            opacity={0.45}
-          />
-        ));
-      }
       const { cx, cy, r, a0, w } = p.path;
       return Array.from({ length: p.count }, (_, k) => {
         const rr = r + (k - (p.count - 1) / 2) * p.spacing;
@@ -191,6 +237,7 @@ export const WYATT_DRAW: DrawTable<
     },
     over(p, c) {
       if (c.time < p.activeAt || c.time > p.endAt) return null;
+      // Each claw turned (never mirrored) to point along its path, tip first, every frame.
       return clawsAt(p, c.time).map((cl, k) => (
         <Sprite
           key={k}
@@ -199,18 +246,20 @@ export const WYATT_DRAW: DrawTable<
           y={cl.at.y}
           w={9}
           h={18}
-          turn={deg(Math.atan2(cl.axis.y, cl.axis.x) - CLAW_AXIS)}
+          turn={clawTurn(cl.dir)}
         />
       ));
     },
-    outside(p, c) {
+    warn(p, c) {
+      // An arrow just outside the edge where the row comes in.
       if (c.time >= p.activeAt) return null;
-      const entry = clawsEntry(p);
+      const entry = clawsEntry(p, c.box);
       return (
         <Arrow
-          x={entry.at.x - entry.dir.x * 4}
-          y={entry.at.y - entry.dir.y * 4}
+          x={entry.at.x - entry.dir.x * 5}
+          y={entry.at.y - entry.dir.y * 5}
           angle={deg(Math.atan2(entry.dir.y, entry.dir.x))}
+          box={c.box}
         />
       );
     },
@@ -238,10 +287,13 @@ export const WYATT_DRAW: DrawTable<
         <>
           <Sprite file="jaw.png" x={p.cx} y={p.cy - gap - 5} w={34} h={10} />
           <Sprite file="jaw.png" x={p.cx} y={p.cy + gap + 5} w={34} h={10} flipY />
-          {c.time < p.activeAt && <Bang x={p.cx + p.w / 2 + 6} y={p.cy - p.h / 2 - 2} />}
         </>
       );
     },
+    warn: (p, c) =>
+      c.time < p.activeAt ? (
+        <Bang x={p.cx + p.w / 2 + 6} y={p.cy - p.h / 2 - 2} box={c.box} />
+      ) : null,
   },
 
   pounce: {
@@ -294,6 +346,46 @@ export const WYATT_DRAW: DrawTable<
     },
   },
 
+  stalk: {
+    svg(p, c) {
+      // Before each hop: the aim line and where it'll land.
+      const k = p.hops.findIndex((h) => c.time >= h.aimAt && c.time < h.hopAt);
+      const hop = p.hops[k];
+      if (!hop?.to) return null;
+      const from = hopFrom(p, k);
+      return (
+        <>
+          <line
+            x1={from.x}
+            y1={from.y}
+            x2={hop.to.x}
+            y2={hop.to.y}
+            stroke={MID}
+            strokeWidth={0.8}
+            opacity={0.8}
+          />
+          <ellipse
+            cx={hop.to.x}
+            cy={hop.to.y + 2}
+            rx={D.stalk.radius + 2}
+            ry={(D.stalk.radius + 2) * 0.55}
+            fill="none"
+            stroke={LIGHT}
+            strokeWidth={0.6}
+          />
+        </>
+      );
+    },
+    over(p, c) {
+      // The bobcat at half size, flipped to face where it's going.
+      const { at } = stalkAt(p, c.time);
+      const k = p.hops.findIndex((h) => c.time < h.landAt);
+      const next = p.hops[k]?.to ?? p.exit;
+      const left = next ? next.x < at.x : false;
+      return <Sprite file="bobcat-head.png" x={at.x} y={at.y} w={15} h={14} flipX={left} />;
+    },
+  },
+
   acorn: {
     over(p, c) {
       if (c.time < p.activeAt || p.done) return null;
@@ -304,25 +396,25 @@ export const WYATT_DRAW: DrawTable<
       if (c.time > p.activeAt + 0.3) return null;
       const turn = p.side === 'top' ? 90 : p.side === 'bottom' ? -90 : 0;
       return (
-        <>
-          <Sprite
-            file="squirrel-run.png"
-            x={p.squirrel.x}
-            y={p.squirrel.y}
-            w={14}
-            h={10}
-            turn={turn}
-            flipX={p.side === 'right'}
-          />
-          {c.time < p.activeAt && (
-            <Bang
-              x={p.squirrel.x + (p.side === 'left' ? -6 : p.side === 'right' ? 6 : 0)}
-              y={p.squirrel.y + (p.side === 'top' ? -8 : p.side === 'bottom' ? 8 : -9)}
-            />
-          )}
-        </>
+        <Sprite
+          file="squirrel-run.png"
+          x={p.squirrel.x}
+          y={p.squirrel.y}
+          w={14}
+          h={10}
+          turn={turn}
+          flipX={p.side === 'right'}
+        />
       );
     },
+    warn: (p, c) =>
+      c.time < p.activeAt ? (
+        <Bang
+          x={p.squirrel.x + (p.side === 'left' ? -6 : p.side === 'right' ? 6 : 0)}
+          y={p.squirrel.y + (p.side === 'top' ? -8 : p.side === 'bottom' ? 8 : -9)}
+          box={c.box}
+        />
+      ) : null,
   },
 
   crumbs: {

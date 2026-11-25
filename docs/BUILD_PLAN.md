@@ -1519,7 +1519,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
   - the bomb's lob height [30].
 - **Not done:** real art beyond the placeholders, sound, an animated GPS preview, and the later animals (mountain lion, rattlesnake, skunk, hawk).
 
-### Phase 10.8, step 3c: Dodge tuning and the Woods Monster
+### Phase 10.8, step 3c: Dodge tuning and the Woods Monster (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge-tuning.md`. The design is the revised `docs/design/12-minigames-dodge.md`; the note at its top lists what changed. New mockups `10-bear-shout-claws-hug.png` to `15-woods-monster-ritual.png` in `docs/mockups/minigames/dodge/`. New placeholder art in `public/assets/minigames/dodge/`.)
 
@@ -1541,6 +1541,40 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 5. **Testing tab:** the Woods Monster in Animal, and a new **Overlaps** setting (Auto, Off, On). With one attack picked, nothing overlaps.
 
 **Tests:** as in `12-minigames-dodge.md`, section 14.
+
+**Phase 10.8 step 3c notes (built Nov 25)**
+- **What's playable:** main menu → **Minigame testing** → **Dodge** → pick an **Animal** (now with the **Woods Monster**), an **Attack** and **Overlaps** (Auto, Off, On) → **Test it** → Start → Line up → Go.
+- **The two bugs:**
+  - **Missing warnings below the box:** the Diagonal bees' line is spread across their path from a point outside a corner, so the end bees started up to ~28 units past the corner, and each "!" was drawn where its bee started. From the bottom corners, that put two marks under the bottom HUD, which was drawn on top of them. Each "!" now goes where its own bee comes into the box; every "!" and warning arrow is on a layer above everything; and one that would still sit under a HUD or off the screen moves just inside the box edge. The bees' box moved up 1 unit to keep the 12-unit gap.
+  - **Upside-down claws:** each claw was turned to stand across its row at a slant, not along its path, so rows going one way had their claws pointing down; and on curved swipes half the rows were mirrored, which turning can't undo. Each claw now points along its path, tip first, turned (never mirrored) every frame.
+- **How it's built:**
+  - every attack is tagged area, missile or changer (`kind` in the library);
+  - `logic.ts` schedules the next attack: an overlap 0.3–0.8 s in (with the tier's chance), or the tier's gap after the running ones end, never two areas or two changers, never over the cap;
+  - the Woods Monster's attacks are in `attacks/monster.ts`, with their drawings in `ui/minigames/dodge/parts/MonsterParts.tsx`.
+- **What I interpreted:**
+  - **Kinds the design doesn't name:** missiles: Bite, Acorn bombs, Honey drips, Thrown sword, Zigzag dash, Landing swipe, Wall scurry, Stalk. Area: X slash (like the rune beams).
+  - **A changer** (the bear hug, Darkness) stops holding up the next attack once its warning is over, so other attacks come during it; it still counts toward the most at once.
+  - **The box** follows the attacking animal only when nothing but a changer is running; overlapping attacks use the box that's there.
+  - **Overlaps On** means every start tries to overlap (within the rules). With one attack picked, nothing overlaps, and the sword bear's extra claws don't come either.
+  - **Stampede:** an overlapping attack comes from another animal when one fits. Its old Tier III-only overlap is gone.
+  - **Claws:** each arc aims at a point near the middle (±20% of the box), so the rows cross in different places. Bobcat's "double Claws" on Tier III is the Tier III row count. Landing swipe's claws curve too. The bear hug no longer brings its own claws.
+  - **Shout** comes from just above the middle of the box (the bear's mouth), also in the Stampede. Tier III's second shout comes right after the first, 20° to one side.
+  - **Thrown sword:** drawn at its hitbox's length, 30 (from mockup 11; it was 48), whole and unclipped. The paw is a placeholder drawn in code, shown when the sword bear is the one head.
+  - **Woods Monster:** his second half and Darkness are tied to the chosen Tier III; the HUD shows the chosen tier. On Tier I his attacks follow Tier II (Fire tongues already has its second set).
+  - **Grasping hands** burst up where the sprite is (seen from above), so you have to keep moving. Mockup 15 draws them at the bottom wall; say if you meant only from there.
+  - **The Eye's** count starts over after each hit, so standing in the gaze hits again only after another 0.3 s.
+- **Numbers the design doesn't give** (my guesses, all `TODO(wyatt)` in `balance.ts`):
+  - claws aim spread [20%] and Landing swipe radius [60];
+  - the shout's mouth [22] above the box, Tier III second shout [50%] at [20°];
+  - one wave every [90] units;
+  - Stalk leaving in [0.3 s];
+  - the zigzag's slant [20–40°];
+  - flames rising and sinking in [0.2 s], filling [85%] of their slot;
+  - hands rising in [0.1 s];
+  - wisps [0.3 s] apart, turning [90°/s], hit radius [3];
+  - rune beams [4] thick; ritual eruption [0.2 s]; the Eye's cone [24°], sweeping [100°] over [3 s];
+  - Darkness light radius [24].
+- **Not done:** real art for the paw, the cultists' poses and the monster, sound, and an animated GPS preview.
 
 ### Phase 10.8, next steps (outline only)
 

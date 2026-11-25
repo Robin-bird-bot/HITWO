@@ -1,8 +1,9 @@
 /**
  * Dodge's animals (docs/design/12-minigames-dodge.md, sections 5 and 7 to
- * 11): each one is a name, a box, a head and a list of attacks from the
+ * 12): each one is a name, a box, a head and a list of attacks from the
  * library, with any tweaks it makes to a shared attack. The Wild Predator
- * Stampede uses every other animal's attacks, plus Herd rush.
+ * Stampede uses every other animal's attacks (not the Woods Monster's),
+ * plus Herd rush. The Woods Monster is a boss: he plays one tier up.
  *
  * Which attacks can be picked: the ones unlocked at the tier, without
  * Claude's ideas when they're off, and (in the testing tab) only the one
@@ -30,6 +31,9 @@ export interface Animal {
 
 const plain = (...ids: AttackId[]): AnimalAttack[] => ids.map((attack) => ({ attack }));
 
+/** Bear with a Sword's sword attacks sometimes bring a row of claws. */
+const sword = (attack: AttackId): AnimalAttack => ({ attack, tweak: { withClaws: true } });
+
 export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
   bees: {
     id: 'bees',
@@ -41,19 +45,20 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     id: 'bear',
     name: 'Bear',
     hud: 'Bear',
-    attacks: plain('claws', 'bite', 'roar', 'hug', 'honey'),
+    attacks: plain('claws', 'bite', 'shout', 'hug', 'honey'),
   },
   swordBear: {
     id: 'swordBear',
     name: 'Bear with a Sword',
     hud: 'Bear + sword',
     attacks: [
-      { attack: 'sweep' },
-      { attack: 'claws', tweak: { noDouble: true } },
-      { attack: 'jab' },
-      { attack: 'poke' },
-      { attack: 'xSlash' },
-      { attack: 'thrown' },
+      sword('sweep'),
+      { attack: 'claws' },
+      sword('jab'),
+      sword('poke'),
+      sword('wave'),
+      sword('xSlash'),
+      sword('thrown'),
     ],
   },
   bobcat: {
@@ -63,6 +68,7 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     attacks: [
       { attack: 'pounce' },
       { attack: 'claws', tweak: D.claws.bobcat },
+      { attack: 'stalk' },
       { attack: 'dash' },
       { attack: 'landingSwipe', tweak: D.claws.bobcat },
     ],
@@ -79,6 +85,12 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     hud: 'Stampede',
     attacks: [],
   },
+  monster: {
+    id: 'monster',
+    name: 'Woods Monster',
+    hud: 'Woods monster',
+    attacks: plain('fire', 'hands', 'wisps', 'runes', 'ritual', 'eye', 'darkness'),
+  },
 };
 
 export const ANIMAL_IDS: readonly AnimalId[] = [
@@ -88,6 +100,7 @@ export const ANIMAL_IDS: readonly AnimalId[] = [
   'bobcat',
   'squirrels',
   'stampede',
+  'monster',
 ];
 
 /** The animals whose attacks the Stampede uses, in the order of its row of heads. */
@@ -123,7 +136,15 @@ function everything(animal: AnimalId): PoolEntry[] {
   }));
 }
 
-/** The attacks that can be picked: unlocked at the tier, Claude's ideas only if on, and only `only` if set. */
+/** The tier an animal's attacks play at: the Woods Monster plays one up. */
+export const playTier = (animal: AnimalId, tier: Tier): Tier =>
+  animal === 'monster' ? (Math.min(3, tier + 1) as Tier) : tier;
+
+/**
+ * The attacks that can be picked: unlocked at the tier (the tier they play
+ * at), Claude's ideas only if on, and only `only` if set. Darkness also
+ * waits for the Woods Monster's second half (logic.ts checks that).
+ */
 export function pool(
   animal: AnimalId,
   tier: Tier,
@@ -138,7 +159,11 @@ export function pool(
   );
 }
 
-/** For the testing tab's Attack picker: each attack the animal uses, once, and whether it's open at the tier. */
+/**
+ * For the testing tab's Attack picker: each attack the animal uses, once,
+ * and whether it's open at the chosen tier (the Woods Monster plays one
+ * up; his Darkness needs Tier III's second half).
+ */
 export function attackChoices(
   animal: AnimalId,
   tier: Tier,
@@ -146,17 +171,21 @@ export function attackChoices(
 ): { id: AttackId; name: string; from: Tier; claudesIdea: boolean; unlocked: boolean }[] {
   const seen = new Set<AttackId>();
   const out: ReturnType<typeof attackChoices> = [];
+  const plays = playTier(animal, tier);
   for (const e of everything(animal)) {
     const def = ATTACKS[e.attack];
     if (seen.has(e.attack) || (!ideas && def.claudesIdea)) continue;
     seen.add(e.attack);
-    const from = unlockTier(e.attack);
+    // The first chosen tier it shows up on.
+    const opensAt = def.secondHalf
+      ? 3
+      : (([1, 2, 3] as const).find((t) => unlockTier(e.attack) <= playTier(animal, t)) ?? 3);
     out.push({
       id: e.attack,
       name: def.name,
-      from,
+      from: opensAt,
       claudesIdea: !!def.claudesIdea,
-      unlocked: from <= tier,
+      unlocked: def.secondHalf ? tier === 3 : unlockTier(e.attack) <= plays,
     });
   }
   return out;

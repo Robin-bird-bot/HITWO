@@ -35,6 +35,29 @@ export const INWARD: Readonly<Record<Side, Point>> = {
 /** The sprite (person.png, 10 × 12): how far its edges are from its middle. */
 export const SPRITE_HALF = { w: 5, h: 6 } as const;
 
+/** The screen, and where the HUDs are: the top one ends here, the bottom one starts here. */
+export const SCREEN = { w: 320, h: 240 } as const;
+export const HUD = { top: 19, bottom: 209 } as const;
+
+/**
+ * Where a warning marker (a "!" or an arrow, `half` from its middle to its
+ * edge) goes. Outside the box is best; but if it would overlap a HUD or
+ * leave the screen, it goes just inside the nearest box edge instead
+ * (`inside`, drawn on a light background).
+ */
+export function markSpot(p: Point, box: Box, half = 3.5): Point & { inside: boolean } {
+  const clear =
+    p.x - half >= 0 && p.x + half <= SCREEN.w && p.y - half >= HUD.top && p.y + half <= HUD.bottom;
+  if (clear) return { x: p.x, y: p.y, inside: false };
+  const e = edges(box);
+  const m = half + 1;
+  return {
+    x: Math.min(e.right - m, Math.max(e.left + m, p.x)),
+    y: Math.min(e.bottom - m, Math.max(e.top + m, p.y)),
+    inside: true,
+  };
+}
+
 export const edges = (b: Box) => ({
   left: b.cx - b.w / 2,
   right: b.cx + b.w / 2,
@@ -66,6 +89,54 @@ export function rayToWall(b: Box, p: Point, dir: Point): number {
   if (dir.y > 1e-9) best = Math.min(best, (e.bottom - p.y) / dir.y);
   if (dir.y < -1e-9) best = Math.min(best, (e.top - p.y) / dir.y);
   return Number.isFinite(best) ? Math.max(0, best) : 0;
+}
+
+/**
+ * Where a line from `start` going `dir` (unit) first crosses into the box,
+ * and the wall it crosses there; `out` units outside that wall is where its
+ * warning goes. A line that misses the box warns at the nearest wall point.
+ */
+export function entryMark(b: Box, start: Point, dir: Point, out = 5): Point {
+  const e = edges(b);
+  let tIn = -Infinity;
+  let tOut = Infinity;
+  let wall: Side = 'left';
+  const slab = (p: number, d: number, lo: number, hi: number, loSide: Side, hiSide: Side) => {
+    if (Math.abs(d) < 1e-9) {
+      if (p < lo || p > hi) tIn = Infinity;
+      return;
+    }
+    let t1 = (lo - p) / d;
+    let t2 = (hi - p) / d;
+    let s1 = loSide;
+    if (t1 > t2) {
+      [t1, t2] = [t2, t1];
+      s1 = hiSide;
+    }
+    if (t1 > tIn) {
+      tIn = t1;
+      wall = s1;
+    }
+    tOut = Math.min(tOut, t2);
+  };
+  slab(start.x, dir.x, e.left, e.right, 'left', 'right');
+  slab(start.y, dir.y, e.top, e.bottom, 'top', 'bottom');
+  if (tIn > tOut || !Number.isFinite(tIn)) {
+    const c = clampToEdge(b, start);
+    return { x: c.x + INWARD[c.side].x * -out, y: c.y + INWARD[c.side].y * -out };
+  }
+  const at = { x: start.x + dir.x * tIn, y: start.y + dir.y * tIn };
+  return { x: at.x - INWARD[wall].x * out, y: at.y - INWARD[wall].y * out };
+}
+
+/** The nearest point on the box's edge to a point outside it, and its wall. */
+function clampToEdge(b: Box, p: Point): Point & { side: Side } {
+  const e = edges(b);
+  const x = Math.min(e.right, Math.max(e.left, p.x));
+  const y = Math.min(e.bottom, Math.max(e.top, p.y));
+  const side: Side =
+    p.y < e.top ? 'top' : p.y > e.bottom ? 'bottom' : p.x < e.left ? 'left' : 'right';
+  return { x, y, side };
 }
 
 /** Keeps the sprite inside the box. */

@@ -349,3 +349,67 @@
   overflow: visible;
   pointer-events: none;
 }
+
+/* A warning moved just inside the box (it would have sat under a HUD): a light plate behind it. */
+.mark[data-inside] {
+  box-shadow: 0 0 0 1px #1d2918;
+}
+
+.arrow[data-inside] {
+  filter: drop-shadow(0 0 0.6px #1d2918);
+}
+
+/* A glow: the bear's mouth before a shout, a candle before a wisp. */
+.glow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f4f8dc 0, rgba(211, 223, 175, 0.6) 45%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Bear with a Sword's paw (placeholder): a pad and three toes, turning around its wrist. */
+.paw {
+  position: absolute;
+  width: 9px;
+  height: 8px;
+  border-radius: 3px 3px 4px 4px;
+  background: #3c4e2f;
+  box-shadow: 0 0 0 0.75px #1d2918;
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+
+.paw > span {
+  position: absolute;
+  bottom: -1.6px;
+  width: 2.6px;
+  height: 2.6px;
+  border-radius: 50%;
+  background: #52653f;
+  box-shadow: 0 0 0 0.5px #1d2918;
+}
+
+.paw > span:nth-child(1) {
+  left: 0.3px;
+}
+
+.paw > span:nth-child(2) {
+  left: 3.2px;
+  bottom: -2px;
+}
+
+.paw > span:nth-child(3) {
+  left: 6.1px;
+}
+
+/* The Woods Monster's Darkness, over the inside of the box. */
+.dark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}

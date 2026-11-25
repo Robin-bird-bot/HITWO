@@ -61,25 +61,32 @@ function Outline({ shape }: { shape: Shape }) {
           strokeWidth={0.5}
         />
       );
-    case 'ring': {
-      const half = Math.min(Math.PI, shape.gap / 2 / Math.max(0.01, shape.r));
-      if (half >= Math.PI) return null;
+    case 'arc':
       return (
         <path
           d={arcPath(
             shape.cx,
             shape.cy,
             shape.r,
-            shape.gapAt + half,
-            shape.gapAt - half + 2 * Math.PI,
+            shape.at - shape.spread / 2,
+            shape.at + shape.spread / 2,
           )}
           fill="none"
           stroke={RED}
           strokeOpacity={0.55}
           strokeWidth={shape.half * 2}
+          strokeLinecap="round"
         />
       );
-    }
+    case 'triangle':
+      return (
+        <polygon
+          points={shape.points.map((q) => `${q.x.toFixed(2)},${q.y.toFixed(2)}`).join(' ')}
+          fill="rgba(255,90,74,0.25)"
+          stroke={RED}
+          strokeWidth={0.5}
+        />
+      );
   }
 }
 

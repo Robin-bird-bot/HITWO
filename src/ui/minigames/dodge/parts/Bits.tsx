@@ -1,7 +1,12 @@
 /**
  * Small pieces Dodge's parts are drawn with: a sprite placed by its middle,
- * a "!" mark, and an arrow. Scene units.
+ * a "!" mark, a warning arrow, the sword and a paw. Scene units.
+ *
+ * Marks and arrows go through `markSpot`: if one would sit under a HUD or
+ * off the screen, it moves just inside the box edge on a light background.
  */
+import { BALANCE } from '../../../../config/balance';
+import { markSpot, type Box } from '../../../../minigames/dodge/logic';
 import ui from '../../gpsUi.module.css';
 import styles from '../Dodge.module.css';
 import { art, deg } from './drawTypes';
@@ -54,38 +59,64 @@ export function Sprite({
   );
 }
 
-/** A "!" warning mark, by its middle. */
-export function Bang({ x, y }: { x: number; y: number }) {
+/** A "!" warning mark, by its middle, kept clear of the HUDs (`box` is the box now). */
+export function Bang({ x, y, box }: { x: number; y: number; box: Box }) {
+  const at = markSpot({ x, y }, box);
   return (
-    <span className={styles.mark} style={{ left: x - 3.5, top: y - 3.5 }}>
+    <span
+      className={styles.mark}
+      data-inside={at.inside || undefined}
+      style={{ left: at.x - 3.5, top: at.y - 3.5 }}
+    >
       !
     </span>
   );
 }
 
-/** A warning arrow pointing along `angle` (degrees), by its middle. */
+/** A warning arrow pointing along `angle` (degrees), by its middle, kept clear of the HUDs. */
 export function Arrow({
   x,
   y,
   angle,
+  box,
   size = 6,
 }: {
   x: number;
   y: number;
   angle: number;
+  box: Box;
   size?: number;
 }) {
+  const at = markSpot({ x, y }, box, size / 2);
   return (
     <span
       className={styles.arrow}
+      data-inside={at.inside || undefined}
       style={{
-        left: x - size / 2,
-        top: y - size / 2,
+        left: at.x - size / 2,
+        top: at.y - size / 2,
         width: size,
         height: size,
         transform: `rotate(${angle.toFixed(1)}deg)`,
       }}
     />
+  );
+}
+
+/**
+ * A bear's paw (placeholder, drawn in code): a pad with three toes, turned
+ * by `turn` degrees around its wrist (0 is pointing down).
+ */
+export function Paw({ x, y, turn }: { x: number; y: number; turn: number }) {
+  return (
+    <span
+      className={styles.paw}
+      style={{ left: x - 4.5, top: y, transform: `rotate(${turn.toFixed(1)}deg)` }}
+    >
+      <span />
+      <span />
+      <span />
+    </span>
   );
 }
 
@@ -115,6 +146,38 @@ export function Sword({
       style={{
         left: x - HILT.x,
         top: y - HILT.y,
+        transform: `rotate(${(deg(angle) - 90).toFixed(1)}deg)`,
+        opacity,
+      }}
+    />
+  );
+}
+
+/** The thrown sword spinning (sword.png, 7 × 64, scaled to its length), by its middle. */
+export function Spinning({
+  x,
+  y,
+  angle,
+  opacity,
+}: {
+  x: number;
+  y: number;
+  angle: number;
+  opacity?: number;
+}) {
+  const h = BALANCE.minigames.dodge.thrown.length;
+  const w = (h * 7) / 64;
+  return (
+    <img
+      className={`${ui.sprite} ${styles.part}`}
+      src={art('sword.png')}
+      alt=""
+      draggable={false}
+      style={{
+        left: x - w / 2,
+        top: y - h / 2,
+        width: w,
+        height: h,
         transform: `rotate(${(deg(angle) - 90).toFixed(1)}deg)`,
         opacity,
       }}

@@ -7,22 +7,24 @@
  * file, from the animals' lists (animals.ts) and its drawing
  * (ui/minigames/dodge/parts/ClaudesIdeasParts.tsx).
  *
- * - **Roar** (Bear): rings spread from the top middle of the box, each with
- *   one gap to slip through.
- * - **Bear hug** (Bear): the side walls squeeze in, hold, and go back; the
- *   sprite is pushed inward. Sometimes Claws come at the same time.
+ * - **Shout** (Bear; it was Roar): a burst of small arc waves from the
+ *   bear's mouth toward the sprite, spreading as they go; step sideways out
+ *   of it. Tier III: sometimes a second shout at a slightly different angle.
+ * - **Bear hug** (Bear, a changer): the side walls squeeze in, hold for 3 s,
+ *   and go back; the sprite is pushed inward. Other attacks keep coming.
  * - **Honey drips** (Bear): drops fall in columns and leave sticky puddles
  *   that slow the sprite (puddles never hit).
  * - **X slash** (Bear with a Sword): two diagonal slashes across the box.
  * - **Thrown sword** (Bear with a Sword): it spins across like a boomerang
- *   and comes back on a lower line.
- * - **Zigzag dash** (Bobcat): the bobcat dashes along a zigzag.
- * - **Landing swipe** (Bobcat): a pounce, then claws burst out from where
- *   it lands.
+ *   and comes back on a lower line; its whole path shows first.
+ * - **Zigzag dash** (Bobcat): the bobcat dashes along a sharp zigzag and
+ *   bounces off the walls for 2 or 3 passes.
+ * - **Landing swipe** (Bobcat): a pounce, then a curved row of claws bursts
+ *   out from where it lands.
  * - **Pinecone rain** (Squirrel Army): pinecones drop, bounce once, and
  *   roll off toward the nearer side wall.
  * - **Wall scurry** (Squirrel Army): a line of squirrels runs around the
- *   box just inside the walls.
+ *   box just inside the walls, each flicking nuts at the sprite.
  * - **Herd rush** (Stampede): a wall of moose charges across, with gaps.
  */
 import { BALANCE } from '../../../config/balance';
@@ -33,31 +35,38 @@ import {
   count,
   DEG,
   edges,
+  INWARD,
+  onSide,
   oneOf,
+  pathLength,
   rayToWall,
   rotate,
+  SIDES,
+  unit,
   type Box,
 } from '../geometry';
 import type { Point, Shape } from '../shapes';
 import type { AttackDef, Part, PartBase, PartRules } from '../types';
-import { clawLine, clawsAcross } from './bear';
+import { clawsBurst } from './bear';
 import { pounce } from './bobcat';
-import { base, warnFor } from './common';
+import { base, from, warnFor } from './common';
 
 const D = BALANCE.minigames.dodge;
 
 // ── Parts ──────────────────────────────────────────────────────────────────
 
-/** A roar ring spreading from (cx, cy), with a gap. */
-export interface RingPart extends PartBase {
-  kind: 'ring';
+/** One wave of a shout: a small arc spreading from the bear's mouth (cx, cy) along angle `at`. */
+export interface ShoutPart extends PartBase {
+  kind: 'shout';
   cx: number;
   cy: number;
+  at: number;
+  spread: number;
   speed: number;
-  gapAt: number;
-  gap: number;
   half: number;
   maxR: number;
+  /** The first wave of a shout carries its warning: the mouth glows and an arrow shows the way. */
+  lead?: true;
 }
 
 /** A bear hug: the side walls squeeze in to `width` of the box, hold, and go back. */
@@ -104,11 +113,16 @@ export interface ThrownPart extends PartBase {
   speed: number;
 }
 
-/** The bobcat dashing along a zigzag. */
+/** The bobcat dashing along a zigzag, bouncing off the walls. */
 export interface DashPart extends PartBase {
   kind: 'dash';
   path: Point[];
   speed: number;
+  /** Where each pass starts on the path (a point's index), and where it bounced to start it. */
+  passes: number[];
+  bounces: Point[];
+  /** Each pass after the first shows this long before its bounce. */
+  nextWarnSec: number;
 }
 
 /** A pinecone: falls, bounces once, then rolls off toward the nearer side wall. */
@@ -124,13 +138,25 @@ export interface PineconePart extends PartBase {
   rolling?: true;
 }
 
-/** A line of squirrels running around the box from a corner. */
+/** A line of squirrels running around the box from a corner, flicking nuts. */
 export interface ScurryPart extends PartBase {
   kind: 'scurry';
   /** Where on the way round it starts (units from the top-left corner, clockwise), and which way. */
   start: number;
   dir: 1 | -1;
   speed: number;
+  /** Each squirrel flicks a nut this often, the four a quarter of that apart. */
+  throwEvery: number;
+  nutSpeed: number;
+}
+
+/** A nut flicked at the sprite, flying straight until it leaves the box. */
+export interface NutPart extends PartBase {
+  kind: 'nut';
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
 }
 
 /** A wall of moose charging across, with gaps. */
@@ -144,7 +170,7 @@ export interface HerdPart extends PartBase {
 }
 
 export type ClaudePart =
-  | RingPart
+  | ShoutPart
   | HugPart
   | DropPart
   | PuddlePart
@@ -153,55 +179,68 @@ export type ClaudePart =
   | DashPart
   | PineconePart
   | ScurryPart
+  | NutPart
   | HerdPart;
 
-// ── Roar ───────────────────────────────────────────────────────────────────
+// ── Shout ──────────────────────────────────────────────────────────────────
 
-const R = D.roar;
+const SH = D.shout;
 
-export const ringRadius = (p: RingPart, time: number): number =>
+/** How far a shout's wave has spread. */
+export const waveRadius = (p: ShoutPart, time: number): number =>
   Math.max(0, (time - p.activeAt) * p.speed);
 
-export const ROAR: AttackDef = {
-  id: 'roar',
-  name: 'Roar',
+/** The bear's mouth, above the middle of the box. */
+export const mouthOf = (box: Box): Point => ({ x: box.cx, y: edges(box).top - SH.mouthAbove });
+
+export const SHOUT: AttackDef = {
+  id: 'shout',
+  name: 'Shout',
+  kind: 'area',
   claudesIdea: true,
   start(ctx) {
+    const mouth = mouthOf(ctx.box);
     const e = edges(ctx.box);
-    const n = count(ctx.rng, R.rings);
-    const first = ctx.time + warnFor();
-    // Each gap in a different place: one in each slice of the half turn below the mouth.
-    const lo = 20 * DEG;
-    const hi = 160 * DEG;
-    const slices = Array.from(
-      { length: n },
-      (_, k) => lo + ((hi - lo) * (k + between(ctx.rng, 0.2, 0.8))) / n,
-    );
-    const order = slices
-      .map((a) => ({ a, key: between(ctx.rng, 0, 1) }))
-      .sort((x, y) => x.key - y.key);
-    const parts = order.map(({ a }, k): RingPart => ({
-      kind: 'ring',
-      ...base(ctx, ctx.time, first + k * R.everySec),
-      cx: ctx.box.cx,
-      cy: e.top,
-      speed: R.speed * ctx.speed,
-      gapAt: a,
-      gap: R.gap,
-      half: R.thickness / 2,
-      maxR: Math.hypot(ctx.box.w / 2, ctx.box.h) + R.thickness,
-    }));
-    return { parts, endsAt: 'parts' };
+    const maxR =
+      Math.max(
+        ...[
+          [e.left, e.bottom],
+          [e.right, e.bottom],
+        ].map(([x, y]) => Math.hypot(x! - mouth.x, y! - mouth.y)),
+      ) + SH.thickness;
+    const aim = Math.atan2(ctx.pos.y - mouth.y, ctx.pos.x - mouth.x);
+    const burst = (at: number, warnAt: number, firstAt: number): ShoutPart[] =>
+      Array.from({ length: count(ctx.rng, SH.waves) }, (_, k) => ({
+        kind: 'shout',
+        ...base(ctx, warnAt, firstAt + k * SH.everySec),
+        cx: mouth.x,
+        cy: mouth.y,
+        at,
+        spread: SH.spreadDeg * DEG,
+        speed: SH.speed * ctx.speed,
+        half: SH.thickness / 2,
+        maxR,
+        ...(k === 0 ? { lead: true as const } : {}),
+      }));
+    const first = burst(aim, ctx.time, ctx.time + warnFor());
+    if (!from(ctx, SH.twoFrom) || !coin(ctx.rng, SH.twoChance)) {
+      return { parts: first, endsAt: 'parts' };
+    }
+    // A second shout right after, a little to one side, with its own warning.
+    const at = first.at(-1)!.activeAt + SH.everySec;
+    const turn = (coin(ctx.rng) ? 1 : -1) * SH.twoAngleDeg * DEG;
+    const second = burst(aim + turn, Math.max(ctx.time, at - warnFor()), at);
+    return { parts: [...first, ...second], endsAt: 'parts' };
   },
 };
 
-const RING_RULES: PartRules<RingPart> = {
+const SHOUT_RULES: PartRules<ShoutPart> = {
   shapes(p, w) {
-    const r = ringRadius(p, w.time);
-    if (w.time < p.activeAt || r > p.maxR) return [];
-    return [{ kind: 'ring', cx: p.cx, cy: p.cy, r, half: p.half, gapAt: p.gapAt, gap: p.gap }];
+    const r = waveRadius(p, w.time);
+    if (w.time < p.activeAt || r <= 0 || r > p.maxR) return [];
+    return [{ kind: 'arc', cx: p.cx, cy: p.cy, r, half: p.half, at: p.at, spread: p.spread }];
   },
-  done: (p, w) => ringRadius(p, w.time) > p.maxR,
+  done: (p, w) => waveRadius(p, w.time) > p.maxR,
 };
 
 // ── Bear hug ───────────────────────────────────────────────────────────────
@@ -229,8 +268,10 @@ export function squeezed(box: Box, parts: readonly Part[], time: number): Box {
 export const HUG: AttackDef = {
   id: 'hug',
   name: 'Bear hug',
+  kind: 'changer',
   claudesIdea: true,
   start(ctx) {
+    // A changer: other attacks keep coming while the walls are in.
     const hug: HugPart = {
       kind: 'hug',
       ...base(ctx, ctx.time, ctx.time + warnFor()),
@@ -238,19 +279,7 @@ export const HUG: AttackDef = {
       holdSec: H.holdSec,
       width: H.width,
     };
-    if (!coin(ctx.rng, H.clawsChance)) return { parts: [hug], endsAt: 'parts' };
-    // Claws from the top or bottom while the walls hold.
-    const at = hug.activeAt + H.squeezeSec;
-    const claws = clawsAcross(
-      ctx,
-      ctx.box,
-      coin(ctx.rng) ? 'top' : 'bottom',
-      between(ctx.rng, 0.35, 0.65),
-      at - warnFor(),
-      at,
-      D.claws.speed * ctx.speed,
-    );
-    return { parts: [hug, claws], endsAt: 'parts' };
+    return { parts: [hug], endsAt: 'parts' };
   },
 };
 
@@ -284,6 +313,7 @@ function columns(
 export const HONEY: AttackDef = {
   id: 'honey',
   name: 'Honey drips',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
@@ -350,6 +380,7 @@ const X = D.xSlash;
 export const X_SLASH: AttackDef = {
   id: 'xSlash',
   name: 'X slash',
+  kind: 'area',
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
@@ -395,9 +426,13 @@ export function thrownAt(p: ThrownPart, time: number): { at: Point; angle: numbe
   return { at, angle: t * T.spinPerSec * 2 * Math.PI, end };
 }
 
+/** When the thrown sword is back (the bear catches it). */
+export const thrownBackAt = (p: ThrownPart): number => p.activeAt + pathLength(p.path) / p.speed;
+
 export const THROWN: AttackDef = {
   id: 'thrown',
   name: 'Thrown sword',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
@@ -453,24 +488,81 @@ const DA = D.dash;
 export const dashAt = (p: DashPart, time: number) =>
   alongPath(p.path, Math.max(0, time - p.activeAt) * p.speed);
 
+/** How far along the path each point is. */
+const distances = (path: readonly Point[]): number[] =>
+  path.reduce<number[]>(
+    (acc, q, i) => [
+      ...acc,
+      i ? acc[i - 1]! + Math.hypot(q.x - path[i - 1]!.x, q.y - path[i - 1]!.y) : 0,
+    ],
+    [],
+  );
+
+/** Each pass of the dash (its points) and when its dotted line shows. */
+export function dashPasses(p: DashPart): { points: Point[]; showAt: number; doneAt: number }[] {
+  const d = distances(p.path);
+  return p.passes.map((startIdx, k) => {
+    const endIdx = p.passes[k + 1] ?? p.path.length - 1;
+    const startAt = p.activeAt + d[startIdx]! / p.speed;
+    return {
+      points: p.path.slice(startIdx, endIdx + 1),
+      showAt: k === 0 ? p.warnAt : startAt - p.nextWarnSec,
+      doneAt: p.activeAt + d[endIdx]! / p.speed,
+    };
+  });
+}
+
+/** A sharp zigzag along a straight line from a to b: legs of about `leg`, turning `turn` at each corner. */
+function zigzag(a: Point, b: Point): Point[] {
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const u = unit({ x: b.x - a.x, y: b.y - a.y });
+  const n = { x: -u.y, y: u.x };
+  const half = (DA.turnDeg / 2) * DEG;
+  const legs = Math.max(2, Math.round(len / (DA.leg * Math.cos(half))));
+  const step = len / legs;
+  const side = step * Math.tan(half);
+  return Array.from({ length: legs + 1 }, (_, i) => {
+    const off = i === 0 || i === legs ? 0 : (i % 2 ? side : -side) / 2;
+    return { x: a.x + u.x * step * i + n.x * off, y: a.y + u.y * step * i + n.y * off };
+  });
+}
+
 export const DASH: AttackDef = {
   id: 'dash',
   name: 'Zigzag dash',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
-    const e = edges(ctx.box);
-    const ltr = coin(ctx.rng);
-    const up = coin(ctx.rng) ? 1 : -1;
-    const amp = (DA.amplitude * ctx.box.h) / 2;
-    const xa = e.left - DA.radius - 2;
-    const xb = e.right + DA.radius + 2;
-    const path = Array.from({ length: DA.legs + 1 }, (_, k) => {
-      const u = k / DA.legs;
-      return {
-        x: ltr ? xa + (xb - xa) * u : xb - (xb - xa) * u,
-        y: ctx.box.cy + (k % 2 === 0 ? up : -up) * amp,
-      };
-    });
+    const box = ctx.box;
+    const e = edges(box);
+    const side = oneOf(ctx.rng, SIDES);
+    let at = onSide(box, side, between(ctx.rng, 0.25, 0.75));
+    // Slanted from straight across, so each bounce sends it back on a new line.
+    let dir = rotate(
+      INWARD[side],
+      (coin(ctx.rng) ? 1 : -1) * between(ctx.rng, DA.slantDeg[0], DA.slantDeg[1]) * DEG,
+    );
+    const out = DA.radius + 2;
+    const path: Point[] = [{ x: at.x - dir.x * out, y: at.y - dir.y * out }];
+    const passes: number[] = [];
+    const bounces: Point[] = [];
+    const n = DA.passes[ctx.tier];
+    for (let k = 0; k < n; k++) {
+      const far = { x: at.x + dir.x * 1e-6, y: at.y + dir.y * 1e-6 };
+      const d = rayToWall(box, far, dir);
+      const to = { x: far.x + dir.x * d, y: far.y + dir.y * d };
+      passes.push(path.length - 1);
+      path.push(...zigzag(path.at(-1)!, to).slice(1));
+      if (k < n - 1) {
+        // Bounce: mirror off the wall (or both, in a corner).
+        const near = (a: number, b: number) => Math.abs(a - b) < 1e-3;
+        if (near(to.x, e.left) || near(to.x, e.right)) dir = { x: -dir.x, y: dir.y };
+        if (near(to.y, e.top) || near(to.y, e.bottom)) dir = { x: dir.x, y: -dir.y };
+        bounces.push(to);
+      }
+      at = to;
+    }
+    path.push({ x: at.x + dir.x * out, y: at.y + dir.y * out });
     return {
       parts: [
         {
@@ -478,6 +570,9 @@ export const DASH: AttackDef = {
           ...base(ctx, ctx.time, ctx.time + warnFor(DA.warnSec)),
           path,
           speed: DA.speed * ctx.speed,
+          passes,
+          bounces,
+          nextWarnSec: warnFor(DA.nextWarnSec),
         },
       ],
       endsAt: 'parts',
@@ -499,18 +594,17 @@ const DASH_RULES: PartRules<DashPart> = {
 export const LANDING_SWIPE: AttackDef = {
   id: 'landingSwipe',
   name: 'Landing swipe',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
     const land = pounce(ctx, { ...ctx.pos }, ctx.time, ctx.time + warnFor(D.pounce.growSec));
-    // Claws burst out from the landing spot in one direction, warned during the shadow.
+    // A curved row of claws bursts out from the landing spot, warned during the shadow.
     const dir = rotate({ x: 1, y: 0 }, between(ctx.rng, 0, Math.PI * 2));
-    const origin = { x: land.cx, y: land.cy };
     const speed = D.claws.speed * ctx.speed * (ctx.tweak.speed ?? 1);
-    const claws = clawLine(
+    const claws = clawsBurst(
       ctx,
-      origin,
+      { x: land.cx, y: land.cy },
       dir,
-      rayToWall(ctx.box, origin, dir) + D.claws.length,
       Math.max(ctx.time, land.activeAt - warnFor()),
       land.activeAt,
       speed,
@@ -526,6 +620,7 @@ const PC = D.pinecones;
 export const PINECONES: AttackDef = {
   id: 'pinecones',
   name: 'Pinecone rain',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
@@ -600,18 +695,33 @@ function aroundLoop(box: Box, d: number): { at: Point; dir: Point } {
   return { at, dir };
 }
 
-/** Each squirrel still running: where it is and which way it faces. */
-export function scurryAt(p: ScurryPart, box: Box, time: number): { at: Point; dir: Point }[] {
+/** Each squirrel still running (`k` is its place in the line): where it is and which way it faces. */
+export function scurryAt(
+  p: ScurryPart,
+  box: Box,
+  time: number,
+): { k: number; at: Point; dir: Point }[] {
   const { length } = scurryLoop(box);
   const run = Math.max(0, time - p.activeAt) * p.speed;
-  const out: { at: Point; dir: Point }[] = [];
+  const out: { k: number; at: Point; dir: Point }[] = [];
   for (let k = 0; k < SC.squirrels; k++) {
     const d = run - k * SC.spacing;
     if (d < 0 || d > length || time < p.activeAt) continue;
     const spot = aroundLoop(box, p.start + p.dir * d);
-    out.push({ at: spot.at, dir: { x: spot.dir.x * p.dir, y: spot.dir.y * p.dir } });
+    out.push({ k, at: spot.at, dir: { x: spot.dir.x * p.dir, y: spot.dir.y * p.dir } });
   }
   return out;
+}
+
+/** When squirrel `k` flicks its `j`-th nut: one interval in, the four a quarter interval apart. */
+export const nutThrowAt = (p: ScurryPart, k: number, j: number): number =>
+  p.activeAt + (j + 1) * p.throwEvery + (k * p.throwEvery) / SC.squirrels;
+
+/** Whether squirrel `k` is blinking now (it's about to throw). */
+export function scurryBlinking(p: ScurryPart, k: number, time: number): boolean {
+  const j = Math.ceil((time - nutThrowAt(p, k, 0)) / p.throwEvery);
+  const at = nutThrowAt(p, k, Math.max(0, j));
+  return time >= at - SC.nuts.blinkSec && time < at;
 }
 
 /** Where the line starts (for its warning). */
@@ -620,6 +730,7 @@ export const scurryStart = (p: ScurryPart, box: Box): Point => aroundLoop(box, p
 export const SCURRY: AttackDef = {
   id: 'scurry',
   name: 'Wall scurry',
+  kind: 'missile',
   claudesIdea: true,
   start(ctx) {
     const { corners, length } = scurryLoop(ctx.box);
@@ -637,6 +748,8 @@ export const SCURRY: AttackDef = {
           start,
           dir: coin(ctx.rng) ? 1 : -1,
           speed: SC.speed * ctx.speed,
+          throwEvery: SC.nuts.everySec[ctx.tier],
+          nutSpeed: SC.nuts.speed * ctx.speed,
         },
       ],
       endsAt: 'parts',
@@ -645,6 +758,32 @@ export const SCURRY: AttackDef = {
 };
 
 const SCURRY_RULES: PartRules<ScurryPart> = {
+  update(p, w) {
+    // Each squirrel still running flicks a nut at the sprite when its time comes.
+    const t0 = w.time - w.dt;
+    const nuts: NutPart[] = [];
+    for (const sq of scurryAt(p, w.box, w.time)) {
+      const j = Math.ceil((w.time - nutThrowAt(p, sq.k, 0)) / p.throwEvery);
+      const at = nutThrowAt(p, sq.k, Math.max(0, j));
+      const prev = nutThrowAt(p, sq.k, Math.max(0, j - 1));
+      const due = [at, prev].find((t) => t > t0 && t <= w.time);
+      if (due === undefined) continue;
+      const dir = unit({ x: w.pos.x - sq.at.x, y: w.pos.y - sq.at.y });
+      nuts.push({
+        kind: 'nut',
+        id: w.nextId(),
+        round: p.round,
+        warnAt: w.time,
+        activeAt: w.time,
+        child: true,
+        x: sq.at.x,
+        y: sq.at.y,
+        vx: dir.x * p.nutSpeed,
+        vy: dir.y * p.nutSpeed,
+      });
+    }
+    return nuts.length ? { part: p, spawn: nuts } : { part: p };
+  },
   shapes(p, w) {
     return scurryAt(p, w.box, w.time).map((s): Shape => ({
       kind: 'circle',
@@ -656,6 +795,18 @@ const SCURRY_RULES: PartRules<ScurryPart> = {
   done: (p, w) =>
     w.time > p.activeAt &&
     (w.time - p.activeAt) * p.speed - (SC.squirrels - 1) * SC.spacing > scurryLoop(w.box).length,
+};
+
+const NUT_RULES: PartRules<NutPart> = {
+  update(p, w) {
+    const x = p.x + p.vx * w.dt;
+    const y = p.y + p.vy * w.dt;
+    const e = edges(w.box);
+    const gone = x < e.left || x > e.right || y < e.top || y > e.bottom;
+    return { part: gone ? { ...p, x, y, done: true } : { ...p, x, y } };
+  },
+  shapes: (p) => (p.done ? [] : [{ kind: 'circle', x: p.x, y: p.y, r: SC.nuts.radius }]),
+  done: (p) => !!p.done,
 };
 
 // ── Herd rush ──────────────────────────────────────────────────────────────
@@ -671,6 +822,7 @@ export const herdX = (p: HerdPart, time: number): number =>
 export const HERD: AttackDef = {
   id: 'herd',
   name: 'Herd rush',
+  kind: 'area',
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
@@ -727,7 +879,7 @@ const HERD_RULES: PartRules<HerdPart> = {
 // ── The lists ──────────────────────────────────────────────────────────────
 
 export const CLAUDES_IDEAS: readonly AttackDef[] = [
-  ROAR,
+  SHOUT,
   HUG,
   HONEY,
   X_SLASH,
@@ -742,7 +894,7 @@ export const CLAUDES_IDEAS: readonly AttackDef[] = [
 export const CLAUDE_RULES: {
   [K in ClaudePart['kind']]: PartRules<Extract<ClaudePart, { kind: K }>>;
 } = {
-  ring: RING_RULES,
+  shout: SHOUT_RULES,
   hug: HUG_RULES,
   drop: DROP_RULES,
   puddle: PUDDLE_RULES,
@@ -751,5 +903,6 @@ export const CLAUDE_RULES: {
   dash: DASH_RULES,
   pinecone: PINECONE_RULES,
   scurry: SCURRY_RULES,
+  nut: NUT_RULES,
   herd: HERD_RULES,
 };

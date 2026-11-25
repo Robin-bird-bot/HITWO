@@ -115,6 +115,7 @@ function shrapnel(
 export const ACORNS: AttackDef = {
   id: 'acorns',
   name: 'Rolling acorns',
+  kind: 'missile',
   start(ctx) {
     const speed = A.speed * ctx.speed;
     const n = A.count[ctx.tier];
@@ -190,6 +191,7 @@ const BOMB_BODY = 6;
 export const BOMBS: AttackDef = {
   id: 'bombs',
   name: 'Acorn bombs',
+  kind: 'missile',
   start(ctx) {
     const n = count(ctx.rng, B.count[ctx.tier]);
     const e = edges(ctx.box);
