@@ -115,34 +115,39 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
           </nav>
 
           <div className={styles.detail}>
-            <h2 className={styles.name}>{active.name}</h2>
-            <p className={styles.description}>{active.description}</p>
+            {/* The settings scroll when they don't all fit; the preview and Test it stay in view below. */}
+            <div className={styles.scroll}>
+              <h2 className={styles.name}>{active.name}</h2>
+              <p className={styles.description}>{active.description}</p>
 
-            {active.settings
-              .filter((s): s is Extract<MinigameSetting, { kind: 'style' }> => s.kind === 'style')
-              .map((s) => (
-                <StyleChoice key={s.id} setting={s} settings={settings} onChange={update} />
-              ))}
+              {active.settings
+                .filter((s): s is Extract<MinigameSetting, { kind: 'style' }> => s.kind === 'style')
+                .map((s) => (
+                  <StyleChoice key={s.id} setting={s} settings={settings} onChange={update} />
+                ))}
 
-            <div className={styles.settings}>
+              <div className={styles.settings}>
+                {active.settings
+                  .filter(
+                    (s) =>
+                      s.kind === 'range' ||
+                      s.kind === 'choice' ||
+                      s.kind === 'pick' ||
+                      s.kind === 'autoRange',
+                  )
+                  .map((s) => (
+                    <Setting key={s.id} setting={s} settings={settings} onChange={update} />
+                  ))}
+              </div>
+
               {active.settings
                 .filter(
-                  (s) =>
-                    s.kind === 'range' ||
-                    s.kind === 'choice' ||
-                    s.kind === 'pick' ||
-                    s.kind === 'autoRange',
+                  (s): s is Extract<MinigameSetting, { kind: 'hikers' }> => s.kind === 'hikers',
                 )
                 .map((s) => (
-                  <Setting key={s.id} setting={s} settings={settings} onChange={update} />
+                  <HikerToggles key={s.id} setting={s} settings={settings} onChange={update} />
                 ))}
             </div>
-
-            {active.settings
-              .filter((s): s is Extract<MinigameSetting, { kind: 'hikers' }> => s.kind === 'hikers')
-              .map((s) => (
-                <HikerToggles key={s.id} setting={s} settings={settings} onChange={update} />
-              ))}
 
             {challenge && (
               <>

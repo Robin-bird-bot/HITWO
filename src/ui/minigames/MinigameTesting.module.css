@@ -139,7 +139,32 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   flex: 1;
+}
+
+/*
+ * The name, settings and hikers: they scroll when a game has more settings
+ * than fit (Dodge), so the preview and Test it below always stay in view.
+ */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Room for focus rings and the scrollbar. */
+  margin: -4px -16px 0 -4px;
+  padding: 4px 16px 10px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #b9a77f transparent;
+  /*
+   * A soft shadow at the bottom edge while there's more below: the cover
+   * scrolls with the content and hides the shadow once you reach the end.
+   */
+  background:
+    linear-gradient(rgba(242, 228, 196, 0), #f2e4c4 70%) 0 100% / 100% 36px no-repeat local,
+    radial-gradient(farthest-side at 50% 100%, rgba(42, 36, 32, 0.28), rgba(42, 36, 32, 0)) 0 100% /
+      100% 16px no-repeat scroll;
 }
 
 .name {
