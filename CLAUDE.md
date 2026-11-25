@@ -22,6 +22,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/11-minigames-puzzles.md` | The four puzzle minigames (Traildle, Find the Object, Remember the Path, Find the Path), the shared Line up step, and their testing-tab settings (Phase 10.8 step 2). |
 | `docs/design/12-minigames-dodge.md` | Dodge, the Undertale-style animal encounter (Bees, Bear, Bear with a Sword, Bobcat, Squirrel Army, Wild Predator Stampede, and the Woods Monster boss), its shared attack library, pacing and overlaps, and its testing-tab settings (Phase 10.8 steps 3, 3b and 3c). |
 | `docs/design/13-minigames-puzzles-2.md` | Four more puzzle and memory minigames (Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice), their testing-tab settings, and the testing tab's categories (Phase 10.8 step 4). |
+| `docs/design/14-minigames-trail-blocks.md` | The passing-challenge rules, the four Trail Blocks (Chop Tree, Mine Rockslide, River Flood, Clearing Animals), Sleeping Bear and Whackoon, and their testing-tab settings (Phase 10.8 step 5). |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |

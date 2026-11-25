@@ -1,0 +1,105 @@
+/*
+ * The top HUD the action minigames share (Dodge's layout; mockups in
+ * docs/mockups/minigames/trail-blocks/), in scene units (320 × 240): the
+ * game's name on the left, a labeled bar in the middle, the tier on the right.
+ */
+
+.name,
+.tier {
+  position: absolute;
+  top: 5px;
+  height: 14px;
+  font-size: 5.5px;
+}
+
+.name {
+  left: 5px;
+  width: 86px;
+}
+
+.tier {
+  right: 5px;
+  width: 54px;
+}
+
+.meter {
+  position: absolute;
+  left: 100px;
+  top: 5px;
+  width: 151px;
+  height: 14px;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-size: 4.5px;
+}
+
+.bar {
+  position: relative;
+  width: 94px;
+  height: 6px;
+  border-radius: 1px;
+  background: #3c4e2f;
+  overflow: hidden;
+}
+
+.bar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #bac995;
+  transition: width 0.25s ease-out;
+}
+
+/* The dark panel along the bottom. */
+.panel {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: 203px;
+  height: 33px;
+  justify-content: flex-start;
+}
+
+/* A word that pops up over the scene ("THUNK", "TIMBER!"). */
+.pop {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #f4f8dc;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  text-shadow:
+    0 0 1px #111a10,
+    0.75px 0.75px 0 #111a10;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: pop 0.8s ease-out forwards;
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -110%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop {
+    animation-timing-function: steps(1);
+  }
+
+  .bar > span {
+    transition: none;
+  }
+}

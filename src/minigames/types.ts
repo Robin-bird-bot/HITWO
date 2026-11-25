@@ -32,6 +32,21 @@ export interface MinigameResult {
   energy?: string;
   /** Hits each hiker took (Dodge): "Mom: 1 hit". Every hit will count for the challenge's effect later. */
   hits?: Record<string, number>;
+  /** What each hiker pays (shown on the results card; applied once challenges run from tiles). */
+  pays?: Record<string, Pay>;
+  /**
+   * A passing challenge (docs/design/14-minigames-trail-blocks.md, section 1):
+   * who moves onto the tile, who goes back, and whether the challenge stays
+   * on the tile (face up) because nobody got past.
+   */
+  passing?: { moveOn: string[]; goBack: string[]; stays: boolean };
+}
+
+/** A cost: energy, resources lost at random, and conditions gained. */
+export interface Pay {
+  energy?: number;
+  resources?: number;
+  conditions?: string[];
 }
 
 /** One setting on the testing tab. */

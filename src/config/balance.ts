@@ -1202,6 +1202,141 @@ export const BALANCE = {
       lineDrawMs: 250,
     },
 
+    /** Tinted art (sleeves, hikers): the gray parts become the hiker's color at this brightness. TODO(wyatt): [70%]. */
+    tintShade: 0.7,
+
+    /*
+     * New challenges, step 1 (Phase 10.8 step 5, docs/design/14-minigames-trail-blocks.md).
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     */
+
+    /**
+     * Passing challenges: hikers who pass move onto the tile; the rest go
+     * back and pay. If nobody passes, everyone loses at least this much
+     * energy by tier, and the challenge stays on the tile, face up.
+     */
+    passing: {
+      nobodyEnergy: { 1: 1, 2: 1, 3: 2 } as Readonly<Record<1 | 2 | 3, number>>,
+    },
+
+    /** Trail Blocks: a first-person timing game in four versions, sharing an energy bar of each hiker's chunk. */
+    trailBlocks: {
+      /** Each hiker's chunk of the energy bar. Running out costs a hiker this much real energy. */
+      chunk: 24,
+      ranOutEnergy: 1,
+      /** A swing costs this; a miss costs this (in all); a perfect swing gives this back. */
+      swingCost: 2,
+      missCost: 4,
+      perfectRefund: 1,
+      /** Work to clear: a base and more per hiker, by tier. */
+      work: {
+        1: { base: 50, perHiker: 25 },
+        2: { base: 60, perHiker: 30 },
+        3: { base: 70, perHiker: 35 },
+      } as Readonly<Record<1 | 2 | 3, { base: number; perHiker: number }>>,
+      /** A good swing does this much work by accuracy; a perfect one (the best share of the zone) does this. */
+      good: [8, 14] as const,
+      perfect: 16,
+      perfectShare: 0.15,
+      /** After each swing, input waits this long while it plays. */
+      swingSec: 0.35,
+      /** Chop Tree: one pass of the marker across the bar, and each green zone (a share of the bar). */
+      chop: {
+        passSec: { 1: 1.2, 2: 1.0, 3: 0.8 } as Readonly<Record<1 | 2 | 3, number>>,
+        zone: { 1: 0.16, 2: 0.12, 3: 0.09 } as Readonly<Record<1 | 2 | 3, number>>,
+      },
+      /** Mine Rockslide: the power bar fills to the top this fast; the green zone is this tall. */
+      rockslide: {
+        fillSec: { 1: 1.0, 2: 0.85, 3: 0.7 } as Readonly<Record<1 | 2 | 3, number>>,
+        zone: { 1: 0.24, 2: 0.18, 3: 0.13 } as Readonly<Record<1 | 2 | 3, number>>,
+      },
+      /** River Flood: this many spots, each this wide, on a bar crossed this fast. The water's top goes from here down to here. */
+      river: {
+        spots: { 1: 4, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+        spot: { 1: 0.1, 2: 0.08, 3: 0.06 } as Readonly<Record<1 | 2 | 3, number>>,
+        passSec: { 1: 1.3, 2: 1.1, 3: 0.9 } as Readonly<Record<1 | 2 | 3, number>>,
+        waterTop: [128, 196] as const,
+      },
+      /**
+       * Clearing Animals: a ring this big at this spot; a circle starts this
+       * many times its size and shrinks to nothing this fast; the ring is
+       * this thick. Just outside it (this far) is a weak hit for this much
+       * work. The crowd starts this big (my guess).
+       */
+      animals: {
+        ring: { x: 160, y: 64, r: 26 },
+        startScale: 2.2,
+        shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0 } as Readonly<Record<1 | 2 | 3, number>>,
+        thickness: { 1: 10, 2: 8, 3: 6 } as Readonly<Record<1 | 2 | 3, number>>,
+        weakReach: 5,
+        weakWork: 4,
+        crowd: 8,
+      },
+    },
+
+    /** Sleeping Bear: red light, green light past a sleeping bear, one hiker at a time. */
+    sleepingBear: {
+      tiers: {
+        1: { asleep: [2.5, 4.5], stirSec: 0.9, awake: [1.5, 2.5], fakeOut: 0, secPerHiker: 9 },
+        2: { asleep: [2, 4], stirSec: 0.7, awake: [1.5, 2.5], fakeOut: 0.3, secPerHiker: 8 },
+        3: { asleep: [1.5, 3.5], stirSec: 0.5, awake: [1.5, 2.5], fakeOut: 0.4, secPerHiker: 7 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            asleep: readonly [number, number];
+            stirSec: number;
+            awake: readonly [number, number];
+            fakeOut: number;
+            secPerHiker: number;
+          }
+        >
+      >,
+      /** Moving within this long after his eyes open is forgiven. */
+      graceSec: 0.12,
+      /** Walking speed and the path's length (scene units). */
+      speed: 45,
+      path: 272,
+      /** After a catch, the next hiker starts this long later (my guess). */
+      roarSec: 1,
+      /** The testing tab's Fake-outs "On" on Tier I uses Tier II's chance. */
+      fakeOutOn: 0.3,
+      /** What being caught costs (resources lost and a condition), and running out of time. */
+      caught: { resources: 1, condition: 'bleeding' },
+      timeOutEnergy: 1,
+    },
+
+    /** Whackoon: whack-a-mole with raccoons in trash cans; skunks are decoys. */
+    whackoon: {
+      tiers: {
+        1: { cols: 3, upSec: 1.0, everySec: 0.7, maxUp: 2, skunks: 0, targetPerHiker: 8 },
+        2: { cols: 3, upSec: 0.8, everySec: 0.55, maxUp: 3, skunks: 0.15, targetPerHiker: 9 },
+        3: { cols: 4, upSec: 0.6, everySec: 0.45, maxUp: 3, skunks: 0.25, targetPerHiker: 10 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            cols: number;
+            upSec: number;
+            everySec: number;
+            maxUp: number;
+            skunks: number;
+            targetPerHiker: number;
+          }
+        >
+      >,
+      /** Each hiker's turn; a raccoon peeks this long first; a whacked one bonks this long (my guess). */
+      turnSec: 10,
+      peekSec: 0.15,
+      bonkSec: 0.3,
+      /** A whacked skunk fogs the cans this long and takes this much off the turn. */
+      sprayFogSec: 1,
+      sprayCostSec: 2,
+      /** The testing tab's Skunks "On" on Tier I uses Tier II's chance. A failed team loses this much energy each. */
+      skunksOn: 0.15,
+      failEnergy: 1,
+    },
+
     /*
      * The third batch of minigames (Phase 10.8 step 4, docs/design/13-minigames-puzzles-2.md).
      * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.

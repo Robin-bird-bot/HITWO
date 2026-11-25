@@ -17,9 +17,12 @@ import {
   MINIGAMES_BY_CATEGORY,
   PICTURE_PUZZLE,
   REMEMBER_PATH,
+  SLEEPING_BEAR,
   THIN_ICE,
   TRAILDLE,
+  TRAIL_BLOCKS,
   TRAIL_MAP,
+  WHACKOON,
 } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
@@ -162,12 +165,41 @@ describe('the minigame list', () => {
         ],
       ],
       ['Search', [['Find the Object', 'ready']]],
-      ['Reaction and timing', [['Fly Swatter', 'soon']]],
+      [
+        'Reaction and timing',
+        [
+          ['Trail Blocks', 'ready'],
+          ['Sleeping Bear', 'ready'],
+          ['Whackoon', 'ready'],
+          ['Fly Swatter', 'soon'],
+        ],
+      ],
       ['Guess and luck', [['Bearrels', 'ready']]],
     ]);
     const listed = MINIGAMES_BY_CATEGORY.flatMap((c) => c.games);
     expect(listed).toHaveLength(MINIGAMES.length);
     expect(MINIGAMES.some((m) => m.id === 'trailMemory')).toBe(false);
+  });
+
+  it('the new challenges’ settings: Trail Blocks’ version and hit quality, fake-outs and skunks', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
+    expect(ids(TRAIL_BLOCKS)).toEqual(['version', 'tier', 'hikers', 'quality']);
+    expect(ids(SLEEPING_BEAR)).toEqual(['tier', 'hikers', 'fakeOuts']);
+    expect(ids(WHACKOON)).toEqual(['tier', 'hikers', 'skunks']);
+    const version = TRAIL_BLOCKS.settings[0];
+    if (version?.kind !== 'pick') throw new Error('Version is a pick');
+    expect(version.options.map((o) => o.label)).toEqual([
+      'Chop Tree',
+      'Mine Rockslide',
+      'River Flood',
+      'Clearing Animals',
+    ]);
+    expect(defaultSettings(TRAIL_BLOCKS)).toMatchObject({ version: 'chop', quality: 'off' });
+    expect(defaultSettings(SLEEPING_BEAR)).toMatchObject({ fakeOuts: 'auto' });
+    expect(cleanSettings(WHACKOON, { skunks: 'maybe' }, TEST_HIKERS).skunks).toBe('auto');
+    expect([TRAIL_BLOCKS, SLEEPING_BEAR, WHACKOON].every((m) => m.category === 'reaction')).toBe(
+      true,
+    );
   });
 
   it('the third batch’s settings, and timers that can be switched off', () => {

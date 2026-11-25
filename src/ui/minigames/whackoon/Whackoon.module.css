@@ -1,0 +1,134 @@
+/* Whackoon (6-whackoon.png), in scene units (320 × 240). */
+
+.play {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+  cursor: none;
+}
+
+.bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 196px;
+}
+
+.can {
+  position: absolute;
+  width: 36px;
+  height: 40px;
+}
+
+.critter {
+  position: absolute;
+  width: 36px;
+  height: 30px;
+  transition: transform 0.08s ease-out;
+}
+
+/* Peeking: still low in the can. */
+.critter[data-peek] {
+  transform: translateY(6px);
+}
+
+.stars {
+  position: absolute;
+  width: 24px;
+  height: 12px;
+}
+
+.fog {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: fog 1s ease-out forwards;
+}
+
+.fog > img {
+  position: absolute;
+  width: 70px;
+  height: 50px;
+  transform: scale(1.6);
+}
+
+@keyframes fog {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.pan {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.big {
+  font-size: 11px;
+  animation-duration: 1.6s;
+}
+
+/* The bottom bar. */
+.team {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-left: 6px;
+  width: 50px;
+  font-size: 3.6px;
+}
+
+.teamCount {
+  font-size: 5.5px;
+}
+
+.hikers {
+  display: flex;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border: 0.75px solid transparent;
+  border-radius: 2px;
+}
+
+.who[data-active] {
+  border-color: #d3dfaf;
+}
+
+.whoWords {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 4px;
+}
+
+.whacked {
+  color: #a0b37d;
+  font-size: 3.2px;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .critter {
+    transition: none;
+  }
+}
