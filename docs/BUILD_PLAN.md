@@ -1576,6 +1576,23 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - Darkness light radius [24].
 - **Not done:** real art for the paw, the cultists' poses and the monster, sound, and an animated GPS preview.
 
+### Phase 10.8, step 4: Trail Map, Memory Puzzle, Picture Puzzle and Thin Ice, test version
+
+(New in the Nov 25 update: `docs/UPDATE-2026-11-25-puzzle-games.md`. The design is `docs/design/13-minigames-puzzles-2.md`. Mockups in `docs/mockups/minigames/puzzles-2/`. Placeholder art in `public/assets/minigames/trail-map/`, `memory/`, `picture-puzzle/` and `thin-ice/`.)
+
+**Goal:** test versions of four more puzzle and memory games, playable from the Minigame testing tab, and the tab's game list grouped by category. No Prepare options yet. Keep everything already built.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by game and tier.
+
+**Build**
+1. **Trail Map:** turn trail tiles (click clockwise; right-click or Shift + click the other way; arrow keys and Space) to connect each hiker's trailhead to the exit. Boards are made from solution trails, filled in, then scrambled; Tiers II and III lock a few solution tiles. Connected tiles light up. Mode: One at a time (a hiker passes the moment they connect) or Together. Time [60], [75] or [90 s], +[20 s] per extra hiker.
+2. **Memory Puzzle:** match snack cards, each set drawn in its hiker's color; sets dealt evenly. A [1 s] preview; visible swaps on Tiers II and III; misses [6], [5], [4]; a timer on Tiers II and III; sets of 3 on Tier III. When misses or time run out, hikers with sets left fail.
+3. **Picture Puzzle:** drag pieces from stacked piles (only the top shows) onto a grid; pieces snap to any empty cell, can move again or go back on a pile; Tier I locks correct pieces. Hikers play in pairs, two pictures sharing one tray. [3 s] per piece.
+4. **Thin Ice:** Minesweeper on a frozen lake. The first tap is safe and opens a patch; numbers count the holes around; flags by right-click, long press or the FLAG button. A hole takes out the hiker at the front of the line, and play goes on. Holes: a base by tier + [2] per hiker.
+5. **Testing tab:** the game list grouped by category; the four games with their settings.
+
+**Tests:** as in `13-minigames-puzzles-2.md`, section 6.
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.
