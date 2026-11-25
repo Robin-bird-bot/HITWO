@@ -1,6 +1,6 @@
 /**
  * Bearrels (docs/design/10-minigames.md, "Bearrels"), played on the turned
- * party GPS's 4:3 screen (1280 × 960), in any of the three art styles.
+ * party GPS's 4:3 screen (1280 × 960), in either version of the GPS greens.
  *
  * Each round: drag each hiker to a barrel (or tap a hiker, then a barrel),
  * until everyone still in is placed, then Ready. The bear pops up, the
@@ -10,7 +10,7 @@
  * different barrel. The bear ducks, and the next round starts with everyone
  * where they were. After the last round, or once everyone is out, a results card.
  *
- * The style only changes how the scene is drawn (./Scene.tsx): switching it
+ * The version only changes how the scene is drawn (./Scene.tsx): switching it
  * mid-round keeps every hiker's barrel, the round and who is out.
  *
  * Mouse, touch or keyboard (1–4, ← →, Enter or Space). Reduced motion: no
@@ -48,6 +48,7 @@ import { sceneHikers, type BearPose, type SceneModel } from '../../../minigames/
 import {
   barrelAt,
   FILL,
+  frameFor,
   GAME,
   hikerCenters,
   pixelFrame,
@@ -318,7 +319,9 @@ export function BearrelsGame({
     const at = game.placed[p.id];
     if (p.from === 'scene' && at !== undefined) {
       const group = behind(game, at);
-      const spot = hikerCenters(style, n, at, group.length, frame)[group.indexOf(p.id)];
+      const spot = hikerCenters(style, n, at, group.length, frameFor(style, frame))[
+        group.indexOf(p.id)
+      ];
       if (spot) return spot;
     }
     const r = tokenRefs.current.get(p.id)?.getBoundingClientRect();
@@ -335,7 +338,7 @@ export function BearrelsGame({
       }
       e.preventDefault();
       const p = toGame(e.clientX, e.clientY);
-      setPress({ ...press, dragging: true, ...p, over: barrelAt(style, n, p, frame) });
+      setPress({ ...press, dragging: true, ...p, over: barrelAt(n, p, frameFor(style, frame)) });
     };
     const up = (e: PointerEvent) => {
       if (e.pointerId !== press.pointerId) return;
@@ -346,7 +349,7 @@ export function BearrelsGame({
         ignoreClick.current = false;
       }, 0);
       const p = toGame(e.clientX, e.clientY);
-      const over = barrelAt(style, n, p, frame);
+      const over = barrelAt(n, p, frameFor(style, frame));
       if (over !== null && canDrag(game, press.id)) {
         setGame(drop(game, press.id, over));
         playSound('place');
@@ -467,7 +470,7 @@ export function BearrelsGame({
       )}
 
       <span className={`${styles.pill} ${styles.round}`} style={pill}>
-        ROUND {game.round} / {game.settings.rounds}
+        R {game.round}/{game.settings.rounds}
       </span>
       <span
         className={`${styles.pill} ${styles.prompt}`}
@@ -475,13 +478,14 @@ export function BearrelsGame({
         data-bad={prompt.bad || undefined}
         role="status"
       >
-        {prompt.text}
+        {prompt.text.toUpperCase()}
       </span>
       <span
         className={`${styles.pill} ${styles.shots}`}
         style={pill}
         aria-label={`${game.settings.shots} shot${game.settings.shots === 1 ? '' : 's'} a round`}
       >
+        <span className={styles.shotsWord}>SHOTS</span>
         {Array.from({ length: game.settings.shots }, (_, i) => (
           <svg key={i} width="26" height="26" viewBox="-100 -100 200 200" aria-hidden="true">
             <g stroke="currentColor" strokeWidth="18" fill="none">

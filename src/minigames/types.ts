@@ -9,18 +9,14 @@
  * touch, and tap, then tap always works too (Nov 24 follow-up).
  */
 
-/** A hiker in a minigame: who, their color (rim light and portrait ring) and silhouette shape. */
+/** A hiker in a minigame: who, and their color (their portrait ring and their figure). */
 export interface MinigameHiker {
   id: string;
   name: string;
   color: string;
-  shape: SilhouetteShape;
   /** The id their minigame art uses (hiker-<art>-100.png): Grandpa Wink is "wink". */
   art: string;
 }
-
-/** The silhouette each hiker is drawn as (layout.json `shapes`). */
-export type SilhouetteShape = 'dog-floppy' | 'dog-fluffy' | 'hat' | 'messy' | 'curly' | 'bald';
 
 /** How a minigame ended: who was safe, and who was hit in which round. */
 export interface MinigameResult {

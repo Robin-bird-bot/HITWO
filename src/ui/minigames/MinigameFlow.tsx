@@ -148,6 +148,7 @@ export function MinigameFlow({
           mode={stage === 'playing' ? 'game' : 'preview'}
           showContent={stage === 'popup' || stage === 'playing'}
           moved={moved}
+          playing={stage === 'playing'}
           content={
             stage === 'playing' && Run ? (
               <Run key={seed} settings={settings} hikers={hikers} seed={seed} onDone={done} />

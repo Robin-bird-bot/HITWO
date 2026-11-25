@@ -1,85 +1,226 @@
 {
-  "viewBox_16x9": [
-    0,
-    0,
-    1280,
-    720
+  "sceneSize": [
+    320,
+    240
   ],
-  "viewBox_4x3": [
-    0,
-    -120,
-    1280,
-    960
+  "note": "All positions are in scene units (320 x 240). gps-pixel files are 1 px per unit: scale up with nearest-neighbour (image-rendering: pixelated). gps-drawn files are 4 px per unit: draw them at 1/4 size in scene units, with normal smoothing.",
+  "pxPerUnit": {
+    "gps-pixel": 1,
+    "gps-drawn": 4
+  },
+  "drawOrder": [
+    "background",
+    "bear",
+    "log",
+    "barrel shadows",
+    "barrels",
+    "hikers",
+    "foreground",
+    "crosshair",
+    "muzzle-flash",
+    "hit flash (red, full screen)"
   ],
-  "extend_for_4x3": {
-    "sky": {
-      "rect": [
-        0,
-        -120,
-        1280,
-        130
-      ],
-      "fill": "#FCE6BE"
+  "background": [
+    0,
+    0
+  ],
+  "foreground": [
+    0,
+    192
+  ],
+  "log": [
+    115,
+    146
+  ],
+  "bear": {
+    "hidden": {
+      "file": "bear-hidden.png",
+      "at": [
+        116.0,
+        124
+      ]
     },
-    "ground": {
-      "rect": [
-        0,
-        700,
-        1280,
-        140
+    "aim": {
+      "center": {
+        "file": "bear-aim-center.png",
+        "at": [
+          116.0,
+          68
+        ]
+      },
+      "left": {
+        "file": "bear-aim-side.png",
+        "at": [
+          116.0,
+          68
+        ]
+      },
+      "right": {
+        "file": "bear-aim-side.png",
+        "mirror": true,
+        "at": [
+          116.0,
+          68
+        ]
+      }
+    },
+    "poseRule": "pick the pose from the crosshair x (it follows the crosshair while it sweeps): x < 130 -> left, x > 190 -> right, otherwise center",
+    "muzzle": {
+      "center": [
+        151.0,
+        112
       ],
-      "fill": "#4A1428"
+      "left": [
+        139.0,
+        115
+      ],
+      "right": [
+        181.0,
+        115
+      ]
+    },
+    "popUp": "hidden -> aim: the aim sprite slides up from 18 units lower with a small bounce. Clip the bear to y < 160 so nothing shows below the log.",
+    "clipBelowY": 160
+  },
+  "muzzleFlash": {
+    "file": "muzzle-flash.png",
+    "size": [
+      34,
+      34
+    ],
+    "centerOn": "bear.muzzle[pose]"
+  },
+  "crosshair": {
+    "file": "crosshair.png",
+    "size": [
+      28,
+      28
+    ],
+    "centerOn": "[barrel.x, barrelBottom - barrel.h * 0.55]"
+  },
+  "barrelBottom": 214,
+  "barrels": {
+    "3": {
+      "file": "barrel-34.png",
+      "w": 34,
+      "h": 42,
+      "x": [
+        64.0,
+        160.0,
+        256.0
+      ],
+      "top": 172,
+      "pose": [
+        "left",
+        "center",
+        "right"
+      ]
+    },
+    "4": {
+      "file": "barrel-34.png",
+      "w": 34,
+      "h": 42,
+      "x": [
+        64.0,
+        128.0,
+        192.0,
+        256.0
+      ],
+      "top": 172,
+      "pose": [
+        "left",
+        "left",
+        "right",
+        "right"
+      ]
+    },
+    "5": {
+      "file": "barrel-32.png",
+      "w": 32,
+      "h": 40,
+      "x": [
+        64.0,
+        112.0,
+        160.0,
+        208.0,
+        256.0
+      ],
+      "top": 174,
+      "pose": [
+        "left",
+        "left",
+        "center",
+        "right",
+        "right"
+      ]
+    },
+    "6": {
+      "file": "barrel-26.png",
+      "w": 26,
+      "h": 32,
+      "x": [
+        64.0,
+        102.4,
+        140.8,
+        179.2,
+        217.6,
+        256.0
+      ],
+      "top": 182,
+      "pose": [
+        "left",
+        "left",
+        "center",
+        "center",
+        "right",
+        "right"
+      ]
     }
   },
-  "barrelTop": 418,
-  "rowX": [
-    150,
-    1130
-  ],
-  "barrelWidth": "min(150, 980/(n-1)*0.7); a single barrel is 150 wide at x 640",
-  "barrelHeight": "width*1.06",
+  "shadow": {
+    "file": "shadow-{w}.png",
+    "at": "[barrel.x - barrel.w * 0.7 + 3, barrelBottom - 3]"
+  },
   "hikers": {
-    "scale": "1.05 alone, 0.8 for two, 0.6 for three or four, times min(1, width/150)",
-    "spacing": "76*scale",
-    "headCenterY": "barrelTop - 56*scale"
+    "files": "hiker-{id}-{100|80|62}.png",
+    "height": 42,
+    "scaleByCount": {
+      "1": 100,
+      "2": 80,
+      "3": 62,
+      "4": 62
+    },
+    "spreadByCount": {
+      "1": 0,
+      "2": 0.5,
+      "3": 0.62,
+      "4": 0.72
+    },
+    "centers": "one hiker: barrel.x. g hikers: spread = barrel.w * spreadByCount[g]; k-th center = barrel.x - spread/2 + spread * k/(g-1)",
+    "top": "barrelBottom - barrel.h * 0.82 + (1 - scale) * 8   (scale = 1, 0.8 or 0.62)",
+    "note": "Hikers crouch in front of their barrel, backs to us. The foreground grass hides their lower half."
   },
-  "hikerColors": {
-    "finn": "#E2683C",
-    "ellie": "#4A8FD4",
-    "mom": "#EBC04A",
-    "wyatt": "#6FBF5A",
-    "gdog": "#B06BD0",
-    "wink": "#3FB8B0"
-  },
-  "shapes": {
-    "finn": "dog-floppy",
-    "ellie": "dog-fluffy",
-    "mom": "hat",
-    "wyatt": "messy",
-    "gdog": "curly",
-    "wink": "bald"
-  },
-  "inks": {
-    "sky0": "#FCE6BE",
-    "sky1": "#F8C68A",
-    "sky2": "#F39A5E",
-    "sun": "#FFF1D6",
-    "cloud": "#FFF6E4",
-    "l1": "#F6A86C",
-    "l2": "#F08A4B",
-    "l3": "#E2683C",
-    "l4": "#C8423A",
-    "l5": "#9C2F3A",
-    "rock": "#6E1F35",
-    "ground": "#4A1428",
-    "ground2": "#3A0F22",
-    "sil": "#2A0A18",
-    "bear": "#3A0F22",
-    "rim": "#FFB36E",
-    "hoop": "#5A1A30",
-    "bird": "#7A2433",
-    "cream": "#FFF1D6",
-    "red": "#E5483A"
-  },
-  "note": "The SVG parts are in art/bearrels/ from the previous update. This file replaces that layout.json (its barrelWidth line was out of date)."
+  "colors": {
+    "lcdGreens": [
+      "#111A10",
+      "#1D2918",
+      "#2B3A23",
+      "#3C4E2F",
+      "#52653F",
+      "#6A7E51",
+      "#859A66",
+      "#A0B37D",
+      "#BAC995",
+      "#D3DFAF"
+    ],
+    "hikers": {
+      "finn": "#E2683C",
+      "ellie": "#4A8FD4",
+      "mom": "#EBC04A",
+      "wyatt": "#6FBF5A",
+      "gdog": "#B06BD0",
+      "wink": "#3FB8B0"
+    },
+    "red": "#C8423A"
+  }
 }

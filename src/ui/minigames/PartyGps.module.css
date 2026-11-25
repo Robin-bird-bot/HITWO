@@ -162,18 +162,56 @@
   }
 }
 
-/* Faint scanlines: a 6% dark line every 3 px. */
+/*
+ * Scanlines on the glass: 1-px lines about 8% dark, every 3 px. They turn
+ * with the GPS (up and down once it's sideways). During play they drift.
+ */
 .scanlines {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.06) 0,
-    rgba(0, 0, 0, 0.06) 1px,
+    rgba(0, 0, 0, var(--scan-dark, 0.08)) 0,
+    rgba(0, 0, 0, var(--scan-dark, 0.08)) 1px,
     transparent 1px,
-    transparent 3px
+    transparent var(--scan-every, 3px)
   );
+}
+
+.scanlines[data-drift] {
+  animation: scanDrift var(--scan-ms) linear infinite;
+}
+
+@keyframes scanDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 var(--scan-every, 3px);
+  }
+}
+
+/* A soft, slightly brighter band sweeping across the screen. */
+.band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--band-share, 15%);
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 240, 0.07) 50%, transparent);
+  transform: translateY(-100%);
+  animation: bandSweep var(--band-ms) linear infinite;
+}
+
+@keyframes bandSweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(calc(100% * 100 / 15));
+  }
 }
 
 /* A faint glass sheen in the top-left corner. */

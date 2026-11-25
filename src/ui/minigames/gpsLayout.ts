@@ -132,3 +132,16 @@ export function styleButtonSpot(turned: TurnedGps): { left: number; top: number 
     top: Math.max(10, turned.body.top + 60),
   };
 }
+
+/**
+ * What the scanlines do: they belong to the glass, so they turn with the GPS
+ * (across when upright, up and down once turned). During play they drift
+ * sideways and a soft band sweeps across; with reduced motion they stay still.
+ */
+export function scanlineMotion(
+  playing: boolean,
+  reduced: boolean,
+): { drift: boolean; band: boolean } {
+  const moving = playing && !reduced;
+  return { drift: moving, band: moving };
+}

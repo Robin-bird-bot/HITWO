@@ -215,6 +215,11 @@
   position: absolute;
 }
 
+/* Drawn 2D: normal smoothing. */
+.smooth {
+  image-rendering: auto;
+}
+
 .spriteFill {
   width: 100%;
   height: 100%;
@@ -254,11 +259,11 @@
 .pxOutline {
   position: absolute;
   box-sizing: border-box;
-  border: 4px dashed #fff1d6;
+  border: 4px dashed #d3dfaf;
   border-radius: 6px;
   box-shadow:
-    0 0 16px 3px rgba(255, 241, 214, 0.7),
-    inset 0 0 10px rgba(255, 241, 214, 0.35);
+    0 0 16px 3px rgba(211, 223, 175, 0.75),
+    inset 0 0 10px rgba(211, 223, 175, 0.35);
   pointer-events: none;
 }
 
@@ -347,20 +352,23 @@
   }
 }
 
-/* ── The in-game UI ── */
+/* ── The in-game UI: GPS-look boxes (dark green, light border, pixel font) ── */
 
 .pill {
   position: absolute;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   box-sizing: border-box;
   padding: 0 20px;
-  border-radius: 23px;
-  background: rgba(42, 10, 24, 0.72);
-  color: #fff1d6;
-  font-weight: 700;
-  font-size: 24px;
+  border: 3px solid #bac995;
+  border-radius: 6px;
+  background: #1d2918;
+  box-shadow: 0 5px 0 #111a10;
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
@@ -376,12 +384,17 @@
 }
 
 .prompt[data-bad] {
-  background: rgba(200, 50, 40, 0.92);
+  background: #c8423a;
+  border-color: #d3dfaf;
 }
 
 .shots {
   right: 18px;
   padding: 0 14px;
+}
+
+.shotsWord {
+  font-size: 18px;
 }
 
 /* Places and sizes come from UI in src/minigames/bearrels/styles.ts. */
@@ -390,22 +403,25 @@
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  border-radius: 18px;
-  background: rgba(42, 10, 24, 0.72);
+  border: 3px solid #bac995;
+  border-radius: 6px;
+  background: #1d2918;
+  box-shadow: 0 5px 0 #111a10;
 }
 
 .token {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   padding: 0;
   border: none;
   background: none;
-  color: #fff1d6;
-  font-family: var(--font-body);
-  font-weight: 700;
-  font-size: 15px;
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: grab;
   touch-action: none;
   transition: transform 0.15s ease;
@@ -441,7 +457,7 @@
 
 /* Being dragged: the token's spot shows an empty ring. */
 .token[data-lifted] .face {
-  background: rgba(42, 10, 24, 0.6);
+  background: rgba(17, 26, 16, 0.6);
 }
 
 .token[data-lifted] .portrait,
@@ -506,7 +522,7 @@
   height: 100%;
   margin-left: -4px;
   border-radius: 4px;
-  background: #e5483a;
+  background: #c8423a;
   transform: rotate(45deg);
 }
 
@@ -521,37 +537,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #fff1d6;
-  color: #2a0a18;
-  font-size: 15px;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: #d3dfaf;
+  color: #1d2918;
+  font-family: var(--font-pixel);
+  font-size: 14px;
   box-shadow: 0 0 0 3px var(--c);
 }
 
 .tokenName {
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1;
 }
 
+/* Ready: light green with dark text when lit; dim when not. */
 .ready {
   position: absolute;
   padding: 0;
-  border: none;
-  border-radius: 14px;
-  background: #fff1d6;
-  color: #2a0a18;
-  font-family: var(--font-body);
-  font-weight: 800;
-  font-size: 26px;
-  letter-spacing: 0.08em;
-  box-shadow: inset 0 -5px 0 #d9b98a;
+  border: 3px solid #d3dfaf;
+  border-radius: 6px;
+  background: #bac995;
+  color: #1d2918;
+  font-family: var(--font-pixel);
+  font-size: 28px;
+  letter-spacing: 0.12em;
+  box-shadow: 0 5px 0 #3c4e2f;
   cursor: pointer;
 }
 
 .ready:disabled {
-  background: rgba(255, 241, 214, 0.22);
-  color: rgba(255, 241, 214, 0.5);
+  border-color: #52653f;
+  background: rgba(29, 41, 24, 0.55);
+  color: #6a7e51;
   box-shadow: none;
   cursor: default;
 }
@@ -570,7 +588,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(42, 10, 24, 0.55);
+  background: rgba(17, 26, 16, 0.55);
 }
 
 .card {

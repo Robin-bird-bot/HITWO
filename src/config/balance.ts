@@ -1021,6 +1021,12 @@ export const BALANCE = {
       dim: 0.35,
       /** The upright GPS loops its preview of the game about this often. */
       previewLoopMs: 6000,
+      /**
+       * The scanlines on the GPS glass (gps-greens update): 1-px lines this dark,
+       * every this many px; during play they drift sideways this fast, and a
+       * soft brighter band this share of the screen wide sweeps across this often.
+       */
+      scanlines: { dark: 0.08, everyPx: 3, driftPxPerSec: 10, bandShare: 0.15, bandEveryMs: 6000 },
     },
     bearrels: {
       barrels: { min: 3, max: 6, default: 3 },

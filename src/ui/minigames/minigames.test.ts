@@ -16,6 +16,7 @@ import {
   gpsTransform,
   gpsTurned,
   gpsUpright,
+  scanlineMotion,
   styleButtonSpot,
 } from './gpsLayout';
 import {
@@ -95,6 +96,14 @@ describe('the party GPS', () => {
     expect([G.turnMs, G.returnMs]).toEqual([700, 500]);
   });
 
+  it('scanlines drift and a band sweeps across during play; with reduced motion they stay still', () => {
+    expect(scanlineMotion(true, false)).toEqual({ drift: true, band: true });
+    expect(scanlineMotion(true, true)).toEqual({ drift: false, band: false });
+    // Upright in the pop-up they stand still.
+    expect(scanlineMotion(false, false)).toEqual({ drift: false, band: false });
+    expect(G.scanlines).toMatchObject({ dark: 0.08, everyPx: 3, driftPxPerSec: 10 });
+  });
+
   it('the Style button sits on the turned body, beside the screen, on the stage', () => {
     for (const phone of [false, true]) {
       const t = gpsTurned(phone);
@@ -118,10 +127,10 @@ describe('the minigame list', () => {
     ]);
   });
 
-  it('Bearrels’ settings: art style (Earthy pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
+  it('Bearrels’ settings: art style (Detailed pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
     expect(BEARRELS.settings[0]).toMatchObject({ kind: 'style', label: 'Art style' });
     expect(defaultSettings(BEARRELS)).toEqual({
-      style: 'earth',
+      style: 'pixel',
       barrels: 3,
       rounds: 3,
       shots: 1,
@@ -142,16 +151,17 @@ describe('the minigame list', () => {
         TEST_HIKERS,
       ),
     ).toEqual({
-      style: 'earth',
+      style: 'pixel',
       barrels: 6,
       rounds: 1,
       shots: 1,
       hikers: ['finn', 'ellie', 'mom', 'wyatt'],
     });
     // A known style is kept; anything else is Earthy pixel.
-    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('teal');
-    expect(cleanSettings(BEARRELS, { style: 'neon' }, TEST_HIKERS).style).toBe('earth');
-    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('earth');
+    expect(cleanSettings(BEARRELS, { style: 'drawn' }, TEST_HIKERS).style).toBe('drawn');
+    // An old style (Earthy, Teal, Silhouette) or anything else: Detailed pixel.
+    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('pixel');
+    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('pixel');
     // No hikers left: back to the default.
     expect(cleanSettings(BEARRELS, { hikers: ['cody'] }, TEST_HIKERS).hikers).toEqual([
       'finn',
@@ -160,24 +170,17 @@ describe('the minigame list', () => {
     ]);
   });
 
-  it('each hiker’s color and silhouette (layout.json); Grandpa Wink is Wink', () => {
-    expect(minigameHiker('finn')).toMatchObject({
-      color: '#E2683C',
-      shape: 'dog-floppy',
-      art: 'finn',
-    });
+  it('each hiker’s color (layout.json); Grandpa Wink is Wink', () => {
+    expect(minigameHiker('finn')).toMatchObject({ color: '#E2683C', art: 'finn' });
     expect(minigameHiker('grandpaWink')).toMatchObject({
       name: 'Wink',
       color: '#3FB8B0',
-      shape: 'bald',
       art: 'wink',
     });
     // A run's party color wins.
     expect(minigameHiker('mom', '#123456').color).toBe('#123456');
-    // A future hiker: a dog gets the floppy dog, anyone else the messy hair.
-    expect(minigameHiker('cody').shape).toBe('dog-floppy');
-    expect(minigameHiker('pearl').shape).toBe('dog-floppy');
-    expect(minigameHiker('ben').shape).toBe('messy');
+    // A future hiker without minigame art gets a plain color.
+    expect(minigameHiker('cody').color).toBe('#C9C2B2');
   });
 });
 
@@ -187,7 +190,7 @@ describe('test mode never touches the saved hike', () => {
     const { storage, data, writes } = fakeStorage({ [AUTOSAVE_KEY]: save });
     expect(readTestingSettings(storage, 'bearrels')).toEqual(defaultSettings(BEARRELS));
     const next = {
-      style: 'silhouette',
+      style: 'drawn',
       barrels: 5,
       rounds: 2,
       shots: 2,
