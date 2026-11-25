@@ -20,7 +20,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/09-hikers.md` | Skill Trails, party XP, morale types and the first 6 hikers' trees (Phase 10.7). The trees as data are in `docs/design/skill-trails/`. **Source of truth for hikers; wins over 07 and 08 where they disagree.** |
 | `docs/design/10-minigames.md` | The challenge pop-up, the vertical party GPS (preview, then turn and zoom), the GPS-greens art (Detailed pixel and Drawn 2D), Bearrels (with drag-and-drop) and the Minigame testing tab (Phase 10.8). |
 | `docs/design/11-minigames-puzzles.md` | The four puzzle minigames (Traildle, Find the Object, Remember the Path, Find the Path), the shared Line up step, and their testing-tab settings (Phase 10.8 step 2). |
-| `docs/design/12-minigames-dodge.md` | Dodge, the Undertale-style animal encounter (Bees, Bear with a Sword), and its testing-tab settings (Phase 10.8 step 3). |
+| `docs/design/12-minigames-dodge.md` | Dodge, the Undertale-style animal encounter (Bees, Bear, Bear with a Sword, Bobcat, Squirrel Army, Wild Predator Stampede), its shared attack library, and its testing-tab settings (Phase 10.8 steps 3 and 3b). |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |

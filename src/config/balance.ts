@@ -1203,8 +1203,12 @@ export const BALANCE = {
     },
 
     /**
-     * Dodge (Phase 10.8 step 3, docs/design/12-minigames-dodge.md): one party
-     * sprite dodges an animal's attacks in a box. TODO(wyatt): every number is a first guess.
+     * Dodge (Phase 10.8 steps 3 and 3b, docs/design/12-minigames-dodge.md):
+     * one party sprite dodges an animal's attacks in a box. Attacks come from
+     * a shared library; an animal is a box, a head and a list of attacks.
+     * TODO(wyatt): every number is a first guess, by attack and tier. Sizes,
+     * places and distances are in scene units (320 × 240), speeds in units a
+     * second. "From" is the first tier an attack or variant shows up on.
      */
     dodge: {
       tiers: {
@@ -1218,18 +1222,67 @@ export const BALANCE = {
       blinkSec: 1,
       /** After a hit, no more hits for this long. */
       safeSec: 1,
-      /** Every attack is warned this long before it can hit; the first comes this soon. */
+      /** Every attack is warned this long before it can hit (unless it says otherwise), never less than the minimum. */
       warnSec: 0.6,
+      warnMinSec: 0.35,
+      /** The first attack comes this soon. */
       firstAttackSec: 0.8,
-      /** The sprite's speed (scene units a second) and its forgiving hitbox (radius). */
+      /** The sprite's speed and its forgiving hitbox (radius). */
       moveSpeed: 80,
       hitRadius: 3,
-      /** The box grows or shrinks over this long. */
+      /** The box grows, shrinks or moves over this long. */
       boxEaseSec: 0.4,
       /** The touch joystick's knob goes this far from where the finger landed (screen px). */
       joystickPx: 24,
+      /**
+       * Each animal's box (width × height) and its middle on screen. The new
+       * boxes sit with their bottom at y 196, as in the mockups. "herd" is the
+       * Stampede's own box, for Herd rush (my guess, from 9-stampede.png).
+       */
+      animals: {
+        bees: { box: [120, 120], at: [160, 138] },
+        bear: { box: [140, 110], at: [160, 141] },
+        swordBear: { box: [180, 80], at: [160, 146] },
+        bobcat: { box: [150, 110], at: [160, 141] },
+        squirrels: { box: [130, 120], at: [160, 136] },
+        herd: { box: [160, 100], at: [160, 146] },
+      } as Readonly<
+        Record<
+          'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'herd',
+          { box: readonly [number, number]; at: readonly [number, number] }
+        >
+      >,
+      /**
+       * The first tier each attack shows up on (1 when not listed). The
+       * attacks marked Claude's idea are in attacks/claudesIdeas.ts.
+       */
+      unlocks: {
+        diagonal: 2,
+        zigzag: 2,
+        aimed: 3,
+        roar: 2,
+        hug: 2,
+        honey: 3,
+        xSlash: 3,
+        thrown: 3,
+        dash: 2,
+        landingSwipe: 3,
+        scurry: 2,
+      } as Readonly<Partial<Record<string, 1 | 2 | 3>>>,
+      /**
+       * Wild Predator Stampede: this much longer than the tier's length by
+       * default; no animal more than this many times in a row; on Tier III,
+       * this chance that a second animal's attack starts this long into the
+       * first (my guess at the chance).
+       */
+      stampede: {
+        extraSec: 10,
+        maxSameAnimal: 2,
+        overlapFrom: 3,
+        overlapChance: 0.35,
+        overlapAfterSec: 0.8,
+      },
       bees: {
-        box: [120, 120] as const,
         radius: 2.5,
         speed: 80,
         /** The two frames swap this often. */
@@ -1244,10 +1297,11 @@ export const BALANCE = {
         /** Aimed: this many bees, launched this far apart in time. */
         aimed: { bees: 4, staggerSec: 0.3 },
       },
-      bear: {
-        box: [180, 80] as const,
-        /** Tier III: the box sometimes shrinks to this for this many swings. */
+      /** Bear with a Sword's sweep (unchanged), and its shrinking box on Tier III. */
+      sword: {
+        /** Tier III: the box sometimes shrinks to this for this many of the bear's attacks. */
         shrunk: [140, 70] as const,
+        shrinkFrom: 3,
         shrinkChance: 0.3,
         shrinkSwings: 3,
         /** The sword is this long from its pivot (above the box); the blade is this thick. */
@@ -1263,8 +1317,176 @@ export const BALANCE = {
         sweepShrink: 0.03,
         sweepMinSec: 0.2,
         /** Tier II and up: sometimes a double swing, the second this long after the first. */
+        doubleFrom: 2,
         doubleChance: 0.35,
         doubleGapSec: 0.3,
+      },
+      /**
+       * Claws (Bear, Bear with a Sword, Bobcat): a row of claw marks this far
+       * apart, crossing the box. Each claw hits as a segment this long and
+       * thick. Curved swipes swing around a pivot this far outside a corner,
+       * over this much of a turn (my guesses), half the time once unlocked.
+       * Double: a second row from the opposite side this long after.
+       */
+      claws: {
+        count: { 1: 3, 2: 4, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
+        spacing: 9,
+        speed: 90,
+        length: 14,
+        thickness: 1,
+        curvedFrom: 2,
+        curvedChance: 0.5,
+        pivotOut: 24,
+        sweepDeg: 100,
+        doubleFrom: 3,
+        doubleDelaySec: 0.5,
+        /** Bobcat claws: this much faster, with this warning. Bear with a Sword's never double. */
+        bobcat: { speed: 1.25, warnSec: 0.5 },
+      },
+      /**
+       * Bite (Bear): jaws open around a zone this big for this long, then snap
+       * shut this fast. Tier III: two bites in a row.
+       */
+      bite: {
+        zone: [40, 26] as const,
+        openSec: 0.7,
+        snapSec: 0.12,
+        doubleFrom: 3,
+        closedSec: 0.25,
+      },
+      /**
+       * Sword jab (Bear with a Sword): a lane this wide shows this long, then the
+       * blade thrusts to the far wall this fast, stays, and pulls back (my
+       * guess). Tier II: two in a row, and diagonal lanes. Tier III: also a fan
+       * of this many, this far apart (my guess).
+       */
+      jab: {
+        laneWidth: 5,
+        warnSec: 0.5,
+        thrustSec: 0.12,
+        holdSec: 0.15,
+        pullSec: 0.15,
+        pairFrom: 2,
+        diagonalFrom: 2,
+        diagonalDeg: [25, 40] as const,
+        fanFrom: 3,
+        fanCount: 3,
+        fanSpreadDeg: 18,
+      },
+      /**
+       * Poke-up slide (Bear with a Sword): the sword slides just outside a wall
+       * at this speed (my guess); every this far along it stabs in this deep
+       * (part of the box's depth) for this long; each stab spot shows "!" this
+       * long before. Tier II: from the top or the bottom. Tier III: both at once,
+       * the top one's spots half a step along.
+       */
+      poke: {
+        slideSpeed: 90,
+        spacing: 28,
+        depth: 0.45,
+        stabSec: 0.25,
+        markSec: 0.4,
+        topFrom: 2,
+        bothFrom: 3,
+      },
+      /**
+       * Pounce (Bobcat): a shadow this big grows over this long, then it lands.
+       * Tier II: aimed at the sprite, two in a row. Tier III: also a feint, the
+       * real shadow showing this long before landing. The dust and the
+       * bobcat stay this long after landing (my guess).
+       */
+      pounce: {
+        shadow: [60, 40] as const,
+        growSec: 0.7,
+        aimedFrom: 2,
+        twoFrom: 2,
+        feintFrom: 3,
+        feintRealSec: 0.4,
+        dustSec: 0.3,
+      },
+      /**
+       * Rolling acorns (Squirrel Army): a squirrel pops up at the edge with a
+       * warning, then throws an acorn at this speed, at least this far from the
+       * wall's line. Each bounce cracks it; it breaks on this bounce into
+       * crumbs that fade over this long. This many at once, by tier.
+       */
+      acorns: {
+        speed: 70,
+        minAngleDeg: 25,
+        breakOn: 3,
+        radius: 3,
+        crumbsSec: 0.3,
+        count: { 1: 2, 2: 3, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
+      },
+      /**
+       * Acorn bombs (Squirrel Army): lobbed over the top edge (this high, my
+       * guess) to a spot marked this long before; they sit, or roll at this
+       * speed from Tier II; the fuse burns this long; the blast reaches this far
+       * for this long. This many at once, by tier.
+       */
+      bombs: {
+        markSec: 0.6,
+        lobHeight: 30,
+        rollSpeed: 15,
+        rollFrom: 2,
+        fuseSec: 1.6,
+        radius: 26,
+        blastSec: 0.2,
+        count: { 1: [1, 1], 2: [2, 2], 3: [2, 3] } as Readonly<
+          Record<1 | 2 | 3, readonly [number, number]>
+        >,
+      },
+      /**
+       * Shrapnel (Tier III): from a bomb's blast and from a breaking acorn, in
+       * straight lines at this speed (the acorns' speed is my guess: the same),
+       * gone at the walls.
+       */
+      shrapnel: { from: 3, bombPieces: 8, acornPieces: 4, speed: 100, radius: 1.5 },
+
+      // Claude's ideas (attacks/claudesIdeas.ts): Wyatt keeps or cuts them after playing.
+      /** Roar: rings from the top middle of the box, this far apart in time (my guess), each with a gap. */
+      roar: { rings: [2, 3] as const, speed: 60, gap: 26, thickness: 2, everySec: 0.7 },
+      /** Bear hug: the side walls squeeze in to this much of the width, hold, and go back; Claws come too this often (my guess). */
+      hug: { width: 0.55, squeezeSec: 0.5, holdSec: 1, clawsChance: 0.5 },
+      /** Honey drips: drops in this many columns, falling this fast (my guess), leaving sticky puddles that slow the sprite. */
+      honey: {
+        columns: [2, 3] as const,
+        speed: 70,
+        radius: 3,
+        staggerSec: 0.25,
+        puddle: [30, 10] as const,
+        puddleSec: 3,
+        slow: 0.5,
+      },
+      /** X slash: two diagonal slashes this far apart in time, each showing this long (my guess). */
+      xSlash: { gapSec: 0.3, showSec: 0.15, thickness: 3 },
+      /** Thrown sword: spins across and back on a lower line (my guesses for all of it). */
+      thrown: {
+        speed: 140,
+        spinPerSec: 2.5,
+        length: 48,
+        thickness: 3,
+        lines: [0.3, 0.75] as const,
+      },
+      /** Zigzag dash: the bobcat dashes along a zigzag (this fast, this many legs, this wide: my guesses). */
+      dash: { warnSec: 0.7, speed: 160, radius: 8, legs: 4, amplitude: 0.35 },
+      /** Pinecone rain: this many columns, falling (gravity, one bounce), then rolling off (my guesses). */
+      pinecones: {
+        columns: [3, 5] as const,
+        radius: 4,
+        gravity: 260,
+        bounce: 0.45,
+        rollSpeed: 60,
+        staggerSec: 0.15,
+      },
+      /** Wall scurry: a line of squirrels runs around the box just inside the walls (spacing and size: my guesses). */
+      scurry: { squirrels: 4, speed: 110, spacing: 14, inset: 6, radius: 4 },
+      /** Herd rush: a wall of moose with this many gaps by tier (speed and lanes: my guesses). */
+      herd: {
+        speed: 110,
+        gaps: { 1: 2, 2: 2, 3: 1 } as Readonly<Record<1 | 2 | 3, number>>,
+        lane: 20,
+        hitInset: 3,
       },
     },
   },

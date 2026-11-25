@@ -1462,6 +1462,63 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - **The joystick** is [24] screen pixels, so it feels the same on any screen size.
 - **Not done:** real art beyond the placeholders, sound, a GPS preview animation (a still frame for now), and the other animals.
 
+### Phase 10.8, step 3b: Dodge's attack library and four new animals (done)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge-animals.md`. The design is the revised `docs/design/12-minigames-dodge.md`. New mockups `4-bear.png` to `9-stampede.png` in `docs/mockups/minigames/dodge/`. New placeholder art in `public/assets/minigames/dodge/`.)
+
+**Goal:** turn Dodge's attacks into a shared library, so an animal is just a box, a head and a list of attacks; add four animals; give Bear with a Sword more attacks; and add testing tools. Keep everything already built: the party sprite and switching, lives, controls, Bees, and the sword sweep.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by attack and tier.
+
+**Build**
+1. **The attack library:** each attack has an id, a name, the tier it starts on, its numbers per tier, its warning and its hit shapes. Bees' patterns and the sword sweep become attacks. Picking is random, never the same attack twice in a row, only what's unlocked at the tier. Every attack warns first: [0.6 s] by default, never under [0.35 s]. New hit shapes: thick segments, ellipses, and ring bands with a gap.
+2. **Wyatt's attacks:** Claws (a row of 3 or 4, straight or a curved swipe, doubled on Tier III), Bite, Sword jab, Poke-up slide, Pounce (with a feint on Tier III), Rolling acorns (they crack on each bounce and break on the 3rd), Acorn bombs, and shrapnel on Tier III.
+3. ***Claude's ideas*** (easy to remove, all switched off together in the testing tab): Roar, Bear hug, Honey drips, X slash, Thrown sword, Zigzag dash, Landing swipe, Pinecone rain, Wall scurry and Herd rush. Honey puddles slow the sprite but never hit. Bear hug and the shrinking box always push the sprite back inside.
+4. **Animals:** Bear [140 × 110], Bear with a Sword [180 × 80] (Sweep, Claws, Jab, Poke-up slide), Bobcat [150 × 110] (Pounce, fast Claws), Squirrel Army [130 × 120] (Rolling acorns, Acorn bombs) and Wild Predator Stampede (every attack, the head and box following whichever animal attacks, two attacks overlapping on Tier III, [10 s] longer).
+5. **Testing tab:** Animal gets the four new animals. New settings: **Attack** (All, or one attack the animal uses, at the chosen tier), **Include Claude's ideas** (On or Off) and **Show hitboxes** (outlines every hit shape).
+
+**Tests:** as in `12-minigames-dodge.md`, section 13.
+
+**Phase 10.8 step 3b notes (built Nov 24)**
+- **What's playable:** main menu → **Minigame testing** → **Dodge** → pick an **Animal** and an **Attack** (All, or one), switch **Include Claude's ideas** and **Show hitboxes**, set the Tier and the rest → **Test it** → Start → Line up → Go.
+- **How it's built:** `src/minigames/dodge/` has the shapes, the attack library (`attacks/`, one file per family) and the animals. Claude's ideas are all in `attacks/claudesIdeas.ts`, with their drawings in `ui/minigames/dodge/parts/ClaudesIdeasParts.tsx`. To cut one, remove it there and from its animal's list in `animals.ts`.
+- **What I interpreted:**
+  - **Bees:** each of the bees' patterns is its own attack in the Attack list.
+  - **Variants by tier:** where a tier adds a variant, the attack picks at random from the variants open so far.
+    - Jab: 2 in a row from Tier II; a pair or a fan on Tier III.
+    - Pounce: 2 aimed from Tier II; 2 aimed or a feint on Tier III.
+    - Claws: straight or curved (half the time) from Tier II.
+  - **Bite:** hits only at the snap. **Pounce:** hits only at the landing.
+  - **Bombs:** only the blast and the shrapnel hurt, not the bomb or its landing.
+  - **Acorns:** a corner hit counts as one bounce. Their shrapnel uses the bombs' speed (100).
+  - **Bear hug** brings straight Claws from the top or bottom during the hold [50%] of the time.
+  - **Landing swipe** is its own attack: an aimed pounce, then a row of claws bursting from the landing spot in a random direction, warned by faint lines during the shadow.
+  - **Herd rush** uses the Stampede's own box [160 × 100] (from mockup 9). Moose charge from the left or right, in lanes [20] tall.
+  - **Stampede:**
+    - a row of heads with a frame on whoever is attacking, as in mockup 9; the moose joins the row when Claude's ideas are on;
+    - Bear and Bear with a Sword share the bear's head;
+    - during an overlap, the box stays the first animal's;
+    - an overlap is always two different animals, so with one attack picked there is none.
+  - **Tier speed** (×1.2, ×1.4) multiplies every attack's speed, never its timings or warnings. Numbers given for one tier only (shrapnel, bomb rolling) are used as they are.
+  - **The sword bear's shrinking box** now lasts for [3] of its attacks of any kind (the sweep that shrinks it and the next two), since it has more than sweeps.
+  - **Attack list:** attacks not open at the chosen tier are greyed out ("from Tier II"). A remembered pick that isn't open plays as All.
+- **Numbers the design doesn't give** (my guesses, all `TODO(wyatt)` in `balance.ts`):
+  - the curved claws' pivot ([24] outside a corner) and turn ([100°]);
+  - jab pull-back [0.15 s], diagonal slant [25–40°] and fan spread [18°];
+  - poke-up slide speed [90];
+  - pounce dust [0.3 s];
+  - roar rings [0.7 s] apart;
+  - honey drop speed [70];
+  - X slash showing [0.15 s];
+  - thrown sword speed [140], spin [2.5] turns a second, length [48] and lines at [30%] and [75%] of the box;
+  - dash speed [160], [4] legs, swinging [35%] of the box's height;
+  - pinecone gravity [260], bounce [0.45] and roll speed [60];
+  - scurry spacing [14] and size [4];
+  - herd speed [110];
+  - the Stampede's overlap chance [35%];
+  - the bomb's lob height [30].
+- **Not done:** real art beyond the placeholders, sound, an animated GPS preview, and the later animals (mountain lion, rattlesnake, skunk, hawk).
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.

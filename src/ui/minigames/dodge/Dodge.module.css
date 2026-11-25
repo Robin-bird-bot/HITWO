@@ -77,8 +77,6 @@
 
 .hatch {
   position: absolute;
-  top: 0;
-  bottom: 0;
   background: repeating-linear-gradient(
     -55deg,
     rgba(160, 179, 125, 0.45) 0,
@@ -276,4 +274,78 @@
   .person[data-safe] {
     animation-duration: 0.4s;
   }
+}
+
+/* Inside the box: a scene-sized layer, moved so its children use scene units. */
+.inside {
+  position: absolute;
+  width: 320px;
+  height: 240px;
+}
+
+.svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.svgLabel {
+  font-family: var(--font-pixel);
+  font-size: 3.5px;
+  fill: #d3dfaf;
+}
+
+/* A sprite of an attack, placed by its middle. */
+.part {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* A warning arrow (a triangle pointing right, turned to its direction). */
+.arrow {
+  position: absolute;
+  background: #d3dfaf;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  pointer-events: none;
+}
+
+/* The poke-up slide's arrow tail. */
+.slideLine {
+  position: absolute;
+  height: 0.8px;
+  background: #d3dfaf;
+  pointer-events: none;
+}
+
+/* The Stampede's row of heads: a frame on whoever is attacking. */
+.headSlot {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 0.75px solid transparent;
+  border-radius: 3px;
+  opacity: 0.75;
+  transition: border-color 0.2s;
+}
+
+.headSlot[data-on] {
+  border-color: #1d2918;
+  opacity: 1;
+}
+
+/* Show hitboxes (testing). */
+.hitboxes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
 }

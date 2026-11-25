@@ -398,3 +398,22 @@
   outline: 3px solid #e9b44c;
   outline-offset: 3px;
 }
+
+/* A long list of options (Dodge's Animal and Attack): a dropdown. */
+.menu {
+  height: 54px;
+  min-width: 220px;
+  padding: 0 14px;
+  border: 2px solid #2a2420;
+  border-radius: 10px;
+  background: #f7ecd2;
+  color: #2a2420;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.menu:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 2px;
+}

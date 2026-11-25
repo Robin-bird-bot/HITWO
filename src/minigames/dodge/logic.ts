@@ -8,8 +8,14 @@
  *   is safe for a moment. A hiker with no lives left is out for good; if the
  *   active hiker goes out, the next takes over at once.
  * - Survive until the clock runs out; it ends early if everyone is out.
- * - Every attack is warned first: "!" markers at the bees' entry points, or
- *   the half of the box a sword swing will sweep.
+ * - **Attacks** come from the shared library (library.ts), one round at a
+ *   time: picked at random from the animal's list (animals.ts), only what's
+ *   unlocked at the tier, never the same attack twice in a row. In the
+ *   Stampede the box and the head follow whoever is attacking, no animal
+ *   attacks more than twice in a row, and on Tier III two attacks sometimes
+ *   overlap.
+ * - Every attack warns first. Honey puddles slow the sprite; a bear hug or
+ *   a shrinking box pushes it back inside.
  *
  * Positions are in scene units (320 × 240).
  */
@@ -18,126 +24,81 @@ import { int, nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
 import type { MinigameResult } from '../types';
+import { boxFor, isAnimal, pool, type PoolEntry } from './animals';
+import { puddleShape, squeezed } from './attacks/claudesIdeas';
+import { clampToBox, type Box } from './geometry';
+import { ATTACKS, rulesFor } from './library';
+import { touches, type Point, type Shape } from './shapes';
+import type {
+  AnimalId,
+  AttackCtx,
+  AttackId,
+  Attacker,
+  DodgeState,
+  Part,
+  Round,
+  Tier,
+  World,
+} from './types';
+
+export type { AnimalId, AttackId, Attacker, DodgeState, Part, Tier } from './types';
+export type { Box } from './geometry';
+export type { Point, Shape } from './shapes';
+export { clampToBox, SPRITE_HALF } from './geometry';
+export { beeAt } from './attacks/bees';
+export { swingAngle, swingWarnSec, swordPivot } from './attacks/sword';
 
 const D = BALANCE.minigames.dodge;
 
-export type Tier = 1 | 2 | 3;
-export type Animal = 'bees' | 'bear';
-
-export interface Point {
-  x: number;
-  y: number;
-}
-
-export interface Box {
-  /** Middle and size. */
-  cx: number;
-  cy: number;
-  w: number;
-  h: number;
-}
-
-/** The box's middle on screen, per animal (the animal sits above it). */
-export const BOX_AT: Readonly<Record<Animal, { cx: number; cy: number }>> = {
-  bees: { cx: 160, cy: 138 },
-  bear: { cx: 160, cy: 146 },
-};
-
-/** The sprite (person.png, 10 × 12): how far its edges are from its middle. */
-export const SPRITE_HALF = { w: 5, h: 6 } as const;
-
-/** A bee on its way. Before `activeAt` it's only a warning at its entry point. */
-export interface Bee {
-  kind: 'bee';
-  id: number;
-  /** Where it starts (just outside the box), and its velocity (units a second). */
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  /** Zigzag: it weaves across its path. */
-  weave?: { amplitude: number; perSec: number; nx: number; ny: number };
-  /** Aimed: it aims at the sprite when it launches, at this speed. */
-  aimSpeed?: number;
-  warnAt: number;
-  activeAt: number;
-  /** Where its "!" goes, on the box's edge. */
-  mark: Point;
-  done: boolean;
-}
-
-/** A sword swing: the half of the box it'll sweep is warned, then the blade sweeps it. */
-export interface Swing {
-  kind: 'swing';
-  id: number;
-  side: 'left' | 'right';
-  warnAt: number;
-  activeAt: number;
-  sweepSec: number;
-  done: boolean;
-}
-
-export type Attack = Bee | Swing;
-
 export interface DodgeOptions {
-  animal: Animal;
+  animal: AnimalId;
   tier: Tier;
+  /** The testing tab's Attack picker: all, or only one attack. */
+  attack?: AttackId | 'all';
+  /** Include Claude's ideas (on unless switched off). */
+  ideas?: boolean;
   /** The testing tab's overrides: "auto" uses the tier's value. */
   lives?: 'auto' | number;
   lengthSec?: 'auto' | number;
   switchSec?: 'auto' | number;
 }
 
-export interface DodgeState {
-  animal: Animal;
-  tier: Tier;
-  order: string[];
-  lives: Record<string, number>;
-  hits: Record<string, number>;
-  maxLives: number;
-  active: string;
-  switchSec: number;
-  /** Seconds until the next hiker takes over. */
-  switchIn: number;
-  /** Seconds of safety left after a hit. */
-  safeFor: number;
-  lengthSec: number;
-  /** Seconds played. */
-  time: number;
-  box: Box;
-  boxTarget: { w: number; h: number };
-  /** The sprite's middle. */
-  pos: Point;
-  attacks: Attack[];
-  nextAttackAt: number;
-  nextId: number;
-  lastPattern?: string;
-  /** Bear: swings so far, the last sides, and swings left with the box shrunk. */
-  swings: number;
-  sides: ('left' | 'right')[];
-  shrunkFor: number;
-  /** The last hit, for the screen ("FINN −1"). */
-  lastHit?: { hikerId: string; at: number };
-  over: boolean;
-  rng: RngState;
-}
-
 const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
   typeof v === 'number' ? v : fallback;
+
+/** The length when Auto: the tier's, plus extra for the Stampede. */
+export const autoLength = (animal: AnimalId, tier: Tier): number =>
+  D.tiers[tier].lengthSec + (animal === 'stampede' ? D.stampede.extraSec : 0);
+
+/** The box an attacker uses (the sword bear's shrinks while `shrunkFor` lasts). */
+function targetBox(attacker: Attacker, shrunkFor: number): Box {
+  const box = boxFor(attacker);
+  if (attacker === 'swordBear' && shrunkFor > 0) {
+    return { ...box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] };
+  }
+  return box;
+}
 
 export function newDodge(
   options: DodgeOptions,
   order: readonly string[],
   seed: number,
 ): DodgeState {
+  const animal: AnimalId = isAnimal(options.animal) ? options.animal : 'bees';
+  const ideas = options.ideas ?? true;
   const lives = Math.max(1, Math.round(orAuto(options.lives, D.lives)));
-  const size = options.animal === 'bees' ? D.bees.box : D.bear.box;
-  const at = BOX_AT[options.animal];
-  const box = { cx: at.cx, cy: at.cy, w: size[0], h: size[1] };
+  // A picked attack this animal can't make at this tier plays as All.
+  const wanted = options.attack ?? 'all';
+  const only =
+    wanted !== 'all' && pool(animal, options.tier, ideas, wanted).length > 0 ? wanted : 'all';
+  const first: Attacker = animal === 'stampede' ? 'herd' : animal;
+  const box = targetBox(first, 0);
   const switchSec = orAuto(options.switchSec, D.switchSec);
   return {
-    animal: options.animal,
+    animal,
     tier: options.tier,
+    only,
+    ideas,
     order: [...order],
     lives: Object.fromEntries(order.map((id) => [id, lives])),
     hits: Object.fromEntries(order.map((id) => [id, 0])),
@@ -146,14 +107,18 @@ export function newDodge(
     switchSec,
     switchIn: switchSec,
     safeFor: 0,
-    lengthSec: orAuto(options.lengthSec, D.tiers[options.tier].lengthSec),
+    lengthSec: orAuto(options.lengthSec, autoLength(animal, options.tier)),
     time: 0,
     box,
-    boxTarget: { w: box.w, h: box.h },
+    boxTarget: box,
     pos: { x: box.cx, y: box.cy },
-    attacks: [],
+    parts: [],
+    rounds: [],
+    history: [],
     nextAttackAt: D.firstAttackSec,
+    showing: animal === 'stampede' ? [] : [animal],
     nextId: 1,
+    roundNo: 1,
     swings: 0,
     sides: [],
     shrunkFor: 0,
@@ -212,271 +177,90 @@ export function joystickVector(
   };
 }
 
-/** Keeps the sprite inside the box. */
-export function clampToBox(p: Point, box: Box): Point {
-  const minX = box.cx - box.w / 2 + SPRITE_HALF.w;
-  const maxX = box.cx + box.w / 2 - SPRITE_HALF.w;
-  const minY = box.cy - box.h / 2 + SPRITE_HALF.h;
-  const maxY = box.cy + box.h / 2 - SPRITE_HALF.h;
-  return { x: Math.min(maxX, Math.max(minX, p.x)), y: Math.min(maxY, Math.max(minY, p.y)) };
-}
+/** The box as the sprite feels it now: squeezed by a bear hug, if one is on. */
+export const effectiveBox = (s: DodgeState): Box => squeezed(s.box, s.parts, s.time);
 
-// ── Attacks ────────────────────────────────────────────────────────────────
+/** Whether the sprite is in a honey puddle (it moves slower there). */
+export const inHoney = (s: DodgeState): boolean =>
+  s.parts.some((p) => p.kind === 'puddle' && touches(puddleShape(p), s.pos, D.hitRadius));
 
-type Side = 'left' | 'right' | 'top' | 'bottom';
-
-/** A bee entering from a side at a place along it (0 to 1), flying straight across. */
-function laneBee(
-  s: DodgeState,
-  side: Side,
-  along: number,
-  warnAt: number,
-  speed: number,
-  id: number,
-): Bee {
-  const b = s.box;
-  const left = b.cx - b.w / 2;
-  const top = b.cy - b.h / 2;
-  const out = 6;
-  const across = { left: [1, 0], right: [-1, 0], top: [0, 1], bottom: [0, -1] }[side];
-  const x = side === 'left' ? left - out : side === 'right' ? left + b.w + out : left + along * b.w;
-  const y = side === 'top' ? top - out : side === 'bottom' ? top + b.h + out : top + along * b.h;
-  const mark = {
-    x: side === 'left' ? left - 5 : side === 'right' ? left + b.w + 5 : x,
-    y: side === 'top' ? top - 5 : side === 'bottom' ? top + b.h + 5 : y,
-  };
-  return {
-    kind: 'bee',
-    id,
-    x,
-    y,
-    vx: across[0]! * speed,
-    vy: across[1]! * speed,
-    warnAt,
-    activeAt: warnAt + D.warnSec,
-    mark,
-    done: false,
-  };
-}
-
-const SIDES: readonly Side[] = ['left', 'right', 'top', 'bottom'];
-
-/** The bees' patterns open to this tier. */
-export function beePatterns(tier: Tier): string[] {
-  return [
-    'lane',
-    'cross',
-    ...(tier >= 2 ? ['diagonal', 'zigzag'] : []),
-    ...(tier >= 3 ? ['aimed'] : []),
-  ];
-}
-
-/** Lanes across the box with one gap lane. */
-function laneWave(
-  s: DodgeState,
-  rng: RngState,
-  side: Side,
-  bees: number,
-  at: number,
-  speed: number,
-  idStart: number,
-): Bee[] {
-  const lanes = bees + 1;
-  const gap = int(rng, 0, lanes - 1);
-  const out: Bee[] = [];
-  let id = idStart;
-  for (let k = 0; k < lanes; k++) {
-    if (k === gap) continue;
-    out.push(laneBee(s, side, (k + 0.5) / lanes, at, speed, id++));
-  }
-  return out;
-}
-
-function spawnBees(s: DodgeState, rng: RngState): { bees: Bee[]; pattern: string } {
-  const options = beePatterns(s.tier).filter((p) => p !== s.lastPattern);
-  const pattern = options[int(rng, 0, options.length - 1)]!;
-  const speed = D.bees.speed * D.tiers[s.tier].speed;
-  const at = s.time;
-  const b = s.box;
-  let id = s.nextId;
-  if (pattern === 'lane') {
-    const side = SIDES[int(rng, 0, 3)]!;
-    return {
-      pattern,
-      bees: laneWave(s, rng, side, int(rng, D.bees.lane[0], D.bees.lane[1]), at, speed, id),
-    };
-  }
-  if (pattern === 'cross') {
-    const a = laneWave(s, rng, 'left', int(rng, D.bees.cross[0], D.bees.cross[1]), at, speed, id);
-    id += a.length;
-    const c = laneWave(s, rng, 'top', int(rng, D.bees.cross[0], D.bees.cross[1]), at, speed, id);
-    return { pattern, bees: [...a, ...c] };
-  }
-  if (pattern === 'diagonal') {
-    // From a corner to the opposite one, in a staggered line across the path.
-    const dx = nextFloat(rng) < 0.5 ? 1 : -1;
-    const dy = nextFloat(rng) < 0.5 ? 1 : -1;
-    const corner = { x: b.cx - (dx * b.w) / 2 - dx * 6, y: b.cy - (dy * b.h) / 2 - dy * 6 };
-    const dir = { x: dx / Math.SQRT2, y: dy / Math.SQRT2 };
-    const perp = { x: -dir.y, y: dir.x };
-    const n = D.bees.diagonal.bees;
-    return {
-      pattern,
-      bees: Array.from({ length: n }, (_, k) => {
-        const off = (k - (n - 1) / 2) * D.bees.diagonal.spacing;
-        const x = corner.x + perp.x * off;
-        const y = corner.y + perp.y * off;
-        const warnAt = at + k * D.bees.diagonal.staggerSec;
-        return {
-          kind: 'bee' as const,
-          id: id++,
-          x,
-          y,
-          vx: dir.x * speed,
-          vy: dir.y * speed,
-          warnAt,
-          activeAt: warnAt + D.warnSec,
-          mark: { x: x + dir.x * 3, y: y + dir.y * 3 },
-          done: false,
-        };
-      }),
-    };
-  }
-  if (pattern === 'zigzag') {
-    const side: Side = nextFloat(rng) < 0.5 ? 'left' : 'right';
-    const n = D.bees.zigzag.bees;
-    return {
-      pattern,
-      bees: Array.from({ length: n }, (_, k) => {
-        const bee = laneBee(s, side, (k + 1) / (n + 1), at, speed * 0.8, id++);
-        return {
-          ...bee,
-          weave: {
-            amplitude: D.bees.zigzag.amplitude / 2,
-            perSec: D.bees.zigzag.perSec,
-            nx: 0,
-            ny: 1,
-          },
-        };
-      }),
-    };
-  }
-  // Aimed: from random edge points, aimed at the sprite when each launches.
-  const n = D.bees.aimed.bees;
-  return {
-    pattern,
-    bees: Array.from({ length: n }, (_, k) => {
-      const side = SIDES[int(rng, 0, 3)]!;
-      const bee = laneBee(
-        s,
-        side,
-        0.1 + nextFloat(rng) * 0.8,
-        at + k * D.bees.aimed.staggerSec,
-        speed,
-        id++,
-      );
-      return { ...bee, aimSpeed: speed };
-    }),
-  };
-}
-
-/** The warning before a swing: it starts long and gets shorter each swing, never under the minimum. */
-export const swingWarnSec = (swings: number): number =>
-  Math.max(D.bear.warnMinSec, D.bear.warnStartSec * (1 - D.bear.warnShrink) ** swings);
-
-export const swingSweepSec = (swings: number): number =>
-  Math.max(D.bear.sweepMinSec, D.bear.sweepSec * (1 - D.bear.sweepShrink) ** swings);
-
-/** One side, or the other at random, never the same side more than twice in a row. */
-function pickSide(s: DodgeState, rng: RngState): 'left' | 'right' {
-  const [a, b] = s.sides.slice(-2);
-  if (a && a === b) return a === 'left' ? 'right' : 'left';
-  return nextFloat(rng) < 0.5 ? 'left' : 'right';
-}
-
-function spawnSwings(
-  s: DodgeState,
-  rng: RngState,
-): { swings: Swing[]; sides: ('left' | 'right')[]; shrink: boolean } {
-  const side = pickSide(s, rng);
-  const warn = swingWarnSec(s.swings);
-  const sweep = swingSweepSec(s.swings);
-  const first: Swing = {
-    kind: 'swing',
-    id: s.nextId,
-    side,
-    warnAt: s.time,
-    activeAt: s.time + warn,
-    sweepSec: sweep,
-    done: false,
-  };
-  const out = [first];
-  const sides = [side];
-  if (s.tier >= 2 && nextFloat(rng) < D.bear.doubleChance) {
-    // Straight back across the other half; its warning shows from the first sweep on.
-    const other = side === 'left' ? 'right' : 'left';
-    out.push({
-      kind: 'swing',
-      id: s.nextId + 1,
-      side: other,
-      warnAt: first.activeAt,
-      activeAt: first.activeAt + sweep + D.bear.doubleGapSec,
-      sweepSec: sweep,
-      done: false,
-    });
-    sides.push(other);
-  }
-  const shrink = s.tier >= 3 && s.shrunkFor <= 0 && nextFloat(rng) < D.bear.shrinkChance;
-  return { swings: out, sides, shrink };
-}
-
-// ── Where things are ───────────────────────────────────────────────────────
-
-/** Where a bee is now (it flies once its warning is over; aimed bees aim at launch). */
-export function beeAt(bee: Bee, time: number): Point {
-  const t = Math.max(0, time - bee.activeAt);
-  let x = bee.x + bee.vx * t;
-  let y = bee.y + bee.vy * t;
-  if (bee.weave) {
-    const w = Math.sin(2 * Math.PI * bee.weave.perSec * t) * bee.weave.amplitude;
-    x += bee.weave.nx * w;
-    y += bee.weave.ny * w;
-  }
-  return { x, y };
-}
-
-/** The pivot the sword turns around, above the middle of the box. */
-export const swordPivot = (box: Box): Point => ({
-  x: box.cx,
-  y: box.cy - box.h / 2 - D.bear.pivotAbove,
-});
+// ── Picking attacks ────────────────────────────────────────────────────────
 
 /**
- * The blade's angle from pointing straight down, toward the swing's side:
- * 0 at the start of the sweep, 90° (flat sideways) at the end.
+ * The next attack: from the pool, never the same attack twice in a row
+ * (unless it's the only one), and in the Stampede no animal more than twice
+ * in a row. An overlap (`notBy`) is always another animal, or none.
  */
-export function swingAngle(sw: Swing, time: number): number | null {
-  if (time < sw.activeAt || time > sw.activeAt + sw.sweepSec) return null;
-  return ((time - sw.activeAt) / sw.sweepSec) * (Math.PI / 2);
+function pick(s: DodgeState, rng: RngState, notBy?: Attacker): PoolEntry | undefined {
+  const all = pool(s.animal, s.tier, s.ideas, s.only);
+  if (!all.length) return undefined;
+  const last = s.history.at(-1);
+  const recent = s.history.slice(-D.stampede.maxSameAnimal).map((h) => h.attacker);
+  const tooMany =
+    s.animal === 'stampede' &&
+    recent.length === D.stampede.maxSameAnimal &&
+    recent.every((a) => a === recent[0])
+      ? recent[0]
+      : undefined;
+  const tries = [
+    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== tooMany && e.attacker !== notBy,
+    (e: PoolEntry) => e.attack !== last?.attack && e.attacker !== notBy,
+    (e: PoolEntry) => e.attacker !== notBy,
+    // An overlap is always two different animals: with no other, there's none.
+    ...(notBy ? [] : [() => true]),
+  ];
+  for (const ok of tries) {
+    const list = all.filter(ok);
+    if (list.length) return list[int(rng, 0, list.length - 1)];
+  }
+  return undefined;
 }
 
-/** Whether a point is swept by a blade turning from angle a0 to a1 on a side (within the blade's reach). */
-function swept(
-  pivot: Point,
-  side: 'left' | 'right',
-  a0: number,
-  a1: number,
-  p: Point,
-  reach: number,
-): boolean {
-  const dx = (p.x - pivot.x) * (side === 'right' ? 1 : -1);
-  const dy = p.y - pivot.y;
-  const dist = Math.hypot(dx, dy);
-  if (dist > D.bear.blade + reach) return false;
-  // The point's angle from straight down, toward the side.
-  const angle = Math.atan2(dx, dy);
-  const slack = dist > 0 ? Math.asin(Math.min(1, reach / dist)) : Math.PI;
-  return angle >= a0 - slack && angle <= a1 + slack;
+/** Starts a round of an attack: its parts, the box it happens in, and what's remembered. */
+function startRound(s: DodgeState, rng: RngState, entry: PoolEntry, moveBox: boolean): DodgeState {
+  let state = s;
+  // The sword bear's shrunk box lasts for a few of its attacks.
+  if (entry.attacker === 'swordBear')
+    state = { ...state, shrunkFor: Math.max(0, state.shrunkFor - 1) };
+  const box = moveBox ? targetBox(entry.attacker, state.shrunkFor) : state.boxTarget;
+  let nextId = state.nextId;
+  const ctx: AttackCtx = {
+    tier: state.tier,
+    time: state.time,
+    box,
+    pos: { ...state.pos },
+    rng,
+    speed: D.tiers[state.tier].speed,
+    round: state.roundNo,
+    nextId: () => nextId++,
+    tweak: entry.tweak,
+    state,
+  };
+  const started = ATTACKS[entry.attack].start(ctx);
+  const next: DodgeState = {
+    ...state,
+    ...started.patch,
+    parts: [...state.parts, ...started.parts],
+    rounds: [
+      ...state.rounds,
+      { no: state.roundNo, attacker: entry.attacker, attack: entry.attack, endsAt: started.endsAt },
+    ],
+    history: [...state.history, { attacker: entry.attacker, attack: entry.attack }].slice(-6),
+    nextId,
+    roundNo: state.roundNo + 1,
+  };
+  const showing = next.rounds.map((r) => r.attacker);
+  return {
+    ...next,
+    showing: [...new Set(showing)],
+    boxTarget: moveBox ? targetBox(entry.attacker, next.shrunkFor) : next.boxTarget,
+  };
+}
+
+/** Whether a round is over: its time has come, or all its parts are done. */
+function roundOver(s: DodgeState, r: Round): boolean {
+  if (r.endsAt !== 'parts') return s.time >= r.endsAt;
+  return !s.parts.some((p) => p.round === r.no && !p.child);
 }
 
 // ── A step ─────────────────────────────────────────────────────────────────
@@ -500,6 +284,42 @@ function hit(s: DodgeState): DodgeState {
   return next;
 }
 
+/** The box eases toward its target: size and place. */
+function easeBox(box: Box, target: Box, dt: number): Box {
+  const ease = (from: number, to: number) => {
+    const rate = (Math.abs(to - from) / D.boxEaseSec) * dt;
+    return from < to
+      ? Math.min(to, from + Math.max(rate, 60 * dt))
+      : Math.max(to, from - Math.max(rate, 60 * dt));
+  };
+  return {
+    cx: ease(box.cx, target.cx),
+    cy: ease(box.cy, target.cy),
+    w: ease(box.w, target.w),
+    h: ease(box.h, target.h),
+  };
+}
+
+const worldOf = (s: DodgeState, dt: number, rng: RngState, ids: { next: number }): World => ({
+  time: s.time,
+  dt,
+  tier: s.tier,
+  box: effectiveBox(s),
+  pos: s.pos,
+  rng,
+  nextId: () => ids.next++,
+});
+
+/**
+ * Every shape that can hit right now, for the testing tab's "Show hitboxes"
+ * (a hit that only happens at one moment, like a bite's snap, shows for
+ * `window` seconds after it).
+ */
+export function hitShapes(s: DodgeState, window = 0.15): Shape[] {
+  const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
+  return s.parts.flatMap((p) => rulesFor(p).shapes(p, w, s.time - window));
+}
+
 /**
  * Moves the game on by `dt` seconds with the player's input (a direction,
  * up to length 1): the clock, switching, the box, the sprite, the attacks,
@@ -521,89 +341,70 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   }
   s.safeFor = Math.max(0, s.safeFor - dt);
 
-  // The box eases to its size; the sprite moves and stays inside.
-  const ease = (from: number, to: number) => {
-    const rate = (Math.abs(to - from) / D.boxEaseSec) * dt;
-    return from < to
-      ? Math.min(to, from + Math.max(rate, 60 * dt))
-      : Math.max(to, from - Math.max(rate, 60 * dt));
-  };
-  s.box = { ...s.box, w: ease(s.box.w, s.boxTarget.w), h: ease(s.box.h, s.boxTarget.h) };
+  // The box eases to its size; the sprite moves (slower in honey) and stays inside.
+  s.box = easeBox(s.box, s.boxTarget, dt);
   const len = Math.hypot(input.x, input.y);
-  const k = len > 1 ? 1 / len : 1;
+  const k = (len > 1 ? 1 / len : 1) * (inHoney(s) ? D.honey.slow : 1);
   s.pos = clampToBox(
     { x: s.pos.x + input.x * k * D.moveSpeed * dt, y: s.pos.y + input.y * k * D.moveSpeed * dt },
-    s.box,
+    effectiveBox(s),
   );
 
-  // New attacks.
-  if (s.time >= s.nextAttackAt) {
-    if (s.animal === 'bees') {
-      const wave = spawnBees(s, rng);
-      const last = Math.max(...wave.bees.map((b) => b.activeAt));
-      s = {
-        ...s,
-        attacks: [...s.attacks, ...wave.bees],
-        nextId: s.nextId + wave.bees.length,
-        lastPattern: wave.pattern,
-        nextAttackAt: last + D.tiers[s.tier].gapSec,
-      };
+  // A new round; in the Stampede on Tier III, sometimes a second one overlapping it.
+  if (s.nextAttackAt !== null && s.time >= s.nextAttackAt) {
+    const entry = pick(s, rng);
+    if (entry) {
+      s = startRound({ ...s, rounds: [], nextAttackAt: null }, rng, entry, true);
+      const st = D.stampede;
+      if (
+        s.animal === 'stampede' &&
+        s.tier >= st.overlapFrom &&
+        nextFloat(rng) < st.overlapChance
+      ) {
+        s.overlapAt = s.time + st.overlapAfterSec;
+      }
     } else {
-      const wave = spawnSwings(s, rng);
-      const end = Math.max(...wave.swings.map((w) => w.activeAt + w.sweepSec));
-      const shrunkFor = wave.shrink ? D.bear.shrinkSwings : Math.max(0, s.shrunkFor - 1);
-      const size = shrunkFor > 0 ? D.bear.shrunk : D.bear.box;
-      s = {
-        ...s,
-        attacks: [...s.attacks, ...wave.swings],
-        nextId: s.nextId + wave.swings.length,
-        swings: s.swings + wave.swings.length,
-        sides: [...s.sides, ...wave.sides].slice(-4),
-        shrunkFor,
-        boxTarget: { w: size[0], h: size[1] },
-        nextAttackAt: end + D.tiers[s.tier].gapSec,
-      };
+      s = { ...s, nextAttackAt: Infinity };
     }
   }
+  if (s.overlapAt !== undefined && s.time >= s.overlapAt) {
+    const entry = pick(s, rng, s.rounds[0]?.attacker);
+    s = { ...s };
+    delete s.overlapAt;
+    // The box stays the first animal's while they overlap.
+    if (entry) s = startRound(s, rng, entry, false);
+  }
 
-  // Attacks move; any that touch the sprite hit (once its safety is over).
-  const reach = D.hitRadius;
-  let struck = false;
-  const pivot = swordPivot(s.box);
-  const attacks = s.attacks.map((a) => {
-    if (a.done) return a;
-    if (a.kind === 'bee') {
-      let bee = a;
-      // An aimed bee aims at the sprite as it launches.
-      if (bee.aimSpeed && s.time >= bee.activeAt && s0.time < bee.activeAt) {
-        const dx = s.pos.x - bee.x;
-        const dy = s.pos.y - bee.y;
-        const d = Math.hypot(dx, dy) || 1;
-        bee = { ...bee, vx: (dx / d) * bee.aimSpeed, vy: (dy / d) * bee.aimSpeed };
-      }
-      if (s.time < bee.activeAt) return bee;
-      const at = beeAt(bee, s.time);
-      if (Math.hypot(at.x - s.pos.x, at.y - s.pos.y) <= D.bees.radius + reach) struck = true;
-      // Gone once it has flown out of the box (it starts just outside, flying in).
-      const outside =
-        Math.abs(at.x - s.box.cx) > s.box.w / 2 + 12 ||
-        Math.abs(at.y - s.box.cy) > s.box.h / 2 + 12;
-      return outside && s.time - bee.activeAt > 0.3 ? { ...bee, done: true } : bee;
-    }
-    const a1 = swingAngle(a, s.time) ?? (s.time > a.activeAt ? Math.PI / 2 : null);
-    if (a1 !== null) {
-      const a0 = Math.max(0, swingAngle(a, s0.time) ?? 0);
-      if (
-        s0.time <= a.activeAt + a.sweepSec &&
-        swept(pivot, a.side, a0, a1, s.pos, reach + D.bear.bladeHalfWidth)
-      ) {
-        struck = true;
-      }
-    }
-    return s.time > a.activeAt + a.sweepSec ? { ...a, done: true } : a;
-  });
-  s = { ...s, attacks: attacks.filter((a) => !a.done || s.time - a.activeAt < 1) };
-  if (struck && s.safeFor <= 0) s = hit(s);
+  // The parts move (and can make new ones: shrapnel, crumbs, puddles).
+  const ids = { next: s.nextId };
+  const w = worldOf(s, dt, rng, ids);
+  const parts: Part[] = [];
+  for (const p0 of s.parts) {
+    const rules = rulesFor(p0);
+    const moved = rules.update ? rules.update(p0, w) : { part: p0 };
+    if (!rules.done(moved.part, w)) parts.push(moved.part);
+    if (moved.spawn) parts.push(...moved.spawn);
+  }
+  s = { ...s, parts, nextId: ids.next };
+
+  // Any that touch the sprite hit (once its safety is over).
+  if (s.safeFor <= 0) {
+    const shapes = s.parts.flatMap((p) =>
+      rulesFor(p).shapes(p, { ...w, box: effectiveBox(s) }, s0.time),
+    );
+    if (shapes.some((sh) => touches(sh, s.pos, D.hitRadius))) s = hit(s);
+  }
+  // The sprite is pushed back inside if the box moved under it.
+  s = { ...s, pos: clampToBox(s.pos, effectiveBox(s)) };
+
+  // The round ends: the next one comes after the tier's gap.
+  if (
+    s.nextAttackAt === null &&
+    s.overlapAt === undefined &&
+    s.rounds.every((r) => roundOver(s, r))
+  ) {
+    s = { ...s, nextAttackAt: s.time + D.tiers[s.tier].gapSec };
+  }
 
   // The clock.
   if (s.time >= s.lengthSec) s = { ...s, over: true };
