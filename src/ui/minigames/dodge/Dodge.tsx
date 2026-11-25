@@ -1,35 +1,37 @@
 /**
- * Dodge on the GPS (docs/design/12-minigames-dodge.md;
- * docs/mockups/minigames/dodge/1-bees.png to 3-hit-switch-joystick.png), in
- * scene units (320 × 240).
+ * Dodge on the GPS (docs/design/12-minigames-dodge.md; mockups
+ * docs/mockups/minigames/dodge/1-bees.png to 9-stampede.png), in scene units
+ * (320 × 240).
  *
  * - **Top:** the animal's name, a SURVIVE bar emptying as time runs down,
  *   and the tier.
- * - **The animal** above the box; **the box** below it, where the party's
+ * - **The animal** above the box (in the Stampede, a row of heads with a
+ *   frame on whoever is attacking); **the box** below it, where the party's
  *   sprite (tinted in the active hiker's color) dodges.
- * - **Warnings:** "!" at the bees' entry points, or the half a sword swing
- *   will sweep, hatched.
+ * - **Attacks** are drawn in layers: warnings and shadows under the sprite,
+ *   attacks over it, and "!" marks, arrows and squirrels outside the box.
  * - **Bottom:** each hiker with their hearts; the active one outlined, out
  *   ones greyed with a red slash; "NEXT SWITCH IN 2S".
+ * - **Show hitboxes** (testing): every hit shape outlined.
  *
  * Controls: WASD or the arrow keys; a floating joystick where a finger (or
  * the mouse) goes down.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
+import { ANIMALS, isAnimal } from '../../../minigames/dodge/animals';
 import {
-  beeAt,
+  effectiveBox,
+  hitShapes,
   joystickVector,
   keysToVector,
   newDodge,
   nextInLine,
   result,
   step,
-  swingAngle,
-  swordPivot,
   switches,
-  type Animal,
+  type AnimalId,
+  type AttackId,
   type Point,
 } from '../../../minigames/dodge/logic';
 import type { MinigameSettings } from '../../../minigames/types';
@@ -38,13 +40,15 @@ import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
 import ui from '../gpsUi.module.css';
+import { Heads } from './Heads';
+import { Hitboxes } from './Hitboxes';
+import { PartsLayer } from './parts/drawParts';
+import { art, type DrawCtx } from './parts/drawTypes';
 import { useTinted } from './tint';
 import styles from './Dodge.module.css';
 
 const D = BALANCE.minigames.dodge;
-const art = (f: string) => asset(`minigames/dodge/${f}`);
 const ROMAN = ['', 'I', 'II', 'III'];
-const NAMES: Record<Animal, string> = { bees: 'Bees', bear: 'Bear + sword' };
 const FIXED = 1 / 120;
 
 const numberOr = (settings: MinigameSettings, id: string): 'auto' | number => {
@@ -55,12 +59,17 @@ const numberOr = (settings: MinigameSettings, id: string): 'auto' | number => {
 export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const reduced = useReducedMotion();
   const sceneRef = useRef<HTMLDivElement>(null);
-  const animal: Animal = pickOf(settings, 'animal') === 'bear' ? 'bear' : 'bees';
+  const chosen = pickOf(settings, 'animal');
+  const animal: AnimalId = isAnimal(chosen) ? chosen : 'bees';
+  const ideas = pickOf(settings, 'ideas') !== 'off';
+  const showHitboxes = pickOf(settings, 'hitboxes') === 'on';
   const [game, setGame] = useState(() =>
     newDodge(
       {
         animal,
         tier: tierOf(settings),
+        attack: (pickOf(settings, 'attack') || 'all') as AttackId | 'all',
+        ideas,
         lives: numberOr(settings, 'lives'),
         lengthSec: numberOr(settings, 'length'),
         switchSec: numberOr(settings, 'switch'),
@@ -176,7 +185,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
     setJoy(null);
   };
 
-  const box = game.box;
+  const box = effectiveBox(game);
   const boxLeft = box.cx - box.w / 2;
   const boxTop = box.cy - box.h / 2;
   const left = Math.max(0, game.lengthSec - game.time);
@@ -186,8 +195,17 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const color = byId(blinking && phase && next ? next : game.active)?.color ?? '#d3dfaf';
   const safe = game.safeFor > 0;
   const recentHit = game.lastHit && game.time - game.lastHit.at < 0.7 ? game.lastHit : null;
-  const pivot = swordPivot(box);
   const beeFrame = Math.floor(game.time / D.bees.frameSec) % 2 === 0 ? 'bee-1.png' : 'bee-2.png';
+  const ctx: DrawCtx = {
+    time: game.time,
+    box,
+    left: boxLeft,
+    right: boxLeft + box.w,
+    top: boxTop,
+    bottom: boxTop + box.h,
+    beeFrame,
+    reduced,
+  };
 
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
@@ -199,7 +217,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         onPointerCancel={onUp}
       >
         {/* The top HUD. */}
-        <div className={`${ui.box} ${styles.name}`}>{NAMES[animal]}</div>
+        <div className={`${ui.box} ${styles.name}`}>{ANIMALS[animal].hud}</div>
         <div className={`${ui.box} ${styles.survive}`}>
           <span>SURVIVE</span>
           <span className={styles.bar}>
@@ -208,81 +226,38 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         </div>
         <div className={`${ui.box} ${styles.tier}`}>TIER {ROMAN[game.tier]}</div>
 
-        {/* The animal. */}
-        {animal === 'bees' ? (
-          <>
-            <img
-              className={`${ui.sprite} ${styles.animal}`}
-              src={art(beeFrame)}
-              alt="A bee"
-              draggable={false}
-              style={{ left: 160 - 15, top: 36, width: 30, height: 21 }}
-            />
-            <span className={`${ui.muted} ${styles.bzz}`}>BZZ</span>
-          </>
-        ) : (
-          <img
-            className={`${ui.sprite} ${styles.animal}`}
-            src={art('bear-head.png')}
-            alt="A bear with a sword"
-            draggable={false}
-            style={{ left: 160 - 20, top: 28, width: 39, height: 34 }}
-          />
-        )}
+        <Heads animal={animal} showing={game.showing} beeFrame={beeFrame} ideas={game.ideas} />
 
-        {/* The box: the bees fly in it, clipped to it. */}
+        {/* The box: everything inside it is clipped to it, drawn in scene units. */}
         <div
           className={styles.box}
           style={{ left: boxLeft, top: boxTop, width: box.w, height: box.h }}
         >
-          {game.attacks.map((a) => {
-            if (a.kind === 'swing') {
-              const warning = game.time >= a.warnAt && game.time < a.activeAt;
-              return warning ? (
-                <span
-                  key={a.id}
-                  className={styles.hatch}
-                  style={{ left: a.side === 'left' ? 0 : box.w / 2, width: box.w / 2 }}
-                >
-                  <span className={styles.bang}>!</span>
-                </span>
-              ) : null;
-            }
-            if (game.time < a.activeAt || a.done) return null;
-            const at = beeAt(a, game.time);
-            const vx = a.vx;
-            return (
-              <img
-                key={a.id}
-                className={`${ui.sprite} ${styles.bee}`}
-                src={art(beeFrame)}
-                alt=""
-                draggable={false}
-                style={{
-                  left: at.x - boxLeft - 5,
-                  top: at.y - boxTop - 3.5,
-                  transform: vx < 0 ? 'scaleX(-1)' : undefined,
-                }}
-              />
-            );
-          })}
-          {/* The party's sprite, in the active hiker's color. */}
-          <img
-            className={`${ui.sprite} ${styles.person}`}
-            data-safe={safe || undefined}
-            src={tints[color] ?? art('person.png')}
-            alt=""
-            draggable={false}
-            style={{ left: game.pos.x - boxLeft - 5, top: game.pos.y - boxTop - 6 }}
-          />
-          {recentHit && (
-            <span
-              className={styles.hitRing}
-              data-soft={reduced || undefined}
-              style={{ left: game.pos.x - boxLeft - 9, top: game.pos.y - boxTop - 9 }}
+          <div className={styles.inside} style={{ left: -boxLeft, top: -boxTop }}>
+            <svg className={styles.svg} viewBox="0 0 320 240" aria-hidden="true">
+              <PartsLayer parts={game.parts} layer="svg" ctx={ctx} />
+            </svg>
+            <PartsLayer parts={game.parts} layer="under" ctx={ctx} />
+            {/* The party's sprite, in the active hiker's color. */}
+            <img
+              className={`${ui.sprite} ${styles.person}`}
+              data-safe={safe || undefined}
+              src={tints[color] ?? art('person.png')}
+              alt=""
+              draggable={false}
+              style={{ left: game.pos.x - 5, top: game.pos.y - 6 }}
             />
-          )}
+            {recentHit && (
+              <span
+                className={styles.hitRing}
+                data-soft={reduced || undefined}
+                style={{ left: game.pos.x - 9, top: game.pos.y - 9 }}
+              />
+            )}
+            <PartsLayer parts={game.parts} layer="over" ctx={ctx} />
+          </div>
         </div>
+        <PartsLayer parts={game.parts} layer="outside" ctx={ctx} />
         {recentHit && (
           <span
             className={styles.hitText}
@@ -292,65 +267,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             {byId(recentHit.hikerId).name.toUpperCase()} −1
           </span>
         )}
-
-        {/* The bees' warnings, outside the box. */}
-        {game.attacks.map((a) =>
-          a.kind === 'bee' && game.time >= a.warnAt && game.time < a.activeAt ? (
-            <span
-              key={`w${a.id}`}
-              className={styles.mark}
-              style={{ left: a.mark.x - 3.5, top: a.mark.y - 3.5 }}
-            >
-              !
-            </span>
-          ) : null,
-        )}
-
-        {/* The sword, turning around its pivot above the box. */}
-        {animal === 'bear' &&
-          game.attacks.map((a) => {
-            if (a.kind !== 'swing') return null;
-            const angle = swingAngle(a, game.time);
-            const shown = angle ?? (game.time >= a.warnAt && game.time < a.activeAt ? 0 : null);
-            if (shown === null) return null;
-            const deg = ((a.side === 'right' ? -shown : shown) * 180) / Math.PI;
-            return (
-              <span key={`s${a.id}`}>
-                {/* A light trail: a few fading blades just behind it. */}
-                {angle !== null &&
-                  [0.12, 0.24, 0.36].map((back, k) => {
-                    const a2 = Math.max(0, shown - back);
-                    const d2 = ((a.side === 'right' ? -a2 : a2) * 180) / Math.PI;
-                    return (
-                      <img
-                        key={back}
-                        className={`${ui.sprite} ${styles.sword} ${styles.ghost}`}
-                        src={art('sword.png')}
-                        alt=""
-                        draggable={false}
-                        style={{
-                          left: pivot.x - 6,
-                          top: pivot.y - 12,
-                          transform: `rotate(${d2}deg)`,
-                          opacity: 0.35 - k * 0.1,
-                        }}
-                      />
-                    );
-                  })}
-                <img
-                  className={`${ui.sprite} ${styles.sword}`}
-                  src={art('sword.png')}
-                  alt=""
-                  draggable={false}
-                  style={{
-                    left: pivot.x - 6,
-                    top: pivot.y - 12,
-                    transform: `rotate(${deg}deg)`,
-                  }}
-                />
-              </span>
-            );
-          })}
+        {showHitboxes && <Hitboxes shapes={hitShapes(game)} sprite={game.pos} />}
 
         {/* The line of hikers. */}
         {switches(game) && !game.over && (

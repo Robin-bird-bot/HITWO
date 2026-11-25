@@ -1,16 +1,19 @@
 /**
- * Every minigame, as data (Phase 10.8). Bearrels and the four puzzle games
- * (docs/design/11-minigames-puzzles.md) are playable; the rest are listed on
+ * Every minigame, as data (Phase 10.8). Bearrels, the four puzzle games
+ * (docs/design/11-minigames-puzzles.md) and Dodge
+ * (docs/design/12-minigames-dodge.md) are playable; the rest are listed on
  * the testing tab as "coming soon". The UI pairs each playable one with its
  * game (src/ui/minigames/runners.tsx).
  */
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
+import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal } from './dodge/animals';
 import type {
   MinigameInfo,
   MinigameSetting,
   MinigameSettings,
   MinigameSettingValue,
+  PickOption,
 } from './types';
 
 const B = BALANCE.minigames.bearrels;
@@ -220,6 +223,33 @@ export const FIND_PATH: MinigameInfo = {
 
 const DG = BALANCE.minigames.dodge;
 
+/** Dodge's attacks for the Attack picker: All, then each one the animal uses (greyed out until its tier). */
+function dodgeAttacks(settings: MinigameSettings): PickOption[] {
+  const animal = isAnimal(settings.animal) ? settings.animal : 'bees';
+  const tier = settings.tier === 2 || settings.tier === 3 ? settings.tier : 1;
+  const choices = attackChoices(animal, tier, settings.ideas !== 'off');
+  return [
+    { id: 'all', label: 'All' },
+    ...choices.map((c) => ({
+      id: c.id,
+      label: `${c.name}${c.claudesIdea ? ' · Claude’s idea' : ''}${c.unlocked ? '' : ` · from Tier ${ROMAN_TIER[c.from]}`}`,
+      disabled: !c.unlocked,
+    })),
+  ];
+}
+
+const ROMAN_TIER = ['', 'I', 'II', 'III'];
+
+/** Every attack any animal uses, once (so a remembered Attack is kept while the Animal changes). */
+const ALL_DODGE_ATTACKS = [
+  ...new Map(
+    ANIMAL_IDS.flatMap((a) => attackChoices(a, 3, true)).map((c) => [
+      c.id,
+      { id: c.id, label: c.name },
+    ]),
+  ).values(),
+];
+
 export const DODGE: MinigameInfo = {
   id: 'dodge',
   name: 'Dodge',
@@ -232,11 +262,39 @@ export const DODGE: MinigameInfo = {
       kind: 'pick',
       id: 'animal',
       label: 'Animal',
-      options: [
-        { id: 'bees', label: 'Bees' },
-        { id: 'bear', label: 'Bear with a Sword' },
-      ],
+      options: ANIMAL_IDS.map((id) => ({ id, label: ANIMALS[id].name })),
       default: 'bees',
+      menu: true,
+    },
+    {
+      kind: 'pick',
+      id: 'attack',
+      label: 'Attack',
+      options: [{ id: 'all', label: 'All' }, ...ALL_DODGE_ATTACKS],
+      default: 'all',
+      menu: true,
+      optionsFor: dodgeAttacks,
+      hint: 'All, or practice one attack at the chosen tier',
+    },
+    {
+      kind: 'pick',
+      id: 'ideas',
+      label: 'Include Claude’s ideas',
+      options: [
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'on',
+    },
+    {
+      kind: 'pick',
+      id: 'hitboxes',
+      label: 'Show hitboxes',
+      options: [
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'off',
     },
     TIER,
     HIKERS,
@@ -249,7 +307,7 @@ export const DODGE: MinigameInfo = {
       DG.tiers[1].lengthSec,
       ' s',
       5,
-      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s`,
+      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s; Stampede +${DG.stampede.extraSec} s`,
     ),
     autoRange('switch', 'Switch every', 3, 10, DG.switchSec, ' s'),
   ],

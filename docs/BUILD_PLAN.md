@@ -1462,7 +1462,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - **The joystick** is [24] screen pixels, so it feels the same on any screen size.
 - **Not done:** real art beyond the placeholders, sound, a GPS preview animation (a still frame for now), and the other animals.
 
-### Phase 10.8, step 3b: Dodge's attack library and four new animals (now)
+### Phase 10.8, step 3b: Dodge's attack library and four new animals (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge-animals.md`. The design is the revised `docs/design/12-minigames-dodge.md`. New mockups `4-bear.png` to `9-stampede.png` in `docs/mockups/minigames/dodge/`. New placeholder art in `public/assets/minigames/dodge/`.)
 
@@ -1478,6 +1478,46 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
 5. **Testing tab:** Animal gets the four new animals. New settings: **Attack** (All, or one attack the animal uses, at the chosen tier), **Include Claude's ideas** (On or Off) and **Show hitboxes** (outlines every hit shape).
 
 **Tests:** as in `12-minigames-dodge.md`, section 13.
+
+**Phase 10.8 step 3b notes (built Nov 24)**
+- **What's playable:** main menu → **Minigame testing** → **Dodge** → pick an **Animal** and an **Attack** (All, or one), switch **Include Claude's ideas** and **Show hitboxes**, set the Tier and the rest → **Test it** → Start → Line up → Go.
+- **How it's built:** `src/minigames/dodge/` has the shapes, the attack library (`attacks/`, one file per family) and the animals. Claude's ideas are all in `attacks/claudesIdeas.ts`, with their drawings in `ui/minigames/dodge/parts/ClaudesIdeasParts.tsx`. To cut one, remove it there and from its animal's list in `animals.ts`.
+- **What I interpreted:**
+  - **Bees:** each of the bees' patterns is its own attack in the Attack list.
+  - **Variants by tier:** where a tier adds a variant, the attack picks at random from the variants open so far.
+    - Jab: 2 in a row from Tier II; a pair or a fan on Tier III.
+    - Pounce: 2 aimed from Tier II; 2 aimed or a feint on Tier III.
+    - Claws: straight or curved (half the time) from Tier II.
+  - **Bite:** hits only at the snap. **Pounce:** hits only at the landing.
+  - **Bombs:** only the blast and the shrapnel hurt, not the bomb or its landing.
+  - **Acorns:** a corner hit counts as one bounce. Their shrapnel uses the bombs' speed (100).
+  - **Bear hug** brings straight Claws from the top or bottom during the hold [50%] of the time.
+  - **Landing swipe** is its own attack: an aimed pounce, then a row of claws bursting from the landing spot in a random direction, warned by faint lines during the shadow.
+  - **Herd rush** uses the Stampede's own box [160 × 100] (from mockup 9). Moose charge from the left or right, in lanes [20] tall.
+  - **Stampede:**
+    - a row of heads with a frame on whoever is attacking, as in mockup 9; the moose joins the row when Claude's ideas are on;
+    - Bear and Bear with a Sword share the bear's head;
+    - during an overlap, the box stays the first animal's;
+    - an overlap is always two different animals, so with one attack picked there is none.
+  - **Tier speed** (×1.2, ×1.4) multiplies every attack's speed, never its timings or warnings. Numbers given for one tier only (shrapnel, bomb rolling) are used as they are.
+  - **The sword bear's shrinking box** now lasts for [3] of its attacks of any kind (the sweep that shrinks it and the next two), since it has more than sweeps.
+  - **Attack list:** attacks not open at the chosen tier are greyed out ("from Tier II"). A remembered pick that isn't open plays as All.
+- **Numbers the design doesn't give** (my guesses, all `TODO(wyatt)` in `balance.ts`):
+  - the curved claws' pivot ([24] outside a corner) and turn ([100°]);
+  - jab pull-back [0.15 s], diagonal slant [25–40°] and fan spread [18°];
+  - poke-up slide speed [90];
+  - pounce dust [0.3 s];
+  - roar rings [0.7 s] apart;
+  - honey drop speed [70];
+  - X slash showing [0.15 s];
+  - thrown sword speed [140], spin [2.5] turns a second, length [48] and lines at [30%] and [75%] of the box;
+  - dash speed [160], [4] legs, swinging [35%] of the box's height;
+  - pinecone gravity [260], bounce [0.45] and roll speed [60];
+  - scurry spacing [14] and size [4];
+  - herd speed [110];
+  - the Stampede's overlap chance [35%];
+  - the bomb's lob height [30].
+- **Not done:** real art beyond the placeholders, sound, an animated GPS preview, and the later animals (mountain lion, rattlesnake, skunk, hawk).
 
 ### Phase 10.8, next steps (outline only)
 

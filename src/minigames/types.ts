@@ -75,9 +75,18 @@ export type MinigameSetting =
       kind: 'pick';
       id: string;
       label: string;
+      /** Every option it can ever have (a remembered value outside these goes back to the default). */
       options: readonly { id: string; label: string }[];
       default: string;
       hint?: string;
+      /** Shown as a dropdown instead of a row of buttons (long lists: Dodge's Animal and Attack). */
+      menu?: boolean;
+      /**
+       * The options right now, when they follow other settings (Dodge's Attack
+       * follows the Animal, the Tier and Claude's ideas). A disabled one is
+       * shown greyed out; a value not open right now plays and shows as the default.
+       */
+      optionsFor?(settings: MinigameSettings): readonly PickOption[];
     }
   | {
       /** The art style: a few named looks for the same game (testing only for now). */
@@ -95,6 +104,13 @@ export type MinigameSetting =
       max: number;
       default: readonly string[];
     };
+
+/** One option of a pick setting that follows other settings. */
+export interface PickOption {
+  id: string;
+  label: string;
+  disabled?: boolean;
+}
 
 /** A minigame's settings, by setting id: numbers, a style id, and the hikers picked. */
 export type MinigameSettingValue = number | string | readonly string[];

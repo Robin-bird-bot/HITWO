@@ -25,7 +25,12 @@ import { emptyScene, type SceneModel } from '../../minigames/bearrels/scene';
 import { toArtStyle } from '../../minigames/bearrels/styles';
 import { MINIGAMES } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
-import type { MinigameInfo, MinigameSetting, MinigameSettings } from '../../minigames/types';
+import type {
+  MinigameInfo,
+  MinigameSetting,
+  MinigameSettings,
+  PickOption,
+} from '../../minigames/types';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 import { MinigameIcon } from './MinigameIcon';
 import { BearrelsScene, ScaledScreen } from './bearrels/Scene';
@@ -227,12 +232,34 @@ function Setting({
     );
   }
   if (s.kind === 'pick') {
-    const value = typeof given === 'string' ? given : s.default;
+    // Options that follow other settings: a value not open right now shows (and plays) as the default.
+    const options: readonly PickOption[] = s.optionsFor ? s.optionsFor(settings) : s.options;
+    const wanted = typeof given === 'string' ? given : s.default;
+    const value = options.some((o) => o.id === wanted && !o.disabled) ? wanted : s.default;
+    if (s.menu) {
+      return (
+        <label className={styles.setting}>
+          <span className={styles.label}>{s.label.toUpperCase()}</span>
+          <select
+            className={styles.menu}
+            value={value}
+            onChange={(e) => onChange({ ...settings, [s.id]: e.target.value })}
+          >
+            {options.map((o) => (
+              <option key={o.id} value={o.id} disabled={o.disabled}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          {s.hint && <span className={styles.hint}>{s.hint}</span>}
+        </label>
+      );
+    }
     return (
       <div className={styles.setting}>
         <span className={styles.label}>{s.label.toUpperCase()}</span>
         <div className={`${styles.choice} ${styles.pick}`} role="radiogroup" aria-label={s.label}>
-          {s.options.map((o) => (
+          {options.map((o) => (
             <button
               key={o.id}
               type="button"

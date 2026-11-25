@@ -1,13 +1,12 @@
 /**
- * Dodge (docs/design/12-minigames-dodge.md, section 8): switching hikers,
- * hits and lives, the ending, warnings, the bear's warning floor, staying in
- * the box, and the controls.
+ * Dodge (docs/design/12-minigames-dodge.md, section 13): switching hikers,
+ * hits and lives, the ending, the sword's warning floor, staying in the box,
+ * and the controls. The attack library's tests are in attacks.test.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { hikerStatus, resultLine } from '../results';
 import {
-  beePatterns,
   clampToBox,
   joystickVector,
   keysToVector,
@@ -33,10 +32,11 @@ const run = (s: DodgeState, seconds: number, input = STILL) => {
 /** Puts a bee right on the sprite, already flying. */
 const beeOn = (s: DodgeState): DodgeState => ({
   ...s,
-  attacks: [
+  parts: [
     {
       kind: 'bee',
       id: 99,
+      round: 0,
       x: s.pos.x,
       y: s.pos.y,
       vx: 0,
@@ -44,7 +44,6 @@ const beeOn = (s: DodgeState): DodgeState => ({
       warnAt: s.time - 1,
       activeAt: s.time - 0.5,
       mark: { x: 0, y: 0 },
-      done: false,
     },
   ],
 });
@@ -90,7 +89,7 @@ describe('hits and lives', () => {
     expect(s.lives.finn).toBe(0);
     expect(s.active).toBe('mom');
     expect(s.switchIn).toBeCloseTo(3);
-    s = run({ ...s, attacks: [] }, 10);
+    s = run({ ...s, parts: [] }, 10);
     expect(s.active).not.toBe('finn');
   });
 });
@@ -99,7 +98,7 @@ describe('the ending', () => {
   it('ends when time runs out; pass or fail and hit counts per hiker', () => {
     let s = calm(newDodge({ animal: 'bees', tier: 1, lives: 1, lengthSec: 10 }, THREE, 1));
     s = step(beeOn(s), DT, STILL);
-    s = run({ ...s, attacks: [] }, 10);
+    s = run({ ...s, parts: [] }, 10);
     expect(s.over).toBe(true);
     const r = result(s);
     expect(r.safe).toEqual(['mom', 'ellie']);
@@ -118,12 +117,12 @@ describe('the ending', () => {
   });
 
   it('length, lives and switch time come from the tier unless the testing tab overrides them', () => {
-    const t3 = newDodge({ animal: 'bear', tier: 3 }, THREE, 1);
+    const t3 = newDodge({ animal: 'swordBear', tier: 3 }, THREE, 1);
     expect(t3.lengthSec).toBe(D.tiers[3].lengthSec);
     expect(t3.maxLives).toBe(D.lives);
     expect(t3.switchSec).toBe(D.switchSec);
     const custom = newDodge(
-      { animal: 'bear', tier: 3, lengthSec: 45, lives: 3, switchSec: 8 },
+      { animal: 'swordBear', tier: 3, lengthSec: 45, lives: 3, switchSec: 8 },
       THREE,
       1,
     );
@@ -131,55 +130,30 @@ describe('the ending', () => {
   });
 });
 
-describe('attacks warn first', () => {
-  it.each([
-    ['bees', 1],
-    ['bees', 3],
-    ['bear', 1],
-    ['bear', 3],
-  ] as const)('%s on Tier %i: every attack has its warning before it can hit', (animal, tier) => {
-    let s = newDodge({ animal, tier, lives: 3, lengthSec: 60 }, THREE, 7);
-    const seen = new Map<number, number>();
-    for (let t = 0; t < 40; t += DT) {
-      s = step(s, DT, { x: Math.sin(t), y: Math.cos(t * 0.7) });
-      for (const a of s.attacks) {
-        if (!seen.has(a.id)) seen.set(a.id, a.activeAt - a.warnAt);
-      }
-      if (s.over) break;
-    }
-    expect(seen.size).toBeGreaterThan(5);
-    const floor = animal === 'bees' ? D.warnSec : D.bear.warnMinSec;
-    for (const warn of seen.values()) expect(warn).toBeGreaterThanOrEqual(floor - 1e-9);
-  });
-
-  it('Bear with a Sword: each swing warns a little less, never below the minimum', () => {
-    expect(swingWarnSec(0)).toBeCloseTo(D.bear.warnStartSec);
+describe('the sword sweep', () => {
+  it('each swing warns a little less, never below the minimum', () => {
+    expect(swingWarnSec(0)).toBeCloseTo(D.sword.warnStartSec);
     expect(swingWarnSec(1)).toBeLessThan(swingWarnSec(0));
-    for (let n = 0; n < 200; n++) expect(swingWarnSec(n)).toBeGreaterThanOrEqual(D.bear.warnMinSec);
+    for (let n = 0; n < 200; n++)
+      expect(swingWarnSec(n)).toBeGreaterThanOrEqual(D.sword.warnMinSec);
   });
 
-  it('the bees’ patterns open up by tier', () => {
-    expect(beePatterns(1)).toEqual(['lane', 'cross']);
-    expect(beePatterns(2)).toEqual(['lane', 'cross', 'diagonal', 'zigzag']);
-    expect(beePatterns(3)).toContain('aimed');
-  });
-
-  it('a sword swing hits a sprite in the half it sweeps, and misses one in the other half', () => {
-    const base = newDodge({ animal: 'bear', tier: 1, lives: 3 }, THREE, 1);
+  it('a swing hits a sprite in the half it sweeps, and misses one in the other half', () => {
+    const base = newDodge({ animal: 'swordBear', tier: 1, lives: 3 }, THREE, 1);
     const swing = (x: number) => {
       let s: DodgeState = {
         ...base,
         nextAttackAt: Infinity,
         pos: { x, y: base.box.cy + 10 },
-        attacks: [
+        parts: [
           {
             kind: 'swing',
             id: 1,
+            round: 0,
             side: 'right',
             warnAt: 0,
             activeAt: 0.1,
             sweepSec: 0.35,
-            done: false,
           },
         ],
       };
@@ -193,13 +167,13 @@ describe('attacks warn first', () => {
 
 describe('controls', () => {
   it('the sprite never leaves the box, even when it shrinks', () => {
-    let s = calm(newDodge({ animal: 'bear', tier: 3 }, THREE, 1));
+    let s = calm(newDodge({ animal: 'swordBear', tier: 3 }, THREE, 1));
     s = run(s, 3, { x: 1, y: 1 });
     const corner = s.pos;
     expect(corner.x).toBeLessThanOrEqual(s.box.cx + s.box.w / 2 - 5 + 1e-9);
-    s = { ...s, boxTarget: { w: D.bear.shrunk[0], h: D.bear.shrunk[1] } };
+    s = { ...s, boxTarget: { ...s.box, w: D.sword.shrunk[0], h: D.sword.shrunk[1] } };
     s = run(s, 1, { x: 1, y: 1 });
-    expect(s.box.w).toBeCloseTo(D.bear.shrunk[0]);
+    expect(s.box.w).toBeCloseTo(D.sword.shrunk[0]);
     expect(s.pos.x).toBeLessThanOrEqual(s.box.cx + s.box.w / 2 - 5 + 1e-9);
     expect(s.pos.y).toBeLessThanOrEqual(s.box.cy + s.box.h / 2 - 6 + 1e-9);
     expect(clampToBox({ x: 999, y: -999 }, s.box)).toEqual({

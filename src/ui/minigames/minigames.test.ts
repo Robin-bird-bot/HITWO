@@ -171,9 +171,27 @@ describe('the minigame list', () => {
     for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
     }
-    // Dodge: Animal, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
-    expect(ids(DODGE)).toEqual(['animal', 'tier', 'hikers', 'lives', 'length', 'switch']);
-    expect(defaultSettings(DODGE)).toMatchObject({ animal: 'bees', lives: 'auto', length: 'auto' });
+    // Dodge: Animal, Attack, Include Claude's ideas, Show hitboxes, Tier, Hikers, Lives (1 to 3),
+    // Length (10 to 60 s) and Switch every (3 to 10 s).
+    expect(ids(DODGE)).toEqual([
+      'animal',
+      'attack',
+      'ideas',
+      'hitboxes',
+      'tier',
+      'hikers',
+      'lives',
+      'length',
+      'switch',
+    ]);
+    expect(defaultSettings(DODGE)).toMatchObject({
+      animal: 'bees',
+      attack: 'all',
+      ideas: 'on',
+      hitboxes: 'off',
+      lives: 'auto',
+      length: 'auto',
+    });
     expect(cleanSettings(DODGE, { lives: 7, length: 33, switch: 1 }, TEST_HIKERS)).toMatchObject({
       lives: 3,
       length: 35,
@@ -185,6 +203,46 @@ describe('the minigame list', () => {
       tier: 1,
     });
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
+  });
+
+  it('Dodge’s Animal and Attack: six animals; the Attack list follows the Animal, the Tier and Claude’s ideas', () => {
+    const animal = DODGE.settings.find((s) => s.id === 'animal');
+    const attack = DODGE.settings.find((s) => s.id === 'attack');
+    if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
+      throw new Error('Dodge needs Animal and Attack picks');
+    }
+    expect(animal.options.map((o) => o.label)).toEqual([
+      'Bees',
+      'Bear',
+      'Bear with a Sword',
+      'Bobcat',
+      'Squirrel Army',
+      'Wild Predator Stampede',
+    ]);
+    expect(animal.menu && attack.menu).toBe(true);
+    const open = (settings: Record<string, string | number>) =>
+      attack.optionsFor!(settings).map((o) => `${o.id}${o.disabled ? ' (closed)' : ''}`);
+    expect(open({ animal: 'bear', tier: 1, ideas: 'on' })).toEqual([
+      'all',
+      'claws',
+      'bite',
+      'roar (closed)',
+      'hug (closed)',
+      'honey (closed)',
+    ]);
+    expect(open({ animal: 'bear', tier: 3, ideas: 'off' })).toEqual(['all', 'claws', 'bite']);
+    expect(attack.optionsFor({ animal: 'bear', tier: 2, ideas: 'on' })[3]).toMatchObject({
+      label: 'Roar · Claude’s idea',
+    });
+    expect(attack.optionsFor({ animal: 'bear', tier: 1, ideas: 'on' })[3]?.label).toBe(
+      'Roar · Claude’s idea · from Tier II',
+    );
+    // A remembered attack is kept while the animal changes; one no animal uses goes back to All.
+    expect(cleanSettings(DODGE, { animal: 'bobcat', attack: 'roar' }, TEST_HIKERS).attack).toBe(
+      'roar',
+    );
+    expect(cleanSettings(DODGE, { attack: 'fireball' }, TEST_HIKERS).attack).toBe('all');
+    expect(cleanSettings(DODGE, { animal: 'dragon' }, TEST_HIKERS).animal).toBe('bees');
   });
 
   it('Bearrels’ settings: art style (Detailed pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
