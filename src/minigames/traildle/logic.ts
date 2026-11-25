@@ -12,11 +12,11 @@ import { BALANCE } from '../../config/balance';
 import { int, seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const T = BALANCE.minigames.traildle;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 /** Right digit in the right spot; right digit in the wrong spot; not in the code. */
 export type Mark = 'right' | 'wrong' | 'none';
 /** What's known about a digit on a board: nothing yet, not in the code, in it somewhere, in a right spot. */

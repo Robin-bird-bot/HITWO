@@ -8,18 +8,22 @@
  *   is safe for a moment. A hiker with no lives left is out for good; if the
  *   active hiker goes out, the next takes over at once.
  * - Survive until the clock runs out; it ends early if everyone is out.
+ * - **Tiers and levels** (section 4): the challenge tier (I to V) sets the
+ *   length and the overlaps, and picks the animal's level (Easy, 1, 2 or 3),
+ *   which sets its attacks, their speed and the gap between them.
  * - **Attacks** come from the shared library (library.ts): picked at random
- *   from the animal's list (animals.ts), only what's unlocked at the tier,
+ *   from the animal's list (animals.ts), only what plays at the level,
  *   never the same attack twice in a row. In the Stampede the box and the
- *   head follow whoever is attacking, and no animal attacks more than twice
- *   in a row.
- * - **Pacing** (section 6): the next attack comes the tier's gap after the
- *   running ones end, or, with the tier's chance, overlaps the current one.
- *   Only one area attack and one changer at a time, and never more than the
- *   tier's most at once. A changer (a bear hug, Darkness) doesn't hold up
- *   the next attack once its warning is over.
- * - **The Woods Monster** plays one tier up; on Tier III he's faster still,
- *   and at half time the box shrinks and Darkness can come.
+ *   portrait follow whoever is attacking, and no animal attacks more than
+ *   twice in a row.
+ * - **Pacing** (section 6): the next attack comes the level's gap after the
+ *   running ones end. Only at Tier V can it overlap the current one (with
+ *   the tier's chance): one area attack and one changer at a time, never
+ *   more than the tier's most at once. A changer (a bear hug, Darkness)
+ *   doesn't hold up the next attack, or count toward the most at once,
+ *   once its warning is over.
+ * - **The Woods Monster** always plays Level 3; at Tier V he also gets his
+ *   boss boost. At half time the box shrinks and Darkness can come.
  * - Every attack warns first. Honey puddles slow the sprite; a bear hug or
  *   a shrinking box pushes it back inside.
  *
@@ -29,8 +33,17 @@ import { BALANCE } from '../../config/balance';
 import { int, nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
-import { attackChoices, boxFor, isAnimal, playTier, pool, type PoolEntry } from './animals';
+import { isTier, type MinigameResult } from '../types';
+import {
+  attackChoices,
+  boxFor,
+  isAnimal,
+  pool,
+  rankFor,
+  type LevelPick,
+  type PoolEntry,
+  type Rank,
+} from './animals';
 import { oneClawRow } from './attacks/bear';
 import { puddleShape, squeezed } from './attacks/claudesIdeas';
 import { between, clampToBox, coin, type Box } from './geometry';
@@ -43,13 +56,15 @@ import type {
   Attacker,
   BoxMove,
   DodgeState,
+  Level,
   Part,
   Round,
   Tier,
   World,
 } from './types';
 
-export type { AnimalId, AttackId, Attacker, DodgeState, Part, Tier } from './types';
+export type { AnimalId, AttackId, Attacker, DodgeState, Level, Part, Tier } from './types';
+export type { LevelPick, Rank } from './animals';
 export type { Box } from './geometry';
 export type { Point, Shape } from './shapes';
 export { clampToBox, markSpot, SPRITE_HALF } from './geometry';
@@ -60,12 +75,15 @@ const D = BALANCE.minigames.dodge;
 
 export interface DodgeOptions {
   animal: AnimalId;
+  /** The challenge tier, I to V. */
   tier: Tier;
+  /** The testing tab's Level: Auto (the tier's), Easy, or a numbered level. */
+  level?: LevelPick;
   /** The testing tab's Attack picker: all, or only one attack. */
   attack?: AttackId | 'all';
   /** Include Claude's ideas (on unless switched off). */
   ideas?: boolean;
-  /** The testing tab's Overlaps: the tier's chance (auto), never, or whenever they fit. */
+  /** The testing tab's Overlaps: the tier's chance (auto: Tier V only), never, or whenever they fit. */
   overlaps?: 'auto' | 'off' | 'on';
   /** The testing tab's overrides: "auto" uses the tier's value. */
   lives?: 'auto' | number;
@@ -81,6 +99,12 @@ export const autoLength = (animal: AnimalId, tier: Tier): number =>
   animal === 'monster'
     ? D.monster.lengthSec
     : D.tiers[tier].lengthSec + (animal === 'stampede' ? D.stampede.extraSec : 0);
+
+/** A game's level as a number (0 is Easy). */
+export const rankOf = (s: Pick<DodgeState, 'level' | 'easy'>): Rank => (s.easy ? 0 : s.level);
+
+/** The level's gap before the next attack. */
+const gapOf = (s: DodgeState): number => D.levels[rankOf(s)].gapSec;
 
 const sameBox = (a: Box, b: Box) => a.cx === b.cx && a.cy === b.cy && a.w === b.w && a.h === b.h;
 
@@ -128,23 +152,25 @@ export function newDodge(
 ): DodgeState {
   const animal: AnimalId = isAnimal(options.animal) ? options.animal : 'bees';
   const ideas = options.ideas ?? true;
-  const hudTier = options.tier;
-  const tier = playTier(animal, hudTier);
-  const boost = animal === 'monster' && hudTier === 3;
+  const hudTier: Tier = isTier(options.tier) ? options.tier : 1;
+  const rank = rankFor(animal, hudTier, options.level);
+  // The Woods Monster's boss boost only comes at Tier V.
+  const boost = animal === 'monster' && hudTier === 5;
   const lives = Math.max(1, Math.round(orAuto(options.lives, D.lives)));
-  // A picked attack this animal can't make at this tier plays as All.
+  // A picked attack this animal doesn't make at this level plays as All.
   const wanted = options.attack ?? 'all';
   const only =
     wanted !== 'all' &&
-    attackChoices(animal, hudTier, ideas).some((c) => c.id === wanted && c.unlocked)
+    attackChoices(animal, rank, ideas).some((c) => c.id === wanted && c.unlocked)
       ? wanted
       : 'all';
   const first: Attacker = animal === 'stampede' ? 'herd' : animal;
   const box = boxFor(first);
   const switchSec = orAuto(options.switchSec, D.switchSec);
-  const t = D.tiers[tier];
+  const t = D.tiers[hudTier];
   const B = D.monster.boost;
   // With one attack picked, nothing overlaps: it's there to be studied alone.
+  // Auto overlaps only where the tier allows (Tier V); On uses Tier V's cap.
   const overlaps = only !== 'all' ? 'off' : (options.overlaps ?? 'auto');
   const overlapChance =
     overlaps === 'off'
@@ -152,14 +178,16 @@ export function newDodge(
       : overlaps === 'on'
         ? 1
         : Math.min(1, t.overlapChance + (boost ? B.overlapChance : 0));
+  const cap = overlaps === 'on' ? Math.max(t.maxAtOnce, D.tiers[5].maxAtOnce) : t.maxAtOnce;
   return {
     animal,
-    tier,
+    level: Math.max(1, rank) as Level,
+    easy: rank === 0,
     hudTier,
     boost,
-    speed: t.speed * (boost ? B.speed : 1),
+    speed: D.levels[rank].speed * (boost ? B.speed : 1),
     overlapChance,
-    maxAtOnce: t.maxAtOnce + (boost ? B.maxAtOnce : 0),
+    maxAtOnce: cap + (boost ? B.maxAtOnce : 0),
     only,
     ideas,
     order: [...order],
@@ -252,10 +280,14 @@ export const inHoney = (s: DodgeState): boolean =>
 
 // ── Picking attacks ────────────────────────────────────────────────────────
 
-/** Whether an attack of this kind can start now: one area and one changer at most, under the cap. */
+/**
+ * Whether an attack of this kind can start now: one area and one changer at
+ * most, under the cap (a changer past its warning doesn't count, so other
+ * attacks run during a bear hug or Darkness).
+ */
 function fits(s: DodgeState, e: PoolEntry): boolean {
   const def = ATTACKS[e.attack];
-  if (s.rounds.length >= s.maxAtOnce) return false;
+  if (s.rounds.filter((r) => holdsUp(s, r)).length >= s.maxAtOnce) return false;
   if (def.secondHalf && !s.secondHalf) return false;
   if (def.kind === 'area' && s.rounds.some((r) => r.kind === 'area')) return false;
   if (def.kind === 'changer' && changerOn(s)) return false;
@@ -269,7 +301,7 @@ function fits(s: DodgeState, e: PoolEntry): boolean {
  * animal that isn't attacking yet when one fits.
  */
 function pick(s: DodgeState, rng: RngState): PoolEntry | undefined {
-  const all = pool(s.animal, s.tier, s.ideas, s.only).filter((e) => fits(s, e));
+  const all = pool(s.animal, rankOf(s), s.ideas, s.only).filter((e) => fits(s, e));
   if (!all.length) return undefined;
   const last = s.history.at(-1);
   const recent = s.history.slice(-D.stampede.maxSameAnimal).map((h) => h.attacker);
@@ -308,7 +340,8 @@ function startRound(s: DodgeState, rng: RngState, entry: PoolEntry): DodgeState 
   const box = alone ? targetBox(entry.attacker, state).box : state.boxMove.to;
   let nextId = state.nextId;
   const ctx: AttackCtx = {
-    tier: state.tier,
+    level: state.level,
+    easy: state.easy,
     time: state.time,
     box,
     pos: { ...state.pos },
@@ -323,7 +356,7 @@ function startRound(s: DodgeState, rng: RngState, entry: PoolEntry): DodgeState 
   const started = def.start(ctx);
   const parts = [...started.parts];
   // Bear with a Sword: sometimes a row of claws comes in on top of a sword attack.
-  if (entry.tweak.withClaws && state.only === 'all' && coin(rng, D.claws.withSword[state.tier])) {
+  if (entry.tweak.withClaws && state.only === 'all' && coin(rng, D.claws.withSword[state.level])) {
     parts.push(oneClawRow(ctx, state.time));
   }
   const calmAt = Math.min(...parts.filter((p) => !p.child).map((p) => p.activeAt));
@@ -370,11 +403,12 @@ function schedule(s0: DodgeState, rng: RngState): DodgeState {
   if (!entry) {
     // Nothing fits now: wait for the running attacks to end (or, with none, try again after the gap).
     const waitFor = s.rounds.some((r) => holdsUp(s, r));
-    return { ...s, nextAttackAt: waitFor ? null : s.time + D.tiers[s.tier].gapSec };
+    return { ...s, nextAttackAt: waitFor ? null : s.time + gapOf(s) };
   }
   s = startRound(s, rng, entry);
   // The next one overlaps this one (with the chance), or waits until they end.
-  const overlap = s.rounds.length < s.maxAtOnce && nextFloat(rng) < s.overlapChance;
+  const running = s.rounds.filter((r) => holdsUp(s, r)).length;
+  const overlap = running < s.maxAtOnce && nextFloat(rng) < s.overlapChance;
   return {
     ...s,
     nextAttackAt: overlap
@@ -407,7 +441,8 @@ function hit(s: DodgeState): DodgeState {
 const worldOf = (s: DodgeState, dt: number, rng: RngState, ids: { next: number }): World => ({
   time: s.time,
   dt,
-  tier: s.tier,
+  level: s.level,
+  easy: s.easy,
   box: effectiveBox(s),
   pos: s.pos,
   rng,
@@ -448,8 +483,8 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   }
   s.safeFor = Math.max(0, s.safeFor - dt);
 
-  // The Woods Monster, Tier III: at half time the woods close in.
-  if (s.animal === 'monster' && s.hudTier === 3 && !s.secondHalf && s.time >= s.lengthSec / 2) {
+  // The Woods Monster: at half time the woods close in (at every tier).
+  if (s.animal === 'monster' && !s.secondHalf && s.time >= s.lengthSec / 2) {
     s = { ...s, secondHalf: true };
     s.boxMove = moveBoxTo(s, targetBox('monster', s).box, D.monster.shrinkSec);
   }
@@ -488,11 +523,11 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   // The sprite is pushed back inside if the box moved under it.
   s = { ...s, pos: clampToBox(s.pos, effectiveBox(s)) };
 
-  // Finished attacks go; once none holds up the next, it comes after the tier's gap.
+  // Finished attacks go; once none holds up the next, it comes after the level's gap.
   const rounds = s.rounds.filter((r) => !roundOver(s, r));
   if (rounds.length !== s.rounds.length) s = { ...s, rounds, showing: showingNow(s, rounds) };
   if (s.nextAttackAt === null && !s.rounds.some((r) => holdsUp(s, r))) {
-    s = { ...s, nextAttackAt: s.time + D.tiers[s.tier].gapSec };
+    s = { ...s, nextAttackAt: s.time + gapOf(s) };
   }
   // The clock.
   if (s.time >= s.lengthSec) s = { ...s, over: true };

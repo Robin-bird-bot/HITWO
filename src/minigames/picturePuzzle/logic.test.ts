@@ -1,6 +1,7 @@
 /**
  * Picture Puzzle (docs/design/13-minigames-puzzles-2.md, section 6): shared
- * piles, top pieces only, back onto piles, finishing, and Tier I locks.
+ * piles, top pieces only, back onto piles, finishing, Tier I locks, the
+ * right-spot bonus (once per piece), 6 × 6 on Tier V, and the photos.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
@@ -12,6 +13,7 @@ import {
   pairsOf,
   pieceAt,
   result,
+  tick,
   timeUp,
   type PicturePuzzleState,
   type Spot,
@@ -63,6 +65,64 @@ describe('setting up', () => {
     expect(s.pieces).toHaveLength(25);
     expect(s.timeSec).toBe(50);
     expect(newPicturePuzzle({ tier: 3 }, ['finn'], 1).grid).toBe(5);
+  });
+
+  it('6 × 6 on Tier V (or by the Grid setting): 36 pieces, 4 piles', () => {
+    const s = newPicturePuzzle({ tier: 5 }, ['finn'], 1);
+    expect(s.grid).toBe(6);
+    expect(s.pieces).toHaveLength(36);
+    expect(s.piles).toHaveLength(4);
+    expect(s.timeSec).toBe(P.tiers[5].secPerPiece * 36);
+    expect(newPicturePuzzle({ tier: 1, grid: 6 }, ['finn'], 1).grid).toBe(6);
+    expect(solveAll(s).results.finn).toBe('passed');
+  });
+
+  it('the photos: never repeated, and the Picture setting picks the first hiker’s', () => {
+    for (let seed = 1; seed <= 5; seed++) {
+      const s = newPicturePuzzle({ tier: 1, picture: 'rocky-butte' }, HIKERS, seed);
+      expect(s.pictureOf.finn).toBe('rocky-butte');
+      expect(new Set(Object.values(s.pictureOf)).size).toBe(4);
+      expect(Object.values(s.pictureOf).every((n) => P.pictures.includes(n))).toBe(true);
+    }
+  });
+});
+
+describe('the clock and the right-spot bonus', () => {
+  it('the first time a piece lands in its own spot, the clock gains the tier’s bonus; never again for that piece', () => {
+    const s0 = newPicturePuzzle({ tier: 2 }, ['finn'], 3);
+    const id = s0.piles[0]!.at(-1)!;
+    const own = s0.pieces[id]!.cell;
+    const placed = move(s0, pile(0), cell(0, own));
+    expect(placed.timeLeft).toBe(s0.timeLeft + P.tiers[2].rightSpotSec);
+    expect(placed.bonusNote).toMatchObject({ sec: P.tiers[2].rightSpotSec, picture: 0, cell: own });
+    // Out and back in: nothing more.
+    const out = move(placed, cell(0, own), pile(1));
+    const back = move(out, pile(1), cell(0, own));
+    expect(back.timeLeft).toBe(placed.timeLeft);
+    // A wrong spot adds nothing.
+    const id2 = back.piles[0]!.at(-1)!;
+    const wrong = (back.pieces[id2]!.cell + 1) % 16;
+    if (back.grids[0]![wrong] === null) {
+      expect(move(back, pile(0), cell(0, wrong)).timeLeft).toBe(back.timeLeft);
+    }
+  });
+
+  it('the Right-spot bonus setting, and 0 adds nothing', () => {
+    const s0 = newPicturePuzzle({ tier: 1, rightSpotSec: 0 }, ['finn'], 4);
+    const id = s0.piles[0]!.at(-1)!;
+    const placed = move(s0, pile(0), cell(0, s0.pieces[id]!.cell));
+    expect(placed.timeLeft).toBe(s0.timeLeft);
+    expect(placed.bonusNote).toBeUndefined();
+    expect(newPicturePuzzle({ tier: 1, rightSpotSec: 4 }, ['finn'], 4).rightSpotSec).toBe(4);
+  });
+
+  it('the clock runs down, and running out fails the unfinished pictures', () => {
+    let s = newPicturePuzzle({ tier: 1 }, ['finn', 'mom'], 5);
+    s = tick(s, 10);
+    expect(s.timeLeft).toBeCloseTo(s.timeSec - 10);
+    s = tick(s, s.timeLeft);
+    expect(s.phase).toBe('between');
+    expect(s.results).toEqual({ finn: 'failed', mom: 'failed' });
   });
 });
 

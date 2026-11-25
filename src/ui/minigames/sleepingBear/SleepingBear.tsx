@@ -8,6 +8,7 @@
  * a "!", and roars when he catches someone. Each hiker is drawn in their
  * color; the bottom bar shows WAITING, SNEAKING, ACROSS or CAUGHT.
  */
+import { TIER_LABELS } from '../../../minigames/types';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
@@ -26,7 +27,6 @@ import hud from '../hud.module.css';
 import styles from './SleepingBear.module.css';
 
 const SB = BALANCE.minigames.sleepingBear;
-const ROMAN = ['', 'I', 'II', 'III'];
 const FIXED = 1 / 120;
 const file = (f: string) => `minigames/sleeping-bear/${f}`;
 const art = (f: string) => asset(file(f));
@@ -230,7 +230,7 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
             <span style={{ width: `${(game.clock / game.total) * 100}%` }} />
           </span>
         </div>
-        <div className={`${ui.box} ${hud.tier}`}>TIER {ROMAN[tier]}</div>
+        <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 
         {/* Each hiker and how they're doing. */}
         <div

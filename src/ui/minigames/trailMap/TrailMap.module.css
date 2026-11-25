@@ -118,3 +118,17 @@
     transition: none;
   }
 }
+
+/*
+ * A trail sign (from Tier II), over its tile. The design says 2×, but mockup
+ * 8-trail-map-signs.png draws the 16-px post at half the tile, so the trail
+ * piece under it still shows; this follows the mockup.
+ */
+.sign {
+  position: absolute;
+  left: 25%;
+  top: 25%;
+  width: 50%;
+  height: 50%;
+  pointer-events: none;
+}

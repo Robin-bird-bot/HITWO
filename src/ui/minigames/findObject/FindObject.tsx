@@ -23,6 +23,7 @@ import {
   isDark,
   isWindy,
   leftToFind,
+  lightDiameter,
   newFindObject,
   nextRound,
   positionAt,
@@ -31,7 +32,7 @@ import {
   tick,
   type Mode,
 } from '../../../minigames/findObject/logic';
-import type { MinigameSettings } from '../../../minigames/types';
+import { TIER_LABELS, type MinigameSettings } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
@@ -42,7 +43,6 @@ import styles from './FindObject.module.css';
 
 const F = BALANCE.minigames.findObject;
 const snack = (name: string) => asset(`minigames/find-object/snacks/${name}.png`);
-const ROMAN = ['', 'I', 'II', 'III'];
 const MODE_LINE: Record<Mode, string> = {
   still: 'Still',
   windy: 'Windy: everything drifts sideways',
@@ -163,7 +163,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
   };
 
   const dark = isDark(game.mode);
-  const radius = F.light.diameter / 2;
+  const radius = lightDiameter(game.tier) / 2;
   const left = leftToFind(game);
   const risk = game.phase === 'playing' ? atRisk(game) : [];
   const inGame = game.line.length;
@@ -278,7 +278,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
         Each target left at the end puts one hiker out, from the back
       </p>
       <p className={`${ui.muted} ${styles.tier}`}>
-        Tier {ROMAN[game.tier]} · {MODE_LINE[game.mode]}
+        Tier {TIER_LABELS[game.tier]} · {MODE_LINE[game.mode]}
       </p>
 
       {intro && game.phase === 'playing' && (

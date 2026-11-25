@@ -6,17 +6,25 @@
  *   Parts are plain data, so the whole game stays one serializable state;
  *   each kind's rules (how it moves, where it can hit, when it's done) live
  *   in a registry keyed by kind (library.ts).
- * - **An attack** is a piece of the library: an id, a name, the tier it
+ * - **An attack** is a piece of the library: an id, a name, the level it
  *   starts on (balance `unlocks`), and `start`, which makes its parts.
- * - **An animal** is a box, a head and a list of attacks (animals.ts).
+ * - **An animal** is a box, a portrait and a list of attacks (animals.ts).
+ * - **Tiers and levels** (Nov 25): the challenge tier (I to V) picks the
+ *   animal's level (Easy, 1, 2 or 3), which sets its attacks and numbers.
+ *   `Level` is the numbered level the attack tables use (Easy reads Level
+ *   1's tables), and `easy` marks Easy.
  */
 import type { RngState } from '../../engine/types';
 import type { ClaudePart } from './attacks/claudesIdeas';
 import type { MonsterPart } from './attacks/monster';
 import type { Box, Side } from './geometry';
+import type { Tier } from '../types';
 import type { Point, Shape } from './shapes';
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
+
+/** A numbered level: what used to be Tiers I to III. Easy is Level 1 with `easy` set. */
+export type Level = 1 | 2 | 3;
 
 export type AnimalId =
   'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'stampede' | 'monster';
@@ -26,6 +34,8 @@ export type Attacker = Exclude<AnimalId, 'stampede'> | 'herd';
 
 export type AttackId =
   // Bees
+  | 'single'
+  | 'pairs'
   | 'lane'
   | 'cross'
   | 'diagonal'
@@ -215,6 +225,8 @@ export interface AcornPart extends PartBase {
   vx: number;
   vy: number;
   bounces: number;
+  /** It breaks on this wall hit (Easy: sooner); otherwise the usual. */
+  breakOn?: number;
 }
 
 /** An acorn bomb: lobbed to a spot, a fuse, then a blast (`activeAt`) that reaches `radius`. */
@@ -271,7 +283,8 @@ export type PartKind = Part['kind'];
 export interface World {
   time: number;
   dt: number;
-  tier: Tier;
+  level: Level;
+  easy: boolean;
   /** The box as it is now (squeezed by a bear hug, if one is on). */
   box: Box;
   /** The sprite's middle. */
@@ -305,13 +318,15 @@ export interface Tweak {
 
 /** What an attack sees when it starts. */
 export interface AttackCtx {
-  tier: Tier;
+  level: Level;
+  /** Easy (Bees and Squirrel Army only): their own gentler patterns. */
+  easy: boolean;
   time: number;
   /** The box the attack happens in (the attacking animal's, where it's heading). */
   box: Box;
   pos: Point;
   rng: RngState;
-  /** The tier's speed (×1.0, ×1.2, ×1.4; more for the Woods Monster on Tier III). */
+  /** The level's speed (×0.85 Easy, ×1.0, ×1.2, ×1.4; more for the Woods Monster at Tier V). */
   speed: number;
   round: number;
   nextId(): number;
@@ -361,10 +376,11 @@ export interface BoxMove {
 
 export interface DodgeState {
   animal: AnimalId;
-  /** The tier the attacks play at (the Woods Monster plays one up), and the one the HUD shows. */
-  tier: Tier;
+  /** The level the attacks play at (and whether it's Easy), and the challenge tier the HUD shows. */
+  level: Level;
+  easy: boolean;
   hudTier: Tier;
-  /** The Woods Monster on Tier III: faster, more overlaps, one more at once. */
+  /** The Woods Monster at Tier V: faster, more overlaps, one more at once. */
   boost: boolean;
   /** The attacks' speed, the chance the next attack overlaps, and the most at once. */
   speed: number;
@@ -392,7 +408,7 @@ export interface DodgeState {
   boxMove: BoxMove;
   /** The sword bear's shrunk box is on (a changer: no bear hug meanwhile). */
   shrunk: boolean;
-  /** The Woods Monster on Tier III: the second half has started (the box shrinks, Darkness can come). */
+  /** The Woods Monster: the second half has started (the box shrinks, Darkness can come). */
   secondHalf: boolean;
   /** The sprite's middle. */
   pos: Point;
@@ -403,12 +419,12 @@ export interface DodgeState {
   history: { attacker: Attacker; attack: AttackId }[];
   /**
    * When the next attack starts: during the current one (an overlap), or
-   * none while waiting for the running attacks to end (then the tier's gap).
+   * none while waiting for the running attacks to end (then the level's gap).
    */
   nextAttackAt: number | null;
   /** When attacks started, and whether each overlapped another (for tests and tuning). */
   starts: { at: number; attack: AttackId; overlapped: boolean }[];
-  /** Who's attacking now, for the heads above the box. */
+  /** Who's attacking now, for the portrait above the box. */
   showing: Attacker[];
   nextId: number;
   roundNo: number;

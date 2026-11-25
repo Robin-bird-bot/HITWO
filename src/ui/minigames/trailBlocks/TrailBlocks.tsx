@@ -11,6 +11,7 @@
  *   the left; let go in the green zone.
  * - Clearing Animals: click when the shrinking circle's edge is in the ring.
  */
+import { TIER_LABELS } from '../../../minigames/types';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
@@ -40,7 +41,6 @@ import hud from '../hud.module.css';
 import styles from './TrailBlocks.module.css';
 
 const B = BALANCE.minigames.trailBlocks;
-const ROMAN = ['', 'I', 'II', 'III'];
 const FIXED = 1 / 120;
 const file = (f: string) => `minigames/trail-blocks/${f}`;
 const art = (f: string) => asset(file(f));
@@ -435,7 +435,7 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
             <span style={{ width: `${(1 - game.work / game.total) * 100}%` }} />
           </span>
         </div>
-        <div className={`${ui.box} ${hud.tier}`}>TIER {ROMAN[tier]}</div>
+        <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 
         {/* The energy bar: each hiker's chunk, in line order. */}
         <div className={`${ui.box} ${hud.panel}`}>

@@ -89,7 +89,7 @@ function clawRow(
   return {
     kind: 'claws',
     ...base(ctx, warnAt, activeAt),
-    count: C.count[ctx.tier],
+    count: C.count[ctx.level],
     spacing: C.spacing,
     length: C.length,
     thickness: C.thickness,
@@ -189,7 +189,7 @@ export const CLAWS: AttackDef = {
     const warn = warnFor(ctx.tweak.warnSec);
     // Rows from different corners, a moment apart.
     const corners = shuffle(ctx.rng, CORNERS);
-    const parts = Array.from({ length: C.rows[ctx.tier] }, (_, k) => {
+    const parts = Array.from({ length: C.rows[ctx.level] }, (_, k) => {
       const warnAt = ctx.time + k * C.rowGapSec;
       return clawsArc(
         ctx,

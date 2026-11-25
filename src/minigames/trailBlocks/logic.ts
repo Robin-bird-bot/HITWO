@@ -25,11 +25,11 @@ import { BALANCE } from '../../config/balance';
 import { nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passingResult } from '../passing';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const B = BALANCE.minigames.trailBlocks;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 export type Version = 'chop' | 'rockslide' | 'river' | 'animals';
 export type Quality = 'perfect' | 'good' | 'weak' | 'miss';
 

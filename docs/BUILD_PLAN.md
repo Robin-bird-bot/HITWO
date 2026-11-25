@@ -1649,7 +1649,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
   - **Settings:** Fake-outs and Skunks are Auto (the tier's), On (Tier II's chance on Tier I) or Off.
 - **Not done:** real art, sound, and animated GPS previews.
 
-### Phase 10.8, step 6: Minigame changes after Wyatt's playtest, and Tiers IV and V
+### Phase 10.8, step 6: Minigame changes after Wyatt's playtest, and Tiers IV and V (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-minigame-changes.md`. The designs are the revised `docs/design/12-minigames-dodge.md`, `13-minigames-puzzles-2.md` and `14-minigames-trail-blocks.md`, and the new `15-challenge-tiers.md`. New mockups in `docs/mockups/minigames/dodge/`, `puzzles-2/` and `trail-blocks/`, plus the overview `0-board-minigame-changes.png`. New art: solid portraits, Wyatt's photos, trail signs and raccoon masks.)
 
@@ -1658,7 +1658,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
 Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Build**
-1. **Tiers I to V:** every game and label supports Tiers IV and V (harder versions of Tier III). Games without their own numbers get them from the fallback rule, written into `balance.ts`. Runs extend the range to V.
+1. **Tiers I to V:** every game and label supports Tiers IV and V (harder versions of Tier III). Games without their own numbers get them from the fallback rule, written into `balance.ts`. Wyatt (Nov 25): only the minigames and the testing tab for now; runs keep their tiers until a later update.
 2. **Dodge:** animals play at a level (Easy, 1, 2, 3), set by a table of who shows up at each tier; overlaps only at Tier V; easier Bees (one at a time on Easy); an Easy Squirrel Army; the Woods Monster always at Level 3; solid portraits (Solid, or Solid + red) with a blink and a bob. Testing tab: Tier I to V, Level, Portrait style (also the P key) and Portrait motion.
 3. **Trail Map:** less time; every trailhead and sign connected at the same moment (no One at a time mode); trail signs from Tier II.
 4. **Memory Puzzle:** no miss limit; a clock on every tier; a match adds time, and from Tier II a miss takes time away.

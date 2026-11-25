@@ -6,12 +6,15 @@
  *   Sets are dealt to the hikers in turn, so the split is as even as it can
  *   be. A hiker never has the same snack twice, but two hikers can: Finn's
  *   orange and Mom's orange are different sets.
- * - **Play:** a preview with every card face up; on Tiers II and III, a few
- *   visible swaps (and on Tier III one more after every miss); then cards
- *   are flipped one at a time. A try ends as soon as the face-up cards don't
- *   all match (a miss) or the set is complete (matched).
- * - **The end:** every set matched, everyone passes. When the misses or the
- *   time run out, each hiker who still has an unmatched set fails.
+ * - **Play:** a preview with every card face up; from Tier II, a few visible
+ *   swaps (and from Tier III one more after every miss); then cards are
+ *   flipped one at a time. A try ends as soon as the face-up cards don't all
+ *   match (a miss) or the set is complete (matched).
+ * - **The clock** (Nov 25: no miss limit any more): it runs after the
+ *   preview. A match adds time; from Tier II a miss takes some away, once
+ *   per try.
+ * - **The end:** every set matched, everyone passes. When the time runs
+ *   out, each hiker who still has an unmatched set fails.
  *
  * Cards keep their ids when they swap places: `cards` maps each position to
  * a card (or to nothing, when the sets don't fill the grid).
@@ -21,11 +24,11 @@ import { int, seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { SNACKS, type Snack } from '../findObject/logic';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const M = BALANCE.minigames.memory;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 
 export interface MemorySet {
   snack: Snack;
@@ -50,22 +53,34 @@ export interface MemoryState {
   /** Swaps still to show, and how many come after each miss. */
   swapsLeft: number;
   swapsPerMiss: number;
-  missesLeft: number;
-  misses: number;
-  /** Seconds to play, or none. */
-  timeSec: number | null;
+  /** How long the preview shows. */
+  previewSec: number;
+  /** The clock: what it started at, what's left, and seconds played since the preview. */
+  timeSec: number;
+  timeLeft: number;
+  elapsed: number;
+  /** A match adds this much; a miss takes this much away. */
+  matchSec: number;
+  missSec: number;
+  /** The last change to the clock ("+5 S", "−2 S"), and when (in `elapsed`). */
+  clockNote?: { sec: number; at: number };
   order: string[];
   rng: RngState;
 }
 
 export interface MemoryOptions {
   tier: Tier;
-  /** Match (Auto: the tier's), misses and swaps (Auto, off, on) and the timer (Auto, off, seconds). */
+  /** Match (Auto: the tier's), swaps (Auto, off, on), and the preview, time, match bonus and miss cost (Auto or seconds). */
   match?: 'auto' | 'pairs' | 'threes';
-  misses?: 'auto' | number;
   swaps?: 'auto' | 'off' | 'on';
-  timer?: 'auto' | 'off' | number;
+  preview?: 'auto' | number;
+  time?: 'auto' | number;
+  matchBonus?: 'auto' | number;
+  missCost?: 'auto' | number;
 }
+
+const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
+  typeof v === 'number' ? v : fallback;
 
 /** Deals the sets: to the hikers in turn, each hiker's snacks all different. */
 export function dealSets(rng: RngState, count: number, order: readonly string[]): MemorySet[] {
@@ -98,9 +113,7 @@ export function newMemory(
   ];
   const swaps =
     options.swaps === 'off' ? 0 : options.swaps === 'on' ? t.swaps || M.swapsOnTier1 : t.swaps;
-  const missesLeft = typeof options.misses === 'number' ? options.misses : t.misses;
-  const timeSec =
-    options.timer === 'off' ? null : typeof options.timer === 'number' ? options.timer : t.timerSec;
+  const timeSec = orAuto(options.time, t.timeSec);
   return {
     tier: options.tier,
     cols: t.cols,
@@ -114,9 +127,12 @@ export function newMemory(
     phase: order.length ? 'preview' : 'over',
     swapsLeft: swaps,
     swapsPerMiss: options.swaps === 'off' ? 0 : t.swapsPerMiss,
-    missesLeft,
-    misses: missesLeft,
+    previewSec: orAuto(options.preview, t.previewSec),
     timeSec,
+    timeLeft: timeSec,
+    elapsed: 0,
+    matchSec: orAuto(options.matchBonus, t.matchSec),
+    missSec: orAuto(options.missCost, t.missSec),
     order: [...order],
     rng,
   };
@@ -149,10 +165,29 @@ export function nextSwap(s: MemoryState): { state: MemoryState; swapped?: [numbe
   return { state: { ...s, rng, cards, swapsLeft, phase }, swapped: [a, b] };
 }
 
+/** Whether the clock is running: after the preview, until it's over. */
+export const clockRuns = (s: MemoryState): boolean =>
+  s.phase === 'swaps' || s.phase === 'play' || s.phase === 'miss';
+
+/** Time passes on the clock; when it runs out, it's over. */
+export function tick(s: MemoryState, dt: number): MemoryState {
+  if (!clockRuns(s)) return s;
+  const timeLeft = Math.max(0, s.timeLeft - dt);
+  const elapsed = s.elapsed + dt;
+  return timeLeft <= 0
+    ? { ...s, timeLeft, elapsed, up: [], phase: 'over' }
+    : { ...s, timeLeft, elapsed };
+}
+
+/** The clock gains (or loses) time, with a note to show. */
+const addTime = (s: MemoryState, sec: number): Partial<MemoryState> =>
+  sec === 0 ? {} : { timeLeft: Math.max(0, s.timeLeft + sec), clockNote: { sec, at: s.elapsed } };
+
 /**
  * Flips the card at a position. When the face-up cards don't all match,
- * it's a miss (shown, then `resolveMiss`); when they make a whole set, it's
- * matched. Every set matched: it's over.
+ * it's a miss: the clock loses the miss cost (once for the try), and it's
+ * shown, then `resolveMiss`. When they make a whole set, it's matched and
+ * the clock gains the match bonus. Every set matched: it's over.
  */
 export function flip(
   s: MemoryState,
@@ -164,8 +199,9 @@ export function flip(
   const up = [...s.up, id];
   const set = s.cardSet[up[0]!]!;
   if (up.some((c) => s.cardSet[c] !== set)) {
+    const after = { ...s, up, phase: 'miss' as const, ...addTime(s, -s.missSec) };
     return {
-      state: { ...s, up, phase: 'miss', missesLeft: Math.max(0, s.missesLeft - 1) },
+      state: after.timeLeft <= 0 ? { ...after, up: [], phase: 'over' } : after,
       outcome: 'miss',
     };
   }
@@ -173,15 +209,14 @@ export function flip(
   const matched = s.matched.map((m, c) => m || up.includes(c));
   const done = matched.every(Boolean);
   return {
-    state: { ...s, up: [], matched, phase: done ? 'over' : 'play' },
+    state: { ...s, up: [], matched, phase: done ? 'over' : 'play', ...addTime(s, s.matchSec) },
     outcome: 'match',
   };
 }
 
-/** The miss has been seen: the cards flip back; over if the misses are gone, else maybe more swaps. */
+/** The miss has been seen: the cards flip back, and maybe more swaps come. */
 export function resolveMiss(s: MemoryState): MemoryState {
   if (s.phase !== 'miss') return s;
-  if (s.missesLeft <= 0) return { ...s, up: [], phase: 'over' };
   if (s.swapsPerMiss > 0) return { ...s, up: [], phase: 'swaps', swapsLeft: s.swapsPerMiss };
   return { ...s, up: [], phase: 'play' };
 }

@@ -13,6 +13,7 @@
  * tile with footprints; a wrong one flashes red with an X and costs a strike.
  * Each hiker, in line order, gets a new path and watches it first.
  */
+import { TIER_LABELS } from '../../../minigames/types';
 import {
   useEffect,
   useRef,
@@ -43,7 +44,6 @@ import styles from './RememberPath.module.css';
 
 const R = BALANCE.minigames.rememberPath;
 const TILE = 32;
-const ROMAN = ['', 'I', 'II', 'III'];
 const tileArt = (f: string) => asset(`minigames/forest-tiles/${f}`);
 const ranger = (f: string) => asset(`minigames/remember-path/${f}`);
 
@@ -237,7 +237,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
             The ranger comes in from below, walks the trail and walks off the top. Remember it.
           </p>
           <p className={`${ui.text} ${styles.tierLine}`}>
-            Tier {ROMAN[tier]}
+            Tier {TIER_LABELS[tier]}
             <br />
             {game.cols} x {game.rows}, {game.path.length - 1} steps
           </p>

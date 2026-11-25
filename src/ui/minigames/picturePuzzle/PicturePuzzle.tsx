@@ -1,7 +1,8 @@
 /**
  * Picture Puzzle on the GPS (docs/design/13-minigames-puzzles-2.md, section
- * 3; mockup 6-picture-puzzle.png), in scene units (320 × 240). Pictures are
- * 120 × 120, cut into 4 × 4 (30-unit) or 5 × 5 (24-unit) pieces.
+ * 3; mockups 6-picture-puzzle.png and 10-picture-photos.png), in scene
+ * units (320 × 240). Pictures are Wyatt's photos, 120 × 120, cut into 4 × 4
+ * (30-unit), 5 × 5 (24-unit) or 6 × 6 (20-unit) pieces.
  *
  * - Drag the top piece of a pile onto any cell, or tap it and then tap a
  *   cell. Pieces in a grid can be dragged to another cell (they swap) or
@@ -10,18 +11,21 @@
  *   the next pair plays after.
  * - Tier I: a piece in its own spot clicks and locks, and a thumbnail of
  *   the finished picture shows. A finished picture glows and locks.
+ * - The first time a piece lands in its own spot, the clock gains time and
+ *   "+2 S" shows over it.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
+  isPictureName,
   move,
   newPicturePuzzle,
   nextRound,
   pieceAt,
   playing,
   result,
-  timeUp,
+  tick,
   type PicturePuzzleState,
   type Spot,
 } from '../../../minigames/picturePuzzle/logic';
@@ -30,13 +34,13 @@ import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
 import { playSound } from '../sound';
-import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import styles from './PicturePuzzle.module.css';
 
 const PP = BALANCE.minigames.picturePuzzle;
 const PICTURE = 120;
 const pictureArt = (name: string) => asset(`minigames/picture-puzzle/picture-${name}.png`);
+const FIXED = 1 / 60;
 
 /** Where things are on the screen for a round: each grid's top-left, and each pile. */
 function layout(s: PicturePuzzleState) {
@@ -61,12 +65,15 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
   const tier = tierOf(settings);
   const gridPick = pickOf(settings, 'grid');
   const thumbPick = pickOf(settings, 'thumbnail');
+  const picturePick = pickOf(settings, 'picture');
   const [game, setGame] = useState(() =>
     newPicturePuzzle(
       {
         tier,
-        grid: gridPick === '4' ? 4 : gridPick === '5' ? 5 : 'auto',
+        grid: gridPick === '4' ? 4 : gridPick === '5' ? 5 : gridPick === '6' ? 6 : 'auto',
         secPerPiece: typeof settings.secPerPiece === 'number' ? settings.secPerPiece : 'auto',
+        rightSpotSec: typeof settings.rightSpot === 'number' ? settings.rightSpot : 'auto',
+        picture: isPictureName(picturePick) ? picturePick : 'random',
       },
       hikers.map((h) => h.id),
       seed,
@@ -88,8 +95,25 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
   const who = playing(game);
   const thumbnails = thumbPick === 'on' || (thumbPick !== 'off' && tier <= PP.thumbnailUpTo);
 
+  // The round's clock: fixed steps, as fast as the screen draws.
   const running = !still && game.phase === 'play';
-  const left = useCountdown(game.timeSec, running, () => setGame((s) => timeUp(s)), game.round);
+  useEffect(() => {
+    if (!running) return;
+    let last = performance.now();
+    let spare = 0;
+    let frame = requestAnimationFrame(function loop(now) {
+      spare = Math.min(0.25, spare + (now - last) / 1000);
+      last = now;
+      const steps = Math.floor(spare / FIXED);
+      spare -= steps * FIXED;
+      if (steps > 0) setGame((s) => tick(s, steps * FIXED));
+      frame = requestAnimationFrame(loop);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [running]);
+  const left = game.timeLeft;
+  const note =
+    game.bonusNote && game.elapsed - game.bonusNote.at < PP.bonusNoteSec ? game.bonusNote : null;
 
   // A round ended: a moment to see it, then the next pair (or the results).
   useEffect(() => {
@@ -207,8 +231,8 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
         onPointerUp={onUp}
         onPointerCancel={() => setHeld(null)}
       >
-        <div className={`${ui.box} ${styles.clock}`} data-low={(left ?? 99) <= 10 || undefined}>
-          {clock(left ?? game.timeSec)}
+        <div className={`${ui.box} ${styles.clock}`} data-low={left <= 10 || undefined}>
+          {clock(left)}
         </div>
 
         {/* Each hiker's picture. */}
@@ -264,12 +288,29 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
           );
         })}
 
+        {/* The right-spot bonus, over its piece. */}
+        {note && L.grids[note.picture] && (
+          <span
+            key={note.at}
+            className={styles.bonus}
+            role="status"
+            style={{
+              left: L.grids[note.picture]!.x + ((note.cell % game.grid) + 0.5) * L.piece,
+              top: L.grids[note.picture]!.y + Math.floor(note.cell / game.grid) * L.piece,
+            }}
+          >
+            +{note.sec} S
+          </span>
+        )}
+
         {/* The tray: piles where only the top piece shows. */}
         <div className={styles.tray} style={{ top: L.trayTop }}>
           <span className={`${ui.text} ${styles.trayWords}`}>
-            {game.grids.length === 2
-              ? 'One tray for both pictures. Taking a piece shows the one under it.'
-              : 'Taking a piece shows the one under it.'}
+            {game.rightSpotSec > 0
+              ? 'A piece in its right spot (the first time) adds time.'
+              : game.grids.length === 2
+                ? 'One tray for both pictures. Taking a piece shows the one under it.'
+                : 'Taking a piece shows the one under it.'}
           </span>
         </div>
         {game.piles.map((pile, k) => {

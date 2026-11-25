@@ -185,7 +185,9 @@ describe('the minigame list', () => {
     const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
     expect(ids(TRAIL_BLOCKS)).toEqual(['version', 'tier', 'hikers', 'quality']);
     expect(ids(SLEEPING_BEAR)).toEqual(['tier', 'hikers', 'fakeOuts']);
-    expect(ids(WHACKOON)).toEqual(['tier', 'hikers', 'skunks']);
+    expect(ids(WHACKOON)).toEqual(['tier', 'hikers', 'mode', 'skunks']);
+    expect(defaultSettings(WHACKOON)).toMatchObject({ mode: 'colors', skunks: 'auto' });
+    expect(cleanSettings(WHACKOON, { mode: 'teams' }, TEST_HIKERS).mode).toBe('colors');
     const version = TRAIL_BLOCKS.settings[0];
     if (version?.kind !== 'pick') throw new Error('Version is a pick');
     expect(version.options.map((o) => o.label)).toEqual([
@@ -204,9 +206,41 @@ describe('the minigame list', () => {
 
   it('the third batch’s settings, and timers that can be switched off', () => {
     const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
-    expect(ids(TRAIL_MAP)).toEqual(['tier', 'hikers', 'mode', 'grid', 'time']);
-    expect(ids(MEMORY)).toEqual(['tier', 'hikers', 'match', 'preview', 'misses', 'swaps', 'timer']);
-    expect(ids(PICTURE_PUZZLE)).toEqual(['tier', 'hikers', 'grid', 'thumbnail', 'secPerPiece']);
+    // Nov 25: Trail Map's Mode and Memory's Misses and Timer are gone.
+    expect(ids(TRAIL_MAP)).toEqual(['tier', 'hikers', 'grid', 'time', 'signs']);
+    expect(ids(MEMORY)).toEqual([
+      'tier',
+      'hikers',
+      'match',
+      'preview',
+      'swaps',
+      'time',
+      'matchBonus',
+      'missCost',
+    ]);
+    expect(ids(PICTURE_PUZZLE)).toEqual([
+      'tier',
+      'hikers',
+      'grid',
+      'thumbnail',
+      'secPerPiece',
+      'rightSpot',
+      'picture',
+    ]);
+    const picture = PICTURE_PUZZLE.settings.find((x) => x.id === 'picture');
+    if (picture?.kind !== 'pick') throw new Error('Picture is a pick');
+    expect(picture.options.map((o) => o.id)).toEqual([
+      'random',
+      'lake-island',
+      'mountain-lake',
+      'green-valley',
+      'foggy-forest',
+      'canyon-trail',
+      'rocky-butte',
+    ]);
+    const grid = PICTURE_PUZZLE.settings.find((x) => x.id === 'grid');
+    if (grid?.kind !== 'pick') throw new Error('Grid is a pick');
+    expect(grid.options.map((o) => o.id)).toEqual(['auto', '4', '5', '6']);
     expect(ids(THIN_ICE)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
     expect(defaultSettings(THIN_ICE)).toMatchObject({
       grid: 'auto',
@@ -221,19 +255,33 @@ describe('the minigame list', () => {
       grid: 'auto',
     });
     expect(
-      cleanSettings(MEMORY, { timer: 33, preview: 0.7, misses: 12 }, TEST_HIKERS),
+      cleanSettings(
+        MEMORY,
+        { time: 33, preview: 0.7, matchBonus: 12, missCost: 'off' },
+        TEST_HIKERS,
+      ),
     ).toMatchObject({
-      timer: 35,
+      time: 35,
       preview: 0.5,
-      misses: 10,
+      matchBonus: 10,
+      missCost: 'auto',
     });
+    expect(cleanSettings(TRAIL_MAP, { signs: 5 }, TEST_HIKERS).signs).toBe(3);
     expect(cleanSettings(THIN_ICE, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject({
       grid: '12x9',
       holesPerHiker: 4,
     });
   });
 
-  it('the puzzle games: Tier (I, II, III), Hikers, and their overrides, where Auto uses the tier', () => {
+  it('the puzzle games: Tier (I to V), Hikers, and their overrides, where Auto uses the tier', () => {
+    // Every game with a Tier offers I to V (15-challenge-tiers.md).
+    for (const info of MINIGAMES) {
+      const tier = info.settings.find((x) => x.id === 'tier');
+      if (!tier) continue;
+      if (tier.kind !== 'choice') throw new Error('Tier is a choice');
+      expect(tier.options).toEqual([1, 2, 3, 4, 5]);
+      expect(tier.labels).toEqual(['I', 'II', 'III', 'IV', 'V']);
+    }
     const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
     expect(ids(TRAILDLE)).toEqual(['tier', 'hikers', 'signs', 'timer']);
     expect(ids(FIND_OBJECT)).toEqual([
@@ -262,14 +310,17 @@ describe('the minigame list', () => {
     for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
     }
-    // Dodge: Animal, Attack, Overlaps, Include Claude's ideas, Show hitboxes, Tier, Hikers,
-    // Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
+    // Dodge: Animal, Attack, Overlaps, Level, Include Claude's ideas, Show hitboxes, Portrait
+    // style and motion, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
     expect(ids(DODGE)).toEqual([
       'animal',
       'attack',
       'overlaps',
+      'level',
       'ideas',
       'hitboxes',
+      'portrait',
+      'motion',
       'tier',
       'hikers',
       'lives',
@@ -280,8 +331,11 @@ describe('the minigame list', () => {
       animal: 'bees',
       attack: 'all',
       overlaps: 'auto',
+      level: 'auto',
       ideas: 'on',
       hitboxes: 'off',
+      portrait: 'solid',
+      motion: 'on',
       lives: 'auto',
       length: 'auto',
     });
@@ -291,14 +345,15 @@ describe('the minigame list', () => {
       switch: 3,
     });
     // A remembered override that isn't an option, or a tier out of range, goes back to the default.
-    expect(cleanSettings(TRAILDLE, { signs: '12', tier: 4 }, TEST_HIKERS)).toMatchObject({
+    expect(cleanSettings(TRAILDLE, { signs: '12', tier: 6 }, TEST_HIKERS)).toMatchObject({
       signs: 'auto',
       tier: 1,
     });
+    expect(cleanSettings(TRAILDLE, { tier: 5 }, TEST_HIKERS).tier).toBe(5);
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
-  it('Dodge’s Animal and Attack: seven animals; the Attack list follows the Animal, the Tier and Claude’s ideas', () => {
+  it('Dodge’s Animal and Attack: seven animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
     const animal = DODGE.settings.find((s) => s.id === 'animal');
     const attack = DODGE.settings.find((s) => s.id === 'attack');
     if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
@@ -316,7 +371,8 @@ describe('the minigame list', () => {
     expect(animal.menu && attack.menu).toBe(true);
     const open = (settings: Record<string, string | number>) =>
       attack.optionsFor!(settings).map((o) => `${o.id}${o.disabled ? ' (closed)' : ''}`);
-    expect(open({ animal: 'bear', tier: 1, ideas: 'on' })).toEqual([
+    // A Bear isn't at Tier I: it plays its lowest level, 1. At Tier II it's Level 1 too.
+    expect(open({ animal: 'bear', tier: 2, ideas: 'on' })).toEqual([
       'all',
       'claws',
       'bite',
@@ -325,13 +381,31 @@ describe('the minigame list', () => {
       'honey (closed)',
     ]);
     expect(open({ animal: 'bear', tier: 3, ideas: 'off' })).toEqual(['all', 'claws', 'bite']);
-    expect(attack.optionsFor({ animal: 'bear', tier: 2, ideas: 'on' })[3]).toMatchObject({
+    expect(attack.optionsFor({ animal: 'bear', tier: 3, ideas: 'on' })[3]).toMatchObject({
       label: 'Shout · Claude’s idea',
     });
-    expect(attack.optionsFor({ animal: 'bear', tier: 1, ideas: 'on' })[3]?.label).toBe(
-      'Shout · Claude’s idea · from Tier II',
+    expect(attack.optionsFor({ animal: 'bear', tier: 2, ideas: 'on' })[3]?.label).toBe(
+      'Shout · Claude’s idea · from Level 2',
     );
-    // The Woods Monster plays one tier up: on Tier I only Darkness (Tier III's second half) is closed.
+    // The Level setting wins over the tier.
+    expect(open({ animal: 'bear', tier: 2, level: '2', ideas: 'off' })).toEqual([
+      'all',
+      'claws',
+      'bite',
+    ]);
+    expect(open({ animal: 'bear', tier: 5, level: '1', ideas: 'on' })).toContain('shout (closed)');
+    // Bees at Tier I are Easy: one at a time and pairs only.
+    expect(open({ animal: 'bees', tier: 1, ideas: 'on' })).toEqual([
+      'all',
+      'single',
+      'pairs',
+      'lane (closed)',
+      'cross (closed)',
+      'diagonal (closed)',
+      'zigzag (closed)',
+      'aimed (closed)',
+    ]);
+    // The Woods Monster always plays Level 3: everything is open, at any tier.
     expect(open({ animal: 'monster', tier: 1, ideas: 'on' })).toEqual([
       'all',
       'fire',
@@ -340,9 +414,11 @@ describe('the minigame list', () => {
       'runes',
       'ritual',
       'eye',
-      'darkness (closed)',
+      'darkness',
     ]);
     expect(open({ animal: 'monster', tier: 1, ideas: 'off' })).toEqual(['all', 'fire']);
+    expect(cleanSettings(DODGE, { level: 'hard' }, TEST_HIKERS).level).toBe('auto');
+    expect(cleanSettings(DODGE, { portrait: 'solidRed' }, TEST_HIKERS).portrait).toBe('solidRed');
     // A remembered attack is kept while the animal changes; one no animal uses goes back to All.
     expect(cleanSettings(DODGE, { animal: 'bobcat', attack: 'shout' }, TEST_HIKERS).attack).toBe(
       'shout',

@@ -148,6 +148,21 @@ export const CATEGORIES: readonly { id: MinigameCategory; name: string }[] = [
   { id: 'luck', name: 'Guess and luck' },
 ];
 
+/**
+ * Challenge tiers I to V (docs/design/15-challenge-tiers.md). Tiers I to III
+ * bring in new challenges; IV and V are harder versions of Tier III.
+ */
+export type Tier = 1 | 2 | 3 | 4 | 5;
+export const TIERS: readonly Tier[] = [1, 2, 3, 4, 5];
+export const TIER_LABELS: Readonly<Record<Tier, string>> = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+};
+export const isTier = (v: unknown): v is Tier => (TIERS as readonly unknown[]).includes(v);
+
 /** A minigame as data: what the testing tab lists and the pop-up names. */
 export interface MinigameInfo {
   id: string;

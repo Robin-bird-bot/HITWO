@@ -132,3 +132,35 @@
     transition: none;
   }
 }
+
+/* Colors mode (7-whackoon-colors.png). */
+.pan[data-resting] {
+  opacity: 0.55;
+}
+
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 194px;
+  margin: 0;
+  text-align: center;
+  font-size: 3.4px;
+  color: #1d2918;
+}
+
+.doneWord {
+  color: #a0b37d;
+}
+
+.squares {
+  display: flex;
+  gap: 1.5px;
+}
+
+.squares > span {
+  width: 5px;
+  height: 4px;
+  border-radius: 0.5px;
+  background: #3c4e2f;
+}

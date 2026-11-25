@@ -5,10 +5,10 @@
  *
  * - **Top:** the animal's name, a SURVIVE bar emptying as time runs down,
  *   and the tier.
- * - **The animal** above the box (in the Stampede, a row of heads with a
- *   frame on whoever is attacking; the Woods Monster with his two cultists);
- *   **the box** below it, where the party's sprite (tinted in the active
- *   hiker's color) dodges.
+ * - **The animal's portrait** above the box (in the Stampede, whoever is
+ *   attacking; the Woods Monster with his two cultists), in the Portrait
+ *   style setting's colors (P switches it while playing); **the box** below
+ *   it, where the party's sprite (tinted in the active hiker's color) dodges.
  * - **Attacks** are drawn in layers: warnings and shadows under the sprite,
  *   attacks over it, squirrels and swords outside the box, and every "!" and
  *   warning arrow on top of everything (the HUDs included), so none is ever
@@ -38,21 +38,21 @@ import {
   type AttackId,
   type Point,
 } from '../../../minigames/dodge/logic';
-import type { MinigameSettings } from '../../../minigames/types';
+import { dodgeLevelPick } from '../../../minigames/catalog';
+import { TIER_LABELS, type MinigameSettings } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
 import ui from '../gpsUi.module.css';
-import { Heads } from './Heads';
 import { Hitboxes } from './Hitboxes';
 import { PartsLayer } from './parts/drawParts';
 import { art, type DrawCtx } from './parts/drawTypes';
+import { Portraits, type PortraitStyle } from './Portraits';
 import { useTinted } from './tint';
 import styles from './Dodge.module.css';
 
 const D = BALANCE.minigames.dodge;
-const ROMAN = ['', 'I', 'II', 'III'];
 const FIXED = 1 / 120;
 
 const numberOr = (settings: MinigameSettings, id: string): 'auto' | number => {
@@ -74,6 +74,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       {
         animal,
         tier: tierOf(settings),
+        level: dodgeLevelPick(settings),
         attack: (pickOf(settings, 'attack') || 'all') as AttackId | 'all',
         ideas,
         overlaps,
@@ -85,6 +86,11 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       seed,
     ),
   );
+  // The portraits: their style (P switches it while playing) and motion.
+  const [portrait, setPortrait] = useState<PortraitStyle>(
+    pickOf(settings, 'portrait') === 'solidRed' ? 'solid-red' : 'solid',
+  );
+  const motion = pickOf(settings, 'motion') !== 'off';
   const keys = useRef(new Set<string>());
   const stick = useRef<{ id: number; start: Point; now: Point; startScene: Point } | null>(null);
   const [joy, setJoy] = useState<{ base: Point; knob: Point } | null>(null);
@@ -110,6 +116,10 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       'D',
     ]);
     const down = (e: KeyboardEvent) => {
+      if ((e.key === 'p' || e.key === 'P') && !e.repeat) {
+        setPortrait((p) => (p === 'solid' ? 'solid-red' : 'solid'));
+        return;
+      }
       if (!watched.has(e.key)) return;
       e.preventDefault();
       keys.current.add(e.key);
@@ -240,9 +250,16 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             <span style={{ width: `${(left / game.lengthSec) * 100}%` }} />
           </span>
         </div>
-        <div className={`${ui.box} ${styles.tier}`}>TIER {ROMAN[game.hudTier]}</div>
+        <div className={`${ui.box} ${styles.tier}`}>TIER {TIER_LABELS[game.hudTier]}</div>
 
-        <Heads animal={animal} showing={game.showing} beeFrame={beeFrame} ideas={game.ideas} />
+        <Portraits
+          animal={animal}
+          showing={game.showing}
+          style={portrait}
+          motion={motion && !reduced}
+          time={game.time}
+          seed={seed}
+        />
 
         {/* The box: everything inside it is clipped to it, drawn in scene units. */}
         <div

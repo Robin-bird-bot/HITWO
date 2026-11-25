@@ -1,23 +1,36 @@
 /**
  * Dodge tuning and the Woods Monster (docs/design/12-minigames-dodge.md,
- * section 14, third pass): pacing and overlaps, warnings on every side,
- * staggered bees, claw facing, the 3-second hug, Stalk and the Zigzag dash,
- * the Wave and the scurry's nuts, and the Woods Monster.
+ * section 14): tiers and levels, pacing and overlaps (only at Tier V),
+ * warnings on every side, bees by level, claw facing, the 3-second hug,
+ * Stalk and the Zigzag dash, the Wave and the scurry's nuts, the Woods
+ * Monster, and the portraits.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { boxFor } from './animals';
+import { TIERS, type Tier } from '../types';
+import {
+  ANIMAL_IDS,
+  animalsAt,
+  boxFor,
+  levelFor,
+  pickAnimal,
+  PORTRAITS,
+  type LevelPick,
+  type Rank,
+} from './animals';
 import { CLAW_TIP, clawsAt, clawShape, clawTurn } from './attacks/bear';
 import { stalkAt } from './attacks/bobcat';
 import { edges, HUD, markSpot, SCREEN, type Box } from './geometry';
 import { ATTACKS } from './library';
+import { seedRng } from '../../engine/rng';
 import { effectiveBox, newDodge, step, type DodgeOptions, type DodgeState } from './logic';
-import type { AnimalId, AttackId, Part, Tier } from './types';
+import type { AnimalId, AttackId, Part } from './types';
 
 const D = BALANCE.minigames.dodge;
 const FOUR = ['finn', 'mom', 'ellie', 'wyatt'];
 const DT = 1 / 60;
-const TIERS: readonly Tier[] = [1, 2, 3];
+const LEVELS: readonly (1 | 2 | 3)[] = [1, 2, 3];
+const pick = (r: Rank): LevelPick => (r === 0 ? 'easy' : r);
 
 const wander = (t: number) => ({ x: Math.sin(t * 1.3), y: Math.cos(t * 0.9) });
 
@@ -35,8 +48,17 @@ function play(
   return s;
 }
 
-const game = (animal: AnimalId, tier: Tier, extra: Partial<DodgeOptions> = {}, seed = 7) =>
+/** A game at a level (Easy is 0), at Tier IV (no overlaps) unless `extra` says otherwise. */
+const game = (animal: AnimalId, level: Rank, extra: Partial<DodgeOptions> = {}, seed = 7) =>
+  newDodge({ animal, tier: 4, level: pick(level), lives: 3, lengthSec: 60, ...extra }, FOUR, seed);
+
+/** A game at a tier, its level by the tier (Auto). */
+const atTier = (animal: AnimalId, tier: Tier, extra: Partial<DodgeOptions> = {}, seed = 7) =>
   newDodge({ animal, tier, lives: 3, lengthSec: 60, ...extra }, FOUR, seed);
+
+/** The rounds that hold up the next attack (a changer past its warning doesn't). */
+const holding = (s: DodgeState) =>
+  s.rounds.filter((r) => !(r.kind === 'changer' && s.time >= r.calmAt)).length;
 
 /** Every part that showed up, the first time it was seen. */
 function partsSeen(s0: DodgeState): Part[] {
@@ -49,19 +71,68 @@ function partsSeen(s0: DodgeState): Part[] {
 
 const kindOf = (id: AttackId) => ATTACKS[id].kind;
 
+describe('tiers and levels', () => {
+  it('each tier offers only the animals in the table, at their level; the Woods Monster is always Level 3', () => {
+    expect(animalsAt(1).sort()).toEqual(['bees', 'squirrels']);
+    expect(animalsAt(2).sort()).toEqual(['bear', 'bees', 'bobcat', 'squirrels']);
+    expect(animalsAt(3)).toHaveLength(7);
+    expect(levelFor('bees', 1)).toBe(0);
+    expect(levelFor('squirrels', 1)).toBe(0);
+    expect(levelFor('bear', 2)).toBe(1);
+    expect(levelFor('swordBear', 3)).toBe(2);
+    expect(levelFor('stampede', 4)).toBe(3);
+    for (const tier of TIERS) {
+      expect(levelFor('monster', tier)).toBe(3);
+      expect(atTier('monster', tier).level).toBe(3);
+    }
+    // Not in the table at a tier (testing only): its lowest level.
+    expect(levelFor('bear', 1)).toBe(1);
+    expect(levelFor('swordBear', 1)).toBe(2);
+    // The Level setting overrides; Easy only for Bees and the Squirrel Army.
+    expect(atTier('bear', 1, { level: 3 }).level).toBe(3);
+    expect(atTier('bear', 1, { level: 'easy' }).easy).toBe(false);
+    expect(atTier('bees', 5, { level: 'easy' }).easy).toBe(true);
+  });
+
+  it('a random animal for a tier comes from the weights, never the Woods Monster', () => {
+    for (const tier of TIERS) {
+      const rng = seedRng(tier * 101);
+      const counts = new Map<AnimalId, number>();
+      for (let k = 0; k < 2000; k++) {
+        const a = pickAnimal(rng, tier);
+        counts.set(a, (counts.get(a) ?? 0) + 1);
+      }
+      expect(counts.has('monster')).toBe(false);
+      for (const a of counts.keys()) expect(D.weights[tier][a]).toBeGreaterThan(0);
+      const total = Object.values(D.weights[tier]).reduce<number>((x, y) => x + (y ?? 0), 0);
+      for (const [a, n] of counts)
+        expect(n / 2000).toBeCloseTo((D.weights[tier][a] ?? 0) / total, 1);
+    }
+  });
+
+  it('the length goes by tier, the speed and gap by level', () => {
+    for (const tier of TIERS) expect(atTier('bees', tier).lengthSec).toBe(60);
+    for (const tier of TIERS)
+      expect(newDodge({ animal: 'bear', tier }, FOUR, 1).lengthSec).toBe(D.tiers[tier].lengthSec);
+    expect(game('bees', 0).speed).toBe(D.levels[0].speed);
+    for (const level of LEVELS) expect(game('bear', level).speed).toBe(D.levels[level].speed);
+  });
+});
+
 describe('pacing and overlaps', () => {
-  it.each(TIERS)(
-    'Tier %i with overlaps off: each attack starts the tier’s gap after the last ones end',
-    (tier) => {
+  it.each([0, 1, 2, 3] as const)(
+    'Level %i: each attack starts the level’s gap after the last ones end',
+    (level) => {
       let emptiedAt: number | null = null;
       let checked = 0;
-      play(game('bees', tier, { overlaps: 'off' }), (s, prev) => {
+      const gap = D.levels[level].gapSec;
+      play(game('bees', level), (s, prev) => {
         if (prev.rounds.length > 0 && s.rounds.length === 0) emptiedAt = s.time;
         if (s.starts.length > prev.starts.length) {
           expect(s.starts.at(-1)!.overlapped).toBe(false);
           if (emptiedAt !== null) {
-            expect(s.time - emptiedAt).toBeGreaterThanOrEqual(D.tiers[tier].gapSec - 1e-9);
-            expect(s.time - emptiedAt).toBeLessThanOrEqual(D.tiers[tier].gapSec + DT + 1e-9);
+            expect(s.time - emptiedAt).toBeGreaterThanOrEqual(gap - 1e-9);
+            expect(s.time - emptiedAt).toBeLessThanOrEqual(gap + DT + 1e-9);
             checked++;
           }
           emptiedAt = null;
@@ -71,45 +142,56 @@ describe('pacing and overlaps', () => {
     },
   );
 
+  it('below Tier V, attacks never overlap (every animal, Auto)', () => {
+    for (const animal of ANIMAL_IDS) {
+      for (const tier of [1, 2, 3, 4] as const) {
+        const end = play(atTier(animal, tier, {}, tier * 7));
+        expect(end.starts.length).toBeGreaterThan(5);
+        expect(end.starts.some((x) => x.overlapped)).toBe(false);
+      }
+    }
+  });
+
   it('never two area attacks or two changers at once, and never more than the tier allows', () => {
     for (const animal of ['stampede', 'bear', 'swordBear', 'monster'] as const) {
       for (const tier of TIERS) {
         for (const overlaps of ['auto', 'on'] as const) {
-          const s0 = game(animal, tier, { overlaps });
+          const s0 = atTier(animal, tier, { overlaps, lengthSec: 30 });
           let most = 0;
           play(s0, (s) => {
             const areas = s.rounds.filter((r) => r.kind === 'area').length;
             const changers = s.rounds.filter((r) => r.kind === 'changer').length;
             expect(areas).toBeLessThanOrEqual(1);
             expect(changers + (s.shrunk ? 1 : 0)).toBeLessThanOrEqual(1);
-            expect(s.rounds.length).toBeLessThanOrEqual(s0.maxAtOnce);
-            most = Math.max(most, s.rounds.length);
+            expect(holding(s)).toBeLessThanOrEqual(s0.maxAtOnce);
+            most = Math.max(most, holding(s));
           });
           if (overlaps === 'on') expect(most).toBe(s0.maxAtOnce);
+          if (overlaps === 'auto' && tier < 5) expect(most).toBe(1);
         }
       }
     }
-  });
+  }, 30_000);
 
-  it('overlaps happen more on higher tiers, never when off, and never with one attack picked', () => {
+  it('overlaps only at Tier V (about its chance), never when off, and never with one attack picked', () => {
     const share = (tier: Tier, extra: Partial<DodgeOptions> = {}) => {
       let starts = 0;
       let overlapped = 0;
       for (let seed = 1; seed <= 6; seed++) {
-        const end = play(game('bees', tier, extra, seed));
+        const end = play(atTier('bees', tier, extra, seed));
         starts += end.starts.length;
         overlapped += end.starts.filter((x) => x.overlapped).length;
       }
       return overlapped / starts;
     };
-    const t1 = share(1);
-    const t3 = share(3);
-    expect(t1).toBeGreaterThan(0.1);
-    expect(t3).toBeGreaterThan(t1 + 0.15);
-    expect(share(3, { overlaps: 'on' })).toBeGreaterThan(t3);
-    expect(share(3, { overlaps: 'off' })).toBe(0);
-    expect(share(3, { attack: 'lane' })).toBe(0);
-    expect(share(3, { attack: 'lane', overlaps: 'on' })).toBe(0);
+    for (const tier of [1, 2, 3, 4] as const) expect(share(tier)).toBe(0);
+    const t5 = share(5);
+    expect(t5).toBeGreaterThan(0.3);
+    expect(share(5, { overlaps: 'on' })).toBeGreaterThan(t5);
+    expect(share(2, { overlaps: 'on' })).toBeGreaterThan(0.3);
+    expect(share(5, { overlaps: 'off' })).toBe(0);
+    expect(share(5, { attack: 'lane' })).toBe(0);
+    expect(share(5, { attack: 'lane', overlaps: 'on' })).toBe(0);
   });
 
   it('every attack has a kind, as in the design', () => {
@@ -151,12 +233,24 @@ describe('warnings', () => {
     return onScreen && Math.hypot(dx, dy) <= 9;
   };
 
-  it.each(['lane', 'cross', 'diagonal', 'zigzag', 'aimed'] as const)(
+  /** A level each bee pattern plays at. */
+  const BEE_LEVEL = {
+    single: 0,
+    pairs: 0,
+    lane: 2,
+    cross: 2,
+    zigzag: 2,
+    diagonal: 3,
+    aimed: 3,
+  } as const;
+
+  it.each(['single', 'pairs', 'lane', 'cross', 'diagonal', 'zigzag', 'aimed'] as const)(
     'every %s bee’s "!" shows next to the box, on every side, never under a HUD',
     (pattern) => {
       const sides = new Set<string>();
       for (let seed = 1; seed <= 12; seed++) {
-        const s0 = game('bees', 3, { attack: pattern, lengthSec: 15 }, seed);
+        const s0 = game('bees', BEE_LEVEL[pattern], { attack: pattern, lengthSec: 15 }, seed);
+        expect(s0.only).toBe(pattern);
         for (const p of partsSeen(s0)) {
           if (p.kind !== 'bee') continue;
           const at = markSpot(p.mark, s0.box);
@@ -174,8 +268,7 @@ describe('warnings', () => {
         }
       }
       if (pattern === 'cross') expect([...sides].sort()).toEqual(['left', 'top']);
-      if (pattern === 'lane' || pattern === 'diagonal' || pattern === 'aimed')
-        expect(sides.has('bottom')).toBe(true);
+      if (pattern !== 'cross' && pattern !== 'zigzag') expect(sides.has('bottom')).toBe(true);
     },
   );
 
@@ -196,30 +289,79 @@ describe('warnings', () => {
 });
 
 describe('bees', () => {
-  it('in a Lane, the bees of one row start at different times, within the stagger', () => {
-    const seen = partsSeen(game('bees', 1, { attack: 'lane', lengthSec: 20 }));
+  /** When each bee of each round sets off, by round. */
+  const startsOf = (level: Rank, attack: AttackId) => {
     const byRound = new Map<number, number[]>();
-    for (const p of seen)
+    for (const p of partsSeen(game('bees', level, { attack, lengthSec: 20 })))
       if (p.kind === 'bee') byRound.set(p.round, [...(byRound.get(p.round) ?? []), p.warnAt]);
-    expect(byRound.size).toBeGreaterThan(3);
-    for (const starts of byRound.values()) {
-      expect(new Set(starts).size).toBe(starts.length);
-      expect(Math.max(...starts) - Math.min(...starts)).toBeLessThanOrEqual(D.bees.staggerSec);
+    expect(byRound.size).toBeGreaterThan(2);
+    return [...byRound.values()].map((list) => list.sort((a, b) => a - b));
+  };
+
+  it.each([0, 1] as const)(
+    'Level %i: One at a time sends its bees one by one, aimed, well apart',
+    (level) => {
+      const every = D.bees.single.everySec[level];
+      for (const starts of startsOf(level, 'single')) {
+        expect(starts.length).toBeGreaterThanOrEqual(D.bees.single.bees[0]);
+        expect(starts.length).toBeLessThanOrEqual(D.bees.single.bees[1]);
+        for (let i = 1; i < starts.length; i++)
+          expect(starts[i]! - starts[i - 1]!).toBeCloseTo(every);
+      }
+      const bees = partsSeen(game('bees', level, { attack: 'single', lengthSec: 8 })).filter(
+        (p): p is Extract<Part, { kind: 'bee' }> => p.kind === 'bee',
+      );
+      expect(bees.every((b) => b.aimSpeed !== undefined)).toBe(true);
+      if (level === 0) expect(bees.every((b) => b.aimSpeed === D.bees.single.easySpeed)).toBe(true);
+    },
+  );
+
+  it('Easy: Pairs send two bees, one after the other', () => {
+    for (const starts of startsOf(0, 'pairs')) {
+      expect(starts).toHaveLength(2);
+      expect(starts[1]! - starts[0]!).toBeCloseTo(D.bees.pairs.everySec);
+    }
+  });
+
+  it.each([1, 2] as const)(
+    'Level %i: a Lane comes in staggered, within the level’s stagger',
+    (level) => {
+      const L = D.bees.lane[level];
+      for (const starts of startsOf(level, 'lane')) {
+        expect(starts.length).toBeGreaterThanOrEqual(L.bees[0]);
+        expect(starts.length).toBeLessThanOrEqual(L.bees[1]);
+        expect(new Set(starts).size).toBe(starts.length);
+        expect(starts.at(-1)! - starts[0]!).toBeLessThanOrEqual(L.staggerSec);
+      }
+    },
+  );
+
+  it('full rows only at Level 3: every bee in a Lane or a Cross sets off at once', () => {
+    for (const attack of ['lane', 'cross'] as const) {
+      for (const starts of startsOf(3, attack)) expect(new Set(starts).size).toBe(1);
+    }
+    for (const starts of startsOf(2, 'cross')) expect(new Set(starts).size).toBeGreaterThan(1);
+  });
+
+  it('Level 3: the Aimed swarm sends its bees all at once, aimed', () => {
+    for (const starts of startsOf(3, 'aimed')) {
+      expect(starts).toHaveLength(D.bees.aimed.bees);
+      expect(new Set(starts).size).toBe(1);
     }
   });
 });
 
 describe('claws', () => {
-  const claws = (animal: AnimalId, tier: Tier) =>
-    partsSeen(game(animal, tier, { attack: 'claws', lengthSec: 20 })).filter(
+  const claws = (animal: AnimalId, level: 1 | 2 | 3) =>
+    partsSeen(game(animal, level, { attack: 'claws', lengthSec: 20 })).filter(
       (p): p is Extract<Part, { kind: 'claws' }> => p.kind === 'claws',
     );
 
   it('are never upside down: each claw points its tip along its path, whatever way it swings', () => {
     let checked = 0;
     for (const animal of ['bear', 'swordBear', 'bobcat'] as const) {
-      for (const tier of TIERS) {
-        for (const p of claws(animal, tier)) {
+      for (const level of LEVELS) {
+        for (const p of claws(animal, level)) {
           for (let k = 0; k <= 8; k++) {
             const t = p.activeAt + ((p.endAt - p.activeAt) * k) / 8;
             for (const c of clawsAt(p, t)) {
@@ -241,16 +383,16 @@ describe('claws', () => {
     expect(checked).toBeGreaterThan(500);
   });
 
-  it.each(TIERS)(
-    'Tier %i: every Claws attack sends its rows, all curved, from different corners',
-    (tier) => {
+  it.each(LEVELS)(
+    'Level %i: every Claws attack sends its rows, all curved, from different corners',
+    (level) => {
       const byRound = new Map<number, Extract<Part, { kind: 'claws' }>[]>();
-      for (const p of claws('bear', tier))
+      for (const p of claws('bear', level))
         byRound.set(p.round, [...(byRound.get(p.round) ?? []), p]);
       expect(byRound.size).toBeGreaterThan(2);
       for (const rows of byRound.values()) {
-        expect(rows).toHaveLength(D.claws.rows[tier]);
-        expect(rows.every((r) => r.count === D.claws.count[tier])).toBe(true);
+        expect(rows).toHaveLength(D.claws.rows[level]);
+        expect(rows.every((r) => r.count === D.claws.count[level])).toBe(true);
         const pivots = new Set(
           rows.map((r) => `${Math.sign(r.path.cx - 160)},${Math.sign(r.path.cy - 141)}`),
         );
@@ -275,7 +417,7 @@ describe('claws', () => {
     const rows = (extra: Partial<DodgeOptions>) =>
       partsSeen(game('swordBear', 3, extra)).filter((p) => p.kind === 'claws').length;
     expect(rows({ attack: 'sweep' })).toBe(0);
-    const withClaws = partsSeen(game('swordBear', 3, { overlaps: 'off' }));
+    const withClaws = partsSeen(game('swordBear', 3));
     const swordRounds = new Set(
       withClaws
         .filter(
@@ -335,45 +477,48 @@ describe('the bear', () => {
 });
 
 describe('the bobcat', () => {
-  it.each(TIERS)('Tier %i: Stalk aims each hop where the sprite is when its aim shows', (tier) => {
-    let hops = 0;
-    play(game('bobcat', tier, { attack: 'stalk', lengthSec: 15 }), (s, prev) => {
-      for (const p of s.parts) {
-        if (p.kind !== 'stalk') continue;
-        expect(p.hops).toHaveLength(D.stalk.hops[tier]);
-        const before = prev.parts.find((q) => q.id === p.id);
-        p.hops.forEach((h, k) => {
-          const was = before?.kind === 'stalk' ? before.hops[k] : undefined;
-          if (h.to && !was?.to) {
-            hops++;
-            const e = edges(s.box);
-            const m = D.stalk.radius;
-            expect(h.to.x).toBeCloseTo(Math.min(e.right - m, Math.max(e.left + m, s.pos.x)));
-            expect(h.to.y).toBeCloseTo(Math.min(e.bottom - m, Math.max(e.top + m, s.pos.y)));
-            expect(s.time).toBeGreaterThanOrEqual(h.aimAt);
-            expect(s.time - h.aimAt).toBeLessThan(DT + 1e-9);
-          }
-        });
-        // It lands where it aimed.
-        const last = p.hops.findLast(
-          (h) => h.to && s.time >= h.landAt && s.time < h.landAt + D.stalk.crouchSec,
-        );
-        if (last?.to) expect(stalkAt(p, s.time).at).toEqual(last.to);
-      }
-    });
-    expect(hops).toBeGreaterThan(5);
-  });
+  it.each(LEVELS)(
+    'Level %i: Stalk aims each hop where the sprite is when its aim shows',
+    (level) => {
+      let hops = 0;
+      play(game('bobcat', level, { attack: 'stalk', lengthSec: 15 }), (s, prev) => {
+        for (const p of s.parts) {
+          if (p.kind !== 'stalk') continue;
+          expect(p.hops).toHaveLength(D.stalk.hops[level]);
+          const before = prev.parts.find((q) => q.id === p.id);
+          p.hops.forEach((h, k) => {
+            const was = before?.kind === 'stalk' ? before.hops[k] : undefined;
+            if (h.to && !was?.to) {
+              hops++;
+              const e = edges(s.box);
+              const m = D.stalk.radius;
+              expect(h.to.x).toBeCloseTo(Math.min(e.right - m, Math.max(e.left + m, s.pos.x)));
+              expect(h.to.y).toBeCloseTo(Math.min(e.bottom - m, Math.max(e.top + m, s.pos.y)));
+              expect(s.time).toBeGreaterThanOrEqual(h.aimAt);
+              expect(s.time - h.aimAt).toBeLessThan(DT + 1e-9);
+            }
+          });
+          // It lands where it aimed.
+          const last = p.hops.findLast(
+            (h) => h.to && s.time >= h.landAt && s.time < h.landAt + D.stalk.crouchSec,
+          );
+          if (last?.to) expect(stalkAt(p, s.time).at).toEqual(last.to);
+        }
+      });
+      expect(hops).toBeGreaterThan(5);
+    },
+  );
 
   it.each([2, 3] as const)(
-    'Tier %i: the Zigzag dash bounces off the walls the right number of times',
-    (tier) => {
-      const dashes = partsSeen(game('bobcat', tier, { attack: 'dash', lengthSec: 15 })).filter(
+    'Level %i: the Zigzag dash bounces off the walls the right number of times',
+    (level) => {
+      const dashes = partsSeen(game('bobcat', level, { attack: 'dash', lengthSec: 15 })).filter(
         (p): p is Extract<Part, { kind: 'dash' }> => p.kind === 'dash',
       );
       expect(dashes.length).toBeGreaterThan(2);
       for (const d of dashes) {
-        expect(d.passes).toHaveLength(D.dash.passes[tier]);
-        expect(d.bounces).toHaveLength(D.dash.passes[tier] - 1);
+        expect(d.passes).toHaveLength(D.dash.passes[level]);
+        expect(d.bounces).toHaveLength(D.dash.passes[level] - 1);
         const e = edges(boxFor('bobcat'));
         for (const b of d.bounces) {
           const onWall = [b.x - e.left, e.right - b.x, b.y - e.top, e.bottom - b.y].some(
@@ -394,7 +539,7 @@ describe('the bobcat', () => {
 });
 
 describe('the sword bear’s Wave and the squirrels’ nuts', () => {
-  it.each(TIERS)('Tier %i: the Wave comes along the right walls', (tier) => {
+  it.each(LEVELS)('Level %i: the Wave comes along the right walls', (tier) => {
     const waves = partsSeen(game('swordBear', tier, { attack: 'wave', lengthSec: 20 })).filter(
       (p): p is Extract<Part, { kind: 'wave' }> => p.kind === 'wave',
     );
@@ -406,7 +551,7 @@ describe('the sword bear’s Wave and the squirrels’ nuts', () => {
     if (tier === 3) expect([...sides]).toEqual(['bottom+top']);
   });
 
-  it.each([2, 3] as const)('Tier %i: Wall scurry squirrels flick nuts at the sprite', (tier) => {
+  it.each([2, 3] as const)('Level %i: Wall scurry squirrels flick nuts at the sprite', (tier) => {
     const seen = partsSeen(game('squirrels', tier, { attack: 'scurry', lengthSec: 15 }));
     const nuts = seen.filter((p) => p.kind === 'nut');
     expect(nuts.length).toBeGreaterThan(8);
@@ -415,23 +560,22 @@ describe('the sword bear’s Wave and the squirrels’ nuts', () => {
 });
 
 describe('the Woods Monster', () => {
-  it('plays one tier up, and on Tier III faster still, with more overlaps and one more at once', () => {
-    const t1 = game('monster', 1);
-    expect(t1.tier).toBe(2);
-    expect(t1.hudTier).toBe(1);
-    expect(t1.speed).toBe(D.tiers[2].speed);
-    expect(t1.overlapChance).toBe(D.tiers[2].overlapChance);
-    expect(t1.maxAtOnce).toBe(D.tiers[2].maxAtOnce);
-    const t2 = game('monster', 2);
-    expect(t2.tier).toBe(3);
-    expect(t2.boost).toBe(false);
-    const t3 = game('monster', 3);
-    expect(t3.tier).toBe(3);
-    expect(t3.speed).toBeCloseTo(D.tiers[3].speed * D.monster.boost.speed);
-    expect(t3.overlapChance).toBeCloseTo(D.tiers[3].overlapChance + D.monster.boost.overlapChance);
-    expect(t3.maxAtOnce).toBe(D.tiers[3].maxAtOnce + D.monster.boost.maxAtOnce);
-    // His fire on Tier I already has Tier II's second set.
-    const flames = partsSeen(game('monster', 1, { attack: 'fire', lengthSec: 6 })).filter(
+  it('always plays Level 3; only at Tier V does he overlap and get his boss boost', () => {
+    for (const tier of [3, 4] as const) {
+      const s = atTier('monster', tier);
+      expect(s.level).toBe(3);
+      expect(s.hudTier).toBe(tier);
+      expect(s.boost).toBe(false);
+      expect(s.speed).toBe(D.levels[3].speed);
+      expect(s.overlapChance).toBe(0);
+    }
+    const t5 = atTier('monster', 5);
+    expect(t5.boost).toBe(true);
+    expect(t5.speed).toBeCloseTo(D.levels[3].speed * D.monster.boost.speed);
+    expect(t5.overlapChance).toBeCloseTo(D.tiers[5].overlapChance + D.monster.boost.overlapChance);
+    expect(t5.maxAtOnce).toBe(D.tiers[5].maxAtOnce + D.monster.boost.maxAtOnce);
+    // At Level 3 his fire has the second set.
+    const flames = partsSeen(atTier('monster', 3, { attack: 'fire', lengthSec: 6 })).filter(
       (p) => p.kind === 'flame',
     );
     expect(new Set(flames.map((p) => p.activeAt)).size).toBeGreaterThan(1);
@@ -443,7 +587,7 @@ describe('the Woods Monster', () => {
     expect(newDodge({ animal: 'monster', tier: 1, lengthSec: 20 }, FOUR, 1).lengthSec).toBe(20);
   });
 
-  it('on Tier III the second half shrinks the box over 1 s, with the sprite pushed inside, and Darkness only comes then', () => {
+  it('the second half shrinks the box over 1 s, with the sprite pushed inside, and Darkness only comes then', () => {
     // Plenty of lives, so it runs to the clock.
     const s0 = newDodge({ animal: 'monster', tier: 3, lives: 99 }, FOUR, 5);
     const half = s0.lengthSec / 2;
@@ -486,12 +630,12 @@ describe('the Woods Monster', () => {
     expect(first).toBeLessThan(half + 1.5);
   });
 
-  it('below Tier III there’s no second half', () => {
-    let changed = false;
-    play(newDodge({ animal: 'monster', tier: 2, lives: 3 }, FOUR, 5), (s) => {
-      if (s.secondHalf || Math.abs(s.box.w - D.animals.monster.box[0]) > 1e-9) changed = true;
-    });
-    expect(changed).toBe(false);
+  it('his second half comes at every tier', () => {
+    for (const tier of TIERS) {
+      const end = play(newDodge({ animal: 'monster', tier, lives: 99 }, FOUR, 5));
+      expect(end.secondHalf).toBe(true);
+      expect(end.box.w).toBeCloseTo(D.monster.shrunk[0]);
+    }
   });
 
   it('The Eye only hits after the sprite stays in its gaze a moment', () => {
@@ -521,9 +665,9 @@ describe('a fuzz run with every Overlaps setting', () => {
       (a) => (['off', 'on'] as const).map((o) => [a, o] as const),
     ),
   )(
-    '%s with overlaps %s on Tier III: it always ends, with nothing off the map',
+    '%s with overlaps %s on Tier V: it always ends, with nothing off the map',
     (animal, overlaps) => {
-      const end = play(newDodge({ animal, tier: 3, overlaps, lives: 3 }, FOUR, 13), (s) => {
+      const end = play(newDodge({ animal, tier: 5, overlaps, lives: 3 }, FOUR, 13), (s) => {
         expect(Number.isFinite(s.pos.x) && Number.isFinite(s.pos.y)).toBe(true);
         for (const p of s.parts) {
           if ('x' in p) expect(Number.isFinite(p.x)).toBe(true);
@@ -532,4 +676,51 @@ describe('a fuzz run with every Overlaps setting', () => {
       expect(end.over).toBe(true);
     },
   );
+});
+
+describe('the portraits', () => {
+  /** The portrait files, inlined (data URLs), and a PNG's size from its header. */
+  const files = import.meta.glob<string>('/public/assets/minigames/dodge/portraits/*/*.png', {
+    eager: true,
+    query: '?inline',
+    import: 'default',
+  });
+  const size = (file: string) => {
+    const url = files[`/public/assets/minigames/dodge/portraits/${file}`];
+    if (!url) throw new Error(`missing ${file}`);
+    const bytes = atob(url.slice(url.indexOf(',') + 1));
+    const word = (at: number) =>
+      [0, 1, 2, 3].reduce((n, k) => n * 256 + bytes.charCodeAt(at + k), 0);
+    return { w: word(16), h: word(20) };
+  };
+
+  it('their sizes match the art, in both styles, blink frames included', () => {
+    for (const style of ['solid', 'solid-red']) {
+      for (const p of Object.values(PORTRAITS)) {
+        expect(size(`${style}/${p.file}.png`)).toEqual({ w: p.w, h: p.h });
+        expect(size(`${style}/${p.file}-blink.png`)).toEqual({ w: p.w, h: p.h });
+      }
+    }
+  });
+
+  it('each sits a gap above its box and never reaches above the line (the box moves down instead)', () => {
+    for (const who of [
+      'bees',
+      'bear',
+      'swordBear',
+      'bobcat',
+      'squirrels',
+      'herd',
+      'monster',
+    ] as const) {
+      const box = boxFor(who);
+      const top = box.cy - box.h / 2 - D.portraits.gap - PORTRAITS[who].h;
+      expect(top).toBeGreaterThanOrEqual(D.portraits.minTop - 1e-9);
+      const at = D.animals[who].at[1];
+      // Moved only as far as needed.
+      if (box.cy > at) expect(top).toBeCloseTo(D.portraits.minTop);
+    }
+    expect(boxFor('squirrels').cy).toBeGreaterThan(D.animals.squirrels.at[1]);
+    expect(boxFor('bees').cy).toBe(D.animals.bees.at[1]);
+  });
 });

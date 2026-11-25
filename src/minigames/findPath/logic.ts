@@ -21,11 +21,11 @@ import { BALANCE } from '../../config/balance';
 import { int, nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const P = BALANCE.minigames.findPath;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 
 /** A tile: column, and row (0 is the top row). */
 export interface Tile {
@@ -289,7 +289,7 @@ export function pick(
   const known: Record<string, Known> = { ...s.known, [k]: onTrail ? 'trail' : 'trees' };
   const uncoveredAt = { ...base.uncoveredAt };
   let revealed: FindPathState['revealed'];
-  if (nextFloat(rng) < P.revealChance) {
+  if (nextFloat(rng) < P.tiers[s.tier].revealChance) {
     const hidden: Tile[] = [];
     for (let r = 0; r < s.rows; r++) {
       for (let c = 0; c < s.cols; c++) if (!known[`${c},${r}`]) hidden.push({ c, r });

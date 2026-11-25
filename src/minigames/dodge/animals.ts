@@ -1,18 +1,28 @@
 /**
- * Dodge's animals (docs/design/12-minigames-dodge.md, sections 5 and 7 to
- * 12): each one is a name, a box, a head and a list of attacks from the
+ * Dodge's animals (docs/design/12-minigames-dodge.md, sections 3 to 12):
+ * each one is a name, a box, a portrait and a list of attacks from the
  * library, with any tweaks it makes to a shared attack. The Wild Predator
  * Stampede uses every other animal's attacks (not the Woods Monster's),
- * plus Herd rush. The Woods Monster is a boss: he plays one tier up.
+ * plus Herd rush.
  *
- * Which attacks can be picked: the ones unlocked at the tier, without
+ * Tiers and levels (section 4, Nov 25): each challenge tier picks which
+ * animals show up and at what level (`roster`), and how common each is
+ * (`weights`). The Woods Monster always plays Level 3. Easy is only for
+ * Bees and the Squirrel Army; the Stampede never plays it.
+ *
+ * Which attacks can be picked: the ones that play at the level, without
  * Claude's ideas when they're off, and (in the testing tab) only the one
  * chosen attack.
  */
 import { BALANCE } from '../../config/balance';
+import { weightedPick } from '../../engine/rng';
+import type { RngState } from '../../engine/types';
+import { isTier, type Tier } from '../types';
 import type { Box } from './geometry';
-import { ATTACKS, unlockTier } from './library';
-import type { AnimalId, AttackId, Attacker, Tier, Tweak } from './types';
+import { ATTACKS, playsAt, ranksOf, type Rank } from './library';
+import type { AnimalId, AttackId, Attacker, Tweak } from './types';
+
+export type { Rank } from './library';
 
 const D = BALANCE.minigames.dodge;
 
@@ -39,7 +49,7 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     id: 'bees',
     name: 'Bees',
     hud: 'Bees',
-    attacks: plain('lane', 'cross', 'diagonal', 'zigzag', 'aimed'),
+    attacks: plain('single', 'pairs', 'lane', 'cross', 'diagonal', 'zigzag', 'aimed'),
   },
   bear: {
     id: 'bear',
@@ -136,65 +146,141 @@ function everything(animal: AnimalId): PoolEntry[] {
   }));
 }
 
-/** The tier an animal's attacks play at: the Woods Monster plays one up. */
-export const playTier = (animal: AnimalId, tier: Tier): Tier =>
-  animal === 'monster' ? (Math.min(3, tier + 1) as Tier) : tier;
+/** The animals with an Easy level of their own. */
+export const HAS_EASY: readonly AnimalId[] = ['bees', 'squirrels'];
+
+/** The testing tab's Level setting: Auto (the tier's), Easy, or a numbered level. */
+export type LevelPick = 'auto' | 'easy' | 1 | 2 | 3;
 
 /**
- * The attacks that can be picked: unlocked at the tier (the tier they play
- * at), Claude's ideas only if on, and only `only` if set. Darkness also
- * waits for the Woods Monster's second half (logic.ts checks that).
+ * The level an animal plays at a tier: the roster's. An animal that doesn't
+ * show up at the tier (a Bear at Tier I) plays its lowest level, so the
+ * testing tab can still try it. The Woods Monster is always Level 3.
+ */
+export function levelFor(animal: AnimalId, tier: Tier): Rank {
+  if (animal === 'monster') return 3;
+  const here = D.roster[tier][animal];
+  if (here !== undefined) return here;
+  const tiers = ([1, 2, 3, 4, 5] as const).filter((t) => D.roster[t][animal] !== undefined);
+  return D.roster[tiers[0] ?? 1][animal] ?? 1;
+}
+
+/**
+ * The level a game plays at: Auto uses the tier's; a picked level
+ * overrides it. Easy is only for Bees and the Squirrel Army (the others
+ * play Level 1), and the Stampede never plays Easy.
+ */
+export function rankFor(animal: AnimalId, tier: Tier, pick: LevelPick = 'auto'): Rank {
+  const rank: Rank = pick === 'auto' ? levelFor(animal, tier) : pick === 'easy' ? 0 : pick;
+  return rank === 0 && !HAS_EASY.includes(animal) ? 1 : rank;
+}
+
+/** The animals that show up at a tier (the Woods Monster only from the night monster event). */
+export const animalsAt = (tier: Tier): AnimalId[] =>
+  ANIMAL_IDS.filter((a) => D.roster[tier][a] !== undefined);
+
+/** A Dodge animal for a tier, by the tier's weights (never the Woods Monster). */
+export function pickAnimal(rng: RngState, tier: Tier): AnimalId {
+  const t = isTier(tier) ? tier : 1;
+  const items = ANIMAL_IDS.flatMap((a) => {
+    const weight = D.weights[t][a] ?? 0;
+    return weight > 0 ? [{ item: a, weight }] : [];
+  });
+  return items.length ? weightedPick(rng, items) : 'bees';
+}
+
+/**
+ * The attacks that can be picked: playing at the level, Claude's ideas
+ * only if on, and only `only` if set. Darkness also waits for the Woods
+ * Monster's second half (logic.ts checks that).
  */
 export function pool(
   animal: AnimalId,
-  tier: Tier,
+  rank: Rank,
   ideas: boolean,
   only: AttackId | 'all' = 'all',
 ): PoolEntry[] {
   return everything(animal).filter(
     (e) =>
-      unlockTier(e.attack) <= tier &&
+      playsAt(e.attack, rank) &&
       (ideas || !ATTACKS[e.attack].claudesIdea) &&
       (only === 'all' || e.attack === only),
   );
 }
 
+const LEVEL_WORD: Readonly<Record<Rank, string>> = {
+  0: 'Easy',
+  1: 'Level 1',
+  2: 'Level 2',
+  3: 'Level 3',
+};
+
+/** Where an attack plays, in words: "from Level 2", "Easy and Level 1 only", "Level 3 only". */
+export function levelsWord(id: AttackId): string {
+  const ranks = ranksOf(id);
+  const last = ranks.at(-1);
+  if (!ranks.length || last === undefined) return '';
+  if (ranks.length === 4) return 'every level';
+  if (last === 3 && ranks.length > 1) return `from ${LEVEL_WORD[ranks[0]!]}`;
+  if (ranks.length === 1) return `${LEVEL_WORD[ranks[0]!]} only`;
+  return `${ranks.map((r) => LEVEL_WORD[r]).join(' and ')} only`;
+}
+
 /**
  * For the testing tab's Attack picker: each attack the animal uses, once,
- * and whether it's open at the chosen tier (the Woods Monster plays one
- * up; his Darkness needs Tier III's second half).
+ * where it plays, and whether it plays at the chosen level.
  */
 export function attackChoices(
   animal: AnimalId,
-  tier: Tier,
+  rank: Rank,
   ideas: boolean,
-): { id: AttackId; name: string; from: Tier; claudesIdea: boolean; unlocked: boolean }[] {
+): { id: AttackId; name: string; where: string; claudesIdea: boolean; unlocked: boolean }[] {
   const seen = new Set<AttackId>();
   const out: ReturnType<typeof attackChoices> = [];
-  const plays = playTier(animal, tier);
   for (const e of everything(animal)) {
     const def = ATTACKS[e.attack];
     if (seen.has(e.attack) || (!ideas && def.claudesIdea)) continue;
     seen.add(e.attack);
-    // The first chosen tier it shows up on.
-    const opensAt = def.secondHalf
-      ? 3
-      : (([1, 2, 3] as const).find((t) => unlockTier(e.attack) <= playTier(animal, t)) ?? 3);
     out.push({
       id: e.attack,
       name: def.name,
-      from: opensAt,
+      where: levelsWord(e.attack),
       claudesIdea: !!def.claudesIdea,
-      unlocked: def.secondHalf ? tier === 3 : unlockTier(e.attack) <= plays,
+      unlocked: playsAt(e.attack, rank),
     });
   }
   return out;
 }
 
-/** An attacker's box: its size and its middle on screen. */
+/**
+ * The portraits above the box (section 3, round 3): the file name in
+ * `portraits/<style>/` and its size, 1 px per unit (the art's; a test
+ * checks them against the files).
+ */
+export const PORTRAITS: Readonly<
+  Record<Attacker | 'cultist', { file: string; w: number; h: number }>
+> = {
+  bees: { file: 'bee', w: 51, h: 42 },
+  bear: { file: 'bear', w: 48, h: 44 },
+  swordBear: { file: 'bear-sword', w: 72, h: 44 },
+  bobcat: { file: 'bobcat', w: 49, h: 42 },
+  squirrels: { file: 'squirrel', w: 73, h: 48 },
+  herd: { file: 'moose', w: 71, h: 54 },
+  monster: { file: 'woods-monster', w: 65, h: 56 },
+  cultist: { file: 'cultist', w: 33, h: 38 },
+};
+
+/**
+ * An attacker's box: its size and its middle on screen. Its portrait sits
+ * a gap above it; if the portrait's top would go above the line, the box
+ * moves down instead.
+ */
 export function boxFor(attacker: Attacker): Box {
   const a = D.animals[attacker];
-  return { cx: a.at[0], cy: a.at[1], w: a.box[0], h: a.box[1] };
+  const P = D.portraits;
+  const top = a.at[1] - a.box[1] / 2 - P.gap - PORTRAITS[attacker].h;
+  const down = Math.max(0, P.minTop - top);
+  return { cx: a.at[0], cy: a.at[1] + down, w: a.box[0], h: a.box[1] };
 }
 
 export const isAnimal = (v: unknown): v is AnimalId =>

@@ -1,23 +1,25 @@
 /**
  * Dodge's attack library and animals (docs/design/12-minigames-dodge.md,
- * section 13): what each animal uses on each tier, the Attack picker,
- * Claude's ideas, warnings, the Squirrel Army's acorns and shrapnel, the
- * bear hug and the shrinking box, honey, the Stampede, and a fuzz run of
- * every animal on every tier.
+ * section 13): what each animal uses at each level, the Attack picker,
+ * Claude's ideas, warnings, the Squirrel Army's acorns and shrapnel (and
+ * its Easy level), the bear hug and the shrinking box, honey, the Stampede,
+ * and a fuzz run of every animal on every tier.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { ANIMAL_IDS, attackChoices, boxFor, playTier, pool } from './animals';
+import { TIERS } from '../types';
+import { ANIMAL_IDS, attackChoices, boxFor, pool, type LevelPick, type Rank } from './animals';
 import { edges } from './geometry';
 import { ATTACKS } from './library';
 import { effectiveBox, hitShapes, newDodge, step, type DodgeState } from './logic';
-import type { AnimalId, AttackId, Part, Tier } from './types';
+import type { AnimalId, AttackId, Part } from './types';
 
 const D = BALANCE.minigames.dodge;
 const FOUR = ['finn', 'mom', 'ellie', 'wyatt'];
 const DT = 1 / 60;
 const STILL = { x: 0, y: 0 };
-const TIERS: readonly Tier[] = [1, 2, 3];
+const LEVELS: readonly (1 | 2 | 3)[] = [1, 2, 3];
+const pick = (r: Rank): LevelPick => (r === 0 ? 'easy' : r);
 
 /** A wandering sprite: it never stands still for long. */
 const wander = (t: number) => ({ x: Math.sin(t * 1.3), y: Math.cos(t * 0.9) });
@@ -37,8 +39,9 @@ function play(
   return s;
 }
 
-const many = (animal: AnimalId, tier: Tier, extra: Partial<Parameters<typeof newDodge>[0]> = {}) =>
-  newDodge({ animal, tier, lives: 3, lengthSec: 60, ...extra }, FOUR, 7);
+/** A game at a level (Easy is 0), at Tier IV: nothing overlaps there. */
+const many = (animal: AnimalId, level: Rank, extra: Partial<Parameters<typeof newDodge>[0]> = {}) =>
+  newDodge({ animal, tier: 4, level: pick(level), lives: 3, lengthSec: 60, ...extra }, FOUR, 7);
 
 /** Every part that ever showed up in a game, by id (the first time it was seen). */
 function partsSeen(s0: DodgeState, input?: (t: number) => { x: number; y: number }): Part[] {
@@ -53,14 +56,16 @@ function partsSeen(s0: DodgeState, input?: (t: number) => { x: number; y: number
   return [...seen.values()];
 }
 
-const ids = (animal: AnimalId, tier: Tier, ideas = true) =>
-  [...new Set(pool(animal, playTier(animal, tier), ideas).map((e) => e.attack))].sort();
+const ids = (animal: AnimalId, level: Rank, ideas = true) =>
+  [...new Set(pool(animal, level, ideas).map((e) => e.attack))].sort();
 
-describe('what each animal uses, by tier', () => {
+describe('what each animal uses, by level', () => {
   it.each([
-    ['bees', 1, ['cross', 'lane']],
-    ['bees', 2, ['cross', 'diagonal', 'lane', 'zigzag']],
-    ['bees', 3, ['aimed', 'cross', 'diagonal', 'lane', 'zigzag']],
+    // Bees by level (Nov 25): one at a time first; full rows only at Level 3.
+    ['bees', 0, ['pairs', 'single']],
+    ['bees', 1, ['lane', 'single']],
+    ['bees', 2, ['cross', 'lane', 'zigzag']],
+    ['bees', 3, ['aimed', 'cross', 'diagonal', 'lane']],
     ['bear', 1, ['bite', 'claws']],
     ['bear', 2, ['bite', 'claws', 'hug', 'shout']],
     ['bear', 3, ['bite', 'claws', 'honey', 'hug', 'shout']],
@@ -69,37 +74,45 @@ describe('what each animal uses, by tier', () => {
     ['bobcat', 1, ['claws', 'pounce', 'stalk']],
     ['bobcat', 2, ['claws', 'dash', 'pounce', 'stalk']],
     ['bobcat', 3, ['claws', 'dash', 'landingSwipe', 'pounce', 'stalk']],
+    ['squirrels', 0, ['acorns', 'bombs', 'pinecones']],
     ['squirrels', 1, ['acorns', 'bombs', 'pinecones']],
     ['squirrels', 2, ['acorns', 'bombs', 'pinecones', 'scurry']],
-    // The Woods Monster plays one tier up; Darkness also waits for Tier III's second half.
-    ['monster', 1, ['eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
+    // The Woods Monster always plays Level 3 (here forced lower); Darkness needs Level 3.
+    ['monster', 2, ['eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
     ['monster', 3, ['darkness', 'eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
-  ] as const)('%s on Tier %i', (animal, tier, expected) => {
-    expect(ids(animal, tier)).toEqual([...expected].sort());
+  ] as const)('%s at Level %i', (animal, level, expected) => {
+    expect(ids(animal, level)).toEqual([...expected].sort());
   });
 
   it('the Woods Monster’s attacks are never in the Stampede', () => {
     const his = new Set(ids('monster', 3));
-    for (const tier of TIERS) expect(ids('stampede', tier).some((a) => his.has(a))).toBe(false);
+    for (const level of LEVELS) expect(ids('stampede', level).some((a) => his.has(a))).toBe(false);
   });
 
-  it('the Stampede has every animal’s attacks at the tier, plus Herd rush', () => {
-    for (const tier of TIERS) {
+  it('the Stampede has every animal’s attacks at the level, plus Herd rush', () => {
+    for (const level of LEVELS) {
       const all = new Set(
         (['bees', 'bear', 'swordBear', 'bobcat', 'squirrels'] as const).flatMap((a) =>
-          ids(a, tier),
+          ids(a, level),
         ),
       );
-      expect(ids('stampede', tier)).toEqual([...all, 'herd'].sort());
+      expect(ids('stampede', level)).toEqual([...all, 'herd'].sort());
     }
+  });
+
+  it('the Stampede never plays Easy', () => {
+    expect(many('stampede', 0).easy).toBe(false);
+    expect(many('stampede', 0).level).toBe(1);
+    expect(many('bear', 0).easy).toBe(false);
+    expect(many('bees', 0).easy).toBe(true);
   });
 
   it('switching Claude’s ideas off removes every attack marked as one', () => {
     for (const animal of ANIMAL_IDS) {
-      for (const tier of TIERS) {
-        const off = pool(animal, tier, false);
+      for (const level of [0, ...LEVELS] as const) {
+        const off = pool(animal, level, false);
         expect(off.every((e) => !ATTACKS[e.attack].claudesIdea)).toBe(true);
-        expect(attackChoices(animal, tier, false).some((c) => c.claudesIdea)).toBe(false);
+        expect(attackChoices(animal, level, false).some((c) => c.claudesIdea)).toBe(false);
       }
     }
     // And in play, none of their parts ever show up.
@@ -129,30 +142,49 @@ describe('what each animal uses, by tier', () => {
     }
   });
 
-  it('the testing tab lists each attack once, with the tier it opens on', () => {
+  it('the testing tab lists each attack once, with the levels it plays at', () => {
     const bear = attackChoices('bear', 1, true);
     expect(bear.map((c) => c.id)).toEqual(['claws', 'bite', 'shout', 'hug', 'honey']);
     expect(bear.find((c) => c.id === 'shout')).toMatchObject({
       unlocked: false,
-      from: 2,
+      where: 'from Level 2',
       claudesIdea: true,
     });
-    expect(bear.find((c) => c.id === 'claws')).toMatchObject({ unlocked: true, from: 1 });
+    expect(bear.find((c) => c.id === 'claws')).toMatchObject({
+      unlocked: true,
+      where: 'every level',
+    });
+    const bees = attackChoices('bees', 0, true);
+    expect(bees.map((c) => c.id)).toEqual([
+      'single',
+      'pairs',
+      'lane',
+      'cross',
+      'diagonal',
+      'zigzag',
+      'aimed',
+    ]);
+    expect(bees.filter((c) => c.unlocked).map((c) => c.id)).toEqual(['single', 'pairs']);
+    expect(bees.find((c) => c.id === 'single')?.where).toBe('Easy and Level 1 only');
+    expect(bees.find((c) => c.id === 'pairs')?.where).toBe('Easy only');
+    expect(bees.find((c) => c.id === 'lane')?.where).toBe('from Level 1');
+    expect(bees.find((c) => c.id === 'zigzag')?.where).toBe('Level 2 only');
+    expect(bees.find((c) => c.id === 'aimed')?.where).toBe('Level 3 only');
     const stampede = attackChoices('stampede', 3, true).map((c) => c.id);
     expect(new Set(stampede).size).toBe(stampede.length);
     expect(stampede).toContain('herd');
-    // The Woods Monster plays one up: on Tier I, Tier II's attacks are open; Darkness needs Tier III.
+    // Darkness needs Level 3 (the Woods Monster always plays it, unless the Level setting says otherwise).
     const monster = attackChoices('monster', 2, true);
     expect(monster.filter((c) => !c.unlocked).map((c) => c.id)).toEqual(['darkness']);
-    expect(monster.find((c) => c.id === 'darkness')).toMatchObject({ from: 3 });
+    expect(monster.find((c) => c.id === 'darkness')?.where).toBe('Level 3 only');
     expect(attackChoices('monster', 3, true).every((c) => c.unlocked)).toBe(true);
   });
 });
 
 describe('the Attack picker', () => {
-  it('one attack plays only that attack, and it still follows the tier', () => {
-    const rows = (tier: Tier) => {
-      const s0 = many('bear', tier, { attack: 'claws' });
+  it('one attack plays only that attack, and it still follows the level', () => {
+    const rows = (level: 1 | 2 | 3) => {
+      const s0 = many('bear', level, { attack: 'claws' });
       expect(s0.only).toBe('claws');
       const rounds = new Set<string>();
       const counts = new Set<number>();
@@ -167,7 +199,10 @@ describe('the Attack picker', () => {
     expect([...rows(2)]).toEqual([D.claws.count[2]]);
   });
 
-  it('an attack the animal can’t make at the tier plays as All', () => {
+  it('an attack the animal doesn’t make at the level plays as All', () => {
+    expect(many('bees', 0, { attack: 'lane' }).only).toBe('all');
+    expect(many('bees', 0, { attack: 'single' }).only).toBe('single');
+    expect(many('bees', 3, { attack: 'single' }).only).toBe('all');
     expect(many('bear', 1, { attack: 'shout' }).only).toBe('all');
     expect(many('bear', 2, { attack: 'shout' }).only).toBe('shout');
     expect(many('bear', 2, { attack: 'shout', ideas: false }).only).toBe('all');
@@ -198,18 +233,19 @@ describe('warnings', () => {
     stalk: D.warnMinSec,
     hand: D.hands.crackSec,
   };
-  it.each(ANIMAL_IDS.flatMap((a) => TIERS.map((t) => [a, t] as const)))(
-    '%s on Tier %i: every attack warns first, never under the minimum',
-    (animal, tier) => {
-      const seen = partsSeen(many(animal, tier)).filter((p) => !p.child);
-      expect(seen.length).toBeGreaterThan(5);
-      for (const p of seen) {
-        const warn = p.activeAt - p.warnAt;
-        expect(warn, p.kind).toBeGreaterThanOrEqual(D.warnMinSec - 1e-9);
-        expect(warn, p.kind).toBeGreaterThanOrEqual((shortest[p.kind] ?? D.warnSec) - 1e-9);
-      }
-    },
-  );
+  it.each([
+    ['bees', 0] as const,
+    ['squirrels', 0] as const,
+    ...ANIMAL_IDS.flatMap((a) => LEVELS.map((l) => [a, l] as const)),
+  ])('%s at Level %i: every attack warns first, never under the minimum', (animal, level) => {
+    const seen = partsSeen(many(animal, level)).filter((p) => !p.child);
+    expect(seen.length).toBeGreaterThan(5);
+    for (const p of seen) {
+      const warn = p.activeAt - p.warnAt;
+      expect(warn, p.kind).toBeGreaterThanOrEqual(D.warnMinSec - 1e-9);
+      expect(warn, p.kind).toBeGreaterThanOrEqual((shortest[p.kind] ?? D.warnSec) - 1e-9);
+    }
+  });
 });
 
 describe('the Squirrel Army', () => {
@@ -239,20 +275,58 @@ describe('the Squirrel Army', () => {
   });
 
   it.each([
+    ['acorns', 0],
     ['acorns', 1],
     ['acorns', 2],
     ['acorns', 3],
+    ['bombs', 0],
     ['bombs', 1],
     ['bombs', 2],
     ['bombs', 3],
-  ] as const)('%s on Tier %i: shrapnel only on Tier III', (attack, tier) => {
-    const seen = partsSeen(many('squirrels', tier, { attack }));
+  ] as const)('%s at Level %i: shrapnel only at Level 3', (attack, level) => {
+    const seen = partsSeen(many('squirrels', level, { attack }));
     const shrapnel = seen.filter((p) => p.kind === 'shrapnel').length;
-    if (tier === 3) expect(shrapnel).toBeGreaterThan(0);
+    if (level === 3) expect(shrapnel).toBeGreaterThan(0);
     else expect(shrapnel).toBe(0);
   });
 
-  it('bombs sit still on Tier I and roll from Tier II; the blast reaches its radius', () => {
+  it('Easy: one acorn at a time, breaking on the 2nd wall hit; one still bomb with a longer fuse and a smaller blast; fewer pinecone columns', () => {
+    const acorns = many('squirrels', 0, { attack: 'acorns' });
+    let most = 0;
+    let broken = 0;
+    play(acorns, (s, prev) => {
+      most = Math.max(most, s.parts.filter((p) => p.kind === 'acorn').length);
+      for (const p of prev.parts) {
+        if (p.kind !== 'acorn' || s.parts.some((q) => q.id === p.id)) continue;
+        broken++;
+        expect(p.bounces).toBe(D.acorns.easy.breakOn - 1);
+      }
+    });
+    expect(most).toBe(D.acorns.easy.count);
+    expect(broken).toBeGreaterThan(3);
+    const bombs = partsSeen(many('squirrels', 0, { attack: 'bombs' })).filter(
+      (p): p is Extract<Part, { kind: 'bomb' }> => p.kind === 'bomb',
+    );
+    const byRound = new Map<number, number>();
+    for (const b of bombs) byRound.set(b.round, (byRound.get(b.round) ?? 0) + 1);
+    expect([...byRound.values()].every((n) => n === D.bombs.easy.count)).toBe(true);
+    for (const b of bombs) {
+      expect(b.vx === 0 && b.vy === 0).toBe(true);
+      expect(b.radius).toBe(D.bombs.easy.radius);
+      expect(b.activeAt - b.landAt).toBeCloseTo(D.bombs.easy.fuseSec);
+    }
+    const cones = partsSeen(many('squirrels', 0, { attack: 'pinecones' })).filter(
+      (p) => p.kind === 'pinecone',
+    );
+    const perRound = new Map<number, number>();
+    for (const c of cones) perRound.set(c.round, (perRound.get(c.round) ?? 0) + 1);
+    for (const n of perRound.values()) {
+      expect(n).toBeGreaterThanOrEqual(D.pinecones.easyColumns[0]);
+      expect(n).toBeLessThanOrEqual(D.pinecones.easyColumns[1]);
+    }
+  });
+
+  it('bombs sit still at Level 1 and roll from Level 2; the blast reaches its radius', () => {
     const sits = partsSeen(many('squirrels', 1, { attack: 'bombs' })).filter(
       (p) => p.kind === 'bomb',
     );
@@ -367,7 +441,7 @@ describe('the Wild Predator Stampede', () => {
     let others = 0;
     for (let seed = 1; seed <= 4; seed++) {
       play(
-        newDodge({ animal: 'stampede', tier: 3, lives: 3, lengthSec: 60 }, FOUR, seed),
+        newDodge({ animal: 'stampede', tier: 5, lives: 3, lengthSec: 60 }, FOUR, seed),
         (s, prev) => {
           if (s.roundNo === prev.roundNo || !s.starts.at(-1)!.overlapped) return;
           overlaps++;
@@ -383,7 +457,7 @@ describe('the Wild Predator Stampede', () => {
   it('with the Attack picker on Herd rush (only one animal), there are no overlaps', () => {
     let most = 0;
     play(
-      newDodge({ animal: 'stampede', tier: 3, attack: 'herd', lives: 3, lengthSec: 60 }, FOUR, 3),
+      newDodge({ animal: 'stampede', tier: 5, attack: 'herd', lives: 3, lengthSec: 60 }, FOUR, 3),
       (s) => {
         most = Math.max(most, s.rounds.length);
       },

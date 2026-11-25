@@ -53,3 +53,84 @@
   white-space: normal;
   text-align: center;
 }
+
+/*
+ * A clock as a bar with the time under it, and a note beside the time when
+ * it changes ("+5 S", "−2 S"), as in 9-memory-clock.png.
+ */
+.timeBar {
+  position: absolute;
+  left: 8px;
+  width: 68px;
+  height: 8px;
+  border-radius: 1px;
+  background: #3c4e2f;
+  overflow: hidden;
+}
+
+.timeBar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #1d2918;
+  transition: width 0.25s ease-out;
+}
+
+.timeText {
+  position: absolute;
+  left: 8px;
+  width: 38px;
+  margin: 0;
+  font-size: 5px;
+  text-align: right;
+}
+
+.timeText[data-low] {
+  color: #c8423a;
+}
+
+.note {
+  position: absolute;
+  left: 49px;
+  width: 26px;
+  height: 12px;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  border-radius: 2px;
+  background: #d3dfaf;
+  color: #1d2918;
+  font-size: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: notePop 1s ease-out forwards;
+}
+
+@keyframes notePop {
+  0% {
+    transform: scale(0.6);
+  }
+  15% {
+    transform: scale(1.1);
+  }
+  25% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeBar > span {
+    transition: none;
+  }
+
+  .note {
+    animation: none;
+  }
+}

@@ -18,5 +18,5 @@ export const base = (ctx: AttackCtx, warnAt: number, activeAt: number): PartBase
   activeAt,
 });
 
-/** Whether the game's tier has reached a variant's first tier. */
-export const from = (ctx: AttackCtx, tier: number): boolean => ctx.tier >= tier;
+/** Whether the game's level has reached a variant's first level. */
+export const from = (ctx: AttackCtx, level: number): boolean => ctx.level >= level;

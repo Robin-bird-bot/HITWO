@@ -5,30 +5,31 @@
  * - **Pieces:** dead end, straight, corner, tee and cross. Each tile has a
  *   turn (0 to 3, clockwise); its openings follow from its piece and turn.
  * - **Making a board:** pick the exit and the trailheads (one per hiker, on
- *   other sides when that can be done); walk each hiker's solution trail
- *   from their trailhead to the exit (a later trail may end where it meets
- *   an earlier one); give each trail tile the piece its openings need; fill
- *   the rest at random; turn everything at random until no trailhead starts
- *   connected. Tiers II and III lock a few solution tiles, turned right.
+ *   other sides when that can be done), and from Tier II the trail signs
+ *   (never on a trailhead's or the exit's tile). Walk the first hiker's
+ *   solution trail from their trailhead through every sign to the exit,
+ *   never repeating a tile; then each other hiker's (a later trail may end
+ *   where it meets an earlier one). Give each trail tile the piece its
+ *   openings need; fill the rest at random; turn everything at random until
+ *   no trailhead starts connected. From Tier II a few solution tiles are
+ *   locked, turned right.
  * - **Lighting:** from each trailhead, through tiles whose openings face
  *   each other on both sides. A trail reaching the exit tile, open toward
- *   the exit, is connected.
- * - **One at a time:** a hiker passes the moment their trail connects, and
- *   stays passed whatever turns come later. **Together:** everyone passes
- *   only when every trail is connected at once. When time runs out, hikers
- *   who aren't through fail.
+ *   the exit, is connected. A sign is reached when its tile is lit.
+ * - **Passing (Nov 25):** everyone passes when every trailhead is connected
+ *   and every sign is reached, at the same moment. When time runs out
+ *   first, everyone fails.
  */
 import { BALANCE } from '../../config/balance';
 import { int, nextFloat, seedRng, shuffle, weightedPick } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passFailResult } from '../lineup';
-import type { MinigameResult } from '../types';
+import type { MinigameResult, Tier } from '../types';
 
 const T = BALANCE.minigames.trailMap;
 
-export type Tier = 1 | 2 | 3;
+export type { Tier };
 export type Piece = 'end' | 'straight' | 'corner' | 'tee' | 'cross';
-export type Mode = 'one' | 'together';
 
 /** The four directions as bits: north (up), east, south, west. */
 export const N = 1;
@@ -129,9 +130,10 @@ export interface TrailMapState {
   exit: Gate;
   /** Each hiker's trailhead. */
   heads: Record<string, Gate>;
+  /** The trail signs' tiles: every one must be reached, along with the exit. */
+  signs: number[];
   order: string[];
-  mode: Mode;
-  /** Hikers who are through (passed). */
+  /** Hikers who are through (passed): everyone at once, or nobody. */
   through: Record<string, true>;
   /** Seconds to play, or none (Off). */
   timeSec: number | null;
@@ -141,8 +143,8 @@ export interface TrailMapState {
 const at = (size: number, c: number, r: number) => r * size + c;
 
 /**
- * A hiker's solution trail: a walk from their trailhead tile to the exit
- * tile that never repeats a tile, leaning toward the exit, backtracking
+ * A solution trail: a walk from one tile to another that never repeats a
+ * tile or steps on a `blocked` one, leaning toward the target, backtracking
  * when stuck. It may stop early on a tile of an earlier trail (`joinable`).
  */
 function walkTrail(
@@ -151,6 +153,7 @@ function walkTrail(
   from: number,
   to: number,
   joinable: ReadonlySet<number>,
+  blocked: ReadonlySet<number> = new Set(),
 ): number[] {
   const target = { c: to % size, r: Math.floor(to / size) };
   const path: number[] = [from];
@@ -164,6 +167,7 @@ function walkTrail(
       const r = Math.floor(here / size);
       const next = DIRS.map((d) => ({ c: c + STEP[d]!.dc, r: r + STEP[d]!.dr }))
         .filter((p) => p.c >= 0 && p.c < size && p.r >= 0 && p.r < size)
+        .filter((p) => !blocked.has(at(size, p.c, p.r)))
         .map((p) => ({
           cell: at(size, p.c, p.r),
           // Toward the exit, mostly, with enough wander to bend.
@@ -233,10 +237,10 @@ export function lighting(s: Pick<TrailMapState, 'size' | 'tiles' | 'exit' | 'hea
 
 export interface TrailMapOptions {
   tier: Tier;
-  /** Grid size (Auto: the tier's), mode (Auto: one at a time) and time (Auto, off, or seconds). */
+  /** Grid size and signs (Auto: the tier's), and time (Auto, off, or seconds). */
   size?: 'auto' | number;
-  mode?: 'auto' | Mode;
   time?: 'auto' | 'off' | number;
+  signs?: 'auto' | number;
 }
 
 export function newTrailMap(
@@ -253,21 +257,26 @@ export function newTrailMap(
       : typeof options.time === 'number'
         ? options.time
         : tier.timeSec + T.extraSecPerHiker * Math.max(0, order.length - 1);
-  const mode: Mode = options.mode === 'together' ? 'together' : 'one';
+  const wanted = Math.max(
+    0,
+    Math.round(typeof options.signs === 'number' ? options.signs : tier.signs),
+  );
 
-  for (let attempt = 0; attempt < 200; attempt++) {
-    const board = makeBoard(rng, size, order, tier.locked);
-    if (board) {
-      return {
-        tier: options.tier,
-        size,
-        ...board,
-        order: [...order],
-        mode,
-        through: {},
-        timeSec,
-        over: order.length === 0,
-      };
+  // If the signs can't all fit on one trail, try again with one fewer.
+  for (let signs = wanted; signs >= 0; signs--) {
+    for (let attempt = 0; attempt < 200; attempt++) {
+      const board = makeBoard(rng, size, order, tier.locked, signs);
+      if (board) {
+        return {
+          tier: options.tier,
+          size,
+          ...board,
+          order: [...order],
+          through: {},
+          timeSec,
+          over: order.length === 0,
+        };
+      }
     }
   }
   throw new Error('Trail Map: no board could be made');
@@ -278,7 +287,8 @@ function makeBoard(
   size: number,
   order: readonly string[],
   lockedCount: number,
-): Pick<TrailMapState, 'tiles' | 'exit' | 'heads'> | null {
+  signCount: number,
+): Pick<TrailMapState, 'tiles' | 'exit' | 'heads' | 'signs'> | null {
   // The exit, then the trailheads on the other sides (all on different tiles).
   const exit: Gate = { side: SIDES[int(rng, 0, 3)]!, index: int(rng, 0, size - 1) };
   const exitCell = gateCell(exit, size);
@@ -301,6 +311,13 @@ function makeBoard(
     heads[id] = g;
   }
 
+  // The trail signs: never on a trailhead's tile or the exit's.
+  const signs = shuffle(
+    rng,
+    Array.from({ length: size * size }, (_, cell) => cell).filter((cell) => !taken.has(cell)),
+  ).slice(0, signCount);
+  if (signs.length < signCount) return null;
+
   // The solution trails, and the openings each of their tiles needs.
   const needs = new Map<number, number>();
   const add = (cell: number, d: number) => needs.set(cell, (needs.get(cell) ?? 0) | d);
@@ -308,11 +325,25 @@ function makeBoard(
   add(exitAt, gateDir(exit));
   const onTrail = new Set<number>();
   const trails: number[][] = [];
-  for (const id of order) {
+  for (const [k, id] of order.entries()) {
     const head = heads[id]!;
     const start = gateCell(head, size);
     const from = at(size, start.c, start.r);
-    const path = walkTrail(rng, size, from, exitAt, onTrail);
+    // The first hiker's trail goes through every sign on its way: one leg at a time, never
+    // stepping on a tile it already used, a sign it hasn't reached yet, or the exit too early.
+    let path: number[];
+    if (k === 0) {
+      const stops = [...signs, exitAt];
+      path = [from];
+      for (const [s, stop] of stops.entries()) {
+        const blocked = new Set([...path.slice(0, -1), ...stops.filter((_, j) => j !== s)]);
+        const leg = walkTrail(rng, size, path.at(-1)!, stop, new Set(), blocked);
+        if (leg.length < 2) return null;
+        path.push(...leg.slice(1));
+      }
+    } else {
+      path = walkTrail(rng, size, from, exitAt, onTrail);
+    }
     if (path.length < 2) return null;
     add(from, gateDir(head));
     for (let i = 0; i < path.length - 1; i++) {
@@ -378,31 +409,36 @@ function makeBoard(
     tiles[cell] = { ...t, turn: wrong };
   }
   if (lighting({ size, tiles, exit, heads }).connected.size > 0) return null;
-  return { tiles, exit, heads };
+  return { tiles, exit, heads, signs };
+}
+
+/** Which signs are reached now (their tiles lit from a trailhead). */
+export function signsReached(
+  s: Pick<TrailMapState, 'size' | 'tiles' | 'exit' | 'heads' | 'signs'>,
+): number[] {
+  const { lit } = lighting(s);
+  return s.signs.filter((cell) => lit.has(cell));
+}
+
+/** Whether every trailhead is connected and every sign reached, right now. */
+export function allConnected(s: TrailMapState): boolean {
+  const { lit, connected } = lighting(s);
+  return s.order.every((id) => connected.has(id)) && s.signs.every((cell) => lit.has(cell));
 }
 
 /**
  * Turns a tile a quarter turn (1 clockwise, −1 the other way), unless it's
- * locked or the game is over. Then: One at a time, anyone newly connected
- * is through; Together, everyone is through once all are connected. It's
- * over when everyone is through.
+ * locked or the game is over. When every trailhead is connected and every
+ * sign reached, everyone is through and it's over.
  */
 export function turn(s: TrailMapState, cell: number, dir: 1 | -1 = 1): TrailMapState {
   const t = s.tiles[cell];
   if (!t || t.locked || s.over) return s;
   const tiles = s.tiles.map((x, i) => (i === cell ? { ...x, turn: (x.turn + dir + 4) % 4 } : x));
   const next = { ...s, tiles };
-  const { connected } = lighting(next);
-  let through = s.through;
-  if (s.mode === 'one') {
-    const newly = [...connected].filter((id) => !through[id]);
-    if (newly.length)
-      through = { ...through, ...Object.fromEntries(newly.map((id) => [id, true])) };
-  } else if (s.order.every((id) => connected.has(id))) {
-    through = Object.fromEntries(s.order.map((id) => [id, true]));
-  }
-  const over = s.order.every((id) => through[id]);
-  return { ...next, through: through as Record<string, true>, over };
+  if (!allConnected(next)) return next;
+  const through = Object.fromEntries(s.order.map((id) => [id, true as const]));
+  return { ...next, through, over: true };
 }
 
 /** Time's up: it's over, and whoever isn't through fails. */

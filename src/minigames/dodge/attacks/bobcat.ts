@@ -142,7 +142,7 @@ export const STALK: AttackDef = {
     const aim = warnFor(K.aimSec / ctx.speed);
     const side = oneOf(ctx.rng, SIDES);
     const start = landing(ctx.box, onSide(ctx.box, side, between(ctx.rng, 0.2, 0.8)));
-    const hops = Array.from({ length: K.hops[ctx.tier] }, (_, k) => {
+    const hops = Array.from({ length: K.hops[ctx.level] }, (_, k) => {
       const aimAt = ctx.time + k * (aim + K.hopSec + K.crouchSec);
       return { aimAt, hopAt: aimAt + aim, landAt: aimAt + aim + K.hopSec };
     });

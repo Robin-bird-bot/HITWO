@@ -12,13 +12,11 @@
  */
 import type { CSSProperties, Ref } from 'react';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
-import type { MinigameHiker, MinigameResult } from '../../minigames/types';
+import { TIER_LABELS, type MinigameHiker, type MinigameResult } from '../../minigames/types';
 import { hikerStatus, resultLine } from '../../minigames/results';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 import { MinigameIcon } from './MinigameIcon';
 import styles from './ChallengePopup.module.css';
-
-const ROMAN = ['', 'I', 'II', 'III'] as const;
 
 export function ChallengePopup({
   challenge,
@@ -56,7 +54,7 @@ export function ChallengePopup({
         aria-hidden={dimmed || undefined}
       >
         <header className={styles.banner}>
-          <span className={styles.corner}>CHALLENGE · TIER {ROMAN[challenge.tier]}</span>
+          <span className={styles.corner}>CHALLENGE · TIER {TIER_LABELS[challenge.tier]}</span>
           <h2 className={styles.name}>
             <span className={styles.diamond} aria-hidden="true">
               <MinigameIcon id={challenge.minigame} size={20} />
