@@ -1,14 +1,16 @@
 /**
  * The challenge pop-up (docs/design/10-minigames.md, "The challenge pop-up";
- * docs/mockups/minigames/2-popup-before-start.jpg): a cream window with a red
- * banner, the poster on the left, and on the right the flavor line, the game,
- * Prepare, If hit, who's on the tile, and Start.
+ * docs/mockups/minigames/4-vertical-gps-preview-then-turn.jpg): a cream window
+ * with a red banner; the poster on the left with the flavor line under it;
+ * an empty slot in the middle where the upright party GPS stands (MinigameFlow
+ * draws it there, above the dimming); and on the right the game, Prepare,
+ * If hit, who's on the tile, and Start.
  *
  * In test mode (the Minigame testing tab) Prepare is hidden. After a game it
  * shows the result line, then Continue, or in test mode Back to testing and
  * Play again.
  */
-import type { CSSProperties } from 'react';
+import type { CSSProperties, Ref } from 'react';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
 import type { MinigameHiker, MinigameResult } from '../../minigames/types';
 import { resultLine } from '../../minigames/bearrels/logic';
@@ -24,6 +26,7 @@ export function ChallengePopup({
   testMode = false,
   result,
   dimmed = false,
+  gpsSlotRef,
   onStart,
   onContinue,
   onBack,
@@ -35,8 +38,10 @@ export function ChallengePopup({
   testMode?: boolean;
   /** After a game: who was safe and who was hit. */
   result?: MinigameResult | undefined;
-  /** The GPS is up in front of it. */
+  /** The GPS is turned, in front of it. */
   dimmed?: boolean;
+  /** The middle slot the upright GPS stands in. */
+  gpsSlotRef?: Ref<HTMLDivElement>;
   onStart(): void;
   onContinue?(): void;
   onBack?(): void;
@@ -66,17 +71,20 @@ export function ChallengePopup({
         </header>
 
         <div className={styles.body}>
-          <div className={styles.poster}>
-            {challenge.poster ? (
-              <img src={challenge.poster} alt="" draggable={false} />
-            ) : (
-              <span className={styles.noPoster} />
-            )}
+          <div className={styles.left}>
+            <div className={styles.poster}>
+              {challenge.poster ? (
+                <img src={challenge.poster} alt="" draggable={false} />
+              ) : (
+                <span className={styles.noPoster} />
+              )}
+            </div>
+            <p className={styles.flavor}>{challenge.flavor}</p>
           </div>
 
-          <div className={styles.column}>
-            <p className={styles.flavor}>{challenge.flavor}</p>
+          <div ref={gpsSlotRef} className={styles.gpsSlot} />
 
+          <div className={styles.column}>
             <span className={styles.label}>THE GAME</span>
             <div className={styles.game}>
               <span className={styles.gameIcon}>
@@ -157,12 +165,9 @@ export function ChallengePopup({
                   )}
                 </>
               ) : (
-                <>
-                  <p className={styles.hint}>Then the party GPS slides up and the game starts.</p>
-                  <button type="button" className={styles.start} onClick={onStart} autoFocus>
-                    START
-                  </button>
-                </>
+                <button type="button" className={styles.start} onClick={onStart} autoFocus>
+                  START
+                </button>
               )}
             </div>
           </div>

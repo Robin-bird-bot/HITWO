@@ -2,7 +2,7 @@
  * Bearrels' scene parts (look C, layered silhouettes), drawn in code from
  * Wyatt's SVG parts in public/assets/minigames/bearrels/ (the same shapes and
  * inks), so each hiker's rim light and bandana can be their own color. All in
- * scene units: a 1280 × 720 view.
+ * the Silhouette style's scene units: a 1280 × 720 view (shown at 4:3).
  */
 import type { ReactNode } from 'react';
 import { INKS } from '../../../minigames/hikers';
@@ -30,6 +30,7 @@ export function Barrel({ box, outline = false }: { box: BarrelBox; outline?: boo
           strokeWidth="6"
           strokeDasharray="18 12"
           strokeLinejoin="round"
+          style={{ filter: 'drop-shadow(0 0 10px rgba(255, 241, 214, 0.85))' }}
         />
       )}
     </g>

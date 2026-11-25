@@ -151,7 +151,7 @@
 }
 
 .description {
-  margin: 6px 0 28px;
+  margin: 6px 0 16px;
   font-size: 16px;
   color: #4a3f36;
 }
@@ -159,7 +159,27 @@
 .settings {
   display: flex;
   gap: 56px;
-  margin-bottom: 26px;
+  margin-bottom: 14px;
+}
+
+/* The art style, above the other settings. */
+.styleSetting {
+  margin-bottom: 14px;
+}
+
+.choice.styleChoice {
+  height: 48px;
+  align-self: flex-start;
+}
+
+.choice.styleChoice > button {
+  width: auto;
+  padding: 0 22px;
+  font-size: 16px;
+}
+
+.choice.styleChoice > button + button {
+  border-left: 2px solid #2a2420;
 }
 
 .setting {
@@ -231,7 +251,7 @@
 }
 
 .hikersBlock {
-  margin-bottom: 22px;
+  margin-bottom: 10px;
 }
 
 .hikers {
@@ -262,8 +282,8 @@
 }
 
 .portrait {
-  width: 74px;
-  height: 74px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   box-shadow: 0 0 0 3px #d8c39a;
 }
@@ -304,19 +324,12 @@
 
 .preview {
   position: relative;
-  width: 480px;
-  height: 270px;
+  width: 296px;
+  height: 222px;
   overflow: hidden;
   border-radius: 12px;
   border: 4px solid #1d2220;
   flex: none;
-}
-
-.previewScene {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
 }
 
 .previewPill {

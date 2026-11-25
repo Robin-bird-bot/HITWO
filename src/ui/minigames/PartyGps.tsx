@@ -1,107 +1,118 @@
 /**
  * The party GPS (docs/design/10-minigames.md, "The party GPS";
- * docs/mockups/minigames/3-gps-lifted-placing.jpg): a yellow landscape
- * handheld the whole party shares. Minigames play on its 16:9 screen, laid
- * out at 1280 × 720 and scaled to fit, under scanlines, a soft inner shadow,
- * a glass sheen and a warm glow.
+ * docs/mockups/minigames/4-vertical-gps-preview-then-turn.jpg): a yellow,
+ * vertical handheld the whole party shares. Drawn in CSS: no image files.
  *
- * It lifts from below over 600 ms with a small overshoot and lowers over
- * 400 ms. With reduced motion it fades in and out at full size. The D-pad and
- * buttons are decoration for now. Drawn in CSS and SVG: no image files.
+ * - **Upright** in its slot in the pop-up, its 3:4 screen loops a preview of
+ *   the game (the 4:3 scene cropped to the middle).
+ * - **Turned:** on Start it turns 90° clockwise and grows to the middle of
+ *   the window (700 ms); the game plays on its now 4:3 screen, laid out at
+ *   1280 × 960 and turned back so it reads upright. On Continue it turns back
+ *   and shrinks (500 ms). With reduced motion it crossfades instead.
+ *
+ * It's drawn at its turned size and only its transform changes, so it's
+ * sharp once it settles. The knob and buttons are decoration for now.
  */
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
-import { BALANCE } from '../../config/balance';
+import type { CSSProperties, ReactNode } from 'react';
 import { useReducedMotion } from '../app/useReducedMotion';
-import { useStage } from '../stage/StageContext';
-import { gpsSize, SCREEN } from './gpsLayout';
+import { GAME } from '../../minigames/bearrels/styles';
+import {
+  DEVICE,
+  gpsMotion,
+  gpsTransform,
+  gpsUpright,
+  type Rect,
+  type TurnedGps,
+} from './gpsLayout';
 import styles from './PartyGps.module.css';
 
-const G = BALANCE.minigames.gps;
-
 export function PartyGps({
-  up,
-  onLowered,
-  children,
+  turned,
+  slot,
+  layout,
+  mode,
+  showContent,
+  moved,
+  content,
 }: {
-  /** Lifted (true), or lowering away (false). */
-  up: boolean;
-  /** It has finished lowering: unmount it. */
-  onLowered?(): void;
-  /** The minigame, laid out at 1280 × 720. */
-  children: ReactNode;
+  /** Turned sideways to play (true), or upright in the pop-up. */
+  turned: boolean;
+  /** The slot in the pop-up it stands in when upright (stage pixels). */
+  slot: Rect;
+  /** Its turned size and place (gpsTurned). */
+  layout: TurnedGps;
+  /** What the screen shows: the upright preview, or the game turned to read upright. */
+  mode: 'preview' | 'game';
+  /** False while it turns: the screen goes dark. */
+  showContent: boolean;
+  /** It has turned at least once (reduced motion: no fade when the pop-up first opens). */
+  moved: boolean;
+  /** Laid out at 1280 × 960. */
+  content: ReactNode;
 }) {
-  const fit = useStage();
   const reduced = useReducedMotion();
-  const size = gpsSize(fit.scale < G.phoneBelowScale);
-  // It mounts below and lifts on the next frame, so the transition runs.
-  const [lifted, setLifted] = useState(false);
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setLifted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
-  // Lowering: when it's down, it can go.
-  useEffect(() => {
-    if (up) return;
-    const timer = setTimeout(() => onLowered?.(), G.lowerMs);
-    return () => clearTimeout(timer);
-  }, [up, onLowered]);
-  const shown = up && lifted;
-
-  const vars = {
-    '--lift-ms': `${G.liftMs}ms`,
-    '--lower-ms': `${G.lowerMs}ms`,
-    width: size.width,
-    height: size.height,
-  } as CSSProperties;
+  const u = layout.unit;
+  const pose = turned ? 'turned' : 'upright';
+  const motion = gpsMotion(reduced, pose);
+  const w = DEVICE.width * u;
+  const h = DEVICE.height * u;
+  const screenH = DEVICE.screen.h * u;
+  const contentTransform =
+    mode === 'game'
+      ? `translate(-50%, -50%) rotate(-90deg) scale(${screenH / GAME.width})`
+      : `translate(-50%, -50%) scale(${screenH / GAME.height})`;
   return (
-    <div
-      className={styles.layer}
-      data-shown={shown || undefined}
-      data-reduced={reduced || undefined}
-    >
-      <div className={styles.gps} style={vars} role="region" aria-label="Party GPS">
-        <span className={styles.antenna} aria-hidden="true" />
-        <span className={styles.topButtons} aria-hidden="true">
-          <span />
-          <span />
-        </span>
-        <div className={styles.face} style={{ inset: size.rim, padding: `${size.pad}px 0 0` }}>
-          <div className={styles.side} style={{ width: size.side }} aria-hidden="true">
-            <svg viewBox="0 0 60 60" width={Math.min(78, size.side * 0.66)} className={styles.dpad}>
-              <path d="M22 4h16v18h18v16H38v18H22V38H4V22h18z" />
-            </svg>
-          </div>
-          <div className={styles.middle}>
-            <div className={styles.bezel} style={{ padding: size.bezel }}>
-              <div
-                className={styles.screen}
-                style={{ width: size.screenWidth, height: size.screenHeight }}
-              >
+    <div className={styles.layer}>
+      <div
+        className={styles.device}
+        data-turned={turned || undefined}
+        data-motion={motion.kind}
+        data-moved={moved || undefined}
+        role="region"
+        aria-label="Party GPS"
+        style={
+          {
+            left: layout.center.x - w / 2,
+            top: layout.center.y - h / 2,
+            width: w,
+            height: h,
+            transform: gpsTransform(pose, gpsUpright(layout, slot)),
+            '--u': u,
+            '--ms': `${motion.ms}ms`,
+          } as CSSProperties
+        }
+      >
+        <span className={styles.nub} aria-hidden="true" />
+        <span className={styles.sideLeft} aria-hidden="true" />
+        <span className={styles.sideLeftSmall} aria-hidden="true" />
+        <span className={styles.sideRight} aria-hidden="true" />
+        <div className={styles.body}>
+          <div className={styles.face} />
+          <div className={styles.bezel}>
+            <div className={styles.screen}>
+              {showContent && (
                 <div
-                  className={styles.viewport}
-                  style={{ transform: `scale(${size.screenWidth / SCREEN.width})` }}
+                  key={mode}
+                  className={styles.content}
+                  data-mode={mode}
+                  style={{ transform: contentTransform }}
                 >
-                  {children}
+                  {content}
                 </div>
-                <span className={styles.scanlines} aria-hidden="true" />
-                <span className={styles.sheen} aria-hidden="true" />
-                <span className={styles.inner} aria-hidden="true" />
-              </div>
+              )}
+              <span className={styles.scanlines} aria-hidden="true" />
+              <span className={styles.sheen} aria-hidden="true" />
+              <span className={styles.inner} aria-hidden="true" />
             </div>
-            <span className={styles.brand} style={{ height: size.label }} aria-hidden="true">
-              TRAILMATE
-            </span>
           </div>
-          <div className={styles.side} style={{ width: size.side }} aria-hidden="true">
-            <span
-              className={styles.buttonYellow}
-              style={{ width: size.side * 0.42, height: size.side * 0.42 }}
-            />
-            <span
-              className={styles.buttonDark}
-              style={{ width: size.side * 0.36, height: size.side * 0.36 }}
-            />
-          </div>
+          <span className={styles.brand} aria-hidden="true">
+            TRAILMATE
+          </span>
+          <span className={styles.knob} aria-hidden="true">
+            <span />
+          </span>
+          <span className={styles.buttonLeft} aria-hidden="true" />
+          <span className={styles.buttonRight} aria-hidden="true" />
         </div>
       </div>
     </div>

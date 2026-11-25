@@ -1001,24 +1001,33 @@ export const BALANCE = {
    */
   minigames: {
     gps: {
-      /** The GPS lifts over this long (with a small overshoot), and lowers over this. */
-      liftMs: 600,
-      lowerMs: 400,
-      /** Lifted, the screen is as large as fits, up to this share of the window width. */
-      maxScreenWidth: 0.88,
-      /** On a phone in landscape, the screen gets at least this share of the height. */
-      phoneScreenHeight: 0.8,
+      /**
+       * On Start the GPS turns 90° clockwise and zooms in over this long; on
+       * Continue it turns back upright and shrinks over this (Nov 24 follow-up).
+       */
+      turnMs: 700,
+      returnMs: 500,
+      /** Turned, the 4:3 screen is as large as fits, up to these shares of the window. */
+      maxScreenWidth: 0.92,
+      maxScreenHeight: 0.86,
+      /**
+       * On a phone in landscape the screen is this share of the height. The doc
+       * says "almost the full height"; 0.95 is my guess.
+       */
+      phoneScreenHeight: 0.95,
       /** The stage counts as a phone when it's drawn smaller than this. */
       phoneBelowScale: 0.6,
       /** The pop-up behind dims to this brightness. */
       dim: 0.35,
+      /** The upright GPS loops its preview of the game about this often. */
+      previewLoopMs: 6000,
     },
     bearrels: {
       barrels: { min: 3, max: 6, default: 3 },
       rounds: { min: 1, max: 5, default: 3 },
       shots: { min: 1, max: 2, default: 1 },
       hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
-      /** The barrel row (scene units: 1280 × 720). */
+      /** Silhouette style: the barrel row (its scene units, 1280 × 720 inside the 4:3 view). */
       rowX: [150, 1130] as const,
       barrelTop: 418,
       maxBarrelWidth: 150,
@@ -1034,13 +1043,23 @@ export const BALANCE = {
         bearUpMs: 450,
         sweepMs: 1400,
         holdMs: 300,
+        /** After a shot, its effects play this long before the next shot or the duck. */
         fireMs: 450,
         flashInMs: 60,
         flashOutMs: 400,
         secondShotMs: 600,
         duckMs: 500,
         betweenRoundsMs: 700,
+        /** The muzzle flash shows this long (Nov 24 follow-up). */
+        muzzleMs: 120,
       },
+      /**
+       * Drag-and-drop (Nov 24 follow-up): a press becomes a drag after moving
+       * this far (screen px); a barrel's drop area reaches this far past it
+       * (game screen units, 1280 × 960); a drop on nothing flies back this fast.
+       * A drop on a barrel slides into place over timing.slideMs.
+       */
+      drag: { startPx: 6, hitMargin: 12, flyBackMs: 200 },
       /** The red flash's strength, and with reduced motion. */
       flash: 0.4,
       softFlash: 0.2,

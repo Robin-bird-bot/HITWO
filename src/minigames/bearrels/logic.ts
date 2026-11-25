@@ -5,7 +5,9 @@
  * behind a barrel it hits is out for the rest of the game. The game ends
  * after the last round, or once every hiker is out.
  *
- * The scene is laid out in its own units: a 1280 × 720 view.
+ * Where things are drawn depends on the art style (./styles.ts); nothing
+ * here does. `barrelLayout` and `hikerSpots` are the Silhouette style's
+ * scene (1280 × 720).
  */
 import { BALANCE } from '../../config/balance';
 import { int, seedRng } from '../../engine/rng';
@@ -14,7 +16,8 @@ import type { MinigameResult } from '../types';
 
 const B = BALANCE.minigames.bearrels;
 
-export const SCENE = { width: 1280, height: 720 } as const;
+/** The Silhouette scene's middle (it is 1280 wide). */
+const MIDDLE_X = 640;
 
 // ── Layout ─────────────────────────────────────────────────────────────────
 
@@ -37,15 +40,12 @@ export function barrelLayout(n: number): BarrelBox[] {
     n <= 1 ? B.maxBarrelWidth : Math.min(B.maxBarrelWidth, (span / (n - 1)) * B.widthShare);
   const height = width * B.heightRatio;
   return Array.from({ length: n }, (_, i) => ({
-    x: n <= 1 ? SCENE.width / 2 : from + (span / (n - 1)) * i,
+    x: n <= 1 ? MIDDLE_X : from + (span / (n - 1)) * i,
     width,
     height,
     top: B.barrelTop,
   }));
 }
-
-/** Where the token bar and Ready start (scene units): nothing there may cover a barrel. */
-export const BOTTOM_BAR_TOP = 612;
 
 /** Where each hiker behind a barrel stands: their head's center and their scale. */
 export function hikerSpots(
@@ -152,6 +152,21 @@ export function place(s: BearrelsState, barrel: number): BearrelsState {
   if (unplaced) next.selected = unplaced;
   else delete next.selected;
   return next;
+}
+
+/** A hiker can be dragged while placing, if they're still in. */
+export const canDrag = (s: BearrelsState, hikerId: string): boolean =>
+  s.phase === 'placing' && s.hikers.includes(hikerId) && s.out[hikerId] === undefined;
+
+/**
+ * A drag ends: dropped on a barrel, the hiker hides behind it (and the next
+ * hiker not placed yet is picked, as with tap, then tap); dropped anywhere
+ * else (null), nothing changes and they go back.
+ */
+export function drop(s: BearrelsState, hikerId: string, barrel: number | null): BearrelsState {
+  if (barrel === null || !canDrag(s, hikerId)) return s;
+  if (barrel < 0 || barrel >= s.settings.barrels) return s;
+  return place(select(s, hikerId), barrel);
 }
 
 /** Ready lights up once every hiker still in is placed. */
