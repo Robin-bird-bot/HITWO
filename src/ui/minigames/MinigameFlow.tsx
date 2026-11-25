@@ -18,7 +18,8 @@ import { useStage } from '../stage/StageContext';
 import { ChallengePopup } from './ChallengePopup';
 import { gpsTurned, styleButtonSpot, type Rect } from './gpsLayout';
 import { PartyGps } from './PartyGps';
-import { PREVIEWS, RUNNERS } from './runners';
+import { PlayStage } from './PlayStage';
+import { PREVIEWS } from './runners';
 import styles from './MinigameFlow.module.css';
 
 const G = BALANCE.minigames.gps;
@@ -78,7 +79,6 @@ export function MinigameFlow({
     if (el) setSlot(boxInFlow(el));
   }, []);
 
-  const Run = RUNNERS[challenge.minigame];
   const Preview = PREVIEWS[challenge.minigame];
   const info = MINIGAME_BY_ID.get(challenge.minigame);
   const styleSetting = info?.settings.find((s) => s.kind === 'style');
@@ -150,8 +150,15 @@ export function MinigameFlow({
           moved={moved}
           playing={stage === 'playing'}
           content={
-            stage === 'playing' && Run ? (
-              <Run key={seed} settings={settings} hikers={hikers} seed={seed} onDone={done} />
+            stage === 'playing' && info ? (
+              <PlayStage
+                key={seed}
+                info={info}
+                settings={settings}
+                hikers={hikers}
+                seed={seed}
+                onDone={done}
+              />
             ) : Preview ? (
               <Preview settings={settings} hikers={hikers} />
             ) : null

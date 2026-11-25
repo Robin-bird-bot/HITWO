@@ -1,0 +1,126 @@
+/*
+ * The GPS look for the puzzle minigames (docs/design/11-minigames-puzzles.md,
+ * "Shared parts"), in scene units: these classes are used inside PixelScreen,
+ * where 1px is one scene unit (320 × 240), zoomed up to the screen.
+ */
+
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 0.75px solid #bac995;
+  border-radius: 1.5px;
+  background: #1d2918;
+  box-shadow: 0 1.25px 0 #111a10;
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: 5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.button {
+  composes: box;
+  padding: 0;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: #2b3a23;
+}
+
+.button:disabled {
+  border-color: #6a7e51;
+  background: rgba(29, 41, 24, 0.45);
+  color: #6a7e51;
+  box-shadow: none;
+  cursor: default;
+}
+
+.button:focus-visible {
+  outline: 1px solid #e9b44c;
+  outline-offset: 1px;
+}
+
+/* Dark text on the green screen. */
+.text {
+  font-family: var(--font-pixel);
+  color: #1d2918;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.muted {
+  composes: text;
+  color: #52653f;
+}
+
+/* Hiker tokens: a circle in the hiker's color with their initial. */
+.token {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex: none;
+  border: 0.75px solid #111a10;
+  border-radius: 50%;
+  color: #111a10;
+  font-family: var(--font-pixel);
+  line-height: 1;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* The current hiker: lifted, with a light ring. */
+.token[data-state='current'] {
+  transform: translateY(-1.5px);
+  box-shadow: 0 0 0 1px #d3dfaf;
+}
+
+.token[data-state='out'] {
+  filter: grayscale(1) brightness(0.75);
+}
+
+.check {
+  position: absolute;
+  right: -1.5px;
+  bottom: -1.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45%;
+  height: 45%;
+  border: 0.5px solid #111a10;
+  border-radius: 50%;
+  background: #d3dfaf;
+}
+
+.check > svg {
+  width: 70%;
+  height: 70%;
+}
+
+.slash {
+  position: absolute;
+  left: 50%;
+  top: -10%;
+  width: 1.5px;
+  height: 120%;
+  margin-left: -0.75px;
+  background: #c8423a;
+  transform: rotate(45deg);
+}
+
+/* Sprites drawn at 1 px per scene unit (or 2 for the forest tiles), nearest-neighbor. */
+.sprite {
+  display: block;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}

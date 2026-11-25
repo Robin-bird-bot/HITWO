@@ -1,0 +1,164 @@
+/* Remember the Path (6- and 7-remember-path-*.png), in scene units (320 × 240). */
+
+.head {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 75px;
+  height: 15px;
+  font-size: 5px;
+}
+
+.lines,
+.tierLine,
+.name,
+.strikesWord {
+  position: absolute;
+  left: 7px;
+  width: 70px;
+  margin: 0;
+  font-size: 3.8px;
+  line-height: 2.2;
+  white-space: normal;
+}
+
+.lines {
+  top: 30px;
+}
+
+.tierLine {
+  top: 76px;
+}
+
+.name {
+  top: 82px;
+  font-size: 5px;
+}
+
+.strikes {
+  position: absolute;
+  left: 7px;
+  top: 94px;
+  display: flex;
+  gap: 2px;
+}
+
+.strikes > span {
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  border-radius: 1px;
+  background: #1d2918;
+}
+
+.strikes > span[data-used] {
+  background: #859a66;
+}
+
+.strikesWord {
+  top: 108px;
+}
+
+.next {
+  position: absolute;
+  left: 4px;
+  top: 120px;
+  width: 75px;
+  height: 15px;
+  font-size: 4.5px;
+}
+
+.message {
+  position: absolute;
+  left: 4px;
+  top: 150px;
+  width: 75px;
+  height: 15px;
+  font-size: 4.5px;
+}
+
+.line {
+  position: absolute;
+  left: 8px;
+  bottom: 12px;
+  display: flex;
+  gap: 5px;
+}
+
+.topLabel {
+  position: absolute;
+  margin: 0;
+  text-align: center;
+  font-size: 3.6px;
+}
+
+.grid {
+  position: absolute;
+  box-shadow: 0 0 0 1px #1d2918;
+  touch-action: none;
+}
+
+.tile {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.tile > img:first-child {
+  width: 32px;
+  height: 32px;
+}
+
+.print {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  transition: opacity 0.3s ease;
+}
+
+.startMark {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border: 0.75px solid #d3dfaf;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.wrong {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #c8423a;
+  color: #d3dfaf;
+  font-size: 8px;
+  pointer-events: none;
+}
+
+.ranger {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  pointer-events: none;
+  transition:
+    left var(--step-ms) linear,
+    top var(--step-ms) linear,
+    opacity 0.2s ease;
+}
+
+.token {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    left 0.15s ease-out,
+    top 0.15s ease-out;
+}

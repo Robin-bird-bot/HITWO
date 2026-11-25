@@ -1,28 +1,36 @@
 /**
  * The Minigame testing tab (docs/design/10-minigames.md, section 5;
- * docs/mockups/minigames/1-testing-tab.jpg), from the main menu.
+ * 11-minigames-puzzles.md, "Testing tab"; docs/mockups/minigames/8-testing-tab-reference.jpg),
+ * from the main menu.
  *
- * - **Left:** every minigame. Bearrels plays; the others are "coming soon".
- * - **Right:** the minigame's settings (the art style, steppers, shot
- *   buttons, hiker toggles), a live preview in the chosen style, and Test it,
- *   which opens its challenge's pop-up in test mode (no Prepare), then the
- *   game on the turned party GPS. While playing, the Style button and the S
- *   key switch the art style; the change is remembered here too.
+ * - **Left:** every minigame. Bearrels and the four puzzle games play; the
+ *   others are "coming soon".
+ * - **Right:** the minigame's settings (Bearrels' art style, steppers and
+ *   shot buttons; the puzzle games' Tier and overrides, where Auto uses the
+ *   tier's value; hiker toggles), a preview, and Test it, which opens its
+ *   pop-up in test mode (no Prepare), then the game on the turned party GPS.
+ *   While playing Bearrels, the Style button and the S key switch the art
+ *   style; the change is remembered here too.
  *
  * Settings are remembered on this device. Nothing touches the saved hike,
  * XP, stats or anything else in a run.
  */
 import { useState, type CSSProperties } from 'react';
-import { BEAR_COUNTRY } from '../../content/minigameChallenges';
+import {
+  BEAR_COUNTRY,
+  testChallenge,
+  type MinigameChallenge,
+} from '../../content/minigameChallenges';
 import { emptyScene, type SceneModel } from '../../minigames/bearrels/scene';
 import { toArtStyle } from '../../minigames/bearrels/styles';
 import { MINIGAMES } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { MinigameInfo, MinigameSetting, MinigameSettings } from '../../minigames/types';
 import { HikerPortrait } from '../hikers/HikerPortrait';
-import { BarrelIcon } from './BarrelIcon';
+import { MinigameIcon } from './MinigameIcon';
 import { BearrelsScene, ScaledScreen } from './bearrels/Scene';
 import { MinigameFlow } from './MinigameFlow';
+import { PREVIEWS } from './runners';
 import {
   browserStorage,
   readTestingSettings,
@@ -31,8 +39,16 @@ import {
 } from './testingSettings';
 import styles from './MinigameTesting.module.css';
 
-/** The challenge each playable minigame opens in test mode. */
-const CHALLENGE_FOR: Readonly<Record<string, typeof BEAR_COUNTRY>> = { bearrels: BEAR_COUNTRY };
+/** The challenge a playable minigame opens in test mode: Bear Country for Bearrels; for the rest, a plain one with their name. */
+function challengeFor(
+  info: MinigameInfo,
+  settings: MinigameSettings,
+): MinigameChallenge | undefined {
+  if (info.status !== 'ready') return undefined;
+  if (info.id === 'bearrels') return BEAR_COUNTRY;
+  const t = settings.tier;
+  return testChallenge(info, t === 2 || t === 3 ? t : 1);
+}
 
 const picked = (s: MinigameSettings, id: string): readonly string[] => {
   const v = s[id];
@@ -50,7 +66,7 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
     setSettings(next);
     writeTestingSettings(browserStorage(), active.id, next);
   };
-  const challenge = CHALLENGE_FOR[active.id];
+  const challenge = challengeFor(active, settings);
   const hikerIds = picked(settings, 'hikers');
   const hikers = hikerIds.map((id) => minigameHiker(id));
 
@@ -81,7 +97,7 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
                   setSettings(readTestingSettings(browserStorage(), m.id));
                 }}
               >
-                <BarrelIcon size={24} />
+                <MinigameIcon id={m.id} size={24} />
                 <span className={styles.itemWords}>
                   <span className={styles.itemName}>{m.name}</span>
                   <span className={styles.itemSub}>
@@ -105,7 +121,7 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
 
             <div className={styles.settings}>
               {active.settings
-                .filter((s) => s.kind === 'range' || s.kind === 'choice')
+                .filter((s) => s.kind === 'range' || s.kind === 'choice' || s.kind === 'pick')
                 .map((s) => (
                   <Setting key={s.id} setting={s} settings={settings} onChange={update} />
                 ))}
@@ -117,14 +133,14 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
                 <HikerToggles key={s.id} setting={s} settings={settings} onChange={update} />
               ))}
 
-            {active.id === 'bearrels' && (
+            {challenge && (
               <>
                 <span className={styles.label}>PREVIEW</span>
                 <div className={styles.previewRow}>
                   <Preview info={active} settings={settings} />
                   <div className={styles.testBox}>
                     <p className={styles.testNote}>
-                      Opens the Bear Country pop-up, then the game. Nothing is saved.
+                      Opens the {challenge.name} pop-up, then the game. Nothing is saved.
                     </p>
                     <button
                       type="button"
@@ -155,7 +171,10 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
   );
 }
 
-/** A − / + stepper, or a row of choice buttons (Shots per round: 1 or 2). */
+/**
+ * A − / + stepper; a row of number buttons (Shots per round: 1 or 2; Tier:
+ * I, II, III); or a row of named buttons (the overrides: Auto, On, Off…).
+ */
 function Setting({
   setting: s,
   settings,
@@ -167,6 +186,29 @@ function Setting({
 }) {
   if (s.kind === 'hikers' || s.kind === 'style') return null;
   const given = settings[s.id];
+  if (s.kind === 'pick') {
+    const value = typeof given === 'string' ? given : s.default;
+    return (
+      <div className={styles.setting}>
+        <span className={styles.label}>{s.label.toUpperCase()}</span>
+        <div className={`${styles.choice} ${styles.pick}`} role="radiogroup" aria-label={s.label}>
+          {s.options.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              role="radio"
+              aria-checked={value === o.id}
+              data-on={value === o.id || undefined}
+              onClick={() => onChange({ ...settings, [s.id]: o.id })}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        {s.hint && <span className={styles.hint}>{s.hint}</span>}
+      </div>
+    );
+  }
   const value = typeof given === 'number' ? given : s.default;
   const set = (n: number) => onChange({ ...settings, [s.id]: n });
   return (
@@ -194,7 +236,7 @@ function Setting({
         </div>
       ) : (
         <div className={styles.choice} role="radiogroup" aria-label={s.label}>
-          {s.options.map((o) => (
+          {s.options.map((o, i) => (
             <button
               key={o}
               type="button"
@@ -203,7 +245,7 @@ function Setting({
               data-on={value === o || undefined}
               onClick={() => set(o)}
             >
-              {o}
+              {s.labels?.[i] ?? o}
             </button>
           ))}
         </div>
@@ -301,11 +343,24 @@ function HikerToggles({
 /** How wide the preview is drawn (4:3). */
 const PREVIEW_WIDTH = 296;
 
-/** A small live picture of the scene in the chosen style: the barrels, and the picked hikers behind them. */
+/**
+ * A small picture of the game: Bearrels' scene in the chosen style, with the
+ * barrels and the picked hikers behind them; a still frame of a puzzle game.
+ */
 function Preview({ info, settings }: { info: MinigameInfo; settings: MinigameSettings }) {
+  const ids = picked(settings, 'hikers');
+  const Still = PREVIEWS[info.id];
+  if (info.id !== 'bearrels') {
+    return (
+      <div className={styles.preview} aria-label={`${info.name} preview`} role="img">
+        <ScaledScreen width={PREVIEW_WIDTH}>
+          {Still && <Still settings={settings} hikers={ids.map((id) => minigameHiker(id))} />}
+        </ScaledScreen>
+      </div>
+    );
+  }
   const n = typeof settings.barrels === 'number' ? settings.barrels : 3;
   const rounds = typeof settings.rounds === 'number' ? settings.rounds : 3;
-  const ids = picked(settings, 'hikers');
   const model: SceneModel = {
     ...emptyScene(n),
     hikers: ids.map((id, i) => ({ hiker: minigameHiker(id), barrel: i % n, state: 'in' })),
@@ -316,7 +371,9 @@ function Preview({ info, settings }: { info: MinigameInfo; settings: MinigameSet
       <ScaledScreen width={PREVIEW_WIDTH}>
         <BearrelsScene style={toArtStyle(settings.style)} model={model} />
       </ScaledScreen>
-      <span className={styles.previewPill}>ROUND 1 / {rounds}</span>
+      <span className={styles.previewPill}>
+        R {1}/{rounds}
+      </span>
     </div>
   );
 }

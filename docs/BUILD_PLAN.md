@@ -1326,7 +1326,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 - **Number added** (`BALANCE.minigames.gps`, `TODO(wyatt)`): `phoneScreenHeight` 0.95, since the doc says "almost the full height".
 - **Not done:** detailed hiker art (after Wyatt picks a style), sound files, Prepare, real stakes, other minigames.
 
-### Phase 10.8, step 1c: Bearrels in the GPS greens (now)
+### Phase 10.8, step 1c: Bearrels in the GPS greens (done)
 
 (New in the Nov 24 follow-up: `docs/UPDATE-2026-11-24-bearrels-gps-greens.md`. The design is the revised `docs/design/10-minigames.md`. New mockups in `docs/mockups/minigames/`: `1-playing-gps-pixel.jpg` to `6-drawn-assets.jpg`; the older style mockups are gone except `4-vertical-gps-preview-then-turn.jpg`, `7-game-states-reference.jpg` and `8-testing-tab-reference.jpg`. The art is in `public/assets/minigames/bearrels/gps-pixel/` and `gps-drawn/`, with one `layout.json` for both.)
 
@@ -1351,7 +1351,16 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 - Switching versions mid-round keeps every hiker's barrel, the round and who is out.
 - During play the scanlines move; with reduced motion they don't.
 
-### Phase 10.8, step 2: Four puzzle minigames, test version (next)
+**Phase 10.8 step 1c notes (built Nov 24)**
+- **What's playable:** Bearrels in Detailed pixel (the default) or Drawn 2D, with the aiming bear, hikers crouched in front of the barrels under the grass, the moving scanlines and the GPS-look boxes. The Style button and S switch between the two mid-round. A remembered old style (Earthy, Teal, Silhouette) opens as Detailed pixel.
+- **What I interpreted:**
+  - **The bear's pose** is the middle one while he pops up, before the crosshair moves.
+  - **The drop area** is as wide as four hikers spread out, so at 6 barrels neighbors overlap a little; the nearest barrel wins.
+  - **The results card** keeps its cream look; the update restyled the HUD only.
+  - **Splinters** are drawn in G2 and smoke in G9.
+- **Not done:** sound files (hooks only), Prepare, real stakes.
+
+### Phase 10.8, step 2: Four puzzle minigames, test version (now)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-four-minigames.md`. The design is `docs/design/11-minigames-puzzles.md`. Mockups in `docs/mockups/minigames/puzzles/`. Placeholder art in `public/assets/minigames/traildle/`, `find-object/`, `remember-path/` and `forest-tiles/`; `_snacks-sheet-8x.png` stays in `assets/` only.)
 
@@ -1371,6 +1380,30 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, gro
 **Tests:** as in `11-minigames-puzzles.md`, section 6.
 
 **Done when:** all four play from the testing tab on every tier and override, with mouse, touch and keyboard, and the tests pass.
+
+**Phase 10.8 step 2 notes (built Nov 24)**
+- **What's playable:** main menu → **Minigame testing** → pick **Traildle**, **Find the Object**, **Remember the Path** or **Find the Path** → set the Tier, Hikers and overrides → **Test it** → Start. With 2 or more hikers, Line up comes first. Each game ends with "2 passed, 1 failed", then Continue or Play again (back to Line up, keeping the last order).
+- **What I interpreted:**
+  - **Line up** is only for the four puzzle games. Bearrels skips it, since the order doesn't matter there.
+  - **Base game labels** in the list come from the library in `08-overhaul-plan.md`: Traildle Puzzle, Find the Object Reaction, Remember the Path Memory, Find the Path Minefield.
+  - **The pop-up** for these games has no flavor line and no If hit (no stakes yet). Its GPS shows a still frame.
+  - **Traildle:**
+    - each pair gets its own sign count within the tier's range; the Signs override sets an exact count;
+    - Timer On on Tier I uses 3:00 (`TODO(wyatt)`, `traildle.timerOnSec`);
+    - between pairs a card shows each code and whether it was found;
+    - a digit typed while pointing at a sign fills that sign, then selects the next.
+  - **Find the Object:**
+    - from Tier II, with 2 or more hikers, the targets are always a mix of 2 snacks, split as evenly as possible;
+    - in Dark, the snacks outside the light stay faintly visible, as in mockup 5, but only ones in the light can be picked.
+  - **Remember the Path:**
+    - stepping back onto the tile you came from counts as a wrong step;
+    - the panel counts steps as tiles minus 1.
+  - **Find the Path:**
+    - the top edge is dashed to show the way out (an arrow on the exit tile would give the trail away);
+    - in fog, the trail line shows only up to tiles still visible;
+    - "+1 Energy" shows in a badge and on the results card.
+  - **On a phone** the smallest labels are very small. That's left for Phase 17 (Phone).
+- **Not done:** Prepare options, real stakes, real art (placeholders as given), sound, the GPS preview animations for these games (still frames for now).
 
 ### Phase 10.8, next steps (outline only)
 

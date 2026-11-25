@@ -23,7 +23,6 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
-  type RefObject,
 } from 'react';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -39,7 +38,6 @@ import {
   place,
   ready,
   result,
-  resultLine,
   select,
   stillIn,
   type BearrelsState,
@@ -47,20 +45,18 @@ import {
 import { sceneHikers, type BearPose, type SceneModel } from '../../../minigames/bearrels/scene';
 import {
   barrelAt,
-  FILL,
   frameFor,
   GAME,
   hikerCenters,
-  pixelFrame,
   UI,
   type ArtStyle,
-  type Frame,
 } from '../../../minigames/bearrels/styles';
 import type { MinigameHiker, MinigameResult } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerPortrait } from '../../hikers/HikerPortrait';
-import { useStage } from '../../stage/StageContext';
+import { ResultsCard } from '../ResultsCard';
 import { playSound } from '../sound';
+import { usePixelFrame } from '../usePixelFrame';
 import { BearrelsScene } from './Scene';
 import styles from './Bearrels.module.css';
 
@@ -99,33 +95,6 @@ interface FlyBack {
   y: number;
   to: { x: number; y: number };
   go: boolean;
-}
-
-/**
- * The pixel styles' whole-number scale: how wide the game screen is drawn
- * (device pixels) decides it. Measured after it mounts (the GPS has finished
- * turning by then) and whenever the stage is rescaled.
- */
-function usePixelFrame(ref: RefObject<HTMLElement | null>): Frame {
-  const { scale } = useStage();
-  const [frame, setFrame] = useState<Frame>(FILL);
-  useEffect(() => {
-    const measure = () => {
-      const el = ref.current;
-      if (!el) return;
-      const width = el.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-      const next = pixelFrame(width);
-      setFrame((f) => (f.unit === next.unit && f.x === next.x && f.y === next.y ? f : next));
-    };
-    // Now, and again once the GPS has surely settled from its turn.
-    const timers = [setTimeout(measure, 0), setTimeout(measure, 400)];
-    window.addEventListener('resize', measure);
-    return () => {
-      timers.forEach((t) => clearTimeout(t));
-      window.removeEventListener('resize', measure);
-    };
-  }, [ref, scale]);
-  return frame;
 }
 
 /** Two frames from now: after the browser has drawn what was just set. */
@@ -579,40 +548,12 @@ export function BearrelsGame({
       )}
 
       {results && (
-        <div className={styles.results}>
-          <div className={styles.card} role="dialog" aria-label="Results">
-            <h3 className={styles.cardTitle}>{resultLine(ended)}</h3>
-            {hikers.map((h) => {
-              const hit = ended.hit.find((x) => x.hikerId === h.id);
-              return (
-                <div key={h.id} className={styles.row}>
-                  <HikerPortrait
-                    hikerId={h.id}
-                    className={styles.rowPortrait}
-                    style={{ boxShadow: `0 0 0 3px ${h.color}` }}
-                  />
-                  <span className={styles.rowName}>{h.name}</span>
-                  <span className={styles.rowState} data-hit={!!hit || undefined}>
-                    {hit ? `Hit in round ${hit.round}` : 'Safe'}
-                  </span>
-                </div>
-              );
-            })}
-            <div className={styles.cardButtons}>
-              <button
-                type="button"
-                className={styles.continue}
-                onClick={() => onDone(ended)}
-                autoFocus
-              >
-                Continue
-              </button>
-              <button type="button" className={styles.again} onClick={playAgain}>
-                Play again
-              </button>
-            </div>
-          </div>
-        </div>
+        <ResultsCard
+          result={ended}
+          hikers={hikers}
+          onContinue={() => onDone(ended)}
+          onPlayAgain={playAgain}
+        />
       )}
       <span className={styles.srOnly}>{stillIn(game).length} still in</span>
     </div>

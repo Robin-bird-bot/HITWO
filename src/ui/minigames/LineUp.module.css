@@ -1,0 +1,107 @@
+/* Line up (1-line-up.png), in scene units (320 × 240). */
+
+.title {
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 111px;
+  height: 15px;
+  font-size: 6px;
+}
+
+.ask,
+.why,
+.frontBack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.ask {
+  top: 41px;
+  font-size: 5px;
+}
+
+.why {
+  top: 54px;
+  font-size: 3.8px;
+}
+
+.card {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 6px 0 12px;
+  border: 0.75px solid #1d2918;
+  border-radius: 3px;
+  background: #a0b37d;
+  cursor: grab;
+  touch-action: none;
+  transition: left 0.18s ease;
+}
+
+.card[data-picked] {
+  border-color: #d3dfaf;
+  box-shadow: 0 0 0 1px #d3dfaf;
+  transform: translateY(-2px);
+}
+
+.card[data-dragging] {
+  z-index: 2;
+  transition: none;
+  transform: translateY(-3px) rotate(-3deg);
+  box-shadow: 0 4px 6px rgba(17, 26, 16, 0.35);
+  cursor: grabbing;
+}
+
+.card:focus-visible {
+  outline: 1px solid #e9b44c;
+  outline-offset: 1px;
+}
+
+.number {
+  font-size: 6px;
+}
+
+.name {
+  font-size: 3.8px;
+}
+
+.chevron {
+  position: absolute;
+  font-size: 6px;
+}
+
+.rule {
+  position: absolute;
+  left: 130px;
+  top: 157px;
+  width: 60px;
+  height: 0.75px;
+  background: #52653f;
+}
+
+.frontBack {
+  top: 167px;
+  font-size: 3.8px;
+}
+
+.go {
+  position: absolute;
+  right: 9px;
+  bottom: 12px;
+  width: 75px;
+  height: 22px;
+  font-size: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}

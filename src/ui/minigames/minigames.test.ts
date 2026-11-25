@@ -5,7 +5,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { BEARRELS, cleanSettings, defaultSettings, MINIGAMES } from '../../minigames/catalog';
+import {
+  BEARRELS,
+  cleanSettings,
+  defaultSettings,
+  FIND_OBJECT,
+  FIND_PATH,
+  MINIGAMES,
+  REMEMBER_PATH,
+  TRAILDLE,
+} from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
 import { AUTOSAVE_KEY } from '../../store/autosave';
@@ -117,14 +126,40 @@ describe('the party GPS', () => {
 });
 
 describe('the minigame list', () => {
-  it('Bearrels plays; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
+  it('Bearrels and the four puzzle games play; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
     expect(MINIGAMES.map((m) => [m.name, m.baseGame, m.status])).toEqual([
       ['Bearrels', 'Barrels', 'ready'],
+      ['Traildle', 'Puzzle', 'ready'],
+      ['Find the Object', 'Reaction', 'ready'],
+      ['Remember the Path', 'Memory', 'ready'],
+      ['Find the Path', 'Minefield', 'ready'],
       ['Ants Are Marching', 'Snake', 'soon'],
       ['Cracked Bridge', 'Platformer', 'soon'],
       ['Fly Swatter', 'Reaction', 'soon'],
       ['Trail Memory', 'Memory', 'soon'],
     ]);
+  });
+
+  it('the puzzle games: Tier (I, II, III), Hikers, and their overrides, where Auto uses the tier', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
+    expect(ids(TRAILDLE)).toEqual(['tier', 'hikers', 'signs', 'timer']);
+    expect(ids(FIND_OBJECT)).toEqual(['tier', 'hikers', 'mode']);
+    expect(ids(REMEMBER_PATH)).toEqual(['tier', 'hikers']);
+    expect(ids(FIND_PATH)).toEqual(['tier', 'hikers', 'fog']);
+    expect(defaultSettings(TRAILDLE)).toEqual({
+      tier: 1,
+      hikers: ['finn', 'ellie', 'mom'],
+      signs: 'auto',
+      timer: 'auto',
+    });
+    for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH])
+      expect(info.lineUp).toBe(true);
+    // A remembered override that isn't an option, or a tier out of range, goes back to the default.
+    expect(cleanSettings(TRAILDLE, { signs: '12', tier: 4 }, TEST_HIKERS)).toMatchObject({
+      signs: 'auto',
+      tier: 1,
+    });
+    expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
   it('Bearrels’ settings: art style (Detailed pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {

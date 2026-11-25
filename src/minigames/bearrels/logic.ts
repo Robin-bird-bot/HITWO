@@ -230,13 +230,12 @@ export function result(s: BearrelsState): MinigameResult {
     hit: s.hikers
       .filter((h) => s.out[h] !== undefined)
       .map((h) => ({ hikerId: h, round: s.out[h] ?? 0 })),
+    wording: 'safe-hit',
   };
 }
 
-/** "1 safe, 2 hit". */
-export function resultLine(r: MinigameResult): string {
-  return `${r.safe.length} safe, ${r.hit.length} hit`;
-}
+/** "1 safe, 2 hit" (shared with the other minigames: ../results.ts). */
+export { resultLine } from '../results';
 
 /** "Finn was hit!", "Ellie and Mom were hit!", "Finn, Ellie and Mom were hit!". */
 export function hitLine(names: readonly string[]): string {

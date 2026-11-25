@@ -1072,6 +1072,115 @@ export const BALANCE = {
       /** A hit hiker tips over this far (degrees). */
       tipDegrees: -24,
     },
+
+    /*
+     * The puzzle minigames (Phase 10.8 step 2, docs/design/11-minigames-puzzles.md).
+     * Every number is a first guess, by game and tier. Tiers are I, II, III.
+     */
+
+    /** Traildle: guess hidden digit codes on trail signs, two codes at once at most. */
+    traildle: {
+      tiers: {
+        1: { signs: [3, 4], guesses: 6, repeats: false, timerSec: null },
+        2: { signs: [5, 6], guesses: 7, repeats: true, timerSec: 180 },
+        3: { signs: [7, 8], guesses: 8, repeats: true, timerSec: 120 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            signs: readonly [number, number];
+            guesses: number;
+            repeats: boolean;
+            timerSec: number | null;
+          }
+        >
+      >,
+      /** Two codes at once get this many more guesses. */
+      twoCodeExtraGuesses: 1,
+      /** The testing tab's Timer "On" on a tier without a timer (Tier I): my guess. */
+      timerOnSec: 180,
+    },
+
+    /** Find the Object: find the named trail snacks in a crowd. */
+    findObject: {
+      tiers: {
+        1: { mode: 'still', distractors: 14, overlap: 0 },
+        2: { mode: 'windy', distractors: 20, overlap: 0.25 },
+        3: { mode: 'dark', distractors: 24, overlap: 0.25 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          { mode: 'still' | 'windy' | 'dark'; distractors: number; overlap: number }
+        >
+      >,
+      /** More distractors for each hiker after the first. */
+      extraDistractorsPerHiker: 3,
+      /** Seconds on the clock, plus this many for each target after the first. */
+      timeSec: 10,
+      extraSecPerTarget: 4,
+      /** A wrong click costs this many seconds. */
+      wrongClickSec: 2,
+      /** The card naming the targets shows this long before the clock starts. */
+      introMs: 1500,
+      /** From Tier II the targets can be a mix of this many snacks. */
+      mixFromTier: 2,
+      mixKinds: 2,
+      /** Snacks keep this far from the screen's edges (scene units), except in Windy. */
+      edgeMargin: 4,
+      /** Windy: drift (units a second) and a small bob (units, every this many ms). */
+      wind: { speed: 12, bob: 2, bobEveryMs: 1500 },
+      /** Dark: the flashlight's size and soft edge (scene units); a touch moving less than this (px) is a tap. */
+      light: { diameter: 42, softEdge: 8, tapPx: 6 },
+    },
+
+    /** Remember the Path: watch the ranger, then walk his path from memory. */
+    rememberPath: {
+      tiers: {
+        1: { cols: 5, rows: 4, length: [5, 6], strikes: 3, stepMs: 500 },
+        2: { cols: 6, rows: 5, length: [7, 8], strikes: 2, stepMs: 450 },
+        3: { cols: 7, rows: 5, length: [9, 10], strikes: 1, stepMs: 400 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            cols: number;
+            rows: number;
+            length: readonly [number, number];
+            strikes: number;
+            stepMs: number;
+          }
+        >
+      >,
+      /** Only the ranger's last this many tiles show footprints. */
+      footprints: 2,
+      /** A wrong step flashes red this long. */
+      wrongFlashMs: 400,
+    },
+
+    /** Find the Path: take turns guessing a hidden trail, one step at a time. */
+    findPath: {
+      tiers: {
+        1: { cols: 5, rows: 5, fog: false },
+        2: { cols: 6, rows: 6, fog: false },
+        3: { cols: 7, rows: 7, fog: true },
+      } as Readonly<Record<1 | 2 | 3, { cols: number; rows: number; fog: boolean }>>,
+      /** Tries for each hiker, each turn. */
+      triesPerTurn: 3,
+      /** Group attempts: this many, plus this many for each hiker after the first. */
+      attempts: 2,
+      attemptsPerExtraHiker: 1,
+      /** The chance a wrong pick also reveals another tile nobody has picked, and how long its "!" shows. */
+      revealChance: 0.35,
+      revealMarkMs: 1000,
+      /** Making a trail: each step goes up about this often, otherwise left or right. */
+      upChance: 0.45,
+      /** Fog: only the tiles uncovered in the last this many picks stay visible. */
+      fogPicks: 2,
+      /** The first hiker through gets this much Energy (shown only in test mode for now). */
+      energy: 1,
+      /** The trail line draws to a new tile over this long. */
+      lineDrawMs: 250,
+    },
   },
 
   /** Screen timings (Nov 14 update). */
