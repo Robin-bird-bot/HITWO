@@ -1360,7 +1360,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - **Splinters** are drawn in G2 and smoke in G9.
 - **Not done:** sound files (hooks only), Prepare, real stakes.
 
-### Phase 10.8, step 2: Four puzzle minigames, test version (now)
+### Phase 10.8, step 2: Four puzzle minigames, test version (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-four-minigames.md`. The design is `docs/design/11-minigames-puzzles.md`. Mockups in `docs/mockups/minigames/puzzles/`. Placeholder art in `public/assets/minigames/traildle/`, `find-object/`, `remember-path/` and `forest-tiles/`; `_snacks-sheet-8x.png` stays in `assets/` only.)
 
@@ -1404,6 +1404,42 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, gro
     - "+1 Energy" shows in a badge and on the results card.
   - **On a phone** the smallest labels are very small. That's left for Phase 17 (Phone).
 - **Not done:** Prepare options, real stakes, real art (placeholders as given), sound, the GPS preview animations for these games (still frames for now).
+
+### Phase 10.8, step 2b: Fixes and changes after testing the four (now)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-minigame-fixes.md`. The design is the revised `docs/design/11-minigames-puzzles.md`. New mockups `10-traildle-fit.png` to `15-find-path-hidden-after-run-out.png` in `docs/mockups/minigames/puzzles/`.)
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Bugs**
+1. **Traildle:** small signs and rows sized from each board's space; rows never shorter than [9] units (the board scrolls, the newest guess always shows, "▲ N MORE" when rows are hidden); big signs shrink so 7 or 8 fit. Worst case: 8 signs, two codes, 9 guesses.
+2. **Find the Object:** a found snack checks a slot showing that same snack.
+3. **Find the Path:** "right" is only the trail tile after the one the hiker stands on, looked up from the trail itself; a trail tile is never shown as trees; reaching the top row always passes. A 1,000-game simulation test.
+
+**Changes**
+4. **Find the Object:** [3] rounds (1 to 5), one more target each round; each unfound target puts one hiker out from the back of the line; a Dark + windy mode (Tier III's default); a shorter timer, [3 s] + [3 s] per target, with Seconds per target and Extra seconds per round settings.
+5. **Remember the Path:** the ranger and each hiker start below the grid's middle; no start tile is marked; the first step into the bottom row can be wrong (a strike); ← → slide along under the grid, ↑ steps in.
+6. **Find the Path:** a run-out hides the trail again (tiles, line and lucky reveals) and the next hiker starts at the trailhead; trees stay unless **Hide after a run-out** is set to Everything; hidden trail tiles are still free to pick; once a hiker reaches the top, the trail stays and the rest walk it through.
+
+**Tests:** the new cases in design section 6, and the old ones again.
+
+### Phase 10.8, step 3: Dodge, test version (next)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge.md`. The design is `docs/design/12-minigames-dodge.md`. Mockups in `docs/mockups/minigames/dodge/`. Placeholder art in `public/assets/minigames/dodge/`.)
+
+**Goal:** an Undertale-style dodging game for animal encounters, playable from the testing tab: one party sprite in the active hiker's color dodges attacks in a box; the active hiker switches every few seconds; a hit costs the active hiker a life; survive until the clock runs out. The first animals are **Bees** and **Bear with a Sword**.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **The game:** `person.png` tinted in the active hiker's color; a switch every [5 s] to the next hiker still in (a 1 s blink first, a countdown in the HUD); [2] lives each, a hit costs 1 and gives [1 s] of safety, 0 means out; the tier's length ([20], [25] or [30 s]), ending early if everyone is out; Passed or Failed with hit counts.
+2. **Controls:** WASD or the arrow keys; a floating touch joystick where the finger lands; mouse drag works like touch.
+3. **Warnings:** every attack is warned [0.6 s] before.
+4. **Bees:** a square box; Lane, Cross, Diagonal and Zigzag (Tier II and up), Aimed (Tier III); "!" markers at the entry edge.
+5. **Bear with a Sword:** a wide box; the half about to be swept is hatched, then the sword sweeps it around a pivot above the box; each swing warns faster, down to a minimum; double swings from Tier II; the box sometimes shrinks on Tier III.
+6. **Testing tab:** Dodge with Animal, Tier, Hikers, Lives per hiker (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
+
+**Tests:** as in `12-minigames-dodge.md`, section 8.
 
 ### Phase 10.8, next steps (outline only)
 
