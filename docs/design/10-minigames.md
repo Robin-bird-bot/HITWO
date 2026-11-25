@@ -1,177 +1,204 @@
 # Minigames (Phase 10.8): the party GPS, the challenge pop-up, and Bearrels
 
-Wyatt's design for how challenge minigames look and play. The first game is **Bearrels**, built and played from a new **Minigame testing** tab on the main menu. Numbers in [brackets] are first guesses: they go in `balance.ts` with `TODO(wyatt)`.
+Wyatt's design for how challenge minigames look and play. The first game is **Bearrels**, built and played from the **Minigame testing** tab on the main menu. Numbers in [brackets] are first guesses: they go in `balance.ts` with `TODO(wyatt)`.
+
+**Revised November 24.** What changed since the first version:
+- **The GPS:** it's vertical again. It loops a preview of the game, then turns sideways and zooms in on Start.
+- **Art styles:** three art styles you can switch between for testing.
+- **Hikers:** plain color-coded silhouettes for now.
+- **Controls:** drag-and-drop.
 
 ## The pieces
 
 1. **The challenge pop-up:** a cream window with a red banner. It's where the player reads the challenge, prepares, and presses Start.
-2. **The party GPS:** a yellow, landscape handheld that the whole party shares. Minigames play on its screen. On Start it lifts toward the player until its screen fills most of the window.
-3. **The minigame:** drawn in the layered-silhouette style (look C). It runs inside the GPS screen and returns a result to the pop-up.
+2. **The party GPS:** a yellow, vertical handheld that the whole party shares.
+   - In the pop-up it plays a short looping preview of the game.
+   - On Start it turns sideways and zooms in until it fills most of the window, and the game plays on its screen.
+3. **The minigame:** drawn in one of three art styles (section 3). It runs inside the GPS screen and returns a result to the pop-up.
 
 Build all three as reusable parts. Every later minigame plugs into the same pop-up and GPS.
 
 ## 1. The challenge pop-up
 
-See `mockups/2-popup-before-start.jpg`. Layout, top to bottom:
+The layout is unchanged from the first version (see `mockups/4-vertical-gps-preview-then-turn.jpg`, top right). The GPS now sits in the middle of the pop-up, between the poster and the right column.
 
 - **Red banner** (#C8423A, with a darker bottom edge #8E2A24):
   - left: "CHALLENGE · TIER II";
   - center: the challenge name in the pixel font, between two small diamond badges that show the game's icon;
   - right: "WHOLE PARTY".
-- **Poster** on the left, 2:3, with a cream mat (#FBF4E2) and a dark keyline. Bear Country uses `posters/bear-country.png`. Wyatt is painting the rest. Posters are art only, and the game sets the name in the banner.
+- **Poster** on the left, 2:3, with a cream mat (#FBF4E2) and a dark keyline. Posters are art only, and the game sets the name in the banner.
+- **The vertical GPS** in the middle, playing the preview (section 2).
 - **Right column:**
-  - the flavor line, in italic;
   - **The game:** icon, game name, one short line on how it plays, and a chip such as "Harder in a group";
-  - **Prepare:** up to 3 option cards (effect plus cost). **Hidden in test mode**;
+  - **Prepare:** up to 3 option cards. **Hidden in test mode**;
   - **If hit:** a red-outlined box with what failing costs;
-  - **On this tile:** the hikers, as portraits with their color rings;
   - **Start:** a big red button.
 - After a game, the pop-up shows the result line ("1 safe, 2 hit") plus Continue. In test mode it shows **Back to testing** and **Play again**.
 
 ## 2. The party GPS
 
-See `mockups/3-gps-lifted-placing.jpg` and `mockups/5-popup-layout-reference.jpg`. Build it in CSS and SVG; it needs no image files.
+See `mockups/4-vertical-gps-preview-then-turn.jpg` and `mockups/1-playing-earthy-pixel.jpg`. Build the body in CSS and SVG; it needs no image files.
 
-- **Body:** a landscape rounded rectangle with a yellow gradient (#F6CB3A to #E2A91E) and a dark inner face (#1C201E).
-  - A black antenna nub on the top right, and two small side buttons on the top edge.
-  - A D-pad on the left, and two round buttons on the right (one yellow, one dark).
-  - "TRAILMATE" in small yellow pixel letters under the screen.
-- **Screen:** 16:9, with a near-black bezel. On top of the game sit:
+- **Body:** a vertical rounded rectangle with a yellow gradient (#F6CB3A to #E2A91E) and a dark inner face (#1C201E).
+  - A black antenna nub on the top left, and small side buttons.
+  - Under the screen: "TRAILMATE" in small yellow pixel letters, a round knob with a yellow cap, and a small button on each side of it.
+- **Screen:** 3:4 portrait when upright. When the GPS turns sideways it becomes 4:3 landscape, which is the shape every minigame is drawn for. On top of the game sit:
   - faint scanlines (horizontal lines about 6% dark, every 3 px);
   - a soft inner shadow;
-  - a faint glass sheen in the top-left corner;
+  - a faint glass sheen;
   - a warm glow around the bezel.
-- **Lift:** when Start is pressed, the GPS slides up from below the pop-up and scales up over [600 ms] with a small overshoot.
-  - Lifted size: the screen is as large as fits, up to [88%] of the window width. On a phone in landscape the side controls shrink so the screen gets at least [80%] of the height.
-  - The pop-up behind dims to about [35%] brightness with a light blur.
-  - On Continue, the GPS lowers back in [400 ms].
-- The D-pad and buttons are decoration for now. Keyboard controls are listed under Bearrels below.
-- Reduced motion: the GPS fades in at full size instead of flying up.
+- **Preview (before Start):** the upright GPS loops a short demo of the game. For Bearrels:
+  - a ghost finger drags a hiker to a barrel;
+  - the bear pops up, the crosshair sweeps, and it fires (sometimes a hit, sometimes a miss);
+  - the loop runs about every [6 s].
 
-## 3. Art style for minigames: layered silhouettes (look C)
+  The demo uses the 4:3 scene cropped to the middle so it fills the tall screen. It shows a "▶ PREVIEW" pill top left and "Watch, then press Start" along the bottom, and it can't be played.
+- **Turn and zoom (on Start), over [700 ms]:**
+  - the GPS turns 90° clockwise, so the antenna ends up on the right and the knob on the left;
+  - at the same time it moves to the center of the window and scales up until the device fills most of it. The landscape screen is as large as fits, up to [92%] of the window width and [86%] of its height. On small screens the body may run past the edge of the window, but the screen never does;
+  - the pop-up behind dims to about [35%] brightness;
+  - when the turn finishes, the game starts.
+- **On Continue:** it shrinks and turns back upright over [500 ms], and the pop-up comes back.
+- **Phone in landscape:** the screen should end up almost the full height of the phone.
+- **Reduced motion:** a crossfade between the upright and sideways views, with no spinning.
+- The knob and buttons are decoration for now.
 
-See `mockups/7-style-c-full-frame.jpg` and the `art/bearrels/` parts.
+## 3. Art styles (three, switchable for testing)
 
-- **Scene:** an SVG with a 1280 × 720 viewBox, scaled to the screen. Flat layers in warm inks, from a pale peach sky down through layered orange and red ridges to dark maroon ground. The main things in the scene are dark silhouettes with a warm rim light offset up and to the right.
-- **Hikers:** each hiker is a silhouette whose **rim light is the hiker's own color**, plus a bandana in that color. The same color rings the hiker's portrait in the UI, which is how the player tells the silhouettes apart.
-  - Use each hiker's color from the game data if there is one. If not, use `layout.json` → `hikerColors`.
-  - Each hiker has a silhouette shape:
+Wyatt wants to compare these in the game before choosing one. Build Bearrels so it can draw the same scene in any of the three, and switch between them without restarting (see section 5).
 
-    | Hiker | Shape |
-    | --- | --- |
-    | Finn | Dog, floppy ears |
-    | Ellie | Fluffy dog |
-    | Mom | Sun hat |
-    | Wyatt | Messy hair |
-    | Gdog | Curly hair and glasses |
-    | Wink | Bald with glasses |
+| Style | Look | Files |
+| --- | --- | --- |
+| **Earthy pixel** (default) | Detailed pixel art: sunset sky with a haloed sun, a lake with reflections, layered pines, tall framing trees, olive grass, a furry bear, wooden barrels | `art/bearrels/pixel-earth/` |
+| **Teal pixel** | Color-focused: one teal family (foggy layered mountains, pines, grass swaths). Only the hikers carry color | `art/bearrels/pixel-teal/` |
+| **Silhouette** | The flat layered silhouettes from the first version | the SVG parts from the last update, plus `art/bearrels/layout.json` |
 
-  - Fallback for future hikers: dog → floppy dog, person → messy hair.
-- **In-game UI:** DOM on top of the scene, scaled with the screen.
-  - **Pills:** dark translucent (rgba(42,10,24,.72)) with cream text in DM Sans bold.
-  - **Round pill:** top left.
-  - **Prompt:** top center. It turns red for bad news.
-  - **Shots:** top right, one crosshair icon per shot each round.
-  - **Hiker tokens:** bottom left.
-  - **Ready:** bottom right.
+**Pixel styles:**
+- Draw the scene at **280 × 210** using the sprites and the exact positions in that style's `layout.json`.
+- Scale it up with nearest-neighbor (`image-rendering: pixelated`), at a whole-number scale where it fits, letterboxed if needed.
+- Draw in this order:
+  1. background;
+  2. bear (hidden or up);
+  3. log;
+  4. hikers, so the barrel hides their lower half;
+  5. barrel shadows;
+  6. barrels;
+  7. crosshair;
+  8. muzzle flash;
+  9. effects.
+- `layout.json` lists the barrel positions and sizes for 3, 4, 5 and 6 barrels, the bear and log positions, the muzzle-flash point, and the rule for placing hikers behind a barrel.
+- Files starting with `_reference-` show how a frame should look. Don't load them in the game.
+- Effects are drawn in code over the pixel scene, at the same pixel scale where possible:
+  - red flash, shake and hikers tipping over;
+  - a few splinter pixels and a smoke puff (3 to 6 pixel-sized squares are enough).
+
+**Silhouette style:**
+- The same SVG parts as before, but shown at 4:3: use viewBox `0 -120 1280 960`.
+- Add a sky strip above (#FCE6BE) and a ground strip below (#4A1428), as in `layout.json` → `extend_for_4x3`.
+- The new `layout.json` replaces the old one. Its barrel width line was out of date.
+
+**Hikers (all styles):**
+- For now they're plain color-coded silhouettes. Detailed character art waits until the style is settled.
+- Shapes: dogs have pointed ears; Mom has a sun hat; the others are a plain head and shoulders.
+- One color per hiker everywhere, matching the ring on their token. The colors are in each `layout.json`.
+
+**In-game UI (all styles):** DOM on top of the scene, scaled with the screen.
+- **Pills:** dark translucent (rgba(42,10,24,.72)) with cream text in DM Sans bold.
+- **Round pill:** top left.
+- **Prompt:** top center. It turns red for bad news.
+- **Shots:** top right.
+- **Hiker tokens:** bottom left.
+- **Ready:** bottom right.
+- The UI must never cover a barrel.
 
 ## 4. Bearrels
 
-The base game is Barrels, with the bear version for the Bear Country challenge. Hide your hikers behind barrels. Each round the bear pops up and shoots. Anyone behind the barrel it hits is out.
+Hide your hikers behind barrels. Each round the bear pops up and shoots. Anyone behind the barrel it hits is out.
 
 ### Settings (test tab)
 
 | Setting | Range | Default |
 | --- | --- | --- |
+| Art style | Earthy pixel, Teal pixel, Silhouette | Earthy pixel |
 | Barrels | 3 to 6 | 3 |
 | Hikers | pick 1 to 4 of the playable hikers | Finn, Ellie, Mom |
 | Rounds | 1 to 5 | 3 |
 | Shots per round | 1 or 2 (never the same barrel twice in a round) | 1 |
 
-### Rules
+### Rules (unchanged)
 
 - Several hikers can hide behind the same barrel. A shot hits **everyone** behind that barrel.
 - A hiker who is hit is **out for the rest of the game**.
 - The bear picks its barrels at random, with every barrel equally likely, before the crosshair starts moving.
 - The game ends after the last round, or as soon as every hiker is out.
-- The result is a list of hikers who are safe, and hikers who were hit (with the round).
-- Later, in the real challenge, each hiker hit takes 1 Injury, and if everyone is hit the party loses 1 Luck. **This update doesn't apply any of it.**
-
-### Layout of the scene (viewBox units)
-
-- Barrels sit in one row, evenly spaced from x [150] to x [1130]. A single barrel goes at x 640.
-  - Barrel width = min([150], 980 ÷ (barrels − 1) × [0.7]).
-  - Height = width × 1.06, and the top sits at y [418].
-- Hikers behind a barrel:
-  - scale [1.05] alone, [0.8] for two, [0.6] for three or four, times min(1, width ÷ 150);
-  - spaced 76 × scale apart;
-  - head center at y = barrel top − 56 × scale.
-- The bear sits behind a rock in the middle of the ridge line:
-  - **hidden:** only its ears show over the rock;
-  - **up:** standing, holding a cork popgun;
-  - **fire:** a muzzle flash at the popgun.
-- The crosshair is a cream ring with four ticks.
-- The hiker tokens and Ready button sit along the bottom edge and must never cover a barrel.
+- Real stakes (Injury, Luck) aren't applied yet.
 
 ### Flow of a round
 
-See `mockups/3-gps-lifted-placing.jpg` and `mockups/4-game-states.jpg`.
+See `mockups/1-playing-earthy-pixel.jpg` and `mockups/7-game-states-reference.jpg` (the states look the same in every style).
 
-1. **Placing.** The bear is hidden. Prompt: "Pick a hiker, then a barrel".
-   - The token bar shows each hiker still in: a portrait with a ring in their color, and their name.
-   - The first hiker not yet placed is selected automatically. A selected token lifts a little and glows in the hiker's color.
-   - Tap or click a token to select that hiker. Tapping a hiker who is already placed selects them so they can move.
-   - With a hiker selected, hovering a barrel shows a dashed cream outline. Tapping it moves the hiker behind that barrel, sliding over [250 ms]. Their token gets a badge with the barrel number, and the next unplaced hiker is selected.
-   - **Ready** stays greyed out until every hiker still in is placed, then lights up. In later rounds hikers stay where they were, so Ready is lit at once, and they can still be moved.
+1. **Placing.** The bear is hidden: only its ears and eyes peek over the log. Prompt: "Drag a hiker to a barrel".
+   - The hikers still in are shown as tokens: a portrait ringed in their color, and their name.
+   - Place each hiker by **dragging** or by **tap, then tap** (see Controls).
+   - **Ready** lights up once every hiker still in is placed. In later rounds hikers keep their barrels, so Ready is lit at once, and they can still be moved.
 2. **The bear pops up.** Tokens lock. Prompt: "Here it comes…".
-   - The ears drop, then the bear rises from behind the rock over [450 ms] with a small bounce.
-   - The crosshair sweeps across the barrels, left to right and back, over about [1.4 s]. It slows down and settles on the chosen barrel.
+   - The bear slides up from behind the log over [450 ms] with a small bounce.
+   - The crosshair sweeps across the barrels for about [1.4 s], slows down and settles on the chosen barrel.
 3. **Fire.**
-   - A [300 ms] hold, then the bear's fire frame, and the target barrel shakes with splinters.
+   - A [300 ms] hold, then the muzzle flash for about [120 ms], and the barrel shakes with a few splinters.
    - **If anyone is behind it:**
-     - **red flash:** a full-screen #E5483A overlay at about 40% plus a thick red inner border. It comes in over [60 ms] and fades out over [400 ms];
+     - **red flash:** a full-screen #E5483A overlay at about 40% plus a thick red inner border, in over [60 ms] and out over [400 ms];
      - a short screen shake;
-     - the hit hikers tip over (rotate −24°, drop a little) and fade to 40%;
-     - the prompt turns red: "Ellie and Mom were hit!" (or "Finn was hit!");
+     - the hit hikers tip over and fade;
+     - a red prompt such as "Ellie and Mom were hit!";
      - their tokens grey out with a red X.
-   - **If the barrel is empty:** a puff of smoke and "Missed!".
-   - With 2 shots, the second shot runs [600 ms] later on a different barrel.
-4. **The bear ducks** behind the rock. Hikers who were hit fade out of the scene, the round pill counts up, and the next round starts.
-5. **Results.** The scene dims and a cream card shows "1 safe, 2 hit" with each hiker's portrait, name, and either "Safe" or "Hit in round 2". Buttons: **Continue** (lowers the GPS and goes back to the pop-up) and **Play again**.
+   - **If the barrel is empty:** a puff and "Missed!".
+   - With 2 shots, the second shot comes [600 ms] later on a different barrel.
+4. **The bear ducks.** Hikers who were hit leave the scene, and the next round starts.
+5. **Results.** A cream card shows "1 safe, 2 hit", with each hiker as Safe or Hit in round N. Buttons: **Continue** (the GPS turns back and the pop-up returns) and **Play again**.
 
 ### Controls
 
-- **Touch or mouse:** tap a token, then a barrel, then Ready.
-- **Keyboard:**
-  - 1–4 selects a hiker;
-  - ← and → move a highlight across the barrels;
-  - Enter or Space places the hiker, or presses Ready once everyone is placed.
+**Drag-and-drop (new).** This is the main way to play, with mouse or touch (pointer events).
+- **Start a drag:** press on a hiker's token, or on a hiker already behind a barrel, and move more than [6 px].
+- **While dragging:**
+  - the portrait lifts (bigger, tilted a little, with a shadow) and follows the pointer;
+  - the token's spot shows an empty ring;
+  - the barrel under the pointer gets a dashed cream outline and a glow. Use a generous hit area: the barrel, the space just above it where hikers peek out, and a margin of about [12 px].
+- **Release over a barrel:** the hiker hides behind it, sliding into place from the drop point over [250 ms].
+- **Release anywhere else:** the portrait flies back to its token over [200 ms].
+- No dragging while the bear is up.
+
+**Tap, then tap (kept):**
+- Tap a token to select that hiker. It lifts and glows in their color.
+- Tap a barrel to send them there. The next unplaced hiker is then selected automatically.
+- Tapping a hiker who is already placed selects them so they can move.
+
+**Keyboard:**
+- 1–4 selects a hiker;
+- ← and → move a highlight across the barrels;
+- Enter or Space places the hiker, or presses Ready.
+
+**For every future minigame:** anything the player places or moves can be dragged, and tap-then-tap always works too.
 
 ### Reduced motion
 
-No shake. A softer red flash (about 20%, no border). The crosshair jumps straight to its barrel.
+No shake or spin. A softer red flash (about 20%, no border). The crosshair jumps straight to its barrel.
 
 ### Sound
 
-Leave hooks for these sounds, but add no sound files yet: place, ready, bear up, crosshair tick, pop, hit, miss.
+Leave hooks only, with no sound files yet: place, ready, bear up, crosshair tick, pop, hit, miss.
 
 ## 5. The Minigame testing tab
 
-See `mockups/1-testing-tab.jpg`.
+See `mockups/8-testing-tab-reference.jpg`.
 
-- **On the main menu:** a plain **Minigame testing** button, always shown for now.
-- **The screen:** the cream window with a red banner reading "MINIGAME TESTING", and "← Main menu" on the left.
-  - **Left:** the list of minigames. Bearrels is active. Ants Are Marching (Snake), Cracked Bridge (Platformer), Fly Swatter (Reaction) and Trail Memory (Memory) show as dashed "coming soon" rows.
-  - **Right:** the name and a one-line description, then the settings:
-    - Barrels and Rounds as − / + steppers;
-    - Shots per round as two buttons, 1 and 2;
-    - Hikers as portrait toggles for the playable hikers. Up to 4 can be picked, and unpicked ones are dimmed.
-  - **Preview:** a small live picture of the scene with the current number of barrels.
-  - **Test it:** a big red button. A line above it says "Opens the Bear Country pop-up, then the game. Nothing is saved."
-- Remember the last settings on this device (local storage).
-- **Test it** opens the Bear Country pop-up in test mode:
-  - the poster, banner, flavor, The game and If hit sections, with the picked hikers under On this tile;
-  - no Prepare section.
-
-  Start → the GPS lifts → Bearrels → the results card → Continue → the GPS lowers → the pop-up shows the result line with **Back to testing** and **Play again**.
+- **Art style:** a new setting with three buttons (Earthy pixel, Teal pixel, Silhouette), shown above the other settings.
+- **Preview:** shows the chosen style.
+- **Switching while playing (test mode only):**
+  - a small "Style" button in a corner outside the GPS screen cycles through the three styles;
+  - so does the **S** key;
+  - the scene redraws in place without restarting the round.
+- Remember the last settings on this device, including the style.
+- **Test it** opens the Bear Country pop-up in test mode (with the GPS preview and no Prepare). The flow is: Start → the GPS turns and zooms → Bearrels → results → Continue → the GPS turns back → the pop-up shows the result with **Back to testing** and **Play again**.
 - Test mode never touches the save, XP, stats or anything else in a run.

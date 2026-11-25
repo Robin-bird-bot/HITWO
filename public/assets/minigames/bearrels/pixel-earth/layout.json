@@ -1,0 +1,367 @@
+{
+  "style": "earth",
+  "size": [
+    280,
+    210
+  ],
+  "scaling": "Draw at this size, then scale up with nearest-neighbour (image-rendering: pixelated), integer scale if it fits, letterboxed.",
+  "draw_order": [
+    "background",
+    "bear",
+    "log",
+    "hikers (behind barrels)",
+    "barrel shadows",
+    "barrels",
+    "crosshair",
+    "muzzle flash",
+    "effects"
+  ],
+  "background": "background.png",
+  "bear": {
+    "up": {
+      "file": "bear-up.png",
+      "x": 108,
+      "y": 78
+    },
+    "hidden": {
+      "file": "bear-hidden.png",
+      "x": 108,
+      "y": 71
+    },
+    "muzzle_flash": {
+      "file": "muzzle-flash.png",
+      "center": [
+        167,
+        124
+      ]
+    },
+    "note": "Pop up: slide from hidden to up. Fire: show the muzzle flash for ~120 ms."
+  },
+  "log": {
+    "file": "log.png",
+    "x": 92,
+    "y": 136
+  },
+  "crosshair": {
+    "file": "crosshair.png",
+    "size": 32,
+    "note": "Centre it on the barrel centre."
+  },
+  "barrels": {
+    "3": [
+      {
+        "x": 36,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          50,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 34,
+          "y": 182
+        }
+      },
+      {
+        "x": 126,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          140,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 124,
+          "y": 182
+        }
+      },
+      {
+        "x": 216,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          230,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 214,
+          "y": 182
+        }
+      }
+    ],
+    "4": [
+      {
+        "x": 36,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          50,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 34,
+          "y": 182
+        }
+      },
+      {
+        "x": 96,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          110,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 94,
+          "y": 182
+        }
+      },
+      {
+        "x": 156,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          170,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 154,
+          "y": 182
+        }
+      },
+      {
+        "x": 216,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          230,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 214,
+          "y": 182
+        }
+      }
+    ],
+    "5": [
+      {
+        "x": 36,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          50,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 34,
+          "y": 182
+        }
+      },
+      {
+        "x": 81,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          95,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 79,
+          "y": 182
+        }
+      },
+      {
+        "x": 126,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          140,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 124,
+          "y": 182
+        }
+      },
+      {
+        "x": 171,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          185,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 169,
+          "y": 182
+        }
+      },
+      {
+        "x": 216,
+        "y": 152,
+        "w": 28,
+        "h": 34,
+        "center": [
+          230,
+          169
+        ],
+        "file": "barrel-28.png",
+        "shadow": {
+          "file": "shadow-28.png",
+          "x": 214,
+          "y": 182
+        }
+      }
+    ],
+    "6": [
+      {
+        "x": 39,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          50,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 37,
+          "y": 176
+        }
+      },
+      {
+        "x": 75,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          86,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 73,
+          "y": 176
+        }
+      },
+      {
+        "x": 111,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          122,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 109,
+          "y": 176
+        }
+      },
+      {
+        "x": 147,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          158,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 145,
+          "y": 176
+        }
+      },
+      {
+        "x": 183,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          194,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 181,
+          "y": 176
+        }
+      },
+      {
+        "x": 219,
+        "y": 152,
+        "w": 23,
+        "h": 28,
+        "center": [
+          230,
+          166
+        ],
+        "file": "barrel-23.png",
+        "shadow": {
+          "file": "shadow-23.png",
+          "x": 217,
+          "y": 176
+        }
+      }
+    ]
+  },
+  "hikers": {
+    "files": "hiker-<id>-<100|80|62>.png",
+    "scale_by_count": {
+      "1": 100,
+      "2": 80,
+      "3": 62,
+      "4": 62
+    },
+    "placement": "For the k-th of g hikers behind a barrel at centre x: left = x + (k - (g-1)/2) * w * 0.75 - w/2, top = barrel.y - h * 0.55 (w, h = sprite size). Draw them before the barrel so it hides their lower half.",
+    "colors": {
+      "finn": "#E2683C",
+      "ellie": "#4A8FD4",
+      "mom": "#EBC04A",
+      "wyatt": "#6FBF5A",
+      "gdog": "#B06BD0",
+      "wink": "#3FB8B0"
+    },
+    "note": "Colour-coded silhouettes for now. Ramp per hiker: colour mixed 50% and 25% toward black, the colour, and 30% toward white."
+  }
+}

@@ -1,4 +1,4 @@
-/* Bearrels on the GPS screen (Phase 10.8). Screen pixels: a 1280 × 720 view. */
+/* Bearrels on the GPS screen (Phase 10.8). Game screen units: a 1280 × 960 view (4:3). */
 
 .game {
   position: absolute;
@@ -7,6 +7,31 @@
   font-family: var(--font-body);
   color: #fff1d6;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* The 1280 × 960 screen, drawn smaller (previews). */
+.scaled {
+  position: relative;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 960px;
+  transform-origin: 0 0;
+}
+
+.sceneSvg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .scene {
@@ -16,7 +41,44 @@
   height: 100%;
 }
 
+/* The pop-up's looping preview: not playable. */
+.preview {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: #fff1d6;
+  pointer-events: none;
+}
+
+.previewPill {
+  top: 24px;
+  height: 46px;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+
+.previewHint {
+  bottom: 44px;
+  height: 54px;
+  font-size: 27px;
+  transform: translateX(-50%);
+}
+
+/* The ghost finger under a dragged portrait. */
+.finger {
+  position: absolute;
+  left: 4px;
+  top: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
 /* A short screen shake when someone is hit. */
+.preview[data-shake] .scene,
 .game[data-shake] .scene {
   animation: shake 0.32s ease-in-out;
 }
@@ -44,6 +106,9 @@
 }
 
 .hiker {
+  position: absolute;
+  left: 0;
+  top: 0;
   transform-box: view-box;
   transform-origin: 0 0;
   transition:
@@ -51,7 +116,14 @@
     opacity 0.4s ease;
 }
 
+/* A hiker just dropped: drawn where they were let go, then slides into place. */
+.hiker[data-arriving] {
+  transition: none;
+}
+
 .tip {
+  width: 100%;
+  height: 100%;
   transform-box: fill-box;
   transform-origin: 50% 100%;
   transition:
@@ -103,6 +175,142 @@
   pointer-events: none;
 }
 
+/* Where a tap or a drop counts for a barrel, and a press on a hiker behind one. */
+.tapArea {
+  position: absolute;
+  cursor: pointer;
+}
+
+.pressArea {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+}
+
+/* ── The pixel styles: 280 × 210, scaled up nearest-neighbor ── */
+
+.pixelScene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #0b0d0c;
+}
+
+.pixelBox {
+  position: absolute;
+  overflow: hidden;
+}
+
+.sprite,
+.spriteFill {
+  display: block;
+  max-width: none;
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sprite {
+  position: absolute;
+}
+
+.spriteFill {
+  width: 100%;
+  height: 100%;
+}
+
+.bearClip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The bear slides up from behind the log with a small bounce, and back down. */
+.pxBearUp {
+  transition:
+    transform var(--bear-ms) cubic-bezier(0.34, 1.45, 0.64, 1),
+    opacity 0s linear var(--op-delay);
+}
+
+.pxBearUp[data-hidden] {
+  transition:
+    transform var(--bear-ms) ease-in,
+    opacity 0s linear var(--op-delay);
+}
+
+.pxBearHidden {
+  transition: opacity 0s linear;
+}
+
+.pxBarrel[data-shaking] {
+  transform-origin: 50% 100%;
+  animation: barrelShake 0.4s ease-in-out;
+}
+
+.pxOutline {
+  position: absolute;
+  box-sizing: border-box;
+  border: 4px dashed #fff1d6;
+  border-radius: 6px;
+  box-shadow:
+    0 0 16px 3px rgba(255, 241, 214, 0.7),
+    inset 0 0 10px rgba(255, 241, 214, 0.35);
+  pointer-events: none;
+}
+
+/* A hiker with no sprite yet: a plain blob in their color. */
+.pxBlob {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 45% 45% 18% 18%;
+}
+
+.pxBurst {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pxSplinter {
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: pxSplinter 0.5s ease-out forwards;
+}
+
+@keyframes pxSplinter {
+  from {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+    opacity: 0;
+  }
+}
+
+.pxSmoke {
+  position: absolute;
+  animation: pxSmoke 0.7s ease-out forwards;
+}
+
+@keyframes pxSmoke {
+  from {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  to {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
+}
+
 /* ── The red flash: in fast, out slower, with a thick inner border ── */
 
 .flash {
@@ -146,7 +354,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 46px;
+  box-sizing: border-box;
   padding: 0 20px;
   border-radius: 23px;
   background: rgba(42, 10, 24, 0.72);
@@ -157,13 +365,11 @@
 }
 
 .round {
-  left: 22px;
-  top: 18px;
+  left: 18px;
 }
 
 .prompt {
   left: 50%;
-  top: 18px;
   transform: translateX(-50%);
   font-size: 26px;
   transition: background-color 0.2s ease;
@@ -174,18 +380,16 @@
 }
 
 .shots {
-  right: 22px;
-  top: 18px;
+  right: 18px;
   padding: 0 14px;
 }
 
+/* Places and sizes come from UI in src/minigames/bearrels/styles.ts. */
 .tokens {
   position: absolute;
-  left: 18px;
-  bottom: 16px;
   display: flex;
-  gap: 10px;
-  padding: 10px 12px 8px;
+  align-items: center;
+  box-sizing: border-box;
   border-radius: 18px;
   background: rgba(42, 10, 24, 0.72);
 }
@@ -201,8 +405,9 @@
   color: #fff1d6;
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
+  font-size: 15px;
+  cursor: grab;
+  touch-action: none;
   transition: transform 0.15s ease;
 }
 
@@ -213,8 +418,6 @@
 .face {
   position: relative;
   display: block;
-  width: 62px;
-  height: 62px;
   border-radius: 50%;
   box-shadow: 0 0 0 4px var(--c);
 }
@@ -234,6 +437,45 @@
   box-shadow:
     0 0 0 4px var(--c),
     0 0 18px 4px var(--c);
+}
+
+/* Being dragged: the token's spot shows an empty ring. */
+.token[data-lifted] .face {
+  background: rgba(42, 10, 24, 0.6);
+}
+
+.token[data-lifted] .portrait,
+.token[data-lifted] .badge {
+  visibility: hidden;
+}
+
+/* The dragged portrait: lifted, bigger, tilted a little, with a shadow. */
+.ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.ghost[data-flying] {
+  transition: transform var(--fly-ms) ease-in;
+}
+
+.ghostFace {
+  position: absolute;
+  left: -35px;
+  top: -35px;
+  display: block;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px var(--c),
+    0 16px 26px rgba(0, 0, 0, 0.45);
+  transform: rotate(-8deg);
 }
 
 /* Out: grey, with a red X. */
@@ -259,10 +501,10 @@
   content: '';
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 0;
   width: 8px;
   height: 100%;
-  margin: -25px 0 0 -4px;
+  margin-left: -4px;
   border-radius: 4px;
   background: #e5483a;
   transform: rotate(45deg);
@@ -294,10 +536,7 @@
 
 .ready {
   position: absolute;
-  right: 20px;
-  bottom: 22px;
-  height: 64px;
-  padding: 0 34px;
+  padding: 0;
   border: none;
   border-radius: 14px;
   background: #fff1d6;
@@ -433,7 +672,15 @@
   }
 
   .game[data-shake] .scene,
-  .barrel[data-shaking] {
+  .preview[data-shake] .scene,
+  .barrel[data-shaking],
+  .pxBarrel[data-shaking] {
     animation: none;
+  }
+
+  .pxBearUp,
+  .pxBearUp[data-hidden],
+  .ghost[data-flying] {
+    transition-duration: 0.01ms;
   }
 }

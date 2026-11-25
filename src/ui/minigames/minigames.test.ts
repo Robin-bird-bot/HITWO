@@ -1,6 +1,7 @@
 /**
- * The minigame parts (Phase 10.8): the GPS's lifted size, the testing tab's
- * remembered settings, and that test mode never reaches the saved hike.
+ * The minigame parts (Phase 10.8): the GPS upright and turned, the testing
+ * tab's remembered settings (the art style among them), and that test mode
+ * never reaches the saved hike.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
@@ -9,7 +10,14 @@ import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
 import { AUTOSAVE_KEY } from '../../store/autosave';
 import { STAGE_HEIGHT, STAGE_WIDTH } from '../stage/fitStage';
-import { gpsSize } from './gpsLayout';
+import {
+  DEVICE,
+  gpsMotion,
+  gpsTransform,
+  gpsTurned,
+  gpsUpright,
+  styleButtonSpot,
+} from './gpsLayout';
 import {
   readTestingSettings,
   TESTING_KEY,
@@ -36,22 +44,66 @@ function fakeStorage(start: Record<string, string> = {}) {
   return { storage, data, writes };
 }
 
-describe('the party GPS, lifted', () => {
-  it('desktop: a 16:9 screen as large as fits, up to 88% of the width, inside the window', () => {
-    const s = gpsSize(false);
-    expect(s.screenWidth / s.screenHeight).toBeCloseTo(16 / 9);
-    expect(s.screenWidth).toBeLessThanOrEqual(STAGE_WIDTH * G.maxScreenWidth);
-    expect(s.width).toBeLessThanOrEqual(STAGE_WIDTH);
-    expect(s.height).toBeLessThanOrEqual(STAGE_HEIGHT);
-    expect(s.screenWidth).toBeGreaterThan(STAGE_WIDTH * 0.7);
+const inStage = (r: { left: number; top: number; width: number; height: number }) =>
+  r.left >= 0 && r.top >= 0 && r.left + r.width <= STAGE_WIDTH && r.top + r.height <= STAGE_HEIGHT;
+
+describe('the party GPS', () => {
+  it('upright, its screen is 3:4', () => {
+    expect(DEVICE.screen.w / DEVICE.screen.h).toBeCloseTo(3 / 4);
+    expect(DEVICE.height).toBeGreaterThan(DEVICE.width);
   });
 
-  it('a phone in landscape: smaller sides, and the screen gets at least 80% of the height', () => {
-    const s = gpsSize(true);
-    expect(s.screenHeight / STAGE_HEIGHT).toBeGreaterThanOrEqual(G.phoneScreenHeight);
-    expect(s.side).toBeLessThan(gpsSize(false).side);
-    expect(s.width).toBeLessThanOrEqual(STAGE_WIDTH);
-    expect(s.height).toBeLessThanOrEqual(STAGE_HEIGHT);
+  it('desktop: turned, the 4:3 screen fills most of the window (up to 92% wide, 86% tall), all inside', () => {
+    const t = gpsTurned(false);
+    expect(t.screen.width / t.screen.height).toBeCloseTo(4 / 3);
+    expect(t.screen.width).toBeLessThanOrEqual(STAGE_WIDTH * G.maxScreenWidth);
+    expect(t.screen.height).toBeLessThanOrEqual(STAGE_HEIGHT * G.maxScreenHeight + 0.01);
+    expect(t.screen.height).toBeGreaterThanOrEqual(STAGE_HEIGHT * 0.85);
+    expect(inStage(t.screen)).toBe(true);
+    expect(inStage(t.body)).toBe(true);
+    // Landscape now: the body is wider than tall, and most of the window.
+    expect(t.body.width).toBeGreaterThan(t.body.height);
+    expect(t.body.width).toBeGreaterThan(STAGE_WIDTH * 0.85);
+  });
+
+  it('a phone in landscape: the screen is almost the whole height; the body may run past the edge, the screen never does', () => {
+    const t = gpsTurned(true);
+    expect(t.screen.height / STAGE_HEIGHT).toBeGreaterThanOrEqual(0.94);
+    expect(t.screen.width / t.screen.height).toBeCloseTo(4 / 3);
+    expect(inStage(t.screen)).toBe(true);
+  });
+
+  it('upright in its pop-up slot: small, and turned back', () => {
+    const t = gpsTurned(false);
+    const slot = { left: 486, top: 182, width: 430, height: 700 };
+    const up = gpsUpright(t, slot);
+    expect(up.scale).toBeLessThan(0.6);
+    // It fits the slot, nub and all, centered on it.
+    expect((DEVICE.height + DEVICE.nub.h) * t.unit * up.scale).toBeLessThanOrEqual(
+      slot.height + 0.01,
+    );
+    expect(DEVICE.width * t.unit * up.scale).toBeLessThanOrEqual(slot.width + 0.01);
+    expect(t.center.x + up.dx).toBeCloseTo(slot.left + slot.width / 2);
+    expect(gpsTransform('upright', up)).toContain('rotate(0deg)');
+    expect(gpsTransform('turned', up)).toContain('rotate(90deg) scale(1)');
+  });
+
+  it('turns over 700 ms and back over 500 ms; with reduced motion it crossfades instead', () => {
+    expect(gpsMotion(false, 'turned')).toEqual({ kind: 'turn', ms: G.turnMs });
+    expect(gpsMotion(false, 'upright')).toEqual({ kind: 'turn', ms: G.returnMs });
+    expect(gpsMotion(true, 'turned').kind).toBe('crossfade');
+    expect([G.turnMs, G.returnMs]).toEqual([700, 500]);
+  });
+
+  it('the Style button sits on the turned body, beside the screen, on the stage', () => {
+    for (const phone of [false, true]) {
+      const t = gpsTurned(phone);
+      const spot = styleButtonSpot(t);
+      expect(spot.left).toBeGreaterThanOrEqual(10);
+      expect(spot.top).toBeGreaterThanOrEqual(10);
+      // A 170-wide button ends before the screen starts.
+      expect(spot.left + 200).toBeLessThan(t.screen.left);
+    }
   });
 });
 
@@ -66,8 +118,10 @@ describe('the minigame list', () => {
     ]);
   });
 
-  it('Bearrels’ settings: barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
+  it('Bearrels’ settings: art style (Earthy pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
+    expect(BEARRELS.settings[0]).toMatchObject({ kind: 'style', label: 'Art style' });
     expect(defaultSettings(BEARRELS)).toEqual({
+      style: 'earth',
       barrels: 3,
       rounds: 3,
       shots: 1,
@@ -87,7 +141,17 @@ describe('the minigame list', () => {
         },
         TEST_HIKERS,
       ),
-    ).toEqual({ barrels: 6, rounds: 1, shots: 1, hikers: ['finn', 'ellie', 'mom', 'wyatt'] });
+    ).toEqual({
+      style: 'earth',
+      barrels: 6,
+      rounds: 1,
+      shots: 1,
+      hikers: ['finn', 'ellie', 'mom', 'wyatt'],
+    });
+    // A known style is kept; anything else is Earthy pixel.
+    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('teal');
+    expect(cleanSettings(BEARRELS, { style: 'neon' }, TEST_HIKERS).style).toBe('earth');
+    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('earth');
     // No hikers left: back to the default.
     expect(cleanSettings(BEARRELS, { hikers: ['cody'] }, TEST_HIKERS).hikers).toEqual([
       'finn',
@@ -97,11 +161,16 @@ describe('the minigame list', () => {
   });
 
   it('each hiker’s color and silhouette (layout.json); Grandpa Wink is Wink', () => {
-    expect(minigameHiker('finn')).toMatchObject({ color: '#E2683C', shape: 'dog-floppy' });
+    expect(minigameHiker('finn')).toMatchObject({
+      color: '#E2683C',
+      shape: 'dog-floppy',
+      art: 'finn',
+    });
     expect(minigameHiker('grandpaWink')).toMatchObject({
       name: 'Wink',
       color: '#3FB8B0',
       shape: 'bald',
+      art: 'wink',
     });
     // A run's party color wins.
     expect(minigameHiker('mom', '#123456').color).toBe('#123456');
@@ -117,7 +186,13 @@ describe('test mode never touches the saved hike', () => {
     const save = '{"saveVersion":21}';
     const { storage, data, writes } = fakeStorage({ [AUTOSAVE_KEY]: save });
     expect(readTestingSettings(storage, 'bearrels')).toEqual(defaultSettings(BEARRELS));
-    const next = { barrels: 5, rounds: 2, shots: 2, hikers: ['wyatt', 'gdog'] };
+    const next = {
+      style: 'silhouette',
+      barrels: 5,
+      rounds: 2,
+      shots: 2,
+      hikers: ['wyatt', 'gdog'],
+    };
     writeTestingSettings(storage, 'bearrels', next);
     expect(readTestingSettings(storage, 'bearrels')).toEqual(next);
     expect(new Set(writes)).toEqual(new Set([TESTING_KEY]));

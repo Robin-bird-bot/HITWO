@@ -1,24 +1,36 @@
 /**
- * Bearrels (docs/design/10-minigames.md, "Bearrels"), played on the party
- * GPS's screen at 1280 × 720.
+ * Bearrels (docs/design/10-minigames.md, "Bearrels"), played on the turned
+ * party GPS's 4:3 screen (1280 × 960), in any of the three art styles.
  *
- * Each round: pick a hiker, then a barrel, until everyone still in is placed,
- * then Ready. The bear pops up, the crosshair sweeps across the barrels and
- * settles on the one it picked, and it fires: anyone behind that barrel is
- * out (a red flash, a shake, the hikers tip over), or "Missed!". With 2
- * shots the second follows on a different barrel. The bear ducks, and the
- * next round starts with everyone where they were. After the last round, or
- * once everyone is out, a results card.
+ * Each round: drag each hiker to a barrel (or tap a hiker, then a barrel),
+ * until everyone still in is placed, then Ready. The bear pops up, the
+ * crosshair sweeps across the barrels and settles on the one it picked, and
+ * it fires: anyone behind that barrel is out (a red flash, a shake, the
+ * hikers tip over), or "Missed!". With 2 shots the second follows on a
+ * different barrel. The bear ducks, and the next round starts with everyone
+ * where they were. After the last round, or once everyone is out, a results card.
  *
- * Touch, mouse or keyboard (1–4, ← →, Enter or Space). Reduced motion: no
+ * The style only changes how the scene is drawn (./Scene.tsx): switching it
+ * mid-round keeps every hiker's barrel, the round and who is out.
+ *
+ * Mouse, touch or keyboard (1–4, ← →, Enter or Space). Reduced motion: no
  * shake, a softer flash, and the crosshair jumps straight to its barrel.
- * Sounds are hooks only (./../sound.ts).
+ * Sounds are hooks only (../sound.ts).
  */
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from 'react';
 import { BALANCE } from '../../../config/balance';
 import {
-  barrelLayout,
+  behind,
+  canDrag,
   canReady,
+  drop,
   endRound,
   fire,
   hitLine,
@@ -32,17 +44,30 @@ import {
   stillIn,
   type BearrelsState,
 } from '../../../minigames/bearrels/logic';
+import { sceneHikers, type BearPose, type SceneModel } from '../../../minigames/bearrels/scene';
+import {
+  barrelAt,
+  FILL,
+  GAME,
+  hikerCenters,
+  pixelFrame,
+  UI,
+  type ArtStyle,
+  type Frame,
+} from '../../../minigames/bearrels/styles';
 import type { MinigameHiker, MinigameResult } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerPortrait } from '../../hikers/HikerPortrait';
+import { useStage } from '../../stage/StageContext';
 import { playSound } from '../sound';
-import { BearrelsScene, type BearPose, type SceneHiker } from './Scene';
+import { BearrelsScene } from './Scene';
 import styles from './Bearrels.module.css';
 
 const T = BALANCE.minigames.bearrels.timing;
 const B = BALANCE.minigames.bearrels;
+const D = B.drag;
 
-const PICK = 'Pick a hiker, then a barrel';
+const PICK = 'Drag a hiker to a barrel';
 const MOVE = 'Move anyone, then Ready';
 
 export interface BearrelsSettingsProps {
@@ -51,13 +76,69 @@ export interface BearrelsSettingsProps {
   shots: number;
 }
 
+/** A press on a hiker (their token, or them behind a barrel): a drag once it moves far enough. */
+interface Press {
+  id: string;
+  from: 'token' | 'scene';
+  pointerId: number;
+  /** Where it started, in screen pixels. */
+  sx: number;
+  sy: number;
+  dragging: boolean;
+  /** Where the pointer is on the game screen (1280 × 960), and the barrel under it. */
+  x: number;
+  y: number;
+  over: number | null;
+}
+
+/** A portrait dropped on nothing, flying back where it came from. */
+interface FlyBack {
+  id: string;
+  x: number;
+  y: number;
+  to: { x: number; y: number };
+  go: boolean;
+}
+
+/**
+ * The pixel styles' whole-number scale: how wide the game screen is drawn
+ * (device pixels) decides it. Measured after it mounts (the GPS has finished
+ * turning by then) and whenever the stage is rescaled.
+ */
+function usePixelFrame(ref: RefObject<HTMLElement | null>): Frame {
+  const { scale } = useStage();
+  const [frame, setFrame] = useState<Frame>(FILL);
+  useEffect(() => {
+    const measure = () => {
+      const el = ref.current;
+      if (!el) return;
+      const width = el.getBoundingClientRect().width * (window.devicePixelRatio || 1);
+      const next = pixelFrame(width);
+      setFrame((f) => (f.unit === next.unit && f.x === next.x && f.y === next.y ? f : next));
+    };
+    // Now, and again once the GPS has surely settled from its turn.
+    const timers = [setTimeout(measure, 0), setTimeout(measure, 400)];
+    window.addEventListener('resize', measure);
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      window.removeEventListener('resize', measure);
+    };
+  }, [ref, scale]);
+  return frame;
+}
+
+/** Two frames from now: after the browser has drawn what was just set. */
+const afterPaint = (fn: () => void) => requestAnimationFrame(() => requestAnimationFrame(fn));
+
 export function BearrelsGame({
   settings,
+  style,
   hikers,
   seed,
   onDone,
 }: {
   settings: BearrelsSettingsProps;
+  style: ArtStyle;
   hikers: readonly MinigameHiker[];
   seed: number;
   /** Continue on the results card: who was safe and who was hit. */
@@ -65,14 +146,18 @@ export function BearrelsGame({
 }) {
   const reduced = useReducedMotion();
   const ids = hikers.map((h) => h.id);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const tokenRefs = useRef(new Map<string, HTMLElement>());
+  const frame = usePixelFrame(rootRef);
   const [round, setRound] = useState(0);
   const [game, setGame] = useState(() => newGame(settings, ids, seed));
-  const barrels = barrelLayout(game.settings.barrels);
+  const n = game.settings.barrels;
   const [bear, setBear] = useState<BearPose>('hidden');
+  /** The crosshair, as a place along the barrel row (a barrel index, in between while sweeping). */
   const [cross, setCross] = useState<number | null>(null);
   const [shaking, setShaking] = useState<number | null>(null);
   const [smoke, setSmoke] = useState<number | null>(null);
-  /** Hikers tipping over from this shot, and hikers gone from the scene. */
+  /** Hikers tipping over from this round's shots, and hikers gone from the scene. */
   const [tipped, setTipped] = useState<string[]>([]);
   const [gone, setGone] = useState<string[]>([]);
   const [prompt, setPrompt] = useState<{ text: string; bad?: boolean }>({ text: PICK });
@@ -83,6 +168,11 @@ export function BearrelsGame({
   const [hover, setHover] = useState<number | null>(null);
   /** The keyboard was used: its highlight shows on the barrels. */
   const [keys, setKeys] = useState(false);
+  const [press, setPress] = useState<Press | null>(null);
+  const [fly, setFly] = useState<FlyBack | null>(null);
+  const [arriving, setArriving] = useState<SceneModel['arriving']>(null);
+  /** A click that ends a drag isn't a tap. */
+  const ignoreClick = useRef(false);
   const alive = useRef(true);
   useEffect(() => {
     alive.current = true;
@@ -93,33 +183,31 @@ export function BearrelsGame({
 
   const name = (id: string) => hikers.find((h) => h.id === id)?.name ?? id;
   const sleep = (ms: number) => new Promise<boolean>((r) => setTimeout(() => r(alive.current), ms));
+  const placing = game.phase === 'placing' && !busy;
 
-  /** The crosshair sweeps left to right, then back, slowing onto its barrel. */
+  /** The crosshair sweeps along the row and back, slowing onto its barrel. */
   const sweep = (target: number) =>
     new Promise<boolean>((resolve) => {
-      const xs = barrels.map((b) => b.x);
-      const to = xs[target] ?? xs[0] ?? 640;
       if (reduced) {
-        setCross(to);
+        setCross(target);
         resolve(alive.current);
         return;
       }
-      const first = xs[0] ?? to;
-      const last = xs.at(-1) ?? to;
+      const last = n - 1;
       const start = performance.now();
-      let prev = first;
+      let prev = 0;
       const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
       const step = (now: number) => {
         if (!alive.current) return resolve(false);
         const t = Math.min(1, (now - start) / T.sweepMs);
-        const x =
+        const at =
           t < 0.55
-            ? first + (last - first) * ease(t / 0.55)
-            : last + (to - last) * (1 - (1 - (t - 0.55) / 0.45) ** 3);
+            ? last * ease(t / 0.55)
+            : last + (target - last) * (1 - (1 - (t - 0.55) / 0.45) ** 3);
         // A tick each time it passes a barrel.
-        if (xs.some((c) => (prev - c) * (x - c) < 0)) playSound('tick');
-        prev = x;
-        setCross(x);
+        if (Math.round(prev) !== Math.round(at)) playSound('tick');
+        prev = at;
+        setCross(at);
         if (t < 1) requestAnimationFrame(step);
         else resolve(true);
       };
@@ -130,6 +218,7 @@ export function BearrelsGame({
   const shoot = async (start: BearrelsState) => {
     setBusy(true);
     setHover(null);
+    setPress(null);
     setPrompt({ text: 'Here it comes…' });
     playSound('ready');
     setBear('up');
@@ -151,7 +240,7 @@ export function BearrelsGame({
         hitThisRound.push(...shot.hit);
         setShaking(target);
         setTipped((t) => [...t, ...shot.hit]);
-        setFlash((n) => n + 1);
+        setFlash((f) => f + 1);
         if (!reduced) setShake(true);
         setPrompt({ text: hitLine(shot.hit.map(name)), bad: true });
         playSound('hit');
@@ -160,8 +249,9 @@ export function BearrelsGame({
         setPrompt({ text: 'Missed!' });
         playSound('miss');
       }
-      if (!(await sleep(T.fireMs))) return;
+      if (!(await sleep(T.muzzleMs))) return;
       setBear('up');
+      if (!(await sleep(Math.max(0, T.fireMs - T.muzzleMs)))) return;
       setShake(false);
       setShaking(null);
       setSmoke(null);
@@ -192,10 +282,95 @@ export function BearrelsGame({
   };
 
   const placeAt = (barrel: number) => {
-    if (busy || game.phase !== 'placing' || !game.selected) return;
+    if (ignoreClick.current || busy || game.phase !== 'placing' || !game.selected) return;
     setGame(place(game, barrel));
     playSound('place');
   };
+
+  // ── Drag-and-drop ──
+
+  /** A point on the screen, on the game screen (1280 × 960). */
+  const toGame = (clientX: number, clientY: number) => {
+    const r = rootRef.current?.getBoundingClientRect();
+    if (!r || !r.width || !r.height) return { x: 0, y: 0 };
+    return {
+      x: ((clientX - r.left) / r.width) * GAME.width,
+      y: ((clientY - r.top) / r.height) * GAME.height,
+    };
+  };
+
+  const startPress = (id: string, from: Press['from'], e: ReactPointerEvent) => {
+    if (!placing || !canDrag(game, id) || e.button > 0) return;
+    setPress({
+      id,
+      from,
+      pointerId: e.pointerId,
+      sx: e.clientX,
+      sy: e.clientY,
+      dragging: false,
+      ...toGame(e.clientX, e.clientY),
+      over: null,
+    });
+  };
+
+  /** Where a hiker's portrait goes back to: their token, or their spot behind a barrel. */
+  const home = (p: Press): { x: number; y: number } => {
+    const at = game.placed[p.id];
+    if (p.from === 'scene' && at !== undefined) {
+      const group = behind(game, at);
+      const spot = hikerCenters(style, n, at, group.length, frame)[group.indexOf(p.id)];
+      if (spot) return spot;
+    }
+    const r = tokenRefs.current.get(p.id)?.getBoundingClientRect();
+    return r ? toGame(r.left + r.width / 2, r.top + r.height / 2) : { x: p.x, y: p.y };
+  };
+
+  // While pressing: follow the pointer anywhere on the page, then drop.
+  useEffect(() => {
+    if (!press) return;
+    const move = (e: PointerEvent) => {
+      if (e.pointerId !== press.pointerId) return;
+      if (!press.dragging && Math.hypot(e.clientX - press.sx, e.clientY - press.sy) <= D.startPx) {
+        return;
+      }
+      e.preventDefault();
+      const p = toGame(e.clientX, e.clientY);
+      setPress({ ...press, dragging: true, ...p, over: barrelAt(style, n, p, frame) });
+    };
+    const up = (e: PointerEvent) => {
+      if (e.pointerId !== press.pointerId) return;
+      setPress(null);
+      if (!press.dragging) return;
+      ignoreClick.current = true;
+      setTimeout(() => {
+        ignoreClick.current = false;
+      }, 0);
+      const p = toGame(e.clientX, e.clientY);
+      const over = barrelAt(style, n, p, frame);
+      if (over !== null && canDrag(game, press.id)) {
+        setGame(drop(game, press.id, over));
+        playSound('place');
+        // Drawn where it was let go, then it slides into place.
+        setArriving({ id: press.id, ...p });
+        afterPaint(() => setArriving(null));
+        return;
+      }
+      setFly({ id: press.id, ...p, to: home(press), go: false });
+      afterPaint(() => setFly((f) => (f ? { ...f, go: true } : f)));
+      setTimeout(() => setFly(null), D.flyBackMs + 40);
+    };
+    const cancel = (e: PointerEvent) => {
+      if (e.pointerId === press.pointerId) setPress(null);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+    };
+  });
 
   // The keyboard: 1–4, ← →, Enter or Space.
   useEffect(() => {
@@ -232,36 +407,48 @@ export function BearrelsGame({
     setKeys(false);
   };
 
-  const scene: SceneHiker[] = game.hikers
-    .filter((id) => game.placed[id] !== undefined && !gone.includes(id))
-    .flatMap((id) => {
-      const hiker = hikers.find((h) => h.id === id);
-      return hiker
-        ? [
-            {
-              hiker,
-              barrel: game.placed[id]!,
-              state: tipped.includes(id) ? ('hit' as const) : ('in' as const),
-            },
-          ]
-        : [];
-    });
-  const placing = game.phase === 'placing' && !busy;
-  const outline = placing && game.selected ? (hover ?? (keys ? game.highlight : null)) : null;
+  const dragging = press?.dragging ? press : null;
+  const lifted = dragging?.id ?? fly?.id ?? null;
+  const model: SceneModel = {
+    barrels: n,
+    hikers: sceneHikers(game, hikers, { tipped, gone, lifted }),
+    bear,
+    crosshair: cross,
+    outline: dragging
+      ? dragging.over
+      : placing && game.selected
+        ? (hover ?? (keys ? game.highlight : null))
+        : null,
+    shaking,
+    smoke,
+    arriving,
+  };
   const ended = result(game);
+  const ghost = dragging
+    ? { id: dragging.id, x: dragging.x, y: dragging.y, flying: false }
+    : fly
+      ? { id: fly.id, ...(fly.go ? fly.to : { x: fly.x, y: fly.y }), flying: true }
+      : null;
+  const ghostHiker = ghost ? hikers.find((h) => h.id === ghost.id) : undefined;
+  const tokenBar = UI.tokens;
+  const pill = { top: UI.pills.top, height: UI.pills.height };
 
   return (
-    <div className={styles.game} data-shake={shake || undefined}>
-      <BearrelsScene
-        barrels={barrels}
-        hikers={scene}
-        bear={bear}
-        crosshair={cross}
-        outline={outline}
-        shaking={shaking}
-        smoke={smoke}
-        {...(placing && game.selected ? { onBarrel: placeAt, onHover: setHover } : {})}
-      />
+    <div ref={rootRef} className={styles.game} data-shake={shake || undefined}>
+      <div className={styles.scene}>
+        <BearrelsScene
+          style={style}
+          model={model}
+          frame={frame}
+          {...(placing
+            ? {
+                onBarrel: placeAt,
+                onHover: setHover,
+                onHikerDown: (id: string, e: ReactPointerEvent) => startPress(id, 'scene', e),
+              }
+            : {})}
+        />
+      </div>
 
       {flash > 0 && (
         <div
@@ -279,11 +466,12 @@ export function BearrelsGame({
         />
       )}
 
-      <span className={`${styles.pill} ${styles.round}`}>
+      <span className={`${styles.pill} ${styles.round}`} style={pill}>
         ROUND {game.round} / {game.settings.rounds}
       </span>
       <span
         className={`${styles.pill} ${styles.prompt}`}
+        style={pill}
         data-bad={prompt.bad || undefined}
         role="status"
       >
@@ -291,6 +479,7 @@ export function BearrelsGame({
       </span>
       <span
         className={`${styles.pill} ${styles.shots}`}
+        style={pill}
         aria-label={`${game.settings.shots} shot${game.settings.shots === 1 ? '' : 's'} a round`}
       >
         {Array.from({ length: game.settings.shots }, (_, i) => (
@@ -303,7 +492,18 @@ export function BearrelsGame({
         ))}
       </span>
 
-      <div className={styles.tokens} role="group" aria-label="Hikers">
+      <div
+        className={styles.tokens}
+        role="group"
+        aria-label="Hikers"
+        style={{
+          left: tokenBar.left,
+          bottom: tokenBar.bottom,
+          height: tokenBar.height,
+          gap: tokenBar.gap,
+          padding: `0 ${tokenBar.pad}px`,
+        }}
+      >
         {hikers.map((h, i) => {
           const out = game.out[h.id] !== undefined;
           const at = game.placed[h.id];
@@ -311,17 +511,25 @@ export function BearrelsGame({
           return (
             <button
               key={h.id}
+              ref={(el) => {
+                if (el) tokenRefs.current.set(h.id, el);
+                else tokenRefs.current.delete(h.id);
+              }}
               type="button"
               className={styles.token}
-              data-selected={chosen || undefined}
+              data-selected={(chosen && lifted !== h.id) || undefined}
+              data-lifted={lifted === h.id || undefined}
               data-out={out || undefined}
               disabled={out || !placing}
-              style={{ '--c': h.color } as CSSProperties}
+              style={{ '--c': h.color, width: tokenBar.width } as CSSProperties}
               aria-pressed={chosen}
               aria-label={`${i + 1}: ${h.name}${out ? ', out' : at !== undefined ? `, behind barrel ${at + 1}` : ''}`}
-              onClick={() => setGame(select(game, h.id))}
+              onPointerDown={(e) => startPress(h.id, 'token', e)}
+              onClick={() => {
+                if (!ignoreClick.current) setGame(select(game, h.id));
+              }}
             >
-              <span className={styles.face}>
+              <span className={styles.face} style={{ width: tokenBar.face, height: tokenBar.face }}>
                 <HikerPortrait hikerId={h.id} className={styles.portrait} />
                 {out && <span className={styles.x} aria-hidden="true" />}
                 {!out && at !== undefined && <span className={styles.badge}>{at + 1}</span>}
@@ -335,11 +543,36 @@ export function BearrelsGame({
       <button
         type="button"
         className={styles.ready}
+        style={{
+          right: UI.ready.right,
+          bottom: UI.ready.bottom,
+          width: UI.ready.width,
+          height: UI.ready.height,
+        }}
         disabled={!placing || !canReady(game)}
         onClick={pressReady}
       >
         READY
       </button>
+
+      {ghost && ghostHiker && (
+        <div
+          className={styles.ghost}
+          data-flying={ghost.flying || undefined}
+          style={
+            {
+              transform: `translate(${ghost.x}px, ${ghost.y}px)`,
+              '--c': ghostHiker.color,
+              '--fly-ms': `${D.flyBackMs}ms`,
+            } as CSSProperties
+          }
+          aria-hidden="true"
+        >
+          <span className={styles.ghostFace}>
+            <HikerPortrait hikerId={ghostHiker.id} className={styles.portrait} />
+          </span>
+        </div>
+      )}
 
       {results && (
         <div className={styles.results}>

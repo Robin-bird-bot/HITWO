@@ -36,6 +36,7 @@ export function minigameHiker(id: string, color?: string): MinigameHiker {
     id,
     name: roster?.name.replace(/^Grandpa /, '') ?? id,
     color: color ?? COLORS[art] ?? '#C9C2B2',
+    art,
     // A future hiker: a dog gets the floppy dog, anyone else the messy hair.
     shape: isShape(shape) ? shape : roster?.family === 'dog' ? 'dog-floppy' : 'messy',
   };

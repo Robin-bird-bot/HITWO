@@ -119,7 +119,9 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 ## Minigames (Phase 10.8)
 
-- **Bearrels' scene parts** (`public/assets/minigames/bearrels/`, originals in `assets/minigames/bearrels/`): the background, the bear (hidden, up, fire; each with the rock), a barrel, one silhouette per hiker (Finn, Ellie, Mom, Wyatt, Gdog, Wink), the crosshair, and `layout.json` (positions, hiker colors, inks). The game draws the bear, barrels, hikers and crosshair in code from the same shapes, so each hiker can be rim-lit in their own color; the background is used as the file.
+- **Bearrels, Silhouette style** (`public/assets/minigames/bearrels/`, originals in `assets/minigames/bearrels/`): the background, the bear (hidden, up, fire; each with the rock), a barrel, one silhouette per hiker (Finn, Ellie, Mom, Wyatt, Gdog, Wink), the crosshair, and `layout.json` (positions, the 4:3 sky and ground strips, hiker colors, inks; replaced in the Nov 24 follow-up). The game draws the bear, barrels, hikers and crosshair in code from the same shapes, so each hiker can be rim-lit in their own color; the background is used as the file.
+- **Bearrels, pixel styles** (`public/assets/minigames/bearrels/pixel-earth/` and `pixel-teal/`, originals in `assets/minigames/bearrels/`): Earthy pixel and Teal pixel, each a 280 × 210 background, the bear (hidden, up), the log, barrels and their shadows in two sizes (one size for 3 to 5 barrels, a smaller one for 6), the crosshair, the muzzle flash, a flat color-coded silhouette per hiker at three sizes (100, 80, 62), and a `layout.json` with every position. The `_reference-aiming.png` and `_reference-placing.png` frames show the expected result; they're kept in `assets/` only and never loaded.
+- **Hiker art in minigames:** plain color-coded silhouettes for now. Wyatt will draw detailed hikers once he picks a style.
 - **Posters** (`public/assets/posters/`, 1200 × 1800): `bear-country.png`. Wyatt is painting the rest; a challenge without one shows a plain cream panel.
 - **The party GPS** is drawn in CSS and SVG: no image files.
 

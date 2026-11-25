@@ -4,7 +4,13 @@
  * time. The UI pairs each playable one with its game (src/ui/minigames/runners.ts).
  */
 import { BALANCE } from '../config/balance';
-import type { MinigameInfo, MinigameSetting, MinigameSettings } from './types';
+import { ART_STYLES } from './bearrels/styles';
+import type {
+  MinigameInfo,
+  MinigameSetting,
+  MinigameSettings,
+  MinigameSettingValue,
+} from './types';
 
 const B = BALANCE.minigames.bearrels;
 
@@ -16,6 +22,13 @@ export const BEARRELS: MinigameInfo = {
     'Hide your hikers behind barrels. Each round the bear shoots, and anyone behind that barrel is out.',
   status: 'ready',
   settings: [
+    {
+      kind: 'style',
+      id: 'style',
+      label: 'Art style',
+      options: ART_STYLES,
+      default: ART_STYLES[0].id,
+    },
     {
       kind: 'range',
       id: 'barrels',
@@ -98,7 +111,10 @@ function cleanOne(
   s: MinigameSetting,
   value: unknown,
   allowedHikers: readonly string[],
-): number | readonly string[] {
+): MinigameSettingValue {
+  if (s.kind === 'style') {
+    return typeof value === 'string' && s.options.some((o) => o.id === value) ? value : s.default;
+  }
   if (s.kind === 'hikers') {
     const list = Array.isArray(value)
       ? value.filter((v): v is string => typeof v === 'string')

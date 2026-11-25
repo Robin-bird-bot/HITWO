@@ -1,0 +1,46 @@
+/* A challenge minigame's flow (Phase 10.8): the pop-up, the GPS, the test-mode Style button. */
+
+.flow {
+  position: absolute;
+  inset: 0;
+}
+
+/* Test mode: switch the art style mid-game. On the turned GPS's knob end, outside its screen. */
+.styleButton {
+  position: absolute;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 170px;
+  padding: 10px 16px 11px;
+  border: 2px solid #f2bd20;
+  border-radius: 12px;
+  background: rgba(29, 34, 32, 0.92);
+  color: #f1eadb;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.styleButton:hover {
+  background: rgba(45, 51, 47, 0.95);
+}
+
+.styleButton:focus-visible {
+  outline: 3px solid #e9b44c;
+  outline-offset: 3px;
+}
+
+.styleLabel {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #e9b44c;
+}
+
+.styleName {
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  color: #f1eadb;
+}

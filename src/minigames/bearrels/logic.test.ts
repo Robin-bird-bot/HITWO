@@ -3,8 +3,9 @@ import { BALANCE } from '../../config/balance';
 import {
   barrelLayout,
   behind,
-  BOTTOM_BAR_TOP,
+  canDrag,
   canReady,
+  drop,
   endRound,
   fire,
   hikerSpots,
@@ -56,10 +57,9 @@ describe('the barrel layout', () => {
         expect(b.width).toBeCloseTo(width);
         expect(b.height).toBeCloseTo(width * B.heightRatio);
         expect(b.top).toBe(B.barrelTop);
-        // No overlap with the next barrel, and clear of the token bar and Ready.
+        // No overlap with the next barrel (the UI is checked in styles.test.ts).
         const next = row[i + 1];
         if (next) expect(b.x + b.width / 2).toBeLessThan(next.x - next.width / 2);
-        expect(b.top + b.height).toBeLessThanOrEqual(BOTTOM_BAR_TOP);
       });
     },
   );
@@ -107,6 +107,46 @@ describe('placing', () => {
     s = place(s, 1);
     expect(canReady(s)).toBe(false);
     s = place(s, 2);
+    expect(canReady(s)).toBe(true);
+  });
+});
+
+describe('drag-and-drop', () => {
+  it('dropping a hiker on a barrel hides them there; the next one not placed is picked', () => {
+    const s = drop(game(), 'ellie', 2);
+    expect(s.placed).toEqual({ ellie: 2 });
+    expect(s.selected).toBe('finn');
+    expect(s.highlight).toBe(2);
+    // A placed hiker can be dragged to another barrel.
+    expect(drop(s, 'ellie', 0).placed.ellie).toBe(0);
+  });
+
+  it('dropping anywhere else changes nothing: they go back', () => {
+    const s = placeAll(game(), [0, 1, 2]);
+    expect(drop(s, 'mom', null)).toBe(s);
+    expect(drop(game(), 'finn', null)).toEqual(game());
+    // Not a barrel in this game.
+    expect(drop(s, 'mom', 5)).toBe(s);
+  });
+
+  it('no dragging while the bear is up, or a hiker who is out', () => {
+    const placed = placeAll(game(), [1, 1, 0]);
+    expect(canDrag(placed, 'finn')).toBe(true);
+    const shooting = ready(placed);
+    expect(canDrag(shooting, 'finn')).toBe(false);
+    expect(drop(shooting, 'finn', 2)).toBe(shooting);
+    const after = endRound(fire({ ...shooting, targets: [1] }).state);
+    expect(canDrag(after, 'finn')).toBe(false);
+    expect(canDrag(after, 'mom')).toBe(true);
+    expect(drop(after, 'finn', 2).placed.finn).toBe(1);
+    expect(canDrag(after, 'cody')).toBe(false);
+  });
+
+  it('tap, then tap still works alongside it', () => {
+    let s = drop(game(), 'finn', 1);
+    s = place(select(s, 'ellie'), 0);
+    s = place(s, 2);
+    expect(s.placed).toEqual({ finn: 1, ellie: 0, mom: 2 });
     expect(canReady(s)).toBe(true);
   });
 });

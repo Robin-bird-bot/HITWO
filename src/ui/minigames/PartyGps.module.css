@@ -1,154 +1,165 @@
-/* The party GPS (Phase 10.8). Stage pixels. */
+/*
+ * The party GPS (Phase 10.8, Nov 24 follow-up): a vertical handheld drawn
+ * in device units (--u stage pixels each) around a 600 × 800 screen. The
+ * whole device turns; see gpsLayout.ts.
+ */
 
 .layer {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 70;
   pointer-events: none;
 }
 
-.gps {
-  position: relative;
-  flex: none;
-  border-radius: 64px;
+.device {
+  position: absolute;
+  transform-origin: 50% 50%;
+  pointer-events: auto;
+  transition: transform var(--ms) cubic-bezier(0.45, 0.05, 0.25, 1);
+}
+
+/* Reduced motion: fade out, change place at the halfway point, fade back in. No spin. */
+.device[data-motion='crossfade'] {
+  transition: transform 0s linear calc(var(--ms) / 2);
+}
+
+.device[data-motion='crossfade'][data-moved][data-turned] {
+  animation: fadeThroughA var(--ms) linear;
+}
+
+.device[data-motion='crossfade'][data-moved]:not([data-turned]) {
+  animation: fadeThroughB var(--ms) linear;
+}
+
+@keyframes fadeThroughA {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeThroughB {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ── The body ── */
+
+.body {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--u) * 84px);
   background: linear-gradient(180deg, #f6cb3a 0%, #e2a91e 100%);
   box-shadow:
     0 30px 70px rgba(0, 0, 0, 0.55),
-    inset 0 2px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -4px 0 rgba(120, 70, 0, 0.35);
-  pointer-events: auto;
-  /* Lowered: below the pop-up, small. */
-  transform: translateY(70%) scale(0.5);
-  opacity: 0;
-  transition:
-    transform var(--lower-ms) cubic-bezier(0.55, 0, 0.75, 0.3),
-    opacity var(--lower-ms) ease-in;
-}
-
-/* Lifted: up with a small overshoot. */
-.layer[data-shown] .gps {
-  transform: none;
-  opacity: 1;
-  transition:
-    transform var(--lift-ms) cubic-bezier(0.34, 1.32, 0.64, 1),
-    opacity calc(var(--lift-ms) * 0.4) ease-out;
-}
-
-/* Reduced motion: a fade at full size. */
-.layer[data-reduced] .gps {
-  transform: none;
-  transition: opacity var(--lower-ms) ease;
-}
-
-.antenna {
-  position: absolute;
-  right: 70px;
-  top: -34px;
-  width: 64px;
-  height: 46px;
-  border-radius: 12px 12px 4px 4px;
-  background: #1c201e;
-  z-index: -1;
-}
-
-.topButtons {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -9px;
-  z-index: -1;
-}
-
-.topButtons > span {
-  position: absolute;
-  top: 0;
-  width: 70px;
-  height: 14px;
-  border-radius: 6px 6px 0 0;
-  background: #1c201e;
-}
-
-.topButtons > span:first-child {
-  left: 90px;
-}
-
-.topButtons > span:last-child {
-  right: 150px;
+    inset 0 calc(var(--u) * 3px) 0 rgba(255, 255, 255, 0.45),
+    inset 0 calc(var(--u) * -5px) 0 rgba(120, 70, 0, 0.35);
 }
 
 .face {
   position: absolute;
-  display: flex;
-  align-items: stretch;
-  box-sizing: border-box;
-  border-radius: 52px;
+  inset: calc(var(--u) * 14px);
+  border-radius: calc(var(--u) * 70px);
   background: #1c201e;
-  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 calc(var(--u) * 4px) calc(var(--u) * 12px) rgba(0, 0, 0, 0.6);
 }
 
-.side {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
-  flex: none;
+/* The antenna nub (top left) and the side buttons, tucked behind the body. */
+.nub,
+.sideLeft,
+.sideLeftSmall,
+.sideRight {
+  position: absolute;
+  z-index: -1;
+  background: #1c201e;
 }
 
-.dpad {
-  fill: #2d332f;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.6));
+.nub {
+  left: calc(var(--u) * 78px);
+  top: calc(var(--u) * -46px);
+  width: calc(var(--u) * 84px);
+  height: calc(var(--u) * 64px);
+  border-radius: calc(var(--u) * 16px) calc(var(--u) * 16px) calc(var(--u) * 4px)
+    calc(var(--u) * 4px);
 }
 
-.buttonYellow,
-.buttonDark {
-  display: block;
-  border-radius: 50%;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.5);
+.sideLeft,
+.sideLeftSmall {
+  left: calc(var(--u) * -9px);
+  width: calc(var(--u) * 16px);
+  border-radius: calc(var(--u) * 5px);
 }
 
-.buttonYellow {
-  background: radial-gradient(circle at 35% 30%, #ffe27a, #f2bd20 60%, #c68f10);
-  transform: translateX(8px);
+.sideLeft {
+  top: calc(var(--u) * 250px);
+  height: calc(var(--u) * 92px);
 }
 
-.buttonDark {
-  background: radial-gradient(circle at 35% 30%, #4a514c, #2b302d 70%);
-  transform: translateX(-12px);
+.sideLeftSmall {
+  top: calc(var(--u) * 366px);
+  height: calc(var(--u) * 52px);
 }
 
-.middle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: none;
+.sideRight {
+  right: calc(var(--u) * -9px);
+  top: calc(var(--u) * 280px);
+  width: calc(var(--u) * 16px);
+  height: calc(var(--u) * 82px);
+  border-radius: calc(var(--u) * 5px);
 }
+
+/* ── The screen ── */
 
 .bezel {
-  border-radius: 18px;
+  position: absolute;
+  left: calc(var(--u) * 22px);
+  top: calc(var(--u) * 30px);
+  width: calc(var(--u) * 616px);
+  height: calc(var(--u) * 816px);
+  box-sizing: border-box;
+  padding: calc(var(--u) * 8px);
+  border-radius: calc(var(--u) * 22px);
   background: #0b0d0c;
   box-shadow:
-    0 0 0 2px #050606,
-    0 0 26px rgba(255, 170, 80, 0.22);
+    0 0 0 calc(var(--u) * 2px) #050606,
+    0 0 calc(var(--u) * 28px) rgba(255, 170, 80, 0.24);
 }
 
 .screen {
   position: relative;
+  width: calc(var(--u) * 600px);
+  height: calc(var(--u) * 800px);
   overflow: hidden;
-  border-radius: 10px;
-  background: #2a0a18;
+  border-radius: calc(var(--u) * 12px);
+  background: #0b0d0c;
 }
 
-.viewport {
+/* What the screen shows, laid out at 1280 × 960 and centered (turned for the game). */
+.content {
   position: absolute;
-  left: 0;
-  top: 0;
+  left: 50%;
+  top: 50%;
   width: 1280px;
-  height: 720px;
-  transform-origin: 0 0;
+  height: 960px;
+  transform-origin: 50% 50%;
+  animation: contentIn 220ms ease-out;
+}
+
+@keyframes contentIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Faint scanlines: a 6% dark line every 3 px. */
@@ -183,15 +194,64 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 0 calc(var(--u) * 30px) rgba(0, 0, 0, 0.45);
   border-radius: inherit;
 }
 
+/* ── Under the screen: TRAILMATE, the knob and two buttons ── */
+
 .brand {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--u) * 858px);
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: calc(var(--u) * 22px);
+  line-height: 1;
+  letter-spacing: 0.32em;
+  color: #f2bd20;
+}
+
+.knob {
+  position: absolute;
+  left: calc(var(--u) * 276px);
+  top: calc(var(--u) * 898px);
   display: flex;
   align-items: center;
-  font-family: var(--font-pixel);
-  font-size: 13px;
-  letter-spacing: 0.3em;
-  color: #f2bd20;
+  justify-content: center;
+  width: calc(var(--u) * 108px);
+  height: calc(var(--u) * 108px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #3a403c, #262b28 70%);
+  box-shadow:
+    0 calc(var(--u) * 4px) 0 rgba(0, 0, 0, 0.5),
+    inset 0 0 0 calc(var(--u) * 3px) #161917;
+}
+
+.knob > span {
+  width: calc(var(--u) * 44px);
+  height: calc(var(--u) * 44px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe27a, #f2bd20 60%, #c68f10);
+  box-shadow: 0 calc(var(--u) * 3px) 0 rgba(0, 0, 0, 0.45);
+}
+
+.buttonLeft,
+.buttonRight {
+  position: absolute;
+  top: calc(var(--u) * 932px);
+  width: calc(var(--u) * 42px);
+  height: calc(var(--u) * 42px);
+  border-radius: calc(var(--u) * 10px);
+  background: #2b302d;
+  box-shadow: 0 calc(var(--u) * 3px) 0 rgba(0, 0, 0, 0.5);
+}
+
+.buttonLeft {
+  left: calc(var(--u) * 177px);
+}
+
+.buttonRight {
+  left: calc(var(--u) * 441px);
 }
