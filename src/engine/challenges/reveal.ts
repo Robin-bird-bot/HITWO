@@ -104,6 +104,7 @@ export function revealTile(
       {
         tier: early.tier,
         scale: early.scale,
+        ...(early.shownTier ? { shownTier: early.shownTier } : {}),
         ...(early.alternative ? { alternative: early.alternative } : {}),
       },
     );
@@ -148,7 +149,10 @@ export function openCard(
   card: CardDef,
   tileId: TileId,
   hikerIds: readonly HikerId[],
-  picked: Pick<Picked, 'tier' | 'scale' | 'alternative'> & { challengeSpace?: boolean },
+  picked: Pick<Picked, 'tier' | 'scale' | 'alternative'> & {
+    shownTier?: number;
+    challengeSpace?: boolean;
+  },
 ): void {
   const here = hikersHere(state, tileId, hikerIds);
   const tile = state.section.tiles[tileId];
@@ -160,6 +164,7 @@ export function openCard(
     tileId,
     tier: picked.tier,
     scale: picked.scale,
+    ...(picked.shownTier ? { shownTier: picked.shownTier } : {}),
     hikerIds: here.map((h) => h.id),
     rolls,
     ...((picked.challengeSpace ?? tile?.special === 'challenge') && card.kind === 'challenge'
@@ -214,6 +219,7 @@ export function revealCardOn(state: GameState, tileId: TileId, cause: string): s
     cardId: picked.cardId,
     tier: picked.tier,
     scale: picked.scale,
+    shownTier: picked.shownTier,
     ...(picked.alternative ? { alternative: picked.alternative } : {}),
   };
   for (const id of [picked.cardId, ...(picked.alternative ? [picked.alternative] : [])]) {
@@ -240,7 +246,12 @@ export function swapChallenge(state: GameState, tileId: TileId, cause: string): 
   if (!tile || !card || card.hidden) return;
   const next = pickChallengeAt(state, state.rng, tile, card.tier, [card.cardId]);
   if (!next) return;
-  tile.revealedCard = { cardId: next, tier: card.tier, scale: card.scale };
+  tile.revealedCard = {
+    cardId: next,
+    tier: card.tier,
+    scale: card.scale,
+    ...(card.shownTier ? { shownTier: card.shownTier } : {}),
+  };
   if (!state.usedCards.includes(next)) state.usedCards.push(next);
   pushEvent(state, { kind: 'revealedCard', tileId, cardId: next, cause });
 }
@@ -290,6 +301,7 @@ export function peekTile(
       cardId: picked.cardId,
       tier: picked.tier,
       scale: picked.scale,
+      shownTier: picked.shownTier,
       ...(picked.alternative ? { alternative: picked.alternative } : {}),
       hidden: true,
     };
@@ -298,5 +310,11 @@ export function peekTile(
     }
   }
   const card = CARDS[tile.revealedCard.cardId];
-  return card ? { has: true, kind: card.kind, tier: tile.revealedCard.tier } : { has: false };
+  return card
+    ? {
+        has: true,
+        kind: card.kind,
+        tier: tile.revealedCard.shownTier ?? tile.revealedCard.tier,
+      }
+    : { has: false };
 }

@@ -7,6 +7,13 @@
  *   columns with gaps between them, each column warned by embers and a "!"
  *   below the box. Tier II: a second set follows at once, in the gaps.
  *   Tier III: flames come down from the ceiling too, in the other columns.
+ * - **Long arms** (Wyatt's idea; missile): two long arms reach out from
+ *   behind his head, taking turns. One winds up beside him, aiming at the
+ *   sprite (a dotted line and a "!"), then thrusts down along the line,
+ *   grabs and pulls back, while the other winds up.
+ * - **Glare** (area; it was The Eye): his eyes flash red, then a beam from
+ *   each eye sweeps across the box, the two in opposite directions;
+ *   staying in one a moment is a hit.
  *
  * Claude's ideas (all switched off together in the testing tab):
  * - **Grasping hands** (missile): a chain of hands bursts up where the
@@ -17,8 +24,6 @@
  *   5-line star through the middle.
  * - **Ritual circle** (area): runes draw a ring around the sprite; when it
  *   closes, the inside erupts.
- * - **The Eye** (area): a big eye at the top of the box sweeps its gaze
- *   across; staying in it a moment is a hit.
  * - **Darkness** (changer, Tier III second half): the box goes dark but for
  *   a light around the sprite; other attacks and their warnings go on.
  */
@@ -35,6 +40,7 @@ import {
   unit,
   type Box,
 } from '../geometry';
+import { MONSTER_EYES, portraitAt } from '../animals';
 import { touches, type Point, type Shape } from '../shapes';
 import type { AttackCtx, AttackDef, PartBase, PartRules } from '../types';
 import { base, from, warnFor } from './common';
@@ -110,19 +116,36 @@ export interface RitualPart extends PartBase {
   eruptSec: number;
 }
 
-/** The Eye at the top of the box, sweeping its gaze across. */
-export interface EyePart extends PartBase {
-  kind: 'eye';
-  /** Where it is along the top (a share of the box's width). */
-  u: number;
-  /** The gaze's angle from straight down: from a0 to a1 (radians) over `sweepSec`. */
-  a0: number;
-  a1: number;
+/**
+ * Glare: a beam from each of his eyes (on screen), each one's middle at
+ * the floor going from `from` to `to` (x) over `sweepSec` from `activeAt`.
+ */
+export interface GlarePart extends PartBase {
+  kind: 'glare';
+  eyes: readonly [Point, Point];
+  from: readonly [number, number];
+  to: readonly [number, number];
   sweepSec: number;
-  spread: number;
-  /** How long the sprite has been in the gaze, and whether that's long enough to hit this step. */
+  width: number;
+  /** How long the sprite has been in a beam, and whether that's long enough to hit this step. */
   gaze: number;
   firing?: true;
+}
+
+/**
+ * One thrust of a long arm: its shoulder (behind his head), which side it
+ * reaches from (−1 left, 1 right), and its target (set when the wind-up
+ * starts, where the sprite is then). Wind-up from `warnAt`, the thrust from
+ * `activeAt`, the grab from `grabAt`, the pull back from `pullAt` to `endAt`.
+ */
+export interface ArmPart extends PartBase {
+  kind: 'arm';
+  side: -1 | 1;
+  shoulder: Point;
+  target?: Point;
+  grabAt: number;
+  pullAt: number;
+  endAt: number;
 }
 
 /** Darkness: the box goes dark but for a light around the sprite, until `until`. */
@@ -133,7 +156,7 @@ export interface DarkPart extends PartBase {
 }
 
 export type MonsterPart =
-  FlamePart | HandPart | WispPart | BeamPart | RitualPart | EyePart | DarkPart;
+  FlamePart | HandPart | WispPart | BeamPart | RitualPart | GlarePart | ArmPart | DarkPart;
 
 // ── Fire tongues ───────────────────────────────────────────────────────────
 
@@ -450,58 +473,58 @@ const RITUAL_RULES: PartRules<RitualPart> = {
   done: (p, w) => w.time > p.activeAt + p.eruptSec + 0.2,
 };
 
-// ── The Eye ────────────────────────────────────────────────────────────────
+// ── Glare ──────────────────────────────────────────────────────────────────
 
-const EY = D.eye;
+const GL = D.glare;
 
-/** eye.png is 30 × 14: it sits just inside the top wall; its gaze starts at its middle. */
-export const EYE = { w: 30, h: 14 } as const;
-
-/** Where the eye is in the box as it is now. */
-export function eyeAt(p: EyePart, box: Box): Point {
-  const e = edges(box);
-  return { x: e.left + p.u * box.w, y: e.top + EYE.h / 2 + 1 };
+/** Where his eyes are on screen: in his portrait, which sits above his box at the start. */
+export function monsterEyes(): [Point, Point] {
+  const at = portraitAt('monster');
+  const [a, b] = MONSTER_EYES;
+  return [
+    { x: at.x + a!.x, y: at.y + a!.y },
+    { x: at.x + b!.x, y: at.y + b!.y },
+  ];
 }
 
-/** The gaze's angle from straight down now. */
-export function gazeAngle(p: EyePart, time: number): number {
-  const u = Math.max(0, Math.min(1, (time - p.activeAt) / p.sweepSec));
-  return p.a0 + (p.a1 - p.a0) * u;
+/** How far along the sweep is (0 to 1). */
+const sweepAt = (p: GlarePart, time: number) =>
+  Math.max(0, Math.min(1, (time - p.activeAt) / p.sweepSec));
+
+/** One eye's beam now: a cone from the eye to the floor, `width` wide there. */
+export function glareBeam(p: GlarePart, box: Box, time: number, eye: 0 | 1): Shape {
+  const u = sweepAt(p, time);
+  const mid = p.from[eye] + (p.to[eye] - p.from[eye]) * u;
+  const floor = edges(box).bottom;
+  return {
+    kind: 'triangle',
+    points: [p.eyes[eye], { x: mid - p.width / 2, y: floor }, { x: mid + p.width / 2, y: floor }],
+  };
 }
 
-/** The gaze: a pale cone from the eye, reaching past the far wall. */
-export function gazeCone(p: EyePart, box: Box, time: number): Shape {
-  const at = eyeAt(p, box);
-  const a = gazeAngle(p, time);
-  const reach = Math.hypot(box.w, box.h);
-  const ray = (da: number) => ({
-    x: at.x + Math.sin(a + da) * reach,
-    y: at.y + Math.cos(a + da) * reach,
-  });
-  return { kind: 'triangle', points: [at, ray(-p.spread / 2), ray(p.spread / 2)] };
-}
-
-const sweeping = (p: EyePart, time: number) =>
+const glaring = (p: GlarePart, time: number) =>
   time >= p.activeAt && time <= p.activeAt + p.sweepSec;
 
-export const EYE_ATTACK: AttackDef = {
-  id: 'eye',
-  name: 'The Eye',
+export const GLARE: AttackDef = {
+  id: 'glare',
+  name: 'Glare',
   kind: 'area',
-  claudesIdea: true,
   start(ctx) {
-    const half = (EY.sweepDeg / 2) * DEG;
-    const ltr = coin(ctx.rng);
+    // The two beams sweep across in opposite directions, crossing in the middle.
+    const e = edges(ctx.box);
+    const lo = e.left + GL.floorWidth / 2;
+    const hi = e.right - GL.floorWidth / 2;
+    const leftFirst = coin(ctx.rng);
     return {
       parts: [
         {
-          kind: 'eye',
-          ...base(ctx, ctx.time, ctx.time + warnFor()),
-          u: between(ctx.rng, 0.2, 0.8),
-          a0: ltr ? -half : half,
-          a1: ltr ? half : -half,
-          sweepSec: EY.sweepSec / ctx.speed,
-          spread: EY.spreadDeg * DEG,
+          kind: 'glare',
+          ...base(ctx, ctx.time, ctx.time + warnFor(GL.warnSec)),
+          eyes: monsterEyes(),
+          from: leftFirst ? [lo, hi] : [hi, lo],
+          to: leftFirst ? [hi, lo] : [lo, hi],
+          sweepSec: GL.sweepSec,
+          width: GL.floorWidth,
           gaze: 0,
         },
       ],
@@ -510,24 +533,135 @@ export const EYE_ATTACK: AttackDef = {
   },
 };
 
-const EYE_RULES: PartRules<EyePart> = {
+const GLARE_RULES: PartRules<GlarePart> = {
   update(p, w) {
-    // Staying in the gaze long enough is a hit; then the count starts over.
+    // Staying in a beam long enough is a hit; then the count starts over.
     let gaze = 0;
-    if (sweeping(p, w.time) && touches(gazeCone(p, w.box, w.time), w.pos, D.hitRadius)) {
+    if (
+      glaring(p, w.time) &&
+      ([0, 1] as const).some((k) => touches(glareBeam(p, w.box, w.time, k), w.pos, D.hitRadius))
+    ) {
       gaze = p.gaze + w.dt;
     }
-    const part: EyePart = { ...p, gaze };
+    const part: GlarePart = { ...p, gaze };
     delete part.firing;
-    if (gaze >= EY.holdSec - 1e-9) {
+    if (gaze >= GL.holdSec - 1e-9) {
       part.gaze = 0;
       part.firing = true;
     }
     return { part };
   },
-  shapes: (p, w) => (p.firing ? [gazeCone(p, w.box, w.time)] : []),
-  outline: (p, w) => (sweeping(p, w.time) ? [gazeCone(p, w.box, w.time)] : []),
+  shapes: (p, w) =>
+    p.firing ? [glareBeam(p, w.box, w.time, 0), glareBeam(p, w.box, w.time, 1)] : [],
+  outline: (p, w) =>
+    glaring(p, w.time) ? [glareBeam(p, w.box, w.time, 0), glareBeam(p, w.box, w.time, 1)] : [],
   done: (p, w) => w.time > p.activeAt + p.sweepSec + 0.3,
+};
+
+// ── Long arms ──────────────────────────────────────────────────────────────
+
+const AR = D.arms;
+
+/** Where each arm's shoulder is in his portrait (behind his head, as in mockup 18). */
+const SHOULDERS = [
+  { x: 13, y: 51 },
+  { x: 52, y: 51 },
+] as const;
+
+const lerp = (a: Point, b: Point, u: number): Point => ({
+  x: a.x + (b.x - a.x) * u,
+  y: a.y + (b.y - a.y) * u,
+});
+
+/** The wound-up pose: the elbow out and up beside him, the hand hanging from it toward the target. */
+function woundUp(p: ArmPart, target: Point): { elbow: Point; hand: Point } {
+  const elbow = {
+    x: p.shoulder.x + p.side * AR.elbowOut[0],
+    y: p.shoulder.y - AR.elbowOut[1],
+  };
+  const d = unit({ x: target.x - elbow.x, y: target.y - elbow.y });
+  return { elbow, hand: { x: elbow.x + d.x * AR.hang, y: elbow.y + d.y * AR.hang } };
+}
+
+/**
+ * An arm now: its shoulder, elbow and hand. Wound up until the thrust; then
+ * the hand shoots along the aim line to the target (the arm straightening),
+ * grabs there, and pulls back.
+ */
+export function armAt(p: ArmPart, time: number): { shoulder: Point; elbow: Point; hand: Point } {
+  const target = p.target ?? { x: p.shoulder.x, y: p.shoulder.y + 60 };
+  const up = woundUp(p, target);
+  const straight = lerp(p.shoulder, target, 0.5);
+  const at = (u: number) => ({
+    shoulder: p.shoulder,
+    elbow: lerp(up.elbow, straight, u),
+    hand: lerp(up.hand, target, u),
+  });
+  if (time < p.activeAt) return at(0);
+  if (time < p.grabAt) return at((time - p.activeAt) / Math.max(0.01, p.grabAt - p.activeAt));
+  if (time < p.pullAt) return at(1);
+  return at(1 - Math.min(1, (time - p.pullAt) / Math.max(0.01, p.endAt - p.pullAt)));
+}
+
+/** Whether the hand is closed (grabbing) now. */
+export const armGrabbing = (p: ArmPart, time: number): boolean =>
+  time >= p.grabAt && time < p.pullAt;
+
+/** The aim line: from the shoulder through the target, on to the far side of the box. */
+export function armAim(p: ArmPart, box: Box): { from: Point; to: Point } | null {
+  if (!p.target) return null;
+  const d = unit({ x: p.target.x - p.shoulder.x, y: p.target.y - p.shoulder.y });
+  const reach = Math.hypot(box.w, box.h) * 2;
+  return { from: p.shoulder, to: { x: p.shoulder.x + d.x * reach, y: p.shoulder.y + d.y * reach } };
+}
+
+export const ARMS: AttackDef = {
+  id: 'arms',
+  name: 'Long arms',
+  kind: 'missile',
+  start(ctx) {
+    // The thrusts take turns between the arms; the next one winds up as the last one thrusts,
+    // and an arm is never used again before it's back.
+    const cycle = AR.windSec + AR.thrustSec + AR.grabSec + AR.pullSec;
+    const every = Math.max(AR.windSec, cycle / 2);
+    const at = portraitAt('monster');
+    const first: -1 | 1 = coin(ctx.rng) ? -1 : 1;
+    const parts: ArmPart[] = Array.from({ length: AR.thrusts }, (_, k) => {
+      const side = (k % 2 === 0 ? first : -first) as -1 | 1;
+      const sh = SHOULDERS[side < 0 ? 0 : 1];
+      const warnAt = ctx.time + k * every;
+      const activeAt = warnAt + warnFor(AR.windSec);
+      return {
+        kind: 'arm',
+        ...base(ctx, warnAt, activeAt),
+        side,
+        shoulder: { x: at.x + sh.x, y: at.y + sh.y },
+        grabAt: activeAt + AR.thrustSec,
+        pullAt: activeAt + AR.thrustSec + AR.grabSec,
+        endAt: activeAt + AR.thrustSec + AR.grabSec + AR.pullSec,
+      };
+    });
+    return { parts, endsAt: 'parts' };
+  },
+};
+
+const ARM_RULES: PartRules<ArmPart> = {
+  update(p, w) {
+    // It aims where the sprite is as its wind-up starts.
+    if (p.target || w.time < p.warnAt) return { part: p };
+    return { part: { ...p, target: { ...w.pos } } };
+  },
+  shapes(p, w) {
+    if (w.time < p.activeAt || w.time > p.endAt) return [];
+    const a = armAt(p, w.time);
+    const half = AR.thickness / 2;
+    return [
+      { kind: 'segment', x1: a.shoulder.x, y1: a.shoulder.y, x2: a.elbow.x, y2: a.elbow.y, half },
+      { kind: 'segment', x1: a.elbow.x, y1: a.elbow.y, x2: a.hand.x, y2: a.hand.y, half },
+      { kind: 'circle', x: a.hand.x, y: a.hand.y, r: AR.handRadius },
+    ];
+  },
+  done: (p, w) => w.time > p.endAt,
 };
 
 // ── Darkness ───────────────────────────────────────────────────────────────
@@ -576,7 +710,8 @@ export const MONSTER_ATTACKS: readonly AttackDef[] = [
   WISPS,
   RUNES,
   RITUAL,
-  EYE_ATTACK,
+  GLARE,
+  ARMS,
   DARKNESS,
 ];
 
@@ -588,6 +723,7 @@ export const MONSTER_RULES: {
   wisp: WISP_RULES,
   beam: BEAM_RULES,
   ritual: RITUAL_RULES,
-  eye: EYE_RULES,
+  glare: GLARE_RULES,
+  arm: ARM_RULES,
   dark: DARK_RULES,
 };

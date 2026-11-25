@@ -1,30 +1,35 @@
 /**
  * Drawing the Woods Monster's attacks (docs/design/12-minigames-dodge.md,
- * section 12; mockups 14 and 15): fire tongues with their embers, grasping
- * hands and their cracks, candle wisps, rune beams, the ritual circle and
- * The Eye. Darkness is drawn by the Dodge screen itself, over the box.
+ * section 12; mockups 14, 15, 18 and 19): fire tongues with their embers,
+ * the long arms, grasping hands and their cracks, candle wisps, rune beams,
+ * the ritual circle and Glare. Darkness is drawn by the Dodge screen itself,
+ * over the box.
  */
 import { BALANCE } from '../../../../config/balance';
 import {
+  type ArmPart,
+  armAim,
+  armAt,
+  armGrabbing,
   CANDLES,
-  EYE,
-  eyeAt,
   flameBase,
   flameHeight,
-  gazeCone,
+  glareBeam,
   HAND,
   handUp,
   ritualDrawn,
 } from '../../../../minigames/dodge/attacks/monster';
+import { edges } from '../../../../minigames/dodge/geometry';
+import { g, RED } from '../../../../minigames/greens';
 import ui from '../../gpsUi.module.css';
 import styles from '../Dodge.module.css';
 import { Bang, Sprite } from './Bits';
-import { arcPath, art, LIGHT, MID, type DrawTable } from './drawTypes';
+import { arcPath, art, deg, LIGHT, pathOf, type DrawCtx, type DrawTable } from './drawTypes';
 
 const D = BALANCE.minigames.dodge;
 
 export const MONSTER_DRAW: DrawTable<
-  'flame' | 'hand' | 'wisp' | 'beam' | 'ritual' | 'eye' | 'dark'
+  'flame' | 'hand' | 'wisp' | 'beam' | 'ritual' | 'glare' | 'arm' | 'dark'
 > = {
   flame: {
     svg(p, c) {
@@ -207,55 +212,135 @@ export const MONSTER_DRAW: DrawTable<
     },
   },
 
-  eye: {
+  glare: {
     svg(p, c) {
-      // The pale cone of its gaze (just an outline while it opens).
-      const cone = gazeCone(p, c.box, c.time);
-      if (cone.kind !== 'triangle') return null;
-      const pts = cone.points.map((q) => `${q.x.toFixed(2)},${q.y.toFixed(2)}`).join(' ');
-      const done = c.time > p.activeAt + p.sweepSec;
-      if (done) return null;
-      const opening = c.time < p.activeAt;
+      // Inside the box: each beam a pale fill on the dark floor, with thin red edges.
+      if (c.time < p.activeAt || c.time > p.activeAt + p.sweepSec) return null;
       return (
-        <polygon
-          points={pts}
-          fill={opening ? 'none' : LIGHT}
-          fillOpacity={0.22 + Math.min(0.3, p.gaze)}
-          stroke={opening ? MID : 'none'}
-          strokeWidth={0.6}
-          strokeDasharray={opening ? '2 2' : undefined}
-        />
+        <g>
+          {([0, 1] as const).map((k) => {
+            const beam = glareBeam(p, c.box, c.time, k);
+            if (beam.kind !== 'triangle') return null;
+            const pts = beam.points.map((q) => `${q.x.toFixed(2)},${q.y.toFixed(2)}`).join(' ');
+            return (
+              <polygon
+                key={k}
+                points={pts}
+                fill={g(4)}
+                fillOpacity={0.75 + Math.min(0.25, p.gaze)}
+              />
+            );
+          })}
+        </g>
+      );
+    },
+    outside(p, c) {
+      // The red edges, from his eyes (floating with his portrait) down to the floor.
+      if (c.time < p.activeAt || c.time > p.activeAt + p.sweepSec) return null;
+      return (
+        <svg className={styles.full} viewBox="0 0 320 240" aria-hidden="true">
+          {([0, 1] as const).map((k) => {
+            const beam = glareBeam(p, c.box, c.time, k);
+            if (beam.kind !== 'triangle') return null;
+            const [eye, l, r] = beam.points;
+            const from = { x: eye.x, y: eye.y + c.portraitDy };
+            return (
+              <g key={k} stroke={RED} strokeWidth={0.6}>
+                <line x1={from.x} y1={from.y} x2={l.x} y2={l.y} />
+                <line x1={from.x} y1={from.y} x2={r.x} y2={r.y} />
+              </g>
+            );
+          })}
+        </svg>
+      );
+    },
+  },
+
+  arm: {
+    behind(p, c) {
+      // The arm, dark outside the box (the box covers the rest), with its elbow knob and hand.
+      if (c.time > p.endAt) return null;
+      const a = armAt(p, c.time);
+      const e = edges(c.box);
+      const handIn = a.hand.x > e.left && a.hand.x < e.right && a.hand.y > e.top;
+      return (
+        <>
+          <svg className={styles.full} viewBox="0 0 320 240" aria-hidden="true">
+            <path
+              d={pathOf([a.shoulder, a.elbow, a.hand])}
+              stroke={g(1)}
+              strokeWidth={D.arms.thickness}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            <circle cx={a.elbow.x} cy={a.elbow.y} r={D.arms.thickness * 0.8} fill={g(1)} />
+          </svg>
+          {!handIn && armHand(p, c, false)}
+        </>
+      );
+    },
+    svg(p, c) {
+      // Inside the box: the aim while it winds up, then the arm itself, light.
+      if (c.time > p.endAt) return null;
+      const aim = c.time < p.activeAt ? armAim(p, c.box) : null;
+      const a = armAt(p, c.time);
+      return (
+        <g>
+          {aim && (
+            <line
+              x1={aim.from.x}
+              y1={aim.from.y}
+              x2={aim.to.x}
+              y2={aim.to.y}
+              stroke={LIGHT}
+              strokeWidth={0.8}
+              strokeDasharray="0.8 5"
+              strokeLinecap="round"
+              opacity={0.7}
+            />
+          )}
+          {c.time >= p.activeAt && (
+            <>
+              <path
+                d={pathOf([a.shoulder, a.elbow, a.hand])}
+                stroke={g(9)}
+                strokeWidth={D.arms.thickness}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <circle cx={a.elbow.x} cy={a.elbow.y} r={D.arms.thickness * 0.8} fill={g(9)} />
+            </>
+          )}
+        </g>
       );
     },
     over(p, c) {
-      const at = eyeAt(p, c.box);
-      const open =
-        c.time < p.activeAt
-          ? 0.2 + 0.8 * ((c.time - p.warnAt) / Math.max(0.01, p.activeAt - p.warnAt))
-          : c.time > p.activeAt + p.sweepSec
-            ? Math.max(0, 1 - (c.time - p.activeAt - p.sweepSec) / 0.3)
-            : 1;
-      return (
-        <img
-          className={`${ui.sprite} ${styles.part}`}
-          src={art('eye.png')}
-          alt=""
-          draggable={false}
-          style={{
-            left: at.x - EYE.w / 2,
-            top: at.y - EYE.h / 2,
-            width: EYE.w,
-            height: EYE.h,
-            transform: `scaleY(${open.toFixed(2)})`,
-          }}
-        />
-      );
+      if (c.time > p.endAt) return null;
+      const a = armAt(p, c.time);
+      const e = edges(c.box);
+      const handIn = a.hand.x > e.left && a.hand.x < e.right && a.hand.y > e.top;
+      return handIn ? armHand(p, c, true) : null;
     },
-    warn: (p, c) =>
-      c.time < p.activeAt ? (
-        <Bang x={eyeAt(p, c.box).x + EYE.w / 2 + 5} y={c.top + 6} box={c.box} />
-      ) : null,
+    warn(p, c) {
+      // The "!" where the aim comes into the box.
+      if (c.time >= p.activeAt || !p.target) return null;
+      const top = edges(c.box).top;
+      const d = { x: p.target.x - p.shoulder.x, y: p.target.y - p.shoulder.y };
+      const x = d.y > 0 ? p.shoulder.x + ((top - p.shoulder.y) * d.x) / d.y : p.target.x;
+      return <Bang x={x} y={top - 5} box={c.box} />;
+    },
   },
 
   dark: {},
 };
+
+/** A long arm's hand: open, or closing as it grabs; turned toward the reach; light inside the box. */
+function armHand(p: ArmPart, c: DrawCtx, light: boolean) {
+  const a = armAt(p, c.time);
+  const target = p.target ?? a.hand;
+  const turn = deg(Math.atan2(-(target.x - a.shoulder.x), target.y - a.shoulder.y));
+  const name = `monster-hand${armGrabbing(p, c.time) ? '-grab' : ''}${light ? '-light' : ''}.png`;
+  return <Sprite file={name} x={a.hand.x} y={a.hand.y} w={21} h={27} turn={turn} />;
+}

@@ -4,7 +4,7 @@
  * - **Bearrels** runs its own rounds and results card.
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
  *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice,
- *   Trail Blocks, Sleeping Bear and Whackoon)
+ *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train! and Rafting)
  *   report how they ended; the play stage shows the shared results card.
  *   Their preview is a still frame for now.
  */
@@ -25,6 +25,9 @@ import { MemoryPuzzle } from './memory/MemoryPuzzle';
 import { PicturePuzzle } from './picturePuzzle/PicturePuzzle';
 import { SleepingBear } from './sleepingBear/SleepingBear';
 import { TrailBlocks } from './trailBlocks/TrailBlocks';
+import { Crossing } from './lanes/Crossing';
+import { Rafting } from './lanes/Rafting';
+import { Train } from './lanes/Train';
 import { Whackoon } from './whackoon/Whackoon';
 import { ThinIce } from './thinIce/ThinIce';
 import { TrailMap } from './trailMap/TrailMap';
@@ -86,6 +89,9 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   trailBlocks: TrailBlocks,
   sleepingBear: SleepingBear,
   whackoon: Whackoon,
+  crossing: Crossing,
+  train: Train,
+  rafting: Rafting,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -128,6 +134,16 @@ function WhackoonStill({ settings, hikers }: MinigamePreviewProps) {
   return <Whackoon settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 
+function CrossingStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Crossing settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function TrainStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Train settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function RaftingStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Rafting settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   bearrels: BearrelsPreviewRun,
   traildle: TraildleStill,
@@ -142,4 +158,7 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   trailBlocks: TrailBlocksStill,
   sleepingBear: SleepingBearStill,
   whackoon: WhackoonStill,
+  crossing: CrossingStill,
+  train: TrainStill,
+  rafting: RaftingStill,
 };

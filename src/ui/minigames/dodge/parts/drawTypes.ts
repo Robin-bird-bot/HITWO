@@ -6,7 +6,10 @@
  *   waves, puddles, the sweep's hatching);
  * - `over`: inside the box, over the sprite (bees, claws, acorns, blades);
  * - `outside`: on the whole screen, not clipped, under the HUDs (the
- *   squirrels popping up, the sweep's sword, the thrown sword, wisps);
+ *   squirrels popping up, the sweep's sword, the thrown sword, wisps,
+ *   Glare's red edges);
+ * - `behind`: on the whole screen, under the portrait and the box (the
+ *   Woods Monster's long arms, reaching out from behind his head);
  * - `warn`: the "!" marks and warning arrows, on their own layer above
  *   everything, so nothing ever covers them (Bang and Arrow keep them clear
  *   of the HUDs and the screen's edges).
@@ -31,6 +34,8 @@ export interface DrawCtx {
   bottom: number;
   beeFrame: string;
   reduced: boolean;
+  /** How far the portrait floats from its resting place now (the Woods Monster's eyes move with it). */
+  portraitDy: number;
 }
 
 export interface PartDrawing<P extends Part> {
@@ -39,10 +44,11 @@ export interface PartDrawing<P extends Part> {
   under?(p: P, c: DrawCtx): ReactNode;
   over?(p: P, c: DrawCtx): ReactNode;
   outside?(p: P, c: DrawCtx): ReactNode;
+  behind?(p: P, c: DrawCtx): ReactNode;
   warn?(p: P, c: DrawCtx): ReactNode;
 }
 
-export type Layer = 'svg' | 'under' | 'over' | 'outside' | 'warn';
+export type Layer = 'svg' | 'under' | 'over' | 'outside' | 'behind' | 'warn';
 
 export type DrawTable<K extends Part['kind']> = {
   [Kind in K]: PartDrawing<Extract<Part, { kind: Kind }>>;

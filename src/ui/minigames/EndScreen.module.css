@@ -1,0 +1,110 @@
+/* The end screen (16-challenge-end-screen.md; mockups end-screens/), in scene units (320 × 240). */
+
+.overlay {
+  z-index: 20;
+}
+
+.hit {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  outline: none;
+}
+
+.drips,
+.hanging {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.drip {
+  position: absolute;
+  top: 0;
+  box-sizing: border-box;
+  border-left: 0.75px solid #8e2a24;
+  border-radius: 0 0 3px 3px;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-pixel);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.subtitle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: 4.2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.row {
+  position: absolute;
+  left: 85px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  height: 14px;
+  font-size: 5px;
+  white-space: nowrap;
+}
+
+.token {
+  position: absolute;
+  left: 0;
+}
+
+.name {
+  position: absolute;
+  left: 21px;
+}
+
+.state {
+  position: absolute;
+  left: 85px;
+}
+
+.cost {
+  position: absolute;
+  left: 137px;
+  font-size: 3.6px;
+}
+
+.line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  font-size: 4.2px;
+  text-align: center;
+  white-space: nowrap;
+  transition: opacity 0.3s ease-out;
+}
+
+/* The clock wipe's hand: from the middle up, turning clockwise. */
+.hand {
+  position: absolute;
+  left: 159.5px;
+  top: -80px;
+  width: 1px;
+  height: 200px;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}

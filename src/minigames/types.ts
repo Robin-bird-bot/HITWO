@@ -163,6 +163,10 @@ export const TIER_LABELS: Readonly<Record<Tier, string>> = {
 };
 export const isTier = (v: unknown): v is Tier => (TIERS as readonly unknown[]).includes(v);
 
+/** Any tier number as its label, I to V (kept in range). */
+export const tierLabel = (n: number): string =>
+  TIER_LABELS[Math.max(1, Math.min(5, Math.round(n))) as Tier];
+
 /** A minigame as data: what the testing tab lists and the pop-up names. */
 export interface MinigameInfo {
   id: string;

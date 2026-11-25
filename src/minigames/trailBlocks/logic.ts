@@ -4,7 +4,8 @@
  * small steps.
  *
  * - **Chop Tree:** a marker sweeps across a bar with green zones at both
- *   ends; the closer to the outer edge, the stronger the swing.
+ *   ends; the closer to the outer edge, the stronger the swing. Each pass
+ *   takes a random time from the tier's range (picked as it turns around).
  * - **Mine Rockslide:** hold to fill a power bar (it rises to the top, then
  *   drops while you hold); let go in the green zone, which moves after
  *   every swing. The middle of the zone is strongest.
@@ -13,7 +14,10 @@
  *   they all are. The middle of a spot is strongest.
  * - **Clearing Animals:** a circle shrinks toward a ring; click when its
  *   edge is in the ring. Just outside it is a weak hit; a circle that
- *   passes the ring is a miss.
+ *   passes the ring is a miss. Every try is somewhere new.
+ * - **After every swing** the control freezes where it stopped for a
+ *   moment (input waits), then the Rockslide's zone and the Animals' ring
+ *   move on.
  *
  * **Energy:** one bar of each hiker's chunk, spent in line order. A swing
  * costs a little, a miss more, a perfect swing gives a little back. When a
@@ -54,18 +58,41 @@ export interface TrailBlocksState {
   phase: 'play' | 'swing' | 'cleared' | 'out';
   swingLeft: number;
   time: number;
-  /** Chop and River: how long the marker has been sweeping. */
-  sweep: number;
+  /** Chop and River: the marker on the bar (0 to 1), which way it's going, and how long this pass takes. */
+  marker: { pos: number; dir: 1 | -1; passSec: number };
   /** Rockslide: how long the button has been held (the power rises, then drops), and the zone's middle. */
   held: number;
   zone: number;
   /** River: the spots (their middles, 0 to 1) and which are gone. */
   spots: { at: number; hit: boolean }[];
-  /** Animals: how long the current circle has been shrinking. */
+  /** Animals: how long the current circle has been shrinking, and where this try's ring is. */
   circle: number;
+  ring: { x: number; y: number };
   lastSwing?: { work: number; quality: Quality; at: number };
   swings: number;
   rng: RngState;
+}
+
+/** Chop: a pass time from the tier's range; River: the tier's. */
+const passFor = (rng: RngState, version: Version, tier: Tier): number => {
+  if (version !== 'chop') return B.river.passSec[tier];
+  const [a, b] = B.chop.passSec[tier];
+  return a + nextFloat(rng) * (b - a);
+};
+
+/** Animals: somewhere new for the ring, clear of the HUD and the whistle. */
+function newRing(rng: RngState, tier: Tier): { x: number; y: number } {
+  const A = B.animals;
+  const reach = A.ring.r + A.thickness[tier] / 2 + A.weakReach;
+  const t = A.tool;
+  for (let tries = 0; tries < 60; tries++) {
+    const x = A.area.x[0] + nextFloat(rng) * (A.area.x[1] - A.area.x[0]);
+    const y = A.area.y[0] + nextFloat(rng) * (A.area.y[1] - A.area.y[0]);
+    const clearHud = y - reach >= A.hudBottom;
+    const clearTool = x + reach <= t.x || y + reach <= t.y || x - reach >= t.x + t.w;
+    if (clearHud && clearTool) return { x, y };
+  }
+  return { x: A.ring.x, y: A.ring.y + 20 };
 }
 
 /** A back-and-forth sweep: 0 → 1 over one pass, then back. */
@@ -111,11 +138,12 @@ export function newTrailBlocks(
     phase: order.length ? 'play' : 'out',
     swingLeft: 0,
     time: 0,
-    sweep: 0,
+    marker: { pos: 0, dir: 1, passSec: passFor(rng, options.version, options.tier) },
     held: 0,
     zone: newZone(rng, options.tier),
     spots: newSpots(rng, options.tier),
     circle: 0,
+    ring: newRing(rng, options.tier),
     swings: 0,
     rng,
   };
@@ -124,8 +152,14 @@ export function newTrailBlocks(
 // ── The controls ───────────────────────────────────────────────────────────
 
 /** Chop and River: where the marker is on the bar (0 to 1). */
-export const markerAt = (s: TrailBlocksState): number =>
-  tri(s.sweep / (s.version === 'river' ? B.river.passSec[s.tier] : B.chop.passSec[s.tier]));
+export const markerAt = (s: TrailBlocksState): number => s.marker.pos;
+
+/** Chop: the axe is in the hand on the side the marker is heading toward. */
+export const axeSide = (s: TrailBlocksState): 'left' | 'right' =>
+  s.marker.dir > 0 ? 'right' : 'left';
+
+/** Whether the control is frozen where the last swing stopped it. */
+export const frozen = (s: TrailBlocksState): boolean => s.phase === 'swing';
 
 /** Rockslide: how full the power bar is (0 to 1). */
 export const powerAt = (s: TrailBlocksState): number => tri(s.held / B.rockslide.fillSec[s.tier]);
@@ -226,16 +260,43 @@ function land(
     swings: s0.swings + 1,
     lastSwing: { work, quality, at: s0.time },
   };
-  // The control moves on.
-  if (s.version === 'rockslide') s = { ...s, held: 0, zone: newZone(rng, s.tier) };
-  if (s.version === 'animals') s = { ...s, circle: 0 };
+  // A River spot that's hit is gone at once (the Rockslide and the Animals move on after the freeze).
   if (s.version === 'river' && spot !== undefined) {
     const spots = s.spots.map((sp, k) => (k === spot ? { ...sp, hit: true } : sp));
     s = { ...s, spots: spots.every((sp) => sp.hit) ? newSpots(rng, s.tier) : spots };
   }
   if (done >= s.total) return { ...s, phase: 'cleared' };
   if (active >= s.order.length) return { ...s, phase: 'out' };
-  return { ...s, phase: 'swing', swingLeft: B.swingSec };
+  return { ...s, phase: 'swing', swingLeft: Math.max(B.swingSec, B.freezeSec) };
+}
+
+/** The freeze is over: the Rockslide's zone and the Animals' ring move somewhere new. */
+function moveOn(s: TrailBlocksState): TrailBlocksState {
+  const rng = [...s.rng] as RngState;
+  if (s.version === 'rockslide') return { ...s, rng, held: 0, zone: newZone(rng, s.tier) };
+  if (s.version === 'animals') return { ...s, rng, circle: 0, ring: newRing(rng, s.tier) };
+  return s;
+}
+
+/** The marker sweeps on, turning around at the ends (Chop picks a new pass time as it turns). */
+function sweep(s: TrailBlocksState, dt: number): TrailBlocksState {
+  let { pos, dir, passSec } = s.marker;
+  let rng = s.rng;
+  pos += (dir * dt) / passSec;
+  for (let guard = 0; guard < 4 && (pos > 1 || pos < 0); guard++) {
+    if (pos > 1) {
+      pos = 2 - pos;
+      dir = -1;
+    } else {
+      pos = -pos;
+      dir = 1;
+    }
+    if (s.version === 'chop') {
+      rng = [...rng] as RngState;
+      passSec = passFor(rng, s.version, s.tier);
+    }
+  }
+  return { ...s, rng, marker: { pos: Math.max(0, Math.min(1, pos)), dir, passSec } };
 }
 
 /** A press: Chop, River and Animals swing now (the Rockslide swings on release). */
@@ -253,17 +314,18 @@ export function release(s: TrailBlocksState): TrailBlocksState {
 }
 
 /**
- * Time passes: the swing plays out, the marker sweeps, the power bar fills
- * while held, and the circle shrinks (one that passes the ring is a miss).
+ * Time passes: the swing plays out with the control frozen where it
+ * stopped; then the marker sweeps, the power bar fills while held, and the
+ * circle shrinks (one that passes the ring is a miss).
  */
 export function tick(s0: TrailBlocksState, dt: number, holding: boolean): TrailBlocksState {
   if (s0.phase === 'cleared' || s0.phase === 'out') return s0;
-  let s: TrailBlocksState = { ...s0, time: s0.time + dt, sweep: s0.sweep + dt };
+  let s: TrailBlocksState = { ...s0, time: s0.time + dt };
   if (s.phase === 'swing') {
     const swingLeft = s.swingLeft - dt;
-    s = swingLeft <= 0 ? { ...s, phase: 'play', swingLeft: 0 } : { ...s, swingLeft };
-    return s;
+    return swingLeft <= 0 ? moveOn({ ...s, phase: 'play', swingLeft: 0 }) : { ...s, swingLeft };
   }
+  if (s.version === 'chop' || s.version === 'river') s = sweep(s, dt);
   if (s.version === 'rockslide' && holding) s = { ...s, held: s.held + dt };
   if (s.version === 'animals') {
     s = { ...s, circle: s.circle + dt };

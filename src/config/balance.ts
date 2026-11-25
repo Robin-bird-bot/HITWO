@@ -463,6 +463,68 @@ export const BALANCE = {
      */
     tierScale: 1.5,
     /**
+     * Which tier a challenge gets (15-challenge-tiers.md, Nov 25): each
+     * challenge rolls its tier from its biome's table (Biome 1, 2, 3) when
+     * it's placed, as [tier, weight] pairs. Normal is used on Easy, Medium
+     * and Hard; Nightmare climbs from III to V. Hard, Random tiers and Boss
+     * Rush are written down for later and not used yet (Boss Rush: every
+     * challenge a Dodge fight, its tiers climbing from I to V by the end).
+     * TODO(wyatt): every percentage is a first guess.
+     */
+    tierTables: {
+      normal: [
+        [
+          [1, 80],
+          [2, 20],
+        ],
+        [
+          [2, 75],
+          [3, 25],
+        ],
+        [
+          [3, 75],
+          [4, 25],
+        ],
+      ],
+      nightmare: [
+        [
+          [3, 80],
+          [4, 20],
+        ],
+        [
+          [4, 75],
+          [5, 25],
+        ],
+        [
+          [5, 75],
+          [4, 25],
+        ],
+      ],
+      // Later: Hard is Normal with a rare Tier V in Biome 3.
+      hard: [
+        [
+          [1, 80],
+          [2, 20],
+        ],
+        [
+          [2, 75],
+          [3, 25],
+        ],
+        [
+          [3, 65],
+          [4, 25],
+          [5, 10],
+        ],
+      ],
+      // Later: every tier equally likely, in every biome.
+      random: [0, 1, 2].map(() => [1, 2, 3, 4, 5].map((t) => [t, 20])),
+    } as Readonly<
+      Record<
+        'normal' | 'nightmare' | 'hard' | 'random',
+        readonly (readonly (readonly [number, number])[])[]
+      >
+    >,
+    /**
      * How strongly Luck skews X and Y toward the party's good end: the roll
      * is u^(2^(Luck × this)), so Luck +2 makes the good end about twice as
      * likely as the bad end. TODO(wyatt): first guess.
@@ -1280,8 +1342,40 @@ export const BALANCE = {
       lineDrawMs: 250,
     },
 
-    /** Tinted art (sleeves, hikers): the gray parts become the hiker's color at this brightness. TODO(wyatt): [70%]. */
+    /** Tinted art (Sleeping Bear's hikers, raccoon masks): the gray parts become the hiker's color at this brightness. TODO(wyatt): [70%]. */
     tintShade: 0.7,
+
+    /**
+     * The end screen every minigame shares (16-challenge-end-screen.md).
+     * TODO(wyatt): every number is a first guess.
+     * - The title sits this far down, this big; it flashes on and off this
+     *   long for this long once the screen is in. TAP TO CONTINUE takes
+     *   input this long after that. Rows start here, this far apart.
+     * - Passing: the clock wipe takes this long. Reduced motion: a crossfade.
+     * - Failing: drips this wide start this far apart and cover the screen
+     *   in about this long; the screen wipes in from the top this fast,
+     *   leaving drips this long hanging from about this share of them.
+     */
+    endScreen: {
+      titleY: 40,
+      titleSize: 16,
+      flash: { onSec: 0.5, offSec: 0.2, forSec: 2.5 },
+      inputAfterSec: 0.8,
+      rowsTop: 86,
+      rowGap: 22,
+      tileY: 172,
+      tapY: 216,
+      wipeSec: 0.8,
+      fadeSec: 0.3,
+      drips: {
+        width: [2, 5] as const,
+        startSec: [0, 0.25] as const,
+        coverSec: 1.0,
+        wipeSec: 0.3,
+        hang: [6, 24] as const,
+        hangShare: 0.55,
+      },
+    },
 
     /*
      * New challenges, step 1 (Phase 10.8 step 5, docs/design/14-minigames-trail-blocks.md).
@@ -1318,12 +1412,31 @@ export const BALANCE = {
       good: [8, 14] as const,
       perfect: 16,
       perfectShare: 0.15,
-      /** After each swing, input waits this long while it plays. */
+      /** Each swing's animation; the marker freezes where it stopped this long (input waits meanwhile). */
       swingSec: 0.35,
-      /** Chop Tree: one pass of the marker across the bar, and each green zone (a share of the bar). */
+      freezeSec: 1,
+      /**
+       * The tools (Nov 25, Wyatt's sprites, no arm): the active hiker's color
+       * laid over the whole tool at this share. The axe slides to the other
+       * hand this fast; a cleared tree tips over this fast.
+       */
+      wash: 0.3,
+      axeSlideSec: 0.1,
+      tipSec: 0.6,
+      /**
+       * Chop Tree (Nov 25, after Wyatt played it): each pass of the marker
+       * across the bar takes a random time from the tier's range, picked
+       * every time it turns around; each green zone is this share of the bar.
+       */
       chop: {
-        passSec: { 1: 1.2, 2: 1.0, 3: 0.8, 4: 0.7, 5: 0.6 } as Readonly<Record<MgTier, number>>,
-        zone: { 1: 0.16, 2: 0.12, 3: 0.09, 4: 0.08, 5: 0.07 } as Readonly<Record<MgTier, number>>,
+        passSec: {
+          1: [0.8, 1.4],
+          2: [0.7, 1.2],
+          3: [0.6, 1.0],
+          4: [0.55, 0.9],
+          5: [0.5, 0.8],
+        } as Readonly<Record<MgTier, readonly [number, number]>>,
+        zone: { 1: 0.14, 2: 0.11, 3: 0.09, 4: 0.08, 5: 0.07 } as Readonly<Record<MgTier, number>>,
       },
       /** Mine Rockslide: the power bar fills to the top this fast; the green zone is this tall. */
       rockslide: {
@@ -1333,18 +1446,24 @@ export const BALANCE = {
       /** River Flood: this many spots, each this wide, on a bar crossed this fast. The water's top goes from here down to here. */
       river: {
         spots: { 1: 4, 2: 4, 3: 5, 4: 5, 5: 6 } as Readonly<Record<MgTier, number>>,
-        spot: { 1: 0.1, 2: 0.08, 3: 0.06, 4: 0.055, 5: 0.05 } as Readonly<Record<MgTier, number>>,
+        // Bigger (Nov 25): it was too hard.
+        spot: { 1: 0.15, 2: 0.12, 3: 0.1, 4: 0.09, 5: 0.08 } as Readonly<Record<MgTier, number>>,
         passSec: { 1: 1.3, 2: 1.1, 3: 0.9, 4: 0.8, 5: 0.7 } as Readonly<Record<MgTier, number>>,
         waterTop: [128, 196] as const,
       },
       /**
-       * Clearing Animals: a ring this big at this spot; a circle starts this
-       * many times its size and shrinks to nothing this fast; the ring is
-       * this thick. Just outside it (this far) is a weak hit for this much
+       * Clearing Animals: a ring this big, somewhere new in this area for
+       * every try (Nov 25), never over the HUD (whose bottom is here) or the
+       * whistle (this area, my guess from its frames); a solid circle starts
+       * this many times its size and shrinks to nothing this fast; the ring
+       * is this thick. Just outside it (this far) is a weak hit for this much
        * work. The crowd starts this big (my guess).
        */
       animals: {
         ring: { x: 160, y: 64, r: 26 },
+        area: { x: [50, 270] as const, y: [44, 150] as const },
+        hudBottom: 22,
+        tool: { x: 252, y: 75, w: 68, h: 113 },
         startScale: 2.2,
         shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0, 4: 0.9, 5: 0.8 } as Readonly<Record<MgTier, number>>,
         thickness: { 1: 10, 2: 8, 3: 6, 4: 5, 5: 4 } as Readonly<Record<MgTier, number>>,
@@ -1357,11 +1476,12 @@ export const BALANCE = {
     /** Sleeping Bear: red light, green light past a sleeping bear, one hiker at a time. */
     sleepingBear: {
       tiers: {
-        1: { asleep: [2.5, 4.5], stirSec: 0.9, awake: [1.5, 2.5], fakeOut: 0, secPerHiker: 9 },
-        2: { asleep: [2, 4], stirSec: 0.7, awake: [1.5, 2.5], fakeOut: 0.3, secPerHiker: 8 },
-        3: { asleep: [1.5, 3.5], stirSec: 0.5, awake: [1.5, 2.5], fakeOut: 0.4, secPerHiker: 7 },
-        4: { asleep: [1.2, 3], stirSec: 0.45, awake: [1.5, 2.5], fakeOut: 0.45, secPerHiker: 6.5 },
-        5: { asleep: [1, 2.5], stirSec: 0.4, awake: [1.5, 2.5], fakeOut: 0.5, secPerHiker: 6 },
+        // Nov 25: more time per hiker (10/9/8/7.5/7 s), with the clock paused while he's awake.
+        1: { asleep: [2.5, 4.5], stirSec: 0.9, awake: [1.5, 2.5], fakeOut: 0, secPerHiker: 10 },
+        2: { asleep: [2, 4], stirSec: 0.7, awake: [1.5, 2.5], fakeOut: 0.3, secPerHiker: 9 },
+        3: { asleep: [1.5, 3.5], stirSec: 0.5, awake: [1.5, 2.5], fakeOut: 0.4, secPerHiker: 8 },
+        4: { asleep: [1.2, 3], stirSec: 0.45, awake: [1.5, 2.5], fakeOut: 0.45, secPerHiker: 7.5 },
+        5: { asleep: [1, 2.5], stirSec: 0.4, awake: [1.5, 2.5], fakeOut: 0.5, secPerHiker: 7 },
       } as Readonly<
         Record<
           MgTier,
@@ -1376,9 +1496,15 @@ export const BALANCE = {
       >,
       /** Moving within this long after his eyes open is forgiven. */
       graceSec: 0.12,
-      /** Walking speed and the path's length (scene units). */
-      speed: 45,
+      /** Walking speed (Nov 25: was 45) and the path's length (scene units). */
+      speed: 55,
       path: 272,
+      /**
+       * The clock (Nov 25): it stops while he's awake and while a caught
+       * hiker is sent off; while he stirs and the hiker keeps moving, it goes
+       * up this fast instead (seconds a second), never past the start.
+       */
+      stirEarnRate: 1,
       /** After a catch, the next hiker starts this long later (my guess). */
       roarSec: 1,
       /** The testing tab's Fake-outs "On" on Tier I uses Tier II's chance. */
@@ -1388,87 +1514,235 @@ export const BALANCE = {
       timeOutEnergy: 1,
     },
 
-    /** Whackoon: whack-a-mole with raccoons in trash cans; skunks are decoys. */
+    /**
+     * Whackoon: whack-a-mole with raccoons in trash cans; skunks are decoys.
+     * Everyone at once, in colors (the Turns mode is gone, Nov 25).
+     */
     whackoon: {
+      /**
+       * By tier: columns of cans (three rows), how long each one stays up,
+       * the fewest and the most up at once, how often skunks come, and the
+       * whacks each hiker needs on their own color. Between the fewest and
+       * the most, another pops up every `everySec` (the old rhythm; my guess).
+       */
       tiers: {
-        1: {
-          cols: 3,
-          upSec: 1.0,
-          everySec: 0.7,
-          maxUp: 2,
-          skunks: 0,
-          targetPerHiker: 8,
-          colorTarget: 5,
-        },
-        2: {
-          cols: 3,
-          upSec: 0.8,
-          everySec: 0.55,
-          maxUp: 3,
-          skunks: 0.15,
-          targetPerHiker: 9,
-          colorTarget: 6,
-        },
-        3: {
-          cols: 4,
-          upSec: 0.6,
-          everySec: 0.45,
-          maxUp: 3,
-          skunks: 0.25,
-          targetPerHiker: 10,
-          colorTarget: 7,
-        },
-        4: {
-          cols: 4,
-          upSec: 0.55,
-          everySec: 0.4,
-          maxUp: 3,
-          skunks: 0.3,
-          targetPerHiker: 11,
-          colorTarget: 8,
-        },
-        5: {
-          cols: 4,
-          upSec: 0.5,
-          everySec: 0.35,
-          maxUp: 4,
-          skunks: 0.35,
-          targetPerHiker: 12,
-          colorTarget: 9,
-        },
+        1: { cols: 3, upSec: 1.2, minUp: 2, maxUp: 3, everySec: 0.7, skunks: 0, target: 5 },
+        2: { cols: 3, upSec: 1.0, minUp: 2, maxUp: 4, everySec: 0.55, skunks: 0.15, target: 6 },
+        3: { cols: 4, upSec: 0.8, minUp: 3, maxUp: 4, everySec: 0.45, skunks: 0.25, target: 7 },
+        4: { cols: 4, upSec: 0.7, minUp: 3, maxUp: 5, everySec: 0.4, skunks: 0.3, target: 8 },
+        5: { cols: 4, upSec: 0.6, minUp: 3, maxUp: 5, everySec: 0.35, skunks: 0.35, target: 9 },
       } as Readonly<
         Record<
           MgTier,
           {
             cols: number;
             upSec: number;
-            everySec: number;
+            minUp: number;
             maxUp: number;
+            everySec: number;
             skunks: number;
-            /** Turns mode: the team's target, per hiker. */
-            targetPerHiker: number;
-            /** Colors mode: whacks each hiker needs on their own color. */
-            colorTarget: number;
+            target: number;
           }
         >
       >,
-      /** Each hiker's turn; a raccoon peeks this long first; a whacked one bonks this long (my guess). */
-      turnSec: 10,
+      /** One shared clock: this much per hiker. Under the fewest up, another pops up within this long. */
+      secPerHiker: 8,
+      refillSec: 0.2,
+      /** A raccoon peeks this long first; a whacked one bonks this long (my guess). */
       peekSec: 0.15,
       bonkSec: 0.3,
-      /** A whacked skunk fogs the cans this long and takes this much off the turn. */
+      /** A whacked skunk fogs the cans this long and takes this much off the clock. */
       sprayFogSec: 1,
       sprayCostSec: 2,
-      /** The testing tab's Skunks "On" on Tier I uses Tier II's chance. A failed team loses this much energy each. */
+      /**
+       * The testing tab's Skunks "On" on Tier I uses Tier II's chance. A hiker
+       * short of their whacks loses this much energy. Whacking a done
+       * hiker's raccoon does nothing, and the mallet can't swing again for this long.
+       */
       skunksOn: 0.15,
       failEnergy: 1,
-      /**
-       * Colors mode (the default, Nov 25): one shared clock of this much per
-       * hiker; whacking a done hiker's raccoon does nothing, and the pan
-       * can't swing again for this long.
-       */
-      colorSecPerHiker: 8,
       donePauseSec: 0.5,
+    },
+
+    /*
+     * The lane games (Phase 10.8 step 7, docs/design/17-minigames-lanes.md):
+     * Crossing, Train! and Rafting, all passing challenges.
+     * TODO(wyatt): every number is a first guess, by game and tier.
+     */
+
+    /**
+     * Crossing (Road, River, Critter, Mixed): Frogger, one hiker at a time.
+     * By tier: lanes, lives per hiker, seconds per attempt, lane speeds
+     * (units a second, from–to), the gap between things in a lane (from–to),
+     * and how many turtle groups dive.
+     */
+    crossing: {
+      tiers: {
+        1: { lanes: 4, lives: 3, attemptSec: 20, speed: [25, 40], gap: [64, 110], divers: 0 },
+        2: { lanes: 5, lives: 2, attemptSec: 18, speed: [30, 50], gap: [56, 96], divers: 1 },
+        3: { lanes: 6, lives: 1, attemptSec: 18, speed: [35, 60], gap: [48, 88], divers: 2 },
+        4: { lanes: 7, lives: 1, attemptSec: 16, speed: [40, 70], gap: [44, 80], divers: 2 },
+        5: { lanes: 8, lives: 1, attemptSec: 15, speed: [45, 80], gap: [40, 72], divers: 3 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            lanes: number;
+            lives: number;
+            attemptSec: number;
+            speed: readonly [number, number];
+            gap: readonly [number, number];
+            divers: number;
+          }
+        >
+      >,
+      /** The grid: rows this tall, this many columns; a hop takes this long. */
+      row: 16,
+      cols: 20,
+      hopSec: 0.12,
+      /**
+       * Critter Crossing is the easy one: speeds and gaps scaled, one more
+       * life, and from Tier II some critters stop for a moment now and then
+       * (how often: my guess).
+       */
+      critter: {
+        speed: 0.7,
+        gap: 1.3,
+        extraLives: 1,
+        stopFrom: 2,
+        stopChance: 0.4,
+        stopSec: [0.5, 1.5] as const,
+        stopEverySec: [2, 5] as const,
+      },
+      /** River: logs this many pieces long, turtles in groups this big; diving: up, half, under. */
+      logPieces: [3, 5] as const,
+      turtles: [2, 3] as const,
+      dive: { upSec: 3, halfSec: 0.6, underSec: 1.2 },
+      /** Road: logging trucks from this tier. Mixed needs this tier (below it, Road plays). */
+      loggerFrom: 3,
+      mixedFrom: 3,
+      /** A hiker who runs out of lives loses this much energy. After a hit, the next hiker goes this long later (my guess). */
+      failEnergy: 1,
+      hitPauseSec: 0.6,
+    },
+
+    /**
+     * Train!: hop between tracks as trains come through; one party sprite,
+     * switching hikers, with lives as in Dodge. By tier: tracks, the clock to
+     * survive, the warning, train speeds (from–to), a new train every this
+     * long, fog, and lives per hiker.
+     */
+    train: {
+      tiers: {
+        1: {
+          tracks: 3,
+          surviveSec: 20,
+          warnSec: 1.0,
+          speed: [140, 170],
+          everySec: 1.6,
+          fog: false,
+          lives: 2,
+        },
+        2: {
+          tracks: 4,
+          surviveSec: 20,
+          warnSec: 0.9,
+          speed: [150, 190],
+          everySec: 1.3,
+          fog: false,
+          lives: 2,
+        },
+        3: {
+          tracks: 5,
+          surviveSec: 25,
+          warnSec: 0.8,
+          speed: [160, 210],
+          everySec: 1.1,
+          fog: false,
+          lives: 2,
+        },
+        4: {
+          tracks: 5,
+          surviveSec: 25,
+          warnSec: 0.7,
+          speed: [170, 220],
+          everySec: 1.0,
+          fog: true,
+          lives: 2,
+        },
+        5: {
+          tracks: 5,
+          surviveSec: 30,
+          warnSec: 0.6,
+          speed: [180, 240],
+          everySec: 0.9,
+          fog: true,
+          lives: 2,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            tracks: number;
+            surviveSec: number;
+            warnSec: number;
+            speed: readonly [number, number];
+            everySec: number;
+            fog: boolean;
+            lives: number;
+          }
+        >
+      >,
+      /** Trains come from either side from this tier (only from the right before). */
+      bothSidesFrom: 3,
+      /** Tracks this far apart; a hop takes this long; the active hiker switches this often. */
+      trackGap: 36,
+      hopSec: 0.12,
+      switchSec: 5,
+      /** After a hit, no more hits for this long. At least one track stays clear for the next this long. */
+      safeSec: 1,
+      clearSec: 1.5,
+      /** An engine (this long) and this many cars (each this long). */
+      cars: [1, 4] as const,
+      engineLength: 64,
+      carLength: 56,
+      /** Fog covers the far share of the screen on each side trains come from. */
+      fogShare: 0.4,
+      failEnergy: 1,
+    },
+
+    /**
+     * Rafting: the whole party in one raft, heading upriver to the dock. By
+     * tier: lanes, the distance (units), the starting pace (units a second),
+     * rocks per 100 units, and rapids per run.
+     */
+    rafting: {
+      tiers: {
+        1: { lanes: 3, distance: 1200, pace: 60, rocksPer100: 1.0, rapids: 1 },
+        2: { lanes: 4, distance: 1400, pace: 66, rocksPer100: 1.3, rapids: 2 },
+        3: { lanes: 4, distance: 1600, pace: 72, rocksPer100: 1.6, rapids: 3 },
+        4: { lanes: 5, distance: 1800, pace: 78, rocksPer100: 1.9, rapids: 3 },
+        5: { lanes: 5, distance: 2000, pace: 84, rocksPer100: 2.2, rapids: 4 },
+      } as Readonly<
+        Record<
+          MgTier,
+          { lanes: number; distance: number; pace: number; rocksPer100: number; rapids: number }
+        >
+      >,
+      /** A lane change slides this long. Rapids raise the pace by this share for the rest of the run. */
+      slideSec: 0.15,
+      rapidsBoost: 0.12,
+      /** After a rock hit, no more hits for this long. */
+      safeSec: 1,
+      /** Large rocks can cover two lanes from this tier, this often (my guess). */
+      twoLaneFrom: 5,
+      twoLaneChance: 0.3,
+      /** The river between the banks (scene x), and where the raft sits (its middle, scene y). */
+      river: [61, 259] as const,
+      raftY: 179,
+      /** The first rocks start this far ahead, and the course stops this far before the dock (my guesses). */
+      startClear: 140,
+      endClear: 80,
     },
 
     /*
@@ -2148,23 +2422,48 @@ export const BALANCE = {
       /** Ritual circle: runes draw a ring this big around the sprite over this long; then the inside erupts (this long: my guess). */
       ritual: { radius: 24, drawSec: 1.2, eruptSec: 0.2, runes: 6 },
       /**
-       * The Eye: its gaze is a cone this wide, sweeping this far over this
-       * long (my guesses). Staying in it this long is a hit.
+       * Glare (was The Eye): his eyes flash red this long, then a beam from
+       * each eye, this wide at the floor, sweeps across the box (the two in
+       * opposite directions) over this long. Staying in one this long is a hit.
        */
-      eye: { spreadDeg: 24, sweepDeg: 100, sweepSec: 3, holdSec: 0.3 },
+      glare: { warnSec: 0.6, floorWidth: 28, sweepSec: 2.4, holdSec: 0.3 },
       /**
-       * The portraits above the box (section 3, round 3): the bottom sits this
-       * far above the box's top at the start; if the top would go above this
-       * line, the box moves down instead. They blink every so often (from,
-       * to) for this long, and bob up this far and back every this long.
+       * Long arms (Wyatt's idea): this many thrusts, alternating arms. Each
+       * winds up this long (aiming at the sprite), thrusts this fast, grabs
+       * this long and pulls back this fast. The arms are this thick and the
+       * hand hits as a circle this big. Wound up, the elbow sits this far out
+       * and up from the shoulder, and the hand hangs this far from it (my
+       * guesses, from mockup 18).
+       */
+      arms: {
+        thrusts: 4,
+        windSec: 0.7,
+        thrustSec: 0.2,
+        grabSec: 0.3,
+        pullSec: 0.4,
+        thickness: 4,
+        handRadius: 6,
+        elbowOut: [38, 23] as const,
+        hang: 12,
+      },
+      /**
+       * The portraits above the box (section 3; Solid + red only): the bottom
+       * sits this far above the box's top at the start; if the top would go
+       * above this line, the box moves down instead. They blink every so
+       * often (from, to) for this long. The flying ones float up and down
+       * this far each way, once every this long; the others swap to their
+       * `-bob` frame and back every this long (the old pixel idle bob).
        */
       portraits: {
         gap: 6,
         minTop: 24,
         blinkEverySec: [3, 5] as const,
         blinkSec: 0.15,
-        bob: 1,
-        bobSec: 0.5,
+        float: {
+          bees: { units: 2, sec: 0.8 },
+          monster: { units: 3, sec: 1.6 },
+        } as Readonly<Partial<Record<string, { units: number; sec: number }>>>,
+        bobSec: 0.4,
       },
       /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },

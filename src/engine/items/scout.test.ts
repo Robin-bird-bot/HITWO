@@ -3,6 +3,7 @@ import { validateAction } from '../applyAction';
 import { lineBetween } from '../map';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action, GameState } from '../types';
+import { rolledTier } from '../challenges/pick';
 import { makeItem } from './make';
 
 /** Puts a tool in Ash's bag; returns its uid. */
@@ -130,12 +131,15 @@ describe('changing the trail', () => {
 
   it('Poo Bag: a tier lower, not below Tier I', () => {
     let s = game();
+    const L = s.section.tiles.L!;
+    L.tierBonus = 1 - rolledTier(s, L);
     expect(validateAction(s, use(tool(s, 'pooBag'), 'L'))).toBe(
       'The challenge there is already Tier I.',
     );
-    s.section.tier = 2;
+    L.tierBonus = 2 - rolledTier(s, L);
+    const bonus = L.tierBonus;
     s = run(s, use(tool(s, 'pooBag'), 'L'));
-    expect(s.section.tiles.L?.tierBonus).toBe(-1);
+    expect(s.section.tiles.L?.tierBonus).toBe(bonus - 1);
   });
 
   it('nothing to do on a tile someone has been to', () => {

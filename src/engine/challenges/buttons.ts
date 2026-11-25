@@ -51,9 +51,9 @@ export function unrevealedTiles(state: GameState): Tile[] {
 
 /**
  * Unknown tiles whose challenge can still drop a tier (none goes below Tier I).
- * TODO(wyatt): in biome 1 every tile starts at Tier I, so Predator Bait only
- * works there once something (Predator's Den) has raised a tile. Until then the
- * button is off, so a press can't only make things harder.
+ * In Biome 1 most tiles roll Tier I (15-challenge-tiers.md), so Predator Bait
+ * often has few to choose from there; with none, the button is off, so a press
+ * can't only make things harder.
  */
 export function easierTiles(state: GameState): Tile[] {
   return unrevealedTiles(state).filter((t) => tileTier(state, t) > 1);

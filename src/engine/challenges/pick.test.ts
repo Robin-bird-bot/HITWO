@@ -3,7 +3,8 @@ import { CARDS, CHALLENGES, TRIALS } from '../../content/challenges';
 import { seedRng } from '../rng';
 import { fixtureGame, fixtureHiker, hiker } from '../test/fixtures';
 import type { GameState, Tile } from '../types';
-import { cardFits, notPlayableYet, pickForTile } from './pick';
+import { BALANCE } from '../../config/balance';
+import { cardFits, notPlayableYet, pickForTile, rolledTier, tileTier } from './pick';
 
 function tile(nodes: Tile['nodes'], extra: Partial<Tile> = {}): Tile {
   return { id: 'X', row: 1, col: 0, kind: 'normal', special: null, nodes, ...extra };
@@ -116,17 +117,23 @@ describe('picking a card for a new tile', () => {
     }
   });
 
-  it('draws a Challenge space from the next tier, and scales a Tier III one ×1.5', () => {
+  it('draws a Challenge space from the next tier, and scales one above Tier III ×1.5 a tier', () => {
     const s = fixtureGame();
+    const base = rolledTier(s, forest);
     for (const p of picks(s, { ...forest, special: 'challenge' }, 200)) {
-      expect(card(p.cardId).tier).toBe(2);
-      expect(p.scale).toBe(1);
+      expect(card(p.cardId).tier).toBe(Math.min(3, base + 1));
+      expect(p.shownTier).toBe(base + 1);
+      expect(p.scale).toBe(base + 1 > 3 ? BALANCE.challenges.tierScale ** (base - 2) : 1);
     }
-    s.section.tier = 3;
+    // Biome 3 (Alpine) rolls Tier III or IV: a Challenge space is IV or V, a Tier III card scaled up.
+    s.section.biome = 'alpine';
+    const top = rolledTier(s, forest);
+    expect([3, 4]).toContain(top);
     const up = picks({ ...s, snowy: true }, { ...forest, special: 'challenge' }, 50);
     for (const p of up) {
       expect(p.tier).toBe(3);
-      expect(p.scale).toBe(1.5);
+      expect(p.shownTier).toBe(top + 1);
+      expect(p.scale).toBeCloseTo(BALANCE.challenges.tierScale ** (top + 1 - 3));
     }
   });
 
@@ -146,5 +153,64 @@ describe('picking a card for a new tile', () => {
       if (c.kind === 'challenge') expect(c.tier).toBe(2);
     }
     expect(hiker(s, 'ash')).toBeDefined();
+  });
+});
+
+describe('which tier a challenge gets (15-challenge-tiers.md)', () => {
+  /** How often each tier comes up over many tiles of one biome. */
+  function shares(biome: 'meadow' | 'temperateRainforest' | 'alpine', nightmare = false) {
+    const counts = new Map<number, number>();
+    const n = 4000;
+    for (let k = 0; k < n; k++) {
+      const s = fixtureGame({ seed: k + 1 });
+      s.section.biome = biome;
+      if (nightmare) s.difficulty = 'nightmare';
+      const t = rolledTier(s, { id: `tile-${k % 97}` });
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    }
+    return new Map([...counts].map(([t, c]) => [t, c / n]));
+  }
+
+  it.each([
+    ['meadow', 0],
+    ['temperateRainforest', 1],
+    ['alpine', 2],
+  ] as const)('Normal, %s: close to its table', (biome, i) => {
+    const table = BALANCE.challenges.tierTables.normal[i]!;
+    const got = shares(biome);
+    const total = table.reduce((a, [, w]) => a + w, 0);
+    expect([...got.keys()].sort()).toEqual(table.map(([t]) => t).sort());
+    for (const [t, w] of table) expect(got.get(t)).toBeCloseTo(w / total, 1);
+  });
+
+  it.each([
+    ['meadow', 0],
+    ['temperateRainforest', 1],
+    ['alpine', 2],
+  ] as const)('Nightmare, %s: close to its table', (biome, i) => {
+    const table = BALANCE.challenges.tierTables.nightmare[i]!;
+    const got = shares(biome, true);
+    const total = table.reduce((a, [, w]) => a + w, 0);
+    for (const [t, w] of table) expect(got.get(t)).toBeCloseTo(w / total, 1);
+  });
+
+  it('a tile’s tier stays the same however often it’s asked, and the tile’s changes add on top', () => {
+    const s = fixtureGame({ seed: 9 });
+    const t = rolledTier(s, forest);
+    for (let k = 0; k < 5; k++) expect(rolledTier(s, forest)).toBe(t);
+    expect(tileTier(s, { ...forest, tierBonus: 1 })).toBe(t + 1);
+    expect(tileTier(s, { ...forest, tierBonus: -1 })).toBe(t - 1);
+  });
+
+  it('Tiers IV and V play a Tier III card, scaled up, and show IV or V; nothing goes above V', () => {
+    const s = fixtureGame({ seed: 3 });
+    s.section.biome = 'alpine';
+    s.difficulty = 'nightmare';
+    const base = rolledTier(s, forest);
+    for (const p of picks({ ...s, snowy: true }, { ...forest, tierBonus: 3 }, 20)) {
+      expect(p.shownTier).toBe(5);
+      expect(p.tier).toBe(3);
+      expect(base + 3).toBeGreaterThan(5);
+    }
   });
 });

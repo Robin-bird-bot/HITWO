@@ -28,7 +28,7 @@ import {
 import { freshWeather } from './weather';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -87,6 +87,9 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 10.7 (Skill Trails): party XP, trees and morale types for the 6 designed
   // hikers. Anyone else in a run keeps their old traits (they no longer level up).
   20: (save) => skillTrails(save),
+  // Phase 10.8 step 7: challenges can show Tiers IV and V (`shownTier` on open and revealed
+  // cards). The field is optional and old cards read as their own tier, so nothing changes.
+  21: (save) => save,
 };
 
 function skillTrails(save: SaveData): SaveData {

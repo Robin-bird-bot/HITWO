@@ -5,10 +5,35 @@ Wyatt's change (November 25): challenges now go from **Tier I to Tier V**.
 - **Tiers IV and V** are harder versions of the Tier III challenges. Nothing new unlocks there.
 - **Labels:** show I, II, III, IV and V wherever a tier appears: the pop-up banner, the HUD boxes and the testing tab.
 - **Testing tab:** every game's Tier setting offers I to V.
-- **In runs:**
-  - if a run already gives challenges a tier, extend the range to V;
-  - tell Wyatt how tiers are given out now, so he can decide where IV and V appear.
+- **In runs:** see "Which tier a challenge gets" below (Wyatt, November 25).
 - **Penalties** (energy lost and so on) at Tiers IV and V are the same as at Tier III, unless a game says otherwise.
+
+## Which tier a challenge gets (Wyatt, November 25)
+Close to how it works now, spread over five tiers. Each challenge rolls its tier when it's placed. The percentages are first guesses.
+
+**Normal difficulty, by biome:**
+
+| Biome | Tiers |
+| --- | --- |
+| Biome 1 | mostly Tier I, some Tier II: I [80%], II [20%] |
+| Biome 2 | mostly Tier II, some Tier III: II [75%], III [25%] |
+| Biome 3 | mostly Tier III, some Tier IV: III [75%], IV [25%] |
+
+**Harder difficulties:**
+- **Hard (later):** the same as Normal, but Tier V shows up rarely, for example [10%] of Biome 3 challenges.
+- **Nightmare:** every challenge starts at Tier III and climbs to IV and V as the run goes on:
+  - Biome 1: III [80%], IV [20%];
+  - Biome 2: IV [75%], V [25%];
+  - Biome 3: V [75%], IV [25%].
+
+**Special run modes (later):**
+- **Random tiers:** every challenge in every biome gets a random tier from I to V, each equally likely [20%].
+- **Boss Rush:** a challenge run where every challenge is a Dodge fight. The tiers climb as the run goes, from Tier I up to Tier V by the end.
+
+**Build now:**
+- the biome table for Normal;
+- the Nightmare table, if Nightmare already exists;
+- Hard, Random tiers and Boss Rush are only notes for now. Keep the tables in `balance.ts` so they're easy to add.
 
 ## Games with their own Tier IV and V numbers
 - **Dodge** (`12-minigames-dodge.md`, section 4): animals play at levels, and overlaps only happen at Tier V.

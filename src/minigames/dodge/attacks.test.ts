@@ -78,8 +78,8 @@ describe('what each animal uses, by level', () => {
     ['squirrels', 1, ['acorns', 'bombs', 'pinecones']],
     ['squirrels', 2, ['acorns', 'bombs', 'pinecones', 'scurry']],
     // The Woods Monster always plays Level 3 (here forced lower); Darkness needs Level 3.
-    ['monster', 2, ['eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
-    ['monster', 3, ['darkness', 'eye', 'fire', 'hands', 'ritual', 'runes', 'wisps']],
+    ['monster', 2, ['arms', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
+    ['monster', 3, ['arms', 'darkness', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
   ] as const)('%s at Level %i', (animal, level, expected) => {
     expect(ids(animal, level)).toEqual([...expected].sort());
   });
@@ -132,7 +132,6 @@ describe('what each animal uses, by level', () => {
       'wisp',
       'beam',
       'ritual',
-      'eye',
       'dark',
     ]);
     for (const animal of ['stampede', 'monster'] as const) {

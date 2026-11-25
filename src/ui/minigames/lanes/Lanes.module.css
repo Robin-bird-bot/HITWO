@@ -1,0 +1,209 @@
+/* The lane games (docs/mockups/minigames/lanes/), in scene units (320 × 240). */
+
+.play {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
+}
+
+/* A row of 16-unit tiles across the screen. */
+.row {
+  position: absolute;
+  left: 0;
+  width: 320px;
+  height: 16px;
+  background-repeat: repeat-x;
+  background-size: 16px 16px;
+  image-rendering: pixelated;
+}
+
+.thing {
+  position: absolute;
+  pointer-events: none;
+}
+
+.flip {
+  transform: scaleX(-1);
+}
+
+.hiker {
+  position: absolute;
+  width: 10px;
+  height: 12px;
+  pointer-events: none;
+  transform-origin: 50% 100%;
+}
+
+.hiker[data-hop] {
+  transform: scaleY(0.85);
+}
+
+.hiker[data-safe] {
+  animation: blink 0.2s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.sign {
+  position: absolute;
+  padding: 1px 4px;
+  border: 0.75px solid #1d2918;
+  border-radius: 1px;
+  background: #d3dfaf;
+  color: #1d2918;
+  font-size: 3.6px;
+  transform: translateX(-50%);
+}
+
+.hint {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 197px;
+  margin: 0;
+  font-size: 3.4px;
+  text-align: center;
+}
+
+.mark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1px;
+  background: #d3dfaf;
+  color: #1d2918;
+  font-size: 5px;
+  font-weight: bold;
+}
+
+/* The bottom bar: each hiker's icon, name and hearts, and how they're doing. */
+.slots {
+  display: flex;
+  flex: 1;
+  justify-content: space-around;
+}
+
+.slot {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 4px;
+  align-items: center;
+  padding: 3px 6px;
+  border: 0.75px solid transparent;
+  border-radius: 2px;
+}
+
+.slot > img {
+  grid-row: span 2;
+  width: 10px;
+  height: 12px;
+}
+
+.slot[data-active] {
+  border-color: #d3dfaf;
+}
+
+.slot[data-out] {
+  filter: grayscale(1) brightness(0.7);
+}
+
+.slotName {
+  font-size: 4px;
+}
+
+.slotState {
+  color: #a0b37d;
+  font-size: 3.2px;
+}
+
+.hearts {
+  display: flex;
+  gap: 1px;
+  font-size: 5px;
+  line-height: 1;
+}
+
+.hearts > span {
+  color: #52653f;
+}
+
+.hearts > span[data-lit] {
+  color: #d3dfaf;
+}
+
+.fog {
+  position: absolute;
+  top: 20px;
+  bottom: 40px;
+  pointer-events: none;
+}
+
+.progress {
+  position: absolute;
+  left: 300px;
+  top: 30px;
+  width: 8px;
+  height: 160px;
+  border-radius: 1px;
+  background: #1d2918;
+  overflow: hidden;
+}
+
+.progress > span {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  background: #bac995;
+}
+
+.token {
+  position: absolute;
+}
+
+.lives {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  font-size: 4px;
+}
+
+.lost {
+  position: relative;
+}
+
+.lost::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 0.75px;
+  background: #c8423a;
+  transform: rotate(-35deg);
+}
+
+.speed {
+  margin-left: auto;
+  margin-right: 10px;
+  font-size: 4.2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiker[data-safe] {
+    animation: none;
+    opacity: 0.6;
+  }
+}

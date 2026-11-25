@@ -115,20 +115,40 @@ function nextBear(s: SleepingBearState, rng: RngState): SleepingBearState {
   }
 }
 
+/**
+ * The shared clock this step (Nov 25): it stops while he's awake and while
+ * a caught hiker is sent off (you can't lose time standing still while he
+ * looks around); while he stirs and the hiker keeps moving it goes up (a
+ * risk: he might wake); otherwise it counts down by the step's time.
+ */
+function clockAfter(s0: SleepingBearState, s: SleepingBearState, dt: number): number {
+  if (s0.bear === 'awake' || s0.bear === 'roar') return s0.clock;
+  if (s0.bear === 'stir' && s.moving) return Math.min(s0.total, s0.clock + SB.stirEarnRate * dt);
+  return s0.clock - dt;
+}
+
+/** Out of time: everyone not across fails. */
+function outOfTime(s: SleepingBearState): SleepingBearState {
+  const status = { ...s.status };
+  for (const id of s.order) {
+    if (status[id] === 'waiting' || status[id] === 'sneaking') status[id] = 'timeout';
+  }
+  return { ...s, clock: 0, status, moving: false, over: true };
+}
+
 /** Time passes; `holding` is whether the button is down (the current hiker walks). */
 export function tick(s0: SleepingBearState, dt: number, holding: boolean): SleepingBearState {
   if (s0.over) return s0;
-  const rng = [...s0.rng] as RngState;
-  let s: SleepingBearState = { ...s0, rng, time: s0.time + dt, clock: s0.clock - dt };
+  const s = step(s0, dt, holding);
+  const clock = clockAfter(s0, s, dt);
+  if (clock <= 0 && !s.over) return outOfTime({ ...s, clock: 0 });
+  return { ...s, clock: Math.max(0, clock) };
+}
 
-  // Out of time: everyone not across fails.
-  if (s.clock <= 0) {
-    const status = { ...s.status };
-    for (const id of s.order) {
-      if (status[id] === 'waiting' || status[id] === 'sneaking') status[id] = 'timeout';
-    }
-    return { ...s, clock: 0, status, moving: false, over: true };
-  }
+/** The bear and the hiker move on by one step (the clock is worked out after). */
+function step(s0: SleepingBearState, dt: number, holding: boolean): SleepingBearState {
+  const rng = [...s0.rng] as RngState;
+  let s: SleepingBearState = { ...s0, rng, time: s0.time + dt };
 
   // The bear.
   s = { ...s, bearLeft: s.bearLeft - dt, awakeFor: s.bear === 'awake' ? s.awakeFor + dt : 0 };

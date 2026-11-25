@@ -109,6 +109,8 @@ export interface Tile {
     cardId: string;
     tier: 1 | 2 | 3;
     scale: number;
+    /** The tier it shows (I to V; above III, a Tier III card scaled up). Older saves: `tier`. */
+    shownTier?: number;
     alternative?: string;
     /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
     hidden?: true;
@@ -735,6 +737,8 @@ export interface OpenChallenge {
   /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
   tier: 1 | 2 | 3;
   scale: number;
+  /** The tier it shows (I to V; above III, a Tier III card scaled up). Older saves: `tier`. */
+  shownTier?: number;
   /** The hikers on the tile when it was revealed: only they're affected. */
   hikerIds: HikerId[];
   rolls: CardRolls;

@@ -3,6 +3,7 @@
  * just the banner and the card's text, opened from the icon on its tile. The
  * numbers show as ranges, since they're rolled when someone lands there.
  */
+import { tierLabel } from '../../minigames/types';
 import { useEffect, useRef } from 'react';
 import { CARDS } from '../../content';
 import type { GameState, TileId } from '../../engine';
@@ -10,8 +11,6 @@ import { Icon } from '../icons/Icon';
 import { tileName } from '../panels/hikerInfo';
 import { cardText } from './cardText';
 import styles from './RevealedCard.module.css';
-
-const TIER_WORD = { 1: 'I', 2: 'II', 3: 'III' } as const;
 
 export function RevealedCard({
   state,
@@ -50,7 +49,8 @@ export function RevealedCard({
       >
         <header className={styles.banner} data-kind={kind}>
           <span className={styles.kind}>
-            {label} · TIER {TIER_WORD[shown.tier]} · {tileName(tile).toUpperCase()}
+            {label} · TIER {tierLabel(shown.shownTier ?? shown.tier)} ·{' '}
+            {tileName(tile).toUpperCase()}
           </span>
           <h2 className={styles.name}>{card.name.toUpperCase()}</h2>
           {other && <span className={styles.kind}>OR {other.name.toUpperCase()} (CHOICE)</span>}

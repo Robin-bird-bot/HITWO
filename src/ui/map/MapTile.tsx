@@ -1,3 +1,4 @@
+import { tierLabel } from '../../minigames/types';
 import { tileLabel } from '../../content/tileLabels';
 import { ASSETS, asset } from '../../config/assets';
 import { isAccomplished, isRevealed, type Tile, type TileNode } from '../../engine';
@@ -402,7 +403,7 @@ function ScanBadge({ scan }: { scan: NonNullable<Tile['scan']> }) {
     );
   }
   const look = scan.kind ? SCAN_LOOK[scan.kind] : SCAN_LOOK.challenge;
-  const tier = scan.tier ? ' ' + 'I'.repeat(scan.tier) : '';
+  const tier = scan.tier ? ' ' + tierLabel(scan.tier) : '';
   return (
     <div
       className={styles.scan}

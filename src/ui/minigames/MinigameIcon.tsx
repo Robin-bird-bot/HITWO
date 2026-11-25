@@ -90,6 +90,29 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M5 7l13-3M10 13v5M14 13v5" />
     </>
   ),
+  // A car between lane lines.
+  crossing: (
+    <>
+      <path d="M3 4h18M3 20h18M3 12h3M9 12h3M15 12h3" />
+      <rect x="6" y="14" width="10" height="4" rx="1" />
+    </>
+  ),
+  // A train engine on a rail.
+  train: (
+    <>
+      <path d="M3 20h18" />
+      <path d="M5 17V9h7v-3h3v3h4v8z" />
+      <circle cx="8" cy="18" r="1.5" />
+      <circle cx="16" cy="18" r="1.5" />
+    </>
+  ),
+  // A raft on waves.
+  rafting: (
+    <>
+      <rect x="6" y="6" width="12" height="9" rx="1" />
+      <path d="M9 6v9M12 6v9M15 6v9M3 19c3-2 6 2 9 0s6 2 9 0" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

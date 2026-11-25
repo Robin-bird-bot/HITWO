@@ -9,6 +9,8 @@
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
 import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal, rankFor } from './dodge/animals';
+import type { TileThing } from './endScreen';
+import { VERSIONS as CROSSING_VERSIONS } from './crossing/logic';
 import { VERSIONS as TRAIL_BLOCK_VERSIONS } from './trailBlocks/logic';
 import {
   CATEGORIES,
@@ -357,17 +359,6 @@ export const DODGE: MinigameInfo = {
     },
     {
       kind: 'pick',
-      id: 'portrait',
-      label: 'Portrait style',
-      options: [
-        { id: 'solid', label: 'Solid' },
-        { id: 'solidRed', label: 'Solid + red' },
-      ],
-      default: 'solid',
-      hint: 'P switches it while playing',
-    },
-    {
-      kind: 'pick',
       id: 'motion',
       label: 'Portrait motion',
       options: [
@@ -375,7 +366,7 @@ export const DODGE: MinigameInfo = {
         { id: 'off', label: 'Off' },
       ],
       default: 'on',
-      hint: 'The blink and the bob',
+      hint: 'The blink, the float and the bob',
     },
     TIER,
     HIKERS,
@@ -676,21 +667,119 @@ export const WHACKOON: MinigameInfo = {
   description: 'Whack the raccoons in your color. Leave the skunks alone.',
   status: 'ready',
   lineUp: true,
+  settings: [TIER, HIKERS, override('skunks', 'Skunks', ON_OFF)],
+};
+
+// ── New challenges, step 2: the lane games (docs/design/17-minigames-lanes.md) ──
+
+const CR = BALANCE.minigames.crossing;
+const TR = BALANCE.minigames.train;
+const RF = BALANCE.minigames.rafting;
+
+export const CROSSING: MinigameInfo = {
+  id: 'crossing',
+  name: 'Crossing',
+  baseGame: 'Frogger',
+  category: 'move',
+  description:
+    'Hop across the lanes one hiker at a time. A hit sends you back to the end of the line.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    {
+      kind: 'pick',
+      id: 'version',
+      label: 'Version',
+      options: CROSSING_VERSIONS.map((v) => ({
+        id: v.id,
+        label: v.id === 'mixed' ? 'Mixed' : v.name,
+      })),
+      default: 'road',
+      hint: 'Mixed (road, a bank, then river) needs Tier III; below it, Road plays',
+    },
+    TIER,
+    HIKERS,
+    autoRange(
+      'lives',
+      'Lives',
+      1,
+      3,
+      CR.tiers[1].lives,
+      '',
+      1,
+      byTier((t) => CR.tiers[t].lives),
+    ),
+    autoRange(
+      'time',
+      'Time per attempt',
+      10,
+      40,
+      CR.tiers[1].attemptSec,
+      ' s',
+      1,
+      `${byTier((t) => CR.tiers[t].attemptSec)} s`,
+    ),
+  ],
+};
+
+export const TRAIN: MinigameInfo = {
+  id: 'train',
+  name: 'Train!',
+  baseGame: 'Dodging',
+  category: 'move',
+  description: 'Hop between the tracks as trains come through. Watch for the headlights.',
+  status: 'ready',
+  lineUp: true,
   settings: [
     TIER,
     HIKERS,
+    autoRange('lives', 'Lives', 1, 3, TR.tiers[1].lives, ''),
+    autoRange(
+      'survive',
+      'Survive',
+      10,
+      60,
+      TR.tiers[1].surviveSec,
+      ' s',
+      5,
+      `${byTier((t) => TR.tiers[t].surviveSec)} s`,
+    ),
     {
       kind: 'pick',
-      id: 'mode',
-      label: 'Mode',
+      id: 'fog',
+      label: 'Fog',
       options: [
-        { id: 'colors', label: 'Colors' },
-        { id: 'turns', label: 'Turns' },
+        { id: 'auto', label: 'Auto' },
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
       ],
-      default: 'colors',
-      hint: 'Colors: each hiker whacks their own color. Turns: one at a time',
+      default: 'auto',
+      hint: 'Auto: on at Tiers IV and V',
     },
-    override('skunks', 'Skunks', ON_OFF),
+  ],
+};
+
+export const RAFTING: MinigameInfo = {
+  id: 'rafting',
+  name: 'Rafting',
+  baseGame: 'Dodging',
+  category: 'move',
+  description: 'Steer the party’s raft upriver to the dock. Miss the rocks; rapids speed you up.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'distance',
+      'Distance',
+      600,
+      3000,
+      RF.tiers[1].distance,
+      '',
+      100,
+      byTier((t) => RF.tiers[t].distance),
+    ),
   ],
 };
 
@@ -711,6 +800,9 @@ const soon = (
 
 export const MINIGAMES: readonly MinigameInfo[] = [
   DODGE,
+  CROSSING,
+  TRAIN,
+  RAFTING,
   soon('antsAreMarching', 'Ants Are Marching', 'Snake', 'move'),
   soon('crackedBridge', 'Cracked Bridge', 'Platformer', 'move'),
   TRAILDLE,
@@ -785,4 +877,51 @@ function cleanOne(
   const n = typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : s.default;
   if (s.kind === 'choice') return s.options.includes(n) ? n : s.default;
   return Math.min(s.max, Math.max(s.min, n));
+}
+
+/** What stands on the tile for each Crossing version, for the end screen's tile line. */
+const CROSSING_THINGS: Readonly<Record<string, TileThing>> = {
+  road: { name: 'traffic' },
+  river: { name: 'river' },
+  critter: { name: 'critters', plural: true },
+  mixed: { name: 'crossing' },
+};
+
+/** What stands on the tile for each Trail Block, for the end screen's tile line. */
+const TRAIL_BLOCK_THINGS: Readonly<Record<string, TileThing>> = {
+  chop: { name: 'tree' },
+  rockslide: { name: 'rockslide' },
+  river: { name: 'flood' },
+  animals: { name: 'animals', plural: true },
+};
+
+/**
+ * What the end screen says about a game (16-challenge-end-screen.md): its
+ * name (the version or the animal where there is one) and tier, "CHOP TREE ·
+ * TIER II", and what stands on the tile for a passing challenge.
+ */
+export function endInfo(
+  info: MinigameInfo,
+  settings: MinigameSettings,
+): { subtitle: string; thing: TileThing } {
+  let name = info.name;
+  let thing: TileThing = { name: info.name };
+  if (info.id === 'trailBlocks') {
+    const v =
+      TRAIL_BLOCK_VERSIONS.find((x) => x.id === settings.version) ?? TRAIL_BLOCK_VERSIONS[0]!;
+    name = v.name;
+    thing = TRAIL_BLOCK_THINGS[v.id] ?? thing;
+  }
+  if (info.id === 'dodge')
+    name = ANIMALS[isAnimal(settings.animal) ? settings.animal : 'bees'].name;
+  if (info.id === 'sleepingBear') thing = { name: 'bear' };
+  if (info.id === 'crossing') {
+    const v = CROSSING_VERSIONS.find((x) => x.id === settings.version) ?? CROSSING_VERSIONS[0]!;
+    name = v.id === 'mixed' ? 'Road and River Crossing' : v.name;
+    thing = CROSSING_THINGS[v.id] ?? thing;
+  }
+  if (info.id === 'train') thing = { name: 'trains', plural: true };
+  if (info.id === 'rafting') thing = { name: 'rapids', plural: true };
+  const tier = isTier(settings.tier) ? ` · Tier ${TIER_LABELS[settings.tier]}` : '';
+  return { subtitle: `${name}${tier}`.toUpperCase(), thing };
 }

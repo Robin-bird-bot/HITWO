@@ -4,6 +4,7 @@ import { isSheltered } from '../actions/sleep';
 import { validateAction } from '../applyAction';
 import { addCondition } from '../conditions';
 import { scavengeSetup } from '../scavenge/setup';
+import { rolledTier, tileTier } from './pick';
 import { END, fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action, ChallengeSection, GameState, Gift } from '../types';
 import { notPlayableYet } from './pick';
@@ -234,26 +235,30 @@ describe('button opportunities', () => {
   });
 
   it('Predator Bait: one tile easier, another harder, up to 3 times', () => {
-    // Biome 1 tiles start at Tier I: with none raised, nothing can get easier.
-    const flat = opened('predator-bait');
+    // Every unknown tile at Tier I: nothing can get easier.
+    const atTier = (g: GameState, tier: number) => {
+      for (const t of Object.values(g.section.tiles)) t.tierBonus = tier - rolledTier(g, t);
+    };
+    const flat = opened('predator-bait', (g) => atTier(g, 1));
     expect(validateAction(flat, press('bait'))).toBe(
       'Every unknown tile is already Tier I, so none can get easier.',
     );
 
-    let s = opened('predator-bait', (g) => {
-      for (const id of ['L', 'M', 'R']) g.section.tiles[id]!.tierBonus = 1;
-    });
+    let s = opened('predator-bait', (g) => atTier(g, 2));
+    const before = Object.fromEntries(
+      Object.values(s.section.tiles).map((t) => [t.id, t.tierBonus ?? 0]),
+    );
     s = run(s, press('bait'));
     const e = s.log.at(-1);
     expect(e).toMatchObject({ kind: 'pressed' });
     if (e?.kind !== 'pressed') throw new Error('no press');
     expect(e.harder).not.toBe(e.easier);
-    expect(s.section.tiles[e.easier!]?.tierBonus).toBe(0);
-    expect(s.section.tiles[e.harder!]?.tierBonus).toBe(2);
+    expect(s.section.tiles[e.easier!]?.tierBonus).toBe(before[e.easier!]! - 1);
+    expect(s.section.tiles[e.harder!]?.tierBonus).toBe(before[e.harder!]! + 1);
     s = run(s, press('bait'), press('bait'));
     expect(validateAction(s, press('bait'))).toBe('No presses left.');
     // Never below Tier I.
-    expect(Object.values(s.section.tiles).every((t) => (t.tierBonus ?? 0) >= 0)).toBe(true);
+    expect(Object.values(s.section.tiles).every((t) => tileTier(s, t) >= 1)).toBe(true);
   });
 
   it('Predator’s Den: +1 Appetite, and each unknown tile gets harder only once', () => {

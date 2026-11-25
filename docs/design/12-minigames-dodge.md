@@ -14,6 +14,11 @@ An Undertale-style dodging game. The animal sits above a box. One small sprite f
 - Bear with a Sword gains bear claws, sword jabs and poke-ups.
 - The testing tab gets an **Attack** picker, a **Show hitboxes** switch and an **Include Claude's ideas** switch.
 
+**Revised November 25, later (Wyatt picked the look).** What changed:
+- **Portraits:** Solid + red is the look. The style setting and the P key go away.
+- **Portrait motion:** the bee and the Woods Monster float smoothly. The others do a classic idle bob: two rows of pixels drop out every other step, so the top of the head dips. Each head still blinks.
+- **Woods Monster:** a new **Long arms** attack (Wyatt's idea), and The Eye becomes **Glare**, fired from his own eyes.
+
 **Revised November 25 (after Wyatt played the tuning update).** What changed:
 - **Five challenge tiers.** Animals now play at a **level** (Easy, 1, 2 or 3), and each challenge tier picks which animals show up and at what level (section 4).
 - **No overlapping attacks** below Tier V. At Tier V every animal overlaps attacks.
@@ -95,21 +100,24 @@ Same drawings as round 2, drawn the way Undertale draws Sans, but turned around 
 - **Pupils and teeth** are bits of the dark green inside those holes.
 - **Front-facing**, cute but ferocious: angry brows, fangs.
 
-Two styles, from the same drawings:
+**The look Wyatt picked: Solid + red** (`art/dodge/portraits/solid-red/`). A few details are red (#C8423A): open mouths, the Woods Monster's and cultists' eyes, the sword bear's headband, the squirrel's helmet band, the bee's stinger and the moose's nostrils. The plain `solid/` folder and the style setting are no longer needed.
 
-| Style | Folder | What's different |
-| --- | --- | --- |
-| **Solid** (default) | `art/dodge/portraits/solid/` | Only the dark green |
-| **Solid + red** | `art/dodge/portraits/solid-red/` | A few details are red (#C8423A): open mouths, the Woods Monster's and cultists' eyes, the sword bear's headband, the squirrel's helmet band, the bee's stinger and the moose's nostrils |
+**Frames, per portrait** (all the same size, bottoms lined up):
+- `<name>.png` and `<name>-blink.png`;
+- for the idle-bob animals, also `<name>-bob.png` and `<name>-bob-blink.png`: the same head with two quiet rows of pixels removed and the top padded, so the head dips 2 units while its chin stays put.
 
 - **Size:** 1 px per unit. They're about 40 to 56 units tall.
 - **Placement:**
   - Centered at x 160. The images are padded so the face is always in the middle (the sword's hilt and the squirrel's tail stick out to one side).
   - The bottom sits [6] units above the box's top border. Use the box's size at the start of the fight, so the portrait doesn't jump when the box changes size.
   - If that would put the top above y [24], move the box down instead.
-- **Blink:** every [3–5 s], at random, show `<name>-blink.png` for [0.15 s]. A cultist's blink turns its eyes off.
-- **Bob:** the portrait moves up [1] unit and back down every [0.5 s]. The two cultists bob out of step with the monster.
+- **Blink:** every [3–5 s], at random, show the blink frame for [0.15 s] (the `-bob-blink` one while bobbed). A cultist's blink turns its eyes off.
+- **Two kinds of motion,** on top of the blink:
+  - **Flying (bee, Woods Monster):** a smooth float, moving up and down along a sine wave and drawn at whole units. Bee: [2] units each way, every [0.8 s]. Woods Monster: [3] units each way, every [1.6 s].
+  - **Idle bob (bear, bear with a sword, bobcat, squirrel, moose, cultists):** swap between `<name>` and `<name>-bob` every [0.4 s]. No smooth movement: it's the old-school pixel bob.
+  - The two cultists bob out of step with each other.
 - **Motion can be turned off** with the Portrait motion setting in the testing tab.
+- See `mockups/20-portrait-motion.gif`.
 - **Which portrait goes with which animal:**
 
 | Animal | Portrait | What it shows |
@@ -438,10 +446,27 @@ The monster from the night events, with the cultists as his helpers. **He's mean
 5. **Ritual circle** *(Claude's idea; area)*.
    - A ring of runes (`rune.png`) draws itself around where the sprite is, radius [24], over [1.2 s]. When it closes, the inside erupts.
    - Get out before it closes.
-6. **The Eye** *(Claude's idea; area)*.
-   - A big eye (`eye.png`) opens at the top of the box. Its gaze, a pale cone, sweeps slowly across.
-   - Staying in the gaze for [0.3 s] counts as a hit.
-7. **Darkness** *(Claude's idea; changer, Tier III second half)*.
+6. **Glare** *(was The Eye; now fired from his own eyes; area)*.
+   - **Warning:** his eyes flash red for [0.6 s] (a red ring around each eye on the portrait).
+   - **The beams:** two pale cones shine from his eyes down into the box, one from each eye. Each cone is [28] units wide at the floor, with thin red edges.
+   - **The sweep:** they sweep across the box in opposite directions over [2.4 s], crossing in the middle, so there's a safe gap to slip through.
+   - **Hits:** staying in a cone for [0.3 s] counts as a hit.
+   - **Drawing:** outside the box, the beams are only their red edges, so the portrait stays clear. Inside the box, each cone is a G4 fill on the dark floor.
+   - `eye.png` is no longer used.
+   - See `mockups/19-woods-monster-glare.png`.
+7. **Long arms** *(Wyatt's idea; missile)*.
+   - **The arms:** two long, thin arms in the portrait's style reach out from behind his head.
+     - Outside the box they're the dark green, [4] units thick, with a knob at the elbow.
+     - Inside the box they turn light (G9), like every attack.
+     - The hands are `monster-hand.png` (open) and `monster-hand-grab.png` (closing), with red claw tips. Both point down: turn them to face the way the arm reaches. Inside the box use `monster-hand-light.png` and `monster-hand-grab-light.png`.
+   - **Wind-up (the warning):** an arm rises and arches out above and beside him, with the hand hanging toward the box.
+     - It aims at where the sprite is; a dotted line in the box shows the aim, and a "!" shows at the box edge.
+     - This lasts [0.7 s].
+   - **The thrust:** the arm shoots straight down along the aim line into the box over [0.2 s], the hand closes for [0.3 s], then the arm pulls back over [0.4 s].
+   - **Rhythm:** [4] thrusts per attack, alternating arms. Each new arm winds up while the other one thrusts.
+   - **Hits:** the part of the arm inside the box (a line [4] units thick) and the hand (a circle of radius [6]).
+   - See `mockups/18-woods-monster-long-arms.png`.
+8. **Darkness** *(Claude's idea; changer, Tier III second half)*.
    - The box goes dark except for a small light around the sprite, for [4 s].
    - Other attacks keep coming, and warnings still show in the dark.
 
@@ -454,8 +479,7 @@ The monster from the night events, with the cultists as his helpers. **He's mean
   - **Level** (Auto, Easy, 1, 2, 3). Auto uses the table in section 4;
   - **Include Claude's ideas** (On or Off, default On);
   - **Show hitboxes** (Off or On), which outlines every hit shape;
-  - **Portrait style** (Solid, Solid + red), which can also be switched live with the P key while playing in test mode;
-  - **Portrait motion** (On or Off), for the blink and bob;
+  - **Portrait motion** (On or Off), for the blink, float and bob;
   - **Tier** (I to V);
   - **Hikers** (1 to 4);
   - **Lives per hiker** (Auto, 1, 2, 3);

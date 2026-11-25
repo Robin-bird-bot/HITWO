@@ -4,6 +4,7 @@ import { validateAction } from '../applyAction';
 import { addCondition } from '../conditions';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action, ChallengeSection, GameState, Gift } from '../types';
+import { tileTier } from './pick';
 import { riskReading } from './risk';
 import type { ChallengeDef } from './types';
 
@@ -198,8 +199,10 @@ describe('special spaces', () => {
       const open = space('challenge', seed).challenge;
       if (!open) continue;
       opened += 1;
-      expect(open).toMatchObject({ tier: 2, special: 'challenge' });
-      expect(card(open.cardId)).toMatchObject({ kind: 'challenge', tier: 2 });
+      const s = space('challenge', seed);
+      const next = Math.min(3, tileTier(s, s.section.tiles.L!) + 1);
+      expect(open).toMatchObject({ tier: next, special: 'challenge' });
+      expect(card(open.cardId)).toMatchObject({ kind: 'challenge', tier: next });
     }
     expect(opened).toBeGreaterThan(10);
   });
