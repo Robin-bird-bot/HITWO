@@ -88,17 +88,49 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
   width: 330px;
   flex: none;
+  min-height: 0;
+}
+
+/* The games scroll when the categories don't all fit. */
+.listScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-right: -12px;
+  padding-right: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: #b9a77f transparent;
+}
+
+.category {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.categoryName {
+  padding: 0 4px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8e5a30;
+  opacity: 0.85;
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  height: 62px;
-  padding: 0 18px;
+  gap: 14px;
+  flex: none;
+  height: 52px;
+  padding: 0 16px;
   border-radius: 10px;
   border: 2px solid transparent;
   background: transparent;

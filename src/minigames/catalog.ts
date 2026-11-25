@@ -1,19 +1,21 @@
 /**
- * Every minigame, as data (Phase 10.8). Bearrels, the four puzzle games
- * (docs/design/11-minigames-puzzles.md) and Dodge
- * (docs/design/12-minigames-dodge.md) are playable; the rest are listed on
- * the testing tab as "coming soon". The UI pairs each playable one with its
- * game (src/ui/minigames/runners.tsx).
+ * Every minigame, as data (Phase 10.8). Bearrels, the puzzle games
+ * (docs/design/11-minigames-puzzles.md and 13-minigames-puzzles-2.md) and
+ * Dodge (docs/design/12-minigames-dodge.md) are playable; the rest are listed
+ * on the testing tab as "coming soon". Each has a category, which the
+ * testing tab groups them by. The UI pairs each playable one with its game
+ * (src/ui/minigames/runners.tsx).
  */
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
 import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal } from './dodge/animals';
-import type {
-  MinigameInfo,
-  MinigameSetting,
-  MinigameSettings,
-  MinigameSettingValue,
-  PickOption,
+import {
+  CATEGORIES,
+  type MinigameInfo,
+  type MinigameSetting,
+  type MinigameSettings,
+  type MinigameSettingValue,
+  type PickOption,
 } from './types';
 
 const B = BALANCE.minigames.bearrels;
@@ -22,6 +24,7 @@ export const BEARRELS: MinigameInfo = {
   id: 'bearrels',
   name: 'Bearrels',
   baseGame: 'Barrels',
+  category: 'luck',
   description:
     'Hide your hikers behind barrels. Each round the bear shoots, and anyone behind that barrel is out.',
   status: 'ready',
@@ -90,7 +93,7 @@ const HIKERS: MinigameSetting = {
   default: B.hikers.default,
 };
 
-/** A number setting that can also be "Auto" (the tier's or default value). */
+/** A number setting that can also be "Auto" (the tier's or default value), and "Off" when `off`. */
 const autoRange = (
   id: string,
   label: string,
@@ -100,6 +103,7 @@ const autoRange = (
   unit: string,
   step = 1,
   autoHint?: string,
+  off = false,
 ): MinigameSetting => ({
   kind: 'autoRange',
   id,
@@ -108,7 +112,8 @@ const autoRange = (
   max,
   step,
   autoValue,
-  hint: `Auto (${autoHint ?? `${autoValue}${unit}`}), or ${min} to ${max}${unit}`,
+  hint: `Auto (${autoHint ?? `${autoValue}${unit}`}), ${off ? 'Off, ' : ''}or ${min} to ${max}${unit}`,
+  ...(off ? { off: true } : {}),
 });
 
 /** An override: "Auto" uses the tier's value. */
@@ -136,6 +141,7 @@ export const TRAILDLE: MinigameInfo = {
   id: 'traildle',
   name: 'Traildle',
   baseGame: 'Puzzle',
+  category: 'puzzle',
   description: 'Guess the hidden codes on the trail signs. Two hikers guess at once.',
   status: 'ready',
   lineUp: true,
@@ -155,6 +161,7 @@ export const FIND_OBJECT: MinigameInfo = {
   id: 'findObject',
   name: 'Find the Object',
   baseGame: 'Reaction',
+  category: 'search',
   description: 'Find the snacks on the list before time runs out.',
   status: 'ready',
   lineUp: true,
@@ -191,6 +198,7 @@ export const REMEMBER_PATH: MinigameInfo = {
   id: 'rememberPath',
   name: 'Remember the Path',
   baseGame: 'Memory',
+  category: 'memory',
   description: 'Watch the ranger walk the trail, then walk it from memory.',
   status: 'ready',
   lineUp: true,
@@ -201,6 +209,7 @@ export const FIND_PATH: MinigameInfo = {
   id: 'findPath',
   name: 'Find the Path',
   baseGame: 'Minefield',
+  category: 'puzzle',
   description: 'Take turns finding the hidden trail through the forest.',
   status: 'ready',
   lineUp: true,
@@ -254,6 +263,7 @@ export const DODGE: MinigameInfo = {
   id: 'dodge',
   name: 'Dodge',
   baseGame: 'Dodging',
+  category: 'move',
   description: 'Dodge the animal’s attacks. The active hiker switches every few seconds.',
   status: 'ready',
   lineUp: true,
@@ -325,27 +335,214 @@ export const DODGE: MinigameInfo = {
   ],
 };
 
-const soon = (id: string, name: string, baseGame: string): MinigameInfo => ({
+// ── The third batch (docs/design/13-minigames-puzzles-2.md) ────────────────
+
+const TM = BALANCE.minigames.trailMap;
+const ME = BALANCE.minigames.memory;
+const PP = BALANCE.minigames.picturePuzzle;
+const TI = BALANCE.minigames.thinIce;
+const byTier = (f: (t: 1 | 2 | 3) => string | number) => `the tier's: ${f(1)}, ${f(2)} or ${f(3)}`;
+
+export const TRAIL_MAP: MinigameInfo = {
+  id: 'trailMap',
+  name: 'Trail Map',
+  baseGame: 'Puzzle',
+  category: 'puzzle',
+  description: 'Turn the trail tiles to connect each trailhead to the exit.',
+  status: 'ready',
+  settings: [
+    TIER,
+    HIKERS,
+    override('mode', 'Mode', [
+      ['one', 'One at a time'],
+      ['together', 'Together'],
+    ]),
+    autoRange(
+      'grid',
+      'Grid',
+      4,
+      7,
+      TM.tiers[1].size,
+      '',
+      1,
+      byTier((t) => TM.tiers[t].size),
+    ),
+    autoRange(
+      'time',
+      'Time',
+      20,
+      180,
+      TM.tiers[1].timeSec,
+      ' s',
+      5,
+      `${byTier((t) => TM.tiers[t].timeSec)} s, +${TM.extraSecPerHiker} s per extra hiker`,
+      true,
+    ),
+  ],
+};
+
+export const MEMORY: MinigameInfo = {
+  id: 'memory',
+  name: 'Memory Puzzle',
+  baseGame: 'Memory',
+  category: 'memory',
+  description: 'Flip cards to match the snacks. Each hiker’s sets are in their color.',
+  status: 'ready',
+  settings: [
+    TIER,
+    HIKERS,
+    override('match', 'Match', [
+      ['pairs', 'Pairs'],
+      ['threes', 'Threes'],
+    ]),
+    autoRange('preview', 'Preview', 0.5, 5, ME.previewSec, ' s', 0.5),
+    autoRange(
+      'misses',
+      'Misses',
+      1,
+      10,
+      ME.tiers[1].misses,
+      '',
+      1,
+      byTier((t) => ME.tiers[t].misses),
+    ),
+    override('swaps', 'Swaps', ON_OFF),
+    autoRange(
+      'timer',
+      'Timer',
+      30,
+      180,
+      90,
+      ' s',
+      5,
+      `${byTier((t) => ME.tiers[t].timerSec ?? 'none')} s`,
+      true,
+    ),
+  ],
+};
+
+export const PICTURE_PUZZLE: MinigameInfo = {
+  id: 'picturePuzzle',
+  name: 'Picture Puzzle',
+  baseGame: 'Puzzle',
+  category: 'puzzle',
+  description: 'Rebuild the picture from the piles. Two hikers share one tray.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override('grid', 'Grid', [
+      ['4', '4 × 4'],
+      ['5', '5 × 5'],
+    ]),
+    override('thumbnail', 'Thumbnail', ON_OFF),
+    autoRange(
+      'secPerPiece',
+      'Seconds per piece',
+      1,
+      6,
+      PP.tiers[1].secPerPiece,
+      ' s',
+      0.5,
+      `${byTier((t) => PP.tiers[t].secPerPiece)} s`,
+    ),
+  ],
+};
+
+/** Thin Ice's grid sizes (columns × rows). */
+export const ICE_SIZES: readonly (readonly [number, number])[] = [
+  [6, 5],
+  [7, 6],
+  [8, 6],
+  [9, 7],
+  [10, 8],
+  [11, 8],
+  [12, 9],
+];
+
+export const THIN_ICE: MinigameInfo = {
+  id: 'thinIce',
+  name: 'Thin Ice',
+  baseGame: 'Minefield',
+  category: 'puzzle',
+  description: 'Check the ice without falling in. Numbers count the holes around.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'grid',
+      label: 'Grid',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        ...ICE_SIZES.map(([c, r]) => ({ id: `${c}x${r}`, label: `${c} × ${r}` })),
+      ],
+      default: 'auto',
+      menu: true,
+      hint: `Auto (${byTier((t) => `${TI.tiers[t].cols} × ${TI.tiers[t].rows}`)})`,
+    },
+    {
+      kind: 'range',
+      id: 'holesPerHiker',
+      label: 'Holes per hiker',
+      min: 0,
+      max: 4,
+      default: TI.holesPerHiker,
+      hint: `On top of ${byTier((t) => TI.tiers[t].holes)}`,
+    },
+    autoRange(
+      'timer',
+      'Timer',
+      60,
+      300,
+      180,
+      ' s',
+      10,
+      `${byTier((t) => TI.tiers[t].timerSec ?? 'none')} s`,
+      true,
+    ),
+  ],
+};
+
+const soon = (
+  id: string,
+  name: string,
+  baseGame: string,
+  category: MinigameInfo['category'],
+): MinigameInfo => ({
   id,
   name,
   baseGame,
+  category,
   description: '',
   status: 'soon',
   settings: [],
 });
 
 export const MINIGAMES: readonly MinigameInfo[] = [
-  BEARRELS,
-  TRAILDLE,
-  FIND_OBJECT,
-  REMEMBER_PATH,
-  FIND_PATH,
   DODGE,
-  soon('antsAreMarching', 'Ants Are Marching', 'Snake'),
-  soon('crackedBridge', 'Cracked Bridge', 'Platformer'),
-  soon('flySwatter', 'Fly Swatter', 'Reaction'),
-  soon('trailMemory', 'Trail Memory', 'Memory'),
+  soon('antsAreMarching', 'Ants Are Marching', 'Snake', 'move'),
+  soon('crackedBridge', 'Cracked Bridge', 'Platformer', 'move'),
+  TRAILDLE,
+  FIND_PATH,
+  TRAIL_MAP,
+  PICTURE_PUZZLE,
+  THIN_ICE,
+  REMEMBER_PATH,
+  MEMORY,
+  FIND_OBJECT,
+  soon('flySwatter', 'Fly Swatter', 'Reaction', 'reaction'),
+  BEARRELS,
 ];
+
+/** The testing tab's list: each category with its games, in order (empty ones left out). */
+export const MINIGAMES_BY_CATEGORY = CATEGORIES.map((c) => ({
+  ...c,
+  games: MINIGAMES.filter((m) => m.category === c.id),
+})).filter((c) => c.games.length > 0);
 
 export const MINIGAME_BY_ID: ReadonlyMap<string, MinigameInfo> = new Map(
   MINIGAMES.map((m) => [m.id, m]),
@@ -379,6 +576,7 @@ function cleanOne(
   allowedHikers: readonly string[],
 ): MinigameSettingValue {
   if (s.kind === 'autoRange') {
+    if (value === 'off' && s.off) return 'off';
     if (value === 'auto' || typeof value !== 'number' || !Number.isFinite(value)) return 'auto';
     const step = s.step ?? 1;
     const snapped = s.min + Math.round((value - s.min) / step) * step;

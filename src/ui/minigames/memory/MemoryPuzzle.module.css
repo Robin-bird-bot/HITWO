@@ -1,0 +1,113 @@
+/* Memory Puzzle (3-memory-preview.png to 5-memory-tier-3.png), in scene units (320 × 240). */
+
+.misses {
+  position: absolute;
+  left: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: 72px;
+}
+
+.misses > span {
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  border-radius: 1px;
+  background: #1d2918;
+}
+
+.misses > span[data-used] {
+  background: #859a66;
+}
+
+.who {
+  position: absolute;
+  left: 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 3.8px;
+}
+
+.card {
+  position: absolute;
+  width: 33px;
+  height: 39px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  cursor: pointer;
+  transition-property: left, top;
+  transition-timing-function: ease-in-out;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.card > img:first-child {
+  width: 33px;
+  height: 39px;
+}
+
+.card[data-up] {
+  animation: flipIn 0.15s ease-out;
+}
+
+.card[data-matched] {
+  box-shadow: 0 0 0 1.25px #1d2918;
+  cursor: default;
+}
+
+.card[data-wrong] {
+  box-shadow: 0 0 0 1.25px #c8423a;
+}
+
+.card[data-cursor] {
+  outline: 1px solid #e9b44c;
+  outline-offset: 1px;
+}
+
+.snack {
+  position: absolute;
+  left: 7px;
+  top: 9px;
+  width: 19px;
+  height: 19px;
+}
+
+.lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.lines line {
+  stroke: #d3dfaf;
+  stroke-width: 1.25px;
+  stroke-linecap: round;
+}
+
+@keyframes flipIn {
+  from {
+    transform: scaleX(0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition-duration: 0s !important;
+  }
+
+  .card[data-up] {
+    animation: none;
+  }
+}
