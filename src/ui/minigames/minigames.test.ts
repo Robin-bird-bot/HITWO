@@ -9,6 +9,7 @@ import {
   BEARRELS,
   cleanSettings,
   defaultSettings,
+  DODGE,
   FIND_OBJECT,
   FIND_PATH,
   MINIGAMES,
@@ -126,13 +127,14 @@ describe('the party GPS', () => {
 });
 
 describe('the minigame list', () => {
-  it('Bearrels and the four puzzle games play; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
+  it('Bearrels, the four puzzle games and Dodge play; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
     expect(MINIGAMES.map((m) => [m.name, m.baseGame, m.status])).toEqual([
       ['Bearrels', 'Barrels', 'ready'],
       ['Traildle', 'Puzzle', 'ready'],
       ['Find the Object', 'Reaction', 'ready'],
       ['Remember the Path', 'Memory', 'ready'],
       ['Find the Path', 'Minefield', 'ready'],
+      ['Dodge', 'Dodging', 'ready'],
       ['Ants Are Marching', 'Snake', 'soon'],
       ['Cracked Bridge', 'Platformer', 'soon'],
       ['Fly Swatter', 'Reaction', 'soon'],
@@ -166,8 +168,17 @@ describe('the minigame list', () => {
       signs: 'auto',
       timer: 'auto',
     });
-    for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH])
+    for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
+    }
+    // Dodge: Animal, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
+    expect(ids(DODGE)).toEqual(['animal', 'tier', 'hikers', 'lives', 'length', 'switch']);
+    expect(defaultSettings(DODGE)).toMatchObject({ animal: 'bees', lives: 'auto', length: 'auto' });
+    expect(cleanSettings(DODGE, { lives: 7, length: 33, switch: 1 }, TEST_HIKERS)).toMatchObject({
+      lives: 3,
+      length: 35,
+      switch: 3,
+    });
     // A remembered override that isn't an option, or a tier out of range, goes back to the default.
     expect(cleanSettings(TRAILDLE, { signs: '12', tier: 4 }, TEST_HIKERS)).toMatchObject({
       signs: 'auto',

@@ -1075,7 +1075,7 @@ export const BALANCE = {
 
     /*
      * The puzzle minigames (Phase 10.8 step 2, docs/design/11-minigames-puzzles.md).
-     * Every number is a first guess, by game and tier. Tiers are I, II, III.
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
      */
 
     /** Traildle: guess hidden digit codes on trail signs, two codes at once at most. */
@@ -1200,6 +1200,72 @@ export const BALANCE = {
       energy: 1,
       /** The trail line draws to a new tile over this long. */
       lineDrawMs: 250,
+    },
+
+    /**
+     * Dodge (Phase 10.8 step 3, docs/design/12-minigames-dodge.md): one party
+     * sprite dodges an animal's attacks in a box. TODO(wyatt): every number is a first guess.
+     */
+    dodge: {
+      tiers: {
+        1: { lengthSec: 20, speed: 1.0, gapSec: 1.6 },
+        2: { lengthSec: 25, speed: 1.2, gapSec: 1.3 },
+        3: { lengthSec: 30, speed: 1.4, gapSec: 1.0 },
+      } as Readonly<Record<1 | 2 | 3, { lengthSec: number; speed: number; gapSec: number }>>,
+      /** Lives per hiker; the active hiker switches this often; the colors blink this long first. */
+      lives: 2,
+      switchSec: 5,
+      blinkSec: 1,
+      /** After a hit, no more hits for this long. */
+      safeSec: 1,
+      /** Every attack is warned this long before it can hit; the first comes this soon. */
+      warnSec: 0.6,
+      firstAttackSec: 0.8,
+      /** The sprite's speed (scene units a second) and its forgiving hitbox (radius). */
+      moveSpeed: 80,
+      hitRadius: 3,
+      /** The box grows or shrinks over this long. */
+      boxEaseSec: 0.4,
+      /** The touch joystick's knob goes this far from where the finger landed (screen px). */
+      joystickPx: 24,
+      bees: {
+        box: [120, 120] as const,
+        radius: 2.5,
+        speed: 80,
+        /** The two frames swap this often. */
+        frameSec: 0.1,
+        /** Lane: this many bees, with one gap lane. Cross: this many per lane. */
+        lane: [4, 6] as const,
+        cross: [3, 4] as const,
+        /** Diagonal: this many bees, this far apart, starting this far apart in time. */
+        diagonal: { bees: 5, spacing: 20, staggerSec: 0.12 },
+        /** Zigzag: this many bees, swinging this far, this many times a second. */
+        zigzag: { bees: 2, amplitude: 28, perSec: 1.2 },
+        /** Aimed: this many bees, launched this far apart in time. */
+        aimed: { bees: 4, staggerSec: 0.3 },
+      },
+      bear: {
+        box: [180, 80] as const,
+        /** Tier III: the box sometimes shrinks to this for this many swings. */
+        shrunk: [140, 70] as const,
+        shrinkChance: 0.3,
+        shrinkSwings: 3,
+        /** The sword is this long from its pivot (above the box); the blade is this thick. */
+        blade: 116,
+        bladeHalfWidth: 2,
+        pivotAbove: 8,
+        /** The warning starts at this, gets this much shorter each swing, and never goes under this. */
+        warnStartSec: 0.8,
+        warnShrink: 0.08,
+        warnMinSec: 0.35,
+        /** The sweep takes this long, a little quicker each swing, never under this. */
+        sweepSec: 0.35,
+        sweepShrink: 0.03,
+        sweepMinSec: 0.2,
+        /** Tier II and up: sometimes a double swing, the second this long after the first. */
+        doubleChance: 0.35,
+        doubleGapSec: 0.3,
+      },
     },
   },
 

@@ -96,6 +96,7 @@ const autoRange = (
   autoValue: number,
   unit: string,
   step = 1,
+  autoHint?: string,
 ): MinigameSetting => ({
   kind: 'autoRange',
   id,
@@ -104,7 +105,7 @@ const autoRange = (
   max,
   step,
   autoValue,
-  hint: `Auto (${autoValue}${unit}), or ${min} to ${max}${unit}`,
+  hint: `Auto (${autoHint ?? `${autoValue}${unit}`}), or ${min} to ${max}${unit}`,
 });
 
 /** An override: "Auto" uses the tier's value. */
@@ -217,6 +218,43 @@ export const FIND_PATH: MinigameInfo = {
   ],
 };
 
+const DG = BALANCE.minigames.dodge;
+
+export const DODGE: MinigameInfo = {
+  id: 'dodge',
+  name: 'Dodge',
+  baseGame: 'Dodging',
+  description: 'Dodge the animal’s attacks. The active hiker switches every few seconds.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    {
+      kind: 'pick',
+      id: 'animal',
+      label: 'Animal',
+      options: [
+        { id: 'bees', label: 'Bees' },
+        { id: 'bear', label: 'Bear with a Sword' },
+      ],
+      default: 'bees',
+    },
+    TIER,
+    HIKERS,
+    autoRange('lives', 'Lives per hiker', 1, 3, DG.lives, ''),
+    autoRange(
+      'length',
+      'Length',
+      10,
+      60,
+      DG.tiers[1].lengthSec,
+      ' s',
+      5,
+      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s`,
+    ),
+    autoRange('switch', 'Switch every', 3, 10, DG.switchSec, ' s'),
+  ],
+};
+
 const soon = (id: string, name: string, baseGame: string): MinigameInfo => ({
   id,
   name,
@@ -232,6 +270,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FIND_OBJECT,
   REMEMBER_PATH,
   FIND_PATH,
+  DODGE,
   soon('antsAreMarching', 'Ants Are Marching', 'Snake'),
   soon('crackedBridge', 'Cracked Bridge', 'Platformer'),
   soon('flySwatter', 'Fly Swatter', 'Reaction'),

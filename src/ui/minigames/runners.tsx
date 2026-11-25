@@ -16,6 +16,7 @@ import type {
 } from '../../minigames/types';
 import { BearrelsGame } from './bearrels/BearrelsGame';
 import { BearrelsPreview } from './bearrels/BearrelsPreview';
+import { Dodge } from './dodge/Dodge';
 import { FindObject } from './findObject/FindObject';
 import { FindPath } from './findPath/FindPath';
 import type { PuzzleRunProps } from './puzzleProps';
@@ -68,6 +69,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   findObject: FindObject,
   rememberPath: RememberPath,
   findPath: FindPath,
+  dodge: Dodge,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -85,10 +87,15 @@ function FindPathStill({ settings, hikers }: MinigamePreviewProps) {
   return <FindPath settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 
+function DodgeStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Dodge settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   bearrels: BearrelsPreviewRun,
   traildle: TraildleStill,
   findObject: FindObjectStill,
   rememberPath: RememberPathStill,
   findPath: FindPathStill,
+  dodge: DodgeStill,
 };

@@ -30,6 +30,8 @@ export interface MinigameResult {
   wording?: 'safe-hit' | 'passed-failed';
   /** The hiker who earned +1 Energy (Find the Path: the first one through). Shown only in test mode for now. */
   energy?: string;
+  /** Hits each hiker took (Dodge): "Mom: 1 hit". Every hit will count for the challenge's effect later. */
+  hits?: Record<string, number>;
 }
 
 /** One setting on the testing tab. */

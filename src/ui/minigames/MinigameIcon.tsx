@@ -34,6 +34,14 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M8 21v0M16 14v0" />
     </>
   ),
+  // A bee.
+  dodge: (
+    <>
+      <ellipse cx="12" cy="14" rx="7" ry="5" />
+      <path d="M9 9.5v9M12 9v10M15 9.5v9" />
+      <path d="M10 9c-2-4-6-3-5 0M14 9c2-4 6-3 5 0" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

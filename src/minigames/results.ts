@@ -15,6 +15,10 @@ export function resultLine(r: MinigameResult): string {
 /** One hiker's line: "Safe", "Hit in round 2", "Passed" or "Failed"; whether it's bad news. */
 export function hikerStatus(r: MinigameResult, hikerId: string): { text: string; bad: boolean } {
   const hit = r.hit.find((h) => h.hikerId === hikerId);
-  if (r.wording === 'passed-failed') return { text: hit ? 'Failed' : 'Passed', bad: !!hit };
+  if (r.wording === 'passed-failed') {
+    const n = r.hits?.[hikerId];
+    const hits = n === undefined ? '' : ` · ${n} hit${n === 1 ? '' : 's'}`;
+    return { text: (hit ? 'Failed' : 'Passed') + hits, bad: !!hit };
+  }
   return { text: hit ? `Hit in round ${hit.round}` : 'Safe', bad: !!hit };
 }

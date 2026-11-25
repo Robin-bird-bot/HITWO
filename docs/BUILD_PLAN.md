@@ -1405,7 +1405,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, gro
   - **On a phone** the smallest labels are very small. That's left for Phase 17 (Phone).
 - **Not done:** Prepare options, real stakes, real art (placeholders as given), sound, the GPS preview animations for these games (still frames for now).
 
-### Phase 10.8, step 2b: Fixes and changes after testing the four (now)
+### Phase 10.8, step 2b: Fixes and changes after testing the four (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-minigame-fixes.md`. The design is the revised `docs/design/11-minigames-puzzles.md`. New mockups `10-traildle-fit.png` to `15-find-path-hidden-after-run-out.png` in `docs/mockups/minigames/puzzles/`.)
 
@@ -1423,7 +1423,16 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** the new cases in design section 6, and the old ones again.
 
-### Phase 10.8, step 3: Dodge, test version (next)
+**Phase 10.8 step 2b notes (built Nov 24)**
+- **What caused the Find the Path bug:** a trail can turn back along the row above itself (left along the bottom, up, then right), so a later trail tile can sit right next to the hiker. The old code treated anything except the very next trail tile as trees, so that real trail tile was marked as trees and later hikers hit a dead end. Now the hiker's place is a tile, "right" is looked up from the trail itself, and only tiles off the trail become trees. A self-check fixes (and logs) a trees mark on the way forward, and a 1,000-game simulation per tier checks every game can be finished.
+- **What I interpreted:**
+  - **Find the Path:** picking a trail tile further along (not the next one) costs a try and shows as trail, never trees.
+  - **Find the Object:** the extra distractors per hiker count the hikers still in that round.
+  - **Remember the Path:** on an even-width grid, ↑ from the middle steps into the right-hand one of the two middle columns.
+  - **Traildle:** the big signs shrink to 0.85× from 7 signs on.
+- **Settings:** the new number settings (Rounds, Seconds per target, Extra seconds per round, and Dodge's) start at **Auto**, the tier's value; − from the lowest number goes back to Auto.
+
+### Phase 10.8, step 3: Dodge, test version (done)
 
 (New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge.md`. The design is `docs/design/12-minigames-dodge.md`. Mockups in `docs/mockups/minigames/dodge/`. Placeholder art in `public/assets/minigames/dodge/`.)
 
@@ -1440,6 +1449,18 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 6. **Testing tab:** Dodge with Animal, Tier, Hikers, Lives per hiker (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
 
 **Tests:** as in `12-minigames-dodge.md`, section 8.
+
+**Phase 10.8 step 3 notes (built Nov 24)**
+- **Built despite the hold:** the fixes update said to hold Dodge, but Wyatt's message asked for it, so it's built.
+- **What's playable:** main menu → **Minigame testing** → **Dodge** → set Animal, Tier, Hikers, Lives per hiker, Length and Switch every → **Test it** → Start → Line up → Go. Ends with "2 passed, 2 failed" and "Passed · 1 hit".
+- **What I interpreted:**
+  - **The base game** label is "Dodging".
+  - **Timing:** the bear's next swing comes the tier's gap after the last sweep ends; the next bee wave comes the gap after the last bee of a wave sets off.
+  - **Double swing:** the second side's warning starts when the first sweep starts, so it sweeps [0.3 s] after the first ends.
+  - **Length setting:** Auto uses the tier's 20, 25 or 30 s.
+  - **The sword:** [116] units from the pivot to the tip, the sword's 128 at 2× less the hilt above the pivot.
+  - **The joystick** is [24] screen pixels, so it feels the same on any screen size.
+- **Not done:** real art beyond the placeholders, sound, a GPS preview animation (a still frame for now), and the other animals.
 
 ### Phase 10.8, next steps (outline only)
 
