@@ -1281,7 +1281,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - there's a 700 ms pause after a round's last shot before the bear ducks.
 - **Not done:** Prepare, real stakes (Injury, Luck), challenge XP, other minigames, sound files (hooks only), and the GPS's D-pad and buttons.
 
-### Phase 10.8, step 1b: Bearrels styles, the vertical GPS and drag-and-drop (now)
+### Phase 10.8, step 1b: Bearrels styles, the vertical GPS and drag-and-drop (done)
 
 (New in the Nov 24 follow-up: `docs/UPDATE-2026-11-24-bearrels-styles.md`. The design is the revised `docs/design/10-minigames.md`, which replaces the first version. New mockups in `docs/mockups/minigames/`: `1-playing-earthy-pixel.jpg` to `8-testing-tab-reference.jpg`. The pixel sprites are in `public/assets/minigames/bearrels/pixel-earth/` and `pixel-teal/`; the `_reference-*.png` frames stay in `assets/` only.)
 
@@ -1325,6 +1325,142 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - **Splinter and smoke colors** in the pixel styles are my picks.
 - **Number added** (`BALANCE.minigames.gps`, `TODO(wyatt)`): `phoneScreenHeight` 0.95, since the doc says "almost the full height".
 - **Not done:** detailed hiker art (after Wyatt picks a style), sound files, Prepare, real stakes, other minigames.
+
+### Phase 10.8, step 1c: Bearrels in the GPS greens (done)
+
+(New in the Nov 24 follow-up: `docs/UPDATE-2026-11-24-bearrels-gps-greens.md`. The design is the revised `docs/design/10-minigames.md`. New mockups in `docs/mockups/minigames/`: `1-playing-gps-pixel.jpg` to `6-drawn-assets.jpg`; the older style mockups are gone except `4-vertical-gps-preview-then-turn.jpg`, `7-game-states-reference.jpg` and `8-testing-tab-reference.jpg`. The art is in `public/assets/minigames/bearrels/gps-pixel/` and `gps-drawn/`, with one `layout.json` for both.)
+
+**Goal:** Bearrels drawn in the GPS's own LCD greens, in two versions Wyatt compares in the game. Everything else stays: the framework, the pop-up, the vertical GPS with its preview and turn, drag-and-drop, the testing tab, and Bearrels' rules and flow.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **Two versions** replace Earthy pixel, Teal pixel and Silhouette: **Detailed pixel** (default; 1 px per unit, nearest-neighbor, whole-number scale) and **Drawn 2D** (4 px per unit, drawn at a quarter size, smooth). The scene is 320 × 240 units. One scene model, two renderers. A saved old style falls back to Detailed pixel.
+2. **Draw order:** background, bear, log, barrel shadows, barrels, hikers, foreground (tall grass over the barrels and hikers), crosshair, muzzle flash, effects. Every position comes from `layout.json`.
+3. **The bear** hides behind the log, then aims a revolver at the screen: left, middle or right (the side pose mirrored for right), following the crosshair's x while it sweeps (under 130 left, over 190 right). The muzzle flash sits on that pose's muzzle point. He pops up from 18 units lower over [450 ms] with a bounce, clipped above y 160.
+4. **Hikers** crouch in front of their barrel, backs to us, sized 100, 80 or 62 by how many share it and spread as `layout.json` says. The foreground grass covers their lower half. The drop target covers the barrel and the hikers in front of it.
+5. **Scanlines** belong to the GPS glass: across and still in the upright preview, up and down once turned, drifting sideways at about [10 px/s] during play, with a soft brighter band about [15%] wide sweeping across every [6 s]. Lines 1 px, about [8%] dark, every [3 px]. Reduced motion: still, no band.
+6. **The in-game UI** in the GPS look: dark green boxes (#1D2918), a light green border (#BAC995), a darker drop edge, light text (#D3DFAF) in the pixel font, in capitals. Round box "R 1/3", prompt, "SHOTS", tokens, Ready (light green when lit).
+7. **Testing tab:** Art style has two buttons; the Style button and S switch between them while playing.
+8. Delete the old `pixel-earth/` and `pixel-teal/` art and the silhouette SVG parts once nothing uses them.
+
+**Tests**
+- Both versions draw 3 to 6 barrels where `layout.json` and the reference frames say, and the UI never covers a barrel.
+- The bear's pose follows the crosshair, and the flash appears at that pose's muzzle, mirrored included.
+- 1 to 4 hikers at one barrel are sized and spread as the layout says, with the grass over them.
+- Switching versions mid-round keeps every hiker's barrel, the round and who is out.
+- During play the scanlines move; with reduced motion they don't.
+
+**Phase 10.8 step 1c notes (built Nov 24)**
+- **What's playable:** Bearrels in Detailed pixel (the default) or Drawn 2D, with the aiming bear, hikers crouched in front of the barrels under the grass, the moving scanlines and the GPS-look boxes. The Style button and S switch between the two mid-round. A remembered old style (Earthy, Teal, Silhouette) opens as Detailed pixel.
+- **What I interpreted:**
+  - **The bear's pose** is the middle one while he pops up, before the crosshair moves.
+  - **The drop area** is as wide as four hikers spread out, so at 6 barrels neighbors overlap a little; the nearest barrel wins.
+  - **The results card** keeps its cream look; the update restyled the HUD only.
+  - **Splinters** are drawn in G2 and smoke in G9.
+- **Not done:** sound files (hooks only), Prepare, real stakes.
+
+### Phase 10.8, step 2: Four puzzle minigames, test version (done)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-four-minigames.md`. The design is `docs/design/11-minigames-puzzles.md`. Mockups in `docs/mockups/minigames/puzzles/`. Placeholder art in `public/assets/minigames/traildle/`, `find-object/`, `remember-path/` and `forest-tiles/`; `_snacks-sheet-8x.png` stays in `assets/` only.)
+
+**Goal:** test versions of **Traildle**, **Find the Object**, **Remember the Path** and **Find the Path**, plus a reusable **Line up** step, playable from the Minigame testing tab, so Wyatt can get the rules and feel right before the real art. No Prepare options yet.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, grouped by game and tier.
+
+**Build**
+1. **Shared parts:** a 320 × 240 scene in the LCD greens, scaled up nearest-neighbor; GPS-style HUD boxes; hiker tokens (a circle in the hiker's color with their initial: waiting, current, safe, out); results as Passed or Failed for every hiker ("2 passed, 1 failed").
+2. **Line up:** before a game with 2 or more hikers, numbered cards to drag into order (tap two to swap also works), then Go. The front of the line goes first. Skipped with 1 hiker. Every game gets the order.
+3. **Traildle:** guess hidden digit codes on trail signs, in pairs (two boards at once, Quordle style). Marks: solid dark (right spot), dashed light (wrong spot), grey crossed out (not in the code); Wordle's rule for repeated digits from Tier II. Signs, guesses and a timer by tier. Arrows on the signs, typing, hover plus a digit, the digit strip, ← →, Backspace and Enter.
+4. **Find the Object:** find the named trail snacks in a crowd of look-alike greens. One target per hiker; the first k hikers in line pass when k are found. A wrong click costs [2 s]. Still (Tier I), Windy (Tier II: drifting and wrapping) and Dark (Tier III: a flashlight follows the pointer).
+5. **Remember the Path:** a ranger walks a path from the bottom row to the top; then each hiker walks it from memory (drag, tap, or arrow keys). Strikes by tier: [3], [2], [1]. Each hiker gets a new path.
+6. **Find the Path:** take turns guessing a hidden trail (up, left or right only) through a forest. Wrong picks become trees and cost a try; running out sends the hiker to the back of the line and costs the group an attempt; with none left, running out means out. Fog on Tier III. The first hiker through gets +[1] Energy (shown only in test mode).
+7. **Testing tab:** all four in the list, with Tier and Hikers settings and the overrides: Traildle Signs and Timer, Find the Object Mode, Find the Path Fog. Same flow as Bearrels: the pop-up in test mode (the game's name in the banner, an empty poster frame, a still frame in the GPS), Start, the turn, the line up, the game, the results, and back.
+
+**Tests:** as in `11-minigames-puzzles.md`, section 6.
+
+**Done when:** all four play from the testing tab on every tier and override, with mouse, touch and keyboard, and the tests pass.
+
+**Phase 10.8 step 2 notes (built Nov 24)**
+- **What's playable:** main menu → **Minigame testing** → pick **Traildle**, **Find the Object**, **Remember the Path** or **Find the Path** → set the Tier, Hikers and overrides → **Test it** → Start. With 2 or more hikers, Line up comes first. Each game ends with "2 passed, 1 failed", then Continue or Play again (back to Line up, keeping the last order).
+- **What I interpreted:**
+  - **Line up** is only for the four puzzle games. Bearrels skips it, since the order doesn't matter there.
+  - **Base game labels** in the list come from the library in `08-overhaul-plan.md`: Traildle Puzzle, Find the Object Reaction, Remember the Path Memory, Find the Path Minefield.
+  - **The pop-up** for these games has no flavor line and no If hit (no stakes yet). Its GPS shows a still frame.
+  - **Traildle:**
+    - each pair gets its own sign count within the tier's range; the Signs override sets an exact count;
+    - Timer On on Tier I uses 3:00 (`TODO(wyatt)`, `traildle.timerOnSec`);
+    - between pairs a card shows each code and whether it was found;
+    - a digit typed while pointing at a sign fills that sign, then selects the next.
+  - **Find the Object:**
+    - from Tier II, with 2 or more hikers, the targets are always a mix of 2 snacks, split as evenly as possible;
+    - in Dark, the snacks outside the light stay faintly visible, as in mockup 5, but only ones in the light can be picked.
+  - **Remember the Path:**
+    - stepping back onto the tile you came from counts as a wrong step;
+    - the panel counts steps as tiles minus 1.
+  - **Find the Path:**
+    - the top edge is dashed to show the way out (an arrow on the exit tile would give the trail away);
+    - in fog, the trail line shows only up to tiles still visible;
+    - "+1 Energy" shows in a badge and on the results card.
+  - **On a phone** the smallest labels are very small. That's left for Phase 17 (Phone).
+- **Not done:** Prepare options, real stakes, real art (placeholders as given), sound, the GPS preview animations for these games (still frames for now).
+
+### Phase 10.8, step 2b: Fixes and changes after testing the four (done)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-minigame-fixes.md`. The design is the revised `docs/design/11-minigames-puzzles.md`. New mockups `10-traildle-fit.png` to `15-find-path-hidden-after-run-out.png` in `docs/mockups/minigames/puzzles/`.)
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Bugs**
+1. **Traildle:** small signs and rows sized from each board's space; rows never shorter than [9] units (the board scrolls, the newest guess always shows, "▲ N MORE" when rows are hidden); big signs shrink so 7 or 8 fit. Worst case: 8 signs, two codes, 9 guesses.
+2. **Find the Object:** a found snack checks a slot showing that same snack.
+3. **Find the Path:** "right" is only the trail tile after the one the hiker stands on, looked up from the trail itself; a trail tile is never shown as trees; reaching the top row always passes. A 1,000-game simulation test.
+
+**Changes**
+4. **Find the Object:** [3] rounds (1 to 5), one more target each round; each unfound target puts one hiker out from the back of the line; a Dark + windy mode (Tier III's default); a shorter timer, [3 s] + [3 s] per target, with Seconds per target and Extra seconds per round settings.
+5. **Remember the Path:** the ranger and each hiker start below the grid's middle; no start tile is marked; the first step into the bottom row can be wrong (a strike); ← → slide along under the grid, ↑ steps in.
+6. **Find the Path:** a run-out hides the trail again (tiles, line and lucky reveals) and the next hiker starts at the trailhead; trees stay unless **Hide after a run-out** is set to Everything; hidden trail tiles are still free to pick; once a hiker reaches the top, the trail stays and the rest walk it through.
+
+**Tests:** the new cases in design section 6, and the old ones again.
+
+**Phase 10.8 step 2b notes (built Nov 24)**
+- **What caused the Find the Path bug:** a trail can turn back along the row above itself (left along the bottom, up, then right), so a later trail tile can sit right next to the hiker. The old code treated anything except the very next trail tile as trees, so that real trail tile was marked as trees and later hikers hit a dead end. Now the hiker's place is a tile, "right" is looked up from the trail itself, and only tiles off the trail become trees. A self-check fixes (and logs) a trees mark on the way forward, and a 1,000-game simulation per tier checks every game can be finished.
+- **What I interpreted:**
+  - **Find the Path:** picking a trail tile further along (not the next one) costs a try and shows as trail, never trees.
+  - **Find the Object:** the extra distractors per hiker count the hikers still in that round.
+  - **Remember the Path:** on an even-width grid, ↑ from the middle steps into the right-hand one of the two middle columns.
+  - **Traildle:** the big signs shrink to 0.85× from 7 signs on.
+- **Settings:** the new number settings (Rounds, Seconds per target, Extra seconds per round, and Dodge's) start at **Auto**, the tier's value; − from the lowest number goes back to Auto.
+
+### Phase 10.8, step 3: Dodge, test version (done)
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge.md`. The design is `docs/design/12-minigames-dodge.md`. Mockups in `docs/mockups/minigames/dodge/`. Placeholder art in `public/assets/minigames/dodge/`.)
+
+**Goal:** an Undertale-style dodging game for animal encounters, playable from the testing tab: one party sprite in the active hiker's color dodges attacks in a box; the active hiker switches every few seconds; a hit costs the active hiker a life; survive until the clock runs out. The first animals are **Bees** and **Bear with a Sword**.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **The game:** `person.png` tinted in the active hiker's color; a switch every [5 s] to the next hiker still in (a 1 s blink first, a countdown in the HUD); [2] lives each, a hit costs 1 and gives [1 s] of safety, 0 means out; the tier's length ([20], [25] or [30 s]), ending early if everyone is out; Passed or Failed with hit counts.
+2. **Controls:** WASD or the arrow keys; a floating touch joystick where the finger lands; mouse drag works like touch.
+3. **Warnings:** every attack is warned [0.6 s] before.
+4. **Bees:** a square box; Lane, Cross, Diagonal and Zigzag (Tier II and up), Aimed (Tier III); "!" markers at the entry edge.
+5. **Bear with a Sword:** a wide box; the half about to be swept is hatched, then the sword sweeps it around a pivot above the box; each swing warns faster, down to a minimum; double swings from Tier II; the box sometimes shrinks on Tier III.
+6. **Testing tab:** Dodge with Animal, Tier, Hikers, Lives per hiker (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
+
+**Tests:** as in `12-minigames-dodge.md`, section 8.
+
+**Phase 10.8 step 3 notes (built Nov 24)**
+- **Built despite the hold:** the fixes update said to hold Dodge, but Wyatt's message asked for it, so it's built.
+- **What's playable:** main menu → **Minigame testing** → **Dodge** → set Animal, Tier, Hikers, Lives per hiker, Length and Switch every → **Test it** → Start → Line up → Go. Ends with "2 passed, 2 failed" and "Passed · 1 hit".
+- **What I interpreted:**
+  - **The base game** label is "Dodging".
+  - **Timing:** the bear's next swing comes the tier's gap after the last sweep ends; the next bee wave comes the gap after the last bee of a wave sets off.
+  - **Double swing:** the second side's warning starts when the first sweep starts, so it sweeps [0.3 s] after the first ends.
+  - **Length setting:** Auto uses the tier's 20, 25 or 30 s.
+  - **The sword:** [116] units from the pivot to the tip, the sword's 128 at 2× less the hilt above the pivot.
+  - **The joystick** is [24] screen pixels, so it feels the same on any screen size.
+- **Not done:** real art beyond the placeholders, sound, a GPS preview animation (a still frame for now), and the other animals.
 
 ### Phase 10.8, next steps (outline only)
 

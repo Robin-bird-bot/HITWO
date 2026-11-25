@@ -12,7 +12,7 @@ export interface MinigameChallenge {
   tier: 1 | 2 | 3;
   /** Who takes part ("WHOLE PARTY"), top right of the banner. */
   who: string;
-  /** In italic, at the top of the right column. */
+  /** In italic, under the poster (none for a test challenge). */
   flavor: string;
   /** Its poster (2:3), when Wyatt has painted one. */
   poster?: string;
@@ -22,8 +22,29 @@ export interface MinigameChallenge {
   game: { name: string; line: string; chip?: string };
   /** Prepare options (effect and cost). TODO(wyatt): not built yet; the mockup's are placeholders. */
   prepare?: readonly { label: string; cost: string; placeholder?: true }[];
-  /** What failing costs. Shown, not applied yet. */
+  /** What failing costs. Shown, not applied yet (none for a test challenge). */
   ifHit: readonly { who: 'each' | 'everyone'; label: string; value: string }[];
+}
+
+/**
+ * The pop-up for a minigame in the testing tab when it has no challenge of
+ * its own yet (11-minigames-puzzles.md, "Testing tab"): the game's name in
+ * the banner, the tier picked, an empty poster frame, no flavor and no stakes.
+ */
+export function testChallenge(
+  game: { id: string; name: string; baseGame: string; description: string },
+  tier: 1 | 2 | 3,
+): MinigameChallenge {
+  return {
+    id: `test-${game.id}`,
+    name: game.name,
+    tier,
+    who: 'Whole party',
+    flavor: '',
+    minigame: game.id,
+    game: { name: game.name, line: game.description },
+    ifHit: [],
+  };
 }
 
 export const BEAR_COUNTRY: MinigameChallenge = {

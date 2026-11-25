@@ -5,7 +5,17 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { BEARRELS, cleanSettings, defaultSettings, MINIGAMES } from '../../minigames/catalog';
+import {
+  BEARRELS,
+  cleanSettings,
+  defaultSettings,
+  DODGE,
+  FIND_OBJECT,
+  FIND_PATH,
+  MINIGAMES,
+  REMEMBER_PATH,
+  TRAILDLE,
+} from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
 import { AUTOSAVE_KEY } from '../../store/autosave';
@@ -16,6 +26,7 @@ import {
   gpsTransform,
   gpsTurned,
   gpsUpright,
+  scanlineMotion,
   styleButtonSpot,
 } from './gpsLayout';
 import {
@@ -95,6 +106,14 @@ describe('the party GPS', () => {
     expect([G.turnMs, G.returnMs]).toEqual([700, 500]);
   });
 
+  it('scanlines drift and a band sweeps across during play; with reduced motion they stay still', () => {
+    expect(scanlineMotion(true, false)).toEqual({ drift: true, band: true });
+    expect(scanlineMotion(true, true)).toEqual({ drift: false, band: false });
+    // Upright in the pop-up they stand still.
+    expect(scanlineMotion(false, false)).toEqual({ drift: false, band: false });
+    expect(G.scanlines).toMatchObject({ dark: 0.08, everyPx: 3, driftPxPerSec: 10 });
+  });
+
   it('the Style button sits on the turned body, beside the screen, on the stage', () => {
     for (const phone of [false, true]) {
       const t = gpsTurned(phone);
@@ -108,9 +127,14 @@ describe('the party GPS', () => {
 });
 
 describe('the minigame list', () => {
-  it('Bearrels plays; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
+  it('Bearrels, the four puzzle games and Dodge play; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
     expect(MINIGAMES.map((m) => [m.name, m.baseGame, m.status])).toEqual([
       ['Bearrels', 'Barrels', 'ready'],
+      ['Traildle', 'Puzzle', 'ready'],
+      ['Find the Object', 'Reaction', 'ready'],
+      ['Remember the Path', 'Memory', 'ready'],
+      ['Find the Path', 'Minefield', 'ready'],
+      ['Dodge', 'Dodging', 'ready'],
       ['Ants Are Marching', 'Snake', 'soon'],
       ['Cracked Bridge', 'Platformer', 'soon'],
       ['Fly Swatter', 'Reaction', 'soon'],
@@ -118,10 +142,55 @@ describe('the minigame list', () => {
     ]);
   });
 
-  it('Bearrels’ settings: art style (Earthy pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
+  it('the puzzle games: Tier (I, II, III), Hikers, and their overrides, where Auto uses the tier', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
+    expect(ids(TRAILDLE)).toEqual(['tier', 'hikers', 'signs', 'timer']);
+    expect(ids(FIND_OBJECT)).toEqual([
+      'tier',
+      'hikers',
+      'mode',
+      'rounds',
+      'secPerTarget',
+      'extraSec',
+    ]);
+    expect(ids(REMEMBER_PATH)).toEqual(['tier', 'hikers']);
+    expect(ids(FIND_PATH)).toEqual(['tier', 'hikers', 'fog', 'hide']);
+    // Auto-or-number settings: "auto" by default, numbers kept in range.
+    expect(defaultSettings(FIND_OBJECT)).toMatchObject({ rounds: 'auto', secPerTarget: 'auto' });
+    expect(cleanSettings(FIND_OBJECT, { rounds: 9, extraSec: -3 }, TEST_HIKERS)).toMatchObject({
+      rounds: 5,
+      extraSec: 0,
+      secPerTarget: 'auto',
+    });
+    expect(defaultSettings(TRAILDLE)).toEqual({
+      tier: 1,
+      hikers: ['finn', 'ellie', 'mom'],
+      signs: 'auto',
+      timer: 'auto',
+    });
+    for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
+      expect(info.lineUp).toBe(true);
+    }
+    // Dodge: Animal, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
+    expect(ids(DODGE)).toEqual(['animal', 'tier', 'hikers', 'lives', 'length', 'switch']);
+    expect(defaultSettings(DODGE)).toMatchObject({ animal: 'bees', lives: 'auto', length: 'auto' });
+    expect(cleanSettings(DODGE, { lives: 7, length: 33, switch: 1 }, TEST_HIKERS)).toMatchObject({
+      lives: 3,
+      length: 35,
+      switch: 3,
+    });
+    // A remembered override that isn't an option, or a tier out of range, goes back to the default.
+    expect(cleanSettings(TRAILDLE, { signs: '12', tier: 4 }, TEST_HIKERS)).toMatchObject({
+      signs: 'auto',
+      tier: 1,
+    });
+    expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
+  });
+
+  it('Bearrels’ settings: art style (Detailed pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
     expect(BEARRELS.settings[0]).toMatchObject({ kind: 'style', label: 'Art style' });
     expect(defaultSettings(BEARRELS)).toEqual({
-      style: 'earth',
+      style: 'pixel',
       barrels: 3,
       rounds: 3,
       shots: 1,
@@ -142,16 +211,17 @@ describe('the minigame list', () => {
         TEST_HIKERS,
       ),
     ).toEqual({
-      style: 'earth',
+      style: 'pixel',
       barrels: 6,
       rounds: 1,
       shots: 1,
       hikers: ['finn', 'ellie', 'mom', 'wyatt'],
     });
     // A known style is kept; anything else is Earthy pixel.
-    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('teal');
-    expect(cleanSettings(BEARRELS, { style: 'neon' }, TEST_HIKERS).style).toBe('earth');
-    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('earth');
+    expect(cleanSettings(BEARRELS, { style: 'drawn' }, TEST_HIKERS).style).toBe('drawn');
+    // An old style (Earthy, Teal, Silhouette) or anything else: Detailed pixel.
+    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('pixel');
+    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('pixel');
     // No hikers left: back to the default.
     expect(cleanSettings(BEARRELS, { hikers: ['cody'] }, TEST_HIKERS).hikers).toEqual([
       'finn',
@@ -160,24 +230,17 @@ describe('the minigame list', () => {
     ]);
   });
 
-  it('each hiker’s color and silhouette (layout.json); Grandpa Wink is Wink', () => {
-    expect(minigameHiker('finn')).toMatchObject({
-      color: '#E2683C',
-      shape: 'dog-floppy',
-      art: 'finn',
-    });
+  it('each hiker’s color (layout.json); Grandpa Wink is Wink', () => {
+    expect(minigameHiker('finn')).toMatchObject({ color: '#E2683C', art: 'finn' });
     expect(minigameHiker('grandpaWink')).toMatchObject({
       name: 'Wink',
       color: '#3FB8B0',
-      shape: 'bald',
       art: 'wink',
     });
     // A run's party color wins.
     expect(minigameHiker('mom', '#123456').color).toBe('#123456');
-    // A future hiker: a dog gets the floppy dog, anyone else the messy hair.
-    expect(minigameHiker('cody').shape).toBe('dog-floppy');
-    expect(minigameHiker('pearl').shape).toBe('dog-floppy');
-    expect(minigameHiker('ben').shape).toBe('messy');
+    // A future hiker without minigame art gets a plain color.
+    expect(minigameHiker('cody').color).toBe('#C9C2B2');
   });
 });
 
@@ -187,7 +250,7 @@ describe('test mode never touches the saved hike', () => {
     const { storage, data, writes } = fakeStorage({ [AUTOSAVE_KEY]: save });
     expect(readTestingSettings(storage, 'bearrels')).toEqual(defaultSettings(BEARRELS));
     const next = {
-      style: 'silhouette',
+      style: 'drawn',
       barrels: 5,
       rounds: 2,
       shots: 2,

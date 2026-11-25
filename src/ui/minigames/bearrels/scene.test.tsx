@@ -1,8 +1,8 @@
 /**
- * One scene model, three renderers (Nov 24 follow-up): switching the art
- * style mid-round keeps every hiker's barrel, the round and who is out. The
- * model never mentions the style, and each renderer draws the same hikers
- * at the same barrels.
+ * One scene model, two versions (gps-greens update): switching between
+ * Detailed pixel and Drawn 2D mid-round keeps every hiker's barrel, the
+ * round and who is out. The model never mentions the version, and both draw
+ * the same hikers at the same barrels, with the grass over them.
  */
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -77,6 +77,31 @@ describe('switching art styles mid-round', () => {
     expect(JSON.stringify(game)).toBe(before);
   });
 
+  it('draws the foreground grass after the hikers, so it covers them', () => {
+    const game = midGame();
+    const model: SceneModel = {
+      ...emptyScene(4),
+      hikers: sceneHikers(game, HIKERS, { tipped: [], gone: [] }),
+    };
+    for (const style of ART_STYLES.map((s) => s.id)) {
+      const html = renderToStaticMarkup(<BearrelsScene style={style} model={model} />);
+      const lastHiker = html.lastIndexOf('data-hiker=');
+      expect(lastHiker).toBeGreaterThan(0);
+      expect(html.indexOf('data-layer="foreground"')).toBeGreaterThan(lastHiker);
+    }
+  });
+
+  it('the muzzle flash shows at the pose the crosshair calls for', () => {
+    const at = (crosshair: number) =>
+      renderToStaticMarkup(
+        <BearrelsScene style="pixel" model={{ ...emptyScene(3), bear: 'fire', crosshair }} />,
+      );
+    expect(at(0)).toContain('data-muzzle="left"');
+    expect(at(1)).toContain('data-muzzle="center"');
+    expect(at(2)).toContain('data-muzzle="right"');
+    expect(at(2)).toContain('scaleX(-1)');
+  });
+
   it('every style draws its tap areas on the same barrels', () => {
     const model = emptyScene(5);
     for (const style of ART_STYLES.map((s) => s.id)) {
@@ -85,7 +110,7 @@ describe('switching art styles mid-round', () => {
       );
       const taps = [...html.matchAll(/data-barrel="(\d+)"/g)].map((m) => Number(m[1]));
       expect(taps, style).toEqual([0, 1, 2, 3, 4]);
-      expect(barrelBoxes(style, 5)).toHaveLength(5);
+      expect(barrelBoxes(5)).toHaveLength(5);
     }
   });
 });

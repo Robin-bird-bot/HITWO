@@ -9,23 +9,29 @@
  * touch, and tap, then tap always works too (Nov 24 follow-up).
  */
 
-/** A hiker in a minigame: who, their color (rim light and portrait ring) and silhouette shape. */
+/** A hiker in a minigame: who, and their color (their portrait ring and their figure). */
 export interface MinigameHiker {
   id: string;
   name: string;
   color: string;
-  shape: SilhouetteShape;
   /** The id their minigame art uses (hiker-<art>-100.png): Grandpa Wink is "wink". */
   art: string;
 }
 
-/** The silhouette each hiker is drawn as (layout.json `shapes`). */
-export type SilhouetteShape = 'dog-floppy' | 'dog-fluffy' | 'hat' | 'messy' | 'curly' | 'bald';
-
-/** How a minigame ended: who was safe, and who was hit in which round. */
+/**
+ * How a minigame ended, for every hiker. Bearrels says who was safe and who
+ * was hit in which round; the puzzle games say who passed and who failed
+ * (`wording`), and the round is 0.
+ */
 export interface MinigameResult {
   safe: string[];
   hit: { hikerId: string; round: number }[];
+  /** "1 safe, 2 hit" (Bearrels) or "2 passed, 1 failed" (the puzzle games). */
+  wording?: 'safe-hit' | 'passed-failed';
+  /** The hiker who earned +1 Energy (Find the Path: the first one through). Shown only in test mode for now. */
+  energy?: string;
+  /** Hits each hiker took (Dodge): "Mom: 1 hit". Every hit will count for the challenge's effect later. */
+  hits?: Record<string, number>;
 }
 
 /** One setting on the testing tab. */
@@ -45,8 +51,33 @@ export type MinigameSetting =
       id: string;
       label: string;
       options: readonly number[];
+      /** What each option's button says (Tier: I, II, III), when not the number. */
+      labels?: readonly string[];
       default: number;
       hint: string;
+    }
+  | {
+      /**
+       * A number in a range, or "auto" (the tier's or the default value,
+       * `autoValue`, shown in the hint). Stepping below the minimum gives Auto.
+       */
+      kind: 'autoRange';
+      id: string;
+      label: string;
+      min: number;
+      max: number;
+      step?: number;
+      autoValue: number;
+      hint: string;
+    }
+  | {
+      /** A few named options, such as Auto, On and Off ("Auto" uses the tier's value). */
+      kind: 'pick';
+      id: string;
+      label: string;
+      options: readonly { id: string; label: string }[];
+      default: string;
+      hint?: string;
     }
   | {
       /** The art style: a few named looks for the same game (testing only for now). */
@@ -79,5 +110,7 @@ export interface MinigameInfo {
   description: string;
   /** Playable now, or listed as "coming soon". */
   status: 'ready' | 'soon';
+  /** The hikers set their order first (Line up) when 2 or more play. */
+  lineUp?: boolean;
   settings: readonly MinigameSetting[];
 }

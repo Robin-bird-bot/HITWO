@@ -1,7 +1,8 @@
 /**
- * Every minigame, as data (Phase 10.8). Bearrels is playable; the others are
- * listed on the testing tab as "coming soon". Their games are added one at a
- * time. The UI pairs each playable one with its game (src/ui/minigames/runners.ts).
+ * Every minigame, as data (Phase 10.8). Bearrels and the four puzzle games
+ * (docs/design/11-minigames-puzzles.md) are playable; the rest are listed on
+ * the testing tab as "coming soon". The UI pairs each playable one with its
+ * game (src/ui/minigames/runners.tsx).
  */
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
@@ -66,6 +67,194 @@ export const BEARRELS: MinigameInfo = {
   ],
 };
 
+/** Tier I, II or III: the puzzle games' main setting. */
+const TIER: MinigameSetting = {
+  kind: 'choice',
+  id: 'tier',
+  label: 'Tier',
+  options: [1, 2, 3],
+  labels: ['I', 'II', 'III'],
+  default: 1,
+  hint: 'Harder each tier',
+};
+
+const HIKERS: MinigameSetting = {
+  kind: 'hikers',
+  id: 'hikers',
+  label: 'Hikers',
+  min: B.hikers.min,
+  max: B.hikers.max,
+  default: B.hikers.default,
+};
+
+/** A number setting that can also be "Auto" (the tier's or default value). */
+const autoRange = (
+  id: string,
+  label: string,
+  min: number,
+  max: number,
+  autoValue: number,
+  unit: string,
+  step = 1,
+  autoHint?: string,
+): MinigameSetting => ({
+  kind: 'autoRange',
+  id,
+  label,
+  min,
+  max,
+  step,
+  autoValue,
+  hint: `Auto (${autoHint ?? `${autoValue}${unit}`}), or ${min} to ${max}${unit}`,
+});
+
+/** An override: "Auto" uses the tier's value. */
+const override = (
+  id: string,
+  label: string,
+  options: readonly [string, string][],
+): MinigameSetting => ({
+  kind: 'pick',
+  id,
+  label,
+  options: [
+    { id: 'auto', label: 'Auto' },
+    ...options.map(([oid, olabel]) => ({ id: oid, label: olabel })),
+  ],
+  default: 'auto',
+});
+
+const ON_OFF: readonly [string, string][] = [
+  ['on', 'On'],
+  ['off', 'Off'],
+];
+
+export const TRAILDLE: MinigameInfo = {
+  id: 'traildle',
+  name: 'Traildle',
+  baseGame: 'Puzzle',
+  description: 'Guess the hidden codes on the trail signs. Two hikers guess at once.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override(
+      'signs',
+      'Signs',
+      [3, 4, 5, 6, 7, 8].map((n) => [String(n), String(n)]),
+    ),
+    override('timer', 'Timer', ON_OFF),
+  ],
+};
+
+export const FIND_OBJECT: MinigameInfo = {
+  id: 'findObject',
+  name: 'Find the Object',
+  baseGame: 'Reaction',
+  description: 'Find the snacks on the list before time runs out.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override('mode', 'Mode', [
+      ['still', 'Still'],
+      ['windy', 'Windy'],
+      ['dark', 'Dark'],
+      ['darkWindy', 'Dark + windy'],
+    ]),
+    autoRange('rounds', 'Rounds', 1, 5, BALANCE.minigames.findObject.rounds, ''),
+    autoRange(
+      'secPerTarget',
+      'Seconds per target',
+      1,
+      8,
+      BALANCE.minigames.findObject.secPerTarget,
+      ' s',
+    ),
+    autoRange(
+      'extraSec',
+      'Extra seconds per round',
+      0,
+      20,
+      BALANCE.minigames.findObject.extraSecPerRound,
+      ' s',
+    ),
+  ],
+};
+
+export const REMEMBER_PATH: MinigameInfo = {
+  id: 'rememberPath',
+  name: 'Remember the Path',
+  baseGame: 'Memory',
+  description: 'Watch the ranger walk the trail, then walk it from memory.',
+  status: 'ready',
+  lineUp: true,
+  settings: [TIER, HIKERS],
+};
+
+export const FIND_PATH: MinigameInfo = {
+  id: 'findPath',
+  name: 'Find the Path',
+  baseGame: 'Minefield',
+  description: 'Take turns finding the hidden trail through the forest.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override('fog', 'Fog', ON_OFF),
+    {
+      kind: 'pick',
+      id: 'hide',
+      label: 'Hide after a run-out',
+      options: [
+        { id: 'trail', label: 'Trail only' },
+        { id: 'everything', label: 'Everything' },
+      ],
+      default: 'trail',
+    },
+  ],
+};
+
+const DG = BALANCE.minigames.dodge;
+
+export const DODGE: MinigameInfo = {
+  id: 'dodge',
+  name: 'Dodge',
+  baseGame: 'Dodging',
+  description: 'Dodge the animal’s attacks. The active hiker switches every few seconds.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    {
+      kind: 'pick',
+      id: 'animal',
+      label: 'Animal',
+      options: [
+        { id: 'bees', label: 'Bees' },
+        { id: 'bear', label: 'Bear with a Sword' },
+      ],
+      default: 'bees',
+    },
+    TIER,
+    HIKERS,
+    autoRange('lives', 'Lives per hiker', 1, 3, DG.lives, ''),
+    autoRange(
+      'length',
+      'Length',
+      10,
+      60,
+      DG.tiers[1].lengthSec,
+      ' s',
+      5,
+      `the tier's: ${DG.tiers[1].lengthSec}, ${DG.tiers[2].lengthSec} or ${DG.tiers[3].lengthSec} s`,
+    ),
+    autoRange('switch', 'Switch every', 3, 10, DG.switchSec, ' s'),
+  ],
+};
+
 const soon = (id: string, name: string, baseGame: string): MinigameInfo => ({
   id,
   name,
@@ -77,6 +266,11 @@ const soon = (id: string, name: string, baseGame: string): MinigameInfo => ({
 
 export const MINIGAMES: readonly MinigameInfo[] = [
   BEARRELS,
+  TRAILDLE,
+  FIND_OBJECT,
+  REMEMBER_PATH,
+  FIND_PATH,
+  DODGE,
   soon('antsAreMarching', 'Ants Are Marching', 'Snake'),
   soon('crackedBridge', 'Cracked Bridge', 'Platformer'),
   soon('flySwatter', 'Fly Swatter', 'Reaction'),
@@ -89,7 +283,9 @@ export const MINIGAME_BY_ID: ReadonlyMap<string, MinigameInfo> = new Map(
 
 /** Each setting at its default. */
 export function defaultSettings(info: MinigameInfo): MinigameSettings {
-  return Object.fromEntries(info.settings.map((s) => [s.id, s.default]));
+  return Object.fromEntries(
+    info.settings.map((s) => [s.id, s.kind === 'autoRange' ? 'auto' : s.default]),
+  );
 }
 
 /**
@@ -112,7 +308,13 @@ function cleanOne(
   value: unknown,
   allowedHikers: readonly string[],
 ): MinigameSettingValue {
-  if (s.kind === 'style') {
+  if (s.kind === 'autoRange') {
+    if (value === 'auto' || typeof value !== 'number' || !Number.isFinite(value)) return 'auto';
+    const step = s.step ?? 1;
+    const snapped = s.min + Math.round((value - s.min) / step) * step;
+    return Math.min(s.max, Math.max(s.min, snapped));
+  }
+  if (s.kind === 'style' || s.kind === 'pick') {
     return typeof value === 'string' && s.options.some((o) => o.id === value) ? value : s.default;
   }
   if (s.kind === 'hikers') {

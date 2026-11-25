@@ -13,9 +13,9 @@
 import type { CSSProperties, Ref } from 'react';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
 import type { MinigameHiker, MinigameResult } from '../../minigames/types';
-import { resultLine } from '../../minigames/bearrels/logic';
+import { hikerStatus, resultLine } from '../../minigames/results';
 import { HikerPortrait } from '../hikers/HikerPortrait';
-import { BarrelIcon } from './BarrelIcon';
+import { MinigameIcon } from './MinigameIcon';
 import styles from './ChallengePopup.module.css';
 
 const ROMAN = ['', 'I', 'II', 'III'] as const;
@@ -47,7 +47,6 @@ export function ChallengePopup({
   onBack?(): void;
   onPlayAgain?(): void;
 }) {
-  const roundOf = (id: string) => result?.hit.find((h) => h.hikerId === id)?.round;
   return (
     <div className={styles.backdrop}>
       <section
@@ -60,11 +59,11 @@ export function ChallengePopup({
           <span className={styles.corner}>CHALLENGE · TIER {ROMAN[challenge.tier]}</span>
           <h2 className={styles.name}>
             <span className={styles.diamond} aria-hidden="true">
-              <BarrelIcon size={20} />
+              <MinigameIcon id={challenge.minigame} size={20} />
             </span>
             {challenge.name.toUpperCase()}
             <span className={styles.diamond} aria-hidden="true">
-              <BarrelIcon size={20} />
+              <MinigameIcon id={challenge.minigame} size={20} />
             </span>
           </h2>
           <span className={styles.corner}>{challenge.who.toUpperCase()}</span>
@@ -79,7 +78,7 @@ export function ChallengePopup({
                 <span className={styles.noPoster} />
               )}
             </div>
-            <p className={styles.flavor}>{challenge.flavor}</p>
+            {challenge.flavor && <p className={styles.flavor}>{challenge.flavor}</p>}
           </div>
 
           <div ref={gpsSlotRef} className={styles.gpsSlot} />
@@ -88,7 +87,7 @@ export function ChallengePopup({
             <span className={styles.label}>THE GAME</span>
             <div className={styles.game}>
               <span className={styles.gameIcon}>
-                <BarrelIcon size={28} />
+                <MinigameIcon id={challenge.minigame} size={28} />
               </span>
               <span className={styles.gameWords}>
                 <span className={styles.gameName}>{challenge.game.name}</span>
@@ -111,20 +110,24 @@ export function ChallengePopup({
               </>
             )}
 
-            <span className={styles.label}>IF HIT</span>
-            <div className={styles.ifHit}>
-              {challenge.ifHit.map((h) => (
-                <span key={h.label} className={styles.hitPart}>
-                  <span className={styles.hitMark} data-who={h.who} aria-hidden="true" />
-                  <b>{h.label}</b> {h.value}
-                </span>
-              ))}
-            </div>
+            {challenge.ifHit.length > 0 && (
+              <>
+                <span className={styles.label}>IF HIT</span>
+                <div className={styles.ifHit}>
+                  {challenge.ifHit.map((h) => (
+                    <span key={h.label} className={styles.hitPart}>
+                      <span className={styles.hitMark} data-who={h.who} aria-hidden="true" />
+                      <b>{h.label}</b> {h.value}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
 
             <span className={styles.label}>ON THIS TILE</span>
             <div className={styles.hikers}>
               {hikers.map((h) => {
-                const round = roundOf(h.id);
+                const status = result ? hikerStatus(result, h.id) : undefined;
                 return (
                   <span key={h.id} className={styles.hiker}>
                     <HikerPortrait
@@ -133,9 +136,9 @@ export function ChallengePopup({
                       style={{ boxShadow: `0 0 0 3px ${h.color}` } as CSSProperties}
                     />
                     <span className={styles.hikerName}>{h.name}</span>
-                    {result && (
-                      <span className={styles.status} data-hit={round !== undefined || undefined}>
-                        {round !== undefined ? `Hit in round ${round}` : 'Safe'}
+                    {status && (
+                      <span className={styles.status} data-hit={status.bad || undefined}>
+                        {status.text}
                       </span>
                     )}
                   </span>

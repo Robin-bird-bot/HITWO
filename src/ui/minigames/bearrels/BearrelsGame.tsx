@@ -1,6 +1,6 @@
 /**
  * Bearrels (docs/design/10-minigames.md, "Bearrels"), played on the turned
- * party GPS's 4:3 screen (1280 × 960), in any of the three art styles.
+ * party GPS's 4:3 screen (1280 × 960), in either version of the GPS greens.
  *
  * Each round: drag each hiker to a barrel (or tap a hiker, then a barrel),
  * until everyone still in is placed, then Ready. The bear pops up, the
@@ -10,7 +10,7 @@
  * different barrel. The bear ducks, and the next round starts with everyone
  * where they were. After the last round, or once everyone is out, a results card.
  *
- * The style only changes how the scene is drawn (./Scene.tsx): switching it
+ * The version only changes how the scene is drawn (./Scene.tsx): switching it
  * mid-round keeps every hiker's barrel, the round and who is out.
  *
  * Mouse, touch or keyboard (1–4, ← →, Enter or Space). Reduced motion: no
@@ -23,7 +23,6 @@ import {
   useState,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
-  type RefObject,
 } from 'react';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -39,7 +38,6 @@ import {
   place,
   ready,
   result,
-  resultLine,
   select,
   stillIn,
   type BearrelsState,
@@ -47,19 +45,18 @@ import {
 import { sceneHikers, type BearPose, type SceneModel } from '../../../minigames/bearrels/scene';
 import {
   barrelAt,
-  FILL,
+  frameFor,
   GAME,
   hikerCenters,
-  pixelFrame,
   UI,
   type ArtStyle,
-  type Frame,
 } from '../../../minigames/bearrels/styles';
 import type { MinigameHiker, MinigameResult } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { HikerPortrait } from '../../hikers/HikerPortrait';
-import { useStage } from '../../stage/StageContext';
+import { ResultsCard } from '../ResultsCard';
 import { playSound } from '../sound';
+import { usePixelFrame } from '../usePixelFrame';
 import { BearrelsScene } from './Scene';
 import styles from './Bearrels.module.css';
 
@@ -98,33 +95,6 @@ interface FlyBack {
   y: number;
   to: { x: number; y: number };
   go: boolean;
-}
-
-/**
- * The pixel styles' whole-number scale: how wide the game screen is drawn
- * (device pixels) decides it. Measured after it mounts (the GPS has finished
- * turning by then) and whenever the stage is rescaled.
- */
-function usePixelFrame(ref: RefObject<HTMLElement | null>): Frame {
-  const { scale } = useStage();
-  const [frame, setFrame] = useState<Frame>(FILL);
-  useEffect(() => {
-    const measure = () => {
-      const el = ref.current;
-      if (!el) return;
-      const width = el.getBoundingClientRect().width * (window.devicePixelRatio || 1);
-      const next = pixelFrame(width);
-      setFrame((f) => (f.unit === next.unit && f.x === next.x && f.y === next.y ? f : next));
-    };
-    // Now, and again once the GPS has surely settled from its turn.
-    const timers = [setTimeout(measure, 0), setTimeout(measure, 400)];
-    window.addEventListener('resize', measure);
-    return () => {
-      timers.forEach((t) => clearTimeout(t));
-      window.removeEventListener('resize', measure);
-    };
-  }, [ref, scale]);
-  return frame;
 }
 
 /** Two frames from now: after the browser has drawn what was just set. */
@@ -318,7 +288,9 @@ export function BearrelsGame({
     const at = game.placed[p.id];
     if (p.from === 'scene' && at !== undefined) {
       const group = behind(game, at);
-      const spot = hikerCenters(style, n, at, group.length, frame)[group.indexOf(p.id)];
+      const spot = hikerCenters(style, n, at, group.length, frameFor(style, frame))[
+        group.indexOf(p.id)
+      ];
       if (spot) return spot;
     }
     const r = tokenRefs.current.get(p.id)?.getBoundingClientRect();
@@ -335,7 +307,7 @@ export function BearrelsGame({
       }
       e.preventDefault();
       const p = toGame(e.clientX, e.clientY);
-      setPress({ ...press, dragging: true, ...p, over: barrelAt(style, n, p, frame) });
+      setPress({ ...press, dragging: true, ...p, over: barrelAt(n, p, frameFor(style, frame)) });
     };
     const up = (e: PointerEvent) => {
       if (e.pointerId !== press.pointerId) return;
@@ -346,7 +318,7 @@ export function BearrelsGame({
         ignoreClick.current = false;
       }, 0);
       const p = toGame(e.clientX, e.clientY);
-      const over = barrelAt(style, n, p, frame);
+      const over = barrelAt(n, p, frameFor(style, frame));
       if (over !== null && canDrag(game, press.id)) {
         setGame(drop(game, press.id, over));
         playSound('place');
@@ -467,7 +439,7 @@ export function BearrelsGame({
       )}
 
       <span className={`${styles.pill} ${styles.round}`} style={pill}>
-        ROUND {game.round} / {game.settings.rounds}
+        R {game.round}/{game.settings.rounds}
       </span>
       <span
         className={`${styles.pill} ${styles.prompt}`}
@@ -475,13 +447,14 @@ export function BearrelsGame({
         data-bad={prompt.bad || undefined}
         role="status"
       >
-        {prompt.text}
+        {prompt.text.toUpperCase()}
       </span>
       <span
         className={`${styles.pill} ${styles.shots}`}
         style={pill}
         aria-label={`${game.settings.shots} shot${game.settings.shots === 1 ? '' : 's'} a round`}
       >
+        <span className={styles.shotsWord}>SHOTS</span>
         {Array.from({ length: game.settings.shots }, (_, i) => (
           <svg key={i} width="26" height="26" viewBox="-100 -100 200 200" aria-hidden="true">
             <g stroke="currentColor" strokeWidth="18" fill="none">
@@ -575,40 +548,12 @@ export function BearrelsGame({
       )}
 
       {results && (
-        <div className={styles.results}>
-          <div className={styles.card} role="dialog" aria-label="Results">
-            <h3 className={styles.cardTitle}>{resultLine(ended)}</h3>
-            {hikers.map((h) => {
-              const hit = ended.hit.find((x) => x.hikerId === h.id);
-              return (
-                <div key={h.id} className={styles.row}>
-                  <HikerPortrait
-                    hikerId={h.id}
-                    className={styles.rowPortrait}
-                    style={{ boxShadow: `0 0 0 3px ${h.color}` }}
-                  />
-                  <span className={styles.rowName}>{h.name}</span>
-                  <span className={styles.rowState} data-hit={!!hit || undefined}>
-                    {hit ? `Hit in round ${hit.round}` : 'Safe'}
-                  </span>
-                </div>
-              );
-            })}
-            <div className={styles.cardButtons}>
-              <button
-                type="button"
-                className={styles.continue}
-                onClick={() => onDone(ended)}
-                autoFocus
-              >
-                Continue
-              </button>
-              <button type="button" className={styles.again} onClick={playAgain}>
-                Play again
-              </button>
-            </div>
-          </div>
-        </div>
+        <ResultsCard
+          result={ended}
+          hikers={hikers}
+          onContinue={() => onDone(ended)}
+          onPlayAgain={playAgain}
+        />
       )}
       <span className={styles.srOnly}>{stillIn(game).length} still in</span>
     </div>

@@ -1021,6 +1021,12 @@ export const BALANCE = {
       dim: 0.35,
       /** The upright GPS loops its preview of the game about this often. */
       previewLoopMs: 6000,
+      /**
+       * The scanlines on the GPS glass (gps-greens update): 1-px lines this dark,
+       * every this many px; during play they drift sideways this fast, and a
+       * soft brighter band this share of the screen wide sweeps across this often.
+       */
+      scanlines: { dark: 0.08, everyPx: 3, driftPxPerSec: 10, bandShare: 0.15, bandEveryMs: 6000 },
     },
     bearrels: {
       barrels: { min: 3, max: 6, default: 3 },
@@ -1065,6 +1071,201 @@ export const BALANCE = {
       softFlash: 0.2,
       /** A hit hiker tips over this far (degrees). */
       tipDegrees: -24,
+    },
+
+    /*
+     * The puzzle minigames (Phase 10.8 step 2, docs/design/11-minigames-puzzles.md).
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     */
+
+    /** Traildle: guess hidden digit codes on trail signs, two codes at once at most. */
+    traildle: {
+      tiers: {
+        1: { signs: [3, 4], guesses: 6, repeats: false, timerSec: null },
+        2: { signs: [5, 6], guesses: 7, repeats: true, timerSec: 180 },
+        3: { signs: [7, 8], guesses: 8, repeats: true, timerSec: 120 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            signs: readonly [number, number];
+            guesses: number;
+            repeats: boolean;
+            timerSec: number | null;
+          }
+        >
+      >,
+      /** Two codes at once get this many more guesses. */
+      twoCodeExtraGuesses: 1,
+      /** The testing tab's Timer "On" on a tier without a timer (Tier I): my guess. */
+      timerOnSec: 180,
+      /**
+       * Fitting the boards (fixes update): small signs up to this wide, rows up
+       * to this tall and never shorter than this (the board scrolls instead);
+       * the big signs shrink to this for 7 or 8 signs (scene units).
+       */
+      fit: { maxSign: 16, maxRow: 13, minRow: 9, bigSignScale: 0.85, bigSignsFrom: 7 },
+    },
+
+    /** Find the Object: find the named trail snacks in a crowd. */
+    findObject: {
+      tiers: {
+        1: { mode: 'still', distractors: 16, overlap: 0 },
+        2: { mode: 'windy', distractors: 22, overlap: 0.25 },
+        3: { mode: 'darkWindy', distractors: 26, overlap: 0.25 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            mode: 'still' | 'windy' | 'dark' | 'darkWindy';
+            distractors: number;
+            overlap: number;
+          }
+        >
+      >,
+      /** Rounds in a game (testing tab: 1 to 5); each later round asks for this many more targets. */
+      rounds: 3,
+      extraTargetsPerRound: 1,
+      /** More distractors for each hiker after the first, and for each round after the first. */
+      extraDistractorsPerHiker: 3,
+      extraDistractorsPerRound: 4,
+      /**
+       * How many kinds of snack the targets can be: `start` at first, then
+       * `more` from round `fromRound`.
+       */
+      kinds: {
+        1: { start: 1, more: 2, fromRound: 2 },
+        2: { start: 2, more: 3, fromRound: 3 },
+        3: { start: 2, more: 3, fromRound: 3 },
+      } as Readonly<Record<1 | 2 | 3, { start: number; more: number; fromRound: number }>>,
+      /** The clock each round: these seconds, plus these for each target (testing tab: 0 to 20, and 1 to 8). */
+      extraSecPerRound: 3,
+      secPerTarget: 3,
+      /** A wrong click costs this many seconds. */
+      wrongClickSec: 2,
+      /** The card naming each round's targets shows this long before the clock starts. */
+      introMs: 1500,
+      /** Snacks keep this far from the screen's edges (scene units), except in the windy modes. */
+      edgeMargin: 4,
+      /** Windy: drift (units a second) and a small bob (units, every this many ms). */
+      wind: { speed: 12, bob: 2, bobEveryMs: 1500 },
+      /** Dark: the flashlight's size and soft edge (scene units); a touch moving less than this (px) is a tap. */
+      light: { diameter: 42, softEdge: 8, tapPx: 6 },
+    },
+
+    /** Remember the Path: watch the ranger, then walk his path from memory. */
+    rememberPath: {
+      tiers: {
+        1: { cols: 5, rows: 4, length: [5, 6], strikes: 3, stepMs: 500 },
+        2: { cols: 6, rows: 5, length: [7, 8], strikes: 2, stepMs: 450 },
+        3: { cols: 7, rows: 5, length: [9, 10], strikes: 1, stepMs: 400 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            cols: number;
+            rows: number;
+            length: readonly [number, number];
+            strikes: number;
+            stepMs: number;
+          }
+        >
+      >,
+      /** Only the ranger's last this many tiles show footprints. */
+      footprints: 2,
+      /** A wrong step flashes red this long. */
+      wrongFlashMs: 400,
+    },
+
+    /** Find the Path: take turns guessing a hidden trail, one step at a time. */
+    findPath: {
+      tiers: {
+        1: { cols: 5, rows: 5, fog: false },
+        2: { cols: 6, rows: 6, fog: false },
+        3: { cols: 7, rows: 7, fog: true },
+      } as Readonly<Record<1 | 2 | 3, { cols: number; rows: number; fog: boolean }>>,
+      /** Tries for each hiker, each turn. */
+      triesPerTurn: 3,
+      /** Group attempts: this many, plus this many for each hiker after the first. */
+      attempts: 2,
+      attemptsPerExtraHiker: 1,
+      /** The chance a wrong pick also reveals another tile nobody has picked, and how long its "!" shows. */
+      revealChance: 0.35,
+      revealMarkMs: 1000,
+      /** Making a trail: each step goes up about this often, otherwise left or right. */
+      upChance: 0.45,
+      /** Fog: only the tiles uncovered in the last this many picks stay visible. */
+      fogPicks: 2,
+      /** The first hiker through gets this much Energy (shown only in test mode for now). */
+      energy: 1,
+      /** The trail line draws to a new tile over this long. */
+      lineDrawMs: 250,
+    },
+
+    /**
+     * Dodge (Phase 10.8 step 3, docs/design/12-minigames-dodge.md): one party
+     * sprite dodges an animal's attacks in a box. TODO(wyatt): every number is a first guess.
+     */
+    dodge: {
+      tiers: {
+        1: { lengthSec: 20, speed: 1.0, gapSec: 1.6 },
+        2: { lengthSec: 25, speed: 1.2, gapSec: 1.3 },
+        3: { lengthSec: 30, speed: 1.4, gapSec: 1.0 },
+      } as Readonly<Record<1 | 2 | 3, { lengthSec: number; speed: number; gapSec: number }>>,
+      /** Lives per hiker; the active hiker switches this often; the colors blink this long first. */
+      lives: 2,
+      switchSec: 5,
+      blinkSec: 1,
+      /** After a hit, no more hits for this long. */
+      safeSec: 1,
+      /** Every attack is warned this long before it can hit; the first comes this soon. */
+      warnSec: 0.6,
+      firstAttackSec: 0.8,
+      /** The sprite's speed (scene units a second) and its forgiving hitbox (radius). */
+      moveSpeed: 80,
+      hitRadius: 3,
+      /** The box grows or shrinks over this long. */
+      boxEaseSec: 0.4,
+      /** The touch joystick's knob goes this far from where the finger landed (screen px). */
+      joystickPx: 24,
+      bees: {
+        box: [120, 120] as const,
+        radius: 2.5,
+        speed: 80,
+        /** The two frames swap this often. */
+        frameSec: 0.1,
+        /** Lane: this many bees, with one gap lane. Cross: this many per lane. */
+        lane: [4, 6] as const,
+        cross: [3, 4] as const,
+        /** Diagonal: this many bees, this far apart, starting this far apart in time. */
+        diagonal: { bees: 5, spacing: 20, staggerSec: 0.12 },
+        /** Zigzag: this many bees, swinging this far, this many times a second. */
+        zigzag: { bees: 2, amplitude: 28, perSec: 1.2 },
+        /** Aimed: this many bees, launched this far apart in time. */
+        aimed: { bees: 4, staggerSec: 0.3 },
+      },
+      bear: {
+        box: [180, 80] as const,
+        /** Tier III: the box sometimes shrinks to this for this many swings. */
+        shrunk: [140, 70] as const,
+        shrinkChance: 0.3,
+        shrinkSwings: 3,
+        /** The sword is this long from its pivot (above the box); the blade is this thick. */
+        blade: 116,
+        bladeHalfWidth: 2,
+        pivotAbove: 8,
+        /** The warning starts at this, gets this much shorter each swing, and never goes under this. */
+        warnStartSec: 0.8,
+        warnShrink: 0.08,
+        warnMinSec: 0.35,
+        /** The sweep takes this long, a little quicker each swing, never under this. */
+        sweepSec: 0.35,
+        sweepShrink: 0.03,
+        sweepMinSec: 0.2,
+        /** Tier II and up: sometimes a double swing, the second this long after the first. */
+        doubleChance: 0.35,
+        doubleGapSec: 0.3,
+      },
     },
   },
 

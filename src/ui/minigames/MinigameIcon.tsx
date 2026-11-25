@@ -1,0 +1,70 @@
+/**
+ * Each minigame's small line icon (the testing tab's list, the pop-up's
+ * banner diamonds and "The game"), in the current color.
+ */
+import type { ReactNode } from 'react';
+
+const PATHS: Readonly<Record<string, ReactNode>> = {
+  // A barrel.
+  bearrels: (
+    <>
+      <path d="M6 3h12c1.5 3 1.5 15 0 18H6C4.5 18 4.5 6 6 3z" />
+      <path d="M5.2 9h13.6M5.2 15h13.6" />
+    </>
+  ),
+  // A trail sign on a post.
+  traildle: (
+    <>
+      <rect x="3" y="4" width="18" height="10" rx="2" />
+      <path d="M12 14v7M8 9h2M12 9h4" />
+    </>
+  ),
+  // An apple.
+  findObject: (
+    <>
+      <path d="M12 7c-3-2-8-1-8 5 0 5 3 9 5 9 1.2 0 2-.6 3-.6s1.8.6 3 .6c2 0 5-4 5-9 0-6-5-7-8-5z" />
+      <path d="M12 7c0-2 1-4 3-4" />
+    </>
+  ),
+  // Footprints.
+  rememberPath: (
+    <>
+      <ellipse cx="8" cy="15" rx="3" ry="4.5" />
+      <ellipse cx="16" cy="8" rx="3" ry="4.5" />
+      <path d="M8 21v0M16 14v0" />
+    </>
+  ),
+  // A bee.
+  dodge: (
+    <>
+      <ellipse cx="12" cy="14" rx="7" ry="5" />
+      <path d="M9 9.5v9M12 9v10M15 9.5v9" />
+      <path d="M10 9c-2-4-6-3-5 0M14 9c2-4 6-3 5 0" />
+    </>
+  ),
+  // A pine and a winding trail.
+  findPath: (
+    <>
+      <path d="M8 3l-5 8h3l-3 5h10l-3-5h3z" />
+      <path d="M8 16v5M16 21c0-3 4-3 4-6s-4-3-4-6" />
+    </>
+  ),
+};
+
+export function MinigameIcon({ id, size = 22 }: { id: string; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {PATHS[id] ?? PATHS.bearrels}
+    </svg>
+  );
+}

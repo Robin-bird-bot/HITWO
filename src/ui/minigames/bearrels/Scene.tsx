@@ -1,7 +1,8 @@
 /**
- * Bearrels' scene in any of the three art styles (docs/design/10-minigames.md,
- * "Art styles"): one scene model, three renderers. Switching styles mid-round
- * only swaps the renderer; the game itself never changes.
+ * Bearrels' scene in either version of the GPS greens (docs/design/10-minigames.md,
+ * "Art: the GPS greens"): one scene model, drawn from Detailed pixel or
+ * Drawn 2D art. Switching versions mid-round only redraws; the game itself
+ * never changes.
  *
  * Every scene fills a 1280 × 960 box (the 4:3 game screen). `ScaledScreen`
  * draws one smaller, for previews.
@@ -9,17 +10,12 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { ArtStyle } from '../../../minigames/bearrels/styles';
 import { GAME } from '../../../minigames/bearrels/styles';
-import { PixelScene } from './PixelScene';
+import { GreensScene } from './GreensScene';
 import type { SceneViewProps } from './sceneView';
-import { SilhouetteScene } from './SilhouetteScene';
 import styles from './Bearrels.module.css';
 
 export function BearrelsScene({ style, ...props }: SceneViewProps & { style: ArtStyle }) {
-  return style === 'silhouette' ? (
-    <SilhouetteScene {...props} />
-  ) : (
-    <PixelScene style={style} {...props} />
-  );
+  return <GreensScene style={style} {...props} />;
 }
 
 /** The 1280 × 960 game screen drawn `width` wide (a preview thumbnail). */

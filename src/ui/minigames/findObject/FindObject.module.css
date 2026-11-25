@@ -1,0 +1,282 @@
+/* Find the Object (3- to 5-find-object-*.png), in scene units (320 × 240). */
+
+.field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.field[data-dark] {
+  cursor: none;
+}
+
+.snack {
+  position: absolute;
+}
+
+/* A target found: it pops. */
+.snack[data-pop] {
+  animation: pop 0.25s ease-out forwards;
+}
+
+@keyframes pop {
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* A wrong click: the snack flashes red. */
+.wrong {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  background: #c8423a;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  animation: wrong 0.45s ease-out forwards;
+}
+
+.wrong[data-soft] {
+  animation-name: wrongSoft;
+}
+
+@keyframes wrong {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes wrongSoft {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Dark: the screen almost black, a soft flashlight circle at the pointer. */
+.dark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Windy: a few faint streaks drifting by. */
+.streaks > span {
+  position: absolute;
+  left: 0;
+  width: 24px;
+  height: 0.5px;
+  background: #859a66;
+  opacity: 0.7;
+  animation: streak 4s linear infinite;
+}
+
+.streaks[data-wind='-1'] > span {
+  animation-direction: reverse;
+}
+
+@keyframes streak {
+  from {
+    transform: translateX(-30px);
+  }
+  to {
+    transform: translateX(330px);
+  }
+}
+
+.find {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  height: 22px;
+  gap: 2px;
+  padding: 0 3px 0 5px;
+  justify-content: flex-start;
+}
+
+.findWord {
+  margin-right: 5px;
+  font-size: 5px;
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 18px;
+  border-radius: 1px;
+  background: #bac995;
+}
+
+.slot > img {
+  width: 16px;
+  height: 16px;
+}
+
+/* Found: a check across the slot. */
+.slot[data-found]::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 3px;
+  width: 6px;
+  height: 11px;
+  border: solid #1d2918;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(40deg);
+}
+
+.roundBox {
+  position: absolute;
+  right: 52px;
+  top: 4px;
+  width: 52px;
+  height: 22px;
+  font-size: 6px;
+}
+
+.clock {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 44px;
+  height: 22px;
+  font-size: 7px;
+}
+
+.clock[data-low] {
+  background: #c8423a;
+}
+
+.clock[data-shake] {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-1.5px);
+  }
+  50% {
+    transform: translateX(1.5px);
+  }
+  75% {
+    transform: translateX(-1px);
+  }
+}
+
+.line {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  height: 24px;
+  gap: 5px;
+  padding: 0 6px;
+}
+
+.lineToken {
+  position: relative;
+  display: inline-flex;
+}
+
+/* At risk right now: a small warning mark. */
+.risk {
+  position: absolute;
+  right: -2px;
+  top: -3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: #e9b44c;
+  color: #1d2918;
+  font-size: 4.5px;
+  line-height: 1;
+}
+
+.note,
+.tier {
+  position: absolute;
+  margin: 0;
+  font-size: 3.6px;
+}
+
+.note {
+  left: 90px;
+  bottom: 9px;
+}
+
+.tier {
+  right: 4px;
+  bottom: 22px;
+}
+
+/* The intro card naming the targets. */
+.intro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.introCard {
+  flex-direction: column;
+  gap: 7px;
+  min-width: 190px;
+  padding: 14px 18px;
+  font-size: 7px;
+}
+
+.introTitle {
+  font-size: 8px;
+}
+
+.introFind {
+  font-size: 6px;
+  color: #bac995;
+}
+
+.introSnacks {
+  display: flex;
+  gap: 4px;
+}
+
+.introSnacks > img {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 1.5px;
+  background: #bac995;
+}
+
+.introSmall {
+  font-size: 4.2px;
+  color: #a0b37d;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock[data-shake] {
+    animation: none;
+  }
+}

@@ -199,6 +199,7 @@ describe('shooting', () => {
     expect(s.phase).toBe('over');
     expect(isOver(s)).toBe(true);
     expect(result(s)).toEqual({
+      wording: 'safe-hit',
       safe: [],
       hit: [
         { hikerId: 'finn', round: 1 },
@@ -221,6 +222,7 @@ describe('shooting', () => {
     s = endRound(fire({ ...ready(s), targets: [2] }).state);
     s = endRound(fire({ ...ready(s), targets: [1] }).state);
     expect(result(s)).toEqual({
+      wording: 'safe-hit',
       safe: ['finn'],
       hit: [
         { hikerId: 'ellie', round: 1 },

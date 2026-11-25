@@ -14,6 +14,7 @@
  * sharp once it settles. The knob and buttons are decoration for now.
  */
 import type { CSSProperties, ReactNode } from 'react';
+import { BALANCE } from '../../config/balance';
 import { useReducedMotion } from '../app/useReducedMotion';
 import { GAME } from '../../minigames/bearrels/styles';
 import {
@@ -21,6 +22,7 @@ import {
   gpsMotion,
   gpsTransform,
   gpsUpright,
+  scanlineMotion,
   type Rect,
   type TurnedGps,
 } from './gpsLayout';
@@ -33,6 +35,7 @@ export function PartyGps({
   mode,
   showContent,
   moved,
+  playing = false,
   content,
 }: {
   /** Turned sideways to play (true), or upright in the pop-up. */
@@ -47,6 +50,8 @@ export function PartyGps({
   showContent: boolean;
   /** It has turned at least once (reduced motion: no fade when the pop-up first opens). */
   moved: boolean;
+  /** A game is being played: the scanlines drift and a band sweeps across. */
+  playing?: boolean;
   /** Laid out at 1280 × 960. */
   content: ReactNode;
 }) {
@@ -54,6 +59,8 @@ export function PartyGps({
   const u = layout.unit;
   const pose = turned ? 'turned' : 'upright';
   const motion = gpsMotion(reduced, pose);
+  const scan = scanlineMotion(playing, reduced);
+  const S = BALANCE.minigames.gps.scanlines;
   const w = DEVICE.width * u;
   const h = DEVICE.height * u;
   const screenH = DEVICE.screen.h * u;
@@ -79,6 +86,11 @@ export function PartyGps({
             transform: gpsTransform(pose, gpsUpright(layout, slot)),
             '--u': u,
             '--ms': `${motion.ms}ms`,
+            '--scan-dark': S.dark,
+            '--scan-every': `${S.everyPx}px`,
+            '--scan-ms': `${(S.everyPx / S.driftPxPerSec) * 1000}ms`,
+            '--band-share': `${S.bandShare * 100}%`,
+            '--band-ms': `${S.bandEveryMs}ms`,
           } as CSSProperties
         }
       >
@@ -100,7 +112,12 @@ export function PartyGps({
                   {content}
                 </div>
               )}
-              <span className={styles.scanlines} aria-hidden="true" />
+              <span
+                className={styles.scanlines}
+                data-drift={scan.drift || undefined}
+                aria-hidden="true"
+              />
+              {scan.band && <span className={styles.band} aria-hidden="true" />}
               <span className={styles.sheen} aria-hidden="true" />
               <span className={styles.inner} aria-hidden="true" />
             </div>

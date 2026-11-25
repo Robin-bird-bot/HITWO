@@ -1,0 +1,264 @@
+/* Traildle (2-traildle.png), in scene units (320 × 240). */
+
+.top {
+  position: absolute;
+  top: 6px;
+  height: 13px;
+  font-size: 5px;
+}
+
+.top[data-low] {
+  background: #c8423a;
+}
+
+.board {
+  position: absolute;
+  top: 24px;
+  height: 110px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 0.75px solid #3c4e2f;
+  border-radius: 2px;
+  background: #a0b37d;
+}
+
+.boardHead {
+  position: absolute;
+  left: 5px;
+  top: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The rows: clipped to the board, scrolled when they don't all fit. */
+.rows {
+  position: absolute;
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.more {
+  position: absolute;
+  left: 50%;
+  top: 9px;
+  margin: 0;
+  font-size: 3.2px;
+  transform: translateX(-50%);
+}
+
+.scrollButtons {
+  position: absolute;
+  right: 1px;
+  bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.scrollButtons > button {
+  width: 6px;
+  height: 6px;
+  padding: 0;
+  border: 0.5px solid #1d2918;
+  border-radius: 1px;
+  background: #bac995;
+  color: #1d2918;
+  font-size: 3px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.scrollButtons > button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 1px;
+  font-family: var(--font-pixel);
+  line-height: 1;
+}
+
+/* Empty rows: the guesses left. */
+.cell[data-mark='empty'] {
+  border: 0.5px solid #859a66;
+}
+
+/* Right digit, right spot: a solid dark sign with a light digit. */
+.cell[data-mark='right'] {
+  border: 0.75px solid #111a10;
+  background: #1d2918;
+  color: #d3dfaf;
+}
+
+/* Right digit, wrong spot: a light sign with a dashed border. */
+.cell[data-mark='wrong'] {
+  border: 0.75px dashed #1d2918;
+  background: #d3dfaf;
+  color: #1d2918;
+}
+
+/* Not in the code: a grey sign, crossed out. */
+.cell[data-mark='none'] {
+  border: 0.5px solid #52653f;
+  background: #6a7e51
+    linear-gradient(
+      to top right,
+      transparent calc(50% - 0.4px),
+      #2b3a23 calc(50% - 0.4px),
+      #2b3a23 calc(50% + 0.4px),
+      transparent calc(50% + 0.4px)
+    );
+  color: #52653f;
+}
+
+.found {
+  position: absolute;
+  right: 5px;
+  top: 3px;
+  height: 10px;
+  padding: 0 4px;
+  font-size: 4px;
+}
+
+.found[data-missed] {
+  background: #3c4e2f;
+}
+
+/* The current guess. */
+/* The guess's big signs, scaled by --big (0.85 for 7 or 8 signs). */
+.signSlot {
+  position: absolute;
+  top: 139px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--big, 1) * 2px);
+}
+
+.arrow,
+.sign {
+  position: relative;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.arrow:disabled,
+.sign:disabled {
+  cursor: default;
+}
+
+.arrow > img {
+  width: calc(var(--big, 1) * 8px);
+  height: calc(var(--big, 1) * 7px);
+}
+
+.sign > img {
+  width: calc(var(--big, 1) * 24px);
+  height: calc(var(--big, 1) * 20px);
+}
+
+.sign[data-selected]::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border: 0.75px solid #d3dfaf;
+  border-radius: 2px;
+}
+
+.signDigit {
+  position: absolute;
+  inset: 0 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel);
+  font-size: calc(var(--big, 1) * 9px);
+  color: #d3dfaf;
+}
+
+.arrow:focus-visible,
+.sign:focus-visible,
+.key:focus-visible {
+  outline: 1px solid #e9b44c;
+  outline-offset: 1px;
+}
+
+/* The digit strip. */
+.key {
+  position: absolute;
+  top: 190px;
+  width: 20px;
+  height: 16px;
+  padding: 0;
+  border: 0.75px solid #1d2918;
+  border-radius: 1.5px;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  cursor: pointer;
+}
+
+.key:disabled {
+  cursor: default;
+}
+
+.side {
+  position: absolute;
+  left: 272px;
+  width: 41px;
+  height: 15px;
+  font-size: 4.5px;
+}
+
+.legend {
+  position: absolute;
+  left: 22px;
+  margin: 0;
+  font-size: 3.6px;
+}
+
+.small {
+  font-size: 3px;
+}
+
+/* Between pairs: how each code went. */
+.done {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 26, 16, 0.35);
+}
+
+.doneCard {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  padding: 8px 10px;
+  font-size: 5px;
+  white-space: normal;
+}
+
+.doneRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.next {
+  align-self: stretch;
+  height: 13px;
+  margin-top: 3px;
+  font-size: 5px;
+}

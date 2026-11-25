@@ -1,0 +1,22 @@
+/* The puzzle minigames' 320 × 240 screen, zoomed to the 1280 × 960 game screen. */
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--font-pixel);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.frame {
+  position: absolute;
+  overflow: hidden;
+}
+
+.scene {
+  position: relative;
+  width: 320px;
+  height: 240px;
+}
