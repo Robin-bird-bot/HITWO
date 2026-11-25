@@ -1304,6 +1304,28 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Done when:** all three styles play from the testing tab through the turned GPS, the style switches mid-game, drag-and-drop works with mouse and touch, and the tests above pass.
 
+**Phase 10.8 step 1b notes (built Nov 24)**
+- **What's playable:**
+  - Main menu → **Minigame testing**: pick an **Art style** (Earthy pixel, Teal pixel, Silhouette), barrels, rounds, shots and hikers. The preview shows the style. Then **Test it**.
+  - The Bear Country pop-up shows the upright GPS looping a preview. **Start** turns it sideways and zooms it in, and Bearrels plays at 4:3.
+  - Drag a hiker's portrait (or a hiker already behind a barrel) onto a barrel. Tap, then tap and the keyboard still work.
+  - While playing, the **Style** button on the GPS's knob end, or the **S** key, switches the style in place. The choice is remembered.
+  - **Continue** turns the GPS back upright.
+- **What I interpreted:**
+  - **Silhouette hikers** keep their rim-lit shapes from step 1. The plain color-coded silhouettes are the pixel styles' sprites.
+  - **The pop-up** keeps the flavor line (now under the poster) and On this tile (right column, with Safe or Hit after a game), though the revised doc and mockup 4 leave them out. It dims without the blur.
+  - **The scanlines** turn with the GPS, as in mockups 1 to 3.
+  - **During the turn** the screen goes dark; the game fades in when the turn ends. Going back, the preview returns once it's upright.
+  - **Reduced motion:** the GPS fades out, changes place, and fades back in.
+  - **A drop on nothing:** a hiker dragged from a token flies back to the token. One dragged out of a barrel goes back to that barrel and stays placed there.
+  - **A tap on a hiker** behind a barrel counts as a tap on that barrel.
+  - **The preview** uses 4 barrels (the middle two show on the tall screen) and the first hiker. The bear always shoots the second barrel, so the loops alternate a hit and a miss.
+  - **The muzzle flash** now shows for 120 ms in every style, Silhouette included. The hit effects still play for 450 ms.
+  - **Token portraits** are a little smaller (56 on the 1280-wide screen), so the token bar never covers a Teal barrel.
+  - **Splinter and smoke colors** in the pixel styles are my picks.
+- **Number added** (`BALANCE.minigames.gps`, `TODO(wyatt)`): `phoneScreenHeight` 0.95, since the doc says "almost the full height".
+- **Not done:** detailed hiker art (after Wyatt picks a style), sound files, Prepare, real stakes, other minigames.
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.
