@@ -14,6 +14,16 @@ An Undertale-style dodging game. The animal sits above a box. One small sprite f
 - Bear with a Sword gains bear claws, sword jabs and poke-ups.
 - The testing tab gets an **Attack** picker, a **Show hitboxes** switch and an **Include Claude's ideas** switch.
 
+**Revised November 25 (after Wyatt played the tuning update).** What changed:
+- **Five challenge tiers.** Animals now play at a **level** (Easy, 1, 2 or 3), and each challenge tier picks which animals show up and at what level (section 4).
+- **No overlapping attacks** below Tier V. At Tier V every animal overlaps attacks.
+- **Bees:** much easier at first. On Tier I they come one at a time; full rows only at the top level.
+- **Squirrel Army:** a new Easy level (one acorn at a time), so it can be a Tier I animal too.
+- **Woods Monster:** always at full strength (Level 3), from Tier III up.
+- **Portraits, round 3:** one dark color with no outline, like Sans in Undertale (section 3, "Portraits").
+
+**Revised November 25 (portraits, round 2).** Wyatt looked at references and picked a new look for the heads above the box: front-facing, in the style of Undertale and Game Boy Pokémon, two inks with dark outlines, an optional red accent, and a blink and a small bob (section 3, "Portraits"). This replaces the first round from earlier today (flat greens, glow and silhouette).
+
 **Revised November 24 (third pass, after Wyatt played the second batch).** What changed:
 - **Pacing:** shorter gaps between attacks, and attacks that overlap (section 6, "Pacing and overlaps").
 - **Warnings:** a fix for warnings that didn't show below the box.
@@ -76,7 +86,46 @@ Numbers in [brackets] are first guesses. Put them in `balance.ts` with `TODO(wya
   - the animal's name (left);
   - a **SURVIVE** bar that empties as time runs down (middle);
   - the tier (right).
-- **The animal** sits above the box: `bee-1.png` at 3× for Bees, `bear-head.png` for the bear.
+- **The animal** sits above the box as a **portrait** (see "Portraits" below).
+
+### Portraits (revised November 25, round 3)
+Same drawings as round 2, drawn the way Undertale draws Sans, but turned around for our light screen:
+- **One color:** each head is a solid shape in the screen's dark green (G1). There's no outline.
+- **The details are holes:** eyes, mouths, muzzles, inner ears and the lines between parts show the background through them, like the black details on Sans's white head.
+- **Pupils and teeth** are bits of the dark green inside those holes.
+- **Front-facing**, cute but ferocious: angry brows, fangs.
+
+Two styles, from the same drawings:
+
+| Style | Folder | What's different |
+| --- | --- | --- |
+| **Solid** (default) | `art/dodge/portraits/solid/` | Only the dark green |
+| **Solid + red** | `art/dodge/portraits/solid-red/` | A few details are red (#C8423A): open mouths, the Woods Monster's and cultists' eyes, the sword bear's headband, the squirrel's helmet band, the bee's stinger and the moose's nostrils |
+
+- **Size:** 1 px per unit. They're about 40 to 56 units tall.
+- **Placement:**
+  - Centered at x 160. The images are padded so the face is always in the middle (the sword's hilt and the squirrel's tail stick out to one side).
+  - The bottom sits [6] units above the box's top border. Use the box's size at the start of the fight, so the portrait doesn't jump when the box changes size.
+  - If that would put the top above y [24], move the box down instead.
+- **Blink:** every [3–5 s], at random, show `<name>-blink.png` for [0.15 s]. A cultist's blink turns its eyes off.
+- **Bob:** the portrait moves up [1] unit and back down every [0.5 s]. The two cultists bob out of step with the monster.
+- **Motion can be turned off** with the Portrait motion setting in the testing tab.
+- **Which portrait goes with which animal:**
+
+| Animal | Portrait | What it shows |
+| --- | --- | --- |
+| Bees | `bee.png` | Big bug eyes, wings out to the sides, a frown with fangs |
+| Bear | `bear.png` | Angry brows, an open snarl with fangs |
+| Bear with a Sword | `bear-sword.png` | A headband, biting a sword |
+| Bobcat | `bobcat.png` | Ear tufts, cheek ruffs, cat eyes |
+| Squirrel Army | `squirrel.png` | An acorn-cap helmet and a bushy tail |
+| Woods Monster | `woods-monster.png` | Branch antlers, dark eye holes, a jagged grin |
+| Woods Monster's helpers | `cultist.png` | One on each side of the monster, their bottoms lined up with his |
+| Stampede, during a Herd rush | `moose.png` | Big antlers, snorting |
+
+- **The Stampede** shows the portrait of whichever animal is attacking.
+- **Sprites that stay:** the sprites that move inside the box stay as they are (`bee-1` and `bee-2`, `squirrel-run`, `moose`, the claws and so on). The Bobcat's Stalk keeps using its old head sprite.
+- See `mockups/16-portraits.png` and `17-in-game-*.png`.
 - **The box:** dark inside (G1) with a light border (G8 and G9). Its size and shape depend on the animal, and it can change between attack patterns, growing or shrinking over [0.4 s].
 - **Bottom HUD:** the line of hikers in order, each with:
   - their tinted person icon and name;
@@ -91,30 +140,64 @@ Numbers in [brackets] are first guesses. Put them in `balance.ts` with `TODO(wya
   - Every group of incoming things gets its marker, on every side it comes from. In a Cross, that's both sides.
 - **Reduced motion:** no screen shake, and a softer red flash.
 
-## 4. Numbers by tier
+## 4. Tiers and levels (revised November 25)
+Challenges now go up to **Tier V**. New animals show up through Tier III, and Tiers IV and V are harder versions of them. Wyatt's call, with Mom in mind: **attacks don't overlap, except at Tier V.**
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Length **(setting)** | [20 s] | [25 s] | [30 s] |
-| Lives per hiker **(setting)** | [2] | [2] | [2] |
-| Switch every **(setting)** | [5 s] | [5 s] | [5 s] |
-| Attack speed | ×[1.0] | ×[1.2] | ×[1.4] |
-| Time between attacks | [0.8 s] | [0.6 s] | [0.4 s] |
-| Chance the next attack overlaps the current one | [30%] | [50%] | [70%] |
-| Most attacks at once | [2] | [2] | [3] |
+### Levels
+Each animal plays at a **level**, which sets its attacks and numbers:
+- **Easy** (new, Bees and Squirrel Army only): see their sections.
+- **Levels 1, 2 and 3:** what used to be Tiers I, II and III. In the attack and animal sections below, "Tier I", "Tier II" and "Tier III" now mean **Levels 1, 2 and 3**.
 
-The testing tab can override the length (10 to 60 s), lives (1 to 3) and switch time (3 to 10 s). "Auto" uses the tier's value.
+### Who shows up, and at what level
+| Animal | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Bees | Easy | 1 | 2 | 3 | 3 + overlaps |
+| Squirrel Army | Easy | 1 | 2 | 3 | 3 + overlaps |
+| Bobcat | — | 1 | 2 | 3 | 3 + overlaps |
+| Bear | — | 1 | 2 | 3 | 3 + overlaps |
+| Bear with a Sword | — | — | 2 | 3 | 3 + overlaps |
+| Stampede | — | — | 2 | 3 | 3 + overlaps |
+| Woods Monster | — | — | 3 | 3 | 3 + overlaps + boss boost |
+
+**How common:** when a Dodge animal is picked at random for a tier, use these weights. The Woods Monster isn't in this pool: he comes from the night monster event, at Tier III and up.
+
+| Animal | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Bees | [60] | [20] | [5] | [5] | [5] |
+| Squirrel Army | [40] | [25] | [10] | [10] | [10] |
+| Bobcat | — | [30] | [25] | [20] | [20] |
+| Bear | — | [25] | [25] | [25] | [25] |
+| Bear with a Sword | — | — | [20] | [20] | [20] |
+| Stampede | — | — | [15] | [20] | [20] |
+
+### Numbers by tier
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Length **(setting)** | [20 s] | [25 s] | [30 s] | [30 s] | [35 s] |
+| Lives per hiker **(setting)** | [2] | [2] | [2] | [2] | [2] |
+| Switch every **(setting)** | [5 s] | [5 s] | [5 s] | [5 s] | [5 s] |
+| Overlaps | none | none | none | none | [60%] chance, up to [3] at once |
+
+### Numbers by level
+| | Easy | Level 1 | Level 2 | Level 3 |
+| --- | --- | --- | --- | --- |
+| Attack speed | ×[0.85] | ×[1.0] | ×[1.2] | ×[1.4] |
+| Time between attacks | [1.0 s] | [0.8 s] | [0.6 s] | [0.5 s] |
+
+- **The Stampede** plays every attack at its own level. Bee and Squirrel attacks in it use the numbered levels, never Easy.
+- **The testing tab** can override the length (10 to 60 s), lives (1 to 3), switch time (3 to 10 s) and the level. "Auto" uses the tier's value.
 
 ## 5. Bees
 
 - **Box:** square, [120 × 120], centered.
 - **A bee:** `bee-1.png` and `bee-2.png` alternate every [0.1 s]. Mirror them to face the way the bee flies. Hitbox: a circle of radius [2.5]. Base speed: [80] units/s.
-- **Patterns.** Pick one at random each time, not the same one twice in a row. Higher tiers mix in the later ones.
-  1. **Lane:** [4–6] bees enter from one side and cross in parallel lanes, leaving one gap lane. **Staggered:** each bee in the row starts at its own random delay of [0–0.45 s], so the row comes in ragged and there's room to weave between them.
-  2. **Cross:** a lane from the left and a lane from the top at the same time, each with a gap and staggered the same way.
-  3. **Diagonal:** bees fly corner to corner in a staggered line. *(Tier II and up)*
-  4. **Zigzag:** [2] bees weave across in a wave. *(Tier II and up)*
-  5. **Aimed:** bees fly in from random edge points, aimed at where the sprite is when they launch. *(Tier III)*
+- **Patterns by level.** Pick one at random each time, never the same one twice in a row. Wyatt: bees are the Tier I animal, so they have to be the easiest.
+  - **Easy:**
+    - **One at a time:** [6–8] bees fly in one by one from random edge points, each aimed at where the sprite is when it launches, [0.8 s] apart, at [55] units/s;
+    - **Pairs:** [2] bees cross side by side in lanes, with a wide gap, [0.6 s] apart.
+  - **Level 1:** One at a time ([0.6 s] apart), and **Lane** with [3–4] bees, staggered over [0–0.6 s].
+  - **Level 2:** **Lane** ([4–6] bees, staggered over [0–0.45 s]), **Cross** (a lane from the left and one from the top), and **Zigzag** ([2] bees weaving across).
+  - **Level 3:** **full rows**, every bee in a lane at once with one gap lane, plus Cross with full rows, **Diagonal** (corner to corner), and **Aimed swarm** ([4] bees at once from random edges, aimed at the sprite).
 - Each pattern's bees show "!" markers at their entry edge [0.6 s] before they appear. Bees leave the box on the far side and are removed.
 
 ## 6. The attack library
@@ -135,8 +218,8 @@ Build attacks as reusable pieces. Each one has:
 
 ### Pacing and overlaps
 Wyatt wants more going on at once, with shorter gaps.
-- **Gaps:** the next attack starts [0.8 s], [0.6 s] or [0.4 s] after the last one ends, by tier (section 4).
-- **Overlaps:** with the tier's chance, the next attack starts while the current one is still running, [0.3–0.8 s] into it. The tier also caps how many run at once.
+- **Gaps:** the next attack starts after the level's gap (section 4).
+- **Overlaps (Tier V only):** with the tier's chance, the next attack starts while the current one is still running, [0.3–0.8 s] into it, up to the cap. Below Tier V, one attack at a time.
 - **Kinds of attack.** Tag every attack as one of these:
   - **area:** it covers a big part of the box (Sword sweep, Shout, Fire tongues, Rune beams, Ritual circle, The Eye, Herd rush);
   - **missile:** things that fly or poke (claws, bees, acorns, nuts, jabs, poke-ups, Wave, pinecones, wisps, hands, pounces);
@@ -200,7 +283,8 @@ Wyatt wants more going on at once, with shorter gaps.
 - **Bouncing:** acorns bounce off the walls like a mirror.
   - Each bounce cracks them one stage: `acorn-0`, `acorn-1`, `acorn-2`.
   - On the [3rd] wall hit they break into `acorn-crumbs`, which can't hurt and fade over [0.3 s].
-- **At once:** Tier I [2], Tier II [3], Tier III [4].
+- **At once:** Easy [1], Tier I [2], Tier II [3], Tier III [4].
+- **Easy:** a single acorn at a time, at [55] units/s, and it breaks on the [2nd] wall hit.
 - **Tier III:** a breaking acorn throws [4] pieces of shrapnel away from the wall.
 - **Hit shape:** a circle of radius [3].
 
@@ -210,7 +294,8 @@ Wyatt wants more going on at once, with shorter gaps.
 - **The fuse:** `bomb` and `bomb-lit` alternate faster and faster for [1.6 s]. The blast radius, [26] units, shows as a pulsing ring the whole time.
 - **The blast:** anything inside the radius during the [0.2 s] blast is hit.
 - **Tier III:** [8] pieces of shrapnel fly out at [100] units/s.
-- **At once:** Tier I [1], Tier II [2], Tier III [2–3].
+- **At once:** Easy [1], Tier I [1], Tier II [2], Tier III [2–3].
+- **Easy:** the bomb sits still, with a longer fuse ([2.2 s]) and a smaller blast ([20] units).
 - **Shrapnel:** `shrapnel.png` flies in straight lines and is removed at the walls. Hit shape: a circle of radius [1.5].
 
 ### Shout *(Claude's idea, reworked; Bear, Tier II and up)*
@@ -265,7 +350,7 @@ Wyatt likes this one.
 Right after a pounce lands, a row of claws bursts out from the landing spot in one direction.
 
 ### Pinecone rain *(Claude's idea; Squirrel Army, Tier I and up)*
-- Pinecones (`pinecone.png`) drop from the top in [3–5] columns, each warned at the top edge.
+- Pinecones (`pinecone.png`) drop from the top in [3–5] columns ([2–3] on Easy), each warned at the top edge.
 - They bounce once on the floor, then roll off toward the nearer side wall.
 
 ### Wall scurry *(Claude's idea; Squirrel Army, Tier II and up)*
@@ -280,14 +365,14 @@ Right after a pounce lands, a row of claws bursts out from the landing spot in o
 - Warned with arrows at the edge they'll come from.
 
 ## 7. Bear
-- **Box:** [140 × 110]. Head: `bear-head.png`.
+- **Box:** [140 × 110]. Portrait: `bear.png`.
 - **Tier I:** Claws (2 curved rows at once), Bite.
 - **Tier II adds:** 3 rows of 4 claws, plus Shout and Bear hug *(Claude's ideas; the hug lasts 3 s and other attacks run during it)*.
 - **Tier III adds:** 4 rows of claws, double Bite, plus Honey drips *(Claude's idea)*.
 - See `mockups/4-bear.png`, `5-bear-claudes-ideas.png` and `10-bear-shout-claws-hug.png`. (Mockup 5 still shows the old Roar rings.)
 
 ## 8. Bear with a Sword
-- **Box:** [180 × 80]. Head: `bear-head.png`. The sword turns around the same pivot as before.
+- **Box:** [180 × 80]. Portrait: `bear-sword.png`. The sword turns around the same pivot as before.
 - **Tier I:** Sword sweep, Claws, Sword jab (straight), Poke-up slide (from below), Wave.
 - **More claws during the sword attacks:** while any sword attack is running, a Claws row comes in on top of it with a [40%] chance (Tier I), [60%] (Tier II) or [80%] (Tier III). These extra claws are missiles, so they don't break the "one area attack" rule.
 - **Tier II adds:** double swings, more claw rows, 2 jabs and diagonal jabs, poke-ups from the top as well, and waves along either wall.
@@ -297,14 +382,15 @@ Right after a pounce lands, a row of claws bursts out from the landing spot in o
 - See `mockups/6-bear-with-a-sword.png` and `11-sword-wave-thrown.png`.
 
 ## 9. Bobcat
-- **Box:** [150 × 110]. Head: `bobcat-head.png`.
+- **Box:** [150 × 110]. Portrait: `bobcat.png`.
 - **Tier I:** Pounce (on a random third of the box), fast Claws, Stalk.
 - **Tier II adds:** pounces aimed at the sprite and 2 in a row, more fast claw rows, 4 Stalk hops, plus Zigzag dash *(Claude's idea)*.
 - **Tier III adds:** the feint pounce and double Claws, plus Landing swipe *(Claude's idea)*.
 - See `mockups/7-bobcat.png` and `12-bobcat-stalk-zigzag.png`.
 
 ## 10. Squirrel Army
-- **Box:** [130 × 120]. Head: `squirrel-head.png`.
+- **Box:** [130 × 120]. Portrait: `squirrel.png`.
+- **Easy (new, Tier I):** Rolling acorns (1 at a time), Acorn bombs (1, sitting still), Pinecone rain (2–3 columns). No Wall scurry.
 - **Tier I:** Rolling acorns (2), Acorn bombs (they sit still), plus Pinecone rain *(Claude's idea)*.
 - **Tier II adds:** 3 acorns at once, bombs that roll, plus Wall scurry *(Claude's idea)*.
 - **Tier III adds:** 4 acorns, shrapnel from acorns and bombs, and 2–3 bombs at once.
@@ -314,7 +400,7 @@ Right after a pounce lands, a row of claws bursts out from the landing spot in o
 - **Every attack** from every animal (not the Woods Monster), limited to the ones unlocked at this tier, plus Herd rush *(Claude's idea)*.
 - **The head** above the box switches to whichever animal is attacking, and the box changes to that animal's shape over [0.4 s]. The sprite is pushed back inside if the box shrinks.
 - **Variety:** no attack twice in a row, and no animal more than twice in a row.
-- **Overlaps:** follow the pacing rules in section 6. On Tier III the overlapping attacks often come from two different animals.
+- **Overlaps:** only at Tier V (section 6), where the overlapping attacks often come from two different animals.
 - **Length:** the tier's length plus [10 s] by default. The Length setting still overrides it.
 - See `mockups/9-stampede.png`.
 
@@ -322,15 +408,14 @@ Right after a pounce lands, a row of claws bursts out from the landing spot in o
 The monster from the night events, with the cultists as his helpers. **He's meant to be really hard.** See `mockups/14-woods-monster-fire.png` and `15-woods-monster-ritual.png`.
 
 - **The look:**
-  - **Head:** `monster-head.png`, a dark shape with antlers and glowing eyes.
-  - **Cultists:** two hooded cultists (`cultist.png`) stand beside the box holding candles (`candle.png`). Some attacks come from them.
+  - **Portrait:** `woods-monster.png`, a tree spirit with branch antlers, dark eye holes with glowing eyes, and a jagged grin.
+  - **Cultists:** two hooded cultist portraits (`portraits/<style>/cultist.png`) stand on each side, as before. Some attacks come from them.
 - **Box:** [170 × 110].
-- **Harder than his tier:** he always plays one step up.
-  - On Tier I he uses Tier II numbers.
-  - On Tier II, Tier III numbers.
-  - On Tier III, Tier III numbers plus [20%] speed, a [+20] point overlap chance and one more attack allowed at once.
+- **Always at full strength:** he only shows up from Tier III (the night monster event), and always plays Level 3.
+  - Tiers III and IV: Level 3, no overlaps.
+  - Tier V: Level 3 with overlaps, plus his boss boost: [20%] more speed, a [+20] point overlap chance and one more attack allowed at once.
 - **Length:** [40 s] by default. The Length setting still overrides it.
-- **Second half (Tier III):** at half time "the woods close in". The box shrinks to [140 × 90] over [1 s], and Darkness can start.
+- **Second half (always):** at half time "the woods close in". The box shrinks to [140 × 90] over [1 s], and Darkness can start.
 
 ### His attacks
 1. **Fire tongues** (Wyatt's idea; area).
@@ -365,10 +450,13 @@ The monster from the night events, with the cultists as his helpers. **He's mean
 - Add **Dodge** to the game list. Settings:
   - **Animal** (Bees, Bear, Bear with a Sword, Bobcat, Squirrel Army, Wild Predator Stampede, Woods Monster);
   - **Attack** (All, or any one attack that animal uses), to practice or tune one attack at a time. With one attack picked, attacks don't overlap;
-  - **Overlaps** (Auto, Off, or On), to compare pacing;
+  - **Overlaps** (Auto, Off, or On). Auto means on at Tier V only;
+  - **Level** (Auto, Easy, 1, 2, 3). Auto uses the table in section 4;
   - **Include Claude's ideas** (On or Off, default On);
   - **Show hitboxes** (Off or On), which outlines every hit shape;
-  - **Tier**;
+  - **Portrait style** (Solid, Solid + red), which can also be switched live with the P key while playing in test mode;
+  - **Portrait motion** (On or Off), for the blink and bob;
+  - **Tier** (I to V);
   - **Hikers** (1 to 4);
   - **Lives per hiker** (Auto, 1, 2, 3);
   - **Length** (Auto, or 10 to 60 s);
@@ -391,20 +479,22 @@ The monster from the night events, with the cultists as his helpers. **He's mean
 - **Bear with a Sword:** the warning time never drops below the minimum.
 - **Attack picker:** choosing one attack plays only that attack, and it still follows the tier.
 - **Pacing:**
-  - gaps between attacks follow the tier;
-  - overlaps happen at about the tier's chance, never with two area attacks or two changers at once, and never beyond the cap.
+  - gaps between attacks follow the level;
+  - below Tier V, attacks never overlap;
+  - at Tier V, overlaps happen at about the tier's chance, never with two area attacks or two changers at once, and never beyond the cap.
+- **Tiers and levels:** each tier only offers the animals in the table, at their level. The Woods Monster is always Level 3.
 - **Warnings:** for every bee pattern and every side (including the bottom), the markers show and aren't hidden by the HUD or the screen edge. If they'd be covered, they move inside the box edge.
-- **Bees:** bees in one row start at different times, within the stagger window.
+- **Bees:** on Easy, bees come one at a time. Bees in a staggered row start at different times, within the stagger window; full rows only at Level 3.
 - **Claws:** never drawn upside down, whatever the direction or arc.
 - **Bear hug:** lasts 3 s, and other attacks run during it.
 - **Bobcat:** Stalk aims each hop at the sprite's position at that moment. The Zigzag dash bounces off the wall the right number of times.
-- **Woods Monster:** plays one tier up, and the Tier III second half shrinks the box with the sprite pushed inside.
+- **Woods Monster:** always Level 3, with the boss boost only at Tier V. The second half shrinks the box with the sprite pushed inside.
 - **Claude's ideas:** switching them off removes every attack marked *(Claude's idea)*.
 - **Tiers:** each animal only uses the attacks and variants unlocked at the chosen tier.
 - **Squirrel Army:** acorns crack on each bounce and break on the 3rd. Shrapnel only appears on Tier III.
 - **Bear hug and the shrinking box:** the sprite is never left outside the box.
 - **Honey:** puddles slow the sprite and never count as a hit.
-- **Stampede:** the head and the box follow whichever animal is attacking. On Tier III, two attacks overlap sometimes. The Woods Monster's attacks aren't in the Stampede; he stays a boss of his own.
+- **Stampede:** the head and the box follow whichever animal is attacking. At Tier V, two attacks overlap sometimes. The Woods Monster's attacks aren't in the Stampede; he stays a boss of his own.
 - **Controls:**
   - the sprite never leaves the box, even when the box shrinks (push it back inside);
   - the joystick appears where the finger lands and stops on release;

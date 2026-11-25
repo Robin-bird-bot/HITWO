@@ -1,5 +1,7 @@
 # Minigames, batch 4, step 1: passing challenges, Trail Blocks, Sleeping Bear, Whackoon
 
+**Revised November 25 (same day):** every table runs to Tier V, and Whackoon gets a **Colors** mode (section 4).
+
 Wyatt added a big set of new challenges. They ship in four steps, and this is the first:
 1. **This step:** the passing-challenge rules, the four Trail Blocks, Sleeping Bear and Whackoon.
 2. Lane games: Road, River and Critter Crossing, Train! and Rafting.
@@ -37,7 +39,7 @@ Some challenges stand between the party and a tile, and the party has to get pas
 - **Hikers who fail** go back to the tile they came from and pay that game's cost.
 - **If at least one hiker passes,** the challenge is gone from the tile.
 - **If nobody passes:**
-  - everyone goes back and loses energy: [1] at Tiers I and II, [2] at Tier III;
+  - everyone goes back and loses energy: [1] at Tiers I and II, [2] at Tiers III to V;
   - the challenge stays on the tile, now revealed (face up);
   - hikers can try it again or go another way, and it stays until someone passes it.
 - **Trail Blocks are team work:** finishing the work clears the way for everyone, so the whole party moves on. Only hikers whose energy ran out pay (section 2).
@@ -85,9 +87,9 @@ See `mockups/1-chop-tree.png` to `4-clear-animals.png`.
 - **If every chunk runs out** before the work is done, everyone fails (section 1).
 
 ### Work
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Work to clear | [50] + [25] per hiker | [60] + [30] per hiker | [70] + [35] per hiker |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Work to clear | [50] + [25] per hiker | [60] + [30] per hiker | [70] + [35] per hiker | [80] + [40] per hiker | [90] + [45] per hiker |
 
 - **A good swing** does [8] to [14] work, depending on how accurate it is.
 - **A perfect swing** (the best [15%] of the zone) does [16] and gives back energy.
@@ -104,10 +106,10 @@ See `mockups/1-chop-tree.png` to `4-clear-animals.png`.
 - **The bar:** green zones at both ends, with a marker sliding back and forth. Click, tap or press Space to swing.
 - **Strength:** the closer to the outer edge, the stronger the swing. Outside the green, the swing misses ("THUNK").
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| One pass across the bar | [1.2 s] | [1.0 s] | [0.8 s] |
-| Each green zone | [16%] | [12%] | [9%] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| One pass across the bar | [1.2 s] | [1.0 s] | [0.8 s] | [0.7 s] | [0.6 s] |
+| Each green zone | [16%] | [12%] | [9%] | [8%] | [7%] |
 
 - **Art:**
   - `axe-ready`, `axe-raised` and `axe-strike`: a swing goes ready → raised → strike → ready;
@@ -121,10 +123,10 @@ See `mockups/1-chop-tree.png` to `4-clear-animals.png`.
 - **The power bar:** a tall bar on the left. Hold to fill it: it rises to the top, then drops back down while you keep holding. Let go to swing.
 - **The green zone:** it sits at a random height and moves after every swing. The closer to its middle you let go, the stronger the swing.
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Fill to the top | [1.0 s] | [0.85 s] | [0.7 s] |
-| Green zone | [24%] | [18%] | [13%] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Fill to the top | [1.0 s] | [0.85 s] | [0.7 s] | [0.6 s] | [0.55 s] |
+| Green zone | [24%] | [18%] | [13%] | [11%] | [10%] |
 
 - **Art:** `pickaxe-*`, `rocks-0` to `rocks-4` (fewer boulders at each stage), and `rock-chips.png` flying off on a hit.
 
@@ -133,11 +135,11 @@ See `mockups/1-chop-tree.png` to `4-clear-animals.png`.
 - **Hitting a spot:** scoops water (the closer to the spot's middle, the more), and that spot disappears. When every spot is gone, a new set appears in new places.
 - **Outside a spot:** a miss.
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Spots | [4] | [4] | [5] |
-| Each spot | [10%] | [8%] | [6%] |
-| One pass across the bar | [1.3 s] | [1.1 s] | [0.9 s] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Spots | [4] | [4] | [5] | [5] | [6] |
+| Each spot | [10%] | [8%] | [6%] | [5.5%] | [5%] |
+| One pass across the bar | [1.3 s] | [1.1 s] | [0.9 s] | [0.8 s] | [0.7 s] |
 
 - **Art:**
   - the bucket goes ready → scoop → toss, and `splash.png` flies off to the left on a toss;
@@ -153,10 +155,10 @@ See `mockups/1-chop-tree.png` to `4-clear-animals.png`.
   - **anything else:** a miss;
   - **if the circle shrinks past the ring:** a miss, and a new circle starts.
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Shrink time | [1.5 s] | [1.2 s] | [1.0 s] |
-| Ring thickness | [10] | [8] | [6] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Shrink time | [1.5 s] | [1.2 s] | [1.0 s] | [0.9 s] | [0.8 s] |
+| Ring thickness | [10] | [8] | [6] | [5] | [4] |
 
 - **The crowd:** the animals left match the work left. Each hit whistles [1–2] away: they flip around and run off to the sides.
 - **Art:** `whistle-hold`, `whistle-blow` (with `whistle-waves.png`), and `animal-deer`, `-raccoon`, `-turkey` and `-rabbit` (facing you; mirror them to run).
@@ -180,13 +182,13 @@ Red light, green light past a sleeping bear, in side view. See `mockups/5-sleepi
 - **Caught:** moving while he's awake. You get a grace of [0.12 s] after his eyes open.
 - **Fake-outs** (Tiers II and III): sometimes he stirs, then goes back to sleep without waking.
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Asleep for | [2.5–4.5 s] | [2–4 s] | [1.5–3.5 s] |
-| Stir warning | [0.9 s] | [0.7 s] | [0.5 s] |
-| Awake for | [1.5–2.5 s] | [1.5–2.5 s] | [1.5–2.5 s] |
-| Fake-outs | none | [30%] of stirs | [40%] of stirs |
-| Time each hiker adds to the clock | [9 s] | [8 s] | [7 s] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Asleep for | [2.5–4.5 s] | [2–4 s] | [1.5–3.5 s] | [1.2–3 s] | [1–2.5 s] |
+| Stir warning | [0.9 s] | [0.7 s] | [0.5 s] | [0.45 s] | [0.4 s] |
+| Awake for | [1.5–2.5 s] | [1.5–2.5 s] | [1.5–2.5 s] | [1.5–2.5 s] | [1.5–2.5 s] |
+| Fake-outs | none | [30%] of stirs | [40%] of stirs | [45%] of stirs | [50%] of stirs |
+| Time each hiker adds to the clock | [9 s] | [8 s] | [7 s] | [6.5 s] | [6 s] |
 
 - **Walking:** [45] units/s. The path is [272] units long (about 6 s of walking).
 - **The clock:** one shared clock for the party. It starts at the time per hiker × the number of hikers. When it runs out, everyone who hasn't crossed fails.
@@ -216,22 +218,37 @@ Red light, green light past a sleeping bear, in side view. See `mockups/5-sleepi
 ## 4. Whackoon
 Whack-a-mole with raccoons popping out of trash cans. See `mockups/6-whackoon.png`.
 
-### Play
-- **Turns:** hikers take turns of [10 s] each, in line order.
+### Modes (setting: Colors or Turns)
+Wyatt's idea: color-coded raccoons, so the player has to pick which ones to hit. **Colors** is the default. Turns (the first version) stays as an option to compare.
+
+**Colors (default):**
+- **One shared clock** for the party: [8 s] per hiker.
+- **Each raccoon** wears a bandit mask in one hiker's color (`raccoon-*-mask.png`, tinted the same way as the Trail Block sleeves). Colors are dealt out evenly.
+- **Each hiker** needs a number of whacks on raccoons of their own color (the target table below). The bottom bar fills their squares.
+- **Done hikers:** when a hiker reaches their target, they pass, but **their raccoons keep popping up**. Whacking one does nothing, and the pan needs [0.5 s] to swing again, so it wastes time. Be choosy.
+- **When the clock runs out,** hikers who reached their target pass. The rest fail and lose [1] energy each.
+- See `mockups/7-whackoon-colors.png`.
+
+**Turns:**
+- **Taking turns:** hikers take turns of [10 s] each, in line order.
+- **The target:** the team's whacks add up. Reach the target and everyone passes; miss it and everyone fails, losing [1] energy each.
+
+**Both modes:**
 - **Whacking:** click or tap a raccoon to whack it. The cursor is a frying pan (`pan-ready`, swinging to `pan-whack` on a click).
-- **The target:** the team's whacks add up. Reach the target and everyone passes; miss it and everyone fails, losing [1] energy each. Whackoon isn't a passing challenge.
+- **Not a passing challenge.**
 - **Skunks** are the decoys:
   - sometimes a skunk pops up instead of a raccoon;
-  - whacking it sprays you: a green cloud (`spray.png`) covers the cans for [1 s], and the turn loses [2 s].
+  - whacking it sprays you: a green cloud (`spray.png`) covers the cans for [1 s], and the clock (or the turn) loses [2 s].
 
-| | Tier I | Tier II | Tier III |
-| --- | --- | --- | --- |
-| Cans | 3 × 3 | 3 × 3 | 4 × 3 |
-| Up for | [1.0 s] | [0.8 s] | [0.6 s] |
-| A new one every | [0.7 s] | [0.55 s] | [0.45 s] |
-| Most up at once | [2] | [3] | [3] |
-| Skunks | none | [15%] | [25%] |
-| Target per hiker | [8] | [9] | [10] |
+| | Tier I | Tier II | Tier III | Tier IV | Tier V |
+| --- | --- | --- | --- | --- | --- |
+| Cans | 3 × 3 | 3 × 3 | 4 × 3 | 4 × 3 | 4 × 3 |
+| Up for | [1.0 s] | [0.8 s] | [0.6 s] | [0.55 s] | [0.5 s] |
+| A new one every | [0.7 s] | [0.55 s] | [0.45 s] | [0.4 s] | [0.35 s] |
+| Most up at once | [2] | [3] | [3] | [3] | [4] |
+| Skunks | none | [15%] | [25%] | [30%] | [35%] |
+| Target per hiker | [8] | [9] | [10] | [11] | [12] |
+| Colors mode: whacks needed per hiker | [5] | [6] | [7] | [8] | [9] |
 
 ### Art
 - **Cans:** `can.png` and `can-open.png` (lid knocked up).
@@ -249,7 +266,7 @@ Add the three games under **Reaction and timing**, with these settings:
   - tier and hikers;
   - **Show hit quality**, which floats each swing's work number for tuning.
 - **Sleeping Bear:** tier, hikers, and Fake-outs (on or off).
-- **Whackoon:** tier, hikers, and Skunks (on or off).
+- **Whackoon:** tier, hikers, Mode (Colors or Turns), and Skunks (on or off).
 
 **Results screen:** in test mode it lists the passing-challenge result (section 1). Nothing is applied.
 
@@ -276,6 +293,7 @@ Add the three games under **Reaction and timing**, with these settings:
   - the clock is time per hiker × hikers;
   - fake-outs never wake him.
 - **Whackoon:**
-  - turns go in order;
+  - Colors: each hiker only counts their own color; a done hiker's raccoons do nothing when whacked and cost the [0.5 s] pause;
+  - Turns: turns go in order;
   - the team total adds up;
   - a skunk costs [2 s] and fogs the screen.
