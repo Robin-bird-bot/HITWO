@@ -68,6 +68,28 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M8 3l2 6-4 4 5 2 1 6M10 9l7-1M11 15l6 3" />
     </>
   ),
+  // An axe in a stump.
+  trailBlocks: (
+    <>
+      <path d="M4 20h16M7 20v-6h10v6" />
+      <path d="M12 14l5-9M15 3l4 2-2 3" />
+    </>
+  ),
+  // A sleeping bear: Zzz.
+  sleepingBear: (
+    <>
+      <path d="M3 19c0-5 4-8 9-8s9 3 9 8z" />
+      <circle cx="7" cy="12" r="1.5" />
+      <path d="M14 3h4l-4 4h4" />
+    </>
+  ),
+  // A trash can with its lid up.
+  whackoon: (
+    <>
+      <path d="M6 9h12l-1 12H7z" />
+      <path d="M5 7l13-3M10 13v5M14 13v5" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

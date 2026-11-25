@@ -1619,7 +1619,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
 - **Fixed along the way:** games without a Line up start while the GPS is still turning, so the screen could be measured mid-turn and drawn too small. It's now measured again after the turn.
 - **Not done:** real art (the pieces, cards, pictures and ice are Wyatt's placeholders), sound, and animated GPS previews.
 
-### Phase 10.8, step 5: Passing challenges, Trail Blocks, Sleeping Bear and Whackoon
+### Phase 10.8, step 5: Passing challenges, Trail Blocks, Sleeping Bear and Whackoon (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-trail-blocks.md`. The design is `docs/design/14-minigames-trail-blocks.md`. Mockups in `docs/mockups/minigames/trail-blocks/`. Placeholder art in `public/assets/minigames/trail-blocks/`, `sleeping-bear/` and `whackoon/`.)
 
@@ -1635,6 +1635,19 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
 5. **Testing tab:** the three games under Reaction and timing, with their settings; the results card lists the passing result.
 
 **Tests:** as in `14-minigames-trail-blocks.md`, section 6.
+
+**Phase 10.8 step 5 notes (built Nov 25)**
+- **What's playable:** main menu → **Minigame testing** → **Reaction and timing** → Trail Blocks (pick a Version), Sleeping Bear or Whackoon → **Test it** → Start → Line up → play.
+- **How it's built:** `src/minigames/passing.ts` (the passing rules), and `src/minigames/<game>/logic.ts` (pure and seeded, with tests) plus `src/ui/minigames/<game>/` for each game. `ui/minigames/tintArt.ts` tints the sleeves and Sleeping Bear's hikers, and `ui/minigames/hud.module.css` is the shared top HUD.
+- **How passing challenges hook in:** challenges don't run minigames from tiles yet, so a passing game returns `passing` (who moves on, who goes back, whether it stays on the tile) and `pays` (each hiker's cost) with its result, and the results card shows them; nothing is applied. When challenges run from tiles, the board reads those two: move the passers onto the tile, send the rest back, charge the costs, and leave the challenge face up if it stays.
+- **What I interpreted:**
+  - **Nobody passes:** each hiker's energy loss is at least [1] ([2] at Tier III) in total, not added to the game's own energy cost; other costs (Sleeping Bear's resource and Bleeding) still apply.
+  - **Trail Blocks:** a hiker who ran out still moves on with the party when the block is cleared ("Passed · −1 Energy"). A miss costs [4] in all (not 2 + 4). A circle that shrinks past the ring counts as a miss and costs energy, so waiting isn't free. Perfect is the best [15%] of a zone: the outer 15% for Chop Tree, the middle 15% for the others.
+  - **Art:** the rock stages are numbered by rocks left (`rocks-4` is the whole pile), the other way from the tree's notch stages.
+  - **Sleeping Bear:** after a catch, the next hiker starts [1 s] later. Hikers still waiting when time runs out fail like the one sneaking.
+  - **Whackoon:** it ends as soon as the team reaches the target; whacking a raccoon while it's still peeking counts; a bonked raccoon drops after [0.3 s]; the skunk's fog covers the cans but whacks still count.
+  - **Settings:** Fake-outs and Skunks are Auto (the tier's), On (Tier II's chance on Tier I) or Off.
+- **Not done:** real art, sound, and animated GPS previews.
 
 ### Phase 10.8, next steps (outline only)
 

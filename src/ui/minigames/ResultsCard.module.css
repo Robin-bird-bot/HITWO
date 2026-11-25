@@ -101,3 +101,31 @@
   font-size: 14px;
   font-weight: 800;
 }
+
+/* What a hiker pays, after their Passed or Failed. */
+.pay {
+  color: #7a5a3a;
+  font-weight: 700;
+}
+
+/* A passing challenge: who moves on, who goes back, and whether it stays. */
+.passing {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #efe3c4;
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.passing p {
+  margin: 0;
+}
+
+.testNote {
+  color: #7d705c;
+  font-size: 14px;
+}

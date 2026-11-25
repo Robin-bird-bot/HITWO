@@ -9,6 +9,7 @@
 import { BALANCE } from '../config/balance';
 import { ART_STYLES } from './bearrels/styles';
 import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal } from './dodge/animals';
+import { VERSIONS as TRAIL_BLOCK_VERSIONS } from './trailBlocks/logic';
 import {
   CATEGORIES,
   type MinigameInfo,
@@ -507,6 +508,63 @@ export const THIN_ICE: MinigameInfo = {
   ],
 };
 
+// ── New challenges, step 1 (docs/design/14-minigames-trail-blocks.md) ───────
+
+export const TRAIL_BLOCKS: MinigameInfo = {
+  id: 'trailBlocks',
+  name: 'Trail Blocks',
+  baseGame: 'Timing',
+  category: 'reaction',
+  description:
+    'Clear the trail together: time each swing. Energy comes out of each hiker’s chunk in line order.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    {
+      kind: 'pick',
+      id: 'version',
+      label: 'Version',
+      options: TRAIL_BLOCK_VERSIONS.map((v) => ({ id: v.id, label: v.name })),
+      default: 'chop',
+    },
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'quality',
+      label: 'Show hit quality',
+      options: [
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'off',
+      hint: 'Floats each swing’s work, for tuning',
+    },
+  ],
+};
+
+export const SLEEPING_BEAR: MinigameInfo = {
+  id: 'sleepingBear',
+  name: 'Sleeping Bear',
+  baseGame: 'Timing',
+  category: 'reaction',
+  description: 'Sneak past the sleeping bear one at a time. Freeze when he wakes.',
+  status: 'ready',
+  lineUp: true,
+  settings: [TIER, HIKERS, override('fakeOuts', 'Fake-outs', ON_OFF)],
+};
+
+export const WHACKOON: MinigameInfo = {
+  id: 'whackoon',
+  name: 'Whackoon',
+  baseGame: 'Reaction',
+  category: 'reaction',
+  description: 'Whack the raccoons in the trash cans. Leave the skunks alone.',
+  status: 'ready',
+  lineUp: true,
+  settings: [TIER, HIKERS, override('skunks', 'Skunks', ON_OFF)],
+};
+
 const soon = (
   id: string,
   name: string,
@@ -534,6 +592,9 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   REMEMBER_PATH,
   MEMORY,
   FIND_OBJECT,
+  TRAIL_BLOCKS,
+  SLEEPING_BEAR,
+  WHACKOON,
   soon('flySwatter', 'Fly Swatter', 'Reaction', 'reaction'),
   BEARRELS,
 ];
