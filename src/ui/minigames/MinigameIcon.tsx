@@ -42,6 +42,32 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M10 9c-2-4-6-3-5 0M14 9c2-4 6-3 5 0" />
     </>
   ),
+  // A map tile with a bending trail.
+  trailMap: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 15h6c2 0 3-1 3-3V3" />
+    </>
+  ),
+  // Two cards, one turned over.
+  memory: (
+    <>
+      <rect x="3" y="5" width="9" height="13" rx="1.5" />
+      <rect x="12" y="6" width="9" height="13" rx="1.5" transform="rotate(8 16.5 12.5)" />
+      <circle cx="7.5" cy="11.5" r="2" />
+    </>
+  ),
+  // A jigsaw piece.
+  picturePuzzle: (
+    <path d="M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 1 0-4z" />
+  ),
+  // Cracked ice.
+  thinIce: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M8 3l2 6-4 4 5 2 1 6M10 9l7-1M11 15l6 3" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

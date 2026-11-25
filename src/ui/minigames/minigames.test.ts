@@ -12,9 +12,14 @@ import {
   DODGE,
   FIND_OBJECT,
   FIND_PATH,
+  MEMORY,
   MINIGAMES,
+  MINIGAMES_BY_CATEGORY,
+  PICTURE_PUZZLE,
   REMEMBER_PATH,
+  THIN_ICE,
   TRAILDLE,
+  TRAIL_MAP,
 } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
@@ -127,19 +132,73 @@ describe('the party GPS', () => {
 });
 
 describe('the minigame list', () => {
-  it('Bearrels, the four puzzle games and Dodge play; Ants Are Marching, Cracked Bridge, Fly Swatter and Trail Memory are coming soon', () => {
-    expect(MINIGAMES.map((m) => [m.name, m.baseGame, m.status])).toEqual([
-      ['Bearrels', 'Barrels', 'ready'],
-      ['Traildle', 'Puzzle', 'ready'],
-      ['Find the Object', 'Reaction', 'ready'],
-      ['Remember the Path', 'Memory', 'ready'],
-      ['Find the Path', 'Minefield', 'ready'],
-      ['Dodge', 'Dodging', 'ready'],
-      ['Ants Are Marching', 'Snake', 'soon'],
-      ['Cracked Bridge', 'Platformer', 'soon'],
-      ['Fly Swatter', 'Reaction', 'soon'],
-      ['Trail Memory', 'Memory', 'soon'],
+  it('is grouped by category, every game in one; Trail Memory is gone (Memory Puzzle replaces it)', () => {
+    expect(
+      MINIGAMES_BY_CATEGORY.map((c) => [c.name, c.games.map((m) => [m.name, m.status])]),
+    ).toEqual([
+      [
+        'Movement and dodging',
+        [
+          ['Dodge', 'ready'],
+          ['Ants Are Marching', 'soon'],
+          ['Cracked Bridge', 'soon'],
+        ],
+      ],
+      [
+        'Puzzle and logic',
+        [
+          ['Traildle', 'ready'],
+          ['Find the Path', 'ready'],
+          ['Trail Map', 'ready'],
+          ['Picture Puzzle', 'ready'],
+          ['Thin Ice', 'ready'],
+        ],
+      ],
+      [
+        'Memory',
+        [
+          ['Remember the Path', 'ready'],
+          ['Memory Puzzle', 'ready'],
+        ],
+      ],
+      ['Search', [['Find the Object', 'ready']]],
+      ['Reaction and timing', [['Fly Swatter', 'soon']]],
+      ['Guess and luck', [['Bearrels', 'ready']]],
     ]);
+    const listed = MINIGAMES_BY_CATEGORY.flatMap((c) => c.games);
+    expect(listed).toHaveLength(MINIGAMES.length);
+    expect(MINIGAMES.some((m) => m.id === 'trailMemory')).toBe(false);
+  });
+
+  it('the third batch’s settings, and timers that can be switched off', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((s) => s.id);
+    expect(ids(TRAIL_MAP)).toEqual(['tier', 'hikers', 'mode', 'grid', 'time']);
+    expect(ids(MEMORY)).toEqual(['tier', 'hikers', 'match', 'preview', 'misses', 'swaps', 'timer']);
+    expect(ids(PICTURE_PUZZLE)).toEqual(['tier', 'hikers', 'grid', 'thumbnail', 'secPerPiece']);
+    expect(ids(THIN_ICE)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
+    expect(defaultSettings(THIN_ICE)).toMatchObject({
+      grid: 'auto',
+      holesPerHiker: 2,
+      timer: 'auto',
+    });
+    expect(PICTURE_PUZZLE.lineUp && THIN_ICE.lineUp).toBe(true);
+    expect(TRAIL_MAP.lineUp || MEMORY.lineUp).toBeFalsy();
+    // Off is kept where a setting can be off, and nowhere else.
+    expect(cleanSettings(TRAIL_MAP, { time: 'off', grid: 'off' }, TEST_HIKERS)).toMatchObject({
+      time: 'off',
+      grid: 'auto',
+    });
+    expect(
+      cleanSettings(MEMORY, { timer: 33, preview: 0.7, misses: 12 }, TEST_HIKERS),
+    ).toMatchObject({
+      timer: 35,
+      preview: 0.5,
+      misses: 10,
+    });
+    expect(cleanSettings(THIN_ICE, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject({
+      grid: '12x9',
+      holesPerHiker: 4,
+    });
   });
 
   it('the puzzle games: Tier (I, II, III), Hikers, and their overrides, where Auto uses the tier', () => {

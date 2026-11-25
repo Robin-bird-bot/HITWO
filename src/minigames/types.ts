@@ -59,7 +59,8 @@ export type MinigameSetting =
   | {
       /**
        * A number in a range, or "auto" (the tier's or the default value,
-       * `autoValue`, shown in the hint). Stepping below the minimum gives Auto.
+       * `autoValue`, shown in the hint). Stepping below the minimum gives Auto,
+       * or Off first when the setting can be switched off (`off`: timers).
        */
       kind: 'autoRange';
       id: string;
@@ -69,6 +70,7 @@ export type MinigameSetting =
       step?: number;
       autoValue: number;
       hint: string;
+      off?: boolean;
     }
   | {
       /** A few named options, such as Auto, On and Off ("Auto" uses the tier's value). */
@@ -116,10 +118,27 @@ export interface PickOption {
 export type MinigameSettingValue = number | string | readonly string[];
 export type MinigameSettings = Record<string, MinigameSettingValue>;
 
+/**
+ * The kinds of minigame (docs/design/13-minigames-puzzles-2.md, section 5):
+ * the testing tab lists the games under these, in this order.
+ */
+export type MinigameCategory = 'move' | 'puzzle' | 'memory' | 'search' | 'reaction' | 'luck';
+
+export const CATEGORIES: readonly { id: MinigameCategory; name: string }[] = [
+  { id: 'move', name: 'Movement and dodging' },
+  { id: 'puzzle', name: 'Puzzle and logic' },
+  { id: 'memory', name: 'Memory' },
+  { id: 'search', name: 'Search' },
+  { id: 'reaction', name: 'Reaction and timing' },
+  { id: 'luck', name: 'Guess and luck' },
+];
+
 /** A minigame as data: what the testing tab lists and the pop-up names. */
 export interface MinigameInfo {
   id: string;
   name: string;
+  /** Where the testing tab lists it. */
+  category: MinigameCategory;
   /** The base game it's a skin of (Barrels, Snake…). */
   baseGame: string;
   /** One line on how it plays. */

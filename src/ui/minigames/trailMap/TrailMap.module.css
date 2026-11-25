@@ -1,0 +1,120 @@
+/* Trail Map (1-trail-map.png and 2-trail-map-hikers.png), in scene units (320 × 240). */
+
+.board {
+  position: absolute;
+  box-shadow: 0 0 0 1px #1d2918;
+  touch-action: manipulation;
+}
+
+.tile {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.tile:disabled {
+  cursor: default;
+}
+
+.tile[data-locked] {
+  cursor: not-allowed;
+}
+
+.piece {
+  width: 100%;
+  height: 100%;
+  transition-property: transform;
+  transition-timing-function: ease-out;
+}
+
+/* The keyboard cursor. */
+.tile[data-cursor]::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border: 1px solid #d3dfaf;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tile:focus-visible {
+  outline: 1px solid #e9b44c;
+  outline-offset: -1px;
+}
+
+/* Footprints along a trail that reaches the exit: two small steps. */
+.print {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.print > span {
+  position: absolute;
+  width: 9%;
+  height: 9%;
+  background: #3c4e2f;
+}
+
+.print > span:first-child {
+  left: 38%;
+  top: 34%;
+}
+
+.print > span:last-child {
+  left: 54%;
+  top: 56%;
+}
+
+/* A locked tile: a stake in its corner. */
+.stake {
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  border: 0.75px solid #d3dfaf;
+  border-radius: 50%;
+  background: #111a10;
+  pointer-events: none;
+}
+
+.exitArrow {
+  position: absolute;
+  width: 10px;
+  height: 6px;
+  background: #1d2918;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  pointer-events: none;
+}
+
+.exitArrow[data-lit] {
+  background: #d3dfaf;
+  filter: drop-shadow(0 0 0.75px #1d2918);
+}
+
+.exitWord {
+  position: absolute;
+  font-size: 4px;
+}
+
+.head,
+.walker {
+  position: absolute;
+  pointer-events: none;
+}
+
+.walker {
+  transition:
+    left 0.15s linear,
+    top 0.15s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece,
+  .walker {
+    transition: none;
+  }
+}

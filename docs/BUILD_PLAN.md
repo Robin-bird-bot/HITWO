@@ -1576,7 +1576,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
   - Darkness light radius [24].
 - **Not done:** real art for the paw, the cultists' poses and the monster, sound, and an animated GPS preview.
 
-### Phase 10.8, step 4: Trail Map, Memory Puzzle, Picture Puzzle and Thin Ice, test version
+### Phase 10.8, step 4: Trail Map, Memory Puzzle, Picture Puzzle and Thin Ice, test version (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-puzzle-games.md`. The design is `docs/design/13-minigames-puzzles-2.md`. Mockups in `docs/mockups/minigames/puzzles-2/`. Placeholder art in `public/assets/minigames/trail-map/`, `memory/`, `picture-puzzle/` and `thin-ice/`.)
 
@@ -1592,6 +1592,32 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
 5. **Testing tab:** the game list grouped by category; the four games with their settings.
 
 **Tests:** as in `13-minigames-puzzles-2.md`, section 6.
+
+**Phase 10.8 step 4 notes (built Nov 25)**
+- **What's playable:** main menu → **Minigame testing**. The list is grouped by category:
+  - **Puzzle and logic:** Trail Map, Picture Puzzle and Thin Ice;
+  - **Memory:** Memory Puzzle.
+  - Then **Test it** → Start (Line up for Picture Puzzle and Thin Ice) → play.
+- **How it's built:** `src/minigames/<game>/logic.ts` (pure and seeded, with tests) and `src/ui/minigames/<game>/` for each game; the shared left panel is `ui/minigames/panel.module.css` and the clock is `useCountdown`. Number settings can now be Off as well as Auto (the timers).
+- **What I interpreted:**
+  - **Categories:** the category table the update mentions isn't in the repo. I sorted the games as:
+    - Movement and dodging: Dodge, Ants Are Marching, Cracked Bridge;
+    - Puzzle and logic: Traildle, Find the Path, Trail Map, Picture Puzzle, Thin Ice;
+    - Memory: Remember the Path, Memory Puzzle;
+    - Search: Find the Object;
+    - Reaction and timing: Fly Swatter;
+    - Guess and luck: Bearrels.
+    - Trail Memory is gone (Memory Puzzle replaces it).
+  - **Trail Map:** a later trail "joining" an earlier one ends where it meets it. Trailheads are on the other sides from the exit when they fit. A locked tile shows a small stake in its corner. A connected trail gets small footprint dots.
+  - **Memory:**
+    - a try ends at the first card that doesn't match, so sets of 3 can miss on the 2nd card;
+    - when the set size doesn't divide the grid (Threes on 4 × 4), the leftover spots stay empty;
+    - Swaps On on Tier I uses Tier II's 2;
+    - cards are drawn at 1.5× (33 × 39).
+  - **Picture Puzzle:** dropping a pile piece on a filled cell swaps them, and the cell's piece goes on top of that pile. Pictures are dealt one per hiker for the whole game, so none repeats.
+  - **Thin Ice:** holes are capped so the first check's patch always fits. Flags stay closed when a 0 opens around them. Big grids use smaller cells to fit the screen.
+- **Fixed along the way:** games without a Line up start while the GPS is still turning, so the screen could be measured mid-turn and drawn too small. It's now measured again after the turn.
+- **Not done:** real art (the pieces, cards, pictures and ice are Wyatt's placeholders), sound, and animated GPS previews.
 
 ### Phase 10.8, next steps (outline only)
 

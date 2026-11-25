@@ -1202,6 +1202,85 @@ export const BALANCE = {
       lineDrawMs: 250,
     },
 
+    /*
+     * The third batch of minigames (Phase 10.8 step 4, docs/design/13-minigames-puzzles-2.md).
+     * TODO(wyatt): every number is a first guess, by game and tier. Tiers are I, II, III.
+     */
+
+    /** Trail Map: turn trail tiles to connect each hiker's trailhead to the exit. */
+    trailMap: {
+      tiers: {
+        1: { size: 4, timeSec: 60, locked: 0 },
+        2: { size: 5, timeSec: 75, locked: 2 },
+        3: { size: 6, timeSec: 90, locked: 3 },
+      } as Readonly<Record<1 | 2 | 3, { size: number; timeSec: number; locked: number }>>,
+      /** More time for each hiker after the first. */
+      extraSecPerHiker: 20,
+      /** The tiles that aren't on a solution trail: how often each piece (they add up to 1). */
+      fill: { straight: 0.3, corner: 0.35, tee: 0.2, end: 0.1, cross: 0.05 },
+      /** A tile turns this fast; a hiker's token walks the trail this fast (a tile). */
+      turnSec: 0.12,
+      walkSecPerTile: 0.15,
+    },
+
+    /** Memory Puzzle: match snack cards, each set in its hiker's color. */
+    memory: {
+      tiers: {
+        1: { cols: 4, rows: 4, setSize: 2, swaps: 0, swapsPerMiss: 0, misses: 6, timerSec: null },
+        2: { cols: 5, rows: 4, setSize: 2, swaps: 2, swapsPerMiss: 0, misses: 5, timerSec: 90 },
+        3: { cols: 6, rows: 4, setSize: 3, swaps: 4, swapsPerMiss: 1, misses: 4, timerSec: 75 },
+      } as Readonly<
+        Record<
+          1 | 2 | 3,
+          {
+            cols: number;
+            rows: number;
+            setSize: 2 | 3;
+            swaps: number;
+            swapsPerMiss: number;
+            misses: number;
+            timerSec: number | null;
+          }
+        >
+      >,
+      /** Every card shows face up this long first (testing tab: 0.5 to 5 s). */
+      previewSec: 1,
+      /** Each swap slides this long. A miss stays up this long before it flips back. */
+      swapSec: 0.4,
+      missShowSec: 0.8,
+      /** The testing tab's Swaps "On" on Tier I uses Tier II's count. */
+      swapsOnTier1: 2,
+    },
+
+    /** Picture Puzzle: rebuild pictures from stacked piles; two hikers share one tray. */
+    picturePuzzle: {
+      tiers: {
+        1: { grid: 4, piles: 6, secPerPiece: 3 },
+        2: { grid: 4, piles: 5, secPerPiece: 3 },
+        3: { grid: 5, piles: 4, secPerPiece: 2.5 },
+      } as Readonly<Record<1 | 2 | 3, { grid: 4 | 5; piles: number; secPerPiece: number }>>,
+      /** The pictures (art/picture-puzzle/picture-<name>.png, 120 × 120). A game never repeats one. */
+      pictures: ['bear', 'peaks', 'oak', 'camp'] as const,
+      /** Tier I: a piece dropped in its right spot locks; Tier I shows a thumbnail. */
+      lockCorrectUpTo: 1,
+      thumbnailUpTo: 1,
+    },
+
+    /** Thin Ice: Minesweeper on a frozen lake; the holes are mines. */
+    thinIce: {
+      tiers: {
+        1: { cols: 8, rows: 6, holes: 4, timerSec: null },
+        2: { cols: 9, rows: 7, holes: 6, timerSec: 180 },
+        3: { cols: 10, rows: 8, holes: 8, timerSec: 150 },
+      } as Readonly<
+        Record<1 | 2 | 3, { cols: number; rows: number; holes: number; timerSec: number | null }>
+      >,
+      /** Wyatt's rule: this many more holes for each hiker (testing tab: 0 to 4). */
+      holesPerHiker: 2,
+      /** A press held this long flags instead of checking. */
+      longPressSec: 0.4,
+    },
+
     /**
      * Dodge (Phase 10.8 steps 3, 3b and 3c, docs/design/12-minigames-dodge.md):
      * one party sprite dodges an animal's attacks in a box. Attacks come from

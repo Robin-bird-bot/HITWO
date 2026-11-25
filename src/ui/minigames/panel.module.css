@@ -1,0 +1,55 @@
+/*
+ * The left panel the third batch of minigames shares (mockups in
+ * docs/mockups/minigames/puzzles-2/), in scene units (320 × 240): the game's
+ * name, a few lines of help, the clock, a message and small labels.
+ */
+
+.head {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 75px;
+  height: 15px;
+  font-size: 5px;
+}
+
+.lines {
+  position: absolute;
+  left: 7px;
+  width: 70px;
+  margin: 0;
+  font-size: 3.6px;
+  line-height: 2.2;
+  white-space: normal;
+}
+
+.clock {
+  position: absolute;
+  left: 4px;
+  width: 75px;
+  height: 18px;
+  font-size: 7px;
+}
+
+.clock[data-low] {
+  color: #e9b44c;
+}
+
+.label {
+  position: absolute;
+  left: 7px;
+  margin: 0;
+  font-size: 3.4px;
+}
+
+.message {
+  position: absolute;
+  left: 4px;
+  width: 75px;
+  min-height: 15px;
+  padding: 3px 4px;
+  font-size: 4px;
+  line-height: 1.6;
+  white-space: normal;
+  text-align: center;
+}

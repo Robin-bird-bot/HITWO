@@ -1,0 +1,125 @@
+/* Thin Ice (7-thin-ice.png), in scene units (320 × 240). */
+
+.holes {
+  position: absolute;
+  left: 7px;
+  top: 50px;
+  margin: 0;
+  font-size: 4.2px;
+}
+
+.who {
+  position: absolute;
+  left: 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 3.8px;
+}
+
+.flag {
+  position: absolute;
+  left: 6px;
+  top: 178px;
+  width: 70px;
+  height: 16px;
+  font-size: 5px;
+}
+
+.flag[data-on] {
+  background: #e9b44c;
+  color: #1d2918;
+  border-color: #1d2918;
+}
+
+.flagHint {
+  position: absolute;
+  left: 6px;
+  top: 198px;
+  width: 70px;
+  margin: 0;
+  text-align: center;
+  font-size: 3px;
+}
+
+.grid {
+  position: absolute;
+  box-shadow: 0 0 0 1px #1d2918;
+  touch-action: none;
+}
+
+.cell {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+}
+
+.cell:disabled,
+.cell[data-open] {
+  cursor: default;
+}
+
+.cell > img:first-child {
+  width: 100%;
+  height: 100%;
+}
+
+.cell[data-cursor]::after {
+  content: '';
+  position: absolute;
+  inset: 0.5px;
+  border: 1px solid #e9b44c;
+  pointer-events: none;
+}
+
+.flagMark {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.number {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d2918;
+  font-family: var(--font-pixel);
+  pointer-events: none;
+}
+
+.splash {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  color: #d3dfaf;
+  font-size: 4px;
+  text-shadow: 0 0 1px #1d2918;
+  pointer-events: none;
+  animation: splash 1.2s ease-out forwards;
+}
+
+@keyframes splash {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -160%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash {
+    animation-duration: 2s;
+    animation-timing-function: steps(1);
+  }
+}

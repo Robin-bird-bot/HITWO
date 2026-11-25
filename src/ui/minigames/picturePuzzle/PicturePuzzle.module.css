@@ -1,0 +1,144 @@
+/* Picture Puzzle (6-picture-puzzle.png), in scene units (320 × 240). */
+
+.play {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+
+.clock {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 44px;
+  height: 15px;
+  font-size: 6px;
+}
+
+.clock[data-low] {
+  color: #e9b44c;
+}
+
+.label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 3.8px;
+}
+
+.thumb {
+  width: 9px;
+  height: 9px;
+  margin-left: 2px;
+  border: 0.5px solid #1d2918;
+  background-size: 100% 100%;
+  image-rendering: pixelated;
+}
+
+.grid {
+  position: absolute;
+  box-sizing: content-box;
+  background: #a0b37d;
+  box-shadow: 0 0 0 1px #1d2918;
+  transition: box-shadow 0.4s ease;
+}
+
+.grid[data-done] {
+  box-shadow:
+    0 0 0 1px #1d2918,
+    0 0 6px 2px #f4f8dc;
+}
+
+.cell {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.25px solid rgba(29, 41, 24, 0.22);
+}
+
+.cell[data-selected] {
+  outline: 1px solid #d3dfaf;
+  outline-offset: -1px;
+}
+
+.piece {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  image-rendering: pixelated;
+  cursor: grab;
+  touch-action: none;
+}
+
+.piece[data-locked] {
+  cursor: default;
+}
+
+.piece[data-selected] {
+  outline: 1px solid #d3dfaf;
+  outline-offset: 0.5px;
+}
+
+.dragging {
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(17, 26, 16, 0.5);
+  cursor: grabbing;
+}
+
+.tray {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 4px;
+  border: 0.75px solid #111a10;
+  border-radius: 2px;
+  background: #2b3a23;
+}
+
+.trayWords {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  text-align: center;
+  color: #d3dfaf;
+  font-size: 3.6px;
+}
+
+.pile {
+  position: absolute;
+}
+
+.under {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.5px solid #111a10;
+  background: #52653f;
+}
+
+.empty {
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-sizing: border-box;
+  border: 0.75px dashed #6a7e51;
+}
+
+.count {
+  position: absolute;
+  top: 60%;
+  color: #d3dfaf;
+  font-size: 4px;
+}
+
+.message {
+  position: absolute;
+  left: 60px;
+  right: 60px;
+  top: 90px;
+  height: 16px;
+  font-size: 4.5px;
+  z-index: 6;
+}

@@ -3,8 +3,9 @@
  *
  * - **Bearrels** runs its own rounds and results card.
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
- *   the Path) report how they ended; the play stage shows the shared results
- *   card. Their preview is a still frame for now.
+ *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle and Thin Ice)
+ *   report how they ended; the play stage shows the shared results card.
+ *   Their preview is a still frame for now.
  */
 import type { ComponentType } from 'react';
 import { toArtStyle } from '../../minigames/bearrels/styles';
@@ -19,6 +20,10 @@ import { BearrelsPreview } from './bearrels/BearrelsPreview';
 import { Dodge } from './dodge/Dodge';
 import { FindObject } from './findObject/FindObject';
 import { FindPath } from './findPath/FindPath';
+import { MemoryPuzzle } from './memory/MemoryPuzzle';
+import { PicturePuzzle } from './picturePuzzle/PicturePuzzle';
+import { ThinIce } from './thinIce/ThinIce';
+import { TrailMap } from './trailMap/TrailMap';
 import type { PuzzleRunProps } from './puzzleProps';
 import { RememberPath } from './rememberPath/RememberPath';
 import { Traildle } from './traildle/Traildle';
@@ -70,6 +75,10 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   rememberPath: RememberPath,
   findPath: FindPath,
   dodge: Dodge,
+  trailMap: TrailMap,
+  memory: MemoryPuzzle,
+  picturePuzzle: PicturePuzzle,
+  thinIce: ThinIce,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -90,6 +99,18 @@ function FindPathStill({ settings, hikers }: MinigamePreviewProps) {
 function DodgeStill({ settings, hikers }: MinigamePreviewProps) {
   return <Dodge settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function TrailMapStill({ settings, hikers }: MinigamePreviewProps) {
+  return <TrailMap settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function MemoryStill({ settings, hikers }: MinigamePreviewProps) {
+  return <MemoryPuzzle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function PicturePuzzleStill({ settings, hikers }: MinigamePreviewProps) {
+  return <PicturePuzzle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function ThinIceStill({ settings, hikers }: MinigamePreviewProps) {
+  return <ThinIce settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   bearrels: BearrelsPreviewRun,
@@ -98,4 +119,8 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   rememberPath: RememberPathStill,
   findPath: FindPathStill,
   dodge: DodgeStill,
+  trailMap: TrailMapStill,
+  memory: MemoryStill,
+  picturePuzzle: PicturePuzzleStill,
+  thinIce: ThinIceStill,
 };

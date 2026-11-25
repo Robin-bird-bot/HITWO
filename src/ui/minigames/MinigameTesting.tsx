@@ -15,7 +15,7 @@
  * Settings are remembered on this device. Nothing touches the saved hike,
  * XP, stats or anything else in a run.
  */
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   BEAR_COUNTRY,
   testChallenge,
@@ -23,7 +23,7 @@ import {
 } from '../../content/minigameChallenges';
 import { emptyScene, type SceneModel } from '../../minigames/bearrels/scene';
 import { toArtStyle } from '../../minigames/bearrels/styles';
-import { MINIGAMES } from '../../minigames/catalog';
+import { MINIGAMES, MINIGAMES_BY_CATEGORY } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type {
   MinigameInfo,
@@ -67,6 +67,11 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
     readTestingSettings(browserStorage(), active.id),
   );
   const [testing, setTesting] = useState(false);
+  // The chosen game stays in view in the scrolling list when the tab opens.
+  const activeItem = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    activeItem.current?.scrollIntoView?.({ block: 'nearest' });
+  }, []);
   const update = (next: MinigameSettings) => {
     setSettings(next);
     writeTestingSettings(browserStorage(), active.id, next);
@@ -86,32 +91,41 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
           <span className={styles.spacer} />
         </header>
         <div className={styles.body}>
+          {/* The games, grouped by category; the list scrolls when it doesn't all fit. */}
           <nav className={styles.list} aria-label="Minigames">
             <span className={styles.label}>MINIGAMES</span>
-            {MINIGAMES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={styles.item}
-                data-active={m.id === active.id || undefined}
-                data-soon={m.status === 'soon' || undefined}
-                disabled={m.status === 'soon'}
-                aria-current={m.id === active.id || undefined}
-                onClick={() => {
-                  setActiveId(m.id);
-                  setSettings(readTestingSettings(browserStorage(), m.id));
-                }}
-              >
-                <MinigameIcon id={m.id} size={24} />
-                <span className={styles.itemWords}>
-                  <span className={styles.itemName}>{m.name}</span>
-                  <span className={styles.itemSub}>
-                    {m.baseGame}
-                    {m.status === 'soon' ? ' · coming soon' : ''}
-                  </span>
-                </span>
-              </button>
-            ))}
+            <div className={styles.listScroll}>
+              {MINIGAMES_BY_CATEGORY.map((c) => (
+                <div key={c.id} className={styles.category} role="group" aria-label={c.name}>
+                  <span className={styles.categoryName}>{c.name}</span>
+                  {c.games.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={styles.item}
+                      data-active={m.id === active.id || undefined}
+                      data-soon={m.status === 'soon' || undefined}
+                      disabled={m.status === 'soon'}
+                      aria-current={m.id === active.id || undefined}
+                      ref={m.id === active.id ? activeItem : undefined}
+                      onClick={() => {
+                        setActiveId(m.id);
+                        setSettings(readTestingSettings(browserStorage(), m.id));
+                      }}
+                    >
+                      <MinigameIcon id={m.id} size={22} />
+                      <span className={styles.itemWords}>
+                        <span className={styles.itemName}>{m.name}</span>
+                        <span className={styles.itemSub}>
+                          {m.baseGame}
+                          {m.status === 'soon' ? ' · coming soon' : ''}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
           </nav>
 
           <div className={styles.detail}>
@@ -203,11 +217,23 @@ function Setting({
   if (s.kind === 'hikers' || s.kind === 'style') return null;
   const given = settings[s.id];
   if (s.kind === 'autoRange') {
-    // Auto, then min to max: − below the minimum goes back to Auto.
+    // Auto, (Off,) then min to max: − below the minimum goes back to Off, then Auto.
     const step = s.step ?? 1;
-    const auto = typeof given !== 'number';
-    const value = auto ? null : given;
-    const set = (v: number | 'auto') => onChange({ ...settings, [s.id]: v });
+    const off = !!s.off && given === 'off';
+    const auto = typeof given !== 'number' && !off;
+    const value = typeof given === 'number' ? given : null;
+    const set = (v: number | 'auto' | 'off') => onChange({ ...settings, [s.id]: v });
+    const less = (): number | 'auto' | 'off' => {
+      if (off) return 'auto';
+      if (value === null) return 'auto';
+      if (value - step >= s.min) return value - step;
+      return s.off ? 'off' : 'auto';
+    };
+    const more = (): number | 'off' => {
+      if (auto && s.off) return 'off';
+      if (value === null) return s.min;
+      return Math.min(s.max, value + step);
+    };
     return (
       <div className={styles.setting}>
         <span className={styles.label}>{s.label.toUpperCase()}</span>
@@ -216,18 +242,18 @@ function Setting({
             type="button"
             aria-label={`Less ${s.label.toLowerCase()}`}
             disabled={auto}
-            onClick={() => set(value === null || value - step < s.min ? 'auto' : value - step)}
+            onClick={() => set(less())}
           >
             −
           </button>
-          <span aria-live="polite" data-auto={auto || undefined}>
-            {auto ? 'AUTO' : value}
+          <span aria-live="polite" data-auto={auto || off || undefined}>
+            {auto ? 'AUTO' : off ? 'OFF' : value}
           </span>
           <button
             type="button"
             aria-label={`More ${s.label.toLowerCase()}`}
             disabled={value !== null && value >= s.max}
-            onClick={() => set(value === null ? s.min : Math.min(s.max, value + step))}
+            onClick={() => set(more())}
           >
             +
           </button>
