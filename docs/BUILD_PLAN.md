@@ -1519,6 +1519,29 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`, by 
   - the bomb's lob height [30].
 - **Not done:** real art beyond the placeholders, sound, an animated GPS preview, and the later animals (mountain lion, rattlesnake, skunk, hawk).
 
+### Phase 10.8, step 3c: Dodge tuning and the Woods Monster
+
+(New in the Nov 24 update: `docs/UPDATE-2026-11-24-dodge-tuning.md`. The design is the revised `docs/design/12-minigames-dodge.md`; the note at its top lists what changed. New mockups `10-bear-shout-claws-hug.png` to `15-woods-monster-ritual.png` in `docs/mockups/minigames/dodge/`. New placeholder art in `public/assets/minigames/dodge/`.)
+
+**Goal:** Wyatt played the new animals. Make Dodge busier and fairer, fix two bugs, apply his per-animal changes, and add a hard boss, the **Woods Monster**. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **Pacing and overlaps:** gaps of [0.8], [0.6] and [0.4 s] by tier; the next attack overlaps the current one with a [30%], [50%] or [70%] chance, up to [2], [2] or [3] at once. Every attack is an **area**, **missile** or **changer**: one area and one changer at a time, and missiles stack.
+2. **Fix, warnings below the box:** warnings on their own top layer, a [12]-unit gap between the box and both HUDs, a marker moves inside the box edge if it would be covered, and every group on every side gets its marker.
+3. **Per animal:**
+   - Bees: rows come in staggered ([0–0.45 s] each).
+   - Claws: always curved; [2], [3] or [4] rows by tier, [0.25 s] apart, from different sides. **Fix:** never drawn upside down.
+   - Bear: Roar becomes a directional **Shout**; Bear hug holds [3 s] and is a changer.
+   - Bear with a Sword: extra claw rows during sword attacks; a clearer Thrown sword; a new **Wave**.
+   - Bobcat: a new **Stalk**; claws ×[1.5]; a sharper Zigzag dash that bounces off the wall.
+   - Squirrel Army: Wall scurry squirrels flick nuts.
+4. **The Woods Monster** (boss, not in the Stampede): plays one tier up, lasts [40 s], and his Tier III second half shrinks the box. Fire tongues (Wyatt's idea), plus *Claude's ideas* Grasping hands, Candle wisps, Rune beams, Ritual circle, The Eye and Darkness.
+5. **Testing tab:** the Woods Monster in Animal, and a new **Overlaps** setting (Auto, Off, On). With one attack picked, nothing overlaps.
+
+**Tests:** as in `12-minigames-dodge.md`, section 14.
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.
