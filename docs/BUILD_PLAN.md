@@ -1668,6 +1668,23 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** as in each revised design file, plus: every game accepts Tiers IV and V, and below Tier V Dodge never overlaps attacks.
 
+### Phase 10.8, step 7: End screens, Dodge portrait motion, step-1 fixes, tiers by biome, and the lane games
+
+(New in the Nov 25 update: `docs/UPDATE-2026-11-25-end-screens-lanes-fixes.md`. The designs are the revised `docs/design/12-minigames-dodge.md`, `14-minigames-trail-blocks.md` and `15-challenge-tiers.md`, and the new `16-challenge-end-screen.md` and `17-minigames-lanes.md`. New mockups in `docs/mockups/minigames/dodge/`, `end-screens/`, `lanes/` and `trail-blocks/`, plus three overview boards. New art: Dodge's bob frames and the Woods Monster's hands, Wyatt's tool, tree and rock sprites, the ribbed cans and the mallet, and placeholder art for Crossing, Train! and Rafting.)
+
+**Goal:** a shared end screen for every minigame, the fixes Wyatt asked for after playing step 1, tiers by biome in runs, and the lane games. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **Challenge Passed / Challenge Failed:** one shared end screen in the GPS screen for every minigame: red drips when everyone failed, a clock wipe when anyone passed, then a flashing title and each hiker's result and cost. A crossfade with reduced motion.
+2. **Dodge:** Solid + red only (no Portrait style setting or P key); the bee and the Woods Monster float, the others do a two-frame idle bob, and all of them blink. The Woods Monster gets **Long arms**, and The Eye becomes **Glare** from his own eyes.
+3. **The step-1 games:** the marker freezes for [1 s] after every Trail Block swing; Chop Tree's random pass speeds and switching axe; bigger River Flood spots; Clearing Animals' solid circle in a new spot each try; Wyatt's tool, tree and rock sprites with a [30%] wash of the hiker's color and no arm; Sleeping Bear's smooth clock that stops while he's awake and earns time back during a stir; Whackoon's new cans and mallet.
+4. **Tiers in runs:** each challenge rolls its tier from its biome's table (Normal), and from the Nightmare table if Nightmare exists. Hard, Random tiers and Boss Rush are tables in `balance.ts` only.
+5. **Crossing, Train! and Rafting:** passing challenges under Movement and dodging in the testing tab.
+
+**Tests:** as in each revised or new design file, plus: each biome's tiers come out close to its table over many rolls.
+
 ### Phase 10.8, next steps (outline only)
 
 - More minigames, added to the testing tab one at a time.
