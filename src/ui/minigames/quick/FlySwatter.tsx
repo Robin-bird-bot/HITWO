@@ -29,6 +29,9 @@ import styles from './FlySwatter.module.css';
 import q from './Quick.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
+import { flySwatterBot } from '../../../minigames/flySwatter/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const FS = BALANCE.minigames.flySwatter;
 const art = (f: string) => asset(`minigames/fly-swatter/${f}`);
@@ -44,6 +47,8 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
         tier,
         bees: beesPick === 'on' || beesPick === 'off' ? beesPick : 'auto',
         strikes: typeof settings.strikes === 'number' ? settings.strikes : 'auto',
+        bigger: prepNumber(settings, 'prep.bigger'),
+        slowerShrink: prepNumber(settings, 'prep.slowerShrink'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -54,6 +59,7 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
   const [swatAt, setSwatAt] = useState(-9);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
@@ -80,7 +86,7 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
     if (e.pointerType !== 'mouse') return;
     setPointer(toScene(sceneRef.current, e.clientX, e.clientY));
   };
-  useKeys(running, (key) => {
+  useKeys(running && !demo, (key) => {
     if (key !== ' ' || !pointer) return false;
     swat(pointer.x, pointer.y);
     return true;
@@ -102,6 +108,8 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
       ? 'TAP EACH CIRCLE BEFORE THE FLY LANDS. LEAVE THE BEES ALONE.'
       : 'TAP EACH CIRCLE BEFORE THE FLY LANDS.';
 
+  // The pop-up's demo: the bot swats through the same handler.
+  useDemoBot(demo && running, game, flySwatterBot, (p) => swat(p.x, p.y));
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div

@@ -36,6 +36,7 @@ import { toScene } from '../sceneCoords';
 import { playSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import styles from './PicturePuzzle.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const PP = BALANCE.minigames.picturePuzzle;
 const PICTURE = 120;
@@ -74,6 +75,7 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
         secPerPiece: typeof settings.secPerPiece === 'number' ? settings.secPerPiece : 'auto',
         rightSpotSec: typeof settings.rightSpot === 'number' ? settings.rightSpot : 'auto',
         picture: isPictureName(picturePick) ? picturePick : 'random',
+        extraSec: prepNumber(settings, 'prep.extraSec'),
       },
       hikers.map((h) => h.id),
       seed,

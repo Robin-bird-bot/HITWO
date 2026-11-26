@@ -35,6 +35,8 @@ import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
 import { BOARD, bigSigns, boardLayout, followRow } from './layout';
 import styles from './Traildle.module.css';
+import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const art = (f: string) => asset(`minigames/traildle/${f}`);
 
@@ -48,6 +50,7 @@ const KEY_FILL: Record<Knowledge, string> = {
 const possessive = (name: string) => `${name.toUpperCase()}${name.endsWith('s') ? '’' : '’S'} CODE`;
 
 export function Traildle({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const signsSetting = pickOf(settings, 'signs');
   const timer = pickOf(settings, 'timer');
   const [game, setGame] = useState(() =>
@@ -56,6 +59,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
         tier: tierOf(settings),
         signs: signsSetting === 'auto' ? 'auto' : Number(signsSetting),
         timer: timer === 'on' || timer === 'off' ? timer : 'auto',
+        extraGuesses: prepNumber(settings, 'prep.guesses'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -119,6 +123,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
 
   // The keyboard: digits, ← →, Backspace, Enter.
   useEffect(() => {
+    if (demo) return;
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
       if (game.phase === 'pairDone' && e.key === 'Enter') {

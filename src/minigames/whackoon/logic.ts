@@ -41,6 +41,8 @@ export interface Mole {
 
 export interface WhackoonState {
   tier: Tier;
+  /** Prepare's SLOWER RACCOONS: they stay up and pop up this many times as long. */
+  slow: number;
   order: string[];
   /** The shared clock: what it started at and what's left. */
   clockSec: number;
@@ -68,16 +70,28 @@ export interface WhackoonState {
 }
 
 export function newWhackoon(
-  options: { tier: Tier; skunks?: 'auto' | 'on' | 'off' },
+  options: {
+    tier: Tier;
+    skunks?: 'auto' | 'on' | 'off';
+    /** Prepare: the share slower, and no skunks. */
+    slower?: number;
+    noSkunks?: boolean;
+  },
   order: readonly string[],
   seed: number,
 ): WhackoonState {
   const t = W.tiers[options.tier];
   const skunkChance =
-    options.skunks === 'off' ? 0 : options.skunks === 'on' ? t.skunks || W.skunksOn : t.skunks;
+    options.noSkunks || options.skunks === 'off'
+      ? 0
+      : options.skunks === 'on'
+        ? t.skunks || W.skunksOn
+        : t.skunks;
+  const slow = 1 / (1 - Math.max(0, Math.min(0.6, options.slower ?? 0)));
   const clockSec = W.secPerHiker * order.length;
   return {
     tier: options.tier,
+    slow,
     order: [...order],
     clockSec,
     timeLeft: clockSec,
@@ -88,7 +102,7 @@ export function newWhackoon(
     rows: 3,
     cans: Array.from({ length: t.cols * 3 }, () => null),
     whacks: Object.fromEntries(order.map((id) => [id, 0])),
-    nextPop: t.everySec,
+    nextPop: t.everySec * slow,
     refillAt: W.refillSec,
     fogUntil: 0,
     skunkChance,
@@ -123,7 +137,7 @@ function popOne(s: WhackoonState, rng: RngState): WhackoonState {
     [color, ...deck] = deck;
   }
   const cans = [...s.cans];
-  cans[i] = { kind, upAt: s.time, until: s.time + t.upSec, ...(color ? { color } : {}) };
+  cans[i] = { kind, upAt: s.time, until: s.time + t.upSec * s.slow, ...(color ? { color } : {}) };
   return { ...s, cans, deck };
 }
 
@@ -163,7 +177,7 @@ export function tick(s0: WhackoonState, dt: number): WhackoonState {
   // The rhythm: another now and then, up to the most.
   let nextPop = s.nextPop;
   if (time >= nextPop) {
-    nextPop = time + t.everySec;
+    nextPop = time + t.everySec * s.slow;
     if (upNow(s) < t.maxUp) s = popOne(s, rng);
   }
   return { ...s, nextPop, refillAt };

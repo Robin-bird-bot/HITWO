@@ -37,6 +37,7 @@ import q from '../quick/Quick.module.css';
 import { TurnBar } from '../quick/TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './Crossroads.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const C = BALANCE.minigames.crossroads;
 const file = (f: string) => `minigames/crossroads/${f}`;
@@ -58,7 +59,11 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
     newCrossroads(
       {
         tier,
-        arrows: typeof settings.arrows === 'number' ? settings.arrows : 'auto',
+        arrows: Math.max(
+          2,
+          (typeof settings.arrows === 'number' ? settings.arrows : C.arrows[tier]) -
+            prepNumber(settings, 'prep.fewerArrows'),
+        ),
         studySec: typeof settings.study === 'number' ? settings.study : null,
         newPerHiker: pickOf(settings, 'newArrows') === 'on',
         turnSec: typeof settings.turn === 'number' ? settings.turn : null,

@@ -39,6 +39,9 @@ export interface FireflyOptions {
   catches?: number | 'auto';
   /** The Time setting, seconds per hiker ("auto": the tier's). */
   timeSec?: number | 'auto';
+  /** Prepare: units more ring, and the share slower the fireflies fly. */
+  biggerRing?: number;
+  slower?: number;
 }
 
 /** Something moving in a straight line: where it is, and its heading (radians). */
@@ -153,8 +156,8 @@ export function newFireflyCatch(
     tier: options.tier,
     catchesNeeded: typeof options.catches === 'number' ? options.catches : t.catches,
     timeSec: typeof options.timeSec === 'number' ? options.timeSec : t.timeSec,
-    ring: t.ring,
-    speed: t.speed,
+    ring: t.ring + (options.biggerRing ?? 0),
+    speed: t.speed * (1 - Math.max(0, Math.min(0.6, options.slower ?? 0))),
     drift: t.drift,
     turns: newTurns(order),
     caught: 0,

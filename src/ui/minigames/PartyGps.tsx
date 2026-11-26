@@ -3,8 +3,10 @@
  * docs/mockups/minigames/4-vertical-gps-preview-then-turn.jpg): a yellow,
  * vertical handheld the whole party shares. Drawn in CSS: no image files.
  *
- * - **Upright** in its slot in the pop-up, its 3:4 screen loops a preview of
- *   the game (the 4:3 scene cropped to the middle).
+ * - **Upright** in its slot in the pop-up, its 3:4 screen shows the demo
+ *   (20-challenge-popup.md, section 2): the 4:3 game drawn as wide as the
+ *   screen and centered, under a dark strip with a blinking DEMO and "A BOT
+ *   IS PLAYING". Clicks on it do nothing. A skipped challenge shows SKIPPED.
  * - **Turned:** on Start it turns 90° clockwise and grows to the middle of
  *   the window (700 ms); the game plays on its now 4:3 screen, laid out at
  *   1280 × 960 and turned back so it reads upright. On Continue it turns back
@@ -16,7 +18,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { BALANCE } from '../../config/balance';
 import { useReducedMotion } from '../app/useReducedMotion';
-import { GAME } from '../../minigames/bearrels/styles';
+import { GAME } from '../../minigames/screen';
 import {
   DEVICE,
   gpsMotion,
@@ -37,6 +39,7 @@ export function PartyGps({
   moved,
   playing = false,
   content,
+  skipped = false,
 }: {
   /** Turned sideways to play (true), or upright in the pop-up. */
   turned: boolean;
@@ -44,8 +47,10 @@ export function PartyGps({
   slot: Rect;
   /** Its turned size and place (gpsTurned). */
   layout: TurnedGps;
-  /** What the screen shows: the upright preview, or the game turned to read upright. */
-  mode: 'preview' | 'game';
+  /** What the screen shows: the upright demo (or a preview), or the game turned to read upright. */
+  mode: 'preview' | 'demo' | 'game';
+  /** Over the upright demo: SKIPPED (SKIP IT is filled). */
+  skipped?: boolean;
   /** False while it turns: the screen goes dark. */
   showContent: boolean;
   /** It has turned at least once (reduced motion: no fade when the pop-up first opens). */
@@ -64,10 +69,13 @@ export function PartyGps({
   const w = DEVICE.width * u;
   const h = DEVICE.height * u;
   const screenH = DEVICE.screen.h * u;
+  const screenW = DEVICE.screen.w * u;
   const contentTransform =
     mode === 'game'
       ? `translate(-50%, -50%) rotate(-90deg) scale(${screenH / GAME.width})`
-      : `translate(-50%, -50%) scale(${screenH / GAME.height})`;
+      : mode === 'demo'
+        ? `translate(-50%, -50%) scale(${screenW / GAME.width})`
+        : `translate(-50%, -50%) scale(${screenH / GAME.height})`;
   return (
     <div className={styles.layer}>
       <div
@@ -111,6 +119,15 @@ export function PartyGps({
                 >
                   {content}
                 </div>
+              )}
+              {showContent && mode === 'demo' && (
+                <span className={styles.demoStrip} aria-label="Demo: a bot is playing">
+                  <b>DEMO</b>
+                  <span>A BOT IS PLAYING</span>
+                </span>
+              )}
+              {showContent && mode === 'demo' && skipped && (
+                <span className={styles.skipped}>SKIPPED</span>
               )}
               <span
                 className={styles.scanlines}

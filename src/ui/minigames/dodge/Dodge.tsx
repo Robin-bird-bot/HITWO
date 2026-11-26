@@ -31,6 +31,7 @@ import {
   keysToVector,
   newDodge,
   nextInLine,
+  slowed,
   result,
   step,
   switches,
@@ -39,6 +40,9 @@ import {
   type Point,
 } from '../../../minigames/dodge/logic';
 import { dodgeLevelPick } from '../../../minigames/catalog';
+import { dodgeBot } from '../../../minigames/dodge/bot';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { TIER_LABELS, type MinigameSettings } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { PixelScreen } from '../PixelScreen';
@@ -51,6 +55,7 @@ import { art, type DrawCtx } from './parts/drawTypes';
 import { Portraits } from './Portraits';
 import { floatOffset } from './portraitMotion';
 import { useTinted } from './tint';
+import { useDemoBot, useDemoMode } from '../demo';
 import styles from './Dodge.module.css';
 
 const D = BALANCE.minigames.dodge;
@@ -63,7 +68,10 @@ const numberOr = (settings: MinigameSettings, id: string): 'auto' | number => {
 
 export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const reduced = useReducedMotion();
+  const demo = useDemoMode();
   const sceneRef = useRef<HTMLDivElement>(null);
+  /** In the pop-up's demo, the bot's direction instead of the player's. */
+  const botMove = useRef<Point>({ x: 0, y: 0 });
   const chosen = pickOf(settings, 'animal');
   const animal: AnimalId = isAnimal(chosen) ? chosen : 'bees';
   const ideas = pickOf(settings, 'ideas') !== 'off';
@@ -82,6 +90,13 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         lives: numberOr(settings, 'lives'),
         lengthSec: numberOr(settings, 'length'),
         switchSec: numberOr(settings, 'switch'),
+        // Prepare (20-challenge-popup.md, section 7).
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        fewerBees: prepNumber(settings, 'prep.smoke'),
+        shorter: prepNumber(settings, 'prep.bearSpray'),
+        sandbags: prepNumber(settings, 'prep.sandbags') > 0,
+        antSlow: prepNumber(settings, 'prep.salt'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -96,9 +111,9 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const tints = useTinted(hikers.map((h) => h.color));
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
 
-  // The keyboard: WASD and the arrow keys, held down.
+  // The keyboard: WASD and the arrow keys, held down (never in the demo).
   useEffect(() => {
-    if (still) return;
+    if (still || demo) return;
     const watched = new Set([
       'ArrowUp',
       'ArrowDown',
@@ -128,7 +143,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       window.removeEventListener('keyup', up);
       window.removeEventListener('blur', blur);
     };
-  }, [still]);
+  }, [still, demo]);
 
   // The game loop: fixed steps, as fast as the screen draws.
   const running = !game.over && !still;
@@ -140,7 +155,11 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       spare = Math.min(0.25, spare + (now - last) / 1000);
       last = now;
       const s = stick.current;
-      const input = s ? joystickVector(s.start, s.now).move : keysToVector(keys.current);
+      const input = demo
+        ? botMove.current
+        : s
+          ? joystickVector(s.start, s.now).move
+          : keysToVector(keys.current);
       // How many fixed steps are due, worked out here so the state update itself stays pure.
       const steps = Math.floor(spare / FIXED);
       spare -= steps * FIXED;
@@ -154,7 +173,10 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       frame = requestAnimationFrame(loop);
     });
     return () => cancelAnimationFrame(frame);
-  }, [running]);
+  }, [running, demo]);
+  useDemoBot(demo && running, game, dodgeBot, (v) => {
+    botMove.current = v;
+  });
 
   // The end: a moment to see it, then the results.
   useEffect(() => {
@@ -168,7 +190,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
 
   // The floating joystick: where a finger (or the mouse) goes down, outside the HUD.
   const onDown = (e: ReactPointerEvent) => {
-    if (still || stick.current) return;
+    if (still || demo || stick.current) return;
     const p = toScene(sceneRef.current, e.clientX, e.clientY);
     if (p.y < 26 || p.y > 206) return;
     const client = { x: e.clientX, y: e.clientY };
@@ -277,6 +299,12 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
               draggable={false}
               style={{ left: game.pos.x - 5, top: game.pos.y - 6 }}
             />
+            {slowed(game) && (
+              <span
+                className={styles.slowRing}
+                style={{ left: game.pos.x - 8, top: game.pos.y - 8 }}
+              />
+            )}
             {recentHit && (
               <span
                 className={styles.hitRing}
@@ -310,7 +338,15 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             style={{ left: game.pos.x + 10, top: game.pos.y - 10 }}
             role="status"
           >
-            {byId(recentHit.hikerId).name.toUpperCase()} −1
+            {byId(recentHit.hikerId).name.toUpperCase()} −{recentHit.damage}
+          </span>
+        )}
+        {slowed(game) && !recentHit && (
+          <span
+            className={`${ui.text} ${styles.slowText}`}
+            style={{ left: game.pos.x + 10, top: game.pos.y - 8 }}
+          >
+            SLOWED
           </span>
         )}
         {showHitboxes && <Hitboxes shapes={hitShapes(game)} sprite={game.pos} />}
@@ -339,7 +375,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
                 />
                 <span className={styles.slotName}>{h.name.toUpperCase()}</span>
                 <span className={styles.hearts}>
-                  {Array.from({ length: game.maxLives }, (_, i) => (
+                  {Array.from({ length: game.startLives[h.id] ?? game.maxLives }, (_, i) => (
                     <span key={i} data-lit={i < lives || undefined}>
                       ♥
                     </span>

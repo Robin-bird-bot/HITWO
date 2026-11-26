@@ -33,6 +33,8 @@ import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
 import styles from './TrailMap.module.css';
+import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const T = BALANCE.minigames.trailMap;
 const art = (f: string) => asset(`minigames/trail-map/${f}`);
@@ -41,8 +43,15 @@ const numberOr = <A extends string>(v: unknown, auto: A): A | number =>
   typeof v === 'number' ? v : auto;
 
 export function TrailMap({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const tier = tierOf(settings);
-  const time = settings.time === 'off' ? 'off' : numberOr(settings.time, 'auto');
+  // Prepare's +10 S on top of the tier's time (or the setting's).
+  const extra = prepNumber(settings, 'prep.extraSec');
+  const picked = settings.time === 'off' ? 'off' : numberOr(settings.time, 'auto');
+  const time =
+    picked === 'off' || extra === 0
+      ? picked
+      : (picked === 'auto' ? T.tiers[tier].timeSec : picked) + extra;
   const [game, setGame] = useState(() =>
     newTrailMap(
       {
@@ -132,6 +141,7 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
 
   // The arrow keys move a cursor; Space (or Enter) turns its tile, Shift turns it back.
   useEffect(() => {
+    if (demo) return;
     if (!running) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[

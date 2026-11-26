@@ -59,3 +59,18 @@
   top: 0;
   bottom: 0;
 }
+
+/* Ridgeline's wind streaks and the gust arrow. */
+.wind {
+  position: absolute;
+  width: 28px;
+  height: 9px;
+  pointer-events: none;
+}
+
+.gustArrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}

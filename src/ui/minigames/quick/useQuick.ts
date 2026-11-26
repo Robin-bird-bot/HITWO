@@ -3,6 +3,7 @@
  * game ended once (after the last frame has stayed up a moment), and keys.
  */
 import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
+import { useDemoMode } from '../demo';
 import { BALANCE } from '../../../config/balance';
 import type { MinigameResult } from '../../../minigames/types';
 
@@ -71,12 +72,14 @@ export function useKeys(
 ): void {
   const keyRef = useRef(onKey);
   const upRef = useRef(onUp);
+  // In the pop-up's demo the bot plays: the player's keys do nothing.
+  const demo = useDemoMode();
   useEffect(() => {
     keyRef.current = onKey;
     upRef.current = onUp;
   });
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || demo) return;
     const down = (e: KeyboardEvent) => {
       if (e.repeat && !repeat) {
         if (e.key === ' ' || e.key.startsWith('Arrow')) e.preventDefault();
@@ -95,5 +98,5 @@ export function useKeys(
       window.removeEventListener('keydown', down);
       window.removeEventListener('keyup', up);
     };
-  }, [enabled, repeat]);
+  }, [enabled, repeat, demo]);
 }

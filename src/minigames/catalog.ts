@@ -1,5 +1,5 @@
 /**
- * Every minigame, as data (Phase 10.8). Bearrels, the puzzle games
+ * Every minigame, as data (Phase 10.8). The puzzle games
  * (docs/design/11-minigames-puzzles.md and 13-minigames-puzzles-2.md) and
  * Dodge (docs/design/12-minigames-dodge.md) are playable; the rest are listed
  * on the testing tab as "coming soon". Each has a category, which the
@@ -7,7 +7,6 @@
  * (src/ui/minigames/runners.tsx).
  */
 import { BALANCE } from '../config/balance';
-import { ART_STYLES } from './bearrels/styles';
 import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal, rankFor } from './dodge/animals';
 import type { TileThing } from './endScreen';
 import { VERSIONS as CROSSING_VERSIONS } from './crossing/logic';
@@ -28,61 +27,8 @@ import {
   type Tier,
 } from './types';
 
-const B = BALANCE.minigames.bearrels;
+const B = BALANCE.minigames;
 const FO = BALANCE.minigames.findObject;
-
-export const BEARRELS: MinigameInfo = {
-  id: 'bearrels',
-  name: 'Bearrels',
-  baseGame: 'Barrels',
-  category: 'luck',
-  description:
-    'Hide your hikers behind barrels. Each round the bear shoots, and anyone behind that barrel is out.',
-  status: 'ready',
-  settings: [
-    {
-      kind: 'style',
-      id: 'style',
-      label: 'Art style',
-      options: ART_STYLES,
-      default: ART_STYLES[0].id,
-    },
-    {
-      kind: 'range',
-      id: 'barrels',
-      label: 'Barrels',
-      min: B.barrels.min,
-      max: B.barrels.max,
-      default: B.barrels.default,
-      hint: `${B.barrels.min} to ${B.barrels.max}`,
-    },
-    {
-      kind: 'range',
-      id: 'rounds',
-      label: 'Rounds',
-      min: B.rounds.min,
-      max: B.rounds.max,
-      default: B.rounds.default,
-      hint: `${B.rounds.min} to ${B.rounds.max}`,
-    },
-    {
-      kind: 'choice',
-      id: 'shots',
-      label: 'Shots per round',
-      options: [1, 2],
-      default: B.shots.default,
-      hint: 'Never the same barrel twice',
-    },
-    {
-      kind: 'hikers',
-      id: 'hikers',
-      label: 'Hikers',
-      min: B.hikers.min,
-      max: B.hikers.max,
-      default: B.hikers.default,
-    },
-  ],
-};
 
 /** Tier I to V (15-challenge-tiers.md): every game's main setting. IV and V are harder versions of III. */
 const TIER: MinigameSetting = {
@@ -797,7 +743,12 @@ const FSW = BALANCE.minigames.flySwatter;
 const RSH = BALANCE.minigames.raccoonShuffle;
 
 /** An Off/On switch for a tuning helper. */
-const helper = (id: string, label: string, hint: string): MinigameSetting => ({
+const helper = (
+  id: string,
+  label: string,
+  hint: string,
+  start: 'on' | 'off' = 'off',
+): MinigameSetting => ({
   kind: 'pick',
   id,
   label,
@@ -805,7 +756,7 @@ const helper = (id: string, label: string, hint: string): MinigameSetting => ({
     { id: 'off', label: 'Off' },
     { id: 'on', label: 'On' },
   ],
-  default: 'off',
+  default: start,
   hint,
 });
 
@@ -984,17 +935,6 @@ export const RACCOON_SHUFFLE: MinigameInfo = {
       ON_OFF,
       `Auto: a ${RSH.tiers[4].night * 100}% chance at Tiers IV and V`,
     ),
-    {
-      kind: 'pick',
-      id: 'packs',
-      label: 'Packs',
-      options: [
-        { id: 'random', label: 'Random' },
-        { id: 'empty', label: 'Empty' },
-      ],
-      default: 'random',
-      hint: 'Made-up packs for the test hikers. Empty: every raccoon takes energy',
-    },
     helper('empties', 'Show the empty bins', 'Marks them through the shuffle, for tuning'),
   ],
 };
@@ -1111,6 +1051,9 @@ export const TRAILS: MinigameInfo = {
       100,
       byTier((t) => TRL.tiers[t].section),
     ),
+    helper('gusts', 'Gusts', 'Ridgeline only: wind that pushes you sideways', 'on'),
+    helper('scree', 'Scree', 'Ridgeline only: loose rock where steering slides', 'on'),
+    helper('knives', 'Knife edges', 'Ridgeline only: stretches where the ridge pinches', 'on'),
   ],
 };
 
@@ -1203,6 +1146,17 @@ export const ROCK_CLIMB: MinigameInfo = {
       default: 'auto',
       hint: 'Auto: any at Tiers I and II, one from Tier III',
     },
+    {
+      kind: 'pick',
+      id: 'reach',
+      label: 'Show reach',
+      options: [
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'on',
+      hint: 'The reach circle and rings on holds the jump can grab',
+    },
   ],
   note: (settings) => {
     const n = Array.isArray(settings.hikers) ? settings.hikers.length : 0;
@@ -1227,6 +1181,63 @@ const soon = (
   settings: [],
 });
 
+// ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
+
+const CC = BALANCE.minigames.campCleanup;
+
+export const CAMP_CLEANUP: MinigameInfo = {
+  id: 'campCleanup',
+  name: 'Camp Cleanup',
+  baseGame: 'Snake',
+  category: 'move',
+  description: 'Steer the party in one long line. Grab trash in your color; each piece adds a bag.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'time',
+      'Time',
+      30,
+      120,
+      CC.tiers[1].timeSec,
+      ' s',
+      5,
+      `${byTier((t) => CC.tiers[t].timeSec)} s`,
+    ),
+    autoRange(
+      'bags',
+      'Bags each',
+      1,
+      8,
+      CC.tiers[1].quota,
+      '',
+      1,
+      byTier((t) => CC.tiers[t].quota),
+    ),
+    autoRange(
+      'speed',
+      'Speed',
+      3,
+      12,
+      CC.tiers[1].speed,
+      ' cells a second',
+      1,
+      `${byTier((t) => CC.tiers[t].speed)} cells a second`,
+    ),
+    override(
+      'obstacles',
+      'Obstacles',
+      [
+        ['off', 'Off'],
+        ['on', 'On'],
+      ],
+      'Auto: from Tier III',
+    ),
+  ],
+};
+
 export const MINIGAMES: readonly MinigameInfo[] = [
   DODGE,
   CROSSING,
@@ -1234,7 +1245,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   RAFTING,
   TRAILS,
   ROCK_CLIMB,
-  soon('antsAreMarching', 'Ants Are Marching', 'Snake', 'move'),
+  CAMP_CLEANUP,
   soon('crackedBridge', 'Cracked Bridge', 'Platformer', 'move'),
   TRAILDLE,
   FIND_PATH,
@@ -1254,7 +1265,6 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FIREFLY_CATCH,
   SIZE_UP,
   FLY_SWATTER,
-  BEARRELS,
   RACCOON_SHUFFLE,
 ];
 
@@ -1366,6 +1376,7 @@ export function endInfo(
   }
   if (info.id === 'rockClimb') thing = { name: 'wall' };
   if (info.id === 'rafting') thing = { name: 'rapids', plural: true };
+  if (info.id === 'campCleanup') thing = { name: 'campsite' };
   const tier = isTier(settings.tier) ? ` · Tier ${TIER_LABELS[settings.tier]}` : '';
   return { subtitle: `${name}${tier}`.toUpperCase(), thing };
 }

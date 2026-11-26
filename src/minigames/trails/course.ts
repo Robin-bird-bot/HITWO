@@ -5,8 +5,10 @@
  * - **Forest Path:** wide, gentle S-curves ([1.15×] as wide).
  * - **Switchbacks:** zigzags from side to side, a sharp corner every
  *   [150…100] units.
- * - **Ridgeline:** narrow ([0.75×]), mostly straight, with sudden short
- *   jogs to the side.
+ * - **Ridgeline (revised Nov 26):** a knife-edge ridge, [0.6×] as wide,
+ *   with a sheer drop on both sides; knife edges that pinch it to [0.6×];
+ *   sudden [40–70]-unit jogs under a looser slope cap ([90%] of top speed);
+ *   and scree patches (the gusts are in logic.ts).
  * - **Riverbank:** winding, with the river along one side.
  *
  * **Fairness:** the trail never moves sideways faster than [75%] of the
@@ -27,7 +29,7 @@ export type TrailType = 'forest' | 'switchbacks' | 'ridgeline' | 'riverbank';
 export const TRAIL_TYPES: readonly { id: TrailType; name: string; ground: string }[] = [
   { id: 'forest', name: 'Forest Path', ground: 'tile-forest' },
   { id: 'switchbacks', name: 'Switchbacks', ground: 'tile-rock' },
-  { id: 'ridgeline', name: 'Ridgeline', ground: 'tile-rock' },
+  { id: 'ridgeline', name: 'Ridgeline', ground: 'tile-drop' },
   { id: 'riverbank', name: 'Riverbank', ground: 'tile-forest' },
 ];
 
@@ -44,16 +46,49 @@ export interface Course {
   xs: number[];
   /** Riverbank: which side the river runs on. */
   riverSide: -1 | 1 | null;
+  /** Ridgeline: knife edges (where it pinches) and scree patches, by distance. */
+  knives: { from: number; to: number }[];
+  scree: { from: number; to: number }[];
 }
 
-/** The steepest the middle line may slope (x per unit along the trail) at this scroll speed. */
-export const maxSlope = (scroll: number): number => (T.fairShare * T.topSpeed) / scroll;
+/** Ridgeline's hazards that can be switched off in the testing tab. */
+export interface RidgeHazards {
+  knives?: boolean;
+  scree?: boolean;
+}
+
+const RG = T.ridge;
+
+/**
+ * The steepest the middle line may slope (x per unit along the trail) at
+ * this scroll speed: [75%] of the hiker's top speed sideways, or [90%] on
+ * Ridgeline (Nov 26).
+ */
+export const maxSlope = (scroll: number, type?: TrailType): number =>
+  ((type === 'ridgeline' ? RG.fairShare : T.fairShare) * T.topSpeed) / scroll;
 
 /** The trail's width for a tier and type. */
 export function widthFor(tier: Tier, type: TrailType): number {
   const w = T.tiers[tier].width;
   return type === 'forest' ? w * T.forestWide : type === 'ridgeline' ? w * T.ridgeNarrow : w;
 }
+
+/** Whether a distance is inside one of these stretches. */
+export const inStretch = (list: readonly { from: number; to: number }[], d: number): boolean =>
+  list.some((k) => d >= k.from && d <= k.to);
+
+/** How far the hiker is into a knife edge's pinch (0 to 1, eased over its first and last [12] units). */
+function pinch(c: Course, d: number): number {
+  for (const k of c.knives) {
+    if (d < k.from || d > k.to) continue;
+    return Math.min(1, (d - k.from) / 12, (k.to - d) / 12);
+  }
+  return 0;
+}
+
+/** The trail's width at a distance: narrower through a knife edge. */
+export const widthAt = (c: Course, d: number): number =>
+  c.width * (1 - (1 - RG.knifeShare) * pinch(c, d));
 
 /** The middle at a distance (between the kept points). */
 export function middleAt(c: Course, d: number): number {
@@ -85,11 +120,17 @@ function follow(
   return xs;
 }
 
-export function makeCourse(rng: RngState, tier: Tier, type: TrailType, length: number): Course {
+export function makeCourse(
+  rng: RngState,
+  tier: Tier,
+  type: TrailType,
+  length: number,
+  hazards: RidgeHazards & { section?: number } = {},
+): Course {
   const t = T.tiers[tier];
   const width = widthFor(tier, type);
   // A little under the cap, so the walk never has to clip.
-  const slope = maxSlope(t.scroll) * 0.98;
+  const slope = maxSlope(t.scroll, type) * 0.98;
   const river = type === 'riverbank' ? T.river.gap + T.river.width : 0;
   const lo = width / 2 + 8 + (type === 'riverbank' ? river : 0);
   const hi = 320 - width / 2 - 8 - (type === 'riverbank' ? river : 0);
@@ -119,7 +160,7 @@ export function makeCourse(rng: RngState, tier: Tier, type: TrailType, length: n
       d < length;
       d += int(rng, T.jogEvery[0], T.jogEvery[1])
     ) {
-      const size = t.jog[0] + nextFloat(rng) * (t.jog[1] - t.jog[0]);
+      const size = RG.jog[0] + nextFloat(rng) * (RG.jog[1] - RG.jog[0]);
       let dir = nextFloat(rng) < 0.5 ? -1 : 1;
       if (x + dir * size > hi || x + dir * size < lo) dir = -dir;
       x = Math.min(hi, Math.max(lo, x + dir * size));
@@ -151,11 +192,38 @@ export function makeCourse(rng: RngState, tier: Tier, type: TrailType, length: n
     };
   }
 
-  return {
-    type,
-    length,
-    width,
-    xs: follow(goal, length, slope, lo, hi),
-    riverSide: type === 'riverbank' ? (nextFloat(rng) < 0.5 ? -1 : 1) : null,
-  };
+  const xs = follow(goal, length, slope, lo, hi);
+  const riverSide = type === 'riverbank' ? (nextFloat(rng) < 0.5 ? -1 : 1) : null;
+  const knives: Course['knives'] = [];
+  const scree: Course['scree'] = [];
+  if (type === 'ridgeline') {
+    // Knife edges every so often.
+    if (hazards.knives !== false) {
+      for (let d = T.leadIn + int(rng, RG.knifeEvery[0], RG.knifeEvery[1]); d < length - 40;) {
+        const len = int(rng, RG.knifeLength[0], RG.knifeLength[1]);
+        knives.push({ from: d, to: Math.min(length, d + len) });
+        d += len + int(rng, RG.knifeEvery[0], RG.knifeEvery[1]);
+      }
+    }
+    // Scree: the tier's patches in each section, kept apart from each other.
+    const per = RG.tiers[tier].scree;
+    const section = hazards.section ?? length;
+    if (hazards.scree !== false && per[1] > 0) {
+      for (let s0 = 0; s0 < length; s0 += section) {
+        const n = int(rng, per[0], per[1]);
+        for (let k = 0; k < n; k++) {
+          for (let tries = 0; tries < 20; tries++) {
+            const len = int(rng, RG.screeLength[0], RG.screeLength[1]);
+            const from = s0 + T.leadIn / 2 + nextFloat(rng) * Math.max(1, section - len - T.leadIn);
+            const to = Math.min(length, from + len);
+            if (scree.some((p) => from < p.to + 30 && to > p.from - 30)) continue;
+            scree.push({ from, to });
+            break;
+          }
+        }
+      }
+      scree.sort((a, b) => a.from - b.from);
+    }
+  }
+  return { type, length, width, xs, riverSide, knives, scree };
 }

@@ -5,7 +5,7 @@
  * whenever the stage is rescaled.
  */
 import { useEffect, useState, type RefObject } from 'react';
-import { FILL, pixelFrame, type Frame } from '../../minigames/bearrels/styles';
+import { FILL, pixelFrame, type Frame } from '../../minigames/screen';
 import { useStage } from '../stage/StageContext';
 
 export function usePixelFrame(ref: RefObject<HTMLElement | null>, measure = true): Frame {

@@ -13,7 +13,7 @@ import { useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { g, RED } from '../../../minigames/greens';
-import { middleAt, TRAIL_TYPES, type TrailType } from '../../../minigames/trails/course';
+import { middleAt, TRAIL_TYPES, widthAt, type TrailType } from '../../../minigames/trails/course';
 import { aim, checkpoints, newTrails, result, steer, tick } from '../../../minigames/trails/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
@@ -28,6 +28,10 @@ import q from '../quick/Quick.module.css';
 import { TurnBar } from '../quick/TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './Trails.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
+import { trailsBot } from '../../../minigames/trails/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const T = BALANCE.minigames.trails;
 const file = (f: string) => `minigames/trails/${f}`;
@@ -49,6 +53,15 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
         type,
         barSec: typeof settings.bar === 'number' ? settings.bar : 'auto',
         section: typeof settings.section === 'number' ? settings.section : 'auto',
+        gusts: pickOf(settings, 'gusts') !== 'off',
+        scree: pickOf(settings, 'scree') !== 'off',
+        knives: pickOf(settings, 'knives') !== 'off',
+        // Prepare (20-challenge-popup.md, section 7).
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        extraBar: Object.fromEntries(
+          Object.entries(perHikerCounts(settings, 'prep.bar')).map(([h, n]) => [h, n * 0.5]),
+        ),
+        extraWidth: prepNumber(settings, 'prep.width'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -58,6 +71,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
   const ids = useId().replace(/:/g, '');
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
   const tints = useTinted(hikers.map((h) => h.color));
@@ -72,7 +86,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
     setGame((s) => steer(s, dir));
   };
   useKeys(
-    running,
+    running && !demo,
     (key) => {
       if (key === 'ArrowLeft' || key === 'a') held.current.left = true;
       else if (key === 'ArrowRight' || key === 'd') held.current.right = true;
@@ -101,8 +115,39 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
   const distAt = (y: number) => game.d + (T.hikerY - y);
   const ys: number[] = [];
   for (let y = TOP - 4; y <= BOTTOM + 4; y += 3) ys.push(y);
-  const left = ys.map((y) => `${(middleAt(c, distAt(y)) - w / 2).toFixed(1)},${y}`);
-  const right = ys.map((y) => `${(middleAt(c, distAt(y)) + w / 2).toFixed(1)},${y}`).reverse();
+  // The edges (Ridgeline's knife edges narrow it).
+  const halfAt = (y: number) => widthAt(c, distAt(y)) / 2;
+  const left = ys.map((y) => `${(middleAt(c, distAt(y)) - halfAt(y)).toFixed(1)},${y}`);
+  const right = ys.map((y) => `${(middleAt(c, distAt(y)) + halfAt(y)).toFixed(1)},${y}`).reverse();
+  const ridge = c.type === 'ridgeline';
+  // Ridgeline: scree patches on the trail, the crumbly lips, and the wind.
+  const screeShapes = ridge
+    ? c.scree.flatMap((p, k) => {
+        const top = T.hikerY - (p.to - game.d);
+        const bottom = T.hikerY - (p.from - game.d);
+        if (bottom < TOP || top > BOTTOM) return [];
+        const yy: number[] = [];
+        for (let y = Math.max(TOP - 2, top); y <= Math.min(BOTTOM + 2, bottom); y += 3) yy.push(y);
+        const l = yy.map((y) => `${(middleAt(c, distAt(y)) - halfAt(y) + 1).toFixed(1)},${y}`);
+        const r = yy
+          .map((y) => `${(middleAt(c, distAt(y)) + halfAt(y) - 1).toFixed(1)},${y}`)
+          .reverse();
+        return [{ key: k, points: [...l, ...r].join(' ') }];
+      })
+    : [];
+  const lips: { x: number; y: number }[] = [];
+  if (ridge) {
+    const lip = T.ridge.lipEvery;
+    const first = Math.ceil((game.d - (BOTTOM - T.hikerY)) / lip) * lip;
+    for (let d = first; T.hikerY - (d - game.d) > TOP - 4; d += lip) {
+      const y = T.hikerY - (d - game.d);
+      const mid = middleAt(c, d);
+      const half = widthAt(c, d) / 2;
+      lips.push({ x: mid - half - 6, y }, { x: mid + half - 2, y });
+    }
+  }
+  const gust = game.gust;
+  const blowing = gust && game.time >= gust.warnAt;
   const river =
     c.riverSide !== null
       ? (() => {
@@ -136,6 +181,8 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
           : 'WAITING';
   };
 
+  // The pop-up's demo: the bot aims, as the pointer would.
+  useDemoBot(demo && running, game, trailsBot, (x) => setGame((s) => aim(s, x)));
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div
@@ -187,6 +234,20 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
                 style={{ imageRendering: 'pixelated' }}
               />
             </pattern>
+            <pattern
+              id={`${ids}-scree`}
+              patternUnits="userSpaceOnUse"
+              width="32"
+              height="32"
+              y={scrollY}
+            >
+              <image
+                href={art('tile-scree.png')}
+                width="32"
+                height="32"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </pattern>
           </defs>
           <g clipPath={`url(#${ids}-view)`}>
             {river && <polygon points={river} fill={`url(#${ids}-water)`} />}
@@ -196,6 +257,20 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
               stroke={g(5)}
               strokeWidth={1}
             />
+            {screeShapes.map((p) => (
+              <polygon key={p.key} points={p.points} fill={`url(#${ids}-scree)`} />
+            ))}
+            {lips.map((l, k) => (
+              <image
+                key={k}
+                href={art('ridge-edge.png')}
+                x={l.x}
+                y={l.y - 2}
+                width="8"
+                height="4"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            ))}
             {/* The checkpoints: the runner's in their color, the rest faint. */}
             {checkpoints(game).map((cp) => {
               const y = T.hikerY - (cp - game.d);
@@ -239,6 +314,38 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
             })}
           </g>
         </svg>
+
+        {/* Ridgeline's wind: streaks blowing across from one side, and the gust arrow at that edge. */}
+        {blowing && gust && (
+          <>
+            {[40, 78, 116, 154].map((y, k) => {
+              const t = (game.time - gust.warnAt) * 220 + k * 70;
+              const x = gust.dir > 0 ? (t % 380) - 40 : 320 - ((t % 380) - 40);
+              return (
+                <img
+                  key={k}
+                  className={`${ui.sprite} ${styles.wind}`}
+                  src={art(Math.floor(game.time / 0.15) % 2 ? 'wind-1.png' : 'wind-2.png')}
+                  alt=""
+                  draggable={false}
+                  style={{ left: x, top: y, transform: gust.dir < 0 ? 'scaleX(-1)' : undefined }}
+                />
+              );
+            })}
+            <img
+              className={`${ui.sprite} ${styles.gustArrow}`}
+              src={art('gust-arrow.png')}
+              alt="A gust"
+              draggable={false}
+              style={{
+                left: gust.dir > 0 ? 4 : 302,
+                top: 100,
+                transform: gust.dir < 0 ? 'scaleX(-1)' : undefined,
+                opacity: game.time < gust.pushAt && Math.floor(game.time / 0.12) % 2 ? 0.4 : 1,
+              }}
+            />
+          </>
+        )}
 
         {/* The hiker. */}
         {who && game.phase === 'run' && (

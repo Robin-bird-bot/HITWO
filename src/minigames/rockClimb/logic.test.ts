@@ -12,7 +12,9 @@ import {
   activeColor,
   activeHand,
   grab,
+  grabClosest,
   handAt,
+  reachableHolds,
   hold,
   letGo,
   makeSequence,
@@ -122,21 +124,118 @@ describe('Rock Climb: moves', () => {
     const s0 = newRockClimb({ tier: 2 }, ['finn', 'mom'], 5);
     expect(activeHand(s0)).toBe('left');
     const target = nextHold(s0)!;
-    const other = s0.holds.find((h) => h.color !== null && h.color !== activeColor(s0));
     const s = climbOne(s0);
+    const other = s.holds.find((h) => h.color !== null && h.color !== activeColor(s));
     expect(s.pathAt).toBe(0);
     expect(s.at).toEqual({ x: target.x, h: target.h });
     expect(activeHand(s)).toBe('right');
-    // Out of reach: nothing (any number of tries at Tier II).
+    // Out of reach: queued, not grabbed; a short jump that never gets there falls.
     const far: RockClimbState = {
       ...s,
       phase: 'jump',
       phaseAt: s.time,
       jump: { from: s.at, deg: 90, dist: 5, tried: false },
     };
-    expect(grab(far, nextHold(s)!.id)).toBe(far);
+    const queued = grab(far, nextHold(s)!.id);
+    expect(queued.jump?.queued).toBe(nextHold(s)!.id);
+    expect(queued.pathAt).toBe(s.pathAt);
     // Another color: nothing.
     if (other) expect(grab(far, other.id)).toBe(far);
+  });
+
+  it.each(TIERS)(
+    'Tier %i: aim and power at the next path hold, queue its grab as the jump starts: it always grabs',
+    (tier) => {
+      for (const party of PARTIES) {
+        for (let seed = 1; seed <= 6; seed++) {
+          let s = newRockClimb({ tier }, party, seed * 13 + tier);
+          for (let k = 0; k < 4 && s.phase === 'aim'; k++) {
+            const target = nextHold(s)!;
+            const dx = target.x - s.at.x;
+            const dh = target.h - s.at.h;
+            s = {
+              ...s,
+              phase: 'jump',
+              phaseAt: s.time,
+              jump: {
+                from: s.at,
+                deg: (Math.atan2(dh, dx) * 180) / Math.PI,
+                dist: Math.hypot(dx, dh),
+                tried: false,
+              },
+            };
+            s = grab(s, target.id);
+            for (let t = 0; t < R.jumpSec + R.hangSec + 0.1 && s.phase === 'jump'; t += 1 / 120)
+              s = tick(s, 1 / 120);
+            expect(s.phase === 'aim' || s.phase === 'top').toBe(true);
+            expect(s.at).toEqual({ x: target.x, h: target.h });
+          }
+        }
+      }
+    },
+  );
+
+  it('a jump that misses the hold by more than the reach never grabs it', () => {
+    let s = newRockClimb({ tier: 1 }, ['finn'], 4);
+    const target = nextHold(s)!;
+    const dx = target.x - s.at.x;
+    const dh = target.h - s.at.h;
+    // Aimed well off to the side.
+    const deg = (Math.atan2(dh, dx) * 180) / Math.PI + 60;
+    s = {
+      ...s,
+      phase: 'jump',
+      phaseAt: s.time,
+      jump: { from: s.at, deg, dist: Math.hypot(dx, dh), tried: false },
+    };
+    s = grab(s, target.id);
+    for (let t = 0; t < R.jumpSec + R.hangSec + 0.1 && s.phase === 'jump'; t += 1 / 120)
+      s = tick(s, 1 / 120);
+    expect(s.phase).toBe('slide');
+    expect(s.pathAt).toBe(-1);
+  });
+
+  it('Space queues the active-color hold the rest of the jump passes closest to; the rings show what it can reach', () => {
+    const s0 = newRockClimb({ tier: 2 }, ['finn', 'mom'], 8);
+    const target = nextHold(s0)!;
+    const dx = target.x - s0.at.x;
+    const dh = target.h - s0.at.h;
+    const s: RockClimbState = {
+      ...s0,
+      phase: 'jump',
+      phaseAt: 0,
+      jump: {
+        from: s0.at,
+        deg: (Math.atan2(dh, dx) * 180) / Math.PI,
+        dist: Math.hypot(dx, dh),
+        tried: false,
+      },
+    };
+    expect(reachableHolds(s).map((h) => h.id)).toContain(target.id);
+    expect(grabClosest(s).jump?.queued).toBe(target.id);
+  });
+
+  it('Prepare: Chalk adds reach; the Harness takes the first fall', () => {
+    expect(newRockClimb({ tier: 3, extraReach: 4 }, ['finn'], 1).reach).toBe(R.tiers[3].reach + 4);
+    let s = newRockClimb({ tier: 1, harness: true }, ['finn', 'mom'], 7);
+    const fallOnce = (x: RockClimbState) =>
+      tick(
+        tick(
+          {
+            ...x,
+            phase: 'jump',
+            phaseAt: x.time,
+            jump: { from: x.at, deg: 10, dist: 30, tried: false },
+          },
+          R.jumpSec + R.hangSec + 0.01,
+        ),
+        R.slideSec + 0.01,
+      );
+    s = fallOnce(s);
+    expect(s.fell).toEqual([]);
+    expect(s.harness).toBe(false);
+    s = fallOnce(s);
+    expect(s.fell).toHaveLength(1);
   });
 
   it('from Tier III, one try per jump: a miss within the hand’s color uses it up', () => {
@@ -161,7 +260,7 @@ describe('Rock Climb: moves', () => {
         phaseAt: s.time,
         jump: { from: s.at, deg: 10, dist: 30, tried: false },
       };
-      s = tick(s, R.jumpSec + 0.01);
+      s = tick(s, R.jumpSec + R.hangSec + 0.01);
       expect(s.phase).toBe('slide');
       s = tick(s, R.slideSec + 0.01);
       expect(s.phase).toBe('aim');
@@ -183,7 +282,7 @@ describe('Rock Climb: moves', () => {
           phaseAt: s.time,
           jump: { from: s.at, deg: 10, dist: 30, tried: false },
         },
-        R.jumpSec + 0.01,
+        R.jumpSec + R.hangSec + 0.01,
       );
       s = tick(s, R.slideSec + 0.01);
       while (s.phase !== 'top' && !s.over) s = climbOne(s);

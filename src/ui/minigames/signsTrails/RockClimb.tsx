@@ -18,7 +18,9 @@ import {
   activeHand,
   aimNow,
   grab,
+  grabClosest,
   handAt,
+  reachableHolds,
   hold,
   letGo,
   newRockClimb,
@@ -38,6 +40,7 @@ import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './RockClimb.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const R = BALANCE.minigames.rockClimb;
 const file = (f: string) => `minigames/rock-climb/${f}`;
@@ -65,8 +68,13 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
       {
         tier,
         holds: typeof settings.holds === 'number' ? settings.holds : 'auto',
-        timeSec: typeof settings.time === 'number' ? settings.time : 'auto',
+        timeSec:
+          (typeof settings.time === 'number' ? settings.time : R.tiers[tier].timeSec) +
+          prepNumber(settings, 'prep.extraSec'),
         tries: tries === 'one' || tries === 'any' ? tries : 'auto',
+        // Prepare (20-challenge-popup.md, section 7): chalk and the harness.
+        extraReach: prepNumber(settings, 'prep.chalk'),
+        harness: prepNumber(settings, 'prep.harness') > 0,
       },
       hikers.map((h) => h.id),
       seed,
@@ -82,7 +90,9 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
 
   // The camera follows the hand: its height sits at scene y R.handY.
   const hand = handAt(game);
-  const camH = game.phase === 'jump' ? hand.h : game.at.h;
+  // The camera stays where the jump started until it lands (fixed Nov 26: when it followed the
+  // hand, the hold you were aiming for slid down the screen as you tried to tap it).
+  const camH = game.phase === 'jump' && game.jump ? game.jump.from.h : game.at.h;
   const screenY = (h: number) => R.handY - (h - camH);
 
   const press = () => {
@@ -91,27 +101,30 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
   const release = () => {
     if (game.phase === 'power') setGame(letGo);
   };
+  /** A grab queued (or taken at once): a sound when the hand takes hold. */
+  const queue = (out: typeof game) => {
+    if (out === game) return;
+    if (out.phase === 'aim' || out.phase === 'top') playSound('pop');
+    setGame(out);
+  };
   const onDown = (e: ReactPointerEvent) => {
     if (!running) return;
     e.preventDefault();
     if (game.phase !== 'jump') return press();
-    // A tap during the jump: the nearest hold to it.
+    // A tap during the jump: the hold under it (within [16] units), else the closest the jump passes.
     const p = toScene(sceneRef.current, e.clientX, e.clientY);
     const target = game.holds
       .map((h) => ({ h, d: Math.hypot(h.x - p.x, screenY(h.h) - p.y) }))
-      .filter((x) => x.d <= 12)
+      .filter((x) => x.d <= R.tapTolerance)
       .sort((a, b) => a.d - b.d)[0];
-    if (!target) return;
-    const out = grab(game, target.h.id);
-    if (out === game) return;
-    playSound(out.phase === 'aim' || out.phase === 'top' ? 'pop' : 'miss');
-    setGame(out);
+    queue(target ? grab(game, target.h.id) : grabClosest(game));
   };
   useKeys(
     running,
     (key) => {
       if (key !== ' ') return false;
-      press();
+      if (game.phase === 'jump') queue(grabClosest(game));
+      else press();
       return true;
     },
     (key) => key === ' ' && release(),
@@ -119,6 +132,7 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
 
   const active = activeColor(game);
   const leaping = game.phase === 'jump';
+  const showReach = pickOf(settings, 'reach') !== 'off';
   const frame = leaping ? 'leap' : 'hang';
   // The climber hangs from the hand: the active hand's dot sits on the hand point.
   const which = activeHand(game) === 'left' ? 0 : 1;
@@ -206,6 +220,40 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
               }}
             />
           </>
+        )}
+
+        {/* While jumping: the reach around the hand, soft rings on the holds the jump can reach, and the queued one. */}
+        {leaping && showReach && (
+          <>
+            <span
+              className={styles.reach}
+              style={{
+                left: hand.x - game.reach,
+                top: screenY(hand.h) - game.reach,
+                width: game.reach * 2,
+                height: game.reach * 2,
+                borderColor: colorOf(active),
+              }}
+            />
+            {reachableHolds(game).map((h) => (
+              <span
+                key={h.id}
+                className={styles.ring}
+                style={{ left: h.x - 11, top: screenY(h.h) - 9, borderColor: colorOf(active) }}
+              />
+            ))}
+          </>
+        )}
+        {leaping && game.jump?.queued != null && game.holds[game.jump.queued] && (
+          <span
+            className={`${ui.text} ${styles.queued}`}
+            style={{
+              left: game.holds[game.jump.queued]!.x,
+              top: screenY(game.holds[game.jump.queued]!.h) - 16,
+            }}
+          >
+            GRAB QUEUED
+          </span>
         )}
 
         {/* The climber, each hand in its color; the active hand ringed. */}

@@ -20,6 +20,10 @@ import q from './Quick.module.css';
 import styles from './TrailBlazes.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
+import { trailBlazesBot } from '../../../minigames/trailBlazes/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const TB = BALANCE.minigames.trailBlazes;
 const art = (f: string) => asset(`minigames/trail-blazes/${f}`);
@@ -34,6 +38,8 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
         tier,
         mode: pickOf(settings, 'mode') === 'clock' ? 'clock' : 'tries',
         tries: typeof settings.tries === 'number' ? settings.tries : 'auto',
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        brighter: prepNumber(settings, 'prep.brighter'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -41,6 +47,7 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
   );
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
@@ -55,7 +62,7 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
     playSound(matched ? 'pop' : 'miss');
     setGame(out);
   };
-  useKeys(running, (key) => {
+  useKeys(running && !demo, (key) => {
     if (key !== ' ' && key !== 'Enter') return false;
     press();
     return true;
@@ -150,6 +157,8 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
     ? `TAP WHEN THE TWO LIT BLAZES ARE LEVEL. A MISS COSTS ${TB.missCostSec} S.`
     : 'TAP WHEN THE TWO LIT BLAZES ARE LEVEL. SQUARES ARE TRIES LEFT.';
 
+  // The pop-up's demo: the bot taps through the same handler.
+  useDemoBot(demo && running, game, trailBlazesBot, () => press());
   return (
     <PixelScreen measure={!still}>
       <div

@@ -89,6 +89,9 @@ export interface SafariOptions {
   bigfoot?: 'auto' | 'always' | 'never';
   /** The Question setting: one type every time, or "random". */
   question?: QuestionType | 'random';
+  /** Prepare: answer signs fewer (Binoculars), and animals fewer (Fewer animals). */
+  fewerSigns?: number;
+  fewerAnimals?: number;
 }
 
 export type SafariPhase = 'watch' | 'question' | 'done';
@@ -260,9 +263,10 @@ export function makeQuestion(
   type: QuestionType,
   run: SafariRun,
   tier: Tier,
+  fewerSigns = 0,
 ): Question | null {
   const t = S.tiers[tier];
-  const count = t.signs;
+  const count = Math.max(2, t.signs - fewerSigns);
   const numbers = (text: string, q: Pick<Question, 'type' | 'kind'>): Question | null => {
     const ans = answerFor(q, run);
     if (ans === null) return null;
@@ -386,11 +390,12 @@ export function newSafari(
         ? 2
         : 1;
 
-  let run = planRun(rng, tier, { night, fog, bigfoot });
+  const fewer = options.fewerAnimals ?? 0;
+  let run = planRun(rng, tier, { night, fog, bigfoot, fewer });
   // A forced type may come from any tier (testing); otherwise only the tier's.
   const fits = (r: SafariRun) => fittingQuestions(r, forced ? 5 : tier);
   for (let k = 0; forced && !fits(run).includes(forced) && k < 20; k++) {
-    run = planRun(rng, tier, { night, fog, bigfoot });
+    run = planRun(rng, tier, { night, fog, bigfoot, fewer });
   }
   const open = fits(run);
   const questions: Question[] = [];
@@ -405,6 +410,7 @@ export function newSafari(
     firstPool[int(rng, 0, Math.max(0, firstPool.length - 1))] ?? 'howMany',
     run,
     tier,
+    options.fewerSigns,
   );
   if (q1) questions.push(q1);
   if (howMany === 2) {
@@ -414,6 +420,7 @@ export function newSafari(
       pool[int(rng, 0, Math.max(0, pool.length - 1))] ?? 'howMany',
       run,
       tier,
+      options.fewerSigns,
     );
     if (q2) questions.push(q2);
   }

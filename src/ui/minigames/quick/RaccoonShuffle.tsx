@@ -12,7 +12,7 @@
  * finger last touched on phones; the selected bin with keys).
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import { ASSETS, asset } from '../../../config/assets';
+import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { RESOURCES } from '../../../content/resources';
 import { testPack } from '../../../minigames/hikers';
@@ -30,7 +30,6 @@ import {
   type Card,
 } from '../../../minigames/raccoonShuffle/logic';
 import { TIER_LABELS } from '../../../minigames/types';
-import { Icon } from '../../icons/Icon';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -41,6 +40,7 @@ import q from './Quick.module.css';
 import styles from './RaccoonShuffle.module.css';
 import { TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
 
 const RS = BALANCE.minigames.raccoonShuffle;
 const art = (f: string) => asset(`minigames/raccoon-shuffle/${f}`);
@@ -61,13 +61,11 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
       {
         tier,
         night: nightPick === 'on' || nightPick === 'off' ? nightPick : 'auto',
-        // Test hikers carry nothing: the Packs setting gives them made-up packs (or none).
-        packs: Object.fromEntries(
-          hikers.map((h) => [
-            h.id,
-            h.pack ?? (pickOf(settings, 'packs') === 'empty' ? {} : testPack(seed, h.id)),
-          ]),
-        ),
+        // The hikers' packs (the testing tab's Packs control makes them up).
+        packs: Object.fromEntries(hikers.map((h) => [h.id, h.pack ?? testPack(seed, h.id)])),
+        // Prepare (20-challenge-popup.md, section 7).
+        extraEmpty: prepNumber(settings, 'prep.lure'),
+        extraSwapSec: prepNumber(settings, 'prep.slowShuffle'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -135,43 +133,59 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
     return false;
   });
 
-  // Where each bin is now: its slot, or partway through a swap (one arcs over, the other slides under).
-  const pairs = game.phase === 'shuffle' ? (game.steps[game.step] ?? []) : [];
+  // Where each bin is now: its slot, or partway through a swap (one arcs over, the other slides
+  // under; far swaps arc higher), or a fake-out (they start to cross, then go back).
+  const now = game.phase === 'shuffle' ? game.steps[game.step] : undefined;
+  const pairs = now?.pairs ?? [];
   const p = swapProgress(game);
   const posOf = (binId: number) => {
     const slot = game.slots.indexOf(binId);
     for (const [a, b] of pairs) {
+      const arc = RS.arc + (b - a >= 2 ? RS.farArc : 0);
       if (slot === a)
         return {
           x: binX(a, n) + (binX(b, n) - binX(a, n)) * ease(p),
-          lift: Math.sin(Math.PI * p) * RS.arc,
+          lift: Math.sin(Math.PI * p) * arc,
           over: true,
         };
       if (slot === b)
         return { x: binX(b, n) + (binX(a, n) - binX(b, n)) * ease(p), lift: 0, over: false };
+    }
+    if (now?.fake) {
+      const [a, b] = now.fake;
+      const k = Math.sin(Math.PI * p) * RS.fakeReach;
+      if (slot === a)
+        return {
+          x: binX(a, n) + (binX(b, n) - binX(a, n)) * k,
+          lift: Math.sin(Math.PI * p) * RS.arc * 0.6,
+          over: true,
+        };
+      if (slot === b)
+        return { x: binX(b, n) + (binX(a, n) - binX(b, n)) * k, lift: 0, over: false };
     }
     return { x: binX(slot, n), lift: 0, over: false };
   };
 
   // What's open: every bin during the show (after the lids open, until they close), the picked one, then all.
   const since = game.time - game.phaseAt;
-  const showOpen = game.phase === 'show' && onTurn && since > 0.2 && since < RS.showSec - 0.4;
+  const showSec = RS.tiers[game.tier].showSec;
+  const showOpen = game.phase === 'show' && onTurn && since > 0.2 && since < showSec - 0.4;
   const isOpen = (slot: number) =>
     showOpen || game.phase === 'after' || (game.phase === 'open' && slot === game.picked);
   const pickedBin = game.picked !== null ? binAt(game, game.picked) : null;
   const flyOff =
     game.phase === 'open' ? Math.min(1, since / RS.pickedSec) : game.phase === 'after' ? 1 : 0;
 
+  // The card: the green pixel icon (12 × 12) at (4, 1) inside card.png, 1:1 (revised Nov 26).
   const drawCard = (card: Card, x: number, top: number, style?: React.CSSProperties) => (
     <span className={styles.card} style={{ left: x - 10, top, ...style }}>
       <img className={ui.sprite} src={art('card.png')} alt="" draggable={false} />
-      <span className={styles.icon}>
-        {card.kind === 'resource' ? (
-          <img src={ASSETS.resources[card.id]} alt={resourceName(card.id)} draggable={false} />
-        ) : (
-          <Icon name="zap" size={10} color="#1d2918" strokeWidth={2.5} />
-        )}
-      </span>
+      <img
+        className={`${ui.sprite} ${styles.icon}`}
+        src={asset(`resources-green/${card.kind === 'resource' ? card.id : 'energy'}.png`)}
+        alt={card.kind === 'resource' ? resourceName(card.id) : 'Energy'}
+        draggable={false}
+      />
       <span className={styles.stick} />
     </span>
   );
@@ -254,7 +268,7 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
             : 'SAFE';
   const bar =
     game.phase === 'show'
-      ? Math.max(0, 1 - since / RS.showSec)
+      ? Math.max(0, 1 - since / showSec)
       : game.phase === 'shuffle'
         ? (game.swapsDone + pairs.length * p) / game.swapsTotal
         : 1;

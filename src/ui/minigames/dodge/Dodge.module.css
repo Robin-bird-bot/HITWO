@@ -133,6 +133,24 @@
   background: rgba(200, 66, 58, 0.15);
 }
 
+/* Caught in a bear trap: a red ring around the sprite, and SLOWED beside it. */
+.slowRing {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 0.75px solid #c8423a;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.slowText {
+  position: absolute;
+  font-size: 3.6px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .hitText {
   position: absolute;
   color: #c8423a;

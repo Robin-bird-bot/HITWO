@@ -29,6 +29,10 @@ import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
 import { useLaneInput } from './useLaneInput';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
+import { trainBot } from '../../../minigames/train/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const T = BALANCE.minigames.train;
 const FIXED = 1 / 120;
@@ -45,6 +49,9 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
         lives: num(settings.lives),
         surviveSec: num(settings.survive),
         fog: fogPick === 'on' || fogPick === 'off' ? fogPick : 'auto',
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        brighter: prepNumber(settings, 'prep.brighter'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -56,6 +63,7 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
 
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -95,7 +103,7 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const trackY = (k: number) => 112 - ((game.tracks - 1) * T.trackGap) / 2 + k * T.trackGap;
   const at = spriteAt(game);
   const input = useLaneInput({
-    enabled: running,
+    enabled: running && !demo,
     sceneRef,
     axes: 'vertical',
     anchor: () => ({ x: 160, y: trackY(at) }),
@@ -141,6 +149,8 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const color = byId(who)?.color ?? '#d3dfaf';
   const left = Math.max(0, game.lengthSec - game.time);
 
+  // The pop-up's demo: the bot hops through the same handler.
+  useDemoBot(demo && running, game, trainBot, (dir) => setGame((s) => hop(s, dir)));
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div
@@ -264,7 +274,7 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
                   />
                   <span className={styles.slotName}>{byId(id).name.toUpperCase()}</span>
                   <span className={styles.hearts}>
-                    {Array.from({ length: game.maxLives }, (_, i) => (
+                    {Array.from({ length: game.startLives[id] ?? game.maxLives }, (_, i) => (
                       <span key={i} data-lit={i < lives || undefined}>
                         ♥
                       </span>

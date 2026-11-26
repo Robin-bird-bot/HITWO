@@ -30,6 +30,7 @@ import q from '../quick/Quick.module.css';
 import { TurnBar } from '../quick/TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './FakeSigns.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const F = BALANCE.minigames.fakeSigns;
 const art = (f: string) => asset(`minigames/fake-signs/${f}`);
@@ -41,9 +42,23 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
     newFakeSigns(
       {
         tier,
-        signs: typeof settings.signs === 'number' ? settings.signs : 'auto',
-        cap: typeof settings.cap === 'number' ? settings.cap : 'auto',
-        showOld: showOld === 'always' || showOld === 'never' ? showOld : 'auto',
+        // Prepare: −1 rule, −1 sign a round, and the old rules kept on screen.
+        signs: Math.max(
+          1,
+          (typeof settings.signs === 'number' ? settings.signs : F.tiers[tier].signs) -
+            prepNumber(settings, 'prep.fewerSigns'),
+        ),
+        cap: Math.max(
+          1,
+          (typeof settings.cap === 'number' ? settings.cap : F.tiers[tier].cap) -
+            prepNumber(settings, 'prep.fewerRules'),
+        ),
+        showOld:
+          prepNumber(settings, 'prep.showOld') > 0
+            ? 'always'
+            : showOld === 'always' || showOld === 'never'
+              ? showOld
+              : 'auto',
         timePerSign: typeof settings.time === 'number' ? settings.time : null,
       },
       hikers.map((h) => h.id),

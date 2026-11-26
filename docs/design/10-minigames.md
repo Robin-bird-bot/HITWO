@@ -22,6 +22,8 @@ Earlier in the day: the vertical GPS with a preview, the turn and zoom on Start,
 Build all three as reusable parts. Every later minigame plugs into the same pop-up and GPS.
 
 ## 1. The challenge pop-up
+**Replaced by `20-challenge-popup.md` (November 26).**
+
 
 The layout is unchanged from the first version (see `mockups/4-vertical-gps-preview-then-turn.jpg`, top right). The GPS now sits in the middle of the pop-up, between the poster and the right column.
 
@@ -124,6 +126,8 @@ Both use the same positions, so one `layout.json` covers both.
 - The prompt still turns red for bad news. The UI must never cover a barrel.
 
 ## 4. Bearrels
+**Removed November 26 (Wyatt): the bear moved into Dodge as Bear with a Gun** (`21-minigames-dodge-camp.md`).
+
 
 Hide your hikers behind barrels. Each round the bear pops up and shoots. Anyone behind the barrel it hits is out.
 

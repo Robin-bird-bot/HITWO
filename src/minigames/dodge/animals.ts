@@ -90,6 +90,18 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     hud: 'Squirrels',
     attacks: plain('acorns', 'bombs', 'pinecones', 'scurry'),
   },
+  gunBear: {
+    id: 'gunBear',
+    name: 'Bear with a Gun',
+    hud: 'Bear + gun',
+    attacks: plain('aimedShot', 'rapidFire', 'traps', 'snipe', 'ricochet', 'quickDraw'),
+  },
+  ants: {
+    id: 'ants',
+    name: 'Ants',
+    hud: 'Ants',
+    attacks: plain('marching', 'antMill', 'leafcutter', 'fireAnts', 'antHill', 'crumbRush'),
+  },
   stampede: {
     id: 'stampede',
     name: 'Wild Predator Stampede',
@@ -110,6 +122,8 @@ export const ANIMAL_IDS: readonly AnimalId[] = [
   'swordBear',
   'bobcat',
   'squirrels',
+  'gunBear',
+  'ants',
   'stampede',
   'monster',
 ];
@@ -121,6 +135,8 @@ export const STAMPEDE_ANIMALS: readonly Exclude<Attacker, 'herd'>[] = [
   'swordBear',
   'bobcat',
   'squirrels',
+  'gunBear',
+  'ants',
 ];
 
 /** One attack that can be picked: who makes it, which, and any tweak. */
@@ -268,6 +284,8 @@ export const PORTRAITS: Readonly<
   squirrels: { file: 'squirrel', w: 73, h: 48 },
   herd: { file: 'moose', w: 71, h: 54 },
   monster: { file: 'woods-monster', w: 65, h: 56 },
+  gunBear: { file: 'bear-gun', w: 76, h: 50 },
+  ants: { file: 'ant', w: 50, h: 46 },
   cultist: { file: 'cultist', w: 33, h: 38 },
 };
 

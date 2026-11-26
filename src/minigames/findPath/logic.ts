@@ -75,12 +75,16 @@ export interface FindPathOptions {
   fog: 'auto' | 'on' | 'off';
   /** What a run-out hides again: the trail only (trees stay), or everything. */
   hide?: 'trail' | 'everything';
+  /** Prepare's +1 TRY: tries more each turn. */
+  extraTries?: number;
 }
 
 export type Known = 'trail' | 'trees';
 
 export interface FindPathState {
   tier: Tier;
+  /** Tries a hiker gets each turn (Prepare's +1 TRY adds). */
+  triesPerTurn: number;
   cols: number;
   rows: number;
   fog: boolean;
@@ -155,7 +159,7 @@ function startTurn(s: FindPathState): FindPathState {
   if (!s.line.length) return { ...s, over: true };
   // Once someone is through (and without fog), the rest walk the trail; otherwise from the trailhead.
   const at = s.energy && !s.fog ? knownTrailEnd(s) : trailhead(s);
-  const next = { ...s, at, tries: P.triesPerTurn };
+  const next = { ...s, at, tries: s.triesPerTurn };
   return at.r === 0 ? through(next) : next;
 }
 
@@ -194,7 +198,8 @@ export function newFindPath(
     line: [...order],
     order: [...order],
     at: trail[0]!,
-    tries: P.triesPerTurn,
+    triesPerTurn: P.triesPerTurn + (options.extraTries ?? 0),
+    tries: P.triesPerTurn + (options.extraTries ?? 0),
     attempts: P.attempts + P.attemptsPerExtraHiker * (n - 1),
     results: {},
     note: '',

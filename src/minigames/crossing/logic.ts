@@ -91,6 +91,8 @@ export interface CrossingState {
   line: string[];
   lives: Record<string, number>;
   maxLives: number;
+  /** Each hiker's lives at the start (Prepare's +1 LIFE adds to one hiker's). */
+  startLives: Record<string, number>;
   status: Record<string, HikerStatus>;
   /** The lanes, bottom to top (lane k is row k + 1); row 0 is the start, the last row the goal. */
   lanes: Lane[];
@@ -115,6 +117,9 @@ export interface CrossingOptions {
   /** The testing tab's overrides: "auto" uses the tier's. */
   lives?: 'auto' | number;
   attemptSec?: 'auto' | number;
+  /** Prepare (20-challenge-popup.md, section 7): extra lives by hiker, and the share slower the lanes go. */
+  extraLives?: Readonly<Record<string, number>>;
+  slower?: number;
 }
 
 const between = (rng: RngState, [a, b]: readonly [number, number]) => a + nextFloat(rng) * (b - a);
@@ -155,11 +160,18 @@ function makeThing(rng: RngState, kind: LaneKind, tier: Tier): Thing {
 }
 
 /** A lane: things with gaps between them around a loop at least a screen and a bit long. */
-function makeLane(rng: RngState, kind: LaneKind, k: number, tier: Tier, critter: boolean): Lane {
+function makeLane(
+  rng: RngState,
+  kind: LaneKind,
+  k: number,
+  tier: Tier,
+  critter: boolean,
+  pace = 1,
+): Lane {
   const t = C.tiers[tier];
   const dir: 1 | -1 = k % 2 === 0 ? 1 : -1;
   if (kind === 'bank') return { kind, dir, speed: 0, span: 320, things: [] };
-  const speed = between(rng, t.speed) * (critter ? C.critter.speed : 1);
+  const speed = between(rng, t.speed) * (critter ? C.critter.speed : 1) * pace;
   const things: Thing[] = [];
   let pos = 0;
   while (pos < 320 + 96) {
@@ -194,7 +206,8 @@ export function newCrossing(
     options.version === 'mixed' && tier < C.mixedFrom ? 'road' : options.version;
   const critter = version === 'critter';
   const kinds = laneKinds(version, t.lanes);
-  const lanes = kinds.map((kind, k) => makeLane(rng, kind, k, tier, critter));
+  const pace = 1 - Math.max(0, Math.min(0.8, options.slower ?? 0));
+  const lanes = kinds.map((kind, k) => makeLane(rng, kind, k, tier, critter, pace));
   // Some turtle groups dive.
   let divers = t.divers;
   for (const lane of lanes) {
@@ -224,8 +237,11 @@ export function newCrossing(
     tier,
     order: [...order],
     line: [...order],
-    lives: Object.fromEntries(order.map((id) => [id, lives])),
+    lives: Object.fromEntries(order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)])),
     maxLives: lives,
+    startLives: Object.fromEntries(
+      order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)]),
+    ),
     status: Object.fromEntries(order.map((id, i) => [id, i === 0 ? 'crossing' : 'waiting'])),
     lanes,
     rows: lanes.length + 2,

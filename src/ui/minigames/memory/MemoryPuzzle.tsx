@@ -31,6 +31,8 @@ import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
 import { snackKey, useSnackTints } from './tintSnack';
 import styles from './MemoryPuzzle.module.css';
+import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const ME = BALANCE.minigames.memory;
 const CARD = { w: 33, h: 39, gap: 5 } as const;
@@ -39,6 +41,7 @@ const FIXED = 1 / 60;
 const num = (v: unknown): 'auto' | number => (typeof v === 'number' ? v : 'auto');
 
 export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const tier = tierOf(settings);
   const match = pickOf(settings, 'match');
   const swaps = pickOf(settings, 'swaps');
@@ -49,7 +52,11 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
         match: match === 'pairs' || match === 'threes' ? match : 'auto',
         swaps: swaps === 'on' || swaps === 'off' ? swaps : 'auto',
         preview: num(settings.preview),
-        time: num(settings.time),
+        time:
+          prepNumber(settings, 'prep.extraSec') > 0
+            ? (typeof settings.time === 'number' ? settings.time : ME.tiers[tier].timeSec) +
+              prepNumber(settings, 'prep.extraSec')
+            : num(settings.time),
         matchBonus: num(settings.matchBonus),
         missCost: num(settings.missCost),
       },
@@ -131,6 +138,7 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
 
   // The arrow keys move a cursor over the cards; Space (or Enter) flips.
   useEffect(() => {
+    if (demo) return;
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[

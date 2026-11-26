@@ -13,8 +13,12 @@
  *   climb is always possible; decoys in other colors on every screen.
  * - **A move:** the arrow swings over the top; hold to stop it, and a
  *   power meter fills and empties; let go to jump [30–110] units that way.
- *   During the jump, tap a hold of the active hand's color within reach to
- *   grab it (from Tier III, one try per jump).
+ * - **Grabbing (fixed Nov 26):** tapping a hold of the active hand's color
+ *   at any time during the jump queues it; the hand grabs it the moment it
+ *   passes within reach, including in the [0.25 s] hang at the end of the
+ *   [0.9 s] jump. Space (or a tap off any hold) queues the hold the rest of
+ *   the jump passes closest to. From Tier III the queued grab is the one
+ *   try; at Tiers I and II a new tap replaces it.
  * - **A fall** (no grab): the climber slides back to the last hold; the
  *   hiker whose color that hand had fails, once (later falls only cost
  *   time); the same hand and color go again.
@@ -52,6 +56,9 @@ export interface RockClimbOptions {
   timeSec?: number | 'auto';
   /** Grab tries per jump ("auto": the tier's). */
   tries?: 'auto' | 'one' | 'any';
+  /** Prepare: more grab reach (Chalk), and the first fall fails nobody (Harness). */
+  extraReach?: number;
+  harness?: boolean;
 }
 
 export type ClimbPhase = 'aim' | 'power' | 'jump' | 'slide' | 'top' | 'out';
@@ -78,8 +85,19 @@ export interface RockClimbState {
   phaseAt: number;
   /** Power: the arrow's angle (degrees, 0 right, 180 left) once stopped. */
   aimDeg: number;
-  /** The jump under way: where from, which way (degrees), how far, and whether its one try is used. */
-  jump: { from: { x: number; h: number }; deg: number; dist: number; tried: boolean } | null;
+  /**
+   * The jump under way: where from, which way (degrees), how far, whether
+   * its one try is used, and the hold queued to grab (if any).
+   */
+  jump: {
+    from: { x: number; h: number };
+    deg: number;
+    dist: number;
+    tried: boolean;
+    queued?: number | null;
+  } | null;
+  /** The Harness: the first fall fails nobody (used up once it saves someone). */
+  harness: boolean;
   /** Hikers who've fallen (each fails once). */
   fell: string[];
   /** The last grab (for a moment's flash) and the last fall. */
@@ -220,7 +238,8 @@ export function newRockClimb(
     order,
     holds,
     path,
-    reach: t.reach,
+    reach: t.reach + (options.extraReach ?? 0),
+    harness: options.harness ?? false,
     oneTry: options.tries === 'one' ? true : options.tries === 'any' ? false : t.oneTry,
     swingSec: t.swingSec,
     powerSec: t.powerSec,
@@ -263,17 +282,40 @@ export const aimNow = (s: RockClimbState): number =>
 export const powerNow = (s: RockClimbState): number =>
   s.phase === 'power' ? tri(s.time - s.phaseAt, s.powerSec) : 0;
 
-/** Where the moving hand is: at the hold, or partway through a jump (easing out). */
+/** Where the hand is at a moment of the jump: easing out over [0.9 s], then hanging at the end. */
+export function handOnJump(
+  j: NonNullable<RockClimbState['jump']>,
+  since: number,
+): { x: number; h: number } {
+  const k = Math.min(1, Math.max(0, since / R.jumpSec));
+  const e = 1 - (1 - k) * (1 - k);
+  const rad = (j.deg * Math.PI) / 180;
+  return { x: j.from.x + Math.cos(rad) * j.dist * e, h: j.from.h + Math.sin(rad) * j.dist * e };
+}
+
+/** Where the moving hand is: at the hold, or partway through a jump (or hanging at its end). */
 export function handAt(s: RockClimbState): { x: number; h: number } {
   if (s.phase !== 'jump' || !s.jump) return s.at;
-  const k = Math.min(1, (s.time - s.phaseAt) / R.jumpSec);
-  const e = 1 - (1 - k) * (1 - k);
-  const rad = (s.jump.deg * Math.PI) / 180;
-  return {
-    x: s.jump.from.x + Math.cos(rad) * s.jump.dist * e,
-    h: s.jump.from.h + Math.sin(rad) * s.jump.dist * e,
-  };
+  return handOnJump(s.jump, s.time - s.phaseAt);
 }
+
+/** How close the rest of this jump (and its hang) comes to a hold. */
+export function closestApproach(s: RockClimbState, hold: Hold): number {
+  if (s.phase !== 'jump' || !s.jump) return Infinity;
+  const since = s.time - s.phaseAt;
+  let best = Infinity;
+  for (let t = since; t <= R.jumpSec + 1e-9; t += 0.02) {
+    const p = handOnJump(s.jump, t);
+    best = Math.min(best, Math.hypot(p.x - hold.x, p.h - hold.h));
+  }
+  return best;
+}
+
+/** The active-color holds the rest of this jump passes within reach of (the soft rings). */
+export const reachableHolds = (s: RockClimbState): Hold[] =>
+  s.holds.filter(
+    (h) => h.color !== null && h.color === activeColor(s) && closestApproach(s, h) <= s.reach,
+  );
 
 /** Hold (press): the arrow stops, and the power meter starts. */
 export function hold(s: RockClimbState): RockClimbState {
@@ -293,16 +335,8 @@ export function letGo(s: RockClimbState): RockClimbState {
   };
 }
 
-/** A tap on a hold during a jump: grabs it if it's the hand's color and within reach. */
-export function grab(s: RockClimbState, holdId: number): RockClimbState {
-  if (s.over || s.phase !== 'jump' || !s.jump) return s;
-  const h = s.holds[holdId];
-  if (!h || h.color === null || h.color !== activeColor(s)) return s;
-  if (s.oneTry && s.jump.tried) return s;
-  const hand = handAt(s);
-  if (Math.hypot(hand.x - h.x, hand.h - h.h) > s.reach) {
-    return s.oneTry ? { ...s, jump: { ...s.jump, tried: true } } : s;
-  }
+/** The hand takes hold: it hangs there, and the next move is the other hand's. */
+function take(s: RockClimbState, h: Hold): RockClimbState {
   const pathAt = h.path !== null ? Math.max(s.pathAt, h.path) : s.pathAt;
   const out: RockClimbState = {
     ...s,
@@ -314,7 +348,34 @@ export function grab(s: RockClimbState, holdId: number): RockClimbState {
     phase: 'aim',
     phaseAt: s.time,
   };
-  return pathAt >= s.path.length - 1 ? { ...out, phase: 'top', over: false } : out;
+  return pathAt >= s.path.length - 1 ? { ...out, phase: 'top' } : out;
+}
+
+/**
+ * A tap on a hold during a jump (fixed Nov 26): a hold of the active hand's
+ * color is queued, and grabbed the moment the hand passes within reach (at
+ * once if it's already there). Other colors do nothing. From Tier III the
+ * queued grab is the one try; at Tiers I and II a new tap replaces it.
+ */
+export function grab(s: RockClimbState, holdId: number): RockClimbState {
+  if (s.over || s.phase !== 'jump' || !s.jump) return s;
+  const h = s.holds[holdId];
+  if (!h || h.color === null || h.color !== activeColor(s)) return s;
+  if (s.oneTry && s.jump.tried) return s;
+  const out = { ...s, jump: { ...s.jump, tried: true, queued: h.id } };
+  const hand = handAt(out);
+  return Math.hypot(hand.x - h.x, hand.h - h.h) <= s.reach ? take(out, h) : out;
+}
+
+/** Space, or a tap off any hold: queue the active-color hold the rest of the jump passes closest to. */
+export function grabClosest(s: RockClimbState): RockClimbState {
+  if (s.over || s.phase !== 'jump' || !s.jump) return s;
+  const color = activeColor(s);
+  const best = s.holds
+    .filter((h) => h.color !== null && h.color === color)
+    .map((h) => ({ h, d: closestApproach(s, h) }))
+    .sort((a, b) => a.d - b.d)[0];
+  return best ? grab(s, best.h.id) : s;
 }
 
 export function tick(s0: RockClimbState, dt: number): RockClimbState {
@@ -324,17 +385,33 @@ export function tick(s0: RockClimbState, dt: number): RockClimbState {
   s = { ...s, timeLeft: s.timeLeft - dt };
   if (s.timeLeft <= 0) return { ...s, timeLeft: 0, phase: 'out', over: true };
   const since = s.time - s.phaseAt;
-  if (s.phase === 'jump' && since >= R.jumpSec) {
-    // No grab: a fall. The hand's hiker fails (once); the same hand and color go again.
-    const by = activeColor(s);
-    const fell = by && !s.fell.includes(by) ? [...s.fell, by] : s.fell;
-    return {
-      ...s,
-      fell,
-      phase: 'slide',
-      phaseAt: s.time,
-      lastFall: by ? { at: s.time, by } : s.lastFall,
-    };
+  if (s.phase === 'jump' && s.jump) {
+    // A queued grab happens the moment the hand passes within reach.
+    const q = s.jump.queued != null ? s.holds[s.jump.queued] : undefined;
+    if (q) {
+      const hand = handAt(s);
+      if (Math.hypot(hand.x - q.x, hand.h - q.h) <= s.reach) return take(s, q);
+    }
+    if (since >= R.jumpSec + R.hangSec) {
+      // No grab: a fall. The hand's hiker fails (once), unless the Harness takes the first fall.
+      const by = activeColor(s);
+      if (s.harness)
+        return {
+          ...s,
+          harness: false,
+          phase: 'slide',
+          phaseAt: s.time,
+          lastFall: by ? { at: s.time, by } : s.lastFall,
+        };
+      const fell = by && !s.fell.includes(by) ? [...s.fell, by] : s.fell;
+      return {
+        ...s,
+        fell,
+        phase: 'slide',
+        phaseAt: s.time,
+        lastFall: by ? { at: s.time, by } : s.lastFall,
+      };
+    }
   }
   if (s.phase === 'slide' && since >= R.slideSec)
     return { ...s, phase: 'aim', phaseAt: s.time, jump: null };

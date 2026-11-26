@@ -1685,7 +1685,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** as in each revised or new design file, plus: each biome's tiers come out close to its table over many rolls.
 
-### Phase 10.8, step 8: The quick games, signs and trails, and the axe, whistle and mallet
+### Phase 10.8, step 8: The quick games, signs and trails, and the axe, whistle and mallet (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-quick-games.md`, revised. The designs are the revised `docs/design/14-minigames-trail-blocks.md` (third pass) and the new `18-minigames-quick.md` and `19-minigames-signs-trails.md`. New mockups in `docs/mockups/minigames/quick-games/` and `signs-trails/`, plus the axe and whistle GIFs and the mallet in `trail-blocks/`. New placeholder art for the ten games, Wyatt's new axe and whistle frames, and his hammer for Whackoon's mallet.)
 
@@ -1709,6 +1709,26 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 All ten end on the Challenge Passed / Challenge Failed screen. In the eight that aren't passing challenges, hikers who fail lose [1] energy, except in Raccoon Shuffle.
 
 **Tests:** as in `18`, section 9, `19`, section 7, and the axe, whistle and Whackoon tests in `14`.
+
+### Phase 10.8, step 9: The challenge pop-up, version 2; Bear with a Gun and Ants; Camp Cleanup; fixes (done)
+
+(New in the Nov 26 update: `docs/UPDATE-2026-11-26-challenge-popup.md`. The designs are the new `docs/design/20-challenge-popup.md` and `21-minigames-dodge-camp.md`, and the revised `18-minigames-quick.md` (Raccoon Shuffle). The pop-up's reference is a working prototype: `docs/mockups/minigames/challenge-popup/prototype.html`. New mockups in `challenge-popup/` and `dodge-new/`. New art: green pixel resource icons, Bear with a Gun and Ants for Dodge, Camp Cleanup, and Ridgeline's drops, scree and wind.)
+
+**Goal:** the new pop-up for every game, the new Dodge animals and Camp Cleanup, and the fixes. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Every game's Prepare options are first guesses.
+
+**Build**
+1. **The pop-up, version 2:** How to play, Controls, a demo of the real game played by a bot (using the current Prepare), bars that show Prepare's changes in green, per-hiker values, and Prepare slots filled from a Zelda-style pop-up inventory. Nothing is spent until Start; SKIP IT rows. The testing tab shows Prepare too, with a Packs setting.
+2. **Every game** exports its How to play, controls, chips, bars, Prepare rows and demo bot (`20`, section 7), and takes the final params (the tier's numbers plus every effect).
+3. **Raccoon Shuffle:** much harder (more bins, one empty, faster far swaps, fake-outs, double swaps, a shorter show, night from Tier III); the cards use the new green icons at (4, 1).
+4. **Bearrels is removed.** Its bear joins Dodge as **Bear with a Gun** (Aimed Shot, Snipe, Bear Traps, Rapid Fire, and two of Claude's ideas); Bear Country plays it at Tier III.
+5. **Ants** join Dodge (Marching Lines, Ant Mill, Fire Ants, Ant Hill, and two of Claude's ideas).
+6. **Camp Cleanup** (Movement and dodging): the party as one snake on a grid, picking up trash in their colors. It replaces Ants Are Marching.
+7. **Ridgeline** gets drops that drain twice as fast, knife edges, bigger jogs, scree and wind gusts.
+8. **Rock Climb:** grabs queue and happen when the hand passes in reach; a floatier jump.
+
+**Tests:** as in `20`, section 8, `21`, section 9, and the new Raccoon Shuffle lines in `18`, section 9.
 
 ### Phase 10.8, next steps (outline only)
 

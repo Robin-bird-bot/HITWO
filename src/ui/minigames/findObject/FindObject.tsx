@@ -40,6 +40,7 @@ import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
 import ui from '../gpsUi.module.css';
 import styles from './FindObject.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const F = BALANCE.minigames.findObject;
 const snack = (name: string) => asset(`minigames/find-object/snacks/${name}.png`);
@@ -72,7 +73,11 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
         mode: (MODES as readonly string[]).includes(modeSetting) ? (modeSetting as Mode) : 'auto',
         rounds: numberOr(settings, 'rounds'),
         secPerTarget: numberOr(settings, 'secPerTarget'),
-        extraSecPerRound: numberOr(settings, 'extraSec'),
+        extraSecPerRound:
+          (typeof settings.extraSec === 'number'
+            ? settings.extraSec
+            : F.tiers[tierOf(settings)].extraSecPerRound) + prepNumber(settings, 'prep.extraSec'),
+        fewer: prepNumber(settings, 'prep.fewer'),
       },
       hikers.map((h) => h.id),
       seed,

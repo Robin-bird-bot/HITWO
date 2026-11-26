@@ -1,25 +1,46 @@
 /**
  * A challenge played as a minigame (docs/design/10-minigames.md, "The
- * pieces"): the pop-up, with the upright party GPS looping a preview; Start
- * turns the GPS sideways and zooms it in, and the game plays on its screen;
- * Continue on the results card turns it back, and the pop-up shows how it went.
+ * pieces"; 20-challenge-popup.md): the pop-up, with the upright party GPS
+ * playing a demo; Start turns the GPS sideways and zooms it in, and the game
+ * plays on its screen; Continue on the results card turns it back, and the
+ * pop-up shows how it went.
+ *
+ * - **The run's seed** is picked when the pop-up opens, so its random
+ *   version (night, fog) is known and pinned: the pop-up, the demo and the
+ *   game all show the same one.
+ * - **Prepare:** the fills live here. The demo and the game get the
+ *   settings with Prepare on top. Start spends what's in the slots (never
+ *   in test mode); a filled SKIP IT passes everyone without playing.
  *
  * In test mode (the Minigame testing tab) the pop-up then offers Back to
- * testing and Play again, a Style button on the GPS (and the S key) switches
- * the art style mid-game, and nothing is saved anywhere but the tab's own
+ * testing and Play again, and nothing is saved anywhere but the tab's own
  * settings: the flow never touches the game store.
  */
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { BALANCE } from '../../config/balance';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
 import { MINIGAME_BY_ID } from '../../minigames/catalog';
+import { passFailResult } from '../../minigames/lineup';
+import { POPUPS } from '../../minigames/popups';
+import {
+  applyPrepare,
+  effects,
+  emptySlot,
+  fillSlot,
+  rowsFor,
+  slotsFor,
+  spend,
+  type Fills,
+  type Packs,
+  type Spent,
+} from '../../minigames/prepare';
 import type { MinigameHiker, MinigameResult, MinigameSettings } from '../../minigames/types';
 import { useStage } from '../stage/StageContext';
 import { ChallengePopup } from './ChallengePopup';
-import { gpsTurned, styleButtonSpot, type Rect } from './gpsLayout';
+import { DemoRunner } from './DemoRunner';
+import { gpsTurned, type Rect } from './gpsLayout';
 import { PartyGps } from './PartyGps';
 import { PlayStage } from './PlayStage';
-import { PREVIEWS } from './runners';
 import styles from './MinigameFlow.module.css';
 
 const G = BALANCE.minigames.gps;
@@ -49,7 +70,7 @@ export function MinigameFlow({
   testMode = false,
   onBack,
   onFinish,
-  onSettingsChange,
+  onSpend,
 }: {
   challenge: MinigameChallenge;
   hikers: readonly MinigameHiker[];
@@ -59,8 +80,8 @@ export function MinigameFlow({
   onBack?(): void;
   /** A real challenge: Continue with the result (a later step). */
   onFinish?(result: MinigameResult): void;
-  /** Test mode: the Style button or the S key changed the art style. */
-  onSettingsChange?(next: MinigameSettings): void;
+  /** A real challenge: what Start took from whom, and the packs after (a later step applies them). */
+  onSpend?(spent: readonly Spent[], packs: Packs): void;
 }) {
   const fit = useStage();
   const layout = gpsTurned(fit.scale < G.phoneBelowScale);
@@ -69,6 +90,7 @@ export function MinigameFlow({
   const [result, setResult] = useState<MinigameResult | undefined>(undefined);
   const [seed, setSeed] = useState(newSeed);
   const [slot, setSlot] = useState<Rect | null>(null);
+  const [fills, setFills] = useState<Fills>({});
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), []);
   const later = (ms: number, fn: () => void) => {
@@ -79,14 +101,50 @@ export function MinigameFlow({
     if (el) setSlot(boxInFlow(el));
   }, []);
 
-  const Preview = PREVIEWS[challenge.minigame];
   const info = MINIGAME_BY_ID.get(challenge.minigame);
-  const styleSetting = info?.settings.find((s) => s.kind === 'style');
+  const popup = POPUPS[challenge.minigame];
+  const ids = hikers.map((h) => h.id);
+  // The settings: the tab's (or the challenge's), the challenge's tier, and this run's version.
+  const base = useMemo(() => {
+    const s: MinigameSettings = {
+      ...settings,
+      ...(challenge.settings ?? {}),
+      tier: challenge.tier,
+    };
+    return { ...s, ...(popup?.version?.(s, seed) ?? {}) };
+  }, [settings, challenge, popup, seed]);
+  const idKey = ids.join(',');
+  const slots = useMemo(
+    () =>
+      slotsFor(
+        rowsFor([...(popup?.prepare(base) ?? []), ...(challenge.prepareRows ?? [])], base),
+        idKey.split(','),
+      ),
+    [popup, base, challenge, idKey],
+  );
+
+  const packs: Packs = useMemo(
+    () =>
+      Object.fromEntries(
+        hikers.map((h) => [h.id, { resources: h.pack ?? {}, items: h.items ?? [] }]),
+      ),
+    [hikers],
+  );
+  const prepared = useMemo(() => applyPrepare(base, slots, fills), [base, slots, fills]);
+  const skip = effects(slots, fills).skip;
 
   const start = () => {
     if (stage !== 'popup') return;
+    if (!testMode) {
+      const out = spend(packs, slots, fills);
+      onSpend?.(out.spent, out.packs);
+    }
+    if (skip) {
+      // SKIP IT: everyone passes without playing.
+      setResult(passFailResult(ids, () => true));
+      return;
+    }
     setResult(undefined);
-    setSeed(newSeed());
     setMoved(true);
     setStage('turning');
     later(G.turnMs, () => setStage('playing'));
@@ -94,50 +152,44 @@ export function MinigameFlow({
   const done = (r: MinigameResult) => {
     setResult(r);
     setStage('returning');
-    later(G.returnMs, () => setStage('popup'));
+    later(G.returnMs, () => {
+      setStage('popup');
+      // The next play is a new run: a new seed (and version).
+      setSeed(newSeed());
+    });
+  };
+  const playAgain = () => {
+    setResult(undefined);
+    if (skip) return;
+    start();
   };
 
-  /** Test mode: the next art style, redrawn in place and remembered. */
-  const cycleStyle = useCallback(() => {
-    if (!styleSetting || styleSetting.kind !== 'style') return;
-    const ids = styleSetting.options.map((o) => o.id);
-    const now = typeof settings[styleSetting.id] === 'string' ? settings[styleSetting.id] : '';
-    const next = ids[(ids.indexOf(now as string) + 1) % ids.length] ?? styleSetting.default;
-    onSettingsChange?.({ ...settings, [styleSetting.id]: next });
-  }, [styleSetting, settings, onSettingsChange]);
-  const canSwitch = testMode && stage === 'playing' && !!styleSetting && !!onSettingsChange;
-
-  // The S key, while playing in test mode.
-  useEffect(() => {
-    if (!canSwitch) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() !== 's' || e.metaKey || e.ctrlKey || e.altKey) return;
-      e.preventDefault();
-      cycleStyle();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [canSwitch, cycleStyle]);
-
-  const styleName =
-    styleSetting?.kind === 'style'
-      ? styleSetting.options.find((o) => o.id === settings[styleSetting.id])?.label
-      : undefined;
-  const spot = styleButtonSpot(layout);
   const turned = stage === 'turning' || stage === 'playing';
-
   return (
     <div className={styles.flow} data-flow-root="" style={{ '--dim': G.dim } as CSSProperties}>
       <ChallengePopup
         challenge={challenge}
+        info={info}
+        popup={popup}
+        base={base}
+        settings={prepared}
         hikers={hikers}
+        slots={slots}
+        fills={fills}
+        packs={packs}
+        onFill={(key, tile) => {
+          const s = slots.find((x) => x.key === key);
+          if (s) setFills((f) => fillSlot(f, s, tile));
+        }}
+        onEmpty={(key) => setFills((f) => emptySlot(f, key))}
+        skip={skip}
         testMode={testMode}
         result={stage === 'popup' ? result : undefined}
         dimmed={stage !== 'popup'}
         gpsSlotRef={slotRef}
         onStart={start}
         {...(onBack ? { onBack } : {})}
-        onPlayAgain={start}
+        onPlayAgain={playAgain}
         onContinue={() => result && onFinish?.(result)}
       />
       {slot && (
@@ -145,37 +197,31 @@ export function MinigameFlow({
           turned={turned}
           slot={slot}
           layout={layout}
-          mode={stage === 'playing' ? 'game' : 'preview'}
+          mode={stage === 'playing' ? 'game' : 'demo'}
           showContent={stage === 'popup' || stage === 'playing'}
           moved={moved}
           playing={stage === 'playing'}
+          skipped={skip}
           content={
             stage === 'playing' && info ? (
               <PlayStage
                 key={seed}
                 info={info}
-                settings={settings}
+                settings={prepared}
                 hikers={hikers}
                 seed={seed}
                 onDone={done}
               />
-            ) : Preview ? (
-              <Preview settings={settings} hikers={hikers} />
-            ) : null
+            ) : (
+              <DemoRunner
+                gameId={challenge.minigame}
+                settings={prepared}
+                hikers={hikers}
+                still={skip}
+              />
+            )
           }
         />
-      )}
-      {canSwitch && (
-        <button
-          type="button"
-          className={styles.styleButton}
-          style={{ left: spot.left, top: spot.top }}
-          onClick={cycleStyle}
-          aria-label={`Art style: ${styleName ?? ''}. Press to change (S).`}
-        >
-          <span className={styles.styleLabel}>STYLE · S</span>
-          <span className={styles.styleName}>{styleName}</span>
-        </button>
       )}
     </div>
   );

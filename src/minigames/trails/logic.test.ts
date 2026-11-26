@@ -17,8 +17,19 @@ import {
   TRAIL_TYPES,
   widthFor,
   type TrailType,
+  widthAt,
 } from './course';
-import { aim, checkpoints, isOff, newTrails, result, tick, type TrailsState } from './logic';
+import {
+  aim,
+  checkpoints,
+  isOff,
+  newTrails,
+  onScree,
+  result,
+  steer,
+  tick,
+  type TrailsState,
+} from './logic';
 
 const T = BALANCE.minigames.trails;
 const Q = BALANCE.minigames.quick;
@@ -52,13 +63,15 @@ describe('Trails: the course', () => {
           expect(c.width).toBeCloseTo(widthFor(tier, type));
           for (let i = 1; i < c.xs.length; i++) {
             const slope = Math.abs(c.xs[i]! - c.xs[i - 1]!) / STEP;
-            expect(slope * scroll).toBeLessThanOrEqual(T.fairShare * T.topSpeed + 1e-6);
+            const share = type === 'ridgeline' ? T.ridge.fairShare : T.fairShare;
+            expect(slope * scroll).toBeLessThanOrEqual(share * T.topSpeed + 1e-6);
             expect(c.xs[i]! - c.width / 2).toBeGreaterThanOrEqual(0);
             expect(c.xs[i]! + c.width / 2).toBeLessThanOrEqual(320);
           }
         }
       }
       expect(maxSlope(scroll) * scroll).toBeCloseTo(T.fairShare * T.topSpeed);
+      expect(maxSlope(scroll, 'ridgeline') * scroll).toBeCloseTo(T.ridge.fairShare * T.topSpeed);
     },
   );
 
@@ -147,5 +160,81 @@ describe('Trails: play', () => {
     const r = result(s);
     expect(r.safe).toEqual([]);
     expect(r.passing?.stays).toBe(true);
+  });
+});
+
+describe('Trails: Ridgeline (revised Nov 26)', () => {
+  it('narrower, with knife edges that pinch it and scree patches on it', () => {
+    const c = makeCourse(seedRng(5), 3, 'ridgeline', 2100, { section: 700 });
+    expect(c.width).toBeCloseTo(
+      T.tiers[3].width * T.ridge.knifeShare === 0 ? 0 : T.tiers[3].width * T.ridgeNarrow,
+    );
+    expect(c.knives.length).toBeGreaterThan(0);
+    const k = c.knives[0]!;
+    expect(widthAt(c, (k.from + k.to) / 2)).toBeCloseTo(c.width * T.ridge.knifeShare);
+    expect(widthAt(c, k.from - 20)).toBe(c.width);
+    expect(c.scree.length).toBeGreaterThanOrEqual(T.ridge.tiers[3].scree[0] * 3);
+    // Switched off, they're gone.
+    const plain = makeCourse(seedRng(5), 3, 'ridgeline', 2100, {
+      section: 700,
+      knives: false,
+      scree: false,
+    });
+    expect(plain.knives).toEqual([]);
+    expect(plain.scree).toEqual([]);
+    // Other trails have none.
+    expect(makeCourse(seedRng(5), 3, 'forest', 2100).knives).toEqual([]);
+  });
+
+  it('off the ridge drains the bar twice as fast', () => {
+    const drained = (type: TrailType) => {
+      let s = newTrails({ tier: 2, type, gusts: false }, ['finn'], 3);
+      s = { ...s, x: 300, target: 300 };
+      for (let k = 0; k < 60; k++) s = tick(aim(s, 300), 1 / 120);
+      return T.tiers[2].barSec - s.bars.finn!;
+    };
+    expect(drained('ridgeline') / drained('forest')).toBeCloseTo(T.ridge.drain, 1);
+  });
+
+  it('gusts warn first, then push the hiker sideways', () => {
+    let s = newTrails({ tier: 5, type: 'ridgeline', scree: false, knives: false }, ['finn'], 9);
+    for (let k = 0; k < 120 * 10 && !s.gust; k++) s = tick(s, 1 / 120);
+    expect(s.gust).not.toBeNull();
+    const g = s.gust!;
+    expect(g.pushAt - g.warnAt).toBeCloseTo(T.ridge.gustWarnSec);
+    // During the warning, nothing pushes: a hiker standing still stays put.
+    const still = { ...s, vx: 0, steer: 0 as const, target: null };
+    const warned = tick(still, 0.1);
+    expect(warned.x).toBeCloseTo(still.x, 5);
+    // Then it pushes.
+    let pushed: TrailsState = { ...still, time: g.pushAt + 0.01 };
+    const x0 = pushed.x;
+    pushed = tick(pushed, 0.2);
+    expect(Math.sign(pushed.x - x0)).toBe(g.dir);
+    // Gusts can be switched off.
+    let calm = newTrails({ tier: 5, type: 'ridgeline', gusts: false }, ['finn'], 9);
+    for (let k = 0; k < 120 * 10; k++) calm = tick(calm, 1 / 120);
+    expect(calm.gust).toBeNull();
+  });
+
+  it('on scree, steering is half as strong and the hiker keeps sliding', () => {
+    const base = newTrails({ tier: 3, type: 'ridgeline', gusts: false }, ['finn'], 5);
+    const patch = base.course.scree[0]!;
+    const on: TrailsState = {
+      ...base,
+      d: (patch.from + patch.to) / 2,
+      x: middleAt(base.course, (patch.from + patch.to) / 2),
+    };
+    const off: TrailsState = { ...on, d: patch.from - 30 };
+    expect(onScree(on)).toBe(true);
+    expect(onScree(off)).toBe(false);
+    const dt = 0.02;
+    const speedOn = tick(steer(on, 1), dt).vx;
+    const speedOff = tick(steer(off, 1), dt).vx;
+    expect(speedOn / speedOff).toBeCloseTo(T.ridge.screeSteer, 2);
+    // Letting go: it slows three times slower.
+    const slowOn = tick(steer({ ...on, vx: 100 }, 0), dt).vx;
+    const slowOff = tick(steer({ ...off, vx: 100 }, 0), dt).vx;
+    expect((100 - slowOff) / (100 - slowOn)).toBeCloseTo(T.ridge.screeSlide, 1);
   });
 });

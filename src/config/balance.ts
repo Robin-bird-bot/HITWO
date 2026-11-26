@@ -1062,7 +1062,7 @@ export const BALANCE = {
 
   /**
    * Minigames (Phase 10.8, docs/design/10-minigames.md): the party GPS and
-   * Bearrels. TODO(wyatt): every number here is a first guess.
+   * every game. TODO(wyatt): every number here is a first guess.
    */
   minigames: {
     gps: {
@@ -1093,49 +1093,36 @@ export const BALANCE = {
        */
       scanlines: { dark: 0.08, everyPx: 3, driftPxPerSec: 10, bandShare: 0.15, bandEveryMs: 6000 },
     },
-    bearrels: {
-      barrels: { min: 3, max: 6, default: 3 },
-      rounds: { min: 1, max: 5, default: 3 },
-      shots: { min: 1, max: 2, default: 1 },
-      hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
-      /** Silhouette style: the barrel row (its scene units, 1280 × 720 inside the 4:3 view). */
-      rowX: [150, 1130] as const,
-      barrelTop: 418,
-      maxBarrelWidth: 150,
-      /** Barrel width = min(max, 980 ÷ (barrels − 1) × this). */
-      widthShare: 0.7,
-      heightRatio: 1.06,
-      /** Hikers behind a barrel: their scale alone, two, and three or four. */
-      hikerScale: { one: 1.05, two: 0.8, more: 0.6 },
-      hikerSpacing: 76,
-      headAbove: 56,
-      timing: {
-        slideMs: 250,
-        bearUpMs: 450,
-        sweepMs: 1400,
-        holdMs: 300,
-        /** After a shot, its effects play this long before the next shot or the duck. */
-        fireMs: 450,
-        flashInMs: 60,
-        flashOutMs: 400,
-        secondShotMs: 600,
-        duckMs: 500,
-        betweenRoundsMs: 700,
-        /** The muzzle flash shows this long (Nov 24 follow-up). */
-        muzzleMs: 120,
-      },
-      /**
-       * Drag-and-drop (Nov 24 follow-up): a press becomes a drag after moving
-       * this far (screen px); a barrel's drop area reaches this far past it
-       * (game screen units, 1280 × 960); a drop on nothing flies back this fast.
-       * A drop on a barrel slides into place over timing.slideMs.
-       */
-      drag: { startPx: 6, hitMargin: 12, flyBackMs: 200 },
-      /** The red flash's strength, and with reduced motion. */
-      flash: 0.4,
-      softFlash: 0.2,
-      /** A hit hiker tips over this far (degrees). */
-      tipDegrees: -24,
+    /** Every game's Hikers setting in the testing tab: how many, and who by default. */
+    hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
+    /** The line-up: a press becomes a drag after moving this far (screen px). */
+    lineUp: { dragStartPx: 6 },
+    /**
+     * The challenge pop-up's Prepare and bars (docs/design/20-challenge-popup.md).
+     * - Level bars have this many segments; the tier sets the start at tier +
+     *   this (Tier I is 4/10); each SLOWER slot is one level, this share
+     *   slower. TODO(wyatt): the design gives no mapping; these are my guesses.
+     * - Time bars: a segment per [5 s], or [10 s] for games over [60 s].
+     * - Slots: [52] across, ghost icons at [26%] cycling every [1.3 s].
+     * - The demo: the result shows [2.4 s] before the next round; long games
+     *   are cut at [30 s]; the bot goes wrong about this often (its own
+     *   games say how).
+     * - The testing tab's Packs: Made-up gives each hiker this many kinds of
+     *   resources (1 to 3 of each) and this many items; Lots gives this many
+     *   of every resource and one of every Prepare item. TODO(wyatt).
+     */
+    prepare: {
+      levels: 10,
+      levelFromTier: 3,
+      levelStep: 0.1,
+      segSec: 5,
+      longSegSec: 10,
+      longGameSec: 60,
+      slotPx: 52,
+      ghostOpacity: 0.26,
+      ghostCycleSec: 1.3,
+      demo: { resultSec: 2.4, cutSec: 30, mistake: [0.15, 0.25] as const },
+      packs: { madeUp: { kinds: [3, 6] as const, items: [1, 3] as const }, lots: 6 },
     },
 
     /*
@@ -2187,15 +2174,15 @@ export const BALANCE = {
      * down; one section per hiker, each ending at a checkpoint. By tier:
      * the scroll speed (units a second), the trail's width, a section's
      * length, each hiker's off-trail bar (seconds), Switchbacks' corner
-     * spacing and Ridgeline's jog size (from–to).
+     * spacing (Ridgeline's numbers are in `ridge`, revised Nov 26).
      */
     trails: {
       tiers: {
-        1: { scroll: 40, width: 56, section: 500, barSec: 3, corner: 150, jog: [16, 24] },
-        2: { scroll: 46, width: 48, section: 600, barSec: 2.5, corner: 130, jog: [20, 28] },
-        3: { scroll: 52, width: 40, section: 700, barSec: 2, corner: 120, jog: [24, 32] },
-        4: { scroll: 58, width: 34, section: 800, barSec: 1.75, corner: 110, jog: [28, 36] },
-        5: { scroll: 64, width: 30, section: 900, barSec: 1.5, corner: 100, jog: [32, 40] },
+        1: { scroll: 40, width: 56, section: 500, barSec: 3, corner: 150 },
+        2: { scroll: 46, width: 48, section: 600, barSec: 2.5, corner: 130 },
+        3: { scroll: 52, width: 40, section: 700, barSec: 2, corner: 120 },
+        4: { scroll: 58, width: 34, section: 800, barSec: 1.75, corner: 110 },
+        5: { scroll: 64, width: 30, section: 900, barSec: 1.5, corner: 100 },
       } as Readonly<
         Record<
           MgTier,
@@ -2205,7 +2192,6 @@ export const BALANCE = {
             section: number;
             barSec: number;
             corner: number;
-            jog: readonly [number, number];
           }
         >
       >,
@@ -2216,9 +2202,46 @@ export const BALANCE = {
       accelSec: 0.1,
       /** The trail never moves sideways faster than this share of the hiker's top speed. */
       fairShare: 0.75,
-      /** By type: Forest Path is this much wider, Ridgeline this much narrower. */
+      /** By type: Forest Path is this much wider, Ridgeline this much narrower (Nov 26: was 0.75). */
       forestWide: 1.15,
-      ridgeNarrow: 0.75,
+      ridgeNarrow: 0.6,
+      /**
+       * Ridgeline, revised Nov 26 (a knife-edge ridge with wind): off the
+       * ridge is a sheer drop that drains the bar this many times as fast;
+       * a crumbly lip every so often along both edges; knife edges every
+       * so often (units, from–to), this long, pinched to this share; jogs
+       * this far to the side, with the slope cap at this share of top speed;
+       * scree patches this long, where steering is this strong and momentum
+       * dies this many times slower; a gust warns this long, then pushes for
+       * this long (from–to). By tier: a gust every (seconds, from–to), its
+       * push (units a second), and scree patches per section (from–to).
+       */
+      ridge: {
+        drain: 2,
+        lipEvery: 8,
+        knifeEvery: [250, 400] as const,
+        knifeLength: [60, 100] as const,
+        knifeShare: 0.6,
+        jog: [40, 70] as const,
+        fairShare: 0.9,
+        screeLength: [40, 70] as const,
+        screeSteer: 0.5,
+        screeSlide: 3,
+        gustWarnSec: 0.8,
+        gustSec: [1.0, 1.5] as const,
+        tiers: {
+          1: { gustEvery: [6, 8], push: 35, scree: [0, 0] },
+          2: { gustEvery: [5, 7], push: 45, scree: [1, 1] },
+          3: { gustEvery: [4, 6], push: 55, scree: [1, 2] },
+          4: { gustEvery: [3, 5], push: 60, scree: [2, 2] },
+          5: { gustEvery: [2.5, 4], push: 65, scree: [2, 3] },
+        } as Readonly<
+          Record<
+            MgTier,
+            { gustEvery: readonly [number, number]; push: number; scree: readonly [number, number] }
+          >
+        >,
+      },
       /**
        * The course (my guesses): a straight start this long; Forest Path and
        * Riverbank bend this far either side; Ridgeline jogs every so often
@@ -2328,7 +2351,14 @@ export const BALANCE = {
        * least this far from flat (degrees); the climber's hand sits at this
        * scene y.
        */
-      jumpSec: 0.5,
+      /**
+       * The grab fix (Nov 26): a jump takes this long (easing out), then the
+       * hand hangs at the end this long and can still grab; a tap counts for
+       * a hold within this many units of its middle.
+       */
+      jumpSec: 0.9,
+      hangSec: 0.25,
+      tapTolerance: 16,
       slideSec: 0.5,
       wallX: [24, 296] as const,
       screen: 170,
@@ -2338,18 +2368,117 @@ export const BALANCE = {
     },
 
     /**
+     * Camp Cleanup (Nov 26; it replaces Ants Are Marching): the party is one
+     * snake on a grid, picking up trash in their colors. By tier: the time,
+     * the bags each hiker needs, the speed (cells a second), the bags lost in
+     * a crash (from–to), and obstacles. TODO(wyatt): every number is a first guess.
+     */
+    campCleanup: {
+      tiers: {
+        1: { timeSec: 60, quota: 3, speed: 5, crash: [2, 3], obstacles: 0 },
+        2: { timeSec: 60, quota: 4, speed: 6, crash: [2, 4], obstacles: 0 },
+        3: { timeSec: 70, quota: 4, speed: 7, crash: [3, 5], obstacles: 3 },
+        4: { timeSec: 75, quota: 5, speed: 8, crash: [3, 6], obstacles: 5 },
+        5: { timeSec: 80, quota: 5, speed: 9, crash: [4, 7], obstacles: 7 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            timeSec: number;
+            quota: number;
+            speed: number;
+            crash: readonly [number, number];
+            obstacles: number;
+          }
+        >
+      >,
+      /** The grid (cells across and down), a cell's size (units), and its top-left corner on the screen. */
+      cols: 25,
+      rows: 14,
+      cell: 12,
+      at: { x: 10, y: 28 },
+      /** Up to this many turns queue up. New trash lands at least this many cells from the head. */
+      queue: 2,
+      trashAway: 3,
+      /** A crash: the snake stops this long, then waits this long for a direction. */
+      crashSec: 0.6,
+      waitSec: 1.5,
+      /** Obstacles stay this many cells from the start. With 5 or 6 hikers the quota drops by this much. */
+      startClear: 3,
+      bigParty: 5,
+      bigPartyLess: 1,
+    },
+
+    /**
      * Raccoon Shuffle (the challenge version): watch which bins hold
      * raccoons, follow the shuffle, pick an empty bin. By tier: bins, empty
      * bins, swaps, the time per swap, the chance two pairs swap at once, and
      * the chance of night.
      */
     raccoonShuffle: {
+      /**
+       * Revised Nov 26 (it was far too easy). By tier: bins, empty bins,
+       * swaps, the first and last swap's time (each shuffle speeds up evenly
+       * between them), the share of far swaps (not neighbors), the chance a
+       * step is a fake-out, the chance of two swaps at once, the show's
+       * length, and the chance of night.
+       */
       tiers: {
-        1: { bins: 3, empty: 1, swaps: 4, swapSec: 0.7, double: 0, night: 0 },
-        2: { bins: 4, empty: 1, swaps: 6, swapSec: 0.55, double: 0, night: 0 },
-        3: { bins: 5, empty: 2, swaps: 7, swapSec: 0.45, double: 0, night: 0 },
-        4: { bins: 7, empty: 2, swaps: 8, swapSec: 0.4, double: 0.3, night: 0.25 },
-        5: { bins: 8, empty: 2, swaps: 10, swapSec: 0.35, double: 0.5, night: 0.25 },
+        1: {
+          bins: 4,
+          empty: 1,
+          swaps: 7,
+          swapSec: [0.5, 0.35],
+          far: 0.3,
+          fake: 0,
+          double: 0,
+          showSec: 2.2,
+          night: 0,
+        },
+        2: {
+          bins: 5,
+          empty: 1,
+          swaps: 9,
+          swapSec: [0.45, 0.3],
+          far: 0.45,
+          fake: 0.15,
+          double: 0.2,
+          showSec: 2.0,
+          night: 0,
+        },
+        3: {
+          bins: 6,
+          empty: 1,
+          swaps: 11,
+          swapSec: [0.4, 0.26],
+          far: 0.6,
+          fake: 0.2,
+          double: 0.35,
+          showSec: 1.8,
+          night: 0.2,
+        },
+        4: {
+          bins: 7,
+          empty: 1,
+          swaps: 13,
+          swapSec: [0.36, 0.22],
+          far: 0.7,
+          fake: 0.25,
+          double: 0.5,
+          showSec: 1.6,
+          night: 0.3,
+        },
+        5: {
+          bins: 8,
+          empty: 1,
+          swaps: 15,
+          swapSec: [0.32, 0.2],
+          far: 0.8,
+          fake: 0.3,
+          double: 0.6,
+          showSec: 1.5,
+          night: 0.35,
+        },
       } as Readonly<
         Record<
           MgTier,
@@ -2357,12 +2486,18 @@ export const BALANCE = {
             bins: number;
             empty: number;
             swaps: number;
-            swapSec: number;
+            swapSec: readonly [number, number];
+            far: number;
+            fake: number;
             double: number;
+            showSec: number;
             night: number;
           }
         >
       >,
+      /** Far swaps arc this much higher, to pass over the bins between. A fake-out crosses this share of the way before going back (my guess). */
+      farArc: 10,
+      fakeReach: 0.35,
       /**
        * The bins stand on this line (scene y). Their middles are this far
        * apart at most, and the row spans at most this much (so 7 and 8 bins
@@ -2373,8 +2508,7 @@ export const BALANCE = {
       binSpan: 260,
       /** A swapped bin lifts this high as it arcs over (my guess). */
       arc: 26,
-      /** The show (lids open), the picked bin open on its own, then every bin open (seconds). */
-      showSec: 2.5,
+      /** The picked bin open on its own, then every bin open (seconds). */
       pickedSec: 0.8,
       afterSec: 1,
       /** A raccoon with an energy card takes this much energy. */
@@ -2596,18 +2730,79 @@ export const BALANCE = {
        */
       roster: {
         1: { bees: 0, squirrels: 0 },
-        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1 },
-        3: { bees: 2, squirrels: 2, bobcat: 2, bear: 2, swordBear: 2, stampede: 2, monster: 3 },
-        4: { bees: 3, squirrels: 3, bobcat: 3, bear: 3, swordBear: 3, stampede: 3, monster: 3 },
-        5: { bees: 3, squirrels: 3, bobcat: 3, bear: 3, swordBear: 3, stampede: 3, monster: 3 },
+        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1 },
+        3: {
+          bees: 2,
+          squirrels: 2,
+          bobcat: 2,
+          bear: 2,
+          swordBear: 2,
+          ants: 2,
+          gunBear: 2,
+          stampede: 2,
+          monster: 3,
+        },
+        4: {
+          bees: 3,
+          squirrels: 3,
+          bobcat: 3,
+          bear: 3,
+          swordBear: 3,
+          ants: 3,
+          gunBear: 3,
+          stampede: 3,
+          monster: 3,
+        },
+        5: {
+          bees: 3,
+          squirrels: 3,
+          bobcat: 3,
+          bear: 3,
+          swordBear: 3,
+          ants: 3,
+          gunBear: 3,
+          stampede: 3,
+          monster: 3,
+        },
       } as Readonly<Record<MgTier, Readonly<Partial<Record<string, 0 | 1 | 2 | 3>>>>>,
-      /** How common each animal is when one is picked at random for a tier (not the Woods Monster). */
+      /**
+       * How common each animal is when one is picked at random for a tier
+       * (not the Woods Monster). Ants and Bear with a Gun (Nov 26):
+       * TODO(wyatt): [25] at Tier II, then [20] each.
+       */
       weights: {
         1: { bees: 60, squirrels: 40 },
-        2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25 },
-        3: { bees: 5, squirrels: 10, bobcat: 25, bear: 25, swordBear: 20, stampede: 15 },
-        4: { bees: 5, squirrels: 10, bobcat: 20, bear: 25, swordBear: 20, stampede: 20 },
-        5: { bees: 5, squirrels: 10, bobcat: 20, bear: 25, swordBear: 20, stampede: 20 },
+        2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
+        3: {
+          bees: 5,
+          squirrels: 10,
+          bobcat: 25,
+          bear: 25,
+          swordBear: 20,
+          stampede: 15,
+          ants: 20,
+          gunBear: 20,
+        },
+        4: {
+          bees: 5,
+          squirrels: 10,
+          bobcat: 20,
+          bear: 25,
+          swordBear: 20,
+          stampede: 20,
+          ants: 20,
+          gunBear: 20,
+        },
+        5: {
+          bees: 5,
+          squirrels: 10,
+          bobcat: 20,
+          bear: 25,
+          swordBear: 20,
+          stampede: 20,
+          ants: 20,
+          gunBear: 20,
+        },
       } as Readonly<Record<MgTier, Readonly<Partial<Record<string, number>>>>>,
       /** An overlapping attack starts this far into the current one (from, to). */
       overlapAfterSec: [0.3, 0.8] as const,
@@ -2645,9 +2840,20 @@ export const BALANCE = {
         squirrels: { box: [130, 120], at: [160, 136] },
         herd: { box: [160, 100], at: [160, 146] },
         monster: { box: [170, 110], at: [160, 141] },
+        /** Nov 26. TODO(wyatt): boxes [160 × 110] and [150 × 120]. */
+        gunBear: { box: [160, 110], at: [160, 142] },
+        ants: { box: [150, 120], at: [160, 136] },
       } as Readonly<
         Record<
-          'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'herd' | 'monster',
+          | 'bees'
+          | 'bear'
+          | 'swordBear'
+          | 'bobcat'
+          | 'squirrels'
+          | 'herd'
+          | 'monster'
+          | 'gunBear'
+          | 'ants',
           { box: readonly [number, number]; at: readonly [number, number] }
         >
       >,
@@ -2666,6 +2872,12 @@ export const BALANCE = {
         landingSwipe: 3,
         scurry: 2,
         darkness: 3,
+        snipe: 2,
+        ricochet: 2,
+        quickDraw: 3,
+        fireAnts: 2,
+        antHill: 2,
+        crumbRush: 3,
       } as Readonly<Partial<Record<string, 1 | 2 | 3>>>,
       /**
        * Wild Predator Stampede: this much longer than the tier's length by
@@ -3109,6 +3321,223 @@ export const BALANCE = {
       },
       /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },
+      /**
+       * Holes and the Ant Hill are walls: the sprite's middle keeps this far
+       * outside their circle. TODO(wyatt): my guess.
+       */
+      blockPad: 4,
+      /**
+       * Bear with a Gun (docs/design/21-minigames-dodge-camp.md, section 1).
+       * By level where it says. TODO(wyatt): every number here is a first
+       * guess from the design's [brackets]; the ones marked "my guess" are mine.
+       */
+      gun: {
+        /**
+         * Aimed Shot: the gun sits this far outside a wall (my guess); the aim
+         * line tracks the sprite this long, then locks and blinks this long;
+         * the shot's lane is this wide and crosses the box this fast, its
+         * trail staying this long. This many shots in a row, this long apart;
+         * at Level 3 every third is a double, two lanes this far apart.
+         */
+        aimed: {
+          out: 4,
+          trackSec: { 1: 0.5, 2: 0.4, 3: 0.32 } as Readonly<Record<1 | 2 | 3, number>>,
+          lockSec: 0.2,
+          laneWidth: 6,
+          crossSec: 0.06,
+          trailSec: 0.15,
+          shots: { 1: 3, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          gapSec: 0.25,
+          doubleFrom: 3,
+          doubleEvery: 3,
+          doubleApart: 14,
+        },
+        /**
+         * Snipe (Level 2 and up): the crosshair follows the sprite at this
+         * share of its top speed for this long, locks red this long, then
+         * blasts a circle this big for this many hearts (the blast shows this
+         * long: my guess). The hole it leaves is this big, stays this long and
+         * fades over this long. At most this many holes, covering at most this
+         * share of the box. Level 3: two snipes back to back.
+         */
+        snipe: {
+          follow: {
+            1: { share: 0.7, sec: 1.6 },
+            2: { share: 0.7, sec: 1.6 },
+            3: { share: 0.85, sec: 2.0 },
+          } as Readonly<Record<1 | 2 | 3, { share: number; sec: number }>>,
+          lockSec: 0.35,
+          blastRadius: 14,
+          blastSec: 0.15,
+          damage: 2,
+          holeRadius: 12,
+          holeSec: { 1: 5, 2: 5, 3: 7 } as Readonly<Record<1 | 2 | 3, number>>,
+          fadeSec: 2,
+          maxHoles: 3,
+          maxCover: 0.3,
+          twiceFrom: 3,
+        },
+        /**
+         * Bear Traps: this many traps, tossed this far apart in time (my
+         * guess), each landing spot's shadow showing this long first. Open
+         * this long (then fading this long: my guess); stepping on one costs
+         * a heart and slows the sprite to this share for this long, and the
+         * closed trap fades in this long. At most this many open; none lands
+         * this near the sprite (spots are picked this far from it: my guess)
+         * or on a hole. A trap hits as an ellipse this big (my guess), and
+         * they land at least this far apart (my guess).
+         */
+        traps: {
+          count: { 1: 2, 2: 3, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
+          tossGapSec: 0.15,
+          shadowSec: 0.6,
+          openSec: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          openFadeSec: 0.5,
+          slow: 0.5,
+          slowSec: 1.5,
+          closedFadeSec: 1,
+          maxOpen: 5,
+          away: 16,
+          pickAway: 28,
+          hit: [7, 4] as const,
+          apart: 22,
+        },
+        /**
+         * Rapid Fire: the gun's warning ("!" and the cone) lasts this long;
+         * then this many bullets fly out over this long, each within this many
+         * degrees of the cone's middle, at this speed. A bullet hits as a
+         * circle this big.
+         */
+        rapid: {
+          warnSec: 0.6,
+          bullets: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          sec: 1.2,
+          spreadDeg: 30,
+          speed: { 1: 200, 2: 230, 3: 260 } as Readonly<Record<1 | 2 | 3, number>>,
+          radius: 2,
+        },
+        /** Ricochet (Claude's idea, Level 2 and up): one slow shot whose path shows this long first, bouncing this many times. */
+        ricochet: {
+          speed: 150,
+          warnSec: 0.8,
+          bounces: { 1: 2, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          radius: 2,
+        },
+        /**
+         * Quick Draw (Claude's idea, Level 3): "!" over the portrait this
+         * long, then a band this thick across the sprite's row, then this long
+         * later one down its column. Each blast shows and hits this long (my
+         * guess). A band never covers more than 1 − this share of the box.
+         */
+        quickDraw: { warnSec: 0.6, band: 16, gapSec: 0.3, blastSec: 0.12, safeShare: 0.3 },
+      },
+      /**
+       * Ants (docs/design/21-minigames-dodge-camp.md, section 2). An ant
+       * hits as a circle this big; its two frames swap this often.
+       * TODO(wyatt): every number here is a first guess from the design's
+       * [brackets]; the ones marked "my guess" are mine.
+       */
+      ants: {
+        radius: 3,
+        frameSec: 0.12,
+        /**
+         * Marching Lines: this many ants a line on a grid this big, turning
+         * every so many cells, at this speed; this many lines, this long
+         * apart. After this long each heads out by the nearest wall. At
+         * Level 1 the lead shows its next turn this many cells ahead.
+         */
+        march: {
+          ants: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          grid: 7,
+          turnEvery: [3, 6] as const,
+          speed: { 1: 45, 2: 55, 3: 65 } as Readonly<Record<1 | 2 | 3, number>>,
+          lines: { 1: 1, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          apartSec: 0.5,
+          walkSec: 5,
+          hintUpTo: 1,
+          hintCells: 2,
+        },
+        /**
+         * Ant Mill: a ring of this many ants this big around a spot for this
+         * long, turning this fast; with a column of this many marching across
+         * elsewhere (at the marching speed: my guess), kept this far outside
+         * the ring (my guess). Level 2: the ring drifts toward the sprite this
+         * fast. Level 3: two rings, turning opposite ways.
+         */
+        mill: {
+          ring: { 1: 12, 2: 14, 3: 16 } as Readonly<Record<1 | 2 | 3, number>>,
+          radius: 22,
+          sec: 4,
+          turn: 1.2,
+          column: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          clear: 8,
+          driftFrom: 2,
+          drift: 10,
+          twoFrom: 3,
+        },
+        /**
+         * Fire Ants (Level 2 and up): this many walk in (over this long: my
+         * guess) to spots this far apart, wait this long, then all but one
+         * turn red and blink for this long before blowing up, each blast
+         * this big (shown this long: my guess). No blast reaches within this
+         * far of the safe ant, which starts at least this far from the sprite.
+         * Level 3: it walks this far (my guess) to a new spot during the warning.
+         */
+        fire: {
+          ants: { 1: 4, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          tierFive: 6,
+          walkSec: 0.6,
+          apart: 30,
+          stopSec: 0.6,
+          redSec: 1.2,
+          blast: 26,
+          boomSec: 0.3,
+          safe: 12,
+          fromSprite: 40,
+          moveFrom: 3,
+          move: [18, 28] as const,
+        },
+        /**
+         * Ant Hill (Level 2 and up): a crack this far from the sprite shows
+         * this long, the hill rises (this long: my guess) and stays up this
+         * long (longer at Tier V), solid as a circle this big. While up it
+         * fires an ant at the sprite this often, at this speed. Then it sinks
+         * (this long: my guess).
+         */
+        hill: {
+          away: 50,
+          crackSec: 0.6,
+          riseSec: 0.2,
+          upSec: { 1: 3, 2: 3, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
+          tierFiveSec: 5,
+          radius: 10,
+          everySec: { 1: 0.4, 2: 0.4, 3: 0.3 } as Readonly<Record<1 | 2 | 3, number>>,
+          speed: { 1: 70, 2: 70, 3: 80 } as Readonly<Record<1 | 2 | 3, number>>,
+          sinkSec: 0.3,
+        },
+        /** Leafcutter Parade (Claude's idea): a row of leaf carriers crosses at this speed with these gaps; a leaf hits as this box. */
+        parade: {
+          speed: 40,
+          gap: { 1: 18, 2: 15, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          leaf: [10, 8] as const,
+        },
+        /**
+         * Crumb Rush (Claude's idea, Level 3): this many crumbs (more at Tier
+         * V), each at least this far from the sprite and from each other (my
+         * guesses); then this many ants pour in from the walls over this long
+         * (my guess) at this speed, and stay this long once there (my guess).
+         */
+        crumbs: {
+          count: 2,
+          tierFive: 3,
+          away: 25,
+          apart: 40,
+          ants: 16,
+          pourSec: 1,
+          speed: 60,
+          staySec: 0.4,
+        },
+      },
     },
   },
 
