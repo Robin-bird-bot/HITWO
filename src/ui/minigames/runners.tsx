@@ -2,7 +2,7 @@
  * Each playable minigame's game and preview, by id (src/minigames/catalog.ts).
  *
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
- *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice,
+ *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Minefield,
  *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting, Camp Cleanup and
  *   the quick games)
  *   report how they ended; the play stage shows the shared results card.
@@ -32,7 +32,7 @@ import { FakeSigns } from './signsTrails/FakeSigns';
 import { RockClimb } from './signsTrails/RockClimb';
 import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
-import { ThinIce } from './thinIce/ThinIce';
+import { Minefield } from './minefield/Minefield';
 import { TrailMap } from './trailMap/TrailMap';
 import type { PuzzleRunProps } from './puzzleProps';
 import { RememberPath } from './rememberPath/RememberPath';
@@ -53,7 +53,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   trailMap: TrailMap,
   memory: MemoryPuzzle,
   picturePuzzle: PicturePuzzle,
-  thinIce: ThinIce,
+  minefield: Minefield,
   trailBlocks: TrailBlocks,
   sleepingBear: SleepingBear,
   whackoon: Whackoon,
@@ -100,8 +100,8 @@ function MemoryStill({ settings, hikers }: MinigamePreviewProps) {
 function PicturePuzzleStill({ settings, hikers }: MinigamePreviewProps) {
   return <PicturePuzzle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
-function ThinIceStill({ settings, hikers }: MinigamePreviewProps) {
-  return <ThinIce settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+function MinefieldStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Minefield settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 function TrailBlocksStill({ settings, hikers }: MinigamePreviewProps) {
   return <TrailBlocks settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
@@ -166,7 +166,7 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   trailMap: TrailMapStill,
   memory: MemoryStill,
   picturePuzzle: PicturePuzzleStill,
-  thinIce: ThinIceStill,
+  minefield: MinefieldStill,
   trailBlocks: TrailBlocksStill,
   sleepingBear: SleepingBearStill,
   whackoon: WhackoonStill,

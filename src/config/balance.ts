@@ -2753,8 +2753,8 @@ export const BALANCE = {
       thumbnailUpTo: 1,
     },
 
-    /** Thin Ice: Minesweeper on a frozen lake; the holes are mines. */
-    thinIce: {
+    /** Minefield, the Dog Waste Zone (23-minigames-final.md, section 6; it was Thin Ice until Nov 26): Minesweeper in a dog park; the piles are mines, and bags are flags. */
+    minefield: {
       tiers: {
         1: { cols: 8, rows: 6, holes: 4, timerSec: null },
         2: { cols: 9, rows: 7, holes: 6, timerSec: 180 },
@@ -2768,6 +2768,8 @@ export const BALANCE = {
       holesPerHiker: 2,
       /** A press held this long flags instead of checking. */
       longPressSec: 0.4,
+      /** Prepare (23-minigames-final.md, section 10): a SCANNER bags this many piles before the start. TODO(wyatt): [2]. */
+      scannerBags: 2,
     },
 
     /**

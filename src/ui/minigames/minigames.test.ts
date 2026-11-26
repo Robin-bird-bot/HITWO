@@ -19,7 +19,7 @@ import {
   PICTURE_PUZZLE,
   REMEMBER_PATH,
   SLEEPING_BEAR,
-  THIN_ICE,
+  MINEFIELD,
   TRAILDLE,
   TRAIL_BLOCKS,
   TRAIL_MAP,
@@ -175,7 +175,7 @@ describe('the minigame list', () => {
           ['Fake Trail Signs', 'ready'],
           ['Trail Map', 'ready'],
           ['Picture Puzzle', 'ready'],
-          ['Thin Ice', 'ready'],
+          ['Minefield', 'ready'],
         ],
       ],
       [
@@ -384,13 +384,13 @@ describe('the minigame list', () => {
     const grid = PICTURE_PUZZLE.settings.find((x) => x.id === 'grid');
     if (grid?.kind !== 'pick') throw new Error('Grid is a pick');
     expect(grid.options.map((o) => o.id)).toEqual(['auto', '4', '5', '6']);
-    expect(ids(THIN_ICE)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
-    expect(defaultSettings(THIN_ICE)).toMatchObject({
+    expect(ids(MINEFIELD)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
+    expect(defaultSettings(MINEFIELD)).toMatchObject({
       grid: 'auto',
       holesPerHiker: 2,
       timer: 'auto',
     });
-    expect(PICTURE_PUZZLE.lineUp && THIN_ICE.lineUp).toBe(true);
+    expect(PICTURE_PUZZLE.lineUp && MINEFIELD.lineUp).toBe(true);
     expect(TRAIL_MAP.lineUp || MEMORY.lineUp).toBeFalsy();
     // Off is kept where a setting can be off, and nowhere else.
     expect(cleanSettings(TRAIL_MAP, { time: 'off', grid: 'off' }, TEST_HIKERS)).toMatchObject({
@@ -410,10 +410,12 @@ describe('the minigame list', () => {
       missCost: 'auto',
     });
     expect(cleanSettings(TRAIL_MAP, { signs: 5 }, TEST_HIKERS).signs).toBe(3);
-    expect(cleanSettings(THIN_ICE, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject({
-      grid: '12x9',
-      holesPerHiker: 4,
-    });
+    expect(cleanSettings(MINEFIELD, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject(
+      {
+        grid: '12x9',
+        holesPerHiker: 4,
+      },
+    );
   });
 
   it('the puzzle games: Tier (I to V), Hikers, and their overrides, where Auto uses the tier', () => {

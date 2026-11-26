@@ -1,4 +1,4 @@
-/* Thin Ice (7-thin-ice.png), in scene units (320 × 240). */
+/* Minefield, the Dog Waste Zone (45-minefield.png; it was Thin Ice), in scene units (320 × 240). */
 
 .holes {
   position: absolute;
@@ -122,4 +122,12 @@
     animation-duration: 2s;
     animation-timing-function: steps(1);
   }
+}
+
+/* The picket fence around the field (fence.png, repeated). */
+.fence {
+  position: absolute;
+  background-repeat: repeat-x;
+  image-rendering: pixelated;
+  pointer-events: none;
 }

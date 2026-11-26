@@ -1,7 +1,7 @@
 /**
  * The pop-up content for Puzzle and logic, Memory and Search
  * (docs/design/20-challenge-popup.md, version 3, section 7): Traildle,
- * Find the Path, Trail Map, Picture Puzzle, Thin Ice, Fake Trail Signs,
+ * Find the Path, Trail Map, Picture Puzzle, Minefield, Fake Trail Signs,
  * Remember the Path, Memory Puzzle, Safari, Crossroads and Find the Object.
  */
 import { BALANCE } from '../../config/balance';
@@ -272,38 +272,41 @@ export const PICTURE_PUZZLE_POPUP: GamePopup = {
   ],
 };
 
-const TI = MG.thinIce;
-const thinIceTimer = (s: MinigameSettings): number | null =>
-  s.timer === 'off' ? null : typeof s.timer === 'number' ? s.timer : TI.tiers[tierIn(s)].timerSec;
+const MF = MG.minefield;
+const minefieldTimer = (s: MinigameSettings): number | null =>
+  s.timer === 'off' ? null : typeof s.timer === 'number' ? s.timer : MF.tiers[tierIn(s)].timerSec;
 
-export const THIN_ICE_POPUP: GamePopup = {
+/** Minefield, the Dog Waste Zone (23-minigames-final.md, section 10; it was Thin Ice). */
+export const MINEFIELD_POPUP: GamePopup = {
   howToPlay: () =>
     phrases(
-      'Holes hide under the ice. Check the safe squares: each number tells you how many holes touch it. The first check is always safe. **Step on a hole and the hiker at the front falls in.**',
+      'Dog Waste Zone! Mow the grass square by square: each number tells you how many piles touch it. Bag the piles you find. The first square is always safe. **Step in one and the hiker at the front is out.**',
     ),
   rules: (s) =>
     rulesOf(
-      line('Flag a square you think is a hole so it can’t be checked by mistake.'),
-      line('Clear every safe square to pass. Hikers who fell in fail.'),
-      thinIceTimer(s) !== null &&
+      line('Clear every safe square to pass.'),
+      minefieldTimer(s) !== null &&
         line('There’s a clock: when it runs out, everyone still in fails.', fromTier(2)),
     ),
   controls: [
-    { action: 'CHECK', inputs: [mouse('Click'), OR, finger('Tap')] },
-    { action: 'FLAG', inputs: [mouse('Right-click'), OR, ...key('F')] },
+    { action: 'MOW', inputs: [mouse('Click'), OR, finger('Tap')] },
+    {
+      action: 'BAG IT',
+      inputs: [mouse('Right-click'), OR, finger('Long-press'), OR, ...key('F')],
+    },
   ],
   chips: () => ['TAKE TURNS'],
   ifFail: [],
   bars(s) {
-    const holes = TI.tiers[tierIn(s)].holes;
-    const timer = thinIceTimer(s);
+    const piles = MF.tiers[tierIn(s)].holes;
+    const timer = minefieldTimer(s);
     return [
       countBar(
-        'holes',
-        'HOLES',
-        holes,
-        holes,
-        mostOver((x) => TI.tiers[x].holes),
+        'piles',
+        'PILES',
+        piles,
+        piles,
+        mostOver((x) => MF.tiers[x].holes),
       ),
       ...(timer
         ? [
@@ -312,7 +315,7 @@ export const THIN_ICE_POPUP: GamePopup = {
               'TIME',
               timer,
               timer,
-              mostOver((x) => TI.tiers[x].timerSec ?? 0),
+              mostOver((x) => MF.tiers[x].timerSec ?? 0),
             ),
           ]
         : []),
@@ -320,23 +323,23 @@ export const THIN_ICE_POPUP: GamePopup = {
   },
   options: () => [
     opt(
-      'testIce',
+      'pooBags',
       'blue',
-      res('stone'),
-      'TEST THE ICE',
-      'TESTED',
-      'marks one hole before you start',
-      { param: P_('testIce'), step: 1 },
+      item('pooBag'),
+      'POO BAGS',
+      'BAGGED',
+      'one pile is bagged before you start',
+      { param: P_('bags'), step: 1 },
       { max: 3 },
     ),
     opt(
-      'stick',
-      'green',
-      item('hikingStick'),
-      'HIKING STICK',
-      'STICK',
-      'each hiker’s first hole only cracks',
-      { param: P_('stick'), step: 1 },
+      'scanner',
+      'blue',
+      item('minesweeper', 'scanner'),
+      'SCANNER',
+      'SCAN',
+      `${MF.scannerBags} piles bagged before you start`,
+      { param: P_('bags'), step: MF.scannerBags },
     ),
   ],
 };

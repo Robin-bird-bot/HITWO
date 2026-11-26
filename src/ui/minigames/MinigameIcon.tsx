@@ -54,6 +54,15 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
   picturePuzzle: (
     <path d="M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 1 0-4z" />
   ),
+  // A pile, three tiers high, with a stink line (Minefield, the Dog Waste Zone).
+  minefield: (
+    <>
+      <path d="M4 20h16c0-2-1.5-3-3-3h-10c-1.5 0-3 1-3 3z" />
+      <path d="M7 17c0-2 1.5-3 3-3h4c1.5 0 3 1 3 3" />
+      <path d="M10 14c0-2 1-3 2-4 1 1 2 2 2 4" />
+      <path d="M17 7c1-1 1-2 0-3" />
+    </>
+  ),
   // Cracked ice.
   thinIce: (
     <>

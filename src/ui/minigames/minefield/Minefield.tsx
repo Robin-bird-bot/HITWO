@@ -1,29 +1,30 @@
 /**
- * Thin Ice on the GPS (docs/design/13-minigames-puzzles-2.md, section 4;
- * mockup 7-thin-ice.png), in scene units (320 × 240). Cells are the 12-px
- * ice tiles at 2× (smaller when a big grid needs it).
+ * Minefield, the Dog Waste Zone, on the GPS (docs/design/23-minigames-final.md,
+ * section 6; mockup 45-minefield.png; it was Thin Ice until Nov 26), in
+ * scene units (320 × 240). Cells are the 12-px grass tiles at 2× (smaller
+ * when a big grid needs it), in a fenced dog park.
  *
- * - Tap or click to check a cell; the first check is always safe.
- * - Flag a hole: right-click, a long press, or the FLAG button (taps flag
- *   until it's pressed again). The arrow keys move a cursor, Space checks
- *   and F flags.
- * - Checking a hole: the hiker at the front of the line falls in ("SPLASH!")
+ * - Tap or click to mow a square; the first one is always safe.
+ * - Bag a pile: right-click, a long press, or the BAG IT button (taps bag
+ *   until it's pressed again). The arrow keys move a cursor, Space mows and
+ *   F bags.
+ * - Stepping in a pile: "EW!", the hiker at the front of the line is out,
  *   and the next one steps up.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
-import { ICE_SIZES } from '../../../minigames/catalog';
+import { FIELD_SIZES } from '../../../minigames/catalog';
 import {
   check,
   count,
   front,
   holesLeft,
-  newThinIce,
+  newMinefield,
   result,
   timeUp,
   toggleFlag,
-} from '../../../minigames/thinIce/logic';
+} from '../../../minigames/minefield/logic';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
@@ -31,30 +32,33 @@ import { playSound } from '../sound';
 import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
-import styles from './ThinIce.module.css';
+import styles from './Minefield.module.css';
 import { useDemoMode } from '../demo';
+import { prepNumber } from '../../../minigames/prepare';
 
-const TI = BALANCE.minigames.thinIce;
-const art = (f: string) => asset(`minigames/thin-ice/${f}`);
+const MF = BALANCE.minigames.minefield;
+const art = (f: string) => asset(`minigames/minefield/${f}`);
 
-export function ThinIce({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+export function Minefield({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
   const demo = useDemoMode();
   const tier = tierOf(settings);
   const sizePick = pickOf(settings, 'grid');
-  const size = ICE_SIZES.find(([c, r]) => `${c}x${r}` === sizePick);
+  const size = FIELD_SIZES.find(([c, r]) => `${c}x${r}` === sizePick);
   const [game, setGame] = useState(() =>
-    newThinIce(
+    newMinefield(
       {
         tier,
         size: size ?? 'auto',
         holesPerHiker:
-          typeof settings.holesPerHiker === 'number' ? settings.holesPerHiker : TI.holesPerHiker,
+          typeof settings.holesPerHiker === 'number' ? settings.holesPerHiker : MF.holesPerHiker,
         timer:
           settings.timer === 'off'
             ? 'off'
             : typeof settings.timer === 'number'
               ? settings.timer
               : 'auto',
+        // Prepare (23-minigames-final.md, section 10): POO BAGS and SCANNER.
+        preBags: prepNumber(settings, 'prep.bags'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -68,7 +72,9 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
   const reported = useRef(false);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
 
-  const cell = Math.min(24, Math.floor(228 / game.rows), Math.floor(230 / game.cols));
+  // Room for the picket fence above and below the field.
+  const cell = Math.min(24, Math.floor(228 / (game.rows + 2.4)), Math.floor(230 / game.cols));
+  const fenceH = Math.round((cell * 14) / 12);
   const gridLeft = 316 - game.cols * cell;
   const gridTop = Math.floor((240 - game.rows * cell) / 2);
   const running = !still && !game.over;
@@ -98,11 +104,11 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
       const next = front(out.state);
       setMessage(
         next
-          ? `${byId(out.fell).name} fell in. ${byId(next).name} steps next.`
-          : `${byId(out.fell).name} fell in.`,
+          ? `Ew! ${byId(out.fell).name} is out. ${byId(next).name} steps next.`
+          : `Ew! ${byId(out.fell).name} is out.`,
       );
     } else if (out.state.won) {
-      setMessage('The ice is mapped!');
+      setMessage('All clear!');
     }
   };
   const doFlag = (c: number) => {
@@ -118,7 +124,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
         press.current.flagged = true;
         doFlag(c);
       }
-    }, TI.longPressSec * 1000);
+    }, MF.longPressSec * 1000);
     press.current = { cell: c, timer, flagged: false };
   };
   const onUp = (c: number) => {
@@ -170,7 +176,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
   return (
     <PixelScreen measure={!still}>
       {/* The left panel. */}
-      <div className={`${ui.box} ${panel.head}`}>THIN ICE</div>
+      <div className={`${ui.box} ${panel.head}`}>MINEFIELD</div>
       {left !== null && (
         <div
           className={`${ui.box} ${panel.clock}`}
@@ -181,10 +187,10 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
         </div>
       )}
       <p className={`${ui.muted} ${panel.label}`} style={{ top: 44 }}>
-        HOLES
+        PILES
       </p>
       <p className={`${ui.text} ${styles.holes}`}>
-        {holesLeft(game)} {flags ? `(${flags} flagged)` : ''}
+        {holesLeft(game)} {flags ? `(${flags} bagged)` : ''}
       </p>
       <p className={`${ui.muted} ${panel.label}`} style={{ top: 64 }}>
         THE LINE
@@ -223,11 +229,27 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
         onClick={() => setFlagMode((f) => !f)}
         disabled={!running}
       >
-        {flagMode ? 'FLAGGING' : 'FLAG'}
+        {flagMode ? 'BAGGING' : 'BAG IT'}
       </button>
       <p className={`${ui.muted} ${styles.flagHint}`}>Or right-click / long-press</p>
 
-      {/* The lake. */}
+      {/* The picket fence above and below the field. */}
+      {[gridTop - fenceH, gridTop + game.rows * cell].map((top) => (
+        <span
+          key={top}
+          className={styles.fence}
+          style={{
+            left: gridLeft - cell / 2,
+            top,
+            width: (game.cols + 1) * cell,
+            height: fenceH,
+            backgroundImage: `url(${art('fence.png')})`,
+            backgroundSize: `${cell}px ${fenceH}px`,
+          }}
+        />
+      ))}
+
+      {/* The field. */}
       <div
         className={styles.grid}
         style={{ left: gridLeft, top: gridTop, width: game.cols * cell, height: game.rows * cell }}
@@ -237,7 +259,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
         {game.open.map((open, c) => {
           const hole = open && !!game.holes?.[c];
           const n = open && !hole ? count(game, c) : 0;
-          const shown = hole ? 'hole.png' : open ? 'open.png' : 'ice.png';
+          const shown = hole ? 'poop.png' : open ? 'mown.png' : 'grass.png';
           return (
             <button
               key={c}
@@ -247,12 +269,12 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
               data-cursor={c === cursor || undefined}
               aria-label={
                 hole
-                  ? 'Hole'
+                  ? 'A pile'
                   : open
-                    ? `${n || 'No'} holes around`
+                    ? `${n || 'No'} piles around`
                     : game.flags[c]
-                      ? 'Flagged'
-                      : 'Ice'
+                      ? 'Bagged'
+                      : 'Tall grass'
               }
               style={{
                 left: (c % game.cols) * cell,
@@ -273,7 +295,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
               {game.flags[c] && !open && (
                 <img
                   className={`${ui.sprite} ${styles.flagMark}`}
-                  src={art('flag.png')}
+                  src={art('bag.png')}
                   alt=""
                   draggable={false}
                 />
@@ -295,7 +317,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
               top: Math.floor(splash.cell / game.cols) * cell - 2,
             }}
           >
-            SPLASH!
+            EW!
           </span>
         )}
       </div>

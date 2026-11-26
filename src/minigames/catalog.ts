@@ -341,7 +341,7 @@ export const DODGE: MinigameInfo = {
 const TM = BALANCE.minigames.trailMap;
 const ME = BALANCE.minigames.memory;
 const PP = BALANCE.minigames.picturePuzzle;
-const TI = BALANCE.minigames.thinIce;
+const MF = BALANCE.minigames.minefield;
 
 /** Picture Puzzle's photos, by name, for the Picture setting. */
 const PICTURE_NAMES: Readonly<Record<(typeof PP.pictures)[number], string>> = {
@@ -507,8 +507,8 @@ export const PICTURE_PUZZLE: MinigameInfo = {
   ],
 };
 
-/** Thin Ice's grid sizes (columns × rows). */
-export const ICE_SIZES: readonly (readonly [number, number])[] = [
+/** Minefield's grid sizes (columns × rows). */
+export const FIELD_SIZES: readonly (readonly [number, number])[] = [
   [6, 5],
   [7, 6],
   [8, 6],
@@ -518,12 +518,13 @@ export const ICE_SIZES: readonly (readonly [number, number])[] = [
   [12, 9],
 ];
 
-export const THIN_ICE: MinigameInfo = {
-  id: 'thinIce',
-  name: 'Thin Ice',
-  baseGame: 'Minefield',
+/** Minefield, the Dog Waste Zone (23-minigames-final.md, section 6): Thin Ice's old game, reskinned. */
+export const MINEFIELD: MinigameInfo = {
+  id: 'minefield',
+  name: 'Minefield',
+  baseGame: 'Minesweeper',
   category: 'puzzle',
-  description: 'Check the ice without falling in. Numbers count the holes around.',
+  description: 'Mow the grass without stepping in a pile. Numbers count the piles around.',
   status: 'ready',
   lineUp: true,
   settings: [
@@ -535,11 +536,11 @@ export const THIN_ICE: MinigameInfo = {
       label: 'Grid',
       options: [
         { id: 'auto', label: 'Auto' },
-        ...ICE_SIZES.map(([c, r]) => ({ id: `${c}x${r}`, label: `${c} × ${r}` })),
+        ...FIELD_SIZES.map(([c, r]) => ({ id: `${c}x${r}`, label: `${c} × ${r}` })),
       ],
       default: 'auto',
       menu: true,
-      hint: `Auto (${byTier((t) => `${TI.tiers[t].cols} × ${TI.tiers[t].rows}`)})`,
+      hint: `Auto (${byTier((t) => `${MF.tiers[t].cols} × ${MF.tiers[t].rows}`)})`,
     },
     {
       kind: 'range',
@@ -547,8 +548,8 @@ export const THIN_ICE: MinigameInfo = {
       label: 'Holes per hiker',
       min: 0,
       max: 4,
-      default: TI.holesPerHiker,
-      hint: `On top of ${byTier((t) => TI.tiers[t].holes)}`,
+      default: MF.holesPerHiker,
+      hint: `On top of ${byTier((t) => MF.tiers[t].holes)}`,
     },
     autoRange(
       'timer',
@@ -558,7 +559,7 @@ export const THIN_ICE: MinigameInfo = {
       180,
       ' s',
       10,
-      `${byTier((t) => TI.tiers[t].timerSec ?? 'none')} s`,
+      `${byTier((t) => MF.tiers[t].timerSec ?? 'none')} s`,
       true,
     ),
   ],
@@ -1245,7 +1246,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FAKE_SIGNS,
   TRAIL_MAP,
   PICTURE_PUZZLE,
-  THIN_ICE,
+  MINEFIELD,
   REMEMBER_PATH,
   MEMORY,
   SAFARI,
