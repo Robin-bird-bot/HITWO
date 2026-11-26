@@ -22,6 +22,7 @@ import {
   REMEMBER_PATH_POPUP,
   SAFARI_POPUP,
   MINEFIELD_POPUP,
+  THIN_ICE_POPUP,
   TRAILDLE_POPUP,
   TRAIL_MAP_POPUP,
 } from './puzzle';
@@ -51,6 +52,7 @@ export const POPUPS: Readonly<Record<string, GamePopup>> = {
   trailMap: TRAIL_MAP_POPUP,
   picturePuzzle: PICTURE_PUZZLE_POPUP,
   minefield: MINEFIELD_POPUP,
+  thinIce: THIN_ICE_POPUP,
   fakeSigns: FAKE_SIGNS_POPUP,
   rememberPath: REMEMBER_PATH_POPUP,
   memory: MEMORY_POPUP,

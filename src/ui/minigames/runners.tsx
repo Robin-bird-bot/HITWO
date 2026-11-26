@@ -33,6 +33,7 @@ import { RockClimb } from './signsTrails/RockClimb';
 import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
 import { Minefield } from './minefield/Minefield';
+import { ThinIce } from './thinIce/ThinIce';
 import { TrailMap } from './trailMap/TrailMap';
 import type { PuzzleRunProps } from './puzzleProps';
 import { RememberPath } from './rememberPath/RememberPath';
@@ -54,6 +55,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   memory: MemoryPuzzle,
   picturePuzzle: PicturePuzzle,
   minefield: Minefield,
+  thinIce: ThinIce,
   trailBlocks: TrailBlocks,
   sleepingBear: SleepingBear,
   whackoon: Whackoon,
@@ -102,6 +104,9 @@ function PicturePuzzleStill({ settings, hikers }: MinigamePreviewProps) {
 }
 function MinefieldStill({ settings, hikers }: MinigamePreviewProps) {
   return <Minefield settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function ThinIceStill({ settings, hikers }: MinigamePreviewProps) {
+  return <ThinIce settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 function TrailBlocksStill({ settings, hikers }: MinigamePreviewProps) {
   return <TrailBlocks settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
@@ -167,6 +172,7 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   memory: MemoryStill,
   picturePuzzle: PicturePuzzleStill,
   minefield: MinefieldStill,
+  thinIce: ThinIceStill,
   trailBlocks: TrailBlocksStill,
   sleepingBear: SleepingBearStill,
   whackoon: WhackoonStill,

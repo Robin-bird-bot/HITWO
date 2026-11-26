@@ -24,6 +24,7 @@ import {
   OR,
   P_,
   phrases,
+  plusFor,
   plusSecOpt,
   rulesOf,
   slowerOpt,
@@ -340,6 +341,78 @@ export const MINEFIELD_POPUP: GamePopup = {
       'SCAN',
       `${MF.scannerBags} piles bagged before you start`,
       { param: P_('bags'), step: MF.scannerBags },
+    ),
+  ],
+};
+
+const TIC = MG.thinIce;
+
+/** Thin Ice, the crossing (23-minigames-final.md, section 10). */
+export const THIN_ICE_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Get every hiker across the ice, one at a time. Step to the squares next to you: each number tells you how many holes touch it. **Step on a hole and you fall in.** The ice cracks behind you, so each hiker needs a new way across.',
+    ),
+  rules: (s) => {
+    const picks = numOr(s, 'picks', TIC.tiers[tierIn(s)].picks);
+    return rulesOf(
+      picks > 0 &&
+        line(`Your ice pick tests a square 2 away, safely. You have ${picks === 1 ? '1' : picks}.`),
+      line('Cracked squares can’t be used, but their numbers stay.'),
+    );
+  },
+  controls: [
+    { action: 'STEP', inputs: [mouse('Click next to you'), OR, finger('Tap')] },
+    { action: 'PICK', inputs: [mouse('Click 2 away'), OR, finger('Tap')] },
+    { action: 'FLAG', inputs: [mouse('Right-click'), OR, finger('Long-press')] },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker who falls in:', value: 'Soaked' }],
+  bars(s) {
+    const t = TIC.tiers[tierIn(s)];
+    const holes = Math.round(t.cols * t.rows * t.holes);
+    const picks = numOr(s, 'picks', t.picks);
+    return [
+      countBar(
+        'holes',
+        'HOLES',
+        holes,
+        holes,
+        mostOver((x) => Math.round(TIC.tiers[x].cols * TIC.tiers[x].rows * TIC.tiers[x].holes)),
+      ),
+      countBar('picks', 'PICKS', picks, picks, 5),
+      countBar(
+        'ice',
+        'ICE',
+        t.cols * t.rows,
+        t.cols * t.rows,
+        mostOver((x) => TIC.tiers[x].cols * TIC.tiers[x].rows),
+      ),
+    ];
+  },
+  options: () => [
+    plusFor('PICK', '+1', 'picks'),
+    opt(
+      'testIce',
+      'blue',
+      res('stone'),
+      'TEST THE ICE',
+      'TESTED',
+      'marks one hole before you start',
+      { param: P_('testIce'), step: 1 },
+      { max: 3 },
+    ),
+    opt(
+      'stick',
+      'green',
+      item('hikingStick'),
+      'HIKING STICK',
+      'STICK',
+      'each hiker’s first hole only cracks',
+      {
+        param: P_('stick'),
+        step: 1,
+      },
     ),
   ],
 };

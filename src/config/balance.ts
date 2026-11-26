@@ -2773,6 +2773,27 @@ export const BALANCE = {
     },
 
     /**
+     * Thin Ice, the crossing (23-minigames-final.md, section 7): by tier,
+     * the ice (columns × rows), the share of it that's holes, and each
+     * hiker's ice picks. A pick tests a square this many steps away. Falling
+     * in brings the challenge's stake (Thin Ice: Soaked, until challenges
+     * are hooked up). A press held this long flags.
+     * TODO(wyatt): [9 × 7, 10 × 8, 11 × 8, 11 × 9, 12 × 9], [12, 15, 18, 20, 22]%, [3, 3, 2, 2, 1], [2].
+     */
+    thinIce: {
+      tiers: {
+        1: { cols: 9, rows: 7, holes: 0.12, picks: 3 },
+        2: { cols: 10, rows: 8, holes: 0.15, picks: 3 },
+        3: { cols: 11, rows: 8, holes: 0.18, picks: 2 },
+        4: { cols: 11, rows: 9, holes: 0.2, picks: 2 },
+        5: { cols: 12, rows: 9, holes: 0.22, picks: 1 },
+      } as Readonly<Record<MgTier, { cols: number; rows: number; holes: number; picks: number }>>,
+      pickReach: 2,
+      fallCondition: 'soaked',
+      longPressSec: 0.4,
+    },
+
+    /**
      * Dodge (Phase 10.8 steps 3, 3b and 3c, docs/design/12-minigames-dodge.md):
      * one party sprite dodges an animal's attacks in a box. Attacks come from
      * a shared library; an animal is a box, a portrait and a list of attacks.

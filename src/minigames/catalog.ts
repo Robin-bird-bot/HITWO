@@ -565,6 +565,47 @@ export const MINEFIELD: MinigameInfo = {
   ],
 };
 
+// ── Thin Ice, the crossing (docs/design/23-minigames-final.md, section 7) ──
+
+const TIC = BALANCE.minigames.thinIce;
+
+export const THIN_ICE: MinigameInfo = {
+  id: 'thinIce',
+  name: 'Thin Ice',
+  baseGame: 'Minesweeper crossing',
+  category: 'puzzle',
+  description:
+    'Cross the ice one at a time. Numbers count the holes around; the ice cracks behind each hiker.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'picks',
+      'Picks',
+      0,
+      5,
+      TIC.tiers[1].picks,
+      '',
+      1,
+      byTier((t) => TIC.tiers[t].picks),
+    ),
+    autoRange('time', 'Time per hiker', 20, 180, 60, ' s', 10, 'no clock', true),
+    {
+      kind: 'pick',
+      id: 'showHoles',
+      label: 'Show the holes',
+      options: [
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'off',
+      hint: 'A faint ring on each hidden hole (testing)',
+    },
+  ],
+};
+
 // ── New challenges, step 1 (docs/design/14-minigames-trail-blocks.md) ───────
 
 export const TRAIL_BLOCKS: MinigameInfo = {
@@ -1247,6 +1288,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   TRAIL_MAP,
   PICTURE_PUZZLE,
   MINEFIELD,
+  THIN_ICE,
   REMEMBER_PATH,
   MEMORY,
   SAFARI,
