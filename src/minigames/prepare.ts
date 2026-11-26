@@ -78,6 +78,8 @@ export interface Option {
   perHiker?: true;
   /** Uses at most (each hiker, for a per-hiker effect). */
   max: number;
+  /** A per-hiker effect's uses at most in all (Falling Rocks' HARDHAT: one, for one hiker). */
+  total?: number;
   /** The setting each use adds `step` to (a per-hiker effect lists its hikers). */
   param: string;
   step: number;
@@ -132,7 +134,8 @@ const costKey = (o: Pick<Option, 'accepts' | 'need'>) =>
 const FOOD_KEY = costKey({ accepts: FOOD, need: 1 });
 
 /** An option's most uses in all: per-hiker effects once (or `max`) for each hiker. */
-const limitOf = (o: Option, hikers: number) => (o.perHiker ? o.max * hikers : o.max);
+const limitOf = (o: Option, hikers: number) =>
+  o.perHiker ? Math.min(o.total ?? Infinity, o.max * hikers) : o.max;
 
 /**
  * The cards for this run (section 4.1): the options that apply, grouped by
@@ -244,7 +247,8 @@ export const effectOpen = (
   except?: string,
 ): boolean =>
   effect.perHiker
-    ? hikers.some((h) => targetOpen(effect, h, fills, except))
+    ? (effect.total === undefined || uses(fills, effect.id, undefined, except) < effect.total) &&
+      hikers.some((h) => targetOpen(effect, h, fills, except))
     : uses(fills, effect.id, undefined, except) < effect.max;
 
 /** Whether a hiker has enough of something the slot takes, free, to fill it. */

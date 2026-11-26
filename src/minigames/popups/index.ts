@@ -10,6 +10,7 @@ import {
   RAFTING_POPUP,
   ROCK_CLIMB_POPUP,
   SKETCHY_BRIDGE_POPUP,
+  FALLING_ROCKS_POPUP,
   TRAILS_POPUP,
   TRAIN_POPUP,
 } from './movement';
@@ -49,6 +50,7 @@ export const POPUPS: Readonly<Record<string, GamePopup>> = {
   trails: TRAILS_POPUP,
   rockClimb: ROCK_CLIMB_POPUP,
   sketchyBridge: SKETCHY_BRIDGE_POPUP,
+  fallingRocks: FALLING_ROCKS_POPUP,
   traildle: TRAILDLE_POPUP,
   findPath: FIND_PATH_POPUP,
   trailMap: TRAIL_MAP_POPUP,

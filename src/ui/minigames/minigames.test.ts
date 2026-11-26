@@ -165,6 +165,7 @@ describe('the minigame list', () => {
           ['Rock Climb', 'ready'],
           ['Camp Cleanup', 'ready'],
           ['Sketchy Bridge', 'ready'],
+          ['Falling Rocks', 'ready'],
         ],
       ],
       [

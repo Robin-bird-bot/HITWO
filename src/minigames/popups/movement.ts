@@ -33,6 +33,7 @@ import {
   rulesOf,
   seconds,
   slowerOpt,
+  slowerShare,
   tierIn,
   timeBar,
   WASD,
@@ -746,6 +747,88 @@ export const SKETCHY_BRIDGE_POPUP: GamePopup = {
         param: P_('harness'),
         step: 1,
       },
+    ),
+  ],
+};
+
+// ── Falling Rocks (23-minigames-final.md, section 10) ──────────────────────
+
+const FR = MG.fallingRocks;
+const boulders = (s: MinigameSettings) =>
+  s.boulders === 'on' ? true : s.boulders === 'off' ? false : tierIn(s) >= FR.boulder.from;
+
+export const FALLING_ROCKS_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Cross the ledge one at a time. Watch for shadows: a rock lands where one grows. Stop, back up, or hide under an overhang. **A hit costs a life.**',
+    ),
+  rules: (s) =>
+    rulesOf(
+      line('Overhangs are safe from everything.'),
+      tierIn(s) >= FR.shower.from &&
+        line('Showers of small rocks fall at once.', fromTier(FR.shower.from as Tier)),
+      boulders(s) &&
+        line(
+          'Boulders roll the whole trail: get under an overhang.',
+          tierIn(s) >= FR.boulder.from ? fromTier(FR.boulder.from as Tier) : undefined,
+        ),
+    ),
+  controls: [
+    { action: 'WALK', inputs: [...key('→'), OR, ...key('D'), OR, finger('Right half')] },
+    { action: 'BACK UP', inputs: [...key('←'), OR, ...key('A'), OR, finger('Left half')] },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker out of lives:', value: 'hurt' }],
+  bars(s) {
+    const t = FR.tiers[tierIn(s)];
+    const slower = 1 + slowerShare(prepNumber(s, P_('slower')));
+    const warn = t.warnSec * slower + prepNumber(s, P_('warn'));
+    // How often: rocks a minute.
+    const often = (sec: number) => Math.round(60 / sec);
+    return [
+      {
+        ...countBar('warn', 'WARNING TIME', t.warnSec, Math.round(warn * 10) / 10, 2),
+        display: (v: number) => `${v.toFixed(1)} S`,
+      },
+      countBar(
+        'rocks',
+        'ROCKS',
+        often(t.everySec),
+        often(t.everySec * slower),
+        mostOver((x) => often(FR.tiers[x].everySec)),
+      ),
+      countBar('trail', 'TRAIL', FR.length, FR.length, FR.length),
+    ];
+  },
+  perHiker: (s) => ({
+    label: 'LIVES',
+    kind: 'hearts',
+    base: numOr(s, 'lives', FR.lives),
+    param: P_('lives'),
+    step: 1,
+  }),
+  options: () => [
+    plusFor('LIFE', '♥'),
+    slowerOpt('SLOWER ROCKS', 'green', 'rocks come less often'),
+    opt(
+      'hardhat',
+      'green',
+      item('hardhat'),
+      '+1 LIFE',
+      '♥',
+      'pick a hiker',
+      { param: P_('lives'), step: 1 },
+      { title: 'HARDHAT', perHiker: true, total: 1 },
+    ),
+    opt(
+      'binoculars',
+      'blue',
+      item('binoculars'),
+      `+${FR.binocularsSec} S WARNING`,
+      'LOOK',
+      'see them coming',
+      { param: P_('warn'), step: FR.binocularsSec },
+      { title: 'BINOCULARS' },
     ),
   ],
 };

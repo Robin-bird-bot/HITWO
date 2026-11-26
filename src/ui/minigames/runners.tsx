@@ -31,6 +31,7 @@ import { Crossroads } from './signsTrails/Crossroads';
 import { FakeSigns } from './signsTrails/FakeSigns';
 import { RockClimb } from './signsTrails/RockClimb';
 import { SketchyBridge } from './sketchyBridge/SketchyBridge';
+import { FallingRocks } from './fallingRocks/FallingRocks';
 import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
 import { Minefield } from './minefield/Minefield';
@@ -75,6 +76,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   rockClimb: RockClimb,
   campCleanup: CampCleanup,
   sketchyBridge: SketchyBridge,
+  fallingRocks: FallingRocks,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -166,6 +168,9 @@ function CampCleanupStill({ settings, hikers }: MinigamePreviewProps) {
 function SketchyBridgeStill({ settings, hikers }: MinigamePreviewProps) {
   return <SketchyBridge settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function FallingRocksStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FallingRocks settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   traildle: TraildleStill,
@@ -196,4 +201,5 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   rockClimb: RockClimbStill,
   campCleanup: CampCleanupStill,
   sketchyBridge: SketchyBridgeStill,
+  fallingRocks: FallingRocksStill,
 };

@@ -1,0 +1,62 @@
+/* Falling Rocks (41-falling-rocks.png), in scene units (320 × 240). */
+
+.bg {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 176px;
+}
+
+.dust {
+  position: absolute;
+  width: 22px;
+  height: 10px;
+  opacity: 0.85;
+}
+
+/* A rock's shadow on the trail, growing until it lands. */
+.shadow {
+  position: absolute;
+  height: 3px;
+  border-radius: 50%;
+  background: #1d2918;
+  opacity: 0.55;
+}
+
+.rock {
+  position: absolute;
+  pointer-events: none;
+}
+
+.hiker {
+  position: absolute;
+  width: 10px;
+  height: 13px;
+}
+
+/* Blinking for a moment after a hit. */
+.hiker[data-blink] {
+  opacity: 0.25;
+}
+
+/* SAFE over an overhang while the hiker is under it. */
+.safe {
+  position: absolute;
+  top: 105px;
+  color: #f4f8dc;
+  font-size: 3.6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pips > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+}

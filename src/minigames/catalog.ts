@@ -1232,6 +1232,38 @@ export const SKETCHY_BRIDGE: MinigameInfo = {
   ],
 };
 
+// ── Falling Rocks (docs/design/23-minigames-final.md, section 2) ──
+
+const FRK = BALANCE.minigames.fallingRocks;
+
+export const FALLING_ROCKS: MinigameInfo = {
+  id: 'fallingRocks',
+  name: 'Falling Rocks',
+  baseGame: 'Side-view crossing',
+  category: 'move',
+  description:
+    'Walk the ledge one at a time. Stop or back up where shadows grow; hide under an overhang from boulders.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange('lives', 'Lives', 1, 4, FRK.lives, ''),
+    {
+      kind: 'pick',
+      id: 'boulders',
+      label: 'Boulders',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'auto',
+      hint: `Auto: from Tier ${TIER_LABELS[FRK.boulder.from as Tier]}`,
+    },
+  ],
+};
+
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
 const CC = BALANCE.minigames.campCleanup;
@@ -1298,6 +1330,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   ROCK_CLIMB,
   CAMP_CLEANUP,
   SKETCHY_BRIDGE,
+  FALLING_ROCKS,
   TRAILDLE,
   FIND_PATH,
   FAKE_SIGNS,

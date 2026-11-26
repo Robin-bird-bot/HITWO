@@ -2773,6 +2773,53 @@ export const BALANCE = {
     },
 
     /**
+     * Falling Rocks (23-minigames-final.md, section 2), side view. The trail
+     * is this long; hikers walk at this speed and back up at this one. The
+     * overhangs (centers and half-widths on the trail) match slope.png. By
+     * tier: a shadow's warning and a hazard every so often (seconds). Rocks
+     * are small, medium or large, hitting within these half-widths. Showers
+     * (from Tier II, this often a hazard: my guess) drop this many small
+     * rocks over this spread, this far apart; boulders (from Tier III, this
+     * often: my guess) rumble this long, then roll at this speed (hitting
+     * within this half-width: my guess). Hazards are mostly aimed this far
+     * ahead of the hiker (both my guesses). Each hiker has this many lives,
+     * and this much safety after a hit. The first hazard comes this long into
+     * a turn, and a landed rock bounces away for this long (my guesses). Out
+     * of lives brings the challenge's stake (Rockfall: an injury chance and
+     * lost resources, until challenges are hooked up). Binoculars add this
+     * much warning.
+     * TODO(wyatt): [300], [40], [30], [1.0–0.6 s], [1.4–0.8 s], [8, 10, 14], [3–5], [60], [0.15 s], [1.2 s], [70], [2], [1 s], [0.3 s].
+     */
+    fallingRocks: {
+      length: 300,
+      walk: 40,
+      back: 30,
+      overhangs: [
+        { x: 87, half: 13 },
+        { x: 205, half: 13 },
+      ] as const,
+      tiers: {
+        1: { warnSec: 1.0, everySec: 1.4 },
+        2: { warnSec: 0.9, everySec: 1.2 },
+        3: { warnSec: 0.8, everySec: 1.0 },
+        4: { warnSec: 0.7, everySec: 0.9 },
+        5: { warnSec: 0.6, everySec: 0.8 },
+      } as Readonly<Record<MgTier, { warnSec: number; everySec: number }>>,
+      sizes: ['s', 'm', 'l'] as const,
+      half: { s: 8, m: 10, l: 14 },
+      shower: { from: 2, chance: 0.25, count: [3, 5] as const, spread: 60, apartSec: 0.15 },
+      boulder: { from: 3, chance: 0.15, warnSec: 1.2, speed: 70, half: 12 },
+      aimAhead: 0.75,
+      ahead: [10, 70] as const,
+      lives: 2,
+      safeSec: 1,
+      firstSec: 1.2,
+      bounceSec: 0.6,
+      stake: 'injury',
+      binocularsSec: 0.3,
+    },
+
+    /**
      * Sketchy Bridge (23-minigames-final.md, section 1), Stardew-style. The
      * balance bar is this tall; the zone rises this fast (units/s²) while
      * held, falls this fast when let go, and bounces off the bottom (speed ×
