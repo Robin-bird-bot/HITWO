@@ -6,6 +6,7 @@
  * for now the Minigame testing tab opens them.
  */
 import { asset } from '../config/assets';
+import { item, type PrepRow } from '../minigames/prepare';
 import type { Tier } from '../minigames/types';
 
 export interface MinigameChallenge {
@@ -24,8 +25,11 @@ export interface MinigameChallenge {
   settings?: Readonly<Record<string, string | number>>;
   /** The game, as the pop-up shows it. */
   game: { name: string; line: string; chip?: string };
-  /** Prepare options (effect and cost). TODO(wyatt): not built yet; the mockup's are placeholders. */
-  prepare?: readonly { label: string; cost: string; placeholder?: true }[];
+  /**
+   * Prepare rows the challenge adds to its game's (20-challenge-popup.md,
+   * section 4, "Data"): Bear Country's SKIP IT.
+   */
+  prepareRows?: readonly PrepRow[];
   /** What failing costs. Shown, not applied yet (none for a test challenge). */
   ifHit: readonly { who: 'each' | 'everyone'; label: string; value: string }[];
 }
@@ -64,10 +68,18 @@ export const BEAR_COUNTRY: MinigameChallenge = {
     name: 'Bear with a Gun',
     line: 'Dodge the bear’s shots and traps. Hikers take turns.',
   },
-  prepare: [
-    { label: '+1 barrel', cost: '2 Wood', placeholder: true },
-    { label: '−1 round', cost: '1 Bear Spray', placeholder: true },
-    { label: 'Skip it', cost: '2 Bear Spray', placeholder: true },
+  // Bear Country also offers SKIP IT: Bear Spray ×2 (20-challenge-popup.md, section 7).
+  prepareRows: [
+    {
+      id: 'skip',
+      label: 'SKIP IT',
+      line: 'Get past without playing',
+      slots: 1,
+      accepts: item('bearSpray'),
+      need: 2,
+      effect: { param: 'prep.skip', step: 1 },
+      skip: true,
+    },
   ],
   ifHit: [
     { who: 'each', label: 'Each hiker hit:', value: '1 Injury' },

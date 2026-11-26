@@ -36,6 +36,7 @@ import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
 import styles from './FindPath.module.css';
 import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const P = BALANCE.minigames.findPath;
 const TILE = 32;
@@ -43,6 +44,7 @@ const tileArt = (f: string) => asset(`minigames/forest-tiles/${f}`);
 const same = (a: Tile, b: Tile) => a.c === b.c && a.r === b.r;
 
 export function FindPath({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const reduced = useReducedMotion();
   const sceneRef = useRef<HTMLDivElement>(null);
   const fogSetting = pickOf(settings, 'fog');
@@ -132,6 +134,7 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
 
   // ← ↑ → pick the tile that way.
   useEffect(() => {
+    if (demo) return;
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];

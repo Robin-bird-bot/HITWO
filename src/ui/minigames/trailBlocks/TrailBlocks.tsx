@@ -51,6 +51,7 @@ import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './TrailBlocks.module.css';
 import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const B = BALANCE.minigames.trailBlocks;
 const FIXED = 1 / 120;
@@ -91,6 +92,7 @@ const CROWD: readonly { kind: string; x: number; y: number; w: number; h: number
 ];
 
 export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const tier = tierOf(settings);
   const picked = pickOf(settings, 'version');
   const version: Version = VERSIONS.some((v) => v.id === picked) ? (picked as Version) : 'chop';
@@ -167,6 +169,7 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
 
   // Space: press (or hold, for the rockslide).
   useEffect(() => {
+    if (demo) return;
     if (still) return;
     const onDown = (e: KeyboardEvent) => {
       if (e.key !== ' ' && e.key !== 'Enter') return;

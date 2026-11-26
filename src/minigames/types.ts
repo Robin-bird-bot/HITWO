@@ -21,6 +21,8 @@ export interface MinigameHiker {
    * (Raccoon Shuffle). In the testing tab it's a made-up pack (`testPack`).
    */
   pack?: Readonly<Partial<Record<string, number>>>;
+  /** The items they carry, for Prepare (20-challenge-popup.md, section 4). */
+  items?: readonly { uid: string; itemId: string; usesLeft?: number; durability?: number }[];
 }
 
 /**

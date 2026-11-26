@@ -22,6 +22,8 @@ import { TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
 import { slowerShare } from '../../../minigames/popups/common';
 import { prepNumber } from '../../../minigames/prepare';
+import { fireflyBot } from '../../../minigames/fireflyCatch/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const F = BALANCE.minigames.fireflyCatch;
 const BOX = F.box;
@@ -44,6 +46,7 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
   );
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
@@ -57,7 +60,7 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
     playSound(out.lastCatch !== game.lastCatch ? 'pop' : 'miss');
     setGame(out);
   };
-  useKeys(running, (key) => {
+  useKeys(running && !demo, (key) => {
     if (key !== ' ' && key !== 'Enter') return false;
     press();
     return true;
@@ -73,6 +76,8 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
   const missFresh = game.lastMiss && game.time - game.lastMiss.at < 0.6;
   const missSec = F.tiers[tier].missSec;
 
+  // The pop-up's demo: the bot taps through the same handler.
+  useDemoBot(demo && running, game, fireflyBot, () => press());
   return (
     <PixelScreen measure={!still}>
       <div

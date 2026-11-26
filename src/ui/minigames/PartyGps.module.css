@@ -293,3 +293,59 @@
 .buttonRight {
   left: calc(var(--u) * 441px);
 }
+
+/* The demo (20-challenge-popup.md, section 2): no clicks, and a dark strip above the game. */
+.content[data-mode='demo'] {
+  pointer-events: none;
+}
+
+.demoStrip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--u) * 92px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 22px);
+  height: calc(var(--u) * 56px);
+  background: #111a10;
+  color: #a0b37d;
+  font-family: var(--font-pixel);
+  font-size: calc(var(--u) * 22px);
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+
+.demoStrip b {
+  color: #d3dfaf;
+  font-weight: normal;
+  animation: demoBlink 1s steps(1) infinite;
+}
+
+@keyframes demoBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demoStrip b {
+    animation: none;
+  }
+}
+
+.skipped {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: calc(var(--u) * 16px) calc(var(--u) * 36px);
+  border-radius: calc(var(--u) * 10px);
+  background: rgba(17, 26, 16, 0.9);
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: calc(var(--u) * 48px);
+  letter-spacing: 0.12em;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}

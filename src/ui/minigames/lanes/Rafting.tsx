@@ -30,6 +30,8 @@ import styles from './Lanes.module.css';
 import { useLaneInput } from './useLaneInput';
 import { slowerShare } from '../../../minigames/popups/common';
 import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
+import { raftingBot } from '../../../minigames/rafting/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const R = BALANCE.minigames.rafting;
 const FIXED = 1 / 120;
@@ -56,6 +58,7 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
 
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -96,7 +99,7 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
   const laneX = (lane: number) => riverL + (lane + 0.5) * laneW;
   const raftX = laneX(raftAt(game));
   const input = useLaneInput({
-    enabled: running,
+    enabled: running && !demo,
     sceneRef,
     axes: 'horizontal',
     anchor: () => ({ x: 160, y: R.raftY }),
@@ -110,6 +113,8 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
   const alive = livesLeft(game);
   const safe = game.safeFor > 0;
 
+  // The pop-up's demo: the bot slides through the same handler.
+  useDemoBot(demo && running, game, raftingBot, (dir) => setGame((s) => slide(s, dir)));
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div

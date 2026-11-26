@@ -8,6 +8,7 @@
  * `axes` limits it to up and down (Train!) or left and right (Rafting).
  */
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type RefObject } from 'react';
+import { useDemoMode } from '../demo';
 import { toScene } from '../sceneCoords';
 
 export type LaneDir = 'up' | 'down' | 'left' | 'right';
@@ -44,6 +45,9 @@ export function useLaneInput({
   axes?: 'both' | 'vertical' | 'horizontal';
   onDir(dir: LaneDir): void;
 }) {
+  // In the pop-up's demo the bot plays: the player's input does nothing.
+  const demo = useDemoMode();
+  const live = enabled && !demo;
   const fire = useRef(onDir);
   useEffect(() => {
     fire.current = onDir;
@@ -54,7 +58,7 @@ export function useLaneInput({
 
   // The keyboard: one move per press.
   useEffect(() => {
-    if (!enabled) return;
+    if (!live) return;
     const onKey = (e: KeyboardEvent) => {
       const d = KEYS[e.key];
       if (!d || !allowed(d)) return;
@@ -75,14 +79,14 @@ export function useLaneInput({
   const down = useRef<{ x: number; y: number; id: number } | null>(null);
   return {
     onPointerDown(e: ReactPointerEvent) {
-      if (!enabled) return;
+      if (!live) return;
       e.preventDefault();
       down.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
     },
     onPointerUp(e: ReactPointerEvent) {
       const start = down.current;
       down.current = null;
-      if (!enabled || !start || start.id !== e.pointerId) return;
+      if (!live || !start || start.id !== e.pointerId) return;
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
       let d: LaneDir | null;

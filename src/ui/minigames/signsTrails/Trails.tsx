@@ -30,6 +30,8 @@ import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './Trails.module.css';
 import { slowerShare } from '../../../minigames/popups/common';
 import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
+import { trailsBot } from '../../../minigames/trails/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const T = BALANCE.minigames.trails;
 const file = (f: string) => `minigames/trails/${f}`;
@@ -69,6 +71,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
   const ids = useId().replace(/:/g, '');
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
   const tints = useTinted(hikers.map((h) => h.color));
@@ -83,7 +86,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
     setGame((s) => steer(s, dir));
   };
   useKeys(
-    running,
+    running && !demo,
     (key) => {
       if (key === 'ArrowLeft' || key === 'a') held.current.left = true;
       else if (key === 'ArrowRight' || key === 'd') held.current.right = true;
@@ -178,6 +181,8 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
           : 'WAITING';
   };
 
+  // The pop-up's demo: the bot aims, as the pointer would.
+  useDemoBot(demo && running, game, trailsBot, (x) => setGame((s) => aim(s, x)));
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div

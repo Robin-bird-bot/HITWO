@@ -32,11 +32,13 @@ import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
 import styles from './ThinIce.module.css';
+import { useDemoMode } from '../demo';
 
 const TI = BALANCE.minigames.thinIce;
 const art = (f: string) => asset(`minigames/thin-ice/${f}`);
 
 export function ThinIce({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const tier = tierOf(settings);
   const sizePick = pickOf(settings, 'grid');
   const size = ICE_SIZES.find(([c, r]) => `${c}x${r}` === sizePick);
@@ -136,6 +138,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
 
   // The arrow keys move a cursor; Space checks, F flags.
   useEffect(() => {
+    if (demo) return;
     if (!running) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[

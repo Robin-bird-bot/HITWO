@@ -20,7 +20,7 @@ import {
   type MinigameChallenge,
 } from '../../content/minigameChallenges';
 import { MINIGAMES, MINIGAMES_BY_CATEGORY } from '../../minigames/catalog';
-import { minigameHiker } from '../../minigames/hikers';
+import { minigameHiker, testPacks, type TestPacks } from '../../minigames/hikers';
 import type {
   MinigameInfo,
   MinigameSetting,
@@ -56,6 +56,23 @@ function challengeFor(
   return testChallenge(info, tierOf(settings));
 }
 
+/** The testing tab's Packs, remembered on this device. */
+const PACKS_KEY = 'hike-in-the-woods/minigame-packs';
+const PACK_SEED = 20261126;
+const PACK_CHOICES: readonly { id: TestPacks; label: string }[] = [
+  { id: 'madeUp', label: 'Made-up' },
+  { id: 'empty', label: 'Empty' },
+  { id: 'lots', label: 'Lots' },
+];
+function readPacks(): TestPacks {
+  try {
+    const v = window.localStorage.getItem(PACKS_KEY);
+    return v === 'empty' || v === 'lots' ? v : 'madeUp';
+  } catch {
+    return 'madeUp';
+  }
+}
+
 const picked = (s: MinigameSettings, id: string): readonly string[] => {
   const v = s[id];
   return Array.isArray(v) ? v : [];
@@ -79,7 +96,20 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
   };
   const challenge = challengeFor(active, settings);
   const hikerIds = picked(settings, 'hikers');
-  const hikers = hikerIds.map((id) => minigameHiker(id));
+  // The testing tab's Packs (20-challenge-popup.md, section 1): what the test hikers carry.
+  const [packs, setPacks] = useState<TestPacks>(readPacks);
+  const choosePacks = (next: TestPacks) => {
+    setPacks(next);
+    try {
+      window.localStorage.setItem(PACKS_KEY, next);
+    } catch {
+      // Remembering it is only a convenience.
+    }
+  };
+  const hikers = hikerIds.map((id) => {
+    const pack = testPacks(packs, PACK_SEED, id);
+    return { ...minigameHiker(id), pack: pack.resources, items: pack.items };
+  });
 
   return (
     <div className={styles.backdrop}>
@@ -178,6 +208,24 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
                     <p className={styles.testNote}>
                       Opens the {challenge.name} pop-up, then the game. Nothing is saved.
                     </p>
+                    <span className={styles.label}>PACKS</span>
+                    <div
+                      className={`${styles.choice} ${styles.pick}`}
+                      role="group"
+                      aria-label="Packs"
+                    >
+                      {PACK_CHOICES.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          data-on={packs === c.id || undefined}
+                          aria-pressed={packs === c.id}
+                          onClick={() => choosePacks(c.id)}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
                     <button
                       type="button"
                       className={styles.test}
@@ -200,7 +248,6 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
           settings={settings}
           testMode
           onBack={() => setTesting(false)}
-          onSettingsChange={update}
         />
       )}
     </div>

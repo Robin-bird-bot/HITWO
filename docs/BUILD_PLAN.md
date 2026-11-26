@@ -1710,7 +1710,7 @@ All ten end on the Challenge Passed / Challenge Failed screen. In the eight that
 
 **Tests:** as in `18`, section 9, `19`, section 7, and the axe, whistle and Whackoon tests in `14`.
 
-### Phase 10.8, step 9: The challenge pop-up, version 2; Bear with a Gun and Ants; Camp Cleanup; fixes
+### Phase 10.8, step 9: The challenge pop-up, version 2; Bear with a Gun and Ants; Camp Cleanup; fixes (done)
 
 (New in the Nov 26 update: `docs/UPDATE-2026-11-26-challenge-popup.md`. The designs are the new `docs/design/20-challenge-popup.md` and `21-minigames-dodge-camp.md`, and the revised `18-minigames-quick.md` (Raccoon Shuffle). The pop-up's reference is a working prototype: `docs/mockups/minigames/challenge-popup/prototype.html`. New mockups in `challenge-popup/` and `dodge-new/`. New art: green pixel resource icons, Bear with a Gun and Ants for Dodge, Camp Cleanup, and Ridgeline's drops, scree and wind.)
 

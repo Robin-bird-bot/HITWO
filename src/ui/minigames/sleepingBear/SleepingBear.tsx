@@ -27,6 +27,8 @@ import hud from '../hud.module.css';
 import styles from './SleepingBear.module.css';
 import { slowerShare } from '../../../minigames/popups/common';
 import { prepNumber } from '../../../minigames/prepare';
+import { sleepingBearBot } from '../../../minigames/sleepingBear/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const SB = BALANCE.minigames.sleepingBear;
 const FIXED = 1 / 120;
@@ -72,6 +74,7 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
 
   // The game loop: fixed steps, as fast as the screen draws.
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -109,9 +112,9 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
     return () => window.clearTimeout(id);
   }, [game, still, onDone]);
 
-  // Hold Space (or a pointer anywhere) to walk.
+  // Hold Space (or a pointer anywhere) to walk (never in the demo).
   useEffect(() => {
-    if (still) return;
+    if (still || demo) return;
     const onDown = (e: KeyboardEvent) => {
       if (e.key !== ' ') return;
       e.preventDefault();
@@ -130,7 +133,7 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
       window.removeEventListener('keyup', onUp);
       window.removeEventListener('blur', blur);
     };
-  }, [still]);
+  }, [still, demo]);
   const onDown = (e: ReactPointerEvent) => {
     e.preventDefault();
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -161,6 +164,10 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
       ? 'FREEZE!'
       : 'HOLD SPACE OR PRESS TO SNEAK';
 
+  // The pop-up's demo: the bot holds and lets go.
+  useDemoBot(demo && running, game, sleepingBearBot, (h) => {
+    holding.current = h;
+  });
   return (
     <PixelScreen measure={!still}>
       <div

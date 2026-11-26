@@ -27,6 +27,8 @@ import hud from '../hud.module.css';
 import styles from './Whackoon.module.css';
 import { slowerShare } from '../../../minigames/popups/common';
 import { prepNumber } from '../../../minigames/prepare';
+import { whackoonBot } from '../../../minigames/whackoon/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const W = BALANCE.minigames.whackoon;
 const FIXED = 1 / 120;
@@ -68,6 +70,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   const spot = (i: number) => ({ x: cols[i % game.cols]!, y: ROWS[Math.floor(i / game.cols)]! });
 
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -135,6 +138,11 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
         ? `${names[0]} IS DONE. SKIP ${names[0]}’S RACCOONS.`
         : `${names.slice(0, -1).join(', ')} AND ${names.at(-1)} ARE DONE. SKIP THEIR RACCOONS.`;
 
+  // The pop-up's demo: the bot whacks a can, as a click would.
+  useDemoBot(demo && running, game, whackoonBot, (i) => {
+    const out = whack(game, i);
+    setGame(out.state);
+  });
   return (
     <PixelScreen ref={sceneRef} measure={!still}>
       <div

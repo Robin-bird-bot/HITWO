@@ -36,6 +36,8 @@ import { useFixedLoop, useReportOnce } from '../quick/useQuick';
 import styles from './CampCleanup.module.css';
 import { slowerShare } from '../../../minigames/popups/common';
 import { prepNumber } from '../../../minigames/prepare';
+import { campCleanupBot } from '../../../minigames/campCleanup/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 
 const C = BALANCE.minigames.campCleanup;
 const file = (f: string) => `minigames/camp-cleanup/${f}`;
@@ -91,6 +93,7 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
   const lit = useLitArt(LIT, colors);
   const people = useTinted(colors);
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
@@ -106,7 +109,7 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
 
   const head = game.snake[0];
   const input = useLaneInput({
-    enabled: running,
+    enabled: running && !demo,
     sceneRef,
     anchor: () =>
       head ? { x: cellX(head.x) + C.cell / 2, y: cellY(head.y) + C.cell / 2 } : { x: 160, y: 112 },
@@ -139,6 +142,8 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
   const pickFresh =
     game.lastPickup && game.time - game.lastPickup.at < 0.6 ? game.lastPickup : null;
 
+  // The pop-up's demo: the bot turns through the same handler.
+  useDemoBot(demo && running, game, campCleanupBot, (d) => setGame((s) => turn(s, d)));
   return (
     <PixelScreen measure={!still}>
       <div

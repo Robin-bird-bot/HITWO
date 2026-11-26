@@ -43,6 +43,7 @@ import ui from '../gpsUi.module.css';
 import styles from './RememberPath.module.css';
 import { slowerShare } from '../../../minigames/popups/common';
 import { prepNumber } from '../../../minigames/prepare';
+import { useDemoMode } from '../demo';
 
 const R = BALANCE.minigames.rememberPath;
 const TILE = 32;
@@ -81,6 +82,7 @@ function rangerRoute(path: readonly Tile[], cols: number, rows: number): Tile[] 
 }
 
 export function RememberPath({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
+  const demo = useDemoMode();
   const tier = tierOf(settings);
   const sceneRef = useRef<HTMLDivElement>(null);
   const [game, setGame] = useState(() =>
@@ -133,7 +135,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       }
     }, stepMs);
     return () => window.clearInterval(id);
-  }, [watching, game.path, steps, tier]);
+  }, [watching, game.path, steps, tier, rangerSlow]);
 
   /** A hiker made it or is out: a moment to read it, then the next hiker (or the results). */
   const finishHiker = (text: string, after: typeof game) => {
@@ -167,6 +169,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
 
   // The arrow keys. Below the grid, ← → slide the token along under it and ↑ steps in.
   useEffect(() => {
+    if (demo) return;
     if (still) return;
     const onKey = (e: KeyboardEvent) => {
       const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[
