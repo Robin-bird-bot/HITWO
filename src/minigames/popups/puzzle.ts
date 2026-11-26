@@ -853,3 +853,87 @@ export const BIRDSONG_POPUP: GamePopup = {
     ),
   ],
 };
+
+// ── Pack It Up (23-minigames-final.md, section 10) ─────────────────────────
+
+const PKU = MG.packItUp;
+const packSize = (s: MinigameSettings): [number, number] => {
+  const v =
+    typeof s.pack === 'string' && /^\d+x\d+$/.test(s.pack) ? s.pack.split('x').map(Number) : null;
+  const t = PKU.tiers[tierIn(s)];
+  return v ? [v[0]!, v[1]!] : [t.cols, t.rows];
+};
+
+export const PACK_IT_UP_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Your pack is torn! Drag the gear into the pack and turn pieces to fit. Nothing can go on a torn spot. **Pack everything before time runs out.**',
+    ),
+  rules: (s) => {
+    const spare = numOr(s, 'spare', PKU.tiers[tierIn(s)].spare) + prepNumber(s, P_('backpack'));
+    return rulesOf(
+      spare === 0 &&
+        line(
+          'There’s no room to spare.',
+          tierIn(s) >= 3 && s.spare !== 0 ? fromTier(3) : undefined,
+        ),
+    );
+  },
+  controls: [
+    { action: 'MOVE', inputs: [mouse('Drag a piece'), OR, finger('Drag')] },
+    {
+      action: 'TURN',
+      inputs: [...key('R'), OR, mouse('Right-click'), OR, finger('The turn button')],
+    },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker who doesn’t finish:', value: '−1 Energy' }],
+  bars(s) {
+    const t = PKU.tiers[tierIn(s)];
+    const [cols, rows] = packSize(s);
+    const extra = prepNumber(s, P_('extraSec'));
+    // About how many pieces: the free cells over the average piece (3.5 cells).
+    const free = cols * rows - t.torn - numOr(s, 'spare', t.spare);
+    const pieces = Math.max(1, Math.round(free / 3.5));
+    return [
+      timeBar(
+        'time',
+        'TIME',
+        t.timeSec,
+        t.timeSec + extra,
+        mostOver((x) => PKU.tiers[x].timeSec) + 2 * PKU.foodSec,
+      ),
+      countBar('pieces', 'PIECES', pieces, pieces - (prepNumber(s, P_('sack')) > 0 ? 1 : 0), 12),
+      countBar(
+        'size',
+        'PACK SIZE',
+        cols * rows,
+        cols * rows,
+        mostOver((x) => PKU.tiers[x].cols * PKU.tiers[x].rows),
+      ),
+    ];
+  },
+  options: () => [
+    plusSecOpt(PKU.foodSec),
+    opt(
+      'backpack',
+      'green',
+      item('backpack', 'fannyPack'),
+      '+1 SPARE CELL',
+      '+1',
+      'a little more room',
+      { param: P_('backpack'), step: 1 },
+      { title: 'BACKPACK' },
+    ),
+    opt(
+      'sack',
+      'red',
+      item('sack'),
+      'THE BIGGEST PIECE IN THE SACK',
+      'SACK',
+      'one less to pack',
+      { param: P_('sack'), step: 1 },
+      { title: 'SACK' },
+    ),
+  ],
+};

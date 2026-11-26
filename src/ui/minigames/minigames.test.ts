@@ -178,6 +178,7 @@ describe('the minigame list', () => {
           ['Picture Puzzle', 'ready'],
           ['Minefield', 'ready'],
           ['Thin Ice', 'ready'],
+          ['Pack It Up', 'ready'],
         ],
       ],
       [

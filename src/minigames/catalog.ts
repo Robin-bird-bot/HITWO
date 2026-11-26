@@ -1378,6 +1378,57 @@ export const BIRDSONG: MinigameInfo = {
   ],
 };
 
+// ── Pack It Up (docs/design/23-minigames-final.md, section 8) ──
+
+const PKK = BALANCE.minigames.packItUp;
+
+/** Pack It Up's pack sizes (columns × rows) for the testing tab. */
+export const PACK_SIZES: readonly (readonly [number, number])[] = [
+  [4, 4],
+  [5, 4],
+  [5, 5],
+  [6, 5],
+  [6, 6],
+  [7, 6],
+  [8, 6],
+];
+
+export const PACK_IT_UP: MinigameInfo = {
+  id: 'packItUp',
+  name: 'Pack It Up',
+  baseGame: 'Polyomino packing',
+  category: 'puzzle',
+  description: 'Drag and turn the gear to fit it all in a torn pack before time runs out.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'pack',
+      label: 'Pack',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        ...PACK_SIZES.map(([c, r]) => ({ id: `${c}x${r}`, label: `${c} × ${r}` })),
+      ],
+      default: 'auto',
+      menu: true,
+      hint: `Auto (${byTier((t) => `${PKK.tiers[t].cols} × ${PKK.tiers[t].rows}`)})`,
+    },
+    autoRange(
+      'spare',
+      'Spare cells',
+      0,
+      3,
+      PKK.tiers[1].spare,
+      '',
+      1,
+      byTier((t) => PKK.tiers[t].spare),
+    ),
+  ],
+};
+
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
 const CC = BALANCE.minigames.campCleanup;
@@ -1452,6 +1503,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   PICTURE_PUZZLE,
   MINEFIELD,
   THIN_ICE,
+  PACK_IT_UP,
   REMEMBER_PATH,
   MEMORY,
   SAFARI,

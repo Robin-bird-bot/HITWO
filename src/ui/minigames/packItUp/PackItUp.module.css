@@ -1,0 +1,87 @@
+/* Pack It Up (47-pack-it-up.png), in scene units (320 × 240). */
+
+/* The pack: a dark rounded bag with a flap across the top. */
+.pack {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid #1d2918;
+  border-radius: 8px;
+  background: #3c4e2f;
+  box-shadow: inset 0 9px 0 -6px #2b3a23;
+}
+
+.slot {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.5px solid #2b3a23;
+  background: #6b8150;
+}
+
+/* A torn cell: dark, with a crack. */
+.slot[data-torn] {
+  background:
+    linear-gradient(135deg, transparent 45%, #a0b37d 45%, #a0b37d 52%, transparent 52%), #1d2918;
+}
+
+.piece {
+  position: absolute;
+  pointer-events: none;
+}
+
+.cell {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  background: #c9d3a8;
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.piece[data-picked] .cell {
+  background: #e9eecb;
+}
+
+/* The gear's picture over its cells. */
+.gear {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  object-fit: contain;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.note {
+  position: absolute;
+  text-align: center;
+  color: #1d2918;
+  font-size: 3.4px;
+}
+
+.tray {
+  position: absolute;
+  align-items: flex-start;
+  padding-top: 5px;
+}
+
+.trayTitle {
+  font-size: 4px;
+}
+
+.turn {
+  position: absolute;
+  left: 262px;
+  top: 172px;
+  width: 44px;
+  height: 12px;
+  font-size: 3.8px;
+}
+
+.sack {
+  position: absolute;
+  left: 176px;
+  top: 176px;
+  width: 84px;
+  font-size: 3px;
+}

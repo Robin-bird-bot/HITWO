@@ -2773,6 +2773,31 @@ export const BALANCE = {
     },
 
     /**
+     * Pack It Up (23-minigames-final.md, section 8; Claude's idea, Wyatt
+     * approved). By tier: the pack (columns × rows), torn cells, spare cells
+     * (none from Tier III: the gear fills it exactly), and each hiker's
+     * seconds. Pieces of up to 5 cells come from this tier (4 before it). A
+     * piece grows toward one of these sizes (my guess: mostly 3 and 4). The
+     * gear pictures, smallest first. FOOD adds this many seconds.
+     * TODO(wyatt): [5 × 4, 5 × 5, 6 × 5, 6 × 6, 7 × 6], [1, 2, 3, 4, 4], [2, 1, 0, 0, 0], [60, 60, 75, 90, 90 s], [+10 s].
+     */
+    packItUp: {
+      tiers: {
+        1: { cols: 5, rows: 4, torn: 1, spare: 2, timeSec: 60 },
+        2: { cols: 5, rows: 5, torn: 2, spare: 1, timeSec: 60 },
+        3: { cols: 6, rows: 5, torn: 3, spare: 0, timeSec: 75 },
+        4: { cols: 6, rows: 6, torn: 4, spare: 0, timeSec: 90 },
+        5: { cols: 7, rows: 6, torn: 4, spare: 0, timeSec: 90 },
+      } as Readonly<
+        Record<MgTier, { cols: number; rows: number; torn: number; spare: number; timeSec: number }>
+      >,
+      fiveFrom: 4,
+      sizes: [2, 3, 3, 4, 4, 4, 5] as const,
+      gear: ['map', 'lantern', 'rope', 'sleeping-bag', 'boots', 'pot', 'tent', 'stove'] as const,
+      foodSec: 10,
+    },
+
+    /**
      * Birdsong (23-minigames-final.md, section 5), Simon with colored
      * notes. By tier: colors in play, the longest song, how fast the notes
      * cross (units/s) and how far apart they come (seconds). The colors, in
