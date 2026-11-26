@@ -26,6 +26,7 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/15-challenge-tiers.md` | Challenge tiers I to V: what Tiers IV and V are, the fallback rule for games without their own IV and V numbers, and which tier a challenge gets in runs, by biome and difficulty (Phase 10.8 steps 6 and 7). |
 | `docs/design/16-challenge-end-screen.md` | The Challenge Passed / Challenge Failed end screen every minigame shares: the drips, the clock wipe, the title and each hiker's result (Phase 10.8 step 7). |
 | `docs/design/17-minigames-lanes.md` | The lane games: Crossing (Road, River, Critter and Mixed), Train! and Rafting, and their testing-tab settings (Phase 10.8 step 7). |
+| `docs/design/18-minigames-quick.md` | Six short games: Trail Blazes, Firefly Catch, Size Up, Safari, Fly Swatter and the Raccoon Shuffle challenge, and their testing-tab settings (Phase 10.8 step 8). |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |

@@ -1668,7 +1668,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** as in each revised design file, plus: every game accepts Tiers IV and V, and below Tier V Dodge never overlaps attacks.
 
-### Phase 10.8, step 7: End screens, Dodge portrait motion, step-1 fixes, tiers by biome, and the lane games
+### Phase 10.8, step 7: End screens, Dodge portrait motion, step-1 fixes, tiers by biome, and the lane games (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-end-screens-lanes-fixes.md`. The designs are the revised `docs/design/12-minigames-dodge.md`, `14-minigames-trail-blocks.md` and `15-challenge-tiers.md`, and the new `16-challenge-end-screen.md` and `17-minigames-lanes.md`. New mockups in `docs/mockups/minigames/dodge/`, `end-screens/`, `lanes/` and `trail-blocks/`, plus three overview boards. New art: Dodge's bob frames and the Woods Monster's hands, Wyatt's tool, tree and rock sprites, the ribbed cans and the mallet, and placeholder art for Crossing, Train! and Rafting.)
 
@@ -1684,6 +1684,26 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 5. **Crossing, Train! and Rafting:** passing challenges under Movement and dodging in the testing tab.
 
 **Tests:** as in each revised or new design file, plus: each biome's tiers come out close to its table over many rolls.
+
+### Phase 10.8, step 8: The quick games
+
+(New in the Nov 25 update: `docs/UPDATE-2026-11-25-quick-games.md`. The design is the new `docs/design/18-minigames-quick.md`. New mockups in `docs/mockups/minigames/quick-games/`. New placeholder art in `trail-blazes/`, `firefly-catch/`, `size-up/`, `safari/`, `fly-swatter/` and `raccoon-shuffle/`.)
+
+**Goal:** six short games in the testing tab. None is a passing challenge: each hiker passes or fails on their own. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+1. **Trail Blazes** (Reaction and timing): two trunks scroll past each other; tap when the lit blazes are level. Tries or Clock mode.
+2. **Firefly Catch** (Reaction and timing): tap when the bouncing firefly is inside the drifting jar ring.
+3. **Size Up** (Reaction and timing): grow or shrink a find to match the field guide's drawing; one try each.
+4. **Safari** (Memory, Wildlife): watch animals come down a hillside, then answer a question as a team (two, as a relay, with 3 or more hikers). Night with a flashlight aimed by the mouse, fog, and a rare Bigfoot.
+5. **Fly Swatter** (Reaction and timing): tap each circle before it shrinks away and the fly lands; leave bee circles alone.
+6. **Raccoon Shuffle** (Guess and luck, Wildlife): watch which bins hold raccoons, follow the shuffle, pick an empty bin. A raccoon steals the item on its card instead of energy.
+
+All six end on the Challenge Passed / Challenge Failed screen. Hikers who fail lose [1] energy, except in Raccoon Shuffle.
+
+**Tests:** as in section 9 of the design file.
 
 ### Phase 10.8, next steps (outline only)
 

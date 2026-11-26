@@ -43,6 +43,7 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `minigames/end-screens/` (Phase 10.8 step 7) | The shared end screen: `challenge-passed.png` and `challenge-failed.png`, the moving transitions in `challenge-passed.gif` and `challenge-failed.gif`, and stills of the clock wipe (`challenge-passed-wipe.png`) and the drips (`challenge-failed-drips.png`) |
 | `minigames/lanes/` (Phase 10.8 step 7) | The lane games: `1-road-crossing.png`, `2-river-crossing-mix.png`, `3-critter-crossing.png`, `4-train.png`, `5-train-fog.png` and `6-rafting.png` |
 | `minigames/0-board-end-screens.png`, `0-board-fixes.png` and `0-board-lanes.png` (Phase 10.8 step 7) | Overviews of the end screens, the step-1 fixes with Wyatt's new art, and the lane games |
+| `minigames/quick-games/` (Phase 10.8 step 8) | The quick games: `1-trail-blazes.png`, `2-firefly-catch.png`, `3-size-up.png`, `4-size-up-reveal.png`, `5-safari-parade.png`, `6-safari-question.png`, `7-safari-night.png`, `8-fly-swatter.png`, `9-raccoon-shuffle-show.png`, `10-raccoon-shuffle-swap.png` and `11-raccoon-shuffle-night.png` |
 
 **Geometry from `Main.dc.html`**
 - Hexes are 112×128.
