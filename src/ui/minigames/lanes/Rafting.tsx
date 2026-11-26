@@ -28,6 +28,8 @@ import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
 import { useLaneInput } from './useLaneInput';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 
 const R = BALANCE.minigames.rafting;
 const FIXED = 1 / 120;
@@ -38,7 +40,13 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
   const tier = tierOf(settings);
   const [game, setGame] = useState(() =>
     newRafting(
-      { tier, distance: typeof settings.distance === 'number' ? settings.distance : 'auto' },
+      {
+        tier,
+        distance: typeof settings.distance === 'number' ? settings.distance : 'auto',
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        sturdy: prepNumber(settings, 'prep.sturdy') > 0,
+      },
       hikers.map((h) => h.id),
       seed,
     ),

@@ -35,6 +35,7 @@ import { toScene } from '../sceneCoords';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
 import styles from './FindPath.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const P = BALANCE.minigames.findPath;
 const TILE = 32;
@@ -50,8 +51,15 @@ export function FindPath({ settings, hikers, seed, onDone, still = false }: Puzz
     newFindPath(
       {
         tier: tierOf(settings),
-        fog: fogSetting === 'on' || fogSetting === 'off' ? fogSetting : 'auto',
+        // Prepare's LANTERN clears the fog.
+        fog:
+          prepNumber(settings, 'prep.lantern') > 0
+            ? 'off'
+            : fogSetting === 'on' || fogSetting === 'off'
+              ? fogSetting
+              : 'auto',
         hide: hideSetting === 'everything' ? 'everything' : 'trail',
+        extraTries: prepNumber(settings, 'prep.tries'),
       },
       hikers.map((h) => h.id),
       seed,

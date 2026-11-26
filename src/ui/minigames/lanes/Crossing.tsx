@@ -32,6 +32,8 @@ import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
 import { useLaneInput } from './useLaneInput';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 
 const C = BALANCE.minigames.crossing;
 const FIXED = 1 / 120;
@@ -66,7 +68,14 @@ export function Crossing({ settings, hikers, seed, onDone, still = false }: Puzz
     : 'road';
   const [game, setGame] = useState(() =>
     newCrossing(
-      { version, tier, lives: num(settings.lives), attemptSec: num(settings.time) },
+      {
+        version,
+        tier,
+        lives: num(settings.lives),
+        attemptSec: num(settings.time),
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+      },
       hikers.map((h) => h.id),
       seed,
     ),
@@ -291,7 +300,7 @@ export function Crossing({ settings, hikers, seed, onDone, still = false }: Puzz
                 <span className={styles.slotName}>
                   {byId(id).name.toUpperCase()}{' '}
                   <span className={styles.hearts}>
-                    {Array.from({ length: game.maxLives }, (_, i) => (
+                    {Array.from({ length: game.startLives[id] ?? game.maxLives }, (_, i) => (
                       <span key={i} data-lit={i < (game.lives[id] ?? 0) || undefined}>
                         ♥
                       </span>

@@ -41,6 +41,9 @@ export interface RaftingState {
   order: string[];
   /** Hikers whose life is gone, in the order they lost it (line order). */
   lost: string[];
+  /** Prepare: spare lives by hiker (+1 LIFE), and a sturdier raft whose first hit doesn't count. */
+  spare: Record<string, number>;
+  sturdy: boolean;
   /** The raft's lane, and a slide on its way. */
   lane: number;
   slide?: { from: number; to: number; at: number };
@@ -61,6 +64,13 @@ export interface RaftingOptions {
   tier: Tier;
   /** The testing tab's override: "auto" uses the tier's. */
   distance?: 'auto' | number;
+  /**
+   * Prepare (20-challenge-popup.md, section 7): extra lives by hiker, the
+   * share slower the river goes, and a sturdier raft.
+   */
+  extraLives?: Readonly<Record<string, number>>;
+  slower?: number;
+  sturdy?: boolean;
 }
 
 /** The course: rows of rocks spread along the river (never every lane), and the rapids between them. */
@@ -131,11 +141,13 @@ export function newRafting(
     lanes: t.lanes,
     order: [...order],
     lost: [],
+    spare: Object.fromEntries(order.map((id) => [id, options.extraLives?.[id] ?? 0])),
+    sturdy: options.sturdy ?? false,
     lane: Math.floor(t.lanes / 2),
     traveled: 0,
     distance,
-    pace: t.pace,
-    startPace: t.pace,
+    pace: t.pace * (1 - Math.max(0, Math.min(0.8, options.slower ?? 0))),
+    startPace: t.pace * (1 - Math.max(0, Math.min(0.8, options.slower ?? 0))),
     things: course(rng, options.tier, t.lanes, distance),
     safeFor: 0,
     time: 0,
@@ -196,7 +208,16 @@ export function tick(s0: RaftingState, dt: number): RaftingState {
       things = things.map((x, j) => (j === k ? { ...x, done: true } : x));
     } else if (s.safeFor <= 0) {
       const who = livesLeft(s)[0];
-      if (who)
+      // A sturdier raft takes the first hit; then a spare life goes before the hiker's own.
+      if (s.sturdy) s = { ...s, sturdy: false, safeFor: R.safeSec };
+      else if (who && (s.spare[who] ?? 0) > 0)
+        s = {
+          ...s,
+          spare: { ...s.spare, [who]: s.spare[who]! - 1 },
+          safeFor: R.safeSec,
+          lastHit: { hikerId: who, at: s.time },
+        };
+      else if (who)
         s = {
           ...s,
           lost: [...s.lost, who],

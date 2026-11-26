@@ -29,6 +29,8 @@ import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
 import { useLaneInput } from './useLaneInput';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 
 const T = BALANCE.minigames.train;
 const FIXED = 1 / 120;
@@ -45,6 +47,9 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
         lives: num(settings.lives),
         surviveSec: num(settings.survive),
         fog: fogPick === 'on' || fogPick === 'off' ? fogPick : 'auto',
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        brighter: prepNumber(settings, 'prep.brighter'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -264,7 +269,7 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
                   />
                   <span className={styles.slotName}>{byId(id).name.toUpperCase()}</span>
                   <span className={styles.hearts}>
-                    {Array.from({ length: game.maxLives }, (_, i) => (
+                    {Array.from({ length: game.startLives[id] ?? game.maxLives }, (_, i) => (
                       <span key={i} data-lit={i < lives || undefined}>
                         ♥
                       </span>

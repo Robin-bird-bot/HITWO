@@ -45,6 +45,10 @@ export interface TrainState {
   order: string[];
   lives: Record<string, number>;
   maxLives: number;
+  /** Each hiker's lives at the start (Prepare's +1 LIFE adds to one hiker's). */
+  startLives: Record<string, number>;
+  /** The share of the tier's speed the trains go (Prepare's SLOWER TRAINS). */
+  pace: number;
   active: string;
   switchSec: number;
   switchIn: number;
@@ -70,6 +74,13 @@ export interface TrainOptions {
   lives?: 'auto' | number;
   surviveSec?: 'auto' | number;
   fog?: 'auto' | 'on' | 'off';
+  /**
+   * Prepare (20-challenge-popup.md, section 7): extra lives by hiker, the
+   * share slower the trains go, and seconds more warning (fog only).
+   */
+  extraLives?: Readonly<Record<string, number>>;
+  slower?: number;
+  brighter?: number;
 }
 
 export function newTrain(
@@ -83,8 +94,12 @@ export function newTrain(
     tier: options.tier,
     tracks: t.tracks,
     order: [...order],
-    lives: Object.fromEntries(order.map((id) => [id, lives])),
+    lives: Object.fromEntries(order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)])),
     maxLives: lives,
+    startLives: Object.fromEntries(
+      order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)]),
+    ),
+    pace: 1 - Math.max(0, Math.min(0.8, options.slower ?? 0)),
     active: order[0] ?? '',
     switchSec: T.switchSec,
     switchIn: T.switchSec,
@@ -93,7 +108,7 @@ export function newTrain(
     nextTrain: 0.6,
     nextId: 1,
     safeFor: 0,
-    warnSec: t.warnSec,
+    warnSec: t.warnSec + (options.brighter ?? 0),
     fog: options.fog === 'on' ? true : options.fog === 'off' ? false : t.fog,
     lengthSec: typeof options.surviveSec === 'number' ? options.surviveSec : t.surviveSec,
     time: 0,
@@ -163,7 +178,7 @@ function spawn(s: TrainState, rng: RngState): TrainState {
     () => (nextFloat(rng) < 0.5 ? 'boxcar' : 'tanker') as CarKind,
   );
   const length = T.engineLength + n * T.carLength;
-  const speed = t.speed[0] + nextFloat(rng) * (t.speed[1] - t.speed[0]);
+  const speed = (t.speed[0] + nextFloat(rng) * (t.speed[1] - t.speed[0])) * s.pace;
   const warnAt = s.time;
   const enterAt = warnAt + s.warnSec;
   const leaveAt = enterAt + (324 + length) / speed;

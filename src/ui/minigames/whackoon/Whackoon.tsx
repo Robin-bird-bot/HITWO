@@ -25,6 +25,8 @@ import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Whackoon.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const W = BALANCE.minigames.whackoon;
 const FIXED = 1 / 120;
@@ -44,7 +46,12 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   const skunks = pickOf(settings, 'skunks');
   const [game, setGame] = useState(() =>
     newWhackoon(
-      { tier, skunks: skunks === 'on' || skunks === 'off' ? skunks : 'auto' },
+      {
+        tier,
+        skunks: skunks === 'on' || skunks === 'off' ? skunks : 'auto',
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        noSkunks: prepNumber(settings, 'prep.noSkunks') > 0,
+      },
       hikers.map((h) => h.id),
       seed,
     ),

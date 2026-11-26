@@ -30,6 +30,8 @@ export type HikerStatus = 'waiting' | 'sneaking' | 'across' | 'caught' | 'timeou
 
 export interface SleepingBearState {
   tier: Tier;
+  /** Prepare's QUIET STEPS: his stir lasts this many times as long. */
+  quiet: number;
   order: string[];
   /** Whose turn it is, and how far along the path they are. */
   current: number;
@@ -54,7 +56,13 @@ export interface SleepingBearState {
 const between = (rng: RngState, [a, b]: readonly [number, number]) => a + nextFloat(rng) * (b - a);
 
 export function newSleepingBear(
-  options: { tier: Tier; fakeOuts?: 'auto' | 'on' | 'off' },
+  options: {
+    tier: Tier;
+    fakeOuts?: 'auto' | 'on' | 'off';
+    /** Prepare: the share lighter he sleeps (a longer stir), and seconds more on the clock. */
+    quiet?: number;
+    extraSec?: number;
+  },
   order: readonly string[],
   seed: number,
 ): SleepingBearState {
@@ -66,9 +74,10 @@ export function newSleepingBear(
       : options.fakeOuts === 'on'
         ? t.fakeOut || SB.fakeOutOn
         : t.fakeOut;
-  const total = t.secPerHiker * order.length;
+  const total = t.secPerHiker * order.length + (options.extraSec ?? 0);
   return {
     tier: options.tier,
+    quiet: 1 / (1 - Math.max(0, Math.min(0.6, options.quiet ?? 0))),
     order: [...order],
     current: 0,
     pos: 0,
@@ -100,7 +109,12 @@ function nextBear(s: SleepingBearState, rng: RngState): SleepingBearState {
   const t = SB.tiers[s.tier];
   switch (s.bear) {
     case 'asleep':
-      return { ...s, bear: 'stir', bearLeft: t.stirSec, fake: nextFloat(rng) < s.fakeOut };
+      return {
+        ...s,
+        bear: 'stir',
+        bearLeft: t.stirSec * s.quiet,
+        fake: nextFloat(rng) < s.fakeOut,
+      };
     case 'stir':
       return s.fake
         ? { ...s, bear: 'asleep', bearLeft: between(rng, t.asleep), fake: false }

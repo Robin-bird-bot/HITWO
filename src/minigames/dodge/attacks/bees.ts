@@ -89,11 +89,15 @@ function aimedBee(ctx: AttackCtx, warnAt: number, speed: number): BeePart {
 /** The level's Lane numbers (Easy uses Level 1's). */
 const laneOf = (ctx: AttackCtx) => D.bees.lane[ctx.level];
 
-/** The next round starts the level's gap after the last bee sets off (as in step 3). */
-const wave = (bees: BeePart[]): AttackStart => ({
-  parts: bees,
-  endsAt: Math.max(...bees.map((b) => b.activeAt)),
-});
+/**
+ * The next round starts the level's gap after the last bee sets off (as in
+ * step 3). Prepare's Smoky Fire takes bees off the end of every wave (one
+ * always comes).
+ */
+const wave = (ctx: AttackCtx, all: BeePart[]): AttackStart => {
+  const bees = all.slice(0, Math.max(1, all.length - (ctx.state.fewerBees ?? 0)));
+  return { parts: bees, endsAt: Math.max(...bees.map((b) => b.activeAt)) };
+};
 
 const beeSpeed = (ctx: AttackCtx) => D.bees.speed * ctx.speed;
 
@@ -107,7 +111,7 @@ export const SINGLE: AttackDef = {
     const n = int(ctx.rng, S.bees[0], S.bees[1]);
     const every = ctx.easy ? S.everySec[0] : S.everySec[1];
     const speed = ctx.easy ? S.easySpeed : beeSpeed(ctx);
-    return wave(Array.from({ length: n }, (_, k) => aimedBee(ctx, ctx.time + k * every, speed)));
+    return wave(ctx, Array.from({ length: n }, (_, k) => aimedBee(ctx, ctx.time + k * every, speed)));
   },
 };
 
@@ -121,7 +125,7 @@ export const PAIRS: AttackDef = {
     const side = SIDES[int(ctx.rng, 0, 3)]!;
     const first = between(ctx.rng, 0.15, 0.85 - P.apart);
     const lanes = nextFloat(ctx.rng) < 0.5 ? [first, first + P.apart] : [first + P.apart, first];
-    return wave(
+    return wave(ctx, 
       lanes.map((along, k) =>
         laneBee(ctx, ctx.box, side, along, ctx.time + k * P.everySec, beeSpeed(ctx)),
       ),
@@ -138,7 +142,7 @@ export const LANE: AttackDef = {
     const L = laneOf(ctx);
     const side = SIDES[int(ctx.rng, 0, 3)]!;
     const n = int(ctx.rng, L.bees[0], L.bees[1]);
-    return wave(laneWave(ctx, ctx.rng, side, n, ctx.time, beeSpeed(ctx), L.staggerSec));
+    return wave(ctx, laneWave(ctx, ctx.rng, side, n, ctx.time, beeSpeed(ctx), L.staggerSec));
   },
 };
 
@@ -159,7 +163,7 @@ export const CROSS: AttackDef = {
         beeSpeed(ctx),
         stagger,
       );
-    return wave([...row('left'), ...row('top')]);
+    return wave(ctx, [...row('left'), ...row('top')]);
   },
 };
 
@@ -177,7 +181,7 @@ export const DIAGONAL: AttackDef = {
     const dir = { x: dx / Math.SQRT2, y: dy / Math.SQRT2 };
     const perp = { x: -dir.y, y: dir.x };
     const n = D.bees.diagonal.bees;
-    return wave(
+    return wave(ctx, 
       Array.from({ length: n }, (_, k) => {
         const off = (k - (n - 1) / 2) * D.bees.diagonal.spacing;
         const x = corner.x + perp.x * off;
@@ -208,7 +212,7 @@ export const ZIGZAG: AttackDef = {
   start(ctx) {
     const side: Side = nextFloat(ctx.rng) < 0.5 ? 'left' : 'right';
     const n = D.bees.zigzag.bees;
-    return wave(
+    return wave(ctx, 
       Array.from({ length: n }, (_, k) => ({
         ...laneBee(ctx, ctx.box, side, (k + 1) / (n + 1), ctx.time, beeSpeed(ctx) * 0.8),
         weave: {
@@ -229,7 +233,7 @@ export const AIMED: AttackDef = {
   start(ctx) {
     // All at once from random edge points, each aimed at the sprite.
     const speed = beeSpeed(ctx);
-    return wave(Array.from({ length: D.bees.aimed.bees }, () => aimedBee(ctx, ctx.time, speed)));
+    return wave(ctx, Array.from({ length: D.bees.aimed.bees }, () => aimedBee(ctx, ctx.time, speed)));
   },
 };
 

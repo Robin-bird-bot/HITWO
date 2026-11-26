@@ -28,6 +28,8 @@ export interface TraildleOptions {
   signs: 'auto' | number;
   /** The testing tab's override: Auto (the tier's), On or Off. */
   timer: 'auto' | 'on' | 'off';
+  /** Prepare's +1 GUESS: guesses more for each pair. */
+  extraGuesses?: number;
 }
 
 export interface Board {
@@ -101,7 +103,12 @@ export function rulesFor(options: TraildleOptions): {
       : options.timer === 'on'
         ? (tier.timerSec ?? T.timerOnSec)
         : tier.timerSec;
-  return { signs, guesses: tier.guesses, repeats: tier.repeats, timerSec };
+  return {
+    signs,
+    guesses: tier.guesses + (options.extraGuesses ?? 0),
+    repeats: tier.repeats,
+    timerSec,
+  };
 }
 
 function makeCode(rng: RngState, length: number, repeats: boolean): number[] {

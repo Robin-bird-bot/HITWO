@@ -246,7 +246,7 @@ function crosshair(ctx: AttackCtx, warnAt: number): CrosshairPart {
     y: ctx.pos.y,
     speed: follow.share * D.moveSpeed,
     lockAt,
-    holeSec: SN.holeSec[ctx.level],
+    holeSec: SN.holeSec[ctx.level] * (ctx.state.sandbags ? 0.5 : 1),
   };
 }
 
@@ -365,7 +365,7 @@ export const BEAR_TRAPS: AttackDef = {
     const holes = holesIn(ctx.state.parts);
     const taken: Point[] = already.map((q) => ({ x: q.x, y: q.y }));
     const parts: TrapPart[] = [];
-    const open = T.openSec[ctx.level];
+    const open = T.openSec[ctx.level] * (ctx.state.sandbags ? 0.5 : 1);
     for (let k = 0; k < Math.min(T.count[ctx.level], room); k++) {
       let spot: Point | null = null;
       for (let tries = 0; tries < 40 && !spot; tries++) {
@@ -434,7 +434,7 @@ export const RAPID_FIRE: AttackDef = {
     const mid = Math.atan2(ctx.pos.y - gun.y, ctx.pos.x - gun.x);
     const half = R.spreadDeg * DEG;
     const n = R.bullets[ctx.level];
-    const speed = R.speed[ctx.level];
+    const speed = R.speed[ctx.level] * ctx.state.pace;
     const fireAt = ctx.time + warnFor(R.warnSec);
     const parts: BulletPart[] = Array.from({ length: n }, (_, k) => {
       const a = mid + (nextFloat(ctx.rng) * 2 - 1) * half;
@@ -519,7 +519,7 @@ export const RICOCHET: AttackDef = {
           kind: 'ricochet',
           ...base(ctx, ctx.time, ctx.time + warnFor(RI.warnSec)),
           path: ricochetPath(ctx.box, gun, ctx.pos, RI.bounces[ctx.level]),
-          speed: RI.speed,
+          speed: RI.speed * ctx.state.pace,
         },
       ],
       endsAt: 'parts',

@@ -40,6 +40,9 @@ export interface TrailBlazesOptions {
   mode?: TrailBlazesMode;
   /** The Tries setting ("auto": the tier's). */
   tries?: number | 'auto';
+  /** Prepare: the share slower the trunks scroll, and units more that count as level. */
+  slower?: number;
+  brighter?: number;
 }
 
 /** A lit pair: a blaze on each trunk, by index (blaze i sits at the trunk's offset + i × gap). */
@@ -52,6 +55,8 @@ export interface LitPair {
 
 export interface TrailBlazesState {
   tier: Tier;
+  /** The share of the tier's speed the trunks scroll at (Prepare's SLOWER TRUNKS). */
+  pace: number;
   mode: TrailBlazesMode;
   pairsNeeded: number;
   level: number;
@@ -97,9 +102,9 @@ export const isLevel = (s: TrailBlazesState): boolean => {
 };
 
 /** This pair's speeds: the tier's, changed by up to ± the tier's share from Tier III. */
-function pairSpeeds(rng: RngState, tier: Tier): { vL: number; vR: number } {
+function pairSpeeds(rng: RngState, tier: Tier, pace = 1): { vL: number; vR: number } {
   const t = TB.tiers[tier];
-  const one = () => t.speed * (1 + (nextFloat(rng) * 2 - 1) * t.change);
+  const one = () => t.speed * pace * (1 + (nextFloat(rng) * 2 - 1) * t.change);
   return { vL: one(), vR: one() };
 }
 
@@ -109,7 +114,7 @@ function pairSpeeds(rng: RngState, tier: Tier): { vL: number; vR: number } {
  * on screen.
  */
 function lightPair(s: TrailBlazesState, rng: RngState): TrailBlazesState {
-  const { vL, vR } = pairSpeeds(rng, s.tier);
+  const { vL, vR } = pairSpeeds(rng, s.tier, s.pace);
   const [lo, hi] = TB.litY;
   const [near, far] = TB.startApart;
   const onScreen = (side: 'l' | 'r', gone: readonly number[]) => {
@@ -159,7 +164,8 @@ export function newTrailBlazes(
     tier: options.tier,
     mode: options.mode ?? 'tries',
     pairsNeeded: t.pairs,
-    level: t.level,
+    pace: 1 - Math.max(0, Math.min(0.6, options.slower ?? 0)),
+    level: t.level + (options.brighter ?? 0),
     tries: typeof options.tries === 'number' ? options.tries : t.tries,
     clockSec: t.clockSec,
     turns: newTurns(order),
@@ -169,8 +175,8 @@ export function newTrailBlazes(
     // The trunks start with their blazes on a random phase.
     offL: nextFloat(rng) * TB.blazeGap,
     offR: nextFloat(rng) * TB.blazeGap,
-    vL: t.speed,
-    vR: t.speed,
+    vL: t.speed * (1 - Math.max(0, Math.min(0.6, options.slower ?? 0))),
+    vR: t.speed * (1 - Math.max(0, Math.min(0.6, options.slower ?? 0))),
     lit: null,
     goneL: [],
     goneR: [],

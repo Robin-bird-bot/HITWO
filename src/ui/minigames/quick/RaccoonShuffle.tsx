@@ -40,6 +40,7 @@ import q from './Quick.module.css';
 import styles from './RaccoonShuffle.module.css';
 import { TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
 
 const RS = BALANCE.minigames.raccoonShuffle;
 const art = (f: string) => asset(`minigames/raccoon-shuffle/${f}`);
@@ -62,6 +63,9 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
         night: nightPick === 'on' || nightPick === 'off' ? nightPick : 'auto',
         // The hikers' packs (the testing tab's Packs control makes them up).
         packs: Object.fromEntries(hikers.map((h) => [h.id, h.pack ?? testPack(seed, h.id)])),
+        // Prepare (20-challenge-popup.md, section 7).
+        extraEmpty: prepNumber(settings, 'prep.lure'),
+        extraSwapSec: prepNumber(settings, 'prep.slowShuffle'),
       },
       hikers.map((h) => h.id),
       seed,

@@ -35,6 +35,7 @@ import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
 import { BOARD, bigSigns, boardLayout, followRow } from './layout';
 import styles from './Traildle.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const art = (f: string) => asset(`minigames/traildle/${f}`);
 
@@ -56,6 +57,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
         tier: tierOf(settings),
         signs: signsSetting === 'auto' ? 'auto' : Number(signsSetting),
         timer: timer === 'on' || timer === 'off' ? timer : 'auto',
+        extraGuesses: prepNumber(settings, 'prep.guesses'),
       },
       hikers.map((h) => h.id),
       seed,

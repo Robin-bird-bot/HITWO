@@ -41,6 +41,8 @@ import { toScene } from '../sceneCoords';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
 import styles from './RememberPath.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const R = BALANCE.minigames.rememberPath;
 const TILE = 32;
@@ -86,8 +88,11 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       tier,
       hikers.map((h) => h.id),
       seed,
+      prepNumber(settings, 'prep.fewerSteps'),
     ),
   );
+  /** Prepare's SLOWER RANGER: each step takes this many times as long. */
+  const rangerSlow = 1 / (1 - slowerShare(prepNumber(settings, 'prep.slower')));
   /** The ranger's walk along his route (−1 before he appears; past the end, he's gone). */
   const [walk, setWalk] = useState(still ? 3 : -1);
   /** Below the grid: the column the hiker's token is under (the middle to start with). */
@@ -117,7 +122,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
   const steps = route.length;
   useEffect(() => {
     if (!watching) return;
-    const stepMs = R.tiers[tier].stepMs;
+    const stepMs = R.tiers[tier].stepMs * rangerSlow;
     let i = -1;
     const id = window.setInterval(() => {
       i += 1;
@@ -345,7 +350,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
               top: top + rangerTile.r * TILE,
               transform: look.mirror ? 'scaleX(-1)' : undefined,
               opacity: walk >= route.length - 1 ? 0 : 1,
-              '--step-ms': `${R.tiers[tier].stepMs}ms`,
+              '--step-ms': `${R.tiers[tier].stepMs * rangerSlow}ms`,
             } as CSSProperties
           }
         />

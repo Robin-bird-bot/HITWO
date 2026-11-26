@@ -1097,6 +1097,33 @@ export const BALANCE = {
     hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
     /** The line-up: a press becomes a drag after moving this far (screen px). */
     lineUp: { dragStartPx: 6 },
+    /**
+     * The challenge pop-up's Prepare and bars (docs/design/20-challenge-popup.md).
+     * - Level bars have this many segments; the tier sets the start at tier +
+     *   this (Tier I is 4/10); each SLOWER slot is one level, this share
+     *   slower. TODO(wyatt): the design gives no mapping; these are my guesses.
+     * - Time bars: a segment per [5 s], or [10 s] for games over [60 s].
+     * - Slots: [52] across, ghost icons at [26%] cycling every [1.3 s].
+     * - The demo: the result shows [2.4 s] before the next round; long games
+     *   are cut at [30 s]; the bot goes wrong about this often (its own
+     *   games say how).
+     * - The testing tab's Packs: Made-up gives each hiker this many kinds of
+     *   resources (1 to 3 of each) and this many items; Lots gives this many
+     *   of every resource and one of every Prepare item. TODO(wyatt).
+     */
+    prepare: {
+      levels: 10,
+      levelFromTier: 3,
+      levelStep: 0.1,
+      segSec: 5,
+      longSegSec: 10,
+      longGameSec: 60,
+      slotPx: 52,
+      ghostOpacity: 0.26,
+      ghostCycleSec: 1.3,
+      demo: { resultSec: 2.4, cutSec: 30, mistake: [0.15, 0.25] as const },
+      packs: { madeUp: { kinds: [3, 6] as const, items: [1, 3] as const }, lots: 6 },
+    },
 
     /*
      * The puzzle minigames (Phase 10.8 step 2, docs/design/11-minigames-puzzles.md).

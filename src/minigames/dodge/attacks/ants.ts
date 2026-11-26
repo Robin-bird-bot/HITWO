@@ -303,7 +303,8 @@ export const MARCHING: AttackDef = {
   kind: 'missile',
   start(ctx) {
     const ants = M.ants[ctx.level];
-    const speed = M.speed[ctx.level];
+    // Prepare's Salt Line slows the lines; Slower Attacks slows everything.
+    const speed = M.speed[ctx.level] * (1 - ctx.state.antSlow) * ctx.state.pace;
     const cells = Math.ceil((speed * M.walkSec) / M.grid);
     const sides = shuffle(ctx.rng, [...SIDES]).slice(0, M.lines[ctx.level]);
     const parts = sides.map((side, k) =>
@@ -403,7 +404,7 @@ export const ANT_MILL: AttackDef = {
           ctx.time,
           columnPath(ctx.box, lane.axis, lane.at, nextFloat(ctx.rng) < 0.5, out),
           n,
-          M.speed[ctx.level],
+          M.speed[ctx.level] * (1 - ctx.state.antSlow) * ctx.state.pace,
           false,
         ),
       );
@@ -571,7 +572,7 @@ export const ANT_HILL: AttackDef = {
           y: spot.y,
           downAt: activeAt + H.riseSec + up,
           everySec: H.everySec[ctx.level],
-          speed: H.speed[ctx.level],
+          speed: H.speed[ctx.level] * ctx.state.pace,
           nextShot: activeAt + H.riseSec,
         },
       ],
@@ -688,7 +689,7 @@ export const LEAFCUTTER: AttackDef = {
           spots,
           start,
           end,
-          speed: PA.speed,
+          speed: PA.speed * ctx.state.pace,
         },
       ],
       endsAt: 'parts',
@@ -755,7 +756,7 @@ export const CRUMB_RUSH: AttackDef = {
           ...base(ctx, ctx.time, activeAt),
           crumbs,
           ants,
-          speed: CR.speed,
+          speed: CR.speed * ctx.state.pace,
           endAt: arrive + CR.staySec,
         },
       ],

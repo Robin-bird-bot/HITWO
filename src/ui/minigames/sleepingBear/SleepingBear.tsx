@@ -25,6 +25,8 @@ import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './SleepingBear.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const SB = BALANCE.minigames.sleepingBear;
 const FIXED = 1 / 120;
@@ -48,7 +50,12 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
   const fake = pickOf(settings, 'fakeOuts');
   const [game, setGame] = useState(() =>
     newSleepingBear(
-      { tier, fakeOuts: fake === 'on' || fake === 'off' ? fake : 'auto' },
+      {
+        tier,
+        fakeOuts: fake === 'on' || fake === 'off' ? fake : 'auto',
+        quiet: slowerShare(prepNumber(settings, 'prep.quiet')),
+        extraSec: prepNumber(settings, 'prep.extraSec'),
+      },
       hikers.map((h) => h.id),
       seed,
     ),

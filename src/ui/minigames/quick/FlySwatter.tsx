@@ -29,6 +29,7 @@ import styles from './FlySwatter.module.css';
 import q from './Quick.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
 
 const FS = BALANCE.minigames.flySwatter;
 const art = (f: string) => asset(`minigames/fly-swatter/${f}`);
@@ -44,6 +45,8 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
         tier,
         bees: beesPick === 'on' || beesPick === 'off' ? beesPick : 'auto',
         strikes: typeof settings.strikes === 'number' ? settings.strikes : 'auto',
+        bigger: prepNumber(settings, 'prep.bigger'),
+        slowerShrink: prepNumber(settings, 'prep.slowerShrink'),
       },
       hikers.map((h) => h.id),
       seed,

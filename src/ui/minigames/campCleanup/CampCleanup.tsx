@@ -34,6 +34,8 @@ import q from '../quick/Quick.module.css';
 import { TurnBar } from '../quick/TurnBar';
 import { useFixedLoop, useReportOnce } from '../quick/useQuick';
 import styles from './CampCleanup.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const C = BALANCE.minigames.campCleanup;
 const file = (f: string) => `minigames/camp-cleanup/${f}`;
@@ -55,6 +57,11 @@ function campOptions(settings: MinigameSettings): CampCleanupOptions {
     quota: num(settings.bags),
     speed: num(settings.speed),
     obstacles: obstacles === 'on' || obstacles === 'off' ? obstacles : 'auto',
+    // Prepare (20-challenge-popup.md, section 7).
+    extraSec: prepNumber(settings, 'prep.extraSec'),
+    slower: slowerShare(prepNumber(settings, 'prep.slower')),
+    fewerBags: prepNumber(settings, 'prep.fewerBags'),
+    fewerObstacles: prepNumber(settings, 'prep.fewerObstacles'),
   };
 }
 

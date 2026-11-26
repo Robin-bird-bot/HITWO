@@ -35,6 +35,7 @@ import q from './Quick.module.css';
 import styles from './SizeUp.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
 
 const file = (f: string) => `minigames/size-up/${f}`;
 const art = (f: string) => asset(file(f));
@@ -56,6 +57,8 @@ export function SizeUp({ settings, hikers, seed, onDone, still = false }: Puzzle
         tier,
         find: isFind(findPick) ? findPick : 'random',
         timeSec: typeof settings.time === 'number' ? settings.time : 'auto',
+        passBonus: prepNumber(settings, 'prep.pass'),
+        extraSec: prepNumber(settings, 'prep.extraSec'),
       },
       hikers.map((h) => h.id),
       seed,

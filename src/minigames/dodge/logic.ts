@@ -93,6 +93,18 @@ export interface DodgeOptions {
   lives?: 'auto' | number;
   lengthSec?: 'auto' | number;
   switchSec?: 'auto' | number;
+  /**
+   * Prepare (20-challenge-popup.md, section 7): extra hearts by hiker, the
+   * share slower the attacks go, bees off each wave, the share shorter (Bear
+   * Spray), traps and holes lasting half as long, and the share slower ant
+   * lines walk.
+   */
+  extraLives?: Readonly<Record<string, number>>;
+  slower?: number;
+  fewerBees?: number;
+  shorter?: number;
+  sandbags?: boolean;
+  antSlow?: number;
 }
 
 const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
@@ -189,20 +201,29 @@ export function newDodge(
     easy: rank === 0,
     hudTier,
     boost,
-    speed: D.levels[rank].speed * (boost ? B.speed : 1),
+    speed: D.levels[rank].speed * (boost ? B.speed : 1) * (1 - (options.slower ?? 0)),
+    pace: 1 - (options.slower ?? 0),
+    fewerBees: Math.max(0, Math.round(options.fewerBees ?? 0)),
+    antSlow: Math.max(0, Math.min(0.8, options.antSlow ?? 0)),
+    sandbags: options.sandbags ?? false,
     overlapChance,
     maxAtOnce: cap + (boost ? B.maxAtOnce : 0),
     only,
     ideas,
     order: [...order],
-    lives: Object.fromEntries(order.map((id) => [id, lives])),
+    lives: Object.fromEntries(order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)])),
+    startLives: Object.fromEntries(
+      order.map((id) => [id, lives + (options.extraLives?.[id] ?? 0)]),
+    ),
     hits: Object.fromEntries(order.map((id) => [id, 0])),
     maxLives: lives,
     active: order[0] ?? '',
     switchSec,
     switchIn: switchSec,
     safeFor: 0,
-    lengthSec: orAuto(options.lengthSec, autoLength(animal, hudTier)),
+    lengthSec:
+      orAuto(options.lengthSec, autoLength(animal, hudTier)) *
+      (1 - Math.max(0, Math.min(0.9, options.shorter ?? 0))),
     time: 0,
     box,
     boxMove: { from: box, to: box, at: 0, sec: 0 },

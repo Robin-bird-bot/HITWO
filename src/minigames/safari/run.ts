@@ -99,6 +99,8 @@ export interface PlanOptions {
   night: boolean;
   fog: boolean;
   bigfoot: boolean;
+  /** Prepare's FEWER ANIMALS: this many fewer. */
+  fewer?: number;
 }
 
 const span = (rng: RngState, [a, b]: readonly [number, number]) => a + nextFloat(rng) * (b - a);
@@ -237,7 +239,7 @@ export function planRun(rng: RngState, tier: Tier, o: PlanOptions): SafariRun {
   const walkers = kinds.filter((k) => k !== 'bird');
   const speeds = planSpeeds(rng, tier, walkers);
   const bushes = planBushes(rng);
-  const total = t.animals + int(rng, -S.animalsSpread, S.animalsSpread);
+  const total = Math.max(3, t.animals + int(rng, -S.animalsSpread, S.animalsSpread) - (o.fewer ?? 0));
 
   // The groups: one of each kind first (so every kind comes), then any kind.
   const groups: Group[] = [];

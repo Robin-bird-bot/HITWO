@@ -40,6 +40,7 @@ import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './RockClimb.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const R = BALANCE.minigames.rockClimb;
 const file = (f: string) => `minigames/rock-climb/${f}`;
@@ -67,10 +68,13 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
       {
         tier,
         holds: typeof settings.holds === 'number' ? settings.holds : 'auto',
-        timeSec: typeof settings.time === 'number' ? settings.time : 'auto',
+        timeSec:
+          (typeof settings.time === 'number' ? settings.time : R.tiers[tier].timeSec) +
+          prepNumber(settings, 'prep.extraSec'),
         tries: tries === 'one' || tries === 'any' ? tries : 'auto',
-        extraReach: typeof settings.extraReach === 'number' ? settings.extraReach : 0,
-        harness: settings.harness === 'on',
+        // Prepare (20-challenge-popup.md, section 7): chalk and the harness.
+        extraReach: prepNumber(settings, 'prep.chalk'),
+        harness: prepNumber(settings, 'prep.harness') > 0,
       },
       hikers.map((h) => h.id),
       seed,

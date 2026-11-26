@@ -40,6 +40,8 @@ import {
   type Point,
 } from '../../../minigames/dodge/logic';
 import { dodgeLevelPick } from '../../../minigames/catalog';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { TIER_LABELS, type MinigameSettings } from '../../../minigames/types';
 import { useReducedMotion } from '../../app/useReducedMotion';
 import { PixelScreen } from '../PixelScreen';
@@ -83,6 +85,13 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         lives: numberOr(settings, 'lives'),
         lengthSec: numberOr(settings, 'length'),
         switchSec: numberOr(settings, 'switch'),
+        // Prepare (20-challenge-popup.md, section 7).
+        extraLives: perHikerCounts(settings, 'prep.lives'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        fewerBees: prepNumber(settings, 'prep.smoke'),
+        shorter: prepNumber(settings, 'prep.bearSpray'),
+        sandbags: prepNumber(settings, 'prep.sandbags') > 0,
+        antSlow: prepNumber(settings, 'prep.salt'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -354,7 +363,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
                 />
                 <span className={styles.slotName}>{h.name.toUpperCase()}</span>
                 <span className={styles.hearts}>
-                  {Array.from({ length: game.maxLives }, (_, i) => (
+                  {Array.from({ length: game.startLives[h.id] ?? game.maxLives }, (_, i) => (
                     <span key={i} data-lit={i < lives || undefined}>
                       ♥
                     </span>

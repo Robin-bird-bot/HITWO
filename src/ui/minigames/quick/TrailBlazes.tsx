@@ -20,6 +20,8 @@ import q from './Quick.module.css';
 import styles from './TrailBlazes.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const TB = BALANCE.minigames.trailBlazes;
 const art = (f: string) => asset(`minigames/trail-blazes/${f}`);
@@ -34,6 +36,8 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
         tier,
         mode: pickOf(settings, 'mode') === 'clock' ? 'clock' : 'tries',
         tries: typeof settings.tries === 'number' ? settings.tries : 'auto',
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        brighter: prepNumber(settings, 'prep.brighter'),
       },
       hikers.map((h) => h.id),
       seed,

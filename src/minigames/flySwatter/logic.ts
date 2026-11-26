@@ -43,6 +43,9 @@ export interface FlySwatterOptions {
   bees?: 'auto' | 'on' | 'off';
   /** The Strikes setting ("auto": the tier's). */
   strikes?: number | 'auto';
+  /** Prepare: units more circle, and seconds more before a circle shrinks away. */
+  bigger?: number;
+  slowerShrink?: number;
 }
 
 export interface Circle {
@@ -140,8 +143,8 @@ export function newFlySwatter(
   return startTurn({
     tier: options.tier,
     flies: t.flies,
-    size: t.circle,
-    shrinkSec: t.shrinkSec,
+    size: t.circle + (options.bigger ?? 0),
+    shrinkSec: t.shrinkSec + (options.slowerShrink ?? 0),
     everySec: t.everySec,
     maxUp: t.maxUp,
     beeShare: bees,

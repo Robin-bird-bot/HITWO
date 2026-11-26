@@ -87,6 +87,8 @@ export function isNext(s: RememberPathState, tile: Tile): boolean {
 
 export interface RememberPathState {
   tier: Tier;
+  /** Prepare's −1 STEP: steps off every path. */
+  fewerSteps: number;
   cols: number;
   rows: number;
   order: string[];
@@ -110,7 +112,10 @@ function forHiker(s: RememberPathState, index: number): RememberPathState {
     ...s,
     rng,
     current: index,
-    path: makePath(rng, s.cols, s.rows, tier.length),
+    path: makePath(rng, s.cols, s.rows, [
+      Math.max(2, tier.length[0] - s.fewerSteps),
+      Math.max(2, tier.length[1] - s.fewerSteps),
+    ]),
     pos: BELOW,
     strikesLeft: tier.strikes,
     phase: 'watch',
@@ -121,11 +126,14 @@ export function newRememberPath(
   tier: Tier,
   order: readonly string[],
   seed: number,
+  /** Prepare's −1 STEP. */
+  fewerSteps = 0,
 ): RememberPathState {
   const t = R.tiers[tier];
   return forHiker(
     {
       tier,
+      fewerSteps,
       cols: t.cols,
       rows: t.rows,
       order: [...order],

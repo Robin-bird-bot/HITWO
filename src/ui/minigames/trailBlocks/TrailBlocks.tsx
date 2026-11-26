@@ -50,6 +50,7 @@ import { useWashedArt, washKey } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './TrailBlocks.module.css';
+import { prepNumber } from '../../../minigames/prepare';
 
 const B = BALANCE.minigames.trailBlocks;
 const FIXED = 1 / 120;
@@ -97,7 +98,7 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
   const showQuality = pickOf(settings, 'quality') === 'on';
   const [game, setGame] = useState(() =>
     newTrailBlocks(
-      { version, tier },
+      { version, tier, lessWork: prepNumber(settings, 'prep.lessWork') },
       hikers.map((h) => h.id),
       seed,
     ),

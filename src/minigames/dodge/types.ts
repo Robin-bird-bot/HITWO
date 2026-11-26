@@ -476,6 +476,17 @@ export interface DodgeState {
   shrunkFor: number;
   /** The sprite moves slower until this time (a bear trap). */
   slowUntil: number;
+  /**
+   * Prepare (20-challenge-popup.md, section 7): the share the attacks' pace
+   * is kept to (SLOWER ATTACKS), bees off every wave (SMOKY FIRE), ant lines'
+   * slowdown (SALT LINE), and traps and holes lasting half as long (SANDBAGS).
+   */
+  pace: number;
+  fewerBees: number;
+  antSlow: number;
+  sandbags: boolean;
+  /** Each hiker's hearts at the start (Prepare's +1 HEART adds to one hiker's). */
+  startLives: Record<string, number>;
   /** The last hit, for the screen ("FINN −1"), and the hearts it cost. */
   lastHit?: { hikerId: string; at: number; damage: number };
   over: boolean;

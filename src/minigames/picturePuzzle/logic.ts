@@ -41,6 +41,8 @@ export interface PicturePuzzleState {
   tier: Tier;
   grid: 4 | 5 | 6;
   secPerPiece: number;
+  /** Prepare's +10 S: seconds more each round. */
+  extraSec: number;
   /** What a piece's first landing in its own spot adds to the clock. */
   rightSpotSec: number;
   order: string[];
@@ -76,6 +78,8 @@ export interface PicturePuzzleOptions {
   rightSpotSec?: 'auto' | number;
   /** The testing tab's Picture: the first hiker's photo (the others are different ones). */
   picture?: 'random' | PictureName;
+  /** Prepare's +10 S: seconds more each round. */
+  extraSec?: number;
 }
 
 export const isPictureName = (v: unknown): v is PictureName =>
@@ -112,8 +116,8 @@ function startRound(s: PicturePuzzleState, round: number): PicturePuzzleState {
     grids: who.map(() => Array.from({ length: cells }, () => null)),
     locked: pieces.map(() => false),
     done: who.map(() => false),
-    timeSec: s.secPerPiece * pieces.length,
-    timeLeft: s.secPerPiece * pieces.length,
+    timeSec: s.secPerPiece * pieces.length + s.extraSec,
+    timeLeft: s.secPerPiece * pieces.length + s.extraSec,
     elapsed: 0,
     bonused: pieces.map(() => false),
     bonusNote: undefined,
@@ -136,6 +140,7 @@ export function newPicturePuzzle(
     tier: options.tier,
     grid: options.grid === 4 || options.grid === 5 || options.grid === 6 ? options.grid : t.grid,
     secPerPiece: typeof options.secPerPiece === 'number' ? options.secPerPiece : t.secPerPiece,
+    extraSec: options.extraSec ?? 0,
     rightSpotSec: typeof options.rightSpotSec === 'number' ? options.rightSpotSec : t.rightSpotSec,
     order: [...order],
     rounds: pairsOf(order),

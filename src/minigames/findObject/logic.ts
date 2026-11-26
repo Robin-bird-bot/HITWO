@@ -67,10 +67,14 @@ export interface FindObjectOptions {
   rounds?: 'auto' | number;
   secPerTarget?: 'auto' | number;
   extraSecPerRound?: 'auto' | number;
+  /** Prepare's −1 TO FIND. */
+  fewer?: number;
 }
 
 export interface FindObjectState {
   tier: Tier;
+  /** Prepare's −1 TO FIND: targets fewer each round. */
+  fewer: number;
   mode: Mode;
   order: string[];
   rounds: number;
@@ -132,7 +136,7 @@ export const timeFor = (
 /** Sets up a round: its targets (split as evenly as possible over its kinds), distractors and clock. */
 function startRound(s: FindObjectState, round: number): FindObjectState {
   const rng = [...s.rng] as RngState;
-  const count = targetsFor(s.line.length, round, s.tier);
+  const count = Math.max(1, targetsFor(s.line.length, round, s.tier) - s.fewer);
   const kinds = Math.min(kindsFor(s.tier, round), count);
   const snacks = shuffle(rng, SNACKS).slice(0, kinds);
   const targets = Array.from({ length: count }, (_, i) => snacks[Math.floor((i * kinds) / count)]!);
@@ -189,6 +193,7 @@ export function newFindObject(
   return startRound(
     {
       tier: options.tier,
+      fewer: options.fewer ?? 0,
       mode: modeFor(options),
       order: [...order],
       rounds: Math.max(1, Math.round(orAuto(options.rounds, F.rounds))),

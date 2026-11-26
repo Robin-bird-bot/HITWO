@@ -51,6 +51,9 @@ export interface SizeUpOptions {
   find?: FindId | 'random';
   /** The Time setting, seconds per hiker ("auto": the tier's). */
   timeSec?: number | 'auto';
+  /** Prepare: percent more that passes, and seconds more each. */
+  passBonus?: number;
+  extraSec?: number;
 }
 
 export interface SizeUpReveal {
@@ -136,8 +139,9 @@ export function newSizeUp(
   const s: SizeUpState = {
     tier: options.tier,
     step: t.step,
-    pass: t.pass,
-    timeSec: typeof options.timeSec === 'number' ? options.timeSec : t.timeSec,
+    pass: t.pass + (options.passBonus ?? 0),
+    timeSec:
+      (typeof options.timeSec === 'number' ? options.timeSec : t.timeSec) + (options.extraSec ?? 0),
     findSetting: options.find ?? 'random',
     turns: newTurns(order),
     find: 'pinecone',

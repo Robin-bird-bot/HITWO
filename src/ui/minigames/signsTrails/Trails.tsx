@@ -28,6 +28,8 @@ import q from '../quick/Quick.module.css';
 import { TurnBar } from '../quick/TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from '../quick/useQuick';
 import styles from './Trails.module.css';
+import { slowerShare } from '../../../minigames/popups/common';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 
 const T = BALANCE.minigames.trails;
 const file = (f: string) => `minigames/trails/${f}`;
@@ -52,6 +54,12 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
         gusts: pickOf(settings, 'gusts') !== 'off',
         scree: pickOf(settings, 'scree') !== 'off',
         knives: pickOf(settings, 'knives') !== 'off',
+        // Prepare (20-challenge-popup.md, section 7).
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
+        extraBar: Object.fromEntries(
+          Object.entries(perHikerCounts(settings, 'prep.bar')).map(([h, n]) => [h, n * 0.5]),
+        ),
+        extraWidth: prepNumber(settings, 'prep.width'),
       },
       hikers.map((h) => h.id),
       seed,

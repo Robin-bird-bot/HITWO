@@ -20,6 +20,8 @@ import styles from './FireflyCatch.module.css';
 import q from './Quick.module.css';
 import { TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { slowerShare } from '../../../minigames/popups/common';
+import { prepNumber } from '../../../minigames/prepare';
 
 const F = BALANCE.minigames.fireflyCatch;
 const BOX = F.box;
@@ -33,6 +35,8 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
         tier,
         catches: typeof settings.catches === 'number' ? settings.catches : 'auto',
         timeSec: typeof settings.time === 'number' ? settings.time : 'auto',
+        biggerRing: prepNumber(settings, 'prep.ring'),
+        slower: slowerShare(prepNumber(settings, 'prep.slower')),
       },
       hikers.map((h) => h.id),
       seed,

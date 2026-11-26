@@ -39,6 +39,7 @@ import q from './Quick.module.css';
 import styles from './Safari.module.css';
 import { TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
+import { prepNumber } from '../../../minigames/prepare';
 
 const S = BALANCE.minigames.safari;
 const art = (f: string) => asset(`minigames/safari/${f}`);
@@ -58,6 +59,8 @@ export function Safari({ settings, hikers, seed, onDone, still = false }: Puzzle
         questions: qs === '1' ? 1 : qs === '2' ? 2 : 'auto',
         bigfoot: bigfoot === 'always' || bigfoot === 'never' ? bigfoot : 'auto',
         question: isQuestionType(forced) ? forced : 'random',
+        fewerSigns: prepNumber(settings, 'prep.binoculars'),
+        fewerAnimals: prepNumber(settings, 'prep.fewerAnimals'),
       },
       hikers.map((h) => h.id),
       seed,
