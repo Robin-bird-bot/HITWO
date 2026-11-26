@@ -166,3 +166,35 @@
   color: #a0b37d;
   font-size: 3.4px;
 }
+
+/* While jumping: the reach around the hand, rings on reachable holds, and the queued grab's tag. */
+.reach {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.75px dashed;
+  border-radius: 50%;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.ring {
+  position: absolute;
+  width: 22px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 50%;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.queued {
+  position: absolute;
+  padding: 1px 3px;
+  border-radius: 1px;
+  background: #1d2918;
+  color: #d3dfaf;
+  font-size: 3.2px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}

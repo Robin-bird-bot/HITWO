@@ -5,8 +5,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { BEAR_COUNTRY } from '../../content/minigameChallenges';
 import {
-  BEARRELS,
+  CAMP_CLEANUP,
   cleanSettings,
   defaultSettings,
   DODGE,
@@ -162,7 +163,7 @@ describe('the minigame list', () => {
           ['Rafting', 'ready'],
           ['Trails', 'ready'],
           ['Rock Climb', 'ready'],
-          ['Ants Are Marching', 'soon'],
+          ['Camp Cleanup', 'ready'],
           ['Cracked Bridge', 'soon'],
         ],
       ],
@@ -199,13 +200,7 @@ describe('the minigame list', () => {
           ['Fly Swatter', 'ready'],
         ],
       ],
-      [
-        'Guess and luck',
-        [
-          ['Bearrels', 'ready'],
-          ['Raccoon Shuffle', 'ready'],
-        ],
-      ],
+      ['Guess and luck', [['Raccoon Shuffle', 'ready']]],
     ]);
     const listed = MINIGAMES_BY_CATEGORY.flatMap((c) => c.games);
     expect(listed).toHaveLength(MINIGAMES.length);
@@ -248,7 +243,7 @@ describe('the minigame list', () => {
       'question',
       'answer',
     ]);
-    expect(ids(RACCOON_SHUFFLE)).toEqual(['tier', 'hikers', 'night', 'packs', 'empties']);
+    expect(ids(RACCOON_SHUFFLE)).toEqual(['tier', 'hikers', 'night', 'empties']);
     expect(defaultSettings(TRAIL_BLAZES)).toMatchObject({ mode: 'tries', tries: 'auto' });
     expect(defaultSettings(SIZE_UP)).toMatchObject({ find: 'random', live: 'off' });
     expect(defaultSettings(SAFARI)).toMatchObject({
@@ -258,11 +253,7 @@ describe('the minigame list', () => {
       question: 'random',
       answer: 'off',
     });
-    expect(defaultSettings(RACCOON_SHUFFLE)).toMatchObject({
-      night: 'auto',
-      packs: 'random',
-      empties: 'off',
-    });
+    expect(defaultSettings(RACCOON_SHUFFLE)).toMatchObject({ night: 'auto', empties: 'off' });
     expect(cleanSettings(TRAIL_BLAZES, { tries: 9, mode: 'sometimes' }, TEST_HIKERS)).toMatchObject(
       {
         tries: 5,
@@ -292,9 +283,18 @@ describe('the minigame list', () => {
       'time',
       'answers',
     ]);
-    expect(ids(TRAILS)).toEqual(['type', 'tier', 'hikers', 'bar', 'section']);
+    expect(ids(TRAILS)).toEqual([
+      'type',
+      'tier',
+      'hikers',
+      'bar',
+      'section',
+      'gusts',
+      'scree',
+      'knives',
+    ]);
     expect(ids(CROSSROADS)).toEqual(['tier', 'hikers', 'arrows', 'study', 'newArrows', 'turn']);
-    expect(ids(ROCK_CLIMB)).toEqual(['tier', 'hikers', 'holds', 'time', 'tries']);
+    expect(ids(ROCK_CLIMB)).toEqual(['tier', 'hikers', 'holds', 'time', 'tries', 'reach']);
     expect(FAKE_SIGNS.category).toBe('puzzle');
     expect(CROSSROADS.category).toBe('memory');
     expect([TRAILS, ROCK_CLIMB].every((m) => m.category === 'move')).toBe(true);
@@ -486,7 +486,7 @@ describe('the minigame list', () => {
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
-  it('Dodge’s Animal and Attack: seven animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
+  it('Dodge’s Animal and Attack: nine animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
     const animal = DODGE.settings.find((s) => s.id === 'animal');
     const attack = DODGE.settings.find((s) => s.id === 'attack');
     if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
@@ -498,10 +498,31 @@ describe('the minigame list', () => {
       'Bear with a Sword',
       'Bobcat',
       'Squirrel Army',
+      'Bear with a Gun',
+      'Ants',
       'Wild Predator Stampede',
       'Woods Monster',
     ]);
     expect(animal.menu && attack.menu).toBe(true);
+    // Nov 26: their attacks in the picker, Claude's ideas marked.
+    const open26 = (settings: Record<string, string | number>) =>
+      attack.optionsFor!(settings).map((o) => `${o.id}${o.disabled ? ' (closed)' : ''}`);
+    expect(open26({ animal: 'gunBear', tier: 3, ideas: 'on' })).toEqual([
+      'all',
+      'aimedShot',
+      'rapidFire',
+      'traps',
+      'snipe',
+      'ricochet',
+      'quickDraw (closed)',
+    ]);
+    expect(open26({ animal: 'ants', tier: 2, ideas: 'off' })).toEqual([
+      'all',
+      'marching',
+      'antMill',
+      'fireAnts (closed)',
+      'antHill (closed)',
+    ]);
     const open = (settings: Record<string, string | number>) =>
       attack.optionsFor!(settings).map((o) => `${o.id}${o.disabled ? ' (closed)' : ''}`);
     // A Bear isn't at Tier I: it plays its lowest level, 1. At Tier II it's Level 1 too.
@@ -571,50 +592,66 @@ describe('the minigame list', () => {
     expect(cleanSettings(DODGE, { animal: 'dragon' }, TEST_HIKERS).animal).toBe('bees');
   });
 
-  it('Bearrels’ settings: art style (Detailed pixel), barrels 3–6 (3), rounds 1–5 (3), shots 1 or 2 (1), hikers 1–4 (Finn, Ellie, Mom)', () => {
-    expect(BEARRELS.settings[0]).toMatchObject({ kind: 'style', label: 'Art style' });
-    expect(defaultSettings(BEARRELS)).toEqual({
-      style: 'pixel',
-      barrels: 3,
-      rounds: 3,
-      shots: 1,
+  it('Camp Cleanup’s settings: Tier, Hikers, Time (Auto, 30–120 s), Bags each (Auto, 1–8), Speed (Auto, 3–12), Obstacles (Auto, Off, On)', () => {
+    expect(CAMP_CLEANUP.category).toBe('move');
+    expect(CAMP_CLEANUP.lineUp).toBe(true);
+    expect(defaultSettings(CAMP_CLEANUP)).toEqual({
+      tier: 1,
       hikers: ['finn', 'ellie', 'mom'],
+      time: 'auto',
+      bags: 'auto',
+      speed: 'auto',
+      obstacles: 'auto',
     });
+    const range = (id: string) => CAMP_CLEANUP.settings.find((x) => x.id === id);
+    expect(range('time')).toMatchObject({ min: 30, max: 120 });
+    expect(range('bags')).toMatchObject({ min: 1, max: 8 });
+    expect(range('speed')).toMatchObject({ min: 3, max: 12 });
   });
 
   it('remembered settings out of range are put back in range', () => {
     expect(
       cleanSettings(
-        BEARRELS,
+        CAMP_CLEANUP,
         {
-          barrels: 12,
-          rounds: -1,
-          shots: 3,
+          tier: 9,
+          time: 500,
+          bags: 0,
+          speed: 'fast',
+          obstacles: 'lots',
           hikers: ['cody', 'finn', 'finn', 'ellie', 'mom', 'wyatt', 'gdog'],
         },
         TEST_HIKERS,
       ),
     ).toEqual({
-      style: 'pixel',
-      barrels: 6,
-      rounds: 1,
-      shots: 1,
+      tier: 1,
+      time: 120,
+      bags: 1,
+      speed: 'auto',
+      obstacles: 'auto',
       hikers: ['finn', 'ellie', 'mom', 'wyatt'],
     });
-    // A known style is kept; anything else is Earthy pixel.
-    expect(cleanSettings(BEARRELS, { style: 'drawn' }, TEST_HIKERS).style).toBe('drawn');
-    // An old style (Earthy, Teal, Silhouette) or anything else: Detailed pixel.
-    expect(cleanSettings(BEARRELS, { style: 'teal' }, TEST_HIKERS).style).toBe('pixel');
-    expect(cleanSettings(BEARRELS, { style: 3 }, TEST_HIKERS).style).toBe('pixel');
     // No hikers left: back to the default.
-    expect(cleanSettings(BEARRELS, { hikers: ['cody'] }, TEST_HIKERS).hikers).toEqual([
+    expect(cleanSettings(CAMP_CLEANUP, { hikers: ['cody'] }, TEST_HIKERS).hikers).toEqual([
       'finn',
       'ellie',
       'mom',
     ]);
   });
 
-  it('each hiker’s color (layout.json); Grandpa Wink is Wink', () => {
+  it('Bearrels is gone (Nov 26); Bear Country plays Dodge with Bear with a Gun, at Tier III', () => {
+    expect(MINIGAMES.some((m) => m.id === 'bearrels')).toBe(false);
+    expect(MINIGAMES_BY_CATEGORY.flatMap((c) => c.games).some((m) => m.name === 'Bearrels')).toBe(
+      false,
+    );
+    expect(BEAR_COUNTRY).toMatchObject({
+      minigame: 'dodge',
+      tier: 3,
+      settings: { animal: 'gunBear' },
+    });
+  });
+
+  it('each hiker’s color (palette.ts); Grandpa Wink is Wink', () => {
     expect(minigameHiker('finn')).toMatchObject({ color: '#E2683C', art: 'finn' });
     expect(minigameHiker('grandpaWink')).toMatchObject({
       name: 'Wink',
@@ -632,23 +669,24 @@ describe('test mode never touches the saved hike', () => {
   it('the testing tab remembers its settings under its own key, and nothing else', () => {
     const save = '{"saveVersion":21}';
     const { storage, data, writes } = fakeStorage({ [AUTOSAVE_KEY]: save });
-    expect(readTestingSettings(storage, 'bearrels')).toEqual(defaultSettings(BEARRELS));
+    expect(readTestingSettings(storage, 'campCleanup')).toEqual(defaultSettings(CAMP_CLEANUP));
     const next = {
-      style: 'drawn',
-      barrels: 5,
-      rounds: 2,
-      shots: 2,
+      tier: 3,
       hikers: ['wyatt', 'gdog'],
+      time: 90,
+      bags: 'auto',
+      speed: 7,
+      obstacles: 'on',
     };
-    writeTestingSettings(storage, 'bearrels', next);
-    expect(readTestingSettings(storage, 'bearrels')).toEqual(next);
+    writeTestingSettings(storage, 'campCleanup', next);
+    expect(readTestingSettings(storage, 'campCleanup')).toEqual(next);
     expect(new Set(writes)).toEqual(new Set([TESTING_KEY]));
     expect(data.get(AUTOSAVE_KEY)).toBe(save);
   });
 
   it('a broken remembered value falls back to the defaults', () => {
     const { storage } = fakeStorage({ [TESTING_KEY]: 'not json' });
-    expect(readTestingSettings(storage, 'bearrels')).toEqual(defaultSettings(BEARRELS));
+    expect(readTestingSettings(storage, 'campCleanup')).toEqual(defaultSettings(CAMP_CLEANUP));
   });
 
   it('no minigame code imports the game store or the save', () => {

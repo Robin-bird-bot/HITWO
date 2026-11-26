@@ -4,7 +4,11 @@
  * section per hiker, each ending at a checkpoint.
  *
  * - **Off the trail** (the icon's middle outside the trail's edges): the
- *   active hiker's bar ticks down in real time. It never refills.
+ *   active hiker's bar ticks down in real time ([2×] as fast off Ridgeline's
+ *   drop). It never refills.
+ * - **Ridgeline (Nov 26):** on scree, steering is half as strong and the
+ *   hiker keeps sliding; wind gusts warn for [0.8 s], then push the hiker
+ *   sideways for [1–1.5 s].
  * - **Reaching a checkpoint:** the hiker passes; "<NAME> MADE IT" for
  *   [0.8 s] while the scroll pauses; the next hiker takes over there.
  * - **Running out (Wyatt):** the hiker fails; after [1 s] the next hiker
@@ -21,11 +25,11 @@
  * Pure and seeded; scene units.
  */
 import { BALANCE } from '../../config/balance';
-import { seedRng } from '../../engine/rng';
+import { nextFloat, seedRng } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { passingResult } from '../passing';
 import type { MinigameResult, Pay, Tier } from '../types';
-import { makeCourse, middleAt, type Course, type TrailType } from './course';
+import { inStretch, makeCourse, middleAt, widthAt, type Course, type TrailType } from './course';
 
 const T = BALANCE.minigames.trails;
 
@@ -36,6 +40,22 @@ export interface TrailsOptions {
   barSec?: number | 'auto';
   /** The Section length setting ("auto": the tier's). */
   section?: number | 'auto';
+  /** Ridgeline's hazards, each on unless switched off (testing). */
+  gusts?: boolean;
+  scree?: boolean;
+  knives?: boolean;
+  /** Prepare: a slower scroll (a share off), more bar for some hikers (seconds), a wider trail (units). */
+  slower?: number;
+  extraBar?: Readonly<Record<string, number>>;
+  extraWidth?: number;
+}
+
+/** A wind gust on Ridgeline: which way it pushes, when it warns, starts pushing and ends. */
+export interface Gust {
+  dir: -1 | 1;
+  warnAt: number;
+  pushAt: number;
+  endAt: number;
 }
 
 export type RunnerState = 'waiting' | 'now' | 'passed' | 'failed';
@@ -68,6 +88,10 @@ export interface TrailsState {
   off: boolean;
   phase: TrailsPhase;
   phaseLeft: number;
+  /** Ridgeline: gusts on, the gust under way, and when the next one comes. */
+  gusts: boolean;
+  gust: Gust | null;
+  nextGustAt: number;
   /** The last one to make it (for "<NAME> MADE IT") and the last one to run out. */
   made?: string;
   ranOut?: string;
@@ -88,9 +112,16 @@ export function nextCheckpoint(
   return checkpoints(s).find((c) => c > d + 1e-6) ?? s.course.length;
 }
 
-/** Whether the icon's middle is off the trail. */
+/** Whether the icon's middle is off the trail (Ridgeline's knife edges narrow it). */
 export const isOff = (s: Pick<TrailsState, 'course' | 'd' | 'x'>): boolean =>
-  Math.abs(s.x - middleAt(s.course, s.d)) > s.course.width / 2;
+  Math.abs(s.x - middleAt(s.course, s.d)) > widthAt(s.course, s.d) / 2;
+
+/** Whether the hiker is on scree (Ridgeline). */
+export const onScree = (s: Pick<TrailsState, 'course' | 'd'>): boolean =>
+  inStretch(s.course.scree, s.d);
+
+const RG = T.ridge;
+const span = (rng: RngState, [a, b]: readonly [number, number]) => a + nextFloat(rng) * (b - a);
 
 export function newTrails(
   options: TrailsOptions,
@@ -101,16 +132,22 @@ export function newTrails(
   const section = typeof options.section === 'number' ? options.section : t.section;
   const barSec = typeof options.barSec === 'number' ? options.barSec : t.barSec;
   const rng = seedRng(seed);
-  const course = makeCourse(rng, options.tier, options.type, section * order.length);
+  const course = makeCourse(rng, options.tier, options.type, section * order.length, {
+    section,
+    knives: options.knives,
+    scree: options.scree,
+  });
+  if (options.extraWidth) course.width += options.extraWidth;
+  const ridge = options.type === 'ridgeline';
   const s: TrailsState = {
     tier: options.tier,
     type: options.type,
     course,
-    scroll: t.scroll,
+    scroll: t.scroll * (1 - (options.slower ?? 0)),
     section,
     barSec,
     order,
-    bars: Object.fromEntries(order.map((id) => [id, barSec])),
+    bars: Object.fromEntries(order.map((id) => [id, barSec + (options.extraBar?.[id] ?? 0)])),
     status: Object.fromEntries(order.map((id) => [id, 'waiting' as RunnerState])),
     cameBack: [],
     runner: null,
@@ -124,6 +161,9 @@ export function newTrails(
     off: false,
     phase: 'run',
     phaseLeft: 0,
+    gusts: ridge && options.gusts !== false,
+    gust: null,
+    nextGustAt: span(rng, RG.tiers[options.tier].gustEvery),
     time: 0,
     over: order.length === 0,
     rng,
@@ -185,9 +225,36 @@ export function tick(s0: TrailsState, dt: number): TrailsState {
       : s.target !== null
         ? Math.max(-top, Math.min(top, (s.target - s.x) * 12))
         : 0;
-  const accel = (top / T.accelSec) * dt;
+  // On scree, steering is half as strong, and momentum dies off three times slower.
+  const slide = onScree(s);
+  const rate = slide ? (want === 0 ? 1 / RG.screeSlide : RG.screeSteer) : 1;
+  const accel = (top / T.accelSec) * dt * rate;
   const vx = s.vx + Math.max(-accel, Math.min(accel, want - s.vx));
-  const x = Math.max(T.xRange[0], Math.min(T.xRange[1], s.x + vx * dt));
+
+  // Ridgeline's gusts: a warning, then a push sideways.
+  let push = 0;
+  if (s.gusts) {
+    const rng: RngState = [...s.rng];
+    let gust = s.gust;
+    let nextGustAt = s.nextGustAt;
+    if (!gust && s.time >= nextGustAt) {
+      const pushAt = s.time + RG.gustWarnSec;
+      gust = {
+        dir: nextFloat(rng) < 0.5 ? -1 : 1,
+        warnAt: s.time,
+        pushAt,
+        endAt: pushAt + span(rng, RG.gustSec),
+      };
+    }
+    if (gust && s.time >= gust.pushAt && s.time < gust.endAt)
+      push = gust.dir * RG.tiers[s.tier].push;
+    if (gust && s.time >= gust.endAt) {
+      gust = null;
+      nextGustAt = s.time + span(rng, RG.tiers[s.tier].gustEvery);
+    }
+    s = { ...s, gust, nextGustAt, rng };
+  }
+  const x = Math.max(T.xRange[0], Math.min(T.xRange[1], s.x + (vx + push) * dt));
   const d = Math.min(s.goal, s.d + s.scroll * dt);
   s = { ...s, x, vx: x === T.xRange[0] || x === T.xRange[1] ? 0 : vx, d };
 
@@ -195,7 +262,8 @@ export function tick(s0: TrailsState, dt: number): TrailsState {
   const off = isOff(s);
   s = { ...s, off };
   if (off) {
-    const left = (s.bars[id] ?? 0) - dt;
+    // Off Ridgeline's drop drains twice as fast.
+    const left = (s.bars[id] ?? 0) - dt * (s.type === 'ridgeline' ? RG.drain : 1);
     if (left <= 0) {
       return {
         ...s,

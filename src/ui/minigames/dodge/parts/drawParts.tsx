@@ -1,18 +1,23 @@
 /**
  * Draws every part on one layer, using each kind's drawing (Wyatt's attacks,
- * Claude's ideas and the Woods Monster's).
+ * Claude's ideas, the Woods Monster's, Bear with a Gun's and the Ants').
  */
 import { Fragment, type ReactNode } from 'react';
 import type { Part } from '../../../../minigames/dodge/logic';
+import { ANT_DRAW } from './AntParts';
 import { CLAUDES_DRAW } from './ClaudesIdeasParts';
 import type { DrawCtx, Layer, PartDrawing } from './drawTypes';
+import { GUN_DRAW } from './GunParts';
 import { MONSTER_DRAW } from './MonsterParts';
 import { WYATT_DRAW } from './WyattParts';
 
-const DRAW = { ...WYATT_DRAW, ...CLAUDES_DRAW, ...MONSTER_DRAW } as Record<
-  Part['kind'],
-  PartDrawing<Part>
->;
+const DRAW = {
+  ...WYATT_DRAW,
+  ...CLAUDES_DRAW,
+  ...MONSTER_DRAW,
+  ...GUN_DRAW,
+  ...ANT_DRAW,
+} satisfies { [K in Part['kind']]: unknown } as Record<Part['kind'], PartDrawing<Part>>;
 
 /**
  * Every part's drawing on a layer (only parts whose warning has started).

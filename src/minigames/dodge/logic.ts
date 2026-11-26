@@ -24,8 +24,11 @@
  *   once its warning is over.
  * - **The Woods Monster** always plays Level 3; at Tier V he also gets his
  *   boss boost. At half time the box shrinks and Darkness can come.
- * - Every attack warns first. Honey puddles slow the sprite; a bear hug or
- *   a shrinking box pushes it back inside.
+ * - Every attack warns first. Honey puddles and sprung bear traps slow the
+ *   sprite; a bear hug or a shrinking box pushes it back inside, and holes
+ *   and the Ant Hill push it out to their edge, like walls.
+ * - **Hits** are checked part by part: most cost 1 heart, a snipe 2, and a
+ *   trap snaps shut as it hits.
  *
  * Positions are in scene units (320 × 240).
  */
@@ -54,6 +57,7 @@ import type {
   AttackCtx,
   AttackId,
   Attacker,
+  Block,
   BoxMove,
   DodgeState,
   Level,
@@ -216,6 +220,7 @@ export function newDodge(
     swings: 0,
     sides: [],
     shrunkFor: 0,
+    slowUntil: 0,
     over: order.length === 0,
     rng: seedRng(seed),
   };
@@ -277,6 +282,36 @@ export const effectiveBox = (s: DodgeState): Box => squeezed(s.box, s.parts, s.t
 /** Whether the sprite is in a honey puddle (it moves slower there). */
 export const inHoney = (s: DodgeState): boolean =>
   s.parts.some((p) => p.kind === 'puddle' && touches(puddleShape(p), s.pos, D.hitRadius));
+
+/** Whether a sprung bear trap has the sprite slowed now. */
+export const slowed = (s: DodgeState): boolean => s.time < s.slowUntil;
+
+/** Every circle the sprite can't enter now (holes, the Ant Hill). */
+export function blocksNow(s: DodgeState): Block[] {
+  const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
+  return s.parts.flatMap((p) => rulesFor(p).blocks?.(p, w) ?? []);
+}
+
+/**
+ * Keeps the sprite inside the box and out of every block: pushed out to a
+ * block's edge (plus a pad), like a wall, the way it was going.
+ */
+export function keepOut(pos: Point, box: Box, blocks: readonly Block[]): Point {
+  let p = clampToBox(pos, box);
+  for (let pass = 0; pass < 3 && blocks.length; pass++) {
+    for (const b of blocks) {
+      const dx = p.x - b.x;
+      const dy = p.y - b.y;
+      const d = Math.hypot(dx, dy);
+      const min = b.r + D.blockPad;
+      if (d >= min) continue;
+      p =
+        d > 1e-6 ? { x: b.x + (dx / d) * min, y: b.y + (dy / d) * min } : { x: b.x + min, y: b.y };
+    }
+    p = clampToBox(p, box);
+  }
+  return p;
+}
 
 // ── Picking attacks ────────────────────────────────────────────────────────
 
@@ -419,17 +454,20 @@ function schedule(s0: DodgeState, rng: RngState): DodgeState {
 
 // ── A step ─────────────────────────────────────────────────────────────────
 
-/** Someone is hit: the active hiker loses a life; at none, they're out and the next takes over. */
-function hit(s: DodgeState): DodgeState {
+/**
+ * Someone is hit: the active hiker loses a life (2 for a snipe); at none,
+ * they're out and the next takes over.
+ */
+function hit(s: DodgeState, damage = 1): DodgeState {
   const who = s.active;
-  const lives = { ...s.lives, [who]: Math.max(0, (s.lives[who] ?? 0) - 1) };
-  const hits = { ...s.hits, [who]: (s.hits[who] ?? 0) + 1 };
+  const lives = { ...s.lives, [who]: Math.max(0, (s.lives[who] ?? 0) - damage) };
+  const hits = { ...s.hits, [who]: (s.hits[who] ?? 0) + damage };
   let next: DodgeState = {
     ...s,
     lives,
     hits,
     safeFor: D.safeSec,
-    lastHit: { hikerId: who, at: s.time },
+    lastHit: { hikerId: who, at: s.time, damage },
   };
   if (lives[who] === 0) {
     const nextUp = nextInLine(next, who);
@@ -447,6 +485,7 @@ const worldOf = (s: DodgeState, dt: number, rng: RngState, ids: { next: number }
   pos: s.pos,
   rng,
   nextId: () => ids.next++,
+  parts: s.parts,
 });
 
 /**
@@ -489,13 +528,16 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
     s.boxMove = moveBoxTo(s, targetBox('monster', s).box, D.monster.shrinkSec);
   }
 
-  // The box moves to its size; the sprite moves (slower in honey) and stays inside.
+  // The box moves to its size; the sprite moves (slower in honey or a trap),
+  // stays inside, and keeps out of holes and the Ant Hill.
   s.box = boxAt(s.boxMove, s.time);
   const len = Math.hypot(input.x, input.y);
-  const k = (len > 1 ? 1 / len : 1) * (inHoney(s) ? D.honey.slow : 1);
-  s.pos = clampToBox(
+  const k =
+    (len > 1 ? 1 / len : 1) * (inHoney(s) ? D.honey.slow : 1) * (slowed(s) ? D.gun.traps.slow : 1);
+  s.pos = keepOut(
     { x: s.pos.x + input.x * k * D.moveSpeed * dt, y: s.pos.y + input.y * k * D.moveSpeed * dt },
     effectiveBox(s),
+    blocksNow(s),
   );
 
   // The next attack, when it's due.
@@ -513,15 +555,29 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   }
   s = { ...s, parts, nextId: ids.next };
 
-  // Any that touch the sprite hit (once its safety is over).
+  // Any that touch the sprite hit (once its safety is over): the most
+  // hearts any of them costs, and a trap snaps shut and slows it.
   if (s.safeFor <= 0) {
-    const shapes = s.parts.flatMap((p) =>
-      rulesFor(p).shapes(p, { ...w, box: effectiveBox(s) }, s0.time),
-    );
-    if (shapes.some((sh) => touches(sh, s.pos, D.hitRadius))) s = hit(s);
+    const wNow = { ...w, box: effectiveBox(s), parts: s.parts };
+    let damage = 0;
+    let slowSec = 0;
+    const after = s.parts.map((p) => {
+      const rules = rulesFor(p);
+      if (!rules.shapes(p, wNow, s0.time).some((sh) => touches(sh, s.pos, D.hitRadius))) return p;
+      damage = Math.max(damage, rules.damage?.(p) ?? 1);
+      if (!rules.onHit) return p;
+      const out = rules.onHit(p, wNow);
+      slowSec = Math.max(slowSec, out.slowSec ?? 0);
+      return out.part;
+    });
+    if (damage > 0) {
+      s = { ...s, parts: after };
+      if (slowSec > 0) s = { ...s, slowUntil: Math.max(s.slowUntil, s.time + slowSec) };
+      s = hit(s, damage);
+    }
   }
-  // The sprite is pushed back inside if the box moved under it.
-  s = { ...s, pos: clampToBox(s.pos, effectiveBox(s)) };
+  // The sprite is pushed back inside if the box moved under it (and out of any new hole).
+  s = { ...s, pos: keepOut(s.pos, effectiveBox(s), blocksNow(s)) };
 
   // Finished attacks go; once none holds up the next, it comes after the level's gap.
   const rounds = s.rounds.filter((r) => !roundOver(s, r));

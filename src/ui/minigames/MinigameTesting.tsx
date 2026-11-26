@@ -3,14 +3,12 @@
  * 11-minigames-puzzles.md, "Testing tab"; docs/mockups/minigames/8-testing-tab-reference.jpg),
  * from the main menu.
  *
- * - **Left:** every minigame. Bearrels and the four puzzle games play; the
- *   others are "coming soon".
- * - **Right:** the minigame's settings (Bearrels' art style, steppers and
- *   shot buttons; the puzzle games' Tier and overrides, where Auto uses the
- *   tier's value; hiker toggles), a preview, and Test it, which opens its
- *   pop-up in test mode (no Prepare), then the game on the turned party GPS.
- *   While playing Bearrels, the Style button and the S key switch the art
- *   style; the change is remembered here too.
+ * - **Left:** every minigame, by category; the ones not built yet are
+ *   "coming soon".
+ * - **Right:** the minigame's settings (Tier and overrides, where Auto uses
+ *   the tier's value; hiker toggles), a preview, and Test it, which opens its
+ *   pop-up in test mode, then the game on the turned party GPS. Dodge with
+ *   Bear with a Gun opens as Bear Country.
  *
  * Settings are remembered on this device. Nothing touches the saved hike,
  * XP, stats or anything else in a run.
@@ -21,8 +19,6 @@ import {
   testChallenge,
   type MinigameChallenge,
 } from '../../content/minigameChallenges';
-import { emptyScene, type SceneModel } from '../../minigames/bearrels/scene';
-import { toArtStyle } from '../../minigames/bearrels/styles';
 import { MINIGAMES, MINIGAMES_BY_CATEGORY } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type {
@@ -33,9 +29,9 @@ import type {
 } from '../../minigames/types';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 import { MinigameIcon } from './MinigameIcon';
-import { BearrelsScene, ScaledScreen } from './bearrels/Scene';
 import { MinigameFlow } from './MinigameFlow';
 import { PREVIEWS } from './runners';
+import { ScaledScreen } from './ScaledScreen';
 import { tierOf } from './puzzleProps';
 import {
   browserStorage,
@@ -45,13 +41,18 @@ import {
 } from './testingSettings';
 import styles from './MinigameTesting.module.css';
 
-/** The challenge a playable minigame opens in test mode: Bear Country for Bearrels; for the rest, a plain one with their name. */
+/**
+ * The challenge a playable minigame opens in test mode: Bear Country for
+ * Dodge with Bear with a Gun (21-minigames-dodge-camp.md, section 0); for
+ * the rest, a plain one with their name.
+ */
 function challengeFor(
   info: MinigameInfo,
   settings: MinigameSettings,
 ): MinigameChallenge | undefined {
   if (info.status !== 'ready') return undefined;
-  if (info.id === 'bearrels') return BEAR_COUNTRY;
+  if (info.id === 'dodge' && settings.animal === 'gunBear')
+    return { ...BEAR_COUNTRY, tier: tierOf(settings) };
   return testChallenge(info, tierOf(settings));
 }
 
@@ -61,7 +62,7 @@ const picked = (s: MinigameSettings, id: string): readonly string[] => {
 };
 
 export function MinigameTesting({ onBack }: { onBack(): void }) {
-  const [activeId, setActiveId] = useState('bearrels');
+  const [activeId, setActiveId] = useState('dodge');
   const active = MINIGAMES.find((m) => m.id === activeId) ?? MINIGAMES[0]!;
   const [settings, setSettings] = useState<MinigameSettings>(() =>
     readTestingSettings(browserStorage(), active.id),
@@ -446,37 +447,15 @@ function HikerToggles({
 /** How wide the preview is drawn (4:3). */
 const PREVIEW_WIDTH = 296;
 
-/**
- * A small picture of the game: Bearrels' scene in the chosen style, with the
- * barrels and the picked hikers behind them; a still frame of a puzzle game.
- */
+/** A small picture of the game: a still frame of it. */
 function Preview({ info, settings }: { info: MinigameInfo; settings: MinigameSettings }) {
   const ids = picked(settings, 'hikers');
   const Still = PREVIEWS[info.id];
-  if (info.id !== 'bearrels') {
-    return (
-      <div className={styles.preview} aria-label={`${info.name} preview`} role="img">
-        <ScaledScreen width={PREVIEW_WIDTH}>
-          {Still && <Still settings={settings} hikers={ids.map((id) => minigameHiker(id))} />}
-        </ScaledScreen>
-      </div>
-    );
-  }
-  const n = typeof settings.barrels === 'number' ? settings.barrels : 3;
-  const rounds = typeof settings.rounds === 'number' ? settings.rounds : 3;
-  const model: SceneModel = {
-    ...emptyScene(n),
-    hikers: ids.map((id, i) => ({ hiker: minigameHiker(id), barrel: i % n, state: 'in' })),
-    outline: Math.min(n - 1, ids.length),
-  };
   return (
-    <div className={styles.preview} aria-label={`${info.name} preview: ${n} barrels`} role="img">
+    <div className={styles.preview} aria-label={`${info.name} preview`} role="img">
       <ScaledScreen width={PREVIEW_WIDTH}>
-        <BearrelsScene style={toArtStyle(settings.style)} model={model} />
+        {Still && <Still settings={settings} hikers={ids.map((id) => minigameHiker(id))} />}
       </ScaledScreen>
-      <span className={styles.previewPill}>
-        R {1}/{rounds}
-      </span>
     </div>
   );
 }

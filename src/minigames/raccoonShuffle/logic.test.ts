@@ -72,19 +72,59 @@ describe('Raccoon Shuffle', () => {
   });
 
   it.each(TIERS)(
-    'Tier %i: the shuffle has the tier’s swaps; double swaps never share a bin',
+    'Tier %i: the tier’s swaps; two at once never share a bin; fake-outs don’t count (revised Nov 26)',
     (tier) => {
-      for (let seed = 1; seed <= 30; seed++) {
-        const steps = planSwaps(seedRng(seed), tier, RS.tiers[tier].bins);
-        expect(steps.flat()).toHaveLength(RS.tiers[tier].swaps);
+      const t = RS.tiers[tier];
+      let far = 0;
+      let all = 0;
+      let fakes = 0;
+      for (let seed = 1; seed <= 60; seed++) {
+        const steps = planSwaps(seedRng(seed), tier, t.bins);
+        expect(steps.flatMap((x) => x.pairs)).toHaveLength(t.swaps);
         for (const step of steps) {
-          const slots = step.flat();
+          const slots = [...step.pairs.flat(), ...(step.fake ?? [])];
           expect(new Set(slots).size).toBe(slots.length);
-          if (RS.tiers[tier].double === 0) expect(step).toHaveLength(1);
+          if (t.double === 0)
+            expect(step.pairs.length + (step.fake ? 1 : 0)).toBeLessThanOrEqual(1);
+          if (step.fake) fakes++;
+          for (const [a, b] of step.pairs) {
+            all++;
+            if (b - a >= 2) far++;
+          }
         }
+        // Swap times speed up evenly from the first to the last.
+        expect(steps[0]!.sec).toBeCloseTo(t.swapSec[0]);
+        expect(steps.at(-1)!.sec).toBeCloseTo(t.swapSec[1]);
+        for (let k = 1; k < steps.length; k++)
+          expect(steps[k]!.sec).toBeLessThanOrEqual(steps[k - 1]!.sec + 1e-9);
       }
+      // The far-swap share is close to the tier's.
+      expect(Math.abs(far / all - t.far)).toBeLessThan(0.12);
+      if (t.fake === 0) expect(fakes).toBe(0);
+      else expect(fakes).toBeGreaterThan(0);
     },
   );
+
+  it('a fake-out never moves a bin’s contents and doesn’t count toward the swaps', () => {
+    let s = newRaccoonShuffle({ tier: 5, packs: PACKS }, ['finn'], 3);
+    const fakeOnly = s.steps.findIndex((x) => x.fake && x.pairs.length === 0);
+    expect(fakeOnly).toBeGreaterThanOrEqual(0);
+    s = runUntil(s, (x) => x.phase === 'shuffle' && x.step === fakeOnly);
+    const before = { slots: s.slots, done: s.swapsDone };
+    s = runUntil(s, (x) => x.step === fakeOnly + 1 || x.phase !== 'shuffle');
+    expect(s.slots).toEqual(before.slots);
+    expect(s.swapsDone).toBe(before.done);
+  });
+
+  it('Prepare: Lure one out adds an empty bin; Slower shuffle adds time to every swap', () => {
+    const plain = newRaccoonShuffle({ tier: 2, packs: PACKS }, ['finn'], 4);
+    const lured = newRaccoonShuffle({ tier: 2, packs: PACKS, extraEmpty: 1 }, ['finn'], 4);
+    expect(lured.bins.filter((b) => b.card === null)).toHaveLength(
+      plain.bins.filter((b) => b.card === null).length + 1,
+    );
+    const slow = newRaccoonShuffle({ tier: 2, packs: PACKS, extraSwapSec: 0.12 }, ['finn'], 4);
+    expect(slow.steps[0]!.sec).toBeCloseTo(plain.steps[0]!.sec + 0.12);
+  });
 
   it('every swap keeps each bin’s contents with it; the bin picked opens with what was put in it', () => {
     for (const tier of TIERS) {
@@ -98,7 +138,7 @@ describe('Raccoon Shuffle', () => {
       let slots = s0.slots;
       for (const step of s0.steps) {
         const next = [...slots];
-        for (const [a, b] of step) [next[a], next[b]] = [next[b]!, next[a]!];
+        for (const [a, b] of step.pairs) [next[a], next[b]] = [next[b]!, next[a]!];
         slots = next;
       }
       expect(s.slots).toEqual(slots);
@@ -155,7 +195,7 @@ describe('Raccoon Shuffle', () => {
     expect(s.bins.filter((b) => b.card).every((b) => b.card!.kind === 'energy')).toBe(true);
   });
 
-  it('night: Auto uses the tier’s chance (never below Tier IV); On and Off force it', () => {
+  it('night: Auto uses the tier’s chance (never below Tier III); On and Off force it', () => {
     const nights = (tier: 1 | 4) =>
       Array.from(
         { length: 200 },

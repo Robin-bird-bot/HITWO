@@ -407,18 +407,6 @@
   flex: none;
 }
 
-.previewPill {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  padding: 3px 9px;
-  border-radius: 10px;
-  background: rgba(42, 10, 24, 0.72);
-  color: #fff1d6;
-  font-size: 11px;
-  font-weight: 700;
-}
-
 .testBox {
   display: flex;
   flex-direction: column;

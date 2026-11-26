@@ -31,6 +31,7 @@ import {
   keysToVector,
   newDodge,
   nextInLine,
+  slowed,
   result,
   step,
   switches,
@@ -277,6 +278,12 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
               draggable={false}
               style={{ left: game.pos.x - 5, top: game.pos.y - 6 }}
             />
+            {slowed(game) && (
+              <span
+                className={styles.slowRing}
+                style={{ left: game.pos.x - 8, top: game.pos.y - 8 }}
+              />
+            )}
             {recentHit && (
               <span
                 className={styles.hitRing}
@@ -310,7 +317,15 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
             style={{ left: game.pos.x + 10, top: game.pos.y - 10 }}
             role="status"
           >
-            {byId(recentHit.hikerId).name.toUpperCase()} −1
+            {byId(recentHit.hikerId).name.toUpperCase()} −{recentHit.damage}
+          </span>
+        )}
+        {slowed(game) && !recentHit && (
+          <span
+            className={`${ui.text} ${styles.slowText}`}
+            style={{ left: game.pos.x + 10, top: game.pos.y - 8 }}
+          >
+            SLOWED
           </span>
         )}
         {showHitboxes && <Hitboxes shapes={hitShapes(game)} sprite={game.pos} />}

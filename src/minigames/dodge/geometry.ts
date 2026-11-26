@@ -92,6 +92,46 @@ export function rayToWall(b: Box, p: Point, dir: Point): number {
 }
 
 /**
+ * Where a line from `p` going `dir` (unit) is inside the box: the distances
+ * along it where it comes in and goes out, or none if it misses.
+ */
+export function throughBox(b: Box, p: Point, dir: Point): { tIn: number; tOut: number } | null {
+  const e = edges(b);
+  let tIn = -Infinity;
+  let tOut = Infinity;
+  const axes: [number, number, number, number][] = [
+    [p.x, dir.x, e.left, e.right],
+    [p.y, dir.y, e.top, e.bottom],
+  ];
+  for (const [at, d, lo, hi] of axes) {
+    if (Math.abs(d) < 1e-9) {
+      if (at < lo || at > hi) return null;
+      continue;
+    }
+    let t1 = (lo - at) / d;
+    let t2 = (hi - at) / d;
+    if (t1 > t2) [t1, t2] = [t2, t1];
+    tIn = Math.max(tIn, t1);
+    tOut = Math.min(tOut, t2);
+  }
+  return tIn <= tOut && tOut > 0 ? { tIn: Math.max(0, tIn), tOut } : null;
+}
+
+/** A point inside the box at least `margin` from every wall, seeded. */
+export function spotIn(rng: RngState, b: Box, margin: number): Point {
+  const e = edges(b);
+  const mx = Math.min(margin, b.w / 2);
+  const my = Math.min(margin, b.h / 2);
+  return {
+    x: e.left + mx + nextFloat(rng) * Math.max(0, b.w - 2 * mx),
+    y: e.top + my + nextFloat(rng) * Math.max(0, b.h - 2 * my),
+  };
+}
+
+/** The distance between two points. */
+export const dist = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
+
+/**
  * Where a line from `start` going `dir` (unit) first crosses into the box,
  * and the wall it crosses there; `out` units outside that wall is where its
  * warning goes. A line that misses the box warns at the nearest wall point.

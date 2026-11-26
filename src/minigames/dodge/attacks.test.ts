@@ -80,6 +80,13 @@ describe('what each animal uses, by level', () => {
     // The Woods Monster always plays Level 3 (here forced lower); Darkness needs Level 3.
     ['monster', 2, ['arms', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
     ['monster', 3, ['arms', 'darkness', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
+    // Bear with a Gun and Ants (Nov 26).
+    ['gunBear', 1, ['aimedShot', 'rapidFire', 'traps']],
+    ['gunBear', 2, ['aimedShot', 'rapidFire', 'ricochet', 'snipe', 'traps']],
+    ['gunBear', 3, ['aimedShot', 'quickDraw', 'rapidFire', 'ricochet', 'snipe', 'traps']],
+    ['ants', 1, ['antMill', 'leafcutter', 'marching']],
+    ['ants', 2, ['antHill', 'antMill', 'fireAnts', 'leafcutter', 'marching']],
+    ['ants', 3, ['antHill', 'antMill', 'crumbRush', 'fireAnts', 'leafcutter', 'marching']],
   ] as const)('%s at Level %i', (animal, level, expected) => {
     expect(ids(animal, level)).toEqual([...expected].sort());
   });
@@ -92,8 +99,8 @@ describe('what each animal uses, by level', () => {
   it('the Stampede has every animal’s attacks at the level, plus Herd rush', () => {
     for (const level of LEVELS) {
       const all = new Set(
-        (['bees', 'bear', 'swordBear', 'bobcat', 'squirrels'] as const).flatMap((a) =>
-          ids(a, level),
+        (['bees', 'bear', 'swordBear', 'bobcat', 'squirrels', 'gunBear', 'ants'] as const).flatMap(
+          (a) => ids(a, level),
         ),
       );
       expect(ids('stampede', level)).toEqual([...all, 'herd'].sort());
@@ -231,6 +238,8 @@ describe('warnings', () => {
     swing: D.sword.warnMinSec,
     stalk: D.warnMinSec,
     hand: D.hands.crackSec,
+    // Aimed Shot at Level 3: the aim tracks [0.32 s], then locks [0.2 s].
+    shot: D.gun.aimed.trackSec[3] + D.gun.aimed.lockSec,
   };
   it.each([
     ['bees', 0] as const,

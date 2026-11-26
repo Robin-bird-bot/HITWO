@@ -1,24 +1,16 @@
 /**
  * Each playable minigame's game and preview, by id (src/minigames/catalog.ts).
  *
- * - **Bearrels** runs its own rounds and results card.
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
  *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice,
- *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting and the
- *   quick games)
+ *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting, Camp Cleanup and
+ *   the quick games)
  *   report how they ended; the play stage shows the shared results card.
  *   Their preview is a still frame for now.
  */
 import type { ComponentType } from 'react';
-import { toArtStyle } from '../../minigames/bearrels/styles';
-import type {
-  MinigameHiker,
-  MinigameResult,
-  MinigameSettings,
-  MinigameSettingValue,
-} from '../../minigames/types';
-import { BearrelsGame } from './bearrels/BearrelsGame';
-import { BearrelsPreview } from './bearrels/BearrelsPreview';
+import type { MinigameHiker, MinigameSettings } from '../../minigames/types';
+import { CampCleanup } from './campCleanup/CampCleanup';
 import { Dodge } from './dodge/Dodge';
 import { FindObject } from './findObject/FindObject';
 import { FindPath } from './findPath/FindPath';
@@ -46,45 +38,10 @@ import type { PuzzleRunProps } from './puzzleProps';
 import { RememberPath } from './rememberPath/RememberPath';
 import { Traildle } from './traildle/Traildle';
 
-export interface MinigameRunProps {
-  settings: MinigameSettings;
-  hikers: readonly MinigameHiker[];
-  seed: number;
-  onDone(result: MinigameResult): void;
-}
-
 export interface MinigamePreviewProps {
   settings: MinigameSettings;
   hikers: readonly MinigameHiker[];
 }
-
-const num = (v: MinigameSettingValue | undefined, fallback: number) =>
-  typeof v === 'number' ? v : fallback;
-
-function BearrelsRun({ settings, hikers, seed, onDone }: MinigameRunProps) {
-  return (
-    <BearrelsGame
-      settings={{
-        barrels: num(settings.barrels, 3),
-        rounds: num(settings.rounds, 3),
-        shots: num(settings.shots, 1),
-      }}
-      style={toArtStyle(settings.style)}
-      hikers={hikers}
-      seed={seed}
-      onDone={onDone}
-    />
-  );
-}
-
-function BearrelsPreviewRun({ settings, hikers }: MinigamePreviewProps) {
-  return <BearrelsPreview style={toArtStyle(settings.style)} hikers={hikers} />;
-}
-
-/** Bearrels: plays its own rounds and shows its own results card. */
-export const RUNNERS: Readonly<Record<string, ComponentType<MinigameRunProps>>> = {
-  bearrels: BearrelsRun,
-};
 
 /** The puzzle games: they report how they ended, and the play stage shows the results. */
 export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = {
@@ -113,6 +70,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   trails: Trails,
   crossroads: Crossroads,
   rockClimb: RockClimb,
+  campCleanup: CampCleanup,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -195,9 +153,11 @@ function CrossroadsStill({ settings, hikers }: MinigamePreviewProps) {
 function RockClimbStill({ settings, hikers }: MinigamePreviewProps) {
   return <RockClimb settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function CampCleanupStill({ settings, hikers }: MinigamePreviewProps) {
+  return <CampCleanup settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
-  bearrels: BearrelsPreviewRun,
   traildle: TraildleStill,
   findObject: FindObjectStill,
   rememberPath: RememberPathStill,
@@ -223,4 +183,5 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   trails: TrailsStill,
   crossroads: CrossroadsStill,
   rockClimb: RockClimbStill,
+  campCleanup: CampCleanupStill,
 };

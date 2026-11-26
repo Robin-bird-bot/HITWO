@@ -1,8 +1,9 @@
 /**
  * Challenges played as minigames (Phase 10.8, docs/design/10-minigames.md):
  * what the challenge pop-up shows. Bear Country is the first, played as
- * Bearrels. Hooking these into real challenges (Prepare, stakes, XP) comes
- * in a later step; for now the Minigame testing tab opens them.
+ * Dodge with Bear with a Gun at Tier III (Nov 26: Bearrels is gone).
+ * Hooking these into real challenges (stakes, XP) comes in a later step;
+ * for now the Minigame testing tab opens them.
  */
 import { asset } from '../config/assets';
 import type { Tier } from '../minigames/types';
@@ -18,8 +19,9 @@ export interface MinigameChallenge {
   flavor: string;
   /** Its poster (2:3), when Wyatt has painted one. */
   poster?: string;
-  /** The minigame it plays (src/minigames/catalog.ts). */
+  /** The minigame it plays (src/minigames/catalog.ts), and the settings it plays with. */
   minigame: string;
+  settings?: Readonly<Record<string, string | number>>;
   /** The game, as the pop-up shows it. */
   game: { name: string; line: string; chip?: string };
   /** Prepare options (effect and cost). TODO(wyatt): not built yet; the mockup's are placeholders. */
@@ -52,15 +54,15 @@ export function testChallenge(
 export const BEAR_COUNTRY: MinigameChallenge = {
   id: 'bearCountry',
   name: 'Bear Country',
-  tier: 2,
+  tier: 3,
   who: 'Whole party',
   flavor: '“Mama bear doesn’t like visitors.”',
   poster: asset('posters/bear-country.png'),
-  minigame: 'bearrels',
+  minigame: 'dodge',
+  settings: { animal: 'gunBear' },
   game: {
-    name: 'Barrels',
-    line: 'Hide behind a barrel. The bear shoots one each round.',
-    chip: 'Harder in a group',
+    name: 'Bear with a Gun',
+    line: 'Dodge the bear’s shots and traps. Hikers take turns.',
   },
   prepare: [
     { label: '+1 barrel', cost: '2 Wood', placeholder: true },

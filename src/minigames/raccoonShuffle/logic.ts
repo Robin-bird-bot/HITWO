@@ -10,9 +10,13 @@
  *   hiker's own pack, picked at random without putting it back (one unit
  *   each, so two cards show wood only if they carry two). Once the pack runs
  *   out, the rest show energy ([1] energy).
- * - **The shuffle:** two bins swap places at a time; from Tier IV two pairs
- *   sometimes swap at once (each pair counts as a swap). A bin keeps its
- *   contents as it moves.
+ * - **The shuffle (revised Nov 26, much harder):** two bins swap places at
+ *   a time, often bins that aren't neighbors (far swaps); from Tier II two
+ *   pairs sometimes swap at once (each pair counts as a swap), and some
+ *   steps are fake-outs (two bins start to cross, then go back; they take a
+ *   swap's time but don't count). Each shuffle starts at the tier's first
+ *   swap time and speeds up evenly to its last. A bin keeps its contents as
+ *   it moves.
  * - **The pick:** empty passes with no cost; a raccoon steals the item on
  *   its card (the hiker fails, and loses that instead of energy).
  * - Then the other bins open for [1 s], and the next hiker gets a new fill.
@@ -55,20 +59,30 @@ export interface RaccoonShuffleOptions {
   night?: 'auto' | 'on' | 'off';
   /** What each hiker carries (the raccoons steal from it). */
   packs: Readonly<Record<string, Pack>>;
+  /** Prepare: more empty bins (Lure one out), and more time on every swap (Slower shuffle). */
+  extraEmpty?: number;
+  extraSwapSec?: number;
+}
+
+/** One step of the shuffle: the pairs that swap, a fake-out pair (if any), and how long it takes. */
+export interface ShuffleStep {
+  pairs: [number, number][];
+  fake: [number, number] | null;
+  sec: number;
 }
 
 export interface RaccoonShuffleState {
   tier: Tier;
   emptyCount: number;
-  swapSec: number;
+  extraSwapSec: number;
   night: boolean;
   packs: Readonly<Record<string, Pack>>;
   turns: Turns;
   /** This hiker's turn: the bins (by id), which bin stands in each slot, left to right. */
   bins: Bin[];
   slots: number[];
-  /** The shuffle: each step's slot pairs (one, or two at once). */
-  steps: [number, number][][];
+  /** The shuffle's steps. */
+  steps: ShuffleStep[];
   /** The step under way (during the shuffle), and swaps done so far. */
   step: number;
   swapsDone: number;
@@ -99,6 +113,7 @@ export const packUnits = (pack: Pack | undefined): string[] =>
  */
 export function fill(rng: RngState, tier: Tier, pack: Pack | undefined, emptyCount: number): Bin[] {
   const n = RS.tiers[tier].bins;
+  emptyCount = Math.min(n - 1, emptyCount);
   const empties = new Set(
     shuffle(
       rng,
@@ -117,29 +132,56 @@ export function fill(rng: RngState, tier: Tier, pack: Pack | undefined, emptyCou
 }
 
 /**
- * The shuffle: the tier's swaps, a pair of slots at a time; from Tier IV two
- * pairs (never sharing a bin) sometimes swap at once.
+ * The shuffle (revised Nov 26): the tier's swaps, a pair of slots at a time.
+ * A share of them are far swaps (not neighbors). From Tier II some steps
+ * swap two pairs at once (never sharing a bin), and some are fake-outs that
+ * don't count (alone, or alongside a swap when two at once are on). Step
+ * times go evenly from the tier's first swap time to its last, plus any
+ * extra from Prepare.
  */
-export function planSwaps(rng: RngState, tier: Tier, bins: number): [number, number][][] {
+export function planSwaps(rng: RngState, tier: Tier, bins: number, extraSec = 0): ShuffleStep[] {
   const t = RS.tiers[tier];
-  const steps: [number, number][][] = [];
+  const raw: { pairs: [number, number][]; fake: [number, number] | null }[] = [];
   let left = t.swaps;
   const pair = (avoid: number[]): [number, number] => {
     const free = Array.from({ length: bins }, (_, i) => i).filter((i) => !avoid.includes(i));
+    const far = nextFloat(rng) < t.far;
+    const options: [number, number][] = [];
+    for (const a of free) {
+      for (const b of free) {
+        if (b <= a) continue;
+        if (far ? b - a >= 2 : b - a === 1) options.push([a, b]);
+      }
+    }
+    if (options.length) return options[Math.floor(nextFloat(rng) * options.length)]!;
     const [a, b] = shuffle(rng, free);
     return [Math.min(a!, b!), Math.max(a!, b!)];
   };
   while (left > 0) {
+    const both = bins >= 4 && t.double > 0 && nextFloat(rng) < t.double;
+    if (t.fake > 0 && nextFloat(rng) < t.fake) {
+      // A fake-out: alone, or beside a real swap when two at once are on.
+      if (both) {
+        const real = pair([]);
+        raw.push({ pairs: [real], fake: pair(real) });
+        left -= 1;
+      } else raw.push({ pairs: [], fake: pair([]) });
+      continue;
+    }
     const first = pair([]);
-    if (left >= 2 && bins >= 4 && t.double > 0 && nextFloat(rng) < t.double) {
-      steps.push([first, pair(first)]);
+    if (left >= 2 && both) {
+      raw.push({ pairs: [first, pair(first)], fake: null });
       left -= 2;
     } else {
-      steps.push([first]);
+      raw.push({ pairs: [first], fake: null });
       left -= 1;
     }
   }
-  return steps;
+  const [a, b] = t.swapSec;
+  return raw.map((r, k) => ({
+    ...r,
+    sec: (raw.length > 1 ? a + ((b - a) * k) / (raw.length - 1) : a) + extraSec,
+  }));
 }
 
 /** A fresh turn for the hiker now up: a new fill and a new shuffle. */
@@ -150,7 +192,7 @@ function startTurn(s: RaccoonShuffleState, rng: RngState): RaccoonShuffleState {
     ...s,
     bins,
     slots: bins.map((b) => b.id),
-    steps: planSwaps(rng, s.tier, bins.length),
+    steps: planSwaps(rng, s.tier, bins.length, s.extraSwapSec),
     step: 0,
     swapsDone: 0,
     phase: 'show',
@@ -171,8 +213,8 @@ export function newRaccoonShuffle(
     options.night === 'on' ? true : options.night === 'off' ? false : nextFloat(rng) < t.night;
   const s: RaccoonShuffleState = {
     tier: options.tier,
-    emptyCount: t.empty,
-    swapSec: t.swapSec,
+    emptyCount: t.empty + (options.extraEmpty ?? 0),
+    extraSwapSec: options.extraSwapSec ?? 0,
     night,
     packs: options.packs,
     turns: newTurns(order),
@@ -235,13 +277,15 @@ export function tick(s0: RaccoonShuffleState, dt: number): RaccoonShuffleState {
   const since = s.time - s.phaseAt;
   switch (s.phase) {
     case 'show':
-      if (since < RS.showSec) return s;
+      if (since < RS.tiers[s.tier].showSec) return s;
       return s.steps.length
         ? { ...s, phase: 'shuffle', phaseAt: s.time, step: 0 }
         : { ...s, phase: 'pick', phaseAt: s.time };
     case 'shuffle': {
-      if (since < s.swapSec) return s;
-      const pairs = s.steps[s.step] ?? [];
+      const now = s.steps[s.step];
+      if (now && since < now.sec) return s;
+      // A fake-out moves nothing and doesn't count.
+      const pairs = now?.pairs ?? [];
       const slots = swapped(s.slots, pairs);
       const step = s.step + 1;
       const swapsDone = s.swapsDone + pairs.length;
@@ -283,4 +327,4 @@ export function binX(slot: number, bins: number): number {
 
 /** How far through the current swap step (0 to 1). */
 export const swapProgress = (s: RaccoonShuffleState): number =>
-  s.phase === 'shuffle' ? Math.min(1, (s.time - s.phaseAt) / s.swapSec) : 0;
+  s.phase === 'shuffle' ? Math.min(1, (s.time - s.phaseAt) / (s.steps[s.step]?.sec ?? 1)) : 0;

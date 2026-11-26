@@ -16,7 +16,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { BALANCE } from '../../config/balance';
 import { useReducedMotion } from '../app/useReducedMotion';
-import { GAME } from '../../minigames/bearrels/styles';
+import { GAME } from '../../minigames/screen';
 import {
   DEVICE,
   gpsMotion,

@@ -1,7 +1,7 @@
 /**
  * How a minigame's result reads (docs/design/10-minigames.md and
- * 11-minigames-puzzles.md, "Results"): "1 safe, 2 hit" for Bearrels, "2
- * passed, 1 failed" for the puzzle games, and each hiker's line.
+ * 11-minigames-puzzles.md, "Results"): "2 passed, 1 failed" (or the old
+ * "1 safe, 2 hit"), and each hiker's line.
  */
 import type { MinigameResult } from './types';
 

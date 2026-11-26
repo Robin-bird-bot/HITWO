@@ -5,13 +5,6 @@
 import type { ReactNode } from 'react';
 
 const PATHS: Readonly<Record<string, ReactNode>> = {
-  // A barrel.
-  bearrels: (
-    <>
-      <path d="M6 3h12c1.5 3 1.5 15 0 18H6C4.5 18 4.5 6 6 3z" />
-      <path d="M5.2 9h13.6M5.2 15h13.6" />
-    </>
-  ),
   // A trail sign on a post.
   traildle: (
     <>
@@ -149,6 +142,15 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M11 16h2M4.5 13l2-8h3l1 7M19.5 13l-2-8h-3l-1 7" />
     </>
   ),
+  // A line of three squares turning a corner, and a piece of trash.
+  campCleanup: (
+    <>
+      <rect x="3" y="11" width="5" height="5" rx="1" />
+      <rect x="9" y="11" width="5" height="5" rx="1" />
+      <rect x="9" y="17" width="5" height="5" rx="1" />
+      <path d="M18 4h3M18.5 4l.5 5h1l.5-5" />
+    </>
+  ),
   // A trash bin.
   raccoonShuffle: (
     <>
@@ -205,7 +207,7 @@ export function MinigameIcon({ id, size = 22 }: { id: string; size?: number }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {PATHS[id] ?? PATHS.bearrels}
+      {PATHS[id] ?? PATHS.dodge}
     </svg>
   );
 }

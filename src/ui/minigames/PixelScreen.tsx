@@ -1,12 +1,12 @@
 /**
  * The puzzle minigames' screen (docs/design/11-minigames-puzzles.md, "Screen"):
  * a 320 × 240 scene, scaled up at a whole-number scale where it fits (like
- * Bearrels' Detailed pixel), on the screen's own green so any letterbox
+ * the pixel art), on the screen's own green so any letterbox
  * doesn't show. Everything inside is laid out in scene units: CSS `zoom`
  * scales it, so sprites stay nearest-neighbor and text stays sharp.
  */
 import { forwardRef, useRef, type ReactNode } from 'react';
-import { SCENE } from '../../minigames/bearrels/styles';
+import { SCENE } from '../../minigames/screen';
 import { SCREEN_GREEN } from '../../minigames/greens';
 import { usePixelFrame } from './usePixelFrame';
 import styles from './PixelScreen.module.css';

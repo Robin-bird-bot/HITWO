@@ -24,14 +24,14 @@ export interface MinigameHiker {
 }
 
 /**
- * How a minigame ended, for every hiker. Bearrels says who was safe and who
- * was hit in which round; the puzzle games say who passed and who failed
- * (`wording`), and the round is 0.
+ * How a minigame ended, for every hiker: who passed and who failed
+ * (`wording`), and the round is 0. (The "safe" and "hit" wording was
+ * Bearrels', removed Nov 26; nothing uses it now.)
  */
 export interface MinigameResult {
   safe: string[];
   hit: { hikerId: string; round: number }[];
-  /** "1 safe, 2 hit" (Bearrels) or "2 passed, 1 failed" (the puzzle games). */
+  /** "2 passed, 1 failed" (every game now), or the old "1 safe, 2 hit". */
   wording?: 'safe-hit' | 'passed-failed';
   /** The hiker who earned +1 Energy (Find the Path: the first one through). Shown only in test mode for now. */
   energy?: string;

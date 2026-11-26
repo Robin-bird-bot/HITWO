@@ -75,8 +75,13 @@ const kindOf = (id: AttackId) => ATTACKS[id].kind;
 describe('tiers and levels', () => {
   it('each tier offers only the animals in the table, at their level; the Woods Monster is always Level 3', () => {
     expect(animalsAt(1).sort()).toEqual(['bees', 'squirrels']);
-    expect(animalsAt(2).sort()).toEqual(['bear', 'bees', 'bobcat', 'squirrels']);
-    expect(animalsAt(3)).toHaveLength(7);
+    expect(animalsAt(2).sort()).toEqual(['ants', 'bear', 'bees', 'bobcat', 'squirrels']);
+    expect(animalsAt(3)).toHaveLength(9);
+    // Nov 26: Ants from Tier II, Bear with a Gun from Tier III (his first tier, Level 2).
+    expect(levelFor('ants', 2)).toBe(1);
+    expect(levelFor('gunBear', 3)).toBe(2);
+    expect(animalsAt(1)).not.toContain('gunBear');
+    expect(animalsAt(2)).not.toContain('gunBear');
     expect(levelFor('bees', 1)).toBe(0);
     expect(levelFor('squirrels', 1)).toBe(0);
     expect(levelFor('bear', 2)).toBe(1);
@@ -205,6 +210,19 @@ describe('pacing and overlaps', () => {
     expect(kindOf('hands')).toBe('missile');
     expect(kindOf('hug')).toBe('changer');
     expect(kindOf('darkness')).toBe('changer');
+    // Bear with a Gun and Ants (Nov 26).
+    expect(kindOf('aimedShot')).toBe('missile');
+    expect(kindOf('rapidFire')).toBe('missile');
+    expect(kindOf('ricochet')).toBe('missile');
+    expect(kindOf('snipe')).toBe('changer');
+    expect(kindOf('traps')).toBe('changer');
+    expect(kindOf('quickDraw')).toBe('area');
+    expect(kindOf('marching')).toBe('missile');
+    expect(kindOf('antMill')).toBe('missile');
+    expect(kindOf('leafcutter')).toBe('missile');
+    expect(kindOf('crumbRush')).toBe('missile');
+    expect(kindOf('fireAnts')).toBe('area');
+    expect(kindOf('antHill')).toBe('changer');
   });
 });
 
@@ -739,9 +757,19 @@ describe('the Woods Monster', () => {
 
 describe('a fuzz run with every Overlaps setting', () => {
   it.each(
-    (['bees', 'bear', 'swordBear', 'bobcat', 'squirrels', 'stampede', 'monster'] as const).flatMap(
-      (a) => (['off', 'on'] as const).map((o) => [a, o] as const),
-    ),
+    (
+      [
+        'bees',
+        'bear',
+        'swordBear',
+        'bobcat',
+        'squirrels',
+        'gunBear',
+        'ants',
+        'stampede',
+        'monster',
+      ] as const
+    ).flatMap((a) => (['off', 'on'] as const).map((o) => [a, o] as const)),
   )(
     '%s with overlaps %s on Tier V: it always ends, with nothing off the map',
     (animal, overlaps) => {
@@ -792,6 +820,8 @@ describe('the portraits', () => {
       'squirrels',
       'herd',
       'monster',
+      'gunBear',
+      'ants',
     ] as const) {
       const box = boxFor(who);
       const top = box.cy - box.h / 2 - D.portraits.gap - PORTRAITS[who].h;

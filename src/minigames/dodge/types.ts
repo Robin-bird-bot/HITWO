@@ -15,7 +15,9 @@
  *   1's tables), and `easy` marks Easy.
  */
 import type { RngState } from '../../engine/types';
+import type { AntPart } from './attacks/ants';
 import type { ClaudePart } from './attacks/claudesIdeas';
+import type { GunPart } from './attacks/gunBear';
 import type { MonsterPart } from './attacks/monster';
 import type { Box, Side } from './geometry';
 import type { Tier } from '../types';
@@ -27,7 +29,15 @@ export type { Tier };
 export type Level = 1 | 2 | 3;
 
 export type AnimalId =
-  'bees' | 'bear' | 'swordBear' | 'bobcat' | 'squirrels' | 'stampede' | 'monster';
+  | 'bees'
+  | 'bear'
+  | 'swordBear'
+  | 'bobcat'
+  | 'squirrels'
+  | 'gunBear'
+  | 'ants'
+  | 'stampede'
+  | 'monster';
 
 /** Who's attacking: an animal (never the Stampede itself), or the Stampede's own moose herd. */
 export type Attacker = Exclude<AnimalId, 'stampede'> | 'herd';
@@ -70,7 +80,21 @@ export type AttackId =
   | 'ritual'
   | 'glare'
   | 'arms'
-  | 'darkness';
+  | 'darkness'
+  // Bear with a Gun (docs/design/21-minigames-dodge-camp.md, section 1)
+  | 'aimedShot'
+  | 'snipe'
+  | 'traps'
+  | 'rapidFire'
+  | 'ricochet'
+  | 'quickDraw'
+  // Ants (section 2)
+  | 'marching'
+  | 'antMill'
+  | 'fireAnts'
+  | 'antHill'
+  | 'leafcutter'
+  | 'crumbRush';
 
 /**
  * What an attack does to the box (design section 6, "Pacing and overlaps"):
@@ -276,7 +300,9 @@ export type Part =
   | WavePart
   | StalkPart
   | ClaudePart
-  | MonsterPart;
+  | MonsterPart
+  | GunPart
+  | AntPart;
 
 export type PartKind = Part['kind'];
 
@@ -292,6 +318,15 @@ export interface World {
   pos: Point;
   rng: RngState;
   nextId(): number;
+  /** Every part now (a new hole checks the ones already there). */
+  parts: readonly Part[];
+}
+
+/** A circle the sprite can't enter. */
+export interface Block {
+  x: number;
+  y: number;
+  r: number;
 }
 
 /** One kind of part's rules. */
@@ -307,6 +342,12 @@ export interface PartRules<P extends Part> {
   outline?(p: P, w: World, t0: number): Shape[];
   /** Whether it's finished and can go. */
   done(p: P, w: World): boolean;
+  /** Circles the sprite can't enter, like a wall (a snipe's hole, the Ant Hill): it's pushed out to their edge. */
+  blocks?(p: P, w: World): Block[];
+  /** Hearts a hit from it costs (1 unless it says: a snipe costs 2). */
+  damage?(p: P): number;
+  /** What a hit does to it (a trap snaps shut), and how long the sprite is slowed. */
+  onHit?(p: P, w: World): { part: P; slowSec?: number };
 }
 
 /** An animal's tweaks to an attack it shares (Bobcat claws are faster with a shorter warning). */
@@ -433,8 +474,10 @@ export interface DodgeState {
   swings: number;
   sides: ('left' | 'right')[];
   shrunkFor: number;
-  /** The last hit, for the screen ("FINN −1"). */
-  lastHit?: { hikerId: string; at: number };
+  /** The sprite moves slower until this time (a bear trap). */
+  slowUntil: number;
+  /** The last hit, for the screen ("FINN −1"), and the hearts it cost. */
+  lastHit?: { hikerId: string; at: number; damage: number };
   over: boolean;
   rng: RngState;
 }

@@ -4,7 +4,6 @@
  * up first; then the game with the hikers in that order; then the shared end
  * screen (Challenge Passed or Challenge Failed). A tap there turns the GPS
  * back, and the pop-up shows how it went (with Play again in test mode).
- * Bearrels plays its own rounds, then the same end screen.
  */
 import { useState } from 'react';
 import { endInfo } from '../../minigames/catalog';
@@ -17,7 +16,7 @@ import type {
 } from '../../minigames/types';
 import { EndScreen } from './EndScreen';
 import { LineUp } from './LineUp';
-import { PUZZLES, RUNNERS } from './runners';
+import { PUZZLES } from './runners';
 
 export function PlayStage({
   info,
@@ -38,23 +37,6 @@ export function PlayStage({
   const [result, setResult] = useState<MinigameResult | null>(null);
   const end = endInfo(info, settings);
 
-  const Own = RUNNERS[info.id];
-  if (Own)
-    return (
-      <>
-        <Own settings={settings} hikers={hikers} seed={seed} onDone={setResult} />
-        {result && (
-          <EndScreen
-            result={result}
-            hikers={hikers}
-            subtitle={end.subtitle}
-            thing={end.thing}
-            seed={seed}
-            onContinue={() => onDone(result)}
-          />
-        )}
-      </>
-    );
   const Game = PUZZLES[info.id];
   if (!Game) return null;
 

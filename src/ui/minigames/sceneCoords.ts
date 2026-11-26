@@ -1,5 +1,5 @@
 /** Pointer positions on a puzzle game's 320 × 240 scene (PixelScreen). */
-import { SCENE } from '../../minigames/bearrels/styles';
+import { SCENE } from '../../minigames/screen';
 
 /** A pointer position on the scene (scene units), from the scene element's box on the page. */
 export function toScene(

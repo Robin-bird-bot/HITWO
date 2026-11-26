@@ -18,7 +18,7 @@ import ui from './gpsUi.module.css';
 import styles from './LineUp.module.css';
 
 const CARD = { w: 47, h: 72, gap: 13, top: 78 };
-const DRAG_PX = BALANCE.minigames.bearrels.drag.startPx;
+const DRAG_PX = BALANCE.minigames.lineUp.dragStartPx;
 
 export function LineUp({
   hikers,

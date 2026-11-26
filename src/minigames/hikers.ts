@@ -2,16 +2,16 @@
  * How each hiker looks in a minigame (docs/design/10-minigames.md, "Hikers"):
  * their own color, the same one that rings their portrait, so they're easy
  * to spot on the green screen. A hiker in a run uses their party color;
- * otherwise their color from Bearrels' layout.json.
+ * otherwise their own color (palette.ts).
  */
 import { BALANCE } from '../config/balance';
 import { RESOURCES } from '../content/resources';
 import { ROSTER_BY_ID } from '../content/roster';
 import { int, pick, seedRng } from '../engine/rng';
 import type { MinigameHiker } from './types';
-import LAYOUT from '../../public/assets/minigames/bearrels/layout.json';
+import { HIKER_COLORS } from './palette';
 
-const COLORS: Readonly<Record<string, string>> = LAYOUT.colors.hikers;
+const COLORS: Readonly<Record<string, string>> = HIKER_COLORS;
 /** Roster ids that the art names differently. */
 const ART_ID: Readonly<Record<string, string>> = { grandpaWink: 'wink' };
 

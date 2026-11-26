@@ -3,10 +3,12 @@
  * attack by id, and every kind of part's rules by kind.
  */
 import { BALANCE } from '../../config/balance';
+import { ANT_ATTACKS, ANT_RULES } from './attacks/ants';
 import { BEE_ATTACKS, BEE_RULES } from './attacks/bees';
 import { BEAR_ATTACKS, BITE_RULES, CLAWS_RULES } from './attacks/bear';
 import { BOBCAT_ATTACKS, POUNCE_RULES, STALK_RULES } from './attacks/bobcat';
 import { CLAUDE_RULES, CLAUDES_IDEAS } from './attacks/claudesIdeas';
+import { GUN_ATTACKS, GUN_RULES } from './attacks/gunBear';
 import { MONSTER_ATTACKS, MONSTER_RULES } from './attacks/monster';
 import {
   ACORN_RULES,
@@ -32,6 +34,8 @@ export const ATTACKS: Readonly<Record<AttackId, AttackDef>> = Object.fromEntries
     ...SQUIRREL_ATTACKS,
     ...CLAUDES_IDEAS,
     ...MONSTER_ATTACKS,
+    ...GUN_ATTACKS,
+    ...ANT_ATTACKS,
   ].map((a) => [a.id, a]),
 ) as Record<AttackId, AttackDef>;
 
@@ -71,6 +75,8 @@ const RULES: { [K in Part['kind']]: PartRules<Extract<Part, { kind: K }>> } = {
   stalk: STALK_RULES,
   ...CLAUDE_RULES,
   ...MONSTER_RULES,
+  ...GUN_RULES,
+  ...ANT_RULES,
 };
 
 /** A part's rules. */
