@@ -189,4 +189,6 @@ export interface MinigameInfo {
   /** The hikers set their order first (Line up) when 2 or more play. */
   lineUp?: boolean;
   settings: readonly MinigameSetting[];
+  /** A note for the testing tab, shown under the hikers when it applies (Rock Climb with 5 or 6 hikers). */
+  note?(settings: MinigameSettings): string | null;
 }

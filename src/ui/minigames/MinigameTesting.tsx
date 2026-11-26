@@ -161,6 +161,11 @@ export function MinigameTesting({ onBack }: { onBack(): void }) {
                 .map((s) => (
                   <HikerToggles key={s.id} setting={s} settings={settings} onChange={update} />
                 ))}
+              {active.note?.(settings) && (
+                <p className={styles.description} role="note">
+                  {active.note(settings)}
+                </p>
+              )}
             </div>
 
             {challenge && (

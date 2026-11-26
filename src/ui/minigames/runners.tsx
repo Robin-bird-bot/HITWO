@@ -35,6 +35,10 @@ import { RaccoonShuffle } from './quick/RaccoonShuffle';
 import { Safari } from './quick/Safari';
 import { SizeUp } from './quick/SizeUp';
 import { TrailBlazes } from './quick/TrailBlazes';
+import { Crossroads } from './signsTrails/Crossroads';
+import { FakeSigns } from './signsTrails/FakeSigns';
+import { RockClimb } from './signsTrails/RockClimb';
+import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
 import { ThinIce } from './thinIce/ThinIce';
 import { TrailMap } from './trailMap/TrailMap';
@@ -105,6 +109,10 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   safari: Safari,
   flySwatter: FlySwatter,
   raccoonShuffle: RaccoonShuffle,
+  fakeSigns: FakeSigns,
+  trails: Trails,
+  crossroads: Crossroads,
+  rockClimb: RockClimb,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -175,6 +183,18 @@ function FlySwatterStill({ settings, hikers }: MinigamePreviewProps) {
 function RaccoonShuffleStill({ settings, hikers }: MinigamePreviewProps) {
   return <RaccoonShuffle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function FakeSignsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FakeSigns settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function TrailsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Trails settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function CrossroadsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Crossroads settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function RockClimbStill({ settings, hikers }: MinigamePreviewProps) {
+  return <RockClimb settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   bearrels: BearrelsPreviewRun,
@@ -199,4 +219,8 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   safari: SafariStill,
   flySwatter: FlySwatterStill,
   raccoonShuffle: RaccoonShuffleStill,
+  fakeSigns: FakeSignsStill,
+  trails: TrailsStill,
+  crossroads: CrossroadsStill,
+  rockClimb: RockClimbStill,
 };

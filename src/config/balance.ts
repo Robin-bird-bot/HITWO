@@ -1417,12 +1417,44 @@ export const BALANCE = {
       freezeSec: 1,
       /**
        * The tools (Nov 25, Wyatt's sprites, no arm): the active hiker's color
-       * laid over the whole tool at this share. The axe slides to the other
-       * hand this fast; a cleared tree tips over this fast.
+       * laid over the whole tool at this share. A cleared tree tips over this fast.
        */
       wash: 0.3,
-      axeSlideSec: 0.1,
       tipSec: 0.6,
+      /**
+       * Chop Tree's axe (third pass): it slides down out of view after the
+       * marker turns, and up on the other side once it crosses the middle;
+       * each slide takes this long, or this share of the pass if that's
+       * shorter. The chop: raise, chop-1, chop-2 (the hit), then back to ready.
+       */
+      axeSlideSec: 0.2,
+      axeSlideShare: 0.2,
+      chopSec: { raise: 0.08, chop1: 0.04, chop2: 0.12, back: 0.15 },
+      /**
+       * Clearing Animals' whistle (third pass): 160 × 160 frames at (172, 44),
+       * the mouthpiece at (138, 140) in every frame. A good whistle leans
+       * toward the ring (the closest of these directions, in degrees, 90 up
+       * and 180 left) and moves this far toward it for this long, then eases
+       * back over `backSec`. A whiff shakes it this far for this long. Each
+       * lean frame's chamber end (where the waves start), measured from the art.
+       */
+      whistle: {
+        x: 172,
+        y: 44,
+        mouth: { x: 138, y: 140 },
+        leans: [105, 125, 145, 165] as const,
+        chamber: {
+          105: { x: 129, y: 3 },
+          125: { x: 85, y: 13 },
+          145: { x: 47, y: 37 },
+          165: { x: 15, y: 77 },
+        } as Readonly<Record<105 | 125 | 145 | 165, { x: number; y: number }>>,
+        move: 6,
+        leanSec: 0.35,
+        backSec: 0.2,
+        shake: 1,
+        shakeSec: 0.2,
+      },
       /**
        * Chop Tree (Nov 25, after Wyatt played it): each pass of the marker
        * across the bar takes a random time from the tier's range, picked
@@ -1463,7 +1495,8 @@ export const BALANCE = {
         ring: { x: 160, y: 64, r: 26 },
         area: { x: [50, 270] as const, y: [44, 150] as const },
         hudBottom: 22,
-        tool: { x: 252, y: 75, w: 68, h: 113 },
+        // The whistle at rest (third pass): its frame's visible area.
+        tool: { x: 237, y: 51, w: 75, h: 135 },
         startScale: 2.2,
         shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0, 4: 0.9, 5: 0.8 } as Readonly<Record<MgTier, number>>,
         thickness: { 1: 10, 2: 8, 3: 6, 4: 5, 5: 4 } as Readonly<Record<MgTier, number>>,
@@ -1562,6 +1595,12 @@ export const BALANCE = {
       skunksOn: 0.15,
       failEnergy: 1,
       donePauseSec: 0.5,
+      /**
+       * The mallet (third pass): Wyatt's hammer, 35 × 37 at the cans' scale.
+       * The pointer is at this spot on it (the head's flat face in
+       * `mallet-whack`; adjust by eye), and a click swings it this long.
+       */
+      mallet: { w: 35, h: 37, hotX: 11, hotY: 29, swingSec: 0.15 },
     },
 
     /*
@@ -2098,6 +2137,204 @@ export const BALANCE = {
       shakeSec: 0.3,
       /** The testing tab's Bees "On" below Tier III uses Tier III's share. */
       beesOn: 0.15,
+    },
+
+    /*
+     * Signs and trails (Phase 10.8 step 8, docs/design/19-minigames-signs-trails.md):
+     * Fake Trail Signs, Trails, Crossroads and Rock Climb. Trails and Rock
+     * Climb are passing challenges. TODO(wyatt): every number is a first guess.
+     */
+
+    /**
+     * Fake Trail Signs: learn the rules, judge each sign REAL or FAKE; each
+     * round adds a rule. By tier: signs per round, the fewest rules the game
+     * must reach, the most rules, whether old rules are hidden, and whether
+     * a sign's ends can differ.
+     */
+    fakeSigns: {
+      tiers: {
+        1: { signs: 2, min: 2, cap: 3, hideOld: false, mixedEnds: false },
+        2: { signs: 3, min: 2, cap: 4, hideOld: false, mixedEnds: false },
+        3: { signs: 3, min: 3, cap: 4, hideOld: false, mixedEnds: true },
+        4: { signs: 4, min: 3, cap: 5, hideOld: true, mixedEnds: true },
+        5: { signs: 4, min: 4, cap: 6, hideOld: true, mixedEnds: true },
+      } as Readonly<
+        Record<
+          MgTier,
+          { signs: number; min: number; cap: number; hideOld: boolean; mixedEnds: boolean }
+        >
+      >,
+      /** The rules' numbers: names longer than (from–to), names this short or shorter, the number over, must be under or over, the two numbers add up to more or less than. */
+      nameLonger: [4, 6] as const,
+      nameShorter: [4, 5] as const,
+      numberOver: [40, 60] as const,
+      numberMust: [30, 70] as const,
+      sumMust: [6, 11] as const,
+      /** This share of each round's signs are fake (from–to). */
+      fakeShare: [0.4, 0.6] as const,
+      /** Rules are checked against this many random signs, and need at least this many real and fake ones (my guesses). */
+      poolSize: 1500,
+      minOfEach: 3,
+      /** A wrong answer's box shows this long; a right answer's tick this long (my guess). */
+      wrongSec: 2.5,
+      rightSec: 0.4,
+      /** The sign's board: as wide as the text plus this. */
+      boardPad: 6,
+    },
+
+    /**
+     * Trails (a passing challenge): keep your hiker on a trail scrolling
+     * down; one section per hiker, each ending at a checkpoint. By tier:
+     * the scroll speed (units a second), the trail's width, a section's
+     * length, each hiker's off-trail bar (seconds), Switchbacks' corner
+     * spacing and Ridgeline's jog size (from–to).
+     */
+    trails: {
+      tiers: {
+        1: { scroll: 40, width: 56, section: 500, barSec: 3, corner: 150, jog: [16, 24] },
+        2: { scroll: 46, width: 48, section: 600, barSec: 2.5, corner: 130, jog: [20, 28] },
+        3: { scroll: 52, width: 40, section: 700, barSec: 2, corner: 120, jog: [24, 32] },
+        4: { scroll: 58, width: 34, section: 800, barSec: 1.75, corner: 110, jog: [28, 36] },
+        5: { scroll: 64, width: 30, section: 900, barSec: 1.5, corner: 100, jog: [32, 40] },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            scroll: number;
+            width: number;
+            section: number;
+            barSec: number;
+            corner: number;
+            jog: readonly [number, number];
+          }
+        >
+      >,
+      /** The hiker: where (scene y), how far left and right, top speed (units a second) reached in this long. */
+      hikerY: 178,
+      xRange: [24, 296] as const,
+      topSpeed: 130,
+      accelSec: 0.1,
+      /** The trail never moves sideways faster than this share of the hiker's top speed. */
+      fairShare: 0.75,
+      /** By type: Forest Path is this much wider, Ridgeline this much narrower. */
+      forestWide: 1.15,
+      ridgeNarrow: 0.75,
+      /**
+       * The course (my guesses): a straight start this long; Forest Path and
+       * Riverbank bend this far either side; Ridgeline jogs every so often
+       * (units, from–to); the river runs this far from the trail's edge, this wide.
+       */
+      leadIn: 60,
+      bend: 70,
+      jogEvery: [90, 170] as const,
+      river: { gap: 3, width: 40 },
+      /** "<NAME> MADE IT" shows this long (the scroll pauses); after a fail, the next hiker starts this long after. */
+      madeSec: 0.8,
+      handoverSec: 1,
+    },
+
+    /**
+     * Crossroads (Wyatt's "Trailmap"): remember a row of arrows, then walk
+     * them through 4-way crossings. By tier: the arrows. Each step walks out
+     * and in this long; MADE IT shows this long; a press back the way you
+     * came bumps this long (my guesses for the last two).
+     */
+    crossroads: {
+      arrows: { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 } as Readonly<Record<MgTier, number>>,
+      walkOutSec: 0.35,
+      walkInSec: 0.35,
+      madeSec: 1.2,
+      bumpSec: 0.2,
+    },
+
+    /**
+     * Rock Climb (a passing challenge): aim, hold for power, jump, and grab
+     * a hold of the active hand's color. By tier: holds to the top, the
+     * time, the arrow's swing (side to side) and the power meter (empty to
+     * full) in seconds, the grab reach (units), one grab try per jump or
+     * any number, and decoy holds per screen.
+     */
+    rockClimb: {
+      tiers: {
+        1: {
+          holds: 8,
+          timeSec: 50,
+          swingSec: 1.6,
+          powerSec: 1.2,
+          reach: 16,
+          oneTry: false,
+          decoys: 3,
+        },
+        2: {
+          holds: 10,
+          timeSec: 50,
+          swingSec: 1.4,
+          powerSec: 1.1,
+          reach: 14,
+          oneTry: false,
+          decoys: 4,
+        },
+        3: {
+          holds: 12,
+          timeSec: 55,
+          swingSec: 1.2,
+          powerSec: 1.0,
+          reach: 12,
+          oneTry: true,
+          decoys: 5,
+        },
+        4: {
+          holds: 14,
+          timeSec: 60,
+          swingSec: 1.0,
+          powerSec: 0.9,
+          reach: 11,
+          oneTry: true,
+          decoys: 6,
+        },
+        5: {
+          holds: 16,
+          timeSec: 60,
+          swingSec: 0.9,
+          powerSec: 0.8,
+          reach: 10,
+          oneTry: true,
+          decoys: 7,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            holds: number;
+            timeSec: number;
+            swingSec: number;
+            powerSec: number;
+            reach: number;
+            oneTry: boolean;
+            decoys: number;
+          }
+        >
+      >,
+      /** A jump goes this far (from empty to full power), and each planned hold is this far from the last. */
+      power: [30, 110] as const,
+      step: [40, 90] as const,
+      /** The color sequence: this long with an even number of hikers, this long with an odd number. */
+      seqEven: 8,
+      seqOdd: 9,
+      /**
+       * My guesses: a jump takes this long; a fall slides back this long;
+       * holds stay this far inside the wall's edges; a screen of wall is this
+       * tall; decoys stay this far from the path; planned holds turn at
+       * least this far from flat (degrees); the climber's hand sits at this
+       * scene y.
+       */
+      jumpSec: 0.5,
+      slideSec: 0.5,
+      wallX: [24, 296] as const,
+      screen: 170,
+      decoyClear: 20,
+      minTurnDeg: 25,
+      handY: 140,
     },
 
     /**

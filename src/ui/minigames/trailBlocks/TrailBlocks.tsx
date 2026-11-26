@@ -7,11 +7,13 @@
  *
  * - Chop Tree and River Flood: a marker sweeps across the strip above the
  *   energy bar; click, tap or press Space to swing. In Chop Tree the axe is
- *   in the hand on the side the marker is heading.
+ *   on the side the marker is on, passed behind the hiker's back between
+ *   edges (third pass), and chops around the end of its handle.
  * - Mine Rockslide: hold (mouse, finger or Space) to fill the tall bar on
  *   the left; let go in the green zone.
  * - Clearing Animals: click when the solid circle's edge is in the ring;
- *   every try is somewhere new.
+ *   every try is somewhere new. A good whistle leans toward the ring; a
+ *   whiff just shakes.
  * - After a swing, the marker (or the power, or the circle) holds where it
  *   stopped for a moment in a light frame.
  */
@@ -23,7 +25,9 @@ import { g } from '../../../minigames/greens';
 import {
   activeHiker,
   animalsLeft,
-  axeSide,
+  axePose,
+  chopFrame,
+  chopHitSec,
   circleRadius,
   frozen,
   markerAt,
@@ -36,6 +40,7 @@ import {
   tick,
   VERSIONS,
   waterTop,
+  whistlePose,
   type Version,
 } from '../../../minigames/trailBlocks/logic';
 import { PixelScreen } from '../PixelScreen';
@@ -51,13 +56,26 @@ const FIXED = 1 / 120;
 const file = (f: string) => `minigames/trail-blocks/${f}`;
 const art = (f: string) => asset(file(f));
 
-/** Each version's tool frames (160 × 124, at (160, 72)): ready, then the two swing frames. */
-const TOOL: Readonly<Record<Version, readonly [string, string, string]>> = {
-  chop: ['axe-ready', 'axe-raised', 'axe-strike'],
+/**
+ * Each version's tool frames. The pickaxe and bucket (160 × 124, at (160,
+ * 72)) go ready → raised → strike. The axe has its own chop (`chopFrame`),
+ * and the whistle (160 × 160, at (172, 44)) rests or leans (`whistlePose`).
+ */
+const TOOL: Readonly<Record<Version, readonly string[]>> = {
+  chop: ['axe-ready', 'axe-raise', 'axe-chop-1', 'axe-chop-2'],
   rockslide: ['pickaxe-ready', 'pickaxe-raised', 'pickaxe-strike'],
   river: ['bucket-ready', 'bucket-scoop', 'bucket-toss'],
-  animals: ['whistle-hold', 'whistle-blow', 'whistle-blow'],
+  animals: [
+    'whistle-rest',
+    'whistle-lean-105',
+    'whistle-lean-125',
+    'whistle-lean-145',
+    'whistle-lean-165',
+  ],
 };
+const W = BALANCE.minigames.trailBlocks.whistle;
+/** The waves art radiates up and left from this spot (its source). */
+const WAVES_FROM = { x: 45, y: 37 };
 
 /** The crowd on the trail (Clearing Animals): who stands where (top-left), as in mockup 4. */
 const CROWD: readonly { kind: string; x: number; y: number; w: number; h: number }[] = [
@@ -173,11 +191,22 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
     down();
   };
 
-  // What the tool shows: a swing goes ready → raised → strike → ready.
+  // What the tool shows: the axe chops on its own side; the whistle rests or
+  // leans; the pickaxe and bucket go ready → raised → strike → ready.
   const since = game.lastSwing ? game.time - game.lastSwing.at : 99;
-  const side = version === 'chop' ? axeSide(game) : 'right';
+  const pose = version === 'chop' ? axePose(game) : { side: 'right' as const, up: 1 };
+  const side = pose.side;
   const still$ = frozen(game);
-  const frame = since < 0.12 ? 1 : since < B.swingSec ? 2 : 0;
+  const whistle = version === 'animals' ? whistlePose(game) : null;
+  const toolFrame =
+    version === 'chop'
+      ? chopFrame(since)
+      : whistle
+        ? whistle.frame
+        : TOOL[version][since < 0.12 ? 1 : since < B.swingSec ? 2 : 0]!;
+  const toolFile = file(`${toolFrame}.png`);
+  const chopHit =
+    version === 'chop' && game.lastSwing && since >= chopHitSec() && since < chopHitSec() + 0.5;
   const who = activeHiker(game);
   const color = (who ? byId(who) : hikers.at(-1))?.color ?? '#d3dfaf';
   const st = stage(game);
@@ -329,33 +358,63 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
                 />
               )}
             </svg>
-            {since < 0.5 && game.lastSwing?.quality !== 'miss' && game.lastSwing && (
+            {/* The waves, from the leaning whistle's chamber toward the ring. */}
+            {whistle?.lean && game.lastSwing?.ring && since < 0.5 && (
               <img
                 className={`${ui.sprite} ${styles.waves}`}
                 src={art('whistle-waves.png')}
                 alt=""
                 draggable={false}
+                style={(() => {
+                  const c = W.chamber[whistle.lean];
+                  const cx = W.x + c.x + whistle.dx;
+                  const cy = W.y + c.y + whistle.dy;
+                  const r = game.lastSwing.ring;
+                  const turn = (Math.atan2(r.y - cy, r.x - cx) * 180) / Math.PI + 135;
+                  return {
+                    left: cx - WAVES_FROM.x,
+                    top: cy - WAVES_FROM.y,
+                    transformOrigin: `${WAVES_FROM.x}px ${WAVES_FROM.y}px`,
+                    transform: `rotate(${turn}deg)`,
+                  };
+                })()}
               />
             )}
           </>
         )}
 
         {/* The tool, swinging by itself, washed with the active hiker's color.
-            The axe is in the hand on the side the marker is heading. */}
+            The axe is on the marker's side and slides down out of view
+            between an edge and the middle; the whistle leans toward the ring. */}
         {!done && (
           <span
-            key={side}
-            className={styles.tool}
+            className={version === 'animals' ? styles.whistle : styles.tool}
             data-side={side}
-            style={{ animationDuration: `${B.axeSlideSec}s` }}
+            style={
+              whistle
+                ? { transform: `translate(${whistle.dx}px, ${whistle.dy}px)` }
+                : {
+                    transform: `translateY(${(1 - pose.up) * 170}px)${side === 'left' ? ' scaleX(-1)' : ''}`,
+                  }
+            }
           >
             <img
               className={ui.sprite}
-              src={washes[washKey(toolFiles[frame]!, color)] ?? art(`${TOOL[version][frame]}.png`)}
+              src={washes[washKey(toolFile, color)] ?? art(`${toolFrame}.png`)}
               alt=""
               draggable={false}
             />
           </span>
+        )}
+        {chopHit && game.lastSwing?.quality !== 'miss' && (
+          <img
+            key={game.swings}
+            className={`${ui.sprite} ${styles.treeChips}`}
+            data-side={side}
+            src={art('rock-chips.png')}
+            alt=""
+            draggable={false}
+          />
         )}
 
         {/* The timing control. */}

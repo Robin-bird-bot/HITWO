@@ -6,9 +6,13 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
+import { TIERS } from '../types';
 import {
   activeHiker,
-  axeSide,
+  axePose,
+  chopFrame,
+  leanFor,
+  whistlePose,
   circleRadius,
   frozen,
   judge,
@@ -118,7 +122,7 @@ describe('the marker freeze', () => {
 });
 
 describe('Chop Tree', () => {
-  it('each pass picks a new speed within the tier’s range, and the axe is on the side the marker heads', () => {
+  it('each pass picks a new speed within the tier’s range', () => {
     for (const tier of [1, 3, 5] as const) {
       let s = newTrailBlocks({ version: 'chop', tier }, ['finn'], 4);
       const [lo, hi] = B.chop.passSec[tier];
@@ -128,10 +132,98 @@ describe('Chop Tree', () => {
         expect(s.marker.passSec).toBeGreaterThanOrEqual(lo);
         expect(s.marker.passSec).toBeLessThanOrEqual(hi);
         passes.add(s.marker.passSec);
-        expect(axeSide(s)).toBe(s.marker.dir > 0 ? 'right' : 'left');
       }
       expect(passes.size).toBeGreaterThan(4);
     }
+  });
+
+  it('the axe is on the side the marker is on; hidden from a turn to the middle; in place before the far zone', () => {
+    for (const tier of TIERS) {
+      const zone = B.chop.zone[tier];
+      for (const passSec of [B.chop.passSec[tier][0], B.chop.passSec[tier][1]]) {
+        const at = (pos: number, dir: 1 | -1) =>
+          axePose({
+            ...newTrailBlocks({ version: 'chop', tier }, ['finn'], 1),
+            marker: { pos, dir, passSec },
+          });
+        // On the marker's side.
+        expect(at(0.2, -1).side).toBe('left');
+        expect(at(0.8, 1).side).toBe('right');
+        // Heading for an edge: fully up before its zone (in either direction).
+        expect(at(zone > 0 ? 1 - zone : 0.99, 1).up).toBe(1);
+        expect(at(zone, -1).up).toBe(1);
+        // Just after turning at an edge it's still up, then gone well before the middle.
+        expect(at(0.001, 1).up).toBeGreaterThan(0.9);
+        expect(at(0.3, 1).up).toBe(0);
+        expect(at(0.7, -1).up).toBe(0);
+        // Just past the middle it's only starting to come up.
+        expect(at(0.51, 1).up).toBeLessThan(0.5);
+      }
+    }
+  });
+
+  it('a swing pops the axe into place on the marker’s side, even mid-bar', () => {
+    let s = newTrailBlocks({ version: 'chop', tier: 1 }, ['finn'], 4);
+    s = { ...s, marker: { pos: 0.35, dir: 1, passSec: 1 } };
+    expect(axePose(s).up).toBe(0);
+    const swung = press(s);
+    expect(swung.phase).toBe('swing');
+    expect(axePose(swung)).toEqual({ side: 'left', up: 1 });
+  });
+
+  it('the chop: ready → raise → chop-1 → chop-2 → back to ready', () => {
+    const c = B.chopSec;
+    const seen: string[] = [];
+    for (let t = 0; t < 0.6; t += 0.005) {
+      const f = chopFrame(t);
+      if (seen.at(-1) !== f) seen.push(f);
+    }
+    expect(seen).toEqual(['axe-raise', 'axe-chop-1', 'axe-chop-2', 'axe-chop-1', 'axe-ready']);
+    expect(chopFrame(c.raise + c.chop1 + 0.01)).toBe('axe-chop-2');
+    expect(chopFrame(99)).toBe('axe-ready');
+  });
+});
+
+describe('Clearing Animals’ whistle', () => {
+  const W = B.whistle;
+  const mouth = { x: W.x + W.mouth.x, y: W.y + W.mouth.y };
+  it('a good whistle leans toward the ring with the closest lean frame', () => {
+    for (const lean of W.leans) {
+      const rad = (lean * Math.PI) / 180;
+      const ring = { x: mouth.x + Math.cos(rad) * 100, y: mouth.y - Math.sin(rad) * 100 };
+      expect(leanFor(ring)).toBe(lean);
+      // A few degrees off still picks it.
+      const off = ((lean + 6) * Math.PI) / 180;
+      expect(leanFor({ x: mouth.x + Math.cos(off) * 100, y: mouth.y - Math.sin(off) * 100 })).toBe(
+        lean,
+      );
+    }
+    // Every ring spot in the area picks one of the four.
+    for (let x = B.animals.area.x[0]; x <= B.animals.area.x[1]; x += 20) {
+      for (let y = B.animals.area.y[0]; y <= B.animals.area.y[1]; y += 20) {
+        expect(W.leans).toContain(leanFor({ x, y }));
+      }
+    }
+  });
+
+  it('a hit leans (and moves toward the ring), then rests; a whiff only shakes', () => {
+    const s0 = newTrailBlocks({ version: 'animals', tier: 1 }, ['finn'], 3);
+    expect(whistlePose(s0).frame).toBe('whistle-rest');
+    const hit = press(radius(s0, B.animals.ring.r));
+    const pose = whistlePose(hit);
+    expect(pose.frame).toBe(`whistle-lean-${leanFor(s0.ring)}`);
+    expect(Math.hypot(pose.dx, pose.dy)).toBeCloseTo(W.move);
+    // It moves toward the ring.
+    expect(Math.sign(pose.dx)).toBe(Math.sign(s0.ring.x - mouth.x) || 0);
+    const later = tick(hit, W.leanSec + W.backSec + 0.05, false);
+    expect(whistlePose(later).frame).toBe('whistle-rest');
+    const whiff = press(radius(s0, B.animals.ring.r * B.animals.startScale));
+    expect(whiff.lastSwing?.quality).toBe('miss');
+    const shaken = tick(whiff, 0.01, false);
+    const p = whistlePose(shaken);
+    expect(p.frame).toBe('whistle-rest');
+    expect(p.lean).toBeNull();
+    expect(Math.abs(p.dx)).toBeLessThanOrEqual(W.shake);
   });
 });
 

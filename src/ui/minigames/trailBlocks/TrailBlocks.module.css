@@ -148,7 +148,11 @@
   }
 }
 
-/* The tool (160 × 124) at (160, 72); the axe on the left is the same frames mirrored at (0, 72). */
+/*
+ * The tool (160 × 124) at (160, 72); the axe on the left is the same frames
+ * mirrored at (0, 72). It slides down out of view between an edge and the
+ * middle (a translateY set by the game).
+ */
 .tool {
   position: absolute;
   left: 160px;
@@ -156,13 +160,10 @@
   width: 160px;
   height: 124px;
   pointer-events: none;
-  animation: slideIn 0.1s ease-out;
 }
 
 .tool[data-side='left'] {
   left: 0;
-  transform: scaleX(-1);
-  animation-name: slideInLeft;
 }
 
 .tool > img {
@@ -172,15 +173,51 @@
   height: 124px;
 }
 
-@keyframes slideIn {
-  from {
-    translate: 40px 0;
+/* The whistle (160 × 160) at (172, 44), low in the right corner and partly off the edge. */
+.whistle {
+  position: absolute;
+  left: 172px;
+  top: 44px;
+  width: 160px;
+  height: 160px;
+  pointer-events: none;
+}
+
+.whistle > img {
+  position: absolute;
+  inset: 0;
+  width: 160px;
+  height: 160px;
+}
+
+/* Chips off the trunk on the chop's hit, flying away from the axe's side. */
+.treeChips {
+  position: absolute;
+  left: 164px;
+  top: 128px;
+  width: 40px;
+  height: 24px;
+  pointer-events: none;
+  animation: chipsRight 0.5s ease-out forwards;
+}
+
+.treeChips[data-side='left'] {
+  left: 116px;
+  transform: scaleX(-1);
+  animation-name: chipsLeft;
+}
+
+@keyframes chipsRight {
+  to {
+    translate: 22px -26px;
+    opacity: 0;
   }
 }
 
-@keyframes slideInLeft {
-  from {
-    translate: -40px 0;
+@keyframes chipsLeft {
+  to {
+    translate: -22px -26px;
+    opacity: 0;
   }
 }
 
@@ -350,7 +387,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .felled,
-  .tool,
+  .treeChips,
   .chips,
   .splash,
   .waves {
