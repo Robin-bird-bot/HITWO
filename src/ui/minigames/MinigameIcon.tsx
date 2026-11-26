@@ -113,6 +113,48 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M9 6v9M12 6v9M15 6v9M3 19c3-2 6 2 9 0s6 2 9 0" />
     </>
   ),
+  // Two trunks, each with a blaze.
+  trailBlazes: (
+    <>
+      <path d="M6 3v18M10 3v18M14 3v18M18 3v18" />
+      <path d="M7 13h2M15 8h2" />
+    </>
+  ),
+  // A jar ring and a firefly.
+  fireflyCatch: (
+    <>
+      <circle cx="10" cy="13" r="7" />
+      <circle cx="17" cy="6" r="2" />
+    </>
+  ),
+  // Arrows out from a corner: grow or shrink.
+  sizeUp: (
+    <>
+      <rect x="3" y="13" width="8" height="8" rx="1" />
+      <path d="M13 11l7-7M14 4h6v6" />
+    </>
+  ),
+  // A fly swatter.
+  flySwatter: (
+    <>
+      <rect x="7" y="3" width="10" height="10" rx="1.5" />
+      <path d="M12 13v8M7 8h10M12 3v10" />
+    </>
+  ),
+  // Binoculars.
+  safari: (
+    <>
+      <circle cx="7" cy="16" r="4" />
+      <circle cx="17" cy="16" r="4" />
+      <path d="M11 16h2M4.5 13l2-8h3l1 7M19.5 13l-2-8h-3l-1 7" />
+    </>
+  ),
+  // A trash bin.
+  raccoonShuffle: (
+    <>
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

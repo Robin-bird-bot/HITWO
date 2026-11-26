@@ -26,6 +26,12 @@ import {
   CROSSING,
   TRAIN,
   RAFTING,
+  TRAIL_BLAZES,
+  FIREFLY_CATCH,
+  SIZE_UP,
+  FLY_SWATTER,
+  SAFARI,
+  RACCOON_SHUFFLE,
 } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import type { StorageLike } from '../../store/autosave';
@@ -168,6 +174,7 @@ describe('the minigame list', () => {
         [
           ['Remember the Path', 'ready'],
           ['Memory Puzzle', 'ready'],
+          ['Safari', 'ready'],
         ],
       ],
       ['Search', [['Find the Object', 'ready']]],
@@ -177,10 +184,19 @@ describe('the minigame list', () => {
           ['Trail Blocks', 'ready'],
           ['Sleeping Bear', 'ready'],
           ['Whackoon', 'ready'],
-          ['Fly Swatter', 'soon'],
+          ['Trail Blazes', 'ready'],
+          ['Firefly Catch', 'ready'],
+          ['Size Up', 'ready'],
+          ['Fly Swatter', 'ready'],
         ],
       ],
-      ['Guess and luck', [['Bearrels', 'ready']]],
+      [
+        'Guess and luck',
+        [
+          ['Bearrels', 'ready'],
+          ['Raccoon Shuffle', 'ready'],
+        ],
+      ],
     ]);
     const listed = MINIGAMES_BY_CATEGORY.flatMap((c) => c.games);
     expect(listed).toHaveLength(MINIGAMES.length);
@@ -206,6 +222,54 @@ describe('the minigame list', () => {
       survive: 60,
     });
     expect(cleanSettings(RAFTING, { distance: 2550 }, TEST_HIKERS).distance).toBe(2600);
+  });
+
+  it('the quick games’ settings, including the tuning helpers (Show % live, Show answer, Show the empty bins)', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((x) => x.id);
+    expect(ids(TRAIL_BLAZES)).toEqual(['tier', 'hikers', 'mode', 'tries']);
+    expect(ids(FIREFLY_CATCH)).toEqual(['tier', 'hikers', 'catches', 'time']);
+    expect(ids(SIZE_UP)).toEqual(['tier', 'hikers', 'find', 'time', 'live']);
+    expect(ids(FLY_SWATTER)).toEqual(['tier', 'hikers', 'bees', 'strikes']);
+    expect(ids(SAFARI)).toEqual([
+      'tier',
+      'hikers',
+      'version',
+      'questions',
+      'bigfoot',
+      'question',
+      'answer',
+    ]);
+    expect(ids(RACCOON_SHUFFLE)).toEqual(['tier', 'hikers', 'night', 'packs', 'empties']);
+    expect(defaultSettings(TRAIL_BLAZES)).toMatchObject({ mode: 'tries', tries: 'auto' });
+    expect(defaultSettings(SIZE_UP)).toMatchObject({ find: 'random', live: 'off' });
+    expect(defaultSettings(SAFARI)).toMatchObject({
+      version: 'auto',
+      questions: 'auto',
+      bigfoot: 'auto',
+      question: 'random',
+      answer: 'off',
+    });
+    expect(defaultSettings(RACCOON_SHUFFLE)).toMatchObject({
+      night: 'auto',
+      packs: 'random',
+      empties: 'off',
+    });
+    expect(cleanSettings(TRAIL_BLAZES, { tries: 9, mode: 'sometimes' }, TEST_HIKERS)).toMatchObject(
+      {
+        tries: 5,
+        mode: 'tries',
+      },
+    );
+    expect(
+      [TRAIL_BLAZES, FIREFLY_CATCH, SIZE_UP, FLY_SWATTER].every((m) => m.category === 'reaction'),
+    ).toBe(true);
+    expect(SAFARI.category).toBe('memory');
+    expect(RACCOON_SHUFFLE.category).toBe('luck');
+    expect(
+      [TRAIL_BLAZES, FIREFLY_CATCH, SIZE_UP, FLY_SWATTER, SAFARI, RACCOON_SHUFFLE].every(
+        (m) => m.lineUp && m.status === 'ready',
+      ),
+    ).toBe(true);
   });
 
   it('the new challenges’ settings: Trail Blocks’ version and hit quality, fake-outs and skunks', () => {

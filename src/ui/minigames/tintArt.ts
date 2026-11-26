@@ -7,6 +7,8 @@
  *   Sleeping Bear's hikers and Whackoon's raccoon masks.
  * - **Wash** (`useWashedArt`): the color laid over every pixel of the art at
  *   a share (30%), only where the art is. The Trail Block tools.
+ * - **Outline** (`useOutlinedArt`): only the art's edge pixels (those beside
+ *   a clear pixel), in the color. Size Up's reveal.
  */
 import { useEffect, useState } from 'react';
 import { asset } from '../../config/assets';
@@ -15,6 +17,7 @@ import { BALANCE } from '../../config/balance';
 const made = new Map<string, string>();
 const key = (file: string, color: string) => `${file}|${color}`;
 const washed = (file: string, color: string) => `${file}|${color}|wash`;
+const outlined = (file: string, color: string) => `${file}|${color}|outline`;
 
 function tint(img: HTMLImageElement, color: string): string {
   const canvas = document.createElement('canvas');
@@ -64,13 +67,43 @@ function wash(img: HTMLImageElement, color: string): string {
   return canvas.toDataURL();
 }
 
+/** Only the art's edge pixels (beside a clear pixel, or at the border), in the color; the rest clear. */
+function outline(img: HTMLImageElement, color: string): string {
+  const canvas = document.createElement('canvas');
+  const [w, h] = [img.naturalWidth, img.naturalHeight];
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return img.src;
+  ctx.drawImage(img, 0, 0);
+  const src = ctx.getImageData(0, 0, w, h);
+  const out = ctx.createImageData(w, h);
+  const hex = color.replace('#', '');
+  const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  const solid = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < w && y < h && src.data[(y * w + x) * 4 + 3]! >= 10;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!solid(x, y)) continue;
+      if (solid(x - 1, y) && solid(x + 1, y) && solid(x, y - 1) && solid(x, y + 1)) continue;
+      const i = (y * w + x) * 4;
+      out.data[i] = rgb[0]!;
+      out.data[i + 1] = rgb[1]!;
+      out.data[i + 2] = rgb[2]!;
+      out.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  return canvas.toDataURL();
+}
+
 /** Makes (or reuses) each file's version in each color, the plain art until it's ready. */
 function useMadeArt(
   files: readonly string[],
   colors: readonly string[],
-  how: 'tint' | 'wash',
+  how: 'tint' | 'wash' | 'outline',
 ): Readonly<Record<string, string>> {
-  const keyOf = how === 'tint' ? key : washed;
+  const keyOf = how === 'tint' ? key : how === 'wash' ? washed : outlined;
   const wanted = [...new Set(files)].flatMap((f) => [...new Set(colors)].map((c) => keyOf(f, c)));
   const id = wanted.sort().join(',');
   const [made$, setMade] = useState<Record<string, string>>(() =>
@@ -99,7 +132,10 @@ function useMadeArt(
         const k = keyOf(f, c);
         const img = imgs.get(f);
         if (!made.has(k) && img?.naturalWidth)
-          made.set(k, how === 'tint' ? tint(img, c) : wash(img, c));
+          made.set(
+            k,
+            how === 'tint' ? tint(img, c) : how === 'wash' ? wash(img, c) : outline(img, c),
+          );
         if (made.has(k)) out[k] = made.get(k)!;
       }
       setMade(out);
@@ -119,5 +155,10 @@ export const useTintedArt = (files: readonly string[], colors: readonly string[]
 export const useWashedArt = (files: readonly string[], colors: readonly string[]) =>
   useMadeArt(files, colors, 'wash');
 
+/** The outlines of these files in these colors, by `outlineKey` (nothing until ready). */
+export const useOutlinedArt = (files: readonly string[], colors: readonly string[]) =>
+  useMadeArt(files, colors, 'outline');
+
 export const tintKey = key;
 export const washKey = washed;
+export const outlineKey = outlined;

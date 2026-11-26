@@ -1,0 +1,149 @@
+/*
+ * What the quick games share (docs/design/18-minigames-quick.md; mockups in
+ * docs/mockups/minigames/quick-games/), in scene units (320 × 240): the play
+ * area, the backdrop, the hint line, the hand-off and the bottom bar's slots.
+ */
+
+.play {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+}
+
+/* The game's backdrop, from the top down to the hint line. */
+.bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 200px;
+}
+
+.thing {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* The line under the scene ("TAP WHEN THE TWO LIT BLAZES ARE LEVEL."), on a light strip as in the mockups. */
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 195px;
+  height: 8px;
+  margin: 0;
+  background: #b9c793;
+  font-size: 3.4px;
+  line-height: 8px;
+  text-align: center;
+}
+
+/* Whose turn it is next, between hikers. */
+.handoff {
+  position: absolute;
+  left: 50%;
+  top: 92px;
+  padding: 5px 10px;
+  font-size: 6px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A word that pops up over the scene and stays ("PASSED", "MISS"). */
+.word {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #f4f8dc;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  text-shadow:
+    0 0 1px #111a10,
+    0.75px 0.75px 0 #111a10;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* The bottom bar: each hiker's token, name and state, and their squares or jar. */
+.slots {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  justify-content: space-around;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+.slot {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  max-width: 96px;
+  height: 25px;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 0.75px solid transparent;
+  border-radius: 2px;
+}
+
+.slot[data-active] {
+  border-color: #d3dfaf;
+}
+
+.slotWords {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.slotName {
+  font-size: 4px;
+}
+
+.slotState {
+  color: #a0b37d;
+  font-size: 3.2px;
+}
+
+.slot[data-failed] .slotState {
+  color: #e5624a;
+}
+
+.slotExtra {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.squares {
+  display: flex;
+  gap: 1.5px;
+}
+
+.squares > span {
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 0.75px;
+  background: #3c4e2f;
+}
+
+.squares > span[data-on] {
+  background: #bac995;
+}
+
+/* A button in the scene (LOCK IN). */
+.button {
+  position: absolute;
+  height: 12px;
+  font-size: 4.5px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play * {
+    transition-duration: 0s !important;
+  }
+}

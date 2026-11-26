@@ -1,0 +1,98 @@
+/* Size Up (3-size-up.png, 4-size-up-reveal.png), in scene units (320 × 240). */
+
+.backdrop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 200px;
+  background: #a9ba86;
+}
+
+.label {
+  position: absolute;
+  top: 26px;
+  margin: 0;
+  font-size: 3.8px;
+  transform: translateX(-50%);
+}
+
+.panel {
+  position: absolute;
+  width: 140px;
+  height: 150px;
+}
+
+.caption {
+  position: absolute;
+  top: 166px;
+  margin: 0;
+  font-size: 3.2px;
+  transform: translateX(-50%);
+}
+
+/* On the trail: the ground, with the find clipped to it. */
+.trail {
+  position: absolute;
+  overflow: hidden;
+  background-size: 140px 150px;
+  image-rendering: pixelated;
+}
+
+.find {
+  position: absolute;
+  transform-origin: 50% 50%;
+}
+
+/* The two halves to tap, each with a thin frame and a hint. */
+.half {
+  position: absolute;
+  width: 136px;
+  height: 72px;
+  box-sizing: border-box;
+  border: 0.5px solid #c9d6a8;
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.halfHint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  color: #d3dfaf;
+  font-size: 3.2px;
+  text-align: center;
+}
+
+/* Show % live (tuning). */
+.live {
+  position: absolute;
+  right: 16px;
+  top: 112px;
+  height: 9px;
+  padding: 0 4px;
+  font-size: 3.6px;
+  pointer-events: none;
+}
+
+.verdict {
+  position: absolute;
+  top: 40px;
+  height: 11px;
+  padding: 0 6px;
+  font-size: 4.5px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.verdict:not([data-passed]) {
+  color: #e5624a;
+}
+
+.lock {
+  left: 136px;
+  top: 186px;
+  width: 48px;
+  height: 9px;
+  font-size: 4px;
+}
