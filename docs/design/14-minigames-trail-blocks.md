@@ -1,5 +1,13 @@
 # Minigames, batch 4, step 1: passing challenges, Trail Blocks, Sleeping Bear, Whackoon
 
+**Revised November 25, third pass (Wyatt):**
+- **The axe stays on its own side.** The chop played on the right even when the axe was on the left. Now:
+  - the axe is on the side the marker is on, and chops there;
+  - when the marker leaves an edge and heads back toward the middle, the axe slides down out of its side, as if passed behind the hiker's back, and slides up on the other side once the marker crosses the middle;
+  - the chop is a real chop: the axe turns around the end of its handle, which stays put (`axe-ready`, `axe-raise`, `axe-chop-1`, `axe-chop-2`).
+- **The whistle** starts further in from the corner and turned up. On a good whistle (not a whiff), it leans toward the ring.
+- **Whackoon's mallet** is Wyatt's hammer sprite, recolored into the greens.
+
 **Revised November 25, after Wyatt played step 1:**
 - **The marker freezes** for [1 s] where you stopped it, in every Trail Block.
 - **Chop Tree is harder:** the marker's speed changes at random every time it turns around. The axe switches hands to the side the marker is heading.
@@ -90,11 +98,12 @@ See `mockups/1-chop-tree.png` (and `1b-chop-tree-strike.png`) to `4-clear-animal
   - Clearing Animals: a ring in the sky.
 - **Starting positions** (scene units):
   - tool frames (160 × 124) at (160, 72); for the axe on the left, the same frames mirrored at (0, 72);
+  - the whistle frames are taller (160 × 160), at (172, 44), so the whistle sits low in the right corner and partly off the edge;
   - the tree (105 × 237) centered at x 160 with its base at y 197. Its top runs up behind the HUD;
   - the rocks (228 × 168) centered at x 160 with their base at y 190.
 - **The tools (new):**
   - each tool is a sprite at its own pixel size (`tool-axe` 51 × 44, `tool-pickaxe` 32 × 31, `tool-bucket` 49 × 46, `tool-whistle` 46 × 61);
-  - the swing frames (`axe-ready`, `-raised`, `-strike`, `pickaxe-*`, `bucket-*`, `whistle-*`) show them 2× big, turned around the end of the handle (or the rim, or the ring);
+  - the swing frames (`axe-*`, `pickaxe-*`, `bucket-*`, `whistle-*`) show them 2× big, turned around the end of the handle (or the rim, or the whistle's mouthpiece);
   - `bucket-scoop` has water in it.
 
 ### Energy
@@ -128,12 +137,20 @@ See `mockups/1-chop-tree.png` (and `1b-chop-tree-strike.png`) to `4-clear-animal
 - **The bar:** green zones at both ends, with a marker sliding back and forth. Click, tap or press Space to swing.
 - **Strength:** the closer to the outer edge, the stronger the swing. Outside the green, the swing misses ("THUNK").
 - **Harder (new):** every time the marker turns around, the speed of its next pass is picked at random from the tier's range, so you can't settle into a rhythm.
-- **The axe switches sides (new):**
-  - the axe is in the hand on the side the marker is heading toward;
-  - heading right: the right hand (the frames as drawn);
-  - heading left: the left side (the same frames mirrored, at the left edge);
-  - it swaps when the marker turns, sliding out and in over [0.1 s];
+- **The axe's side (revised, third pass):**
+  - **right side:** the frames as drawn, at (160, 72). **Left side:** every frame mirrored, at (0, 72). The chop plays on whichever side the axe is on: never draw the right-side frames while the axe is on the left;
+  - the axe is on the side the marker is on. When you'd chop (in a green zone at an edge), that's the edge the marker is at;
+  - **passing it behind the back:**
+    1. when the marker turns at an edge and starts back toward the middle, the axe slides straight down out of view on its side;
+    2. it stays hidden while the marker heads for the middle;
+    3. when the marker crosses the middle, the axe slides up into place on the other side;
+    4. each slide takes [0.2 s], or [20%] of that pass's time if that's shorter, so it's always in place before the marker reaches the far zone;
+  - **a click while the axe is hidden or sliding** (always a miss, since the marker is mid-bar): the axe pops into place on the side the marker is on and chops there;
   - a swing hits that side of the trunk.
+- **The chop (revised, third pass):** the axe turns around the end of its handle, which stays in the same spot in every frame:
+  - `axe-ready` (as drawn) → `axe-raise` (wound back [35°]) for [0.08 s] → `axe-chop-1` ([14°] forward) for [0.04 s] → `axe-chop-2` ([30°] forward, the hit) for [0.12 s] → back to `axe-ready` over [0.15 s];
+  - chips fly off the trunk on the `axe-chop-2` frame;
+  - see `mockups/trail-blocks/chop-tree-axe.gif`.
 
 | | Tier I | Tier II | Tier III | Tier IV | Tier V |
 | --- | --- | --- | --- | --- | --- |
@@ -141,7 +158,7 @@ See `mockups/1-chop-tree.png` (and `1b-chop-tree-strike.png`) to `4-clear-animal
 | Each green zone | [14%] | [11%] | [9%] | [8%] | [7%] |
 
 - **Art:**
-  - `axe-ready`, `axe-raised` and `axe-strike`: a swing goes ready → raised → strike → ready;
+  - `axe-ready`, `axe-raise`, `axe-chop-1` and `axe-chop-2` (replacing `axe-raised` and `axe-strike`);
   - the tree is the pine from Wyatt's reference, `tree-0` to `tree-4` (3× big);
   - notches deepen on both sides of the trunk.
 - **When it's cleared:**
@@ -192,7 +209,13 @@ See `mockups/1-chop-tree.png` (and `1b-chop-tree-strike.png`) to `4-clear-animal
 | Ring thickness | [10] | [8] | [6] | [5] | [4] |
 
 - **The crowd:** the animals left match the work left. Each hit whistles [1–2] away: they flip around and run off to the sides.
-- **Art:** `whistle-hold`, `whistle-blow` (with `whistle-waves.png`), and `animal-deer`, `-raccoon`, `-turkey` and `-rabbit` (facing you; mirror them to run).
+- **The whistle (revised, third pass):**
+  - **at rest:** `whistle-rest`, further in from the corner than before and turned up (its chamber points up and a little left);
+  - **a good whistle** (a full or weak hit): it leans toward the ring for [0.35 s]. Pick the `whistle-lean-<n>` frame whose direction is closest to the ring, as seen from the mouthpiece. `n` is the direction the chamber points, in degrees (90 is straight up, 180 is left): 105, 125, 145 or 165. Also move it [6] units toward the ring. `whistle-waves.png` goes from the chamber toward the ring. Then it eases back to rest over [0.2 s];
+  - **a whiff** (a miss): no lean and no waves, just a [1]-unit shake for [0.2 s];
+  - the mouthpiece (bottom right of each frame, at (138, 140)) stays put in every frame;
+  - see `mockups/trail-blocks/clear-animals-whistle.gif`.
+- **Art:** `whistle-rest` and `whistle-lean-105`, `-125`, `-145` and `-165` (replacing `whistle-hold` and `whistle-blow`), `whistle-waves.png`, and `animal-deer`, `-raccoon`, `-turkey` and `-rabbit` (facing you; mirror them to run).
 
 ### The hiker's color on the tools
 - **The wash (Wyatt):** after drawing a tool frame, lay the active hiker's color over the whole tool at [30%], only where the tool is (its own pixels). No extra files are needed.
@@ -262,7 +285,8 @@ Claude Code already fixed this after Wyatt's playtest. It's written here so the 
 - **Done hikers:** when a hiker reaches their number, they pass, but **their raccoons keep popping up**. Whacking one does nothing, and the mallet needs [0.5 s] to swing again. Be choosy.
 - **Several up at once:** keep at least the tier's minimum up at all times (the table). When one goes down, another pops up within [0.2 s].
 - **When the clock runs out,** hikers who reached their number pass. The rest fail and lose [1] energy each.
-- **Whacking:** click or tap a raccoon. The cursor is a mallet (`mallet-ready`, swinging to `mallet-whack` on a click).
+- **Whacking:** click or tap a raccoon. The cursor is a mallet (`mallet-ready`, swinging to `mallet-whack` on a click for [0.15 s]).
+- **The mallet (revised, third pass):** Wyatt's hammer sprite, recolored, at the cans' scale (1 pixel = 1 unit). Both frames are 35 × 37 and turn around the end of the handle. The cursor's hot spot is the middle of the head's flat face in `mallet-whack`, about (11, 29); adjust it by eye. It's credited in `art/whackoon/CREDITS.md`.
 - **Not a passing challenge.**
 - **Skunks** are the decoys:
   - sometimes a skunk pops up instead of a raccoon;
@@ -321,7 +345,11 @@ Add the three games under **Reaction and timing**, with these settings:
 - **The marker freeze:** after a click or release, the marker holds for [1 s] and input waits.
 - **Chop Tree:**
   - each pass picks a new speed within the tier's range;
-  - the axe is always on the side the marker is heading.
+  - the axe is on the side the marker is on; it's hidden between a turn and the middle, and in place before the far zone, at every pass speed;
+  - a chop on the left uses the mirrored frames at the left edge, never the right-side ones;
+  - the handle's end stays in the same spot through the whole chop.
+- **Clearing Animals whistle:**
+  - a hit leans toward the ring using the closest lean frame; a whiff never leans.
 - **Sleeping Bear:**
   - moving after the grace while he's awake is caught, and moving during a stir is fine and earns time back;
   - the clock is time per hiker × hikers, goes down smoothly, and stops while he's awake;
