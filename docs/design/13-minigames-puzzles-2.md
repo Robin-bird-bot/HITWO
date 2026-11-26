@@ -151,6 +151,8 @@ Rebuild a picture from pieces stacked in a tray. With two hikers there are two p
 ---
 
 ## 4. Thin Ice
+**Renamed Minefield (Dog Waste Zone) on November 26. The new Thin Ice is in `23-minigames-final.md`, section 7.**
+
 Minesweeper on a frozen lake: the "mines" are holes in the ice. Map them without falling in. See `mockups/7-thin-ice.png`.
 
 ### The ice
