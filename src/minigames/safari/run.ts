@@ -239,7 +239,10 @@ export function planRun(rng: RngState, tier: Tier, o: PlanOptions): SafariRun {
   const walkers = kinds.filter((k) => k !== 'bird');
   const speeds = planSpeeds(rng, tier, walkers);
   const bushes = planBushes(rng);
-  const total = Math.max(3, t.animals + int(rng, -S.animalsSpread, S.animalsSpread) - (o.fewer ?? 0));
+  const total = Math.max(
+    3,
+    t.animals + int(rng, -S.animalsSpread, S.animalsSpread) - (o.fewer ?? 0),
+  );
 
   // The groups: one of each kind first (so every kind comes), then any kind.
   const groups: Group[] = [];

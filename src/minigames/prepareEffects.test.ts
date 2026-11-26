@@ -84,7 +84,13 @@ describe('Prepare reaches the games', () => {
       ...x,
       safeFor: 0,
       things: [
-        { kind: 'rock' as const, lane: x.lane, lanes: 1 as const, at: x.traveled, size: 'm' as const },
+        {
+          kind: 'rock' as const,
+          lane: x.lane,
+          lanes: 1 as const,
+          at: x.traveled,
+          size: 'm' as const,
+        },
       ],
     });
     s = raftTick(rock(s), 0.001);

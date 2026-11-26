@@ -141,7 +141,8 @@ export function newTrailBlocks(
     ranOut: [],
     work: 0,
     total: Math.round(
-      (w.base + w.perHiker * order.length) * (1 - Math.max(0, Math.min(0.9, options.lessWork ?? 0))),
+      (w.base + w.perHiker * order.length) *
+        (1 - Math.max(0, Math.min(0.9, options.lessWork ?? 0))),
     ),
     phase: order.length ? 'play' : 'out',
     swingLeft: 0,

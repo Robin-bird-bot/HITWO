@@ -111,7 +111,10 @@ export const SINGLE: AttackDef = {
     const n = int(ctx.rng, S.bees[0], S.bees[1]);
     const every = ctx.easy ? S.everySec[0] : S.everySec[1];
     const speed = ctx.easy ? S.easySpeed : beeSpeed(ctx);
-    return wave(ctx, Array.from({ length: n }, (_, k) => aimedBee(ctx, ctx.time + k * every, speed)));
+    return wave(
+      ctx,
+      Array.from({ length: n }, (_, k) => aimedBee(ctx, ctx.time + k * every, speed)),
+    );
   },
 };
 
@@ -125,7 +128,8 @@ export const PAIRS: AttackDef = {
     const side = SIDES[int(ctx.rng, 0, 3)]!;
     const first = between(ctx.rng, 0.15, 0.85 - P.apart);
     const lanes = nextFloat(ctx.rng) < 0.5 ? [first, first + P.apart] : [first + P.apart, first];
-    return wave(ctx, 
+    return wave(
+      ctx,
       lanes.map((along, k) =>
         laneBee(ctx, ctx.box, side, along, ctx.time + k * P.everySec, beeSpeed(ctx)),
       ),
@@ -181,7 +185,8 @@ export const DIAGONAL: AttackDef = {
     const dir = { x: dx / Math.SQRT2, y: dy / Math.SQRT2 };
     const perp = { x: -dir.y, y: dir.x };
     const n = D.bees.diagonal.bees;
-    return wave(ctx, 
+    return wave(
+      ctx,
       Array.from({ length: n }, (_, k) => {
         const off = (k - (n - 1) / 2) * D.bees.diagonal.spacing;
         const x = corner.x + perp.x * off;
@@ -212,7 +217,8 @@ export const ZIGZAG: AttackDef = {
   start(ctx) {
     const side: Side = nextFloat(ctx.rng) < 0.5 ? 'left' : 'right';
     const n = D.bees.zigzag.bees;
-    return wave(ctx, 
+    return wave(
+      ctx,
       Array.from({ length: n }, (_, k) => ({
         ...laneBee(ctx, ctx.box, side, (k + 1) / (n + 1), ctx.time, beeSpeed(ctx) * 0.8),
         weave: {
@@ -233,7 +239,10 @@ export const AIMED: AttackDef = {
   start(ctx) {
     // All at once from random edge points, each aimed at the sprite.
     const speed = beeSpeed(ctx);
-    return wave(ctx, Array.from({ length: D.bees.aimed.bees }, () => aimedBee(ctx, ctx.time, speed)));
+    return wave(
+      ctx,
+      Array.from({ length: D.bees.aimed.bees }, () => aimedBee(ctx, ctx.time, speed)),
+    );
   },
 };
 

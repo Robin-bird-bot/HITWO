@@ -151,8 +151,7 @@ export const whoCanFill = (
   fills: Fills,
   packs: Packs,
   order: readonly string[],
-): string[] =>
-  fills[slot.key] ? [] : order.filter((h) => canFill(slot, slots, fills, packs, h));
+): string[] => (fills[slot.key] ? [] : order.filter((h) => canFill(slot, slots, fills, packs, h)));
 
 export interface Tile {
   thing: Thing;
