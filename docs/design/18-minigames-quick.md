@@ -1,5 +1,7 @@
 # Minigames, batch 4, step 3: Trail Blazes, Firefly Catch, Size Up, Safari, Fly Swatter, Raccoon Shuffle
 
+**Revised November 26 (Wyatt): Raccoon Shuffle was way too easy, and its card icons sat low and didn't match the screen.** See section 6, "Revised November 26".
+
 Six short games. None of them is a passing challenge: each hiker passes or fails on their own, like Whackoon. Hikers who fail lose [1] energy each (Raccoon Shuffle is different: the raccoon steals something instead, section 6).
 
 **Test version:**
@@ -240,7 +242,7 @@ Raccoons hide in trash bins, then the bins get shuffled like the cup-and-ball ga
 ### Play
 - **The scene:** `bg.png` (a trailhead pad at dusk with a forest edge). The bins stand in one row on the line at y [150], spaced evenly across the screen.
 - **The bins:** Whackoon's ribbed cans, `art/whackoon/can.png` and `can-open.png`.
-- **1. The show** ([2.5 s]; the top bar says WATCH):
+- **1. The show** (the tier's show time; the top bar says WATCH):
   - every lid opens;
   - in most bins, a raccoon (`art/whackoon/raccoon-up.png`) pops up, holding up `card.png` with the resource it would steal from **this hiker** in the middle;
   - the empty bins show `tag-empty.png` with EMPTY on it;
@@ -258,18 +260,39 @@ Raccoons hide in trash bins, then the bins get shuffled like the cup-and-ball ga
 - **Then** the other bins open for [1 s], so everyone can see where things went, and the next hiker gets a new fill and a new shuffle.
 
 ### Night **(setting)**
-- **When:** Tiers IV and V, a [25%] chance.
+- **When:** from Tier III, at the chance in the table (revised November 26).
 - **The dark:** everything is [93%] dark except a circle of light around the mouse, [40] units across, with a soft [6]-unit edge. It's dark through the whole round, the show included, so you have to follow the bins with the light.
 - **On phones:** the light sits where the finger last touched, and dragging moves it. With keys, the light follows the selected bin.
 
+### Revised November 26: harder, and better cards
+- **Why it was easy:**
+  - few bins, with a lot of them empty (2 of 5 empty at Tier III is a 40% coin flip);
+  - slow, steady swaps of neighbors that are easy to follow;
+  - a long show.
+- **Harder numbers:** the table below replaces the old one.
+- **Swaps speed up:** each shuffle starts at the tier's first swap time and speeds up evenly to its last swap time by the final swap. There's no pause between swaps.
+- **Far swaps:** a share of swaps are between bins that aren't neighbors (the table). They arc higher ([+10] units) so they pass over the bins between them.
+- **Fake-outs** (from Tier II):
+  - two bins lift and start to cross as if swapping, then go back to their own spots;
+  - a fake-out takes one swap's time but doesn't count as a swap;
+  - it can happen alongside a real swap when two swaps at once are on.
+- **The cards:**
+  - draw the resource on the GPS screen with the new green pixel icons, `art/resources-green/<id>.png` (12 × 12, outline included). Energy is `energy.png`;
+  - put the icon at **(4, 1)** inside `card.png` at 1:1, so it fills the card's light square exactly. Don't scale it, and drop the old 14 × 14 box with the 12 px painted icon, which sat 2–3 px low;
+  - see `mockups/challenge-popup/raccoon-cards-before.png` and `raccoon-cards-after.png`.
+- **Show the empty bins** (the testing tab's tuning helper) must default to **Off**.
+
 | | Tier I | Tier II | Tier III | Tier IV | Tier V |
 | --- | --- | --- | --- | --- | --- |
-| Bins | [3] | [4] | [5] | [7] | [8] |
-| Empty bins | [1] | [1] | [2] | [2] | [2] |
-| Swaps | [4] | [6] | [7] | [8] | [10] |
-| Time per swap | [0.7 s] | [0.55 s] | [0.45 s] | [0.4 s] | [0.35 s] |
-| Two swaps at once | no | no | no | sometimes ([30%]) | sometimes ([50%]) |
-| Night | no | no | no | [25%] | [25%] |
+| Bins | [4] | [5] | [6] | [7] | [8] |
+| Empty bins | [1] | [1] | [1] | [1] | [1] |
+| Swaps | [7] | [9] | [11] | [13] | [15] |
+| Time per swap (first → last) | [0.5 → 0.35 s] | [0.45 → 0.3 s] | [0.4 → 0.26 s] | [0.36 → 0.22 s] | [0.32 → 0.2 s] |
+| Far swaps | [30%] | [45%] | [60%] | [70%] | [80%] |
+| Fake-outs (of swap steps) | none | [15%] | [20%] | [25%] | [30%] |
+| Two swaps at once | no | [20%] | [35%] | [50%] | [60%] |
+| Show time | [2.2 s] | [2.0 s] | [1.8 s] | [1.6 s] | [1.5 s] |
+| Night | no | no | [20%] | [30%] | [35%] |
 
 ---
 
@@ -355,6 +378,9 @@ All placeholder art is in the GPS greens.
   - the round stops at the strike limit.
 - **Raccoon Shuffle:**
   - every swap keeps each bin's contents with it, and the bin picked opens with what was put in it;
+  - fake-outs never move a bin's contents, and they don't count toward the swaps;
+  - swap times speed up from the first to the last, and the far-swap share matches the tier;
+  - card icons are the green 12 × 12 icons at (4, 1), unscaled;
   - each card shows something from the active hiker's inventory, or energy when they have nothing;
   - an empty bin passes with no cost, and a raccoon takes exactly the item on its card;
   - each hiker gets a new fill and a new shuffle.

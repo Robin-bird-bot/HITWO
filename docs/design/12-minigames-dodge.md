@@ -165,6 +165,8 @@ Each animal plays at a **level**, which sets its attacks and numbers:
 | Bear | — | 1 | 2 | 3 | 3 + overlaps |
 | Bear with a Sword | — | — | 2 | 3 | 3 + overlaps |
 | Stampede | — | — | 2 | 3 | 3 + overlaps |
+| Ants (Nov 26, `21`) | — | 1 | 2 | 3 | 3 + overlaps |
+| Bear with a Gun (Nov 26, `21`) | — | — | 2 | 3 | 3 + overlaps |
 | Woods Monster | — | — | 3 | 3 | 3 + overlaps + boss boost |
 
 **How common:** when a Dodge animal is picked at random for a tier, use these weights. The Woods Monster isn't in this pool: he comes from the night monster event, at Tier III and up.
@@ -177,6 +179,8 @@ Each animal plays at a **level**, which sets its attacks and numbers:
 | Bear | — | [25] | [25] | [25] | [25] |
 | Bear with a Sword | — | — | [20] | [20] | [20] |
 | Stampede | — | — | [15] | [20] | [20] |
+| Ants (Nov 26) | — | [25] | [20] | [20] | [20] |
+| Bear with a Gun (Nov 26) | — | — | [20] | [20] | [20] |
 
 ### Numbers by tier
 | | Tier I | Tier II | Tier III | Tier IV | Tier V |
