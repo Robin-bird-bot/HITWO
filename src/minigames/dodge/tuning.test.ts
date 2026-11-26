@@ -74,9 +74,27 @@ const kindOf = (id: AttackId) => ATTACKS[id].kind;
 
 describe('tiers and levels', () => {
   it('each tier offers only the animals in the table, at their level; the Woods Monster is always Level 3', () => {
-    expect(animalsAt(1).sort()).toEqual(['ants', 'bees', 'squirrels']);
-    expect(animalsAt(2).sort()).toEqual(['ants', 'bear', 'bees', 'bobcat', 'squirrels']);
-    expect(animalsAt(3)).toHaveLength(9);
+    // Nov 26, third round: the Eagle at every tier; the snow animals in none.
+    expect(animalsAt(1).sort()).toEqual(['ants', 'bees', 'eagle', 'squirrels']);
+    expect(animalsAt(2).sort()).toEqual(['ants', 'bear', 'bees', 'bobcat', 'eagle', 'squirrels']);
+    expect(animalsAt(3)).toHaveLength(10);
+    for (const tier of TIERS) {
+      expect(animalsAt(tier)).toContain('eagle');
+      expect(animalsAt(tier)).not.toContain('snowLeopard');
+      expect(animalsAt(tier)).not.toContain('snowgirl');
+    }
+    expect(levelFor('eagle', 1)).toBe(0);
+    expect(atTier('eagle', 1).easy).toBe(true);
+    expect(levelFor('eagle', 2)).toBe(1);
+    expect(levelFor('eagle', 3)).toBe(2);
+    expect(levelFor('eagle', 5)).toBe(3);
+    // The snow animals: Level 2 at Tier III, Level 3 at IV and V, their lowest (2) when tested lower.
+    for (const a of ['snowLeopard', 'snowgirl'] as const) {
+      expect(levelFor(a, 1)).toBe(2);
+      expect(levelFor(a, 3)).toBe(2);
+      expect(levelFor(a, 4)).toBe(3);
+      expect(levelFor(a, 5)).toBe(3);
+    }
     // Nov 26: Ants from Tier II, Bear with a Gun from Tier III (his first tier, Level 2).
     expect(levelFor('ants', 2)).toBe(1);
     expect(levelFor('gunBear', 3)).toBe(2);
@@ -97,7 +115,7 @@ describe('tiers and levels', () => {
     // Not in the table at a tier (testing only): its lowest level.
     expect(levelFor('bear', 1)).toBe(1);
     expect(levelFor('swordBear', 1)).toBe(2);
-    // The Level setting overrides; Easy only for Bees, the Squirrel Army and Ants.
+    // The Level setting overrides; Easy only for Bees, the Squirrel Army, Ants and the Eagle.
     expect(atTier('bear', 1, { level: 3 }).level).toBe(3);
     expect(atTier('bear', 1, { level: 'easy' }).easy).toBe(false);
     expect(atTier('bees', 5, { level: 'easy' }).easy).toBe(true);

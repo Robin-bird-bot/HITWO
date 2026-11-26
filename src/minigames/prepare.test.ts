@@ -129,6 +129,22 @@ describe('cost cards', () => {
     }
   });
 
+  it('a per-hiker effect with a total (HARDHAT: one, for one hiker) has that many slots and uses', () => {
+    const hat = option({ id: 'hat', accepts: item('hardhat'), perHiker: true, total: 1 });
+    const card = cardsFor([hat], {}, 3)[0]!;
+    expect(card.slots).toBe(1);
+    const fills: Fills = {
+      'hat:0': {
+        hiker: 'mom',
+        thing: { kind: 'item', id: 'hardhat' },
+        effect: 'hat',
+        target: 'finn',
+      },
+    };
+    expect(effectOpen(hat, fills, ORDER)).toBe(false);
+    expect(effectOpen(hat, {}, ORDER)).toBe(true);
+  });
+
   it('only options that apply to this run make cards', () => {
     expect(cardsFor([SLOW, SPRAY], { animal: 'bees' }, 3).map((c) => c.id)).toEqual(['slower']);
     expect(cardsFor([SLOW, SPRAY], { animal: 'bear' }, 3).map((c) => c.id)).toEqual([

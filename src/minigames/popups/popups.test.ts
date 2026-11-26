@@ -79,7 +79,7 @@ describe('every game’s pop-up content', () => {
         const rules = popup.rules(s);
         expect(rules.length).toBeLessThanOrEqual(BALANCE.minigames.prepare.ruleLines);
         for (const r of rules) {
-          if (r.when) expect(r.when).toMatch(/^TIER (I|II|III|IV|V)( AND UP)?$/);
+          if (r.when) expect(r.when).toMatch(/^(TIER (I|II|III|IV|V)( AND UP)?|TIERS I AND II)$/);
           expect(text(r.text).length).toBeGreaterThan(0);
         }
         expect(
@@ -99,9 +99,9 @@ describe('every game’s pop-up content', () => {
           expect(b.max).toBeGreaterThanOrEqual(b.base);
           if (b.kind === 'level') expect(b.max).toBe(BALANCE.minigames.prepare.levels);
         }
-        // Cards: at most 3 of the game's own (a challenge's SKIP IT makes 4, which the
-        // pop-up's right column fits by tightening), at most [3] slots, upper-case labels.
-        expect(cardsOf(popup, s).length).toBeLessThanOrEqual(3);
+        // Cards: at most 4 (Sketchy Bridge has 4; with 4 or more the pop-up's right column
+        // tightens to fit), at most [3] slots, upper-case labels.
+        expect(cardsOf(popup, s).length).toBeLessThanOrEqual(4);
         for (const c of cardsOf(popup, s)) {
           expect(c.slots).toBeGreaterThan(0);
           expect(c.slots).toBeLessThanOrEqual(BALANCE.minigames.prepare.cardSlots);

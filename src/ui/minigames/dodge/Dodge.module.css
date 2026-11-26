@@ -446,3 +446,40 @@
   overflow: visible;
   pointer-events: none;
 }
+
+/* Comb-Over: the Toupeeagle's wall of red hair. */
+.comb {
+  background: repeating-linear-gradient(0deg, #c8423a 0 2px, #e5624a 2px 4px);
+  box-shadow: 0 0 0 0.5px #0f170c;
+}
+
+/* An oil barrel's fuse number. */
+.fuse {
+  position: absolute;
+  width: 6px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  text-shadow:
+    0 0 1px #0f170c,
+    0.5px 0.5px 0 #0f170c;
+  pointer-events: none;
+}
+
+/* Ice (the snow animals' whole box): light streaks on the floor. */
+.box[data-ice] {
+  background-image: repeating-linear-gradient(
+    -20deg,
+    rgba(211, 223, 175, 0.08) 0 1px,
+    transparent 1px 14px
+  );
+}
+
+/* Slide marks behind the sprite on ice. */
+.slide {
+  position: absolute;
+  width: 2px;
+  height: 0.75px;
+  background: #d3dfaf;
+  pointer-events: none;
+}

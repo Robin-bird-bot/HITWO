@@ -15,7 +15,7 @@ import { passingResult } from './passing';
 import { newPicturePuzzle, tick as pictureTick } from './picturePuzzle/logic';
 import { newRememberPath } from './rememberPath/logic';
 import { newSleepingBear, tick as bearTick } from './sleepingBear/logic';
-import { check, newThinIce } from './thinIce/logic';
+import { check, newMinefield } from './minefield/logic';
 import { newTrailBlocks, press, tick as blocksTick, VERSIONS } from './trailBlocks/logic';
 import { newTrailMap } from './trailMap/logic';
 import { newTraildle, tick as traildleTick } from './traildle/logic';
@@ -37,7 +37,7 @@ describe('Tiers I to V', () => {
       trailMap: M.trailMap.tiers,
       memory: M.memory.tiers,
       picturePuzzle: M.picturePuzzle.tiers,
-      thinIce: M.thinIce.tiers,
+      minefield: M.minefield.tiers,
       trailBlocks: M.trailBlocks.work,
       chopPass: M.trailBlocks.chop.passSec,
       chopZone: M.trailBlocks.chop.zone,
@@ -91,10 +91,13 @@ describe('Tiers I to V', () => {
     // Picture Puzzle: 5 × 5 on IV, 6 × 6 on V.
     const picture = pictureTick(newPicturePuzzle({ tier }, TWO, 7), 1);
     expect(picture.grid).toBe(M.picturePuzzle.tiers[tier].grid);
-    // Thin Ice: its grid and holes.
-    const ice = check(newThinIce({ tier }, TWO, 8), 0).state;
-    expect([ice.cols, ice.rows]).toEqual([M.thinIce.tiers[tier].cols, M.thinIce.tiers[tier].rows]);
-    expect(ice.holeCount).toBe(M.thinIce.tiers[tier].holes + 2 * M.thinIce.holesPerHiker);
+    // Minefield (it was Thin Ice): its grid and piles.
+    const field = check(newMinefield({ tier }, TWO, 8), 0).state;
+    expect([field.cols, field.rows]).toEqual([
+      M.minefield.tiers[tier].cols,
+      M.minefield.tiers[tier].rows,
+    ]);
+    expect(field.holeCount).toBe(M.minefield.tiers[tier].holes + 2 * M.minefield.holesPerHiker);
     // Trail Blocks: every version swings.
     for (const v of VERSIONS) {
       let s = newTrailBlocks({ version: v.id, tier }, TWO, 9);

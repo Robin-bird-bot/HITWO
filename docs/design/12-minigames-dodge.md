@@ -149,6 +149,8 @@ Same drawings as round 2, drawn the way Undertale draws Sans, but turned around 
 - **Reduced motion:** no screen shake, and a softer red flash.
 
 ## 4. Tiers and levels (revised November 25)
+**The Eagle, the Snow Leopard and the Snowgirl: see `23-minigames-final.md`, section 9.**
+
 Challenges now go up to **Tier V**. New animals show up through Tier III, and Tiers IV and V are harder versions of them. Wyatt's call, with Mom in mind: **attacks don't overlap, except at Tier V.**
 
 ### Levels

@@ -2753,8 +2753,8 @@ export const BALANCE = {
       thumbnailUpTo: 1,
     },
 
-    /** Thin Ice: Minesweeper on a frozen lake; the holes are mines. */
-    thinIce: {
+    /** Minefield, the Dog Waste Zone (23-minigames-final.md, section 6; it was Thin Ice until Nov 26): Minesweeper in a dog park; the piles are mines, and bags are flags. */
+    minefield: {
       tiers: {
         1: { cols: 8, rows: 6, holes: 4, timerSec: null },
         2: { cols: 9, rows: 7, holes: 6, timerSec: 180 },
@@ -2767,6 +2767,289 @@ export const BALANCE = {
       /** Wyatt's rule: this many more holes for each hiker (testing tab: 0 to 4). */
       holesPerHiker: 2,
       /** A press held this long flags instead of checking. */
+      longPressSec: 0.4,
+      /** Prepare (23-minigames-final.md, section 10): a SCANNER bags this many piles before the start. TODO(wyatt): [2]. */
+      scannerBags: 2,
+    },
+
+    /**
+     * Pack It Up (23-minigames-final.md, section 8; Claude's idea, Wyatt
+     * approved). By tier: the pack (columns × rows), torn cells, spare cells
+     * (none from Tier III: the gear fills it exactly), and each hiker's
+     * seconds. Pieces of up to 5 cells come from this tier (4 before it). A
+     * piece grows toward one of these sizes (my guess: mostly 3 and 4). The
+     * gear pictures, smallest first. FOOD adds this many seconds.
+     * TODO(wyatt): [5 × 4, 5 × 5, 6 × 5, 6 × 6, 7 × 6], [1, 2, 3, 4, 4], [2, 1, 0, 0, 0], [60, 60, 75, 90, 90 s], [+10 s].
+     */
+    packItUp: {
+      tiers: {
+        1: { cols: 5, rows: 4, torn: 1, spare: 2, timeSec: 60 },
+        2: { cols: 5, rows: 5, torn: 2, spare: 1, timeSec: 60 },
+        3: { cols: 6, rows: 5, torn: 3, spare: 0, timeSec: 75 },
+        4: { cols: 6, rows: 6, torn: 4, spare: 0, timeSec: 90 },
+        5: { cols: 7, rows: 6, torn: 4, spare: 0, timeSec: 90 },
+      } as Readonly<
+        Record<MgTier, { cols: number; rows: number; torn: number; spare: number; timeSec: number }>
+      >,
+      fiveFrom: 4,
+      sizes: [2, 3, 3, 4, 4, 4, 5] as const,
+      gear: ['map', 'lantern', 'rope', 'sleeping-bag', 'boots', 'pot', 'tent', 'stove'] as const,
+      foodSec: 10,
+    },
+
+    /**
+     * Birdsong (23-minigames-final.md, section 5), Simon with colored
+     * notes. By tier: colors in play, the longest song, how fast the notes
+     * cross (units/s) and how far apart they come (seconds). The colors, in
+     * the order they're used, each with its shape (white art, tinted). Round
+     * 1 has this many notes; songs are new each round from this tier (before
+     * it, the same song grows). Each hiker has this many strikes. The screen
+     * is this wide; notes start and end this far off it; a second play
+     * (Field Notebook) comes this long after the first. A hiker's turn
+     * starts after this hand-off, and the answer shows this long before the
+     * next round (my guesses). The demo bot gets a note right this often.
+     * TODO(wyatt): [4–8], [5–9], [70–110], [0.55–0.35 s], [2], [3], [92%].
+     */
+    birdsong: {
+      tiers: {
+        1: { colors: 4, longest: 5, speed: 70, gapSec: 0.55 },
+        2: { colors: 5, longest: 6, speed: 80, gapSec: 0.5 },
+        3: { colors: 6, longest: 7, speed: 90, gapSec: 0.45 },
+        4: { colors: 7, longest: 8, speed: 100, gapSec: 0.4 },
+        5: { colors: 8, longest: 9, speed: 110, gapSec: 0.35 },
+      } as Readonly<
+        Record<MgTier, { colors: number; longest: number; speed: number; gapSec: number }>
+      >,
+      palette: [
+        { name: 'orange', shape: 'star', color: '#E07040' },
+        { name: 'blue', shape: 'ring', color: '#4A8FD4' },
+        { name: 'yellow', shape: 'diamond', color: '#E9B44C' },
+        { name: 'purple', shape: 'cross', color: '#A86CD0' },
+        { name: 'red', shape: 'heart', color: '#C8423A' },
+        { name: 'teal', shape: 'circle', color: '#3FB3A8' },
+        { name: 'pink', shape: 'square', color: '#E58FB0' },
+        { name: 'white', shape: 'triangle', color: '#F1EADB' },
+      ] as const,
+      firstLength: 2,
+      newFrom: 3,
+      strikes: 3,
+      screenW: 320,
+      noteMargin: 14,
+      replayPauseSec: 0.6,
+      handoffSec: 1.2,
+      afterSec: 1.2,
+      botRight: 0.92,
+    },
+
+    /**
+     * Squirrel Theft (23-minigames-final.md, section 4), a shooting
+     * gallery. By tier: how long a squirrel stays up, each hiker's nuts, and
+     * the HAPPY line as a share of all the party's nuts. The intro lasts
+     * this long; the thief takes this many things when the challenge
+     * doesn't say (the challenge sets it: [3–6]). A nut lands this long
+     * after it's thrown and feeds a target within this far of the spot. A
+     * squirrel's body (and a bear's) is this big around its middle, for
+     * aiming. The first target comes this long in, then one every so often,
+     * at most this many up at once; a fed squirrel ducks this long after
+     * (all my guesses). Where targets pop up: the far bushes, the log and
+     * the near bushes (rows), and the branches (runners, from Tier II, this
+     * often, at this speed: my guesses), all matching bg.png. Bears (from
+     * Tier III, this often: my guess) take this much off the bar; from Tier
+     * IV one pops up where a squirrel just ducked this often (my guess).
+     * BAIT keeps squirrels up this much longer.
+     * TODO(wyatt): [1.4–0.8 s], [6, 6, 5, 5, 4], [40–60]%, [3 s], [3–6], [0.35 s], [7], [2], [0.3 s].
+     */
+    squirrelTheft: {
+      tiers: {
+        1: { upSec: 1.4, nuts: 6, line: 0.4 },
+        2: { upSec: 1.2, nuts: 6, line: 0.45 },
+        3: { upSec: 1.0, nuts: 5, line: 0.5 },
+        4: { upSec: 0.9, nuts: 5, line: 0.55 },
+        5: { upSec: 0.8, nuts: 4, line: 0.6 },
+      } as Readonly<Record<MgTier, { upSec: number; nuts: number; line: number }>>,
+      introSec: 3,
+      stolenAuto: 4,
+      flightSec: 0.35,
+      reach: 7,
+      half: [9, 7] as const,
+      firstSec: 0.6,
+      everySec: [0.5, 0.9] as const,
+      maxUp: 3,
+      fedSec: 0.4,
+      rows: [
+        { x0: 20, x1: 300, y: 104 },
+        { x0: 50, x1: 270, y: 140 },
+        { x0: 20, x1: 300, y: 167 },
+      ] as const,
+      branches: [
+        { x0: 36, x1: 62, y: 53 },
+        { x0: 116, x1: 144, y: 53 },
+        { x0: 210, x1: 238, y: 53 },
+        { x0: 292, x1: 316, y: 53 },
+      ] as const,
+      runner: { from: 2, chance: 0.3, speed: 22 },
+      bear: {
+        from: 3,
+        chance: 0.2,
+        cost: 2,
+        half: [12, 9] as const,
+        ambushFrom: 4,
+        ambushChance: 0.35,
+      },
+      baitSec: 0.3,
+      /** The demo bot misjudges this share of its throws. */
+      botMiss: 0.3,
+    },
+
+    /**
+     * Fly Block (23-minigames-final.md, section 3), Tempest-style. By tier:
+     * panels around the pie, the flies' speed (units/s), flies a round, and
+     * a fly every so often (seconds). A lane runs this far out from the ring
+     * (my guess, from the screen). Each hiker can take this many bites. The
+     * first fly comes this long into a round (my guess). Fast flies (from
+     * Tier II) are this much faster; zig-zag flies (from Tier III) blink this
+     * long before they hop; horseflies (from Tier IV) are knocked back this
+     * far by the first swat; bees (from Tier III) come along this often a
+     * fly, a little slower (both my guesses). The share of each kind, and
+     * how often a few come at once late in a round, are my guesses. SMOKE
+     * takes this many flies off a round. Holding a key moves the swatter
+     * this often.
+     * TODO(wyatt): [8, 10, 12, 12, 16], [30–54], [12–20], [1.1–0.7 s], [3], [1.6×], [30], [3], [0.12 s].
+     */
+    flyBlock: {
+      tiers: {
+        1: { panels: 8, speed: 30, flies: 12, everySec: 1.1 },
+        2: { panels: 10, speed: 36, flies: 14, everySec: 1.0 },
+        3: { panels: 12, speed: 42, flies: 16, everySec: 0.9 },
+        4: { panels: 12, speed: 48, flies: 18, everySec: 0.8 },
+        5: { panels: 16, speed: 54, flies: 20, everySec: 0.7 },
+      } as Readonly<
+        Record<MgTier, { panels: number; speed: number; flies: number; everySec: number }>
+      >,
+      laneLength: 110,
+      bites: 3,
+      firstSec: 1,
+      fast: { from: 2, share: 0.25, times: 1.6 },
+      zig: { from: 3, share: 0.2, blinkSec: 0.3 },
+      horse: { from: 4, share: 0.15, knockBack: 30 },
+      bee: { from: 3, chance: 0.2, times: 0.8 },
+      together: { chance: 0.3, count: 2 },
+      smoke: 3,
+      repeatSec: 0.12,
+    },
+
+    /**
+     * Falling Rocks (23-minigames-final.md, section 2), side view. The trail
+     * is this long; hikers walk at this speed and back up at this one. The
+     * overhangs (centers and half-widths on the trail) match slope.png. By
+     * tier: a shadow's warning and a hazard every so often (seconds). Rocks
+     * are small, medium or large, hitting within these half-widths. Showers
+     * (from Tier II, this often a hazard: my guess) drop this many small
+     * rocks over this spread, this far apart; boulders (from Tier III, this
+     * often: my guess) rumble this long, then roll at this speed (hitting
+     * within this half-width: my guess). Hazards are mostly aimed this far
+     * ahead of the hiker (both my guesses). Each hiker has this many lives,
+     * and this much safety after a hit. The first hazard comes this long into
+     * a turn, and a landed rock bounces away for this long (my guesses). Out
+     * of lives brings the challenge's stake (Rockfall: an injury chance and
+     * lost resources, until challenges are hooked up). Binoculars add this
+     * much warning.
+     * TODO(wyatt): [300], [40], [30], [1.0–0.6 s], [1.4–0.8 s], [8, 10, 14], [3–5], [60], [0.15 s], [1.2 s], [70], [2], [1 s], [0.3 s].
+     */
+    fallingRocks: {
+      length: 300,
+      walk: 40,
+      back: 30,
+      overhangs: [
+        { x: 87, half: 13 },
+        { x: 205, half: 13 },
+      ] as const,
+      tiers: {
+        1: { warnSec: 1.0, everySec: 1.4 },
+        2: { warnSec: 0.9, everySec: 1.2 },
+        3: { warnSec: 0.8, everySec: 1.0 },
+        4: { warnSec: 0.7, everySec: 0.9 },
+        5: { warnSec: 0.6, everySec: 0.8 },
+      } as Readonly<Record<MgTier, { warnSec: number; everySec: number }>>,
+      sizes: ['s', 'm', 'l'] as const,
+      half: { s: 8, m: 10, l: 14 },
+      shower: { from: 2, chance: 0.25, count: [3, 5] as const, spread: 60, apartSec: 0.15 },
+      boulder: { from: 3, chance: 0.15, warnSec: 1.2, speed: 70, half: 12 },
+      aimAhead: 0.75,
+      ahead: [10, 70] as const,
+      lives: 2,
+      safeSec: 1,
+      firstSec: 1.2,
+      bounceSec: 0.6,
+      stake: 'injury',
+      binocularsSec: 0.3,
+    },
+
+    /**
+     * Sketchy Bridge (23-minigames-final.md, section 1), Stardew-style. The
+     * balance bar is this tall; the zone rises this fast (units/s²) while
+     * held, falls this fast when let go, and bounces off the bottom (speed ×
+     * this). By tier: the zone's height, the icon's speed (units/s), the
+     * in-zone seconds a crossing takes, integrity lost a second outside the
+     * zone, and whether wind gusts blow. Integrity starts at this; a plank
+     * falls every this many points. The icon picks a new height every this
+     * long (staying this far from the ends). From this tier it darts this
+     * far (this often a pick: my guess). Gusts flap this long, then push the
+     * icon this long at this speed, every so often (speed and how often: my
+     * guesses). The hiker who breaks the bridge gets this (the challenge's
+     * stake, until challenges are hooked up).
+     * TODO(wyatt): every number here; [600], [400], [0.3], [44–24], [50–96], [8–12 s], [14–22], [100], [4].
+     */
+    sketchyBridge: {
+      barH: 150,
+      rise: 600,
+      fall: 400,
+      bounce: 0.3,
+      tiers: {
+        1: { zone: 44, sway: 50, crossSec: 8, drain: 14, gusts: false },
+        2: { zone: 38, sway: 60, crossSec: 9, drain: 16, gusts: false },
+        3: { zone: 32, sway: 72, crossSec: 10, drain: 18, gusts: false },
+        4: { zone: 28, sway: 84, crossSec: 11, drain: 20, gusts: true },
+        5: { zone: 24, sway: 96, crossSec: 12, drain: 22, gusts: true },
+      } as Readonly<
+        Record<
+          MgTier,
+          { zone: number; sway: number; crossSec: number; drain: number; gusts: boolean }
+        >
+      >,
+      integrity: 100,
+      plankEvery: 4,
+      retargetSec: [0.6, 1.4] as const,
+      iconMargin: 8,
+      dartFrom: 3,
+      dartChance: 0.25,
+      dart: [30, 50] as const,
+      gust: { flapSec: 0.5, pushSec: 0.6, speed: 70, everySec: [3, 6] as const },
+      fallCondition: 'injury',
+      /** Prepare (section 10): PATCH THE PLANKS adds this much; FOOD makes the zone this much bigger; the Hiking Stick cuts the sway by this share. */
+      patch: 20,
+      extraZone: 4,
+      lessSway: 0.25,
+    },
+
+    /**
+     * Thin Ice, the crossing (23-minigames-final.md, section 7): by tier,
+     * the ice (columns × rows), the share of it that's holes, and each
+     * hiker's ice picks. A pick tests a square this many steps away. Falling
+     * in brings the challenge's stake (Thin Ice: Soaked, until challenges
+     * are hooked up). A press held this long flags.
+     * TODO(wyatt): [9 × 7, 10 × 8, 11 × 8, 11 × 9, 12 × 9], [12, 15, 18, 20, 22]%, [3, 3, 2, 2, 1], [2].
+     */
+    thinIce: {
+      tiers: {
+        1: { cols: 9, rows: 7, holes: 0.12, picks: 3 },
+        2: { cols: 10, rows: 8, holes: 0.15, picks: 3 },
+        3: { cols: 11, rows: 8, holes: 0.18, picks: 2 },
+        4: { cols: 11, rows: 9, holes: 0.2, picks: 2 },
+        5: { cols: 12, rows: 9, holes: 0.22, picks: 1 },
+      } as Readonly<Record<MgTier, { cols: number; rows: number; holes: number; picks: number }>>,
+      pickReach: 2,
+      fallCondition: 'soaked',
       longPressSec: 0.4,
     },
 
@@ -2811,9 +3094,10 @@ export const BALANCE = {
        * Monster comes from the night monster event, from Tier III.
        */
       roster: {
-        1: { bees: 0, squirrels: 0, ants: 0 },
-        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1 },
+        1: { bees: 0, squirrels: 0, ants: 0, eagle: 0 },
+        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1, eagle: 1 },
         3: {
+          eagle: 2,
           bees: 2,
           squirrels: 2,
           bobcat: 2,
@@ -2825,6 +3109,7 @@ export const BALANCE = {
           monster: 3,
         },
         4: {
+          eagle: 3,
           bees: 3,
           squirrels: 3,
           bobcat: 3,
@@ -2836,6 +3121,7 @@ export const BALANCE = {
           monster: 3,
         },
         5: {
+          eagle: 3,
           bees: 3,
           squirrels: 3,
           bobcat: 3,
@@ -2851,12 +3137,14 @@ export const BALANCE = {
        * How common each animal is when one is picked at random for a tier
        * (not the Woods Monster). Ants and Bear with a Gun (Nov 26):
        * TODO(wyatt): [25] at Tier II, then [20] each; at Tier I (Nov 26, second
-       * round) bees [40], squirrels [30], ants [30].
+       * round) bees [40], squirrels [30], ants [30]. The Eagle (Nov 26, third
+       * round): [20] at every tier. The snow animals aren't picked at random.
        */
       weights: {
-        1: { bees: 40, squirrels: 30, ants: 30 },
-        2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
+        1: { eagle: 20, bees: 40, squirrels: 30, ants: 30 },
+        2: { eagle: 20, bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
         3: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 25,
@@ -2867,6 +3155,7 @@ export const BALANCE = {
           gunBear: 20,
         },
         4: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 20,
@@ -2877,6 +3166,7 @@ export const BALANCE = {
           gunBear: 20,
         },
         5: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 20,
@@ -2926,6 +3216,12 @@ export const BALANCE = {
         /** Nov 26. TODO(wyatt): boxes [160 × 110] and [150 × 120]. */
         gunBear: { box: [160, 110], at: [160, 142] },
         ants: { box: [150, 120], at: [160, 136] },
+        /** Nov 26, third round (my guesses): the Eagle's three versions, the Snow Leopard and the Snowgirl. */
+        eagle: { box: [150, 110], at: [160, 141] },
+        toupeeEagle: { box: [150, 110], at: [160, 141] },
+        freeagle: { box: [160, 105], at: [160, 144] },
+        snowLeopard: { box: [160, 110], at: [160, 141] },
+        snowgirl: { box: [150, 110], at: [160, 141] },
       } as Readonly<
         Record<
           | 'bees'
@@ -2936,7 +3232,12 @@ export const BALANCE = {
           | 'herd'
           | 'monster'
           | 'gunBear'
-          | 'ants',
+          | 'ants'
+          | 'eagle'
+          | 'toupeeEagle'
+          | 'freeagle'
+          | 'snowLeopard'
+          | 'snowgirl',
           { box: readonly [number, number]; at: readonly [number, number] }
         >
       >,
@@ -2961,6 +3262,9 @@ export const BALANCE = {
         fireAnts: 2,
         antHill: 2,
         crumbRush: 3,
+        wingGust: 2,
+        oilBarrels: 2,
+        avalanche: 3,
       } as Readonly<Partial<Record<string, 1 | 2 | 3>>>,
       /**
        * Wild Predator Stampede: this much longer than the tier's length by
@@ -3411,6 +3715,125 @@ export const BALANCE = {
           monster: { units: 3, sec: 1.6 },
         } as Readonly<Partial<Record<string, { units: number; sec: number }>>>,
         bobSec: 0.4,
+      },
+      /**
+       * Ice physics (23-minigames-final.md, section 9.4): on ice, input
+       * speeds the sprite up at this rate (units/s²) to the normal top
+       * speed; with no input it slides, its speed shrinking by this much a
+       * second (speed × e^(−this × dt)). GRIP (Prepare) multiplies the
+       * friction by this. TODO(wyatt): [240], [1.2], [2].
+       */
+      ice: { accel: 240, friction: 1.2, grip: 2 },
+      /**
+       * The Eagle (section 9.1): his version by level (Easy: Eagle; Level 1:
+       * Toupeeagle; Levels 2 and 3: Freeagle). At Easy he only swoops and
+       * drops feathers. Swoop: "!" and the dotted path this long, then he
+       * flies it this fast, hitting within this radius; this many in a row by
+       * level (the last aimed at the sprite from Level 2), this far apart
+       * (my guess). Feather Fall: this many by level, falling this fast,
+       * swaying this far every this long (hitting within this radius, and
+       * coming in over this long: my guesses). Talon Drop: a shadow follows
+       * the sprite this long, then the talons strike this long after,
+       * within this radius (shown this long: my guess). Wing Gust: feathers
+       * stream this long, then the sprite is pushed this fast for this long.
+       * Hair Toss: this many curly hairs by level, this fast, curving this
+       * much (and hitting within this radius: my guesses). Comb-Over: a wall
+       * of hair with one gap this wide sweeps across (this thick, this fast,
+       * after this warning: my guesses). Oil Barrels: this many by level,
+       * landing on a shadow this long, a fuse this long, bursting within
+       * this radius (shown this long: my guess); each leaves a puddle this
+       * big for this long, where the sprite slides.
+       * TODO(wyatt): every number from the design's [brackets]; the rest are my guesses.
+       */
+      eagle: {
+        easy: ['swoop', 'featherFall'] as readonly string[],
+        swoop: {
+          warnSec: 0.8,
+          speed: 220,
+          radius: 7,
+          count: { 0: 1, 1: 2, 2: 3, 3: 3 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          apartSec: 0.7,
+        },
+        feather: {
+          count: { 0: 6, 1: 8, 2: 10, 3: 12 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          speed: 30,
+          sway: 12,
+          swaySec: 1.2,
+          radius: 3,
+          spreadSec: 2,
+        },
+        talon: { followSec: 1, strikeSec: 0.4, radius: 12, showSec: 0.2 },
+        gust: { warnSec: 0.4, push: 40, sec: 1.2 },
+        hair: {
+          count: { 1: 3, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          speed: 110,
+          curve: 40,
+          radius: 3,
+          apartSec: 0.3,
+        },
+        comb: { gap: 20, thick: 8, speed: 70, warnSec: 0.8 },
+        oil: {
+          barrels: { 1: 2, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          landSec: 0.6,
+          fuseSec: 1.4,
+          burst: 18,
+          burstShowSec: 0.2,
+          puddle: 20,
+          puddleSec: 6,
+        },
+      },
+      /**
+       * The snow animals (sections 9.2 and 9.3): only from their snow
+       * challenges and the testing tab; Level 2 at Tier III and Level 3 at
+       * Tiers IV and V (their lowest, 2, when tested at Tiers I and II). The
+       * whole box is ice. Every attack is Claude's idea but the Claws.
+       * Pounce: a red dotted line to where the sprite is, then a leap this
+       * long after at this speed, hitting within this radius; at Level 3
+       * sometimes a second (this often: my guess). Prowl: he pads round the
+       * box for this long (my guess) at this speed (my guess), then pounces
+       * with this shorter warning. Tail Sweep: a band this wide (my guess) is
+       * warned this long, then the tail sweeps it over this long (my guess).
+       * Snow Kick: this many pellets in a cone this wide, this fast, hitting
+       * within this radius (after this warning: my guesses). Snowballs: this
+       * many by level, each landing on a shadow that grows this long, hitting
+       * within this radius as it lands, then bursting into this many chunks
+       * that slide out this fast for this long (my guesses). Icicles: this
+       * many glint along the top this long, then drop this far apart at this
+       * speed (my guesses). Antler Charge: a stripe this wide is warned this
+       * long, then she charges through it this fast (my guesses). Shake Off:
+       * a ring of this many flakes from the middle, then a second turned half
+       * a gap this long after, this fast (my guesses). Avalanche (Level 3):
+       * snow falls in columns this wide, with one gap, after this warning,
+       * this fast, in a band this tall (my guesses).
+       * TODO(wyatt): every number from the design's [brackets]; the rest are my guesses.
+       */
+      snow: {
+        levels: { 1: 2, 2: 2, 3: 2, 4: 3, 5: 3 } as Readonly<Record<MgTier, 2 | 3>>,
+        pounce: { warnSec: 0.7, speed: 260, radius: 8, doubleChance: 0.35 },
+        prowl: { sec: 1.6, speed: 90, warnSec: 0.5 },
+        tail: { band: 24, warnSec: 0.8, sweepSec: 0.4 },
+        kick: { count: [8, 12] as const, spreadDeg: 30, speed: 90, radius: 2.5, warnSec: 0.6 },
+        snowballs: {
+          count: { 1: 3, 2: 3, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          lobSec: 0.8,
+          apartSec: 0.35,
+          radius: 6,
+          chunks: 4,
+          chunkSpeed: 50,
+          chunkRadius: 3,
+          chunkSec: 1.6,
+        },
+        icicles: {
+          count: [5, 8] as const,
+          glintSec: 0.6,
+          apartSec: 0.18,
+          speed: 160,
+          half: 2,
+          length: 14,
+        },
+        charge: { band: 18, warnSec: 1, speed: 200, radius: 12 },
+        shake: { flakes: 16, apartSec: 0.4, speed: 70, radius: 2, warnSec: 0.6 },
+        avalanche: { column: 16, warnSec: 0.8, speed: 120, band: 20 },
       },
       /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },

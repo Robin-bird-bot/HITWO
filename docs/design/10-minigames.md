@@ -1,5 +1,7 @@
 # Minigames (Phase 10.8): the party GPS, the challenge pop-up, and Bearrels
 
+**Frost Fire is on hold, and the Knowledge category (trivia) is dropped for now (November 26).**
+
 Wyatt's design for how challenge minigames look and play. The first game is **Bearrels**, built and played from the **Minigame testing** tab on the main menu. Numbers in [brackets] are first guesses: they go in `balance.ts` with `TODO(wyatt)`.
 
 **Revised November 24 (second pass).** What changed since the last version:

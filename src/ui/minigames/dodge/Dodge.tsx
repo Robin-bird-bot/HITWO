@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { BALANCE } from '../../../config/balance';
-import { ANIMALS, isAnimal } from '../../../minigames/dodge/animals';
+import { ANIMALS, EAGLE_NAMES, EAGLE_VERSIONS, isAnimal } from '../../../minigames/dodge/animals';
 import { darkness } from '../../../minigames/dodge/attacks/monster';
 import {
   effectiveBox,
@@ -31,12 +31,14 @@ import {
   keysToVector,
   newDodge,
   nextInLine,
+  onIce,
   slowed,
   result,
   step,
   switches,
   type AnimalId,
   type AttackId,
+  type EagleVersion,
   type Point,
 } from '../../../minigames/dodge/logic';
 import { dodgeLevelPick } from '../../../minigames/catalog';
@@ -97,6 +99,13 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         shorter: prepNumber(settings, 'prep.bearSpray'),
         sandbags: prepNumber(settings, 'prep.sandbags') > 0,
         antSlow: prepNumber(settings, 'prep.salt'),
+        grip: prepNumber(settings, 'prep.grip') > 0,
+        // The testing tab's Version (the Eagle only): Auto follows the level.
+        eagleVersion: (EAGLE_VERSIONS as readonly string[]).includes(
+          pickOf(settings, 'eagleVersion'),
+        )
+          ? (pickOf(settings, 'eagleVersion') as EagleVersion)
+          : 'auto',
       },
       hikers.map((h) => h.id),
       seed,
@@ -227,6 +236,9 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
   const phase = Math.floor(game.time / 0.15) % 2 === 1;
   const color = byId(blinking && phase && next ? next : game.active)?.color ?? '#d3dfaf';
   const safe = game.safeFor > 0;
+  // Sliding on ice: marks trail the sprite while it moves.
+  const slideSpeed = Math.hypot(game.vel.x, game.vel.y) || 1;
+  const sliding = slideSpeed > 8 && onIce(game);
   const recentHit = game.lastHit && game.time - game.lastHit.at < 0.7 ? game.lastHit : null;
   const beeFrame = Math.floor(game.time / D.bees.frameSec) % 2 === 0 ? 'bee-1.png' : 'bee-2.png';
   const ctx: DrawCtx = {
@@ -260,7 +272,9 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         onPointerCancel={onUp}
       >
         {/* The top HUD. */}
-        <div className={`${ui.box} ${styles.name}`}>{ANIMALS[animal].hud}</div>
+        <div className={`${ui.box} ${styles.name}`}>
+          {animal === 'eagle' ? EAGLE_NAMES[game.eagle] : ANIMALS[animal].hud}
+        </div>
         <div className={`${ui.box} ${styles.survive}`}>
           <span>SURVIVE</span>
           <span className={styles.bar}>
@@ -283,6 +297,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         {/* The box: everything inside it is clipped to it, drawn in scene units. */}
         <div
           className={styles.box}
+          data-ice={game.ice || undefined}
           style={{ left: boxLeft, top: boxTop, width: box.w, height: box.h }}
         >
           <div className={styles.inside} style={{ left: -boxLeft, top: -boxTop }}>
@@ -290,6 +305,19 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
               <PartsLayer parts={game.parts} layer="svg" ctx={ctx} />
             </svg>
             <PartsLayer parts={game.parts} layer="under" ctx={ctx} />
+            {/* On ice, little slide marks trail the sprite. */}
+            {sliding &&
+              [1, 2, 3].map((k) => (
+                <span
+                  key={k}
+                  className={styles.slide}
+                  style={{
+                    left: game.pos.x - (game.vel.x / slideSpeed) * k * 3 - 1,
+                    top: game.pos.y + 5 - (game.vel.y / slideSpeed) * k * 3,
+                    opacity: 0.6 - k * 0.15,
+                  }}
+                />
+              ))}
             {/* The party's sprite, in the active hiker's color. */}
             <img
               className={`${ui.sprite} ${styles.person}`}

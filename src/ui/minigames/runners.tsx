@@ -2,7 +2,7 @@
  * Each playable minigame's game and preview, by id (src/minigames/catalog.ts).
  *
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
- *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice,
+ *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Minefield,
  *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting, Camp Cleanup and
  *   the quick games)
  *   report how they ended; the play stage shows the shared results card.
@@ -30,8 +30,15 @@ import { TrailBlazes } from './quick/TrailBlazes';
 import { Crossroads } from './signsTrails/Crossroads';
 import { FakeSigns } from './signsTrails/FakeSigns';
 import { RockClimb } from './signsTrails/RockClimb';
+import { SketchyBridge } from './sketchyBridge/SketchyBridge';
+import { FallingRocks } from './fallingRocks/FallingRocks';
+import { FlyBlock } from './flyBlock/FlyBlock';
+import { SquirrelTheft } from './squirrelTheft/SquirrelTheft';
+import { Birdsong } from './birdsong/Birdsong';
+import { PackItUp } from './packItUp/PackItUp';
 import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
+import { Minefield } from './minefield/Minefield';
 import { ThinIce } from './thinIce/ThinIce';
 import { TrailMap } from './trailMap/TrailMap';
 import type { PuzzleRunProps } from './puzzleProps';
@@ -53,6 +60,7 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   trailMap: TrailMap,
   memory: MemoryPuzzle,
   picturePuzzle: PicturePuzzle,
+  minefield: Minefield,
   thinIce: ThinIce,
   trailBlocks: TrailBlocks,
   sleepingBear: SleepingBear,
@@ -71,6 +79,12 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   crossroads: Crossroads,
   rockClimb: RockClimb,
   campCleanup: CampCleanup,
+  sketchyBridge: SketchyBridge,
+  fallingRocks: FallingRocks,
+  flyBlock: FlyBlock,
+  squirrelTheft: SquirrelTheft,
+  birdsong: Birdsong,
+  packItUp: PackItUp,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -99,6 +113,9 @@ function MemoryStill({ settings, hikers }: MinigamePreviewProps) {
 }
 function PicturePuzzleStill({ settings, hikers }: MinigamePreviewProps) {
   return <PicturePuzzle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function MinefieldStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Minefield settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 function ThinIceStill({ settings, hikers }: MinigamePreviewProps) {
   return <ThinIce settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
@@ -156,6 +173,24 @@ function RockClimbStill({ settings, hikers }: MinigamePreviewProps) {
 function CampCleanupStill({ settings, hikers }: MinigamePreviewProps) {
   return <CampCleanup settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function SketchyBridgeStill({ settings, hikers }: MinigamePreviewProps) {
+  return <SketchyBridge settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FallingRocksStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FallingRocks settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FlyBlockStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FlyBlock settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function SquirrelTheftStill({ settings, hikers }: MinigamePreviewProps) {
+  return <SquirrelTheft settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function BirdsongStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Birdsong settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function PackItUpStill({ settings, hikers }: MinigamePreviewProps) {
+  return <PackItUp settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   traildle: TraildleStill,
@@ -166,6 +201,7 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   trailMap: TrailMapStill,
   memory: MemoryStill,
   picturePuzzle: PicturePuzzleStill,
+  minefield: MinefieldStill,
   thinIce: ThinIceStill,
   trailBlocks: TrailBlocksStill,
   sleepingBear: SleepingBearStill,
@@ -184,4 +220,10 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   crossroads: CrossroadsStill,
   rockClimb: RockClimbStill,
   campCleanup: CampCleanupStill,
+  sketchyBridge: SketchyBridgeStill,
+  fallingRocks: FallingRocksStill,
+  flyBlock: FlyBlockStill,
+  squirrelTheft: SquirrelTheftStill,
+  birdsong: BirdsongStill,
+  packItUp: PackItUpStill,
 };

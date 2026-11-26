@@ -6,10 +6,17 @@
  */
 import { BALANCE } from '../../config/balance';
 import { VERSIONS as CROSSING_VERSIONS } from '../crossing/logic';
-import { ANIMALS, isAnimal, levelFor } from '../dodge/animals';
+import {
+  ANIMALS,
+  EAGLE_NAMES,
+  EAGLE_VERSIONS,
+  eagleVersionFor,
+  isAnimal,
+  levelFor,
+} from '../dodge/animals';
 import { autoLength } from '../dodge/logic';
-import type { AnimalId } from '../dodge/types';
-import { group, item, prepNumber, res } from '../prepare';
+import type { AnimalId, EagleVersion } from '../dodge/types';
+import { FOOD, group, item, prepNumber, res } from '../prepare';
 import { TRAIL_TYPES } from '../trails/course';
 import { TIERS, type MinigameSettings, type Tier } from '../types';
 import {
@@ -33,6 +40,7 @@ import {
   rulesOf,
   seconds,
   slowerOpt,
+  slowerShare,
   tierIn,
   timeBar,
   WASD,
@@ -56,7 +64,24 @@ const ANIMAL_WORDS: Readonly<Record<AnimalId, string>> = {
   ants: 'the ants',
   stampede: 'the stampede',
   monster: 'the Woods Monster',
+  eagle: 'the eagle',
+  snowLeopard: 'the snow leopard',
+  snowgirl: 'the Abominable Snowgirl',
 };
+
+/** The Eagle's version this run: the testing tab's Version, or the level's (23, section 9.1). */
+function eagleOf(s: MinigameSettings): EagleVersion {
+  const v = s.eagleVersion;
+  return typeof v === 'string' && (EAGLE_VERSIONS as readonly string[]).includes(v)
+    ? (v as EagleVersion)
+    : eagleVersionFor(dodgeRank(s));
+}
+
+/** The animals the GRIP card helps: the ones that make you slide. */
+const SLIPPERY = (s: MinigameSettings) =>
+  animalOf(s) === 'snowLeopard' ||
+  animalOf(s) === 'snowgirl' ||
+  (animalOf(s) === 'eagle' && eagleOf(s) === 'freeagle');
 
 /** Dodge's length after Prepare's Bear Spray. */
 function dodgeLength(s: MinigameSettings): { base: number; value: number } {
@@ -137,6 +162,32 @@ function animalLines(s: MinigameSettings) {
       return [line('At half time the box shrinks, and the lights can go out.')];
     case 'stampede':
       return [line('Animals take turns attacking. The box follows whoever’s attacking.')];
+    case 'eagle': {
+      // Each version keeps the earlier ones' lines; the tier's version gets a tag.
+      const v = EAGLE_VERSIONS.indexOf(eagleOf(s));
+      const auto = typeof s.eagleVersion !== 'string' || s.eagleVersion === 'auto';
+      return [
+        line('He swoops along the dotted path.'),
+        v >= 1 &&
+          line(
+            'Curly hairs curve in. Watch for the gap in the comb-over.',
+            auto ? fromTier(2) : undefined,
+          ),
+        v >= 2 &&
+          line('Oil barrels blow up when their number runs out.', auto ? fromTier(3) : undefined),
+        v >= 2 && line('The puddles they leave are slippery.'),
+      ];
+    }
+    case 'snowLeopard':
+      return [
+        line('The floor is ice: you slide.'),
+        line('He pounces at where you are when he crouches.'),
+      ];
+    case 'snowgirl':
+      return [
+        line('The floor is ice: you slide.'),
+        line('Snowballs break into chunks that slide.'),
+      ];
   }
 }
 
@@ -161,7 +212,7 @@ export const DODGE_POPUP: GamePopup = {
   chips: (s) => [
     seconds(dodgeLength(s).value),
     'TAKE TURNS',
-    ANIMALS[animalOf(s)].name.toUpperCase(),
+    (animalOf(s) === 'eagle' ? EAGLE_NAMES[eagleOf(s)] : ANIMALS[animalOf(s)].name).toUpperCase(),
   ],
   ifFail: [],
   bars(s) {
@@ -259,6 +310,16 @@ export const DODGE_POPUP: GamePopup = {
           max: 2,
           onlyIf: (x) => animalOf(x) === 'ants',
         },
+      ),
+      opt(
+        'grip',
+        'red',
+        item('workBoots', 'trailShoes', 'liftedBoots'),
+        'HALF AS SLIPPERY',
+        'GRIP',
+        'you stop sliding sooner',
+        { param: P_('grip'), step: 1 },
+        { title: 'GRIP', onlyIf: SLIPPERY },
       ),
     ];
   },
@@ -643,5 +704,191 @@ export const ROCK_CLIMB_POPUP: GamePopup = {
       param: P_('harness'),
       step: 1,
     }),
+  ],
+};
+
+// ── Sketchy Bridge (23-minigames-final.md, section 10) ─────────────────────
+
+const SB = MG.sketchyBridge;
+
+export const SKETCHY_BRIDGE_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Cross the bridge one at a time. Hold to raise the zone and keep your hiker inside it: you only walk while you’re in it. **Outside it, the bridge weakens.**',
+    ),
+  rules: (s) =>
+    rulesOf(
+      line('The bridge doesn’t recover between hikers.'),
+      line('If it breaks, the hiker on it falls, and everyone still waiting fails.'),
+      tierIn(s) >= SB.dartFrom &&
+        line('Your hiker sometimes darts.', fromTier(SB.dartFrom as Tier)),
+      SB.tiers[tierIn(s)].gusts && line('Wind gusts push your hiker.', fromTier(4)),
+    ),
+  controls: [
+    {
+      action: 'HOLD',
+      inputs: [...key('SPACE'), OR, mouse('The button'), OR, finger('Anywhere')],
+    },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [
+    { who: 'each', label: 'On it when it breaks:', value: 'hurt' },
+    { who: 'everyone', label: 'Still waiting:', value: '−1 Energy each' },
+  ],
+  bars(s) {
+    const t = SB.tiers[tierIn(s)];
+    const bridge = numOr(s, 'bridge', SB.integrity);
+    const sway = t.sway;
+    return [
+      countBar(
+        'bridge',
+        'BRIDGE',
+        bridge,
+        bridge + prepNumber(s, P_('patch')),
+        SB.integrity + 2 * SB.patch,
+      ),
+      countBar(
+        'zone',
+        'ZONE SIZE',
+        t.zone,
+        t.zone + prepNumber(s, P_('zone')),
+        mostOver((x) => SB.tiers[x].zone) + 2 * SB.extraZone,
+      ),
+      countBar(
+        'sway',
+        'SWAY SPEED',
+        sway,
+        Math.round(sway * (prepNumber(s, P_('stick')) > 0 ? 1 - SB.lessSway : 1)),
+        mostOver((x) => SB.tiers[x].sway),
+      ),
+    ];
+  },
+  options: () => [
+    opt(
+      'patch',
+      'green',
+      res('wood'),
+      'PATCH THE PLANKS',
+      `+${SB.patch}`,
+      `+${SB.patch} bridge`,
+      { param: P_('patch'), step: SB.patch },
+      { need: 2, max: 2 },
+    ),
+    opt(
+      'zone',
+      'green',
+      FOOD,
+      'BIGGER ZONE',
+      'ZONE',
+      `+${SB.extraZone} zone`,
+      { param: P_('zone'), step: SB.extraZone },
+      { max: 2 },
+    ),
+    opt(
+      'stick',
+      'red',
+      item('hikingStick'),
+      'HIKING STICK',
+      'STICK',
+      `${Math.round(SB.lessSway * 100)}% less sway`,
+      {
+        param: P_('stick'),
+        step: 1,
+      },
+    ),
+    opt(
+      'harness',
+      'green',
+      item('harness'),
+      'HARNESS',
+      'HARNESS',
+      'whoever’s on it when it breaks isn’t hurt',
+      {
+        param: P_('harness'),
+        step: 1,
+      },
+    ),
+  ],
+};
+
+// ── Falling Rocks (23-minigames-final.md, section 10) ──────────────────────
+
+const FR = MG.fallingRocks;
+const boulders = (s: MinigameSettings) =>
+  s.boulders === 'on' ? true : s.boulders === 'off' ? false : tierIn(s) >= FR.boulder.from;
+
+export const FALLING_ROCKS_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Cross the ledge one at a time. Watch for shadows: a rock lands where one grows. Stop, back up, or hide under an overhang. **A hit costs a life.**',
+    ),
+  rules: (s) =>
+    rulesOf(
+      line('Overhangs are safe from everything.'),
+      tierIn(s) >= FR.shower.from &&
+        line('Showers of small rocks fall at once.', fromTier(FR.shower.from as Tier)),
+      boulders(s) &&
+        line(
+          'Boulders roll the whole trail: get under an overhang.',
+          tierIn(s) >= FR.boulder.from ? fromTier(FR.boulder.from as Tier) : undefined,
+        ),
+    ),
+  controls: [
+    { action: 'WALK', inputs: [...key('→'), OR, ...key('D'), OR, finger('Right half')] },
+    { action: 'BACK UP', inputs: [...key('←'), OR, ...key('A'), OR, finger('Left half')] },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker out of lives:', value: 'hurt' }],
+  bars(s) {
+    const t = FR.tiers[tierIn(s)];
+    const slower = 1 + slowerShare(prepNumber(s, P_('slower')));
+    const warn = t.warnSec * slower + prepNumber(s, P_('warn'));
+    // How often: rocks a minute.
+    const often = (sec: number) => Math.round(60 / sec);
+    return [
+      {
+        ...countBar('warn', 'WARNING TIME', t.warnSec, Math.round(warn * 10) / 10, 2),
+        display: (v: number) => `${v.toFixed(1)} S`,
+      },
+      countBar(
+        'rocks',
+        'ROCKS',
+        often(t.everySec),
+        often(t.everySec * slower),
+        mostOver((x) => often(FR.tiers[x].everySec)),
+      ),
+      countBar('trail', 'TRAIL', FR.length, FR.length, FR.length),
+    ];
+  },
+  perHiker: (s) => ({
+    label: 'LIVES',
+    kind: 'hearts',
+    base: numOr(s, 'lives', FR.lives),
+    param: P_('lives'),
+    step: 1,
+  }),
+  options: () => [
+    plusFor('LIFE', '♥'),
+    slowerOpt('SLOWER ROCKS', 'green', 'rocks come less often'),
+    opt(
+      'hardhat',
+      'green',
+      item('hardhat'),
+      '+1 LIFE',
+      '♥',
+      'pick a hiker',
+      { param: P_('lives'), step: 1 },
+      { title: 'HARDHAT', perHiker: true, total: 1 },
+    ),
+    opt(
+      'binoculars',
+      'blue',
+      item('binoculars'),
+      `+${FR.binocularsSec} S WARNING`,
+      'LOOK',
+      'see them coming',
+      { param: P_('warn'), step: FR.binocularsSec },
+      { title: 'BINOCULARS' },
+    ),
   ],
 };

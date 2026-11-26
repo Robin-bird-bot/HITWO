@@ -71,8 +71,13 @@ export function Portraits({
   /** Glare is warning: the Woods Monster's eyes flash red. */
   glaring?: boolean;
 }) {
+  // The Stampede shows whoever's attacking; the Eagle shows his version (it's in `showing`).
   const who: Attacker =
-    animal === 'stampede' ? (showing.at(-1) ?? 'herd') : (animal as Exclude<AnimalId, 'stampede'>);
+    animal === 'stampede'
+      ? (showing.at(-1) ?? 'herd')
+      : animal === 'eagle'
+        ? (showing.at(-1) ?? 'eagle')
+        : (animal as Exclude<AnimalId, 'stampede'>);
   const p = PORTRAITS[who];
   const at = portraitAt(who);
   const flies = !!P.float[who];

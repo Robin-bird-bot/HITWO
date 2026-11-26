@@ -1,14 +1,14 @@
 /**
  * The pop-up content for Puzzle and logic, Memory and Search
  * (docs/design/20-challenge-popup.md, version 3, section 7): Traildle,
- * Find the Path, Trail Map, Picture Puzzle, Thin Ice, Fake Trail Signs,
+ * Find the Path, Trail Map, Picture Puzzle, Minefield, Fake Trail Signs,
  * Remember the Path, Memory Puzzle, Safari, Crossroads and Find the Object.
  */
 import { BALANCE } from '../../config/balance';
 import { isDark, isWindy, targetsFor, type Mode } from '../findObject/logic';
 import { FOOD, item, prepNumber, res } from '../prepare';
 import { newSafari } from '../safari/logic';
-import type { MinigameSettings } from '../types';
+import type { MinigameSettings, Tier } from '../types';
 import {
   countBar,
   finger,
@@ -24,9 +24,11 @@ import {
   OR,
   P_,
   phrases,
+  plusFor,
   plusSecOpt,
   rulesOf,
   slowerOpt,
+  slowerShare,
   tapRow,
   tierIn,
   timeBar,
@@ -272,38 +274,41 @@ export const PICTURE_PUZZLE_POPUP: GamePopup = {
   ],
 };
 
-const TI = MG.thinIce;
-const thinIceTimer = (s: MinigameSettings): number | null =>
-  s.timer === 'off' ? null : typeof s.timer === 'number' ? s.timer : TI.tiers[tierIn(s)].timerSec;
+const MF = MG.minefield;
+const minefieldTimer = (s: MinigameSettings): number | null =>
+  s.timer === 'off' ? null : typeof s.timer === 'number' ? s.timer : MF.tiers[tierIn(s)].timerSec;
 
-export const THIN_ICE_POPUP: GamePopup = {
+/** Minefield, the Dog Waste Zone (23-minigames-final.md, section 10; it was Thin Ice). */
+export const MINEFIELD_POPUP: GamePopup = {
   howToPlay: () =>
     phrases(
-      'Holes hide under the ice. Check the safe squares: each number tells you how many holes touch it. The first check is always safe. **Step on a hole and the hiker at the front falls in.**',
+      'Dog Waste Zone! Mow the grass square by square: each number tells you how many piles touch it. Bag the piles you find. The first square is always safe. **Step in one and the hiker at the front is out.**',
     ),
   rules: (s) =>
     rulesOf(
-      line('Flag a square you think is a hole so it can’t be checked by mistake.'),
-      line('Clear every safe square to pass. Hikers who fell in fail.'),
-      thinIceTimer(s) !== null &&
+      line('Clear every safe square to pass.'),
+      minefieldTimer(s) !== null &&
         line('There’s a clock: when it runs out, everyone still in fails.', fromTier(2)),
     ),
   controls: [
-    { action: 'CHECK', inputs: [mouse('Click'), OR, finger('Tap')] },
-    { action: 'FLAG', inputs: [mouse('Right-click'), OR, ...key('F')] },
+    { action: 'MOW', inputs: [mouse('Click'), OR, finger('Tap')] },
+    {
+      action: 'BAG IT',
+      inputs: [mouse('Right-click'), OR, finger('Long-press'), OR, ...key('F')],
+    },
   ],
   chips: () => ['TAKE TURNS'],
   ifFail: [],
   bars(s) {
-    const holes = TI.tiers[tierIn(s)].holes;
-    const timer = thinIceTimer(s);
+    const piles = MF.tiers[tierIn(s)].holes;
+    const timer = minefieldTimer(s);
     return [
       countBar(
-        'holes',
-        'HOLES',
-        holes,
-        holes,
-        mostOver((x) => TI.tiers[x].holes),
+        'piles',
+        'PILES',
+        piles,
+        piles,
+        mostOver((x) => MF.tiers[x].holes),
       ),
       ...(timer
         ? [
@@ -312,13 +317,82 @@ export const THIN_ICE_POPUP: GamePopup = {
               'TIME',
               timer,
               timer,
-              mostOver((x) => TI.tiers[x].timerSec ?? 0),
+              mostOver((x) => MF.tiers[x].timerSec ?? 0),
             ),
           ]
         : []),
     ];
   },
   options: () => [
+    opt(
+      'pooBags',
+      'blue',
+      item('pooBag'),
+      'POO BAGS',
+      'BAGGED',
+      'one pile is bagged before you start',
+      { param: P_('bags'), step: 1 },
+      { max: 3 },
+    ),
+    opt(
+      'scanner',
+      'blue',
+      item('minesweeper', 'scanner'),
+      'SCANNER',
+      'SCAN',
+      `${MF.scannerBags} piles bagged before you start`,
+      { param: P_('bags'), step: MF.scannerBags },
+    ),
+  ],
+};
+
+const TIC = MG.thinIce;
+
+/** Thin Ice, the crossing (23-minigames-final.md, section 10). */
+export const THIN_ICE_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Get every hiker across the ice, one at a time. Step to the squares next to you: each number tells you how many holes touch it. **Step on a hole and you fall in.** The ice cracks behind you, so each hiker needs a new way across.',
+    ),
+  rules: (s) => {
+    const picks = numOr(s, 'picks', TIC.tiers[tierIn(s)].picks);
+    return rulesOf(
+      picks > 0 &&
+        line(`Your ice pick tests a square 2 away, safely. You have ${picks === 1 ? '1' : picks}.`),
+      line('Cracked squares can’t be used, but their numbers stay.'),
+    );
+  },
+  controls: [
+    { action: 'STEP', inputs: [mouse('Click next to you'), OR, finger('Tap')] },
+    { action: 'PICK', inputs: [mouse('Click 2 away'), OR, finger('Tap')] },
+    { action: 'FLAG', inputs: [mouse('Right-click'), OR, finger('Long-press')] },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker who falls in:', value: 'Soaked' }],
+  bars(s) {
+    const t = TIC.tiers[tierIn(s)];
+    const holes = Math.round(t.cols * t.rows * t.holes);
+    const picks = numOr(s, 'picks', t.picks);
+    return [
+      countBar(
+        'holes',
+        'HOLES',
+        holes,
+        holes,
+        mostOver((x) => Math.round(TIC.tiers[x].cols * TIC.tiers[x].rows * TIC.tiers[x].holes)),
+      ),
+      countBar('picks', 'PICKS', picks, picks, 5),
+      countBar(
+        'ice',
+        'ICE',
+        t.cols * t.rows,
+        t.cols * t.rows,
+        mostOver((x) => TIC.tiers[x].cols * TIC.tiers[x].rows),
+      ),
+    ];
+  },
+  options: () => [
+    plusFor('PICK', '+1', 'picks'),
     opt(
       'testIce',
       'blue',
@@ -336,7 +410,10 @@ export const THIN_ICE_POPUP: GamePopup = {
       'HIKING STICK',
       'STICK',
       'each hiker’s first hole only cracks',
-      { param: P_('stick'), step: 1 },
+      {
+        param: P_('stick'),
+        step: 1,
+      },
     ),
   ],
 };
@@ -687,6 +764,176 @@ export const FIND_OBJECT_POPUP: GamePopup = {
       '−1',
       'one snack fewer each round',
       { param: P_('fewer'), step: 1 },
+    ),
+  ],
+};
+
+// ── Birdsong (23-minigames-final.md, section 10) ───────────────────────────
+
+const BSG = MG.birdsong;
+const songMode = (s: MinigameSettings) =>
+  s.songs === 'grow' || s.songs === 'new' ? s.songs : tierIn(s) >= BSG.newFrom ? 'new' : 'grow';
+
+export const BIRDSONG_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      `Listen to the bird: each note takes its color as it crosses the middle. Then tap the colors in the same order. **A wrong note is a strike:** ${BSG.strikes} strikes and you’re out. Hikers take turns, one song each.`,
+    ),
+  rules: (s) => {
+    const auto = s.songs !== 'grow' && s.songs !== 'new';
+    return rulesOf(
+      songMode(s) === 'grow'
+        ? line('Each song is the last one plus one more note.', auto ? 'TIERS I AND II' : undefined)
+        : line(
+            'Every song is new, and one note longer.',
+            auto ? fromTier(BSG.newFrom as Tier) : undefined,
+          ),
+      line('After a wrong note, finish the song anyway.'),
+    );
+  },
+  controls: [
+    {
+      action: 'PICK',
+      inputs: [mouse('Click a color'), OR, finger('Tap'), OR, ...key('1–8')],
+    },
+  ],
+  chips: () => ['TAKE TURNS'],
+  ifFail: [{ who: 'each', label: 'Each hiker out of strikes:', value: '−1 Energy' }],
+  bars(s) {
+    const t = BSG.tiers[tierIn(s)];
+    const colors = numOr(s, 'colors', t.colors);
+    const slow = 1 - slowerShare(prepNumber(s, P_('slower')));
+    return [
+      countBar('colors', 'COLORS', colors, colors, BSG.palette.length),
+      countBar(
+        'longest',
+        'LONGEST SONG',
+        t.longest,
+        t.longest,
+        mostOver((x) => BSG.tiers[x].longest),
+      ),
+      countBar(
+        'speed',
+        'NOTE SPEED',
+        t.speed,
+        Math.round(t.speed * slow),
+        mostOver((x) => BSG.tiers[x].speed),
+      ),
+    ];
+  },
+  perHiker: () => ({
+    label: 'STRIKES',
+    kind: 'pips',
+    base: BSG.strikes,
+    param: P_('strikes'),
+    step: 1,
+  }),
+  options: () => [
+    plusFor('STRIKE', '+1', 'strikes'),
+    slowerOpt('SLOWER NOTES', 'green', 'the notes slow down'),
+    opt(
+      'notebook',
+      'blue',
+      item('fieldNotebook'),
+      'EACH SONG TWICE',
+      'TWICE',
+      'each song plays twice',
+      { param: P_('notebook'), step: 1 },
+      { title: 'FIELD NOTEBOOK' },
+    ),
+    opt(
+      'ukulele',
+      'blue',
+      item('ukulele'),
+      'HEAR THE COLORS',
+      'UKE',
+      'the colors play their tones when you hover them',
+      { param: P_('ukulele'), step: 1 },
+      { title: 'UKULELE' },
+    ),
+  ],
+};
+
+// ── Pack It Up (23-minigames-final.md, section 10) ─────────────────────────
+
+const PKU = MG.packItUp;
+const packSize = (s: MinigameSettings): [number, number] => {
+  const v =
+    typeof s.pack === 'string' && /^\d+x\d+$/.test(s.pack) ? s.pack.split('x').map(Number) : null;
+  const t = PKU.tiers[tierIn(s)];
+  return v ? [v[0]!, v[1]!] : [t.cols, t.rows];
+};
+
+export const PACK_IT_UP_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Your pack is torn! Drag the gear into the pack and turn pieces to fit. Nothing can go on a torn spot. **Pack everything before time runs out.**',
+    ),
+  rules: (s) => {
+    const spare = numOr(s, 'spare', PKU.tiers[tierIn(s)].spare) + prepNumber(s, P_('backpack'));
+    return rulesOf(
+      spare === 0 &&
+        line(
+          'There’s no room to spare.',
+          tierIn(s) >= 3 && s.spare !== 0 ? fromTier(3) : undefined,
+        ),
+    );
+  },
+  controls: [
+    { action: 'MOVE', inputs: [mouse('Drag a piece'), OR, finger('Drag')] },
+    {
+      action: 'TURN',
+      inputs: [...key('R'), OR, mouse('Right-click'), OR, finger('The turn button')],
+    },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [{ who: 'each', label: 'Each hiker who doesn’t finish:', value: '−1 Energy' }],
+  bars(s) {
+    const t = PKU.tiers[tierIn(s)];
+    const [cols, rows] = packSize(s);
+    const extra = prepNumber(s, P_('extraSec'));
+    // About how many pieces: the free cells over the average piece (3.5 cells).
+    const free = cols * rows - t.torn - numOr(s, 'spare', t.spare);
+    const pieces = Math.max(1, Math.round(free / 3.5));
+    return [
+      timeBar(
+        'time',
+        'TIME',
+        t.timeSec,
+        t.timeSec + extra,
+        mostOver((x) => PKU.tiers[x].timeSec) + 2 * PKU.foodSec,
+      ),
+      countBar('pieces', 'PIECES', pieces, pieces - (prepNumber(s, P_('sack')) > 0 ? 1 : 0), 12),
+      countBar(
+        'size',
+        'PACK SIZE',
+        cols * rows,
+        cols * rows,
+        mostOver((x) => PKU.tiers[x].cols * PKU.tiers[x].rows),
+      ),
+    ];
+  },
+  options: () => [
+    plusSecOpt(PKU.foodSec),
+    opt(
+      'backpack',
+      'green',
+      item('backpack', 'fannyPack'),
+      '+1 SPARE CELL',
+      '+1',
+      'a little more room',
+      { param: P_('backpack'), step: 1 },
+      { title: 'BACKPACK' },
+    ),
+    opt(
+      'sack',
+      'red',
+      item('sack'),
+      'THE BIGGEST PIECE IN THE SACK',
+      'SACK',
+      'one less to pack',
+      { param: P_('sack'), step: 1 },
+      { title: 'SACK' },
     ),
   ],
 };

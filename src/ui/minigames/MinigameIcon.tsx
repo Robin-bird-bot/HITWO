@@ -54,6 +54,61 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
   picturePuzzle: (
     <path d="M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 1 0-4z" />
   ),
+  // A backpack with a tear.
+  packItUp: (
+    <>
+      <path d="M6 8h12v13H6z" />
+      <path d="M9 8V5h6v3M6 13h12" />
+      <path d="M14 16l2 2-1 2" />
+    </>
+  ),
+  // A music note and a little bird.
+  birdsong: (
+    <>
+      <path d="M9 18V5l9-2v12" />
+      <circle cx="6.5" cy="18" r="2.5" />
+      <circle cx="15.5" cy="15" r="2.5" />
+    </>
+  ),
+  // An acorn, thrown.
+  squirrelTheft: (
+    <>
+      <path d="M7 10h10c0 6-2 10-5 10s-5-4-5-10z" />
+      <path d="M6 10c0-3 3-5 6-5s6 2 6 5M12 5V3" />
+      <path d="M19 15l3-2M19 19l3 1" />
+    </>
+  ),
+  // A pie in a ring of panels, with lanes running out.
+  flyBlock: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M5 19l2-2" />
+    </>
+  ),
+  // A rock falling onto a ledge, with its shadow.
+  fallingRocks: (
+    <>
+      <path d="M8 4l5-1 3 3-1 4-5 1-3-3z" />
+      <path d="M2 20h20M8 17h8" />
+    </>
+  ),
+  // A rope bridge: two sagging ropes and hangers.
+  sketchyBridge: (
+    <>
+      <path d="M2 8q10 7 20 0M2 14q10 7 20 0" />
+      <path d="M7 11v5M12 12v6M17 11v5M2 6v10M22 6v10" />
+    </>
+  ),
+  // A pile, three tiers high, with a stink line (Minefield, the Dog Waste Zone).
+  minefield: (
+    <>
+      <path d="M4 20h16c0-2-1.5-3-3-3h-10c-1.5 0-3 1-3 3z" />
+      <path d="M7 17c0-2 1.5-3 3-3h4c1.5 0 3 1 3 3" />
+      <path d="M10 14c0-2 1-3 2-4 1 1 2 2 2 4" />
+      <path d="M17 7c1-1 1-2 0-3" />
+    </>
+  ),
   // Cracked ice.
   thinIce: (
     <>

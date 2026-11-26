@@ -1,0 +1,63 @@
+/* Fly Block (42-fly-block.png), in scene units (320 × 240). */
+
+.field {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+.pie {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+}
+
+.fly {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* A zig-zag fly blinks just before it hops lanes. */
+.fly[data-blink] {
+  animation: blink 0.1s steps(2) infinite;
+}
+
+/* A fast fly leaves a faint blur. */
+.fly[data-fast] {
+  filter: drop-shadow(0 0 1px #d3dfaf);
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.swatter {
+  position: absolute;
+  width: 18px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pips > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #2b3a23;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fly[data-blink] {
+    animation: none;
+    outline: 0.6px dashed #f4f8dc;
+  }
+}

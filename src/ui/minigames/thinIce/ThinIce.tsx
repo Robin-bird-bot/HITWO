@@ -1,124 +1,126 @@
 /**
- * Thin Ice on the GPS (docs/design/13-minigames-puzzles-2.md, section 4;
- * mockup 7-thin-ice.png), in scene units (320 × 240). Cells are the 12-px
- * ice tiles at 2× (smaller when a big grid needs it).
+ * Thin Ice, the crossing, on the GPS (docs/design/23-minigames-final.md,
+ * section 7; mockup 46-thin-ice-crossing.png), in scene units (320 × 240):
+ * the far shore above the ice and the near shore below it, with each
+ * near-shore square's number; the crossing hiker's token on the ice; each
+ * finished hiker's path drawn in their color over the cracked squares; and
+ * the hiker's picks on the right.
  *
- * - Tap or click to check a cell; the first check is always safe.
- * - Flag a hole: right-click, a long press, or the FLAG button (taps flag
- *   until it's pressed again). The arrow keys move a cursor, Space checks
- *   and F flags.
- * - Checking a hole: the hiker at the front of the line falls in ("SPLASH!")
- *   and the next one steps up.
+ * - Tap a near-shore square to stand there.
+ * - Tap a square next to you to step onto it, or one 2 away to test it with
+ *   the ice pick. From the first ice row, tap the far shore to cross.
+ * - Right-click or long-press flags a square (free).
  */
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
-import { ICE_SIZES } from '../../../minigames/catalog';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
+import { thinIceBot, type ThinIceAction } from '../../../minigames/thinIce/bot';
 import {
-  check,
+  canPick,
+  canStep,
   count,
-  front,
-  holesLeft,
+  cross,
+  crossing,
   newThinIce,
+  pick,
+  posOf,
   result,
-  timeUp,
+  shoreCount,
+  stand,
+  step,
+  tick,
   toggleFlag,
 } from '../../../minigames/thinIce/logic';
+import { turnWord } from '../../../minigames/quick/turns';
+import { TIER_LABELS } from '../../../minigames/types';
+import { useDemoBot, useDemoMode } from '../demo';
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
-import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
-import panel from '../panel.module.css';
+import hud from '../hud.module.css';
+import q from '../quick/Quick.module.css';
+import { TurnBar } from '../quick/TurnBar';
+import { useFixedLoop, useReportOnce } from '../quick/useQuick';
 import styles from './ThinIce.module.css';
-import { useDemoMode } from '../demo';
 
-const TI = BALANCE.minigames.thinIce;
+const T = BALANCE.minigames.thinIce;
 const art = (f: string) => asset(`minigames/thin-ice/${f}`);
 
 export function ThinIce({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
-  const demo = useDemoMode();
   const tier = tierOf(settings);
-  const sizePick = pickOf(settings, 'grid');
-  const size = ICE_SIZES.find(([c, r]) => `${c}x${r}` === sizePick);
   const [game, setGame] = useState(() =>
     newThinIce(
       {
         tier,
-        size: size ?? 'auto',
-        holesPerHiker:
-          typeof settings.holesPerHiker === 'number' ? settings.holesPerHiker : TI.holesPerHiker,
-        timer:
-          settings.timer === 'off'
-            ? 'off'
-            : typeof settings.timer === 'number'
-              ? settings.timer
-              : 'auto',
+        picks: typeof settings.picks === 'number' ? settings.picks : 'auto',
+        timeSec: typeof settings.time === 'number' ? settings.time : 'off',
+        // Prepare (23-minigames-final.md, section 10): +1 pick, TEST THE ICE and the Hiking Stick.
+        extraPicks: perHikerCounts(settings, 'prep.picks'),
+        marked: prepNumber(settings, 'prep.testIce'),
+        stick: prepNumber(settings, 'prep.stick') > 0,
       },
       hikers.map((h) => h.id),
       seed,
     ),
   );
-  const [flagMode, setFlagMode] = useState(false);
-  const [cursor, setCursor] = useState<number | null>(null);
-  const [splash, setSplash] = useState<{ cell: number; n: number } | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const press = useRef<{ cell: number; timer: number; flagged: boolean } | null>(null);
-  const reported = useRef(false);
-  const byId = (id: string) => hikers.find((h) => h.id === id)!;
-
-  const cell = Math.min(24, Math.floor(228 / game.rows), Math.floor(230 / game.cols));
-  const gridLeft = 316 - game.cols * cell;
-  const gridTop = Math.floor((240 - game.rows * cell) / 2);
+  const demo = useDemoMode();
   const running = !still && !game.over;
+  useFixedLoop(running, setGame, tick);
+  useReportOnce(game, still, onDone, result);
+  const press = useRef<{ cell: number; timer: number; flagged: boolean } | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const byId = (id: string) => hikers.find((h) => h.id === id);
+  const colorOf = (id: string) => byId(id)?.color ?? '#d3dfaf';
+  const who = crossing(game);
+  const showHoles = pickOf(settings, 'showHoles') === 'on';
 
-  const left = useCountdown(game.timeSec, running, () => {
-    setGame((s) => timeUp(s));
-    setMessage('Time’s up');
+  // The board: shores above and below the ice, on the left; the picks panel on the right.
+  const cell = Math.min(16, Math.floor(156 / (game.rows + 2)), Math.floor(170 / game.cols));
+  const width = game.cols * cell;
+  const left = 12 + Math.floor((196 - width) / 2);
+  const shoreH = cell;
+  const top = 26 + Math.floor((166 - (game.rows * cell + 2 * shoreH)) / 2);
+  const iceTop = top + shoreH;
+  const nearTop = iceTop + game.rows * cell;
+  const at = (c: number) => ({
+    x: left + posOf(game, c).col * cell,
+    y: iceTop + posOf(game, c).row * cell,
   });
 
-  useEffect(() => {
-    if (!game.over || still || reported.current) return;
-    const id = window.setTimeout(() => {
-      reported.current = true;
-      onDone(result(game));
-    }, 1600);
-    return () => window.clearTimeout(id);
-  }, [game, still, onDone]);
-
-  const doCheck = (c: number) => {
-    if (!running) return;
-    const out = check(game, c);
-    if (out.state === game) return;
-    setGame(out.state);
-    if (out.fell) {
-      playSound('miss');
-      setSplash((s) => ({ cell: c, n: (s?.n ?? 0) + 1 }));
-      const next = front(out.state);
-      setMessage(
-        next
-          ? `${byId(out.fell).name} fell in. ${byId(next).name} steps next.`
-          : `${byId(out.fell).name} fell in.`,
-      );
-    } else if (out.state.won) {
-      setMessage('The ice is mapped!');
-    }
+  const act = (a: ThinIceAction) => {
+    const before = game;
+    const out =
+      a.kind === 'stand'
+        ? stand(before, a.col)
+        : a.kind === 'step'
+          ? step(before, a.cell)
+          : a.kind === 'pick'
+            ? pick(before, a.cell)
+            : cross(before);
+    if (out === before) return;
+    if (out.fell.length > before.fell.length) playSound('miss');
+    else if (out.last && out.last !== before.last && out.last.kind === 'across') playSound('ready');
+    else playSound('pop');
+    setGame(out);
   };
-  const doFlag = (c: number) => {
-    if (!running) return;
-    setGame((s) => toggleFlag(s, c));
-  };
+  useDemoBot(demo && running, game, thinIceBot, act);
 
-  // Tap to check (or flag, in flag mode); a long press flags.
+  const tapCell = (c: number) => {
+    if (canStep(game, c)) act({ kind: 'step', cell: c });
+    else if (canPick(game, c)) act({ kind: 'pick', cell: c });
+  };
+  const flag = (c: number) => running && setGame((s) => toggleFlag(s, c));
   const onDown = (e: ReactPointerEvent, c: number) => {
-    if (!running || e.button === 2) return;
+    if (!running || demo || e.button === 2) return;
     const timer = window.setTimeout(() => {
       if (press.current?.cell === c) {
         press.current.flagged = true;
-        doFlag(c);
+        flag(c);
       }
-    }, TI.longPressSec * 1000);
+    }, T.longPressSec * 1000);
     press.current = { cell: c, timer, flagged: false };
   };
   const onUp = (c: number) => {
@@ -126,178 +128,225 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
     press.current = null;
     if (!p || p.cell !== c) return;
     window.clearTimeout(p.timer);
-    if (p.flagged) return;
-    setCursor(null);
-    if (flagMode) doFlag(c);
-    else doCheck(c);
-  };
-  const cancel = () => {
-    if (press.current) window.clearTimeout(press.current.timer);
-    press.current = null;
+    if (!p.flagged) tapCell(c);
   };
 
-  // The arrow keys move a cursor; Space checks, F flags.
-  useEffect(() => {
-    if (demo) return;
-    if (!running) return;
-    const onKey = (e: KeyboardEvent) => {
-      const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[
-        e.key
-      ];
-      if (d) {
-        e.preventDefault();
-        setCursor((c) => {
-          if (c === null) return Math.floor(game.rows / 2) * game.cols + Math.floor(game.cols / 2);
-          const col = Math.max(0, Math.min(game.cols - 1, (c % game.cols) + d[0]!));
-          const row = Math.max(0, Math.min(game.rows - 1, Math.floor(c / game.cols) + d[1]!));
-          return row * game.cols + col;
-        });
-      } else if ((e.key === ' ' || e.key === 'Enter') && cursor !== null) {
-        e.preventDefault();
-        doCheck(cursor);
-      } else if ((e.key === 'f' || e.key === 'F') && cursor !== null) {
-        e.preventDefault();
-        doFlag(cursor);
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  });
-
-  const flags = game.flags.filter(Boolean).length;
-  const next = front(game);
+  const last = game.last && game.time - game.last.at < 1.4 ? game.last : null;
+  const across = game.turns.order.filter((id) => game.turns.done[id] === true);
+  const word = (id: string) => {
+    if (game.fell.includes(id)) return 'FELL IN';
+    if (game.timedOut.includes(id)) return 'OUT OF TIME';
+    if (game.turns.done[id]) return 'ACROSS';
+    const w = turnWord(game.turns, id);
+    return w === 'NOW' ? 'CROSSING' : w;
+  };
 
   return (
     <PixelScreen measure={!still}>
-      {/* The left panel. */}
-      <div className={`${ui.box} ${panel.head}`}>THIN ICE</div>
-      {left !== null && (
-        <div
-          className={`${ui.box} ${panel.clock}`}
-          style={{ top: 24, height: 14, fontSize: 6 }}
-          data-low={left <= 10 || undefined}
+      <div className={q.play} onContextMenu={(e) => e.preventDefault()}>
+        {/* The far shore: hikers who made it wait here. Tap it from the first ice row to cross. */}
+        <button
+          type="button"
+          className={styles.shore}
+          data-goal={(game.at?.row === 0 && running) || undefined}
+          style={{ left, top, width, height: shoreH }}
+          onClick={() => !demo && act({ kind: 'cross' })}
+          disabled={still}
+          aria-label="The far shore"
         >
-          {clock(left)}
-        </div>
-      )}
-      <p className={`${ui.muted} ${panel.label}`} style={{ top: 44 }}>
-        HOLES
-      </p>
-      <p className={`${ui.text} ${styles.holes}`}>
-        {holesLeft(game)} {flags ? `(${flags} flagged)` : ''}
-      </p>
-      <p className={`${ui.muted} ${panel.label}`} style={{ top: 64 }}>
-        THE LINE
-      </p>
-      {game.order.map((id, k) => (
-        <span key={id} className={styles.who} style={{ top: 70 + k * 13 }}>
+          <span className={ui.text}>FAR SHORE</span>
+        </button>
+        {across.map((id, k) => (
           <HikerToken
-            hiker={byId(id)}
-            size={10}
-            state={
-              game.fell.includes(id)
-                ? 'out'
-                : id === next && !game.over
-                  ? 'current'
-                  : game.won
-                    ? 'safe'
-                    : 'waiting'
-            }
+            key={id}
+            hiker={byId(id)!}
+            size={Math.min(10, cell - 4)}
+            state="safe"
+            className={styles.token}
+            style={{ left: left + 4 + k * (cell - 2), top: top + 2 }}
           />
-          <span className={ui.text}>
-            {byId(id).name}
-            {id === next && !game.over ? ' <' : ''}
-          </span>
-        </span>
-      ))}
-      {message && (
-        <div className={`${ui.box} ${panel.message}`} style={{ top: 128 }} role="status">
-          {message}
-        </div>
-      )}
-      <button
-        type="button"
-        className={`${ui.button} ${styles.flag}`}
-        data-on={flagMode || undefined}
-        aria-pressed={flagMode}
-        onClick={() => setFlagMode((f) => !f)}
-        disabled={!running}
-      >
-        {flagMode ? 'FLAGGING' : 'FLAG'}
-      </button>
-      <p className={`${ui.muted} ${styles.flagHint}`}>Or right-click / long-press</p>
+        ))}
 
-      {/* The lake. */}
-      <div
-        className={styles.grid}
-        style={{ left: gridLeft, top: gridTop, width: game.cols * cell, height: game.rows * cell }}
-        onContextMenu={(e) => e.preventDefault()}
-        onPointerLeave={cancel}
-      >
-        {game.open.map((open, c) => {
-          const hole = open && !!game.holes?.[c];
-          const n = open && !hole ? count(game, c) : 0;
-          const shown = hole ? 'hole.png' : open ? 'open.png' : 'ice.png';
+        {/* The ice. */}
+        {game.holes.map((hole, c) => {
+          const p = at(c);
+          const seen = game.seen[c];
+          const cracked = game.cracked[c];
+          const n = seen && !hole ? count(game, c) : 0;
+          const file =
+            seen && hole ? 'hole.png' : cracked ? 'cracked.png' : seen ? 'open.png' : 'ice.png';
+          const stepOk = canStep(game, c);
+          const pickOk = !stepOk && canPick(game, c);
           return (
             <button
               key={c}
               type="button"
               className={styles.cell}
-              data-open={open || undefined}
-              data-cursor={c === cursor || undefined}
-              aria-label={
-                hole
-                  ? 'Hole'
-                  : open
-                    ? `${n || 'No'} holes around`
-                    : game.flags[c]
-                      ? 'Flagged'
-                      : 'Ice'
-              }
-              style={{
-                left: (c % game.cols) * cell,
-                top: Math.floor(c / game.cols) * cell,
-                width: cell,
-                height: cell,
-              }}
+              data-step={(stepOk && !demo) || undefined}
+              data-pick={(pickOk && !demo) || undefined}
+              data-hover={(hover === c && (stepOk || pickOk)) || undefined}
+              style={{ left: p.x, top: p.y, width: cell, height: cell }}
               onPointerDown={(e) => onDown(e, c)}
               onPointerUp={() => onUp(c)}
+              onPointerEnter={() => setHover(c)}
+              onPointerLeave={() => {
+                setHover(null);
+                if (press.current) window.clearTimeout(press.current.timer);
+                press.current = null;
+              }}
               onContextMenu={(e) => {
                 e.preventDefault();
-                cancel();
-                doFlag(c);
+                if (!demo) flag(c);
               }}
               disabled={still}
+              aria-label={
+                seen && hole
+                  ? 'Open water'
+                  : cracked
+                    ? `Cracked, ${n} around`
+                    : seen
+                      ? `${n || 'No'} holes around`
+                      : game.flags[c]
+                        ? 'Flagged'
+                        : 'Ice'
+              }
             >
-              <img className={ui.sprite} src={art(shown)} alt="" draggable={false} />
-              {game.flags[c] && !open && (
+              <img className={ui.sprite} src={art(file)} alt="" draggable={false} />
+              {game.flags[c] && !seen && (
                 <img
-                  className={`${ui.sprite} ${styles.flagMark}`}
+                  className={`${ui.sprite} ${styles.mark}`}
                   src={art('flag.png')}
                   alt=""
                   draggable={false}
                 />
               )}
+              {showHoles && hole && !seen && <span className={styles.secret} />}
               {n > 0 && (
-                <span className={styles.number} style={{ fontSize: cell * 0.36 }}>
+                <span className={styles.number} style={{ fontSize: cell * 0.42 }}>
                   {n}
                 </span>
               )}
             </button>
           );
         })}
-        {splash && (
-          <span
-            key={splash.n}
-            className={`${ui.text} ${styles.splash}`}
+
+        {/* Each finished hiker's path, in their color. */}
+        <svg className={styles.paths} viewBox="0 0 320 240" aria-hidden="true">
+          {Object.entries(game.paths).map(([id, path]) =>
+            path.length > 1 ? (
+              <polyline
+                key={id}
+                points={path.map((c) => `${at(c).x + cell / 2},${at(c).y + cell / 2}`).join(' ')}
+                fill="none"
+                stroke={colorOf(id)}
+                strokeWidth={1.2}
+                strokeLinejoin="round"
+                opacity={0.85}
+              />
+            ) : null,
+          )}
+        </svg>
+
+        {/* The near shore: each square's number counts the holes touching it in the first ice row. */}
+        <div className={styles.near} style={{ left, top: nearTop, width, height: shoreH }}>
+          {Array.from({ length: game.cols }, (_, col) => (
+            <button
+              key={col}
+              type="button"
+              className={styles.shoreCell}
+              data-step={(!game.at && running && !demo) || undefined}
+              style={{ left: col * cell, width: cell, height: shoreH }}
+              onClick={() => !demo && act({ kind: 'stand', col })}
+              disabled={still}
+              aria-label={`Near shore: ${shoreCount(game, col)} holes ahead`}
+            >
+              <img className={ui.sprite} src={art('shore.png')} alt="" draggable={false} />
+              <span className={styles.number} style={{ fontSize: cell * 0.42 }}>
+                {shoreCount(game, col)}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* The crossing hiker. */}
+        {who && game.at && byId(who) && (
+          <HikerToken
+            hiker={byId(who)!}
+            size={Math.min(10, cell - 4)}
+            state="current"
+            className={styles.token}
             style={{
-              left: (splash.cell % game.cols) * cell + cell / 2,
-              top: Math.floor(splash.cell / game.cols) * cell - 2,
+              left: left + game.at.col * cell + (cell - Math.min(10, cell - 4)) / 2,
+              top:
+                (game.at.row === game.rows ? nearTop : iceTop + game.at.row * cell) +
+                (cell - Math.min(10, cell - 4)) / 2,
             }}
+          />
+        )}
+        {last && last.cell !== undefined && last.kind !== 'pick' && (
+          <span
+            className={q.word}
+            style={{ left: at(last.cell).x + cell / 2, top: at(last.cell).y - 4 }}
           >
-            SPLASH!
+            {last.kind === 'fell' ? 'SPLASH!' : 'CRACK!'}
           </span>
         )}
+
+        {/* The crossing hiker's picks, and the key. */}
+        <div className={`${ui.box} ${styles.side}`}>
+          <span className={styles.sideName}>
+            {who ? (byId(who)?.name ?? who).toUpperCase() : ''}
+          </span>
+          <span className={ui.muted}>PICKS</span>
+          <span className={styles.picks}>
+            {Array.from({ length: Math.max(0, game.picksLeft) }, (_, k) => (
+              <img
+                key={k}
+                className={ui.sprite}
+                src={art('ice-pick.png')}
+                alt=""
+                draggable={false}
+              />
+            ))}
+            {game.picksLeft <= 0 && <span className={ui.muted}>NONE</span>}
+          </span>
+          {game.timeLeft !== null && (
+            <span className={styles.time} data-low={game.timeLeft <= 10 || undefined}>
+              {clock(Math.ceil(game.timeLeft))}
+            </span>
+          )}
+          <span className={ui.muted}>CRACKED ICE</span>
+          <img
+            className={`${ui.sprite} ${styles.key}`}
+            src={art('cracked.png')}
+            alt=""
+            draggable={false}
+          />
+          <span className={styles.keyText}>CAN’T BE USED</span>
+        </div>
+
+        <p className={`${ui.muted} ${q.hint}`}>
+          {!game.at
+            ? 'TAP THE NEAR SHORE TO STAND THERE. ITS NUMBER COUNTS THE HOLES AHEAD.'
+            : game.at.row === 0
+              ? 'TAP THE FAR SHORE TO CROSS.'
+              : 'STEP NEXT TO YOU, OR USE A PICK TO TEST A SQUARE 2 AWAY.'}
+        </p>
+
+        {/* The top HUD. */}
+        <div className={`${ui.box} ${hud.name}`}>THIN ICE</div>
+        <div className={`${ui.box} ${hud.meter}`}>
+          <span>
+            ACROSS {across.length} OF {game.turns.order.length}
+          </span>
+          <span className={hud.bar}>
+            <span
+              style={{ width: `${(across.length / Math.max(1, game.turns.order.length)) * 100}%` }}
+            />
+          </span>
+        </div>
+        <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
+        <TurnBar hikers={hikers} word={word} active={game.over ? undefined : who} />
       </div>
     </PixelScreen>
   );

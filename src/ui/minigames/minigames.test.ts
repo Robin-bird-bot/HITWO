@@ -19,7 +19,7 @@ import {
   PICTURE_PUZZLE,
   REMEMBER_PATH,
   SLEEPING_BEAR,
-  THIN_ICE,
+  MINEFIELD,
   TRAILDLE,
   TRAIL_BLOCKS,
   TRAIL_MAP,
@@ -164,7 +164,8 @@ describe('the minigame list', () => {
           ['Trails', 'ready'],
           ['Rock Climb', 'ready'],
           ['Camp Cleanup', 'ready'],
-          ['Cracked Bridge', 'soon'],
+          ['Sketchy Bridge', 'ready'],
+          ['Falling Rocks', 'ready'],
         ],
       ],
       [
@@ -175,7 +176,9 @@ describe('the minigame list', () => {
           ['Fake Trail Signs', 'ready'],
           ['Trail Map', 'ready'],
           ['Picture Puzzle', 'ready'],
+          ['Minefield', 'ready'],
           ['Thin Ice', 'ready'],
+          ['Pack It Up', 'ready'],
         ],
       ],
       [
@@ -185,6 +188,7 @@ describe('the minigame list', () => {
           ['Memory Puzzle', 'ready'],
           ['Safari', 'ready'],
           ['Crossroads', 'ready'],
+          ['Birdsong', 'ready'],
         ],
       ],
       ['Search', [['Find the Object', 'ready']]],
@@ -198,6 +202,8 @@ describe('the minigame list', () => {
           ['Firefly Catch', 'ready'],
           ['Size Up', 'ready'],
           ['Fly Swatter', 'ready'],
+          ['Fly Block', 'ready'],
+          ['Squirrel Theft', 'ready'],
         ],
       ],
       ['Guess and luck', [['Raccoon Shuffle', 'ready']]],
@@ -384,13 +390,13 @@ describe('the minigame list', () => {
     const grid = PICTURE_PUZZLE.settings.find((x) => x.id === 'grid');
     if (grid?.kind !== 'pick') throw new Error('Grid is a pick');
     expect(grid.options.map((o) => o.id)).toEqual(['auto', '4', '5', '6']);
-    expect(ids(THIN_ICE)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
-    expect(defaultSettings(THIN_ICE)).toMatchObject({
+    expect(ids(MINEFIELD)).toEqual(['tier', 'hikers', 'grid', 'holesPerHiker', 'timer']);
+    expect(defaultSettings(MINEFIELD)).toMatchObject({
       grid: 'auto',
       holesPerHiker: 2,
       timer: 'auto',
     });
-    expect(PICTURE_PUZZLE.lineUp && THIN_ICE.lineUp).toBe(true);
+    expect(PICTURE_PUZZLE.lineUp && MINEFIELD.lineUp).toBe(true);
     expect(TRAIL_MAP.lineUp || MEMORY.lineUp).toBeFalsy();
     // Off is kept where a setting can be off, and nowhere else.
     expect(cleanSettings(TRAIL_MAP, { time: 'off', grid: 'off' }, TEST_HIKERS)).toMatchObject({
@@ -410,10 +416,12 @@ describe('the minigame list', () => {
       missCost: 'auto',
     });
     expect(cleanSettings(TRAIL_MAP, { signs: 5 }, TEST_HIKERS).signs).toBe(3);
-    expect(cleanSettings(THIN_ICE, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject({
-      grid: '12x9',
-      holesPerHiker: 4,
-    });
+    expect(cleanSettings(MINEFIELD, { grid: '12x9', holesPerHiker: 9 }, TEST_HIKERS)).toMatchObject(
+      {
+        grid: '12x9',
+        holesPerHiker: 4,
+      },
+    );
   });
 
   it('the puzzle games: Tier (I to V), Hikers, and their overrides, where Auto uses the tier', () => {
@@ -453,10 +461,11 @@ describe('the minigame list', () => {
     for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
     }
-    // Dodge: Animal, Attack, Overlaps, Level, Include Claude's ideas, Show hitboxes, Portrait
+    // Dodge: Animal, Version (the Eagle only), Attack, Overlaps, Level, Include Claude's ideas, Show hitboxes, Portrait
     // style and motion, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
     expect(ids(DODGE)).toEqual([
       'animal',
+      'eagleVersion',
       'attack',
       'overlaps',
       'level',
@@ -494,7 +503,7 @@ describe('the minigame list', () => {
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
-  it('Dodge’s Animal and Attack: nine animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
+  it('Dodge’s Animal and Attack: twelve animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
     const animal = DODGE.settings.find((s) => s.id === 'animal');
     const attack = DODGE.settings.find((s) => s.id === 'attack');
     if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
@@ -508,8 +517,11 @@ describe('the minigame list', () => {
       'Squirrel Army',
       'Bear with a Gun',
       'Ants',
+      'Eagle',
       'Wild Predator Stampede',
       'Woods Monster',
+      'Snow Leopard',
+      'Abominable Snowgirl',
     ]);
     expect(animal.menu && attack.menu).toBe(true);
     // Nov 26: their attacks in the picker, Claude's ideas marked.

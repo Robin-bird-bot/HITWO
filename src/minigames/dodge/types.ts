@@ -16,6 +16,8 @@
  */
 import type { RngState } from '../../engine/types';
 import type { AntPart } from './attacks/ants';
+import type { EaglePart } from './attacks/eagle';
+import type { SnowPart } from './attacks/snow';
 import type { ClaudePart } from './attacks/claudesIdeas';
 import type { GunPart } from './attacks/gunBear';
 import type { MonsterPart } from './attacks/monster';
@@ -36,11 +38,20 @@ export type AnimalId =
   | 'squirrels'
   | 'gunBear'
   | 'ants'
+  | 'eagle'
   | 'stampede'
-  | 'monster';
+  | 'monster'
+  | 'snowLeopard'
+  | 'snowgirl';
 
-/** Who's attacking: an animal (never the Stampede itself), or the Stampede's own moose herd. */
-export type Attacker = Exclude<AnimalId, 'stampede'> | 'herd';
+/** The Eagle's versions, by level (23-minigames-final.md, section 9.1). */
+export type EagleVersion = 'eagle' | 'toupeeEagle' | 'freeagle';
+
+/**
+ * Who's attacking: an animal (never the Stampede itself), the Stampede's
+ * own moose herd, or one of the Eagle's later versions.
+ */
+export type Attacker = Exclude<AnimalId, 'stampede'> | 'herd' | Exclude<EagleVersion, 'eagle'>;
 
 export type AttackId =
   // Bees
@@ -95,7 +106,25 @@ export type AttackId =
   | 'fireAnts'
   | 'antHill'
   | 'leafcutter'
-  | 'crumbRush';
+  | 'crumbRush'
+  // The Eagle (Nov 26, third round)
+  | 'swoop'
+  | 'featherFall'
+  | 'talonDrop'
+  | 'wingGust'
+  | 'hairToss'
+  | 'combOver'
+  | 'oilBarrels'
+  // The snow animals
+  | 'leopardPounce'
+  | 'prowl'
+  | 'tailSweep'
+  | 'snowKick'
+  | 'snowballs'
+  | 'icicles'
+  | 'antlerCharge'
+  | 'shakeOff'
+  | 'avalanche';
 
 /**
  * What an attack does to the box (design section 6, "Pacing and overlaps"):
@@ -315,7 +344,9 @@ export type Part =
   | ClaudePart
   | MonsterPart
   | GunPart
-  | AntPart;
+  | AntPart
+  | EaglePart
+  | SnowPart;
 
 export type PartKind = Part['kind'];
 
@@ -361,6 +392,10 @@ export interface PartRules<P extends Part> {
   damage?(p: P): number;
   /** What a hit does to it (a trap snaps shut), and how long the sprite is slowed. */
   onHit?(p: P, w: World): { part: P; slowSec?: number };
+  /** Where the floor is slippery (Freeagle's oil puddles): the sprite slides on ice there. */
+  slippery?(p: P, w: World): Shape[];
+  /** A push on the sprite now (units/s; Wing Gust), or none. */
+  push?(p: P, w: World): Point | null;
 }
 
 /** An animal's tweaks to an attack it shares (Bobcat claws are faster with a shorter warning). */
@@ -498,6 +533,15 @@ export interface DodgeState {
   fewerBees: number;
   antSlow: number;
   sandbags: boolean;
+  /**
+   * Ice physics (23-minigames-final.md, section 9.4): the sprite's speed,
+   * whether the whole box is ice (the snow animals), and the friction there
+   * (GRIP doubles it). The Eagle's version, which sets his attacks.
+   */
+  vel: Point;
+  ice: boolean;
+  friction: number;
+  eagle: EagleVersion;
   /** Each hiker's hearts at the start (Prepare's +1 HEART adds to one hiker's). */
   startLives: Record<string, number>;
   /** The last hit, for the screen ("FINN −1"), and the hearts it cost. */

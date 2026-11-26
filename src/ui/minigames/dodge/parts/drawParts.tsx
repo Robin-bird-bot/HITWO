@@ -6,6 +6,8 @@ import { Fragment, type ReactNode } from 'react';
 import type { Part } from '../../../../minigames/dodge/logic';
 import { ANT_DRAW } from './AntParts';
 import { CLAUDES_DRAW } from './ClaudesIdeasParts';
+import { EAGLE_DRAW } from './EagleParts';
+import { SNOW_DRAW } from './SnowParts';
 import type { DrawCtx, Layer, PartDrawing } from './drawTypes';
 import { GUN_DRAW } from './GunParts';
 import { MONSTER_DRAW } from './MonsterParts';
@@ -17,6 +19,8 @@ const DRAW = {
   ...MONSTER_DRAW,
   ...GUN_DRAW,
   ...ANT_DRAW,
+  ...EAGLE_DRAW,
+  ...SNOW_DRAW,
 } satisfies { [K in Part['kind']]: unknown } as Record<Part['kind'], PartDrawing<Part>>;
 
 /**

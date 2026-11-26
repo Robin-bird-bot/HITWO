@@ -40,9 +40,11 @@ import { isTier, type MinigameResult } from '../types';
 import {
   attackChoices,
   boxFor,
+  eagleVersionFor,
   isAnimal,
   pool,
   rankFor,
+  SNOW_ANIMALS,
   type LevelPick,
   type PoolEntry,
   type Rank,
@@ -60,6 +62,7 @@ import type {
   Block,
   BoxMove,
   DodgeState,
+  EagleVersion,
   Level,
   Part,
   Round,
@@ -67,7 +70,16 @@ import type {
   World,
 } from './types';
 
-export type { AnimalId, AttackId, Attacker, DodgeState, Level, Part, Tier } from './types';
+export type {
+  AnimalId,
+  AttackId,
+  Attacker,
+  DodgeState,
+  EagleVersion,
+  Level,
+  Part,
+  Tier,
+} from './types';
 export type { LevelPick, Rank } from './animals';
 export type { Box } from './geometry';
 export type { Point, Shape } from './shapes';
@@ -104,6 +116,9 @@ export interface DodgeOptions {
   shorter?: number;
   sandbags?: boolean;
   antSlow?: number;
+  /** The Eagle's version (the testing tab's Version: Auto follows the level), and GRIP (half as slippery). */
+  eagleVersion?: 'auto' | EagleVersion;
+  grip?: boolean;
 }
 
 const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
@@ -169,6 +184,10 @@ export function newDodge(
   const ideas = options.ideas ?? true;
   const hudTier: Tier = isTier(options.tier) ? options.tier : 1;
   const rank = rankFor(animal, hudTier, options.level);
+  const version: EagleVersion =
+    options.eagleVersion && options.eagleVersion !== 'auto'
+      ? options.eagleVersion
+      : eagleVersionFor(rank);
   // The Woods Monster's boss boost only comes at Tier V.
   const boost = animal === 'monster' && hudTier === 5;
   const lives = Math.max(1, Math.round(orAuto(options.lives, D.lives)));
@@ -176,10 +195,10 @@ export function newDodge(
   const wanted = options.attack ?? 'all';
   const only =
     wanted !== 'all' &&
-    attackChoices(animal, rank, ideas, hudTier).some((c) => c.id === wanted && c.unlocked)
+    attackChoices(animal, rank, ideas, hudTier, version).some((c) => c.id === wanted && c.unlocked)
       ? wanted
       : 'all';
-  const first: Attacker = animal === 'stampede' ? 'herd' : animal;
+  const first: Attacker = animal === 'stampede' ? 'herd' : animal === 'eagle' ? version : animal;
   const box = boxFor(first);
   const switchSec = orAuto(options.switchSec, D.switchSec);
   const t = D.tiers[hudTier];
@@ -205,6 +224,10 @@ export function newDodge(
     fewerBees: Math.max(0, Math.round(options.fewerBees ?? 0)),
     antSlow: Math.max(0, Math.min(0.8, options.antSlow ?? 0)),
     sandbags: options.sandbags ?? false,
+    vel: { x: 0, y: 0 },
+    ice: SNOW_ANIMALS.includes(animal),
+    friction: D.ice.friction * (options.grip ? D.ice.grip : 1),
+    eagle: version,
     overlapChance,
     maxAtOnce: cap + (boost ? B.maxAtOnce : 0),
     only,
@@ -234,7 +257,7 @@ export function newDodge(
     history: [],
     nextAttackAt: D.firstAttackSec,
     starts: [],
-    showing: animal === 'stampede' ? [] : [animal],
+    showing: animal === 'stampede' ? [] : [first],
     nextId: 1,
     roundNo: 1,
     shrunkFor: 0,
@@ -304,6 +327,32 @@ export const inHoney = (s: DodgeState): boolean =>
 /** Whether a sprung bear trap has the sprite slowed now. */
 export const slowed = (s: DodgeState): boolean => s.time < s.slowUntil;
 
+/**
+ * Whether the sprite slides on ice now (23-minigames-final.md, section
+ * 9.4): the snow animals' whole box, or inside one of Freeagle's oil puddles.
+ */
+export function onIce(s: DodgeState): boolean {
+  if (s.ice) return true;
+  const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
+  return s.parts.some((p) =>
+    rulesFor(p)
+      .slippery?.(p, w)
+      .some((sh) => touches(sh, s.pos, 0)),
+  );
+}
+
+/** Any push on the sprite now (Wing Gust), in units a second. */
+function pushNow(s: DodgeState): Point {
+  const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
+  return s.parts.reduce(
+    (acc, p) => {
+      const v = rulesFor(p).push?.(p, w);
+      return v ? { x: acc.x + v.x, y: acc.y + v.y } : acc;
+    },
+    { x: 0, y: 0 },
+  );
+}
+
 /** Every circle the sprite can't enter now (holes, the Ant Hill). */
 export function blocksNow(s: DodgeState): Block[] {
   const w = worldOf(s, 0, [...s.rng] as RngState, { next: s.nextId });
@@ -354,7 +403,9 @@ function fits(s: DodgeState, e: PoolEntry): boolean {
  * animal that isn't attacking yet when one fits.
  */
 function pick(s: DodgeState, rng: RngState): PoolEntry | undefined {
-  const all = pool(s.animal, rankOf(s), s.ideas, s.only, s.hudTier).filter((e) => fits(s, e));
+  const all = pool(s.animal, rankOf(s), s.ideas, s.only, s.hudTier, s.eagle).filter((e) =>
+    fits(s, e),
+  );
   if (!all.length) return undefined;
   const last = s.history.at(-1);
   const recent = s.history.slice(-D.stampede.maxSameAnimal).map((h) => h.attacker);
@@ -559,13 +610,30 @@ export function step(s0: DodgeState, dt: number, input: Point): DodgeState {
   // stays inside, and keeps out of holes and the Ant Hill.
   s.box = boxAt(s.boxMove, s.time);
   const len = Math.hypot(input.x, input.y);
-  const k =
-    (len > 1 ? 1 / len : 1) * (inHoney(s) ? D.honey.slow : 1) * (slowed(s) ? D.gun.traps.slow : 1);
-  s.pos = keepOut(
-    { x: s.pos.x + input.x * k * D.moveSpeed * dt, y: s.pos.y + input.y * k * D.moveSpeed * dt },
-    effectiveBox(s),
-    blocksNow(s),
-  );
+  const dir = len > 1 ? { x: input.x / len, y: input.y / len } : input;
+  const top = D.moveSpeed * (inHoney(s) ? D.honey.slow : 1) * (slowed(s) ? D.gun.traps.slow : 1);
+  // On ice the sprite speeds up and slides (section 9.4); elsewhere it goes where it's steered.
+  let vel: Point;
+  if (onIce(s)) {
+    if (len > 0.01) {
+      const v = { x: s.vel.x + dir.x * D.ice.accel * dt, y: s.vel.y + dir.y * D.ice.accel * dt };
+      const most = top * Math.min(1, len);
+      const speed = Math.hypot(v.x, v.y);
+      vel = speed > most ? { x: (v.x / speed) * most, y: (v.y / speed) * most } : v;
+    } else {
+      const f = Math.exp(-s.friction * dt);
+      vel = { x: s.vel.x * f, y: s.vel.y * f };
+    }
+  } else {
+    vel = { x: dir.x * top, y: dir.y * top };
+  }
+  const push = pushNow(s);
+  const want = { x: s.pos.x + (vel.x + push.x) * dt, y: s.pos.y + (vel.y + push.y) * dt };
+  s.pos = keepOut(want, effectiveBox(s), blocksNow(s));
+  // It stops at the walls: the speed into a wall is gone.
+  if (Math.abs(s.pos.x - want.x) > 1e-6) vel = { ...vel, x: 0 };
+  if (Math.abs(s.pos.y - want.y) > 1e-6) vel = { ...vel, y: 0 };
+  s.vel = vel;
 
   // The next attack, when it's due.
   s = schedule(s, rng);

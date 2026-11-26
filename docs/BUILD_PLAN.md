@@ -1730,7 +1730,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Eve
 
 **Tests:** as in `20`, section 8, `21`, section 9, and the new Raccoon Shuffle lines in `18`, section 9.
 
-### Phase 10.8, step 10: The challenge pop-up, version 3, and game revisions
+### Phase 10.8, step 10: The challenge pop-up, version 3, and game revisions (done)
 
 (New in the Nov 26 second-round update: `docs/UPDATE-2026-11-26-popup-v3.md`. The designs are `docs/design/20-challenge-popup.md` (version 3, replaces version 2) and the new `22-minigame-revisions.md`. The pop-up's reference is the version 3 prototype: `docs/mockups/minigames/challenge-popup/prototype.html`, with `v3-*.png` screenshots. New mockups in `revisions-nov-26/`. New art: Raccoon Shuffle's wider card, Rock Climb's climber body and hands, and the arming bear trap.)
 
@@ -1753,11 +1753,28 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Eve
 
 **Tests:** as in `20`, section 8, and `22`, section 6.
 
+### Phase 10.8, step 11: The last minigame batch
+
+(New in the Nov 26 third-round update: `docs/UPDATE-2026-11-26-final-games.md`. The design is the new `docs/design/23-minigames-final.md`, with mockups in `docs/mockups/minigames/final-games/`. Builds on step 10's pop-up.)
+
+**Goal:** Wyatt's final games before they go onto the trail map. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Rules marked *(Claude's idea)* in `23` are Claude's.
+
+**Build**
+1. **Minefield:** rename Thin Ice to Minefield (the Dog Waste Zone), with the same rules and new art and words.
+2. **The new Thin Ice:** cross the ice; the ice cracks behind each hiker, so each needs a new way across.
+3. **Six new games,** one at a time, each with logic and tests, a screen, a demo bot, a catalog entry and testing-tab settings: Sketchy Bridge, Falling Rocks, Fly Block, Squirrel Theft, Birdsong and Pack It Up.
+4. **Dodge:** ice physics; the Eagle with his three versions (Eagle, Toupeeagle, Freeagle); the Snow Leopard and the Snowgirl.
+5. **Pop-up content** for every new game and animal (`23`, section 10).
+
+**Dropped for now:** Frost Fire, and the Knowledge category (trivia).
+
+**Tests:** as in `23`, section 13.
+
 ### Phase 10.8, next steps (outline only)
 
-- Step 4: Sketchy Bridge and Falling Rocks (Rock Climb moved up to step 3).
-- More minigames, added to the testing tab one at a time.
-- Then hooking minigames into real challenges, with Prepare and stakes.
+- Hooking minigames into real challenges on the trail map, with Prepare and stakes.
 
 ---
 
