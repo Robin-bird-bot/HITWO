@@ -2773,6 +2773,43 @@ export const BALANCE = {
     },
 
     /**
+     * Fly Block (23-minigames-final.md, section 3), Tempest-style. By tier:
+     * panels around the pie, the flies' speed (units/s), flies a round, and
+     * a fly every so often (seconds). A lane runs this far out from the ring
+     * (my guess, from the screen). Each hiker can take this many bites. The
+     * first fly comes this long into a round (my guess). Fast flies (from
+     * Tier II) are this much faster; zig-zag flies (from Tier III) blink this
+     * long before they hop; horseflies (from Tier IV) are knocked back this
+     * far by the first swat; bees (from Tier III) come along this often a
+     * fly, a little slower (both my guesses). The share of each kind, and
+     * how often a few come at once late in a round, are my guesses. SMOKE
+     * takes this many flies off a round. Holding a key moves the swatter
+     * this often.
+     * TODO(wyatt): [8, 10, 12, 12, 16], [30–54], [12–20], [1.1–0.7 s], [3], [1.6×], [30], [3], [0.12 s].
+     */
+    flyBlock: {
+      tiers: {
+        1: { panels: 8, speed: 30, flies: 12, everySec: 1.1 },
+        2: { panels: 10, speed: 36, flies: 14, everySec: 1.0 },
+        3: { panels: 12, speed: 42, flies: 16, everySec: 0.9 },
+        4: { panels: 12, speed: 48, flies: 18, everySec: 0.8 },
+        5: { panels: 16, speed: 54, flies: 20, everySec: 0.7 },
+      } as Readonly<
+        Record<MgTier, { panels: number; speed: number; flies: number; everySec: number }>
+      >,
+      laneLength: 110,
+      bites: 3,
+      firstSec: 1,
+      fast: { from: 2, share: 0.25, times: 1.6 },
+      zig: { from: 3, share: 0.2, blinkSec: 0.3 },
+      horse: { from: 4, share: 0.15, knockBack: 30 },
+      bee: { from: 3, chance: 0.2, times: 0.8 },
+      together: { chance: 0.3, count: 2 },
+      smoke: 3,
+      repeatSec: 0.12,
+    },
+
+    /**
      * Falling Rocks (23-minigames-final.md, section 2), side view. The trail
      * is this long; hikers walk at this speed and back up at this one. The
      * overhangs (centers and half-widths on the trail) match slope.png. By

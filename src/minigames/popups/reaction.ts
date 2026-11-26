@@ -5,7 +5,7 @@
  * Swatter and Raccoon Shuffle.
  */
 import { BALANCE } from '../../config/balance';
-import { FOOD, item, prepNumber, res } from '../prepare';
+import { FOOD, group, item, prepNumber, res } from '../prepare';
 import { newRaccoonShuffle } from '../raccoonShuffle/logic';
 import { VERSIONS as BLOCK_VERSIONS } from '../trailBlocks/logic';
 import type { MinigameSettings } from '../types';
@@ -26,10 +26,12 @@ import {
   OR,
   P_,
   phrases,
+  plusFor,
   plusSecOpt,
   rulesOf,
   seconds,
   slowerOpt,
+  slowerShare,
   tapRow,
   tierIn,
   timeBar,
@@ -587,6 +589,83 @@ export const FLY_SWATTER_POPUP: GamePopup = {
       {
         max: 2,
       },
+    ),
+  ],
+};
+
+// ── Fly Block (23-minigames-final.md, section 10) ──────────────────────────
+
+const FLB = MG.flyBlock;
+const flyBees = (s: MinigameSettings) =>
+  s.bees === 'on' ? true : s.bees === 'off' ? false : tierIn(s) >= FLB.bee.from;
+
+export const FLY_BLOCK_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      `Flies are coming for the pie. Move the swatter around the ring, one panel at a time, and block each fly in its lane. **A fly that gets through takes a bite:** ${FLB.bites} bites and that hiker fails.`,
+    ),
+  rules: (s) =>
+    rulesOf(
+      tierIn(s) >= FLB.fast.from && line('Some flies are fast.', fromTier(2)),
+      tierIn(s) >= FLB.zig.from && line('Some hop to the next lane on the way in.', fromTier(3)),
+      flyBees(s) &&
+        line(
+          'Let the bees by: blocking one is a sting.',
+          tierIn(s) >= FLB.bee.from ? fromTier(3) : undefined,
+        ),
+      tierIn(s) >= FLB.horse.from && line('Horseflies take two swats.', fromTier(4)),
+    ),
+  controls: [
+    {
+      action: 'MOVE',
+      inputs: [
+        ...key('A', 'D'),
+        OR,
+        ...key('←', '→'),
+        OR,
+        finger('Swipe'),
+        OR,
+        finger('Tap a side'),
+      ],
+    },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: FAIL_ENERGY,
+  bars(s) {
+    const t = FLB.tiers[tierIn(s)];
+    const panels = numOr(s, 'panels', t.panels);
+    const slow = 1 - slowerShare(prepNumber(s, P_('slower')));
+    return [
+      countBar(
+        'speed',
+        'FLY SPEED',
+        t.speed,
+        Math.round(t.speed * slow),
+        mostOver((x) => FLB.tiers[x].speed),
+      ),
+      countBar(
+        'flies',
+        'FLIES',
+        t.flies,
+        Math.max(1, t.flies - prepNumber(s, P_('smoke'))),
+        mostOver((x) => FLB.tiers[x].flies),
+      ),
+      countBar('panels', 'PANELS', panels, panels, 16),
+    ];
+  },
+  perHiker: () => ({ label: 'BITES', kind: 'pips', base: FLB.bites, param: P_('bites'), step: 1 }),
+  options: () => [
+    plusFor('BITE ALLOWED', '+1', 'bites'),
+    slowerOpt('SLOWER FLIES', 'green', 'the flies slow down'),
+    opt(
+      'smoke',
+      'red',
+      group('forest'),
+      `−${FLB.smoke} FLIES`,
+      `−${FLB.smoke}`,
+      'smoke keeps some away',
+      { param: P_('smoke'), step: FLB.smoke },
+      { title: 'SMOKE', need: 2 },
     ),
   ],
 };

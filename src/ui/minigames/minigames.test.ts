@@ -200,6 +200,7 @@ describe('the minigame list', () => {
           ['Firefly Catch', 'ready'],
           ['Size Up', 'ready'],
           ['Fly Swatter', 'ready'],
+          ['Fly Block', 'ready'],
         ],
       ],
       ['Guess and luck', [['Raccoon Shuffle', 'ready']]],

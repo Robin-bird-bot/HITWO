@@ -54,6 +54,14 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
   picturePuzzle: (
     <path d="M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 1 0-4z" />
   ),
+  // A pie in a ring of panels, with lanes running out.
+  flyBlock: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="7" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M5 19l2-2" />
+    </>
+  ),
   // A rock falling onto a ledge, with its shadow.
   fallingRocks: (
     <>

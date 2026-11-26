@@ -1264,6 +1264,47 @@ export const FALLING_ROCKS: MinigameInfo = {
   ],
 };
 
+// ── Fly Block (docs/design/23-minigames-final.md, section 3) ──
+
+const FLK = BALANCE.minigames.flyBlock;
+
+export const FLY_BLOCK: MinigameInfo = {
+  id: 'flyBlock',
+  name: 'Fly Block',
+  baseGame: 'Tempest',
+  category: 'reaction',
+  description:
+    'Move the swatter around the ring and block each fly in its lane before it bites the pie.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'panels',
+      'Panels',
+      8,
+      16,
+      FLK.tiers[1].panels,
+      '',
+      2,
+      byTier((t) => FLK.tiers[t].panels),
+    ),
+    {
+      kind: 'pick',
+      id: 'bees',
+      label: 'Bees',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'auto',
+      hint: `Auto: from Tier ${TIER_LABELS[FLK.bee.from as Tier]}`,
+    },
+  ],
+};
+
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
 const CC = BALANCE.minigames.campCleanup;
@@ -1350,6 +1391,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FIREFLY_CATCH,
   SIZE_UP,
   FLY_SWATTER,
+  FLY_BLOCK,
   RACCOON_SHUFFLE,
 ];
 

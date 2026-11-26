@@ -134,7 +134,12 @@ describe('cost cards', () => {
     const card = cardsFor([hat], {}, 3)[0]!;
     expect(card.slots).toBe(1);
     const fills: Fills = {
-      'hat:0': { hiker: 'mom', thing: { kind: 'item', id: 'hardhat' }, effect: 'hat', target: 'finn' },
+      'hat:0': {
+        hiker: 'mom',
+        thing: { kind: 'item', id: 'hardhat' },
+        effect: 'hat',
+        target: 'finn',
+      },
     };
     expect(effectOpen(hat, fills, ORDER)).toBe(false);
     expect(effectOpen(hat, {}, ORDER)).toBe(true);
