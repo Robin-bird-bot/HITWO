@@ -1417,12 +1417,44 @@ export const BALANCE = {
       freezeSec: 1,
       /**
        * The tools (Nov 25, Wyatt's sprites, no arm): the active hiker's color
-       * laid over the whole tool at this share. The axe slides to the other
-       * hand this fast; a cleared tree tips over this fast.
+       * laid over the whole tool at this share. A cleared tree tips over this fast.
        */
       wash: 0.3,
-      axeSlideSec: 0.1,
       tipSec: 0.6,
+      /**
+       * Chop Tree's axe (third pass): it slides down out of view after the
+       * marker turns, and up on the other side once it crosses the middle;
+       * each slide takes this long, or this share of the pass if that's
+       * shorter. The chop: raise, chop-1, chop-2 (the hit), then back to ready.
+       */
+      axeSlideSec: 0.2,
+      axeSlideShare: 0.2,
+      chopSec: { raise: 0.08, chop1: 0.04, chop2: 0.12, back: 0.15 },
+      /**
+       * Clearing Animals' whistle (third pass): 160 × 160 frames at (172, 44),
+       * the mouthpiece at (138, 140) in every frame. A good whistle leans
+       * toward the ring (the closest of these directions, in degrees, 90 up
+       * and 180 left) and moves this far toward it for this long, then eases
+       * back over `backSec`. A whiff shakes it this far for this long. Each
+       * lean frame's chamber end (where the waves start), measured from the art.
+       */
+      whistle: {
+        x: 172,
+        y: 44,
+        mouth: { x: 138, y: 140 },
+        leans: [105, 125, 145, 165] as const,
+        chamber: {
+          105: { x: 129, y: 3 },
+          125: { x: 85, y: 13 },
+          145: { x: 47, y: 37 },
+          165: { x: 15, y: 77 },
+        } as Readonly<Record<105 | 125 | 145 | 165, { x: number; y: number }>>,
+        move: 6,
+        leanSec: 0.35,
+        backSec: 0.2,
+        shake: 1,
+        shakeSec: 0.2,
+      },
       /**
        * Chop Tree (Nov 25, after Wyatt played it): each pass of the marker
        * across the bar takes a random time from the tier's range, picked
@@ -1463,7 +1495,8 @@ export const BALANCE = {
         ring: { x: 160, y: 64, r: 26 },
         area: { x: [50, 270] as const, y: [44, 150] as const },
         hudBottom: 22,
-        tool: { x: 252, y: 75, w: 68, h: 113 },
+        // The whistle at rest (third pass): its frame's visible area.
+        tool: { x: 237, y: 51, w: 75, h: 135 },
         startScale: 2.2,
         shrinkSec: { 1: 1.5, 2: 1.2, 3: 1.0, 4: 0.9, 5: 0.8 } as Readonly<Record<MgTier, number>>,
         thickness: { 1: 10, 2: 8, 3: 6, 4: 5, 5: 4 } as Readonly<Record<MgTier, number>>,
@@ -1562,6 +1595,12 @@ export const BALANCE = {
       skunksOn: 0.15,
       failEnergy: 1,
       donePauseSec: 0.5,
+      /**
+       * The mallet (third pass): Wyatt's hammer, 35 × 37 at the cans' scale.
+       * The pointer is at this spot on it (the head's flat face in
+       * `mallet-whack`; adjust by eye), and a click swings it this long.
+       */
+      mallet: { w: 35, h: 37, hotX: 11, hotY: 29, swingSec: 0.15 },
     },
 
     /*
@@ -1743,6 +1782,609 @@ export const BALANCE = {
       /** The first rocks start this far ahead, and the course stops this far before the dock (my guesses). */
       startClear: 140,
       endClear: 80,
+    },
+
+    /*
+     * The quick games (Phase 10.8 step 8, docs/design/18-minigames-quick.md):
+     * Trail Blazes, Firefly Catch, Size Up, Safari, Fly Swatter and Raccoon
+     * Shuffle. None is a passing challenge: each hiker passes or fails on
+     * their own. TODO(wyatt): every number is a first guess, by game and tier.
+     */
+    quick: {
+      /** A hiker who fails loses this much energy (Raccoon Shuffle: the raccoon steals instead). */
+      failEnergy: 1,
+      /** Between one hiker's turn and the next ("MOM, YOUR TURN"; my guess). */
+      handoffSec: 1,
+      /** After the last turn, the last frame stays up this long before the end screen (my guess). */
+      endPauseSec: 1,
+    },
+
+    /**
+     * Trail Blazes: two trunks scroll past each other (left up, right down);
+     * tap when the lit blazes are level. By tier: pairs per hiker, "level"
+     * (the centers within this many units), each trunk's speed (units a
+     * second), how much each pair changes the speeds (±share; 0: never), a
+     * wobble while they approach (±share), tries, and the Clock mode's clock.
+     */
+    trailBlazes: {
+      tiers: {
+        1: { pairs: 4, level: 8, speed: 30, change: 0, wobble: 0, tries: 3, clockSec: 25 },
+        2: { pairs: 5, level: 7, speed: 34, change: 0, wobble: 0, tries: 3, clockSec: 25 },
+        3: { pairs: 6, level: 6, speed: 38, change: 0.25, wobble: 0, tries: 3, clockSec: 25 },
+        4: { pairs: 6, level: 5, speed: 42, change: 0.3, wobble: 0, tries: 3, clockSec: 22 },
+        5: { pairs: 7, level: 4, speed: 46, change: 0.3, wobble: 0.15, tries: 3, clockSec: 20 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            pairs: number;
+            level: number;
+            speed: number;
+            change: number;
+            wobble: number;
+            tries: number;
+            clockSec: number;
+          }
+        >
+      >,
+      /** The trunks' left edges (scene x) and width, and the blazes' spacing on them. */
+      trunkX: [96, 180] as const,
+      trunkW: 44,
+      blazeGap: 30,
+      /** A new lit pair starts this far apart (units), heading toward each other. */
+      startApart: [80, 140] as const,
+      /** Where a lit pair can start (scene y of the blazes' centers; my guess: on screen, clear of the HUD). */
+      litY: [34, 186] as const,
+      /** A match's line shows this long. In Clock mode, a miss costs this much. */
+      matchLineSec: 0.4,
+      missCostSec: 2,
+      /** The Tier V wobble's period (my guess). */
+      wobbleSec: 1.1,
+    },
+
+    /**
+     * Firefly Catch: tap when the bouncing firefly is inside the jar ring.
+     * By tier: catches needed, seconds per hiker, the ring (across, units),
+     * the firefly's speed and the ring's drift (units a second), what a miss
+     * costs (seconds), and how long the firefly goes dark (0: never).
+     */
+    fireflyCatch: {
+      tiers: {
+        1: { catches: 3, timeSec: 15, ring: 30, speed: 60, drift: 12, missSec: 0, darkSec: 0 },
+        2: { catches: 3, timeSec: 15, ring: 26, speed: 75, drift: 20, missSec: 1, darkSec: 0 },
+        3: { catches: 3, timeSec: 15, ring: 22, speed: 90, drift: 30, missSec: 1, darkSec: 0.4 },
+        4: { catches: 3, timeSec: 15, ring: 19, speed: 100, drift: 40, missSec: 1, darkSec: 0.5 },
+        5: { catches: 3, timeSec: 15, ring: 16, speed: 110, drift: 45, missSec: 1, darkSec: 0.6 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            catches: number;
+            timeSec: number;
+            ring: number;
+            speed: number;
+            drift: number;
+            missSec: number;
+            darkSec: number;
+          }
+        >
+      >,
+      /** The play area (scene units). */
+      box: { left: 38, right: 282, top: 30, bottom: 192 },
+      /** Every so often (seconds, from–to), the firefly's heading wobbles by up to this much (degrees). */
+      wobbleEverySec: [0.5, 1] as const,
+      wobbleDeg: 20,
+      /** It goes dark every so often (seconds, from–to). A new one starts at least this far from the ring. */
+      darkEverySec: [1.5, 2.5] as const,
+      newAway: 60,
+      /** A caught firefly flies down to the jar over this long (my guess). */
+      toJarSec: 0.45,
+    },
+
+    /**
+     * Size Up: grow or shrink a find to match the field guide's sketch. By
+     * tier: each step (a share of the sketch's size), passing (within this
+     * many percent), seconds per hiker, how it's turned, and how many finds
+     * (the first four, or all six).
+     */
+    sizeUp: {
+      tiers: {
+        1: { step: 0.04, pass: 8, timeSec: 12, turn: 'upright', finds: 4 },
+        2: { step: 0.03, pass: 6, timeSec: 10, turn: 'any', finds: 4 },
+        3: { step: 0.02, pass: 5, timeSec: 9, turn: 'mirror', finds: 6 },
+        4: { step: 0.015, pass: 4, timeSec: 8, turn: 'mirror', finds: 6 },
+        5: { step: 0.01, pass: 3, timeSec: 7, turn: 'mirror', finds: 6 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            step: number;
+            pass: number;
+            timeSec: number;
+            turn: 'upright' | 'any' | 'mirror';
+            finds: number;
+          }
+        >
+      >,
+      /** The sketch is drawn at this many times its art's size (from–to), new each turn. */
+      sketchScale: [2.5, 3.5] as const,
+      /** The find starts this far off the sketch's size (a share, from–to), bigger or smaller. */
+      startOff: [0.2, 0.4] as const,
+      /** "Sometimes mirrored" (my guess), and how far the size can go (a share of the sketch's; my guess). */
+      mirrorChance: 0.5,
+      ratio: [0.4, 1.8] as const,
+      /** Holding repeats every `repeatSec` after `holdSec`. The reveal lasts this long. */
+      holdSec: 0.35,
+      repeatSec: 0.1,
+      revealSec: 1.5,
+    },
+
+    /**
+     * Safari: watch animals come down a hillside, then answer a question
+     * together (two with 3 or more hikers). By tier: the watch (seconds),
+     * animals that come (± `animalsSpread`), kinds in a run, the most on
+     * screen at once, the time to walk down (seconds, from–to, for the
+     * middle kinds), answer signs, the chances of night, fog and Bigfoot,
+     * the gap between number signs, and what they do (chances per animal;
+     * my guesses for "+ stop, herds" and "all, more often").
+     */
+    safari: {
+      tiers: {
+        1: {
+          watchSec: 15,
+          animals: 8,
+          kinds: 3,
+          maxOnScreen: 3,
+          walkSec: [5, 8],
+          signs: 3,
+          night: 0,
+          fog: 0,
+          bigfoot: 0,
+          numberGap: 2,
+          does: { stop: 0, herd: 0, birds: false, turnBack: 0, hide: 0 },
+        },
+        2: {
+          watchSec: 18,
+          animals: 10,
+          kinds: 4,
+          maxOnScreen: 4,
+          walkSec: [4.5, 7],
+          signs: 4,
+          night: 0,
+          fog: 0,
+          bigfoot: 0,
+          numberGap: 1,
+          does: { stop: 0.2, herd: 0.2, birds: true, turnBack: 0, hide: 0 },
+        },
+        3: {
+          watchSec: 20,
+          animals: 12,
+          kinds: 5,
+          maxOnScreen: 5,
+          walkSec: [4, 6.5],
+          signs: 4,
+          night: 0.25,
+          fog: 0,
+          bigfoot: 0.05,
+          numberGap: 1,
+          does: { stop: 0.2, herd: 0.2, birds: true, turnBack: 0.15, hide: 0.15 },
+        },
+        4: {
+          watchSec: 22,
+          animals: 14,
+          kinds: 6,
+          maxOnScreen: 6,
+          walkSec: [3.5, 6],
+          signs: 5,
+          night: 0.25,
+          fog: 0.25,
+          bigfoot: 0.08,
+          numberGap: 1,
+          does: { stop: 0.3, herd: 0.3, birds: true, turnBack: 0.2, hide: 0.2 },
+        },
+        5: {
+          watchSec: 25,
+          animals: 16,
+          kinds: 7,
+          maxOnScreen: 6,
+          walkSec: [3, 5.5],
+          signs: 5,
+          night: 0.25,
+          fog: 0.25,
+          bigfoot: 0.1,
+          numberGap: 1,
+          does: { stop: 0.3, herd: 0.3, birds: true, turnBack: 0.2, hide: 0.2 },
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            watchSec: number;
+            animals: number;
+            kinds: number;
+            maxOnScreen: number;
+            walkSec: readonly [number, number];
+            signs: number;
+            night: number;
+            fog: number;
+            bigfoot: number;
+            numberGap: number;
+            does: {
+              stop: number;
+              herd: number;
+              birds: boolean;
+              turnBack: number;
+              hide: number;
+            };
+          }
+        >
+      >,
+      animalsSpread: 2,
+      /** The fastest kind is at least this much faster than the next; the slowest at most this share of the next. */
+      fastestGap: 1.4,
+      slowestGap: 0.7,
+      /** Herds of this many (from–to); a stop lasts this long (seconds, from–to). */
+      herd: [2, 3] as const,
+      stopSec: [0.6, 1.5] as const,
+      /** Bushes on the hillside, and the last animal comes in at least this long before the watch ends (my guess). */
+      bushes: 3,
+      lastEntrySec: 2,
+      /** Walking frames swap this often. The hillside, top to bottom (scene y). */
+      frameSec: 0.25,
+      top: 22,
+      bottom: 202,
+      /** Night: the beam's width (degrees), how dark the rest is, and how fast keys swing it (degrees a second). */
+      beamDeg: 30,
+      dark: 0.93,
+      keyDegPerSec: 120,
+      /** Fog hides this share of what's behind it. Bigfoot crosses in this long. */
+      fogHide: 0.7,
+      bigfootSec: 2,
+      /**
+       * Birds fly across in this long (seconds, from–to), zigzagging this far
+       * up and down every so often; they're left out of "fastest" and
+       * "slowest" (my guesses).
+       */
+      birdSec: [2.5, 3.5] as const,
+      zigzag: 8,
+      zigzagSec: 0.5,
+      /** Between one group coming in and the next, at least this long (seconds, from–to; my guess). */
+      gapSec: [0.5, 1.2] as const,
+      /** Fog: this many patches, drifting this fast (units a second, from–to; my guesses). */
+      fogPatches: 3,
+      fogDrift: [6, 12] as const,
+    },
+
+    /**
+     * Fly Swatter: tap each circle before it shrinks away and the fly lands.
+     * By tier: flies per hiker, the circle (across, units), the shrink time,
+     * a new circle every so often (seconds), the most up at once, the share
+     * of bee circles, strikes allowed, and whether a tap on nothing is a strike.
+     */
+    flySwatter: {
+      tiers: {
+        1: {
+          flies: 8,
+          circle: 44,
+          shrinkSec: 1.6,
+          everySec: 1.0,
+          maxUp: 1,
+          bees: 0,
+          strikes: 3,
+          stray: false,
+        },
+        2: {
+          flies: 10,
+          circle: 40,
+          shrinkSec: 1.4,
+          everySec: 0.8,
+          maxUp: 2,
+          bees: 0,
+          strikes: 3,
+          stray: false,
+        },
+        3: {
+          flies: 12,
+          circle: 36,
+          shrinkSec: 1.2,
+          everySec: 0.7,
+          maxUp: 3,
+          bees: 0.15,
+          strikes: 3,
+          stray: true,
+        },
+        4: {
+          flies: 14,
+          circle: 32,
+          shrinkSec: 1.0,
+          everySec: 0.6,
+          maxUp: 3,
+          bees: 0.2,
+          strikes: 3,
+          stray: true,
+        },
+        5: {
+          flies: 16,
+          circle: 28,
+          shrinkSec: 0.9,
+          everySec: 0.5,
+          maxUp: 4,
+          bees: 0.25,
+          strikes: 3,
+          stray: true,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            flies: number;
+            circle: number;
+            shrinkSec: number;
+            everySec: number;
+            maxUp: number;
+            bees: number;
+            strikes: number;
+            stray: boolean;
+          }
+        >
+      >,
+      /** Where circles appear (their middles, scene units). */
+      area: { left: 40, right: 280, top: 40, bottom: 180 },
+      /** Wing frames swap this often; the swatter swats this long; a splat stays this long; a sting shakes this long. */
+      frameSec: 0.08,
+      swatSec: 0.15,
+      splatSec: 0.6,
+      shakeSec: 0.3,
+      /** The testing tab's Bees "On" below Tier III uses Tier III's share. */
+      beesOn: 0.15,
+    },
+
+    /*
+     * Signs and trails (Phase 10.8 step 8, docs/design/19-minigames-signs-trails.md):
+     * Fake Trail Signs, Trails, Crossroads and Rock Climb. Trails and Rock
+     * Climb are passing challenges. TODO(wyatt): every number is a first guess.
+     */
+
+    /**
+     * Fake Trail Signs: learn the rules, judge each sign REAL or FAKE; each
+     * round adds a rule. By tier: signs per round, the fewest rules the game
+     * must reach, the most rules, whether old rules are hidden, and whether
+     * a sign's ends can differ.
+     */
+    fakeSigns: {
+      tiers: {
+        1: { signs: 2, min: 2, cap: 3, hideOld: false, mixedEnds: false },
+        2: { signs: 3, min: 2, cap: 4, hideOld: false, mixedEnds: false },
+        3: { signs: 3, min: 3, cap: 4, hideOld: false, mixedEnds: true },
+        4: { signs: 4, min: 3, cap: 5, hideOld: true, mixedEnds: true },
+        5: { signs: 4, min: 4, cap: 6, hideOld: true, mixedEnds: true },
+      } as Readonly<
+        Record<
+          MgTier,
+          { signs: number; min: number; cap: number; hideOld: boolean; mixedEnds: boolean }
+        >
+      >,
+      /** The rules' numbers: names longer than (from–to), names this short or shorter, the number over, must be under or over, the two numbers add up to more or less than. */
+      nameLonger: [4, 6] as const,
+      nameShorter: [4, 5] as const,
+      numberOver: [40, 60] as const,
+      numberMust: [30, 70] as const,
+      sumMust: [6, 11] as const,
+      /** This share of each round's signs are fake (from–to). */
+      fakeShare: [0.4, 0.6] as const,
+      /** Rules are checked against this many random signs, and need at least this many real and fake ones (my guesses). */
+      poolSize: 1500,
+      minOfEach: 3,
+      /** A wrong answer's box shows this long; a right answer's tick this long (my guess). */
+      wrongSec: 2.5,
+      rightSec: 0.4,
+      /** The sign's board: as wide as the text plus this. */
+      boardPad: 6,
+    },
+
+    /**
+     * Trails (a passing challenge): keep your hiker on a trail scrolling
+     * down; one section per hiker, each ending at a checkpoint. By tier:
+     * the scroll speed (units a second), the trail's width, a section's
+     * length, each hiker's off-trail bar (seconds), Switchbacks' corner
+     * spacing and Ridgeline's jog size (from–to).
+     */
+    trails: {
+      tiers: {
+        1: { scroll: 40, width: 56, section: 500, barSec: 3, corner: 150, jog: [16, 24] },
+        2: { scroll: 46, width: 48, section: 600, barSec: 2.5, corner: 130, jog: [20, 28] },
+        3: { scroll: 52, width: 40, section: 700, barSec: 2, corner: 120, jog: [24, 32] },
+        4: { scroll: 58, width: 34, section: 800, barSec: 1.75, corner: 110, jog: [28, 36] },
+        5: { scroll: 64, width: 30, section: 900, barSec: 1.5, corner: 100, jog: [32, 40] },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            scroll: number;
+            width: number;
+            section: number;
+            barSec: number;
+            corner: number;
+            jog: readonly [number, number];
+          }
+        >
+      >,
+      /** The hiker: where (scene y), how far left and right, top speed (units a second) reached in this long. */
+      hikerY: 178,
+      xRange: [24, 296] as const,
+      topSpeed: 130,
+      accelSec: 0.1,
+      /** The trail never moves sideways faster than this share of the hiker's top speed. */
+      fairShare: 0.75,
+      /** By type: Forest Path is this much wider, Ridgeline this much narrower. */
+      forestWide: 1.15,
+      ridgeNarrow: 0.75,
+      /**
+       * The course (my guesses): a straight start this long; Forest Path and
+       * Riverbank bend this far either side; Ridgeline jogs every so often
+       * (units, from–to); the river runs this far from the trail's edge, this wide.
+       */
+      leadIn: 60,
+      bend: 70,
+      jogEvery: [90, 170] as const,
+      river: { gap: 3, width: 40 },
+      /** "<NAME> MADE IT" shows this long (the scroll pauses); after a fail, the next hiker starts this long after. */
+      madeSec: 0.8,
+      handoverSec: 1,
+    },
+
+    /**
+     * Crossroads (Wyatt's "Trailmap"): remember a row of arrows, then walk
+     * them through 4-way crossings. By tier: the arrows. Each step walks out
+     * and in this long; MADE IT shows this long; a press back the way you
+     * came bumps this long (my guesses for the last two).
+     */
+    crossroads: {
+      arrows: { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 } as Readonly<Record<MgTier, number>>,
+      walkOutSec: 0.35,
+      walkInSec: 0.35,
+      madeSec: 1.2,
+      bumpSec: 0.2,
+    },
+
+    /**
+     * Rock Climb (a passing challenge): aim, hold for power, jump, and grab
+     * a hold of the active hand's color. By tier: holds to the top, the
+     * time, the arrow's swing (side to side) and the power meter (empty to
+     * full) in seconds, the grab reach (units), one grab try per jump or
+     * any number, and decoy holds per screen.
+     */
+    rockClimb: {
+      tiers: {
+        1: {
+          holds: 8,
+          timeSec: 50,
+          swingSec: 1.6,
+          powerSec: 1.2,
+          reach: 16,
+          oneTry: false,
+          decoys: 3,
+        },
+        2: {
+          holds: 10,
+          timeSec: 50,
+          swingSec: 1.4,
+          powerSec: 1.1,
+          reach: 14,
+          oneTry: false,
+          decoys: 4,
+        },
+        3: {
+          holds: 12,
+          timeSec: 55,
+          swingSec: 1.2,
+          powerSec: 1.0,
+          reach: 12,
+          oneTry: true,
+          decoys: 5,
+        },
+        4: {
+          holds: 14,
+          timeSec: 60,
+          swingSec: 1.0,
+          powerSec: 0.9,
+          reach: 11,
+          oneTry: true,
+          decoys: 6,
+        },
+        5: {
+          holds: 16,
+          timeSec: 60,
+          swingSec: 0.9,
+          powerSec: 0.8,
+          reach: 10,
+          oneTry: true,
+          decoys: 7,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            holds: number;
+            timeSec: number;
+            swingSec: number;
+            powerSec: number;
+            reach: number;
+            oneTry: boolean;
+            decoys: number;
+          }
+        >
+      >,
+      /** A jump goes this far (from empty to full power), and each planned hold is this far from the last. */
+      power: [30, 110] as const,
+      step: [40, 90] as const,
+      /** The color sequence: this long with an even number of hikers, this long with an odd number. */
+      seqEven: 8,
+      seqOdd: 9,
+      /**
+       * My guesses: a jump takes this long; a fall slides back this long;
+       * holds stay this far inside the wall's edges; a screen of wall is this
+       * tall; decoys stay this far from the path; planned holds turn at
+       * least this far from flat (degrees); the climber's hand sits at this
+       * scene y.
+       */
+      jumpSec: 0.5,
+      slideSec: 0.5,
+      wallX: [24, 296] as const,
+      screen: 170,
+      decoyClear: 20,
+      minTurnDeg: 25,
+      handY: 140,
+    },
+
+    /**
+     * Raccoon Shuffle (the challenge version): watch which bins hold
+     * raccoons, follow the shuffle, pick an empty bin. By tier: bins, empty
+     * bins, swaps, the time per swap, the chance two pairs swap at once, and
+     * the chance of night.
+     */
+    raccoonShuffle: {
+      tiers: {
+        1: { bins: 3, empty: 1, swaps: 4, swapSec: 0.7, double: 0, night: 0 },
+        2: { bins: 4, empty: 1, swaps: 6, swapSec: 0.55, double: 0, night: 0 },
+        3: { bins: 5, empty: 2, swaps: 7, swapSec: 0.45, double: 0, night: 0 },
+        4: { bins: 7, empty: 2, swaps: 8, swapSec: 0.4, double: 0.3, night: 0.25 },
+        5: { bins: 8, empty: 2, swaps: 10, swapSec: 0.35, double: 0.5, night: 0.25 },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            bins: number;
+            empty: number;
+            swaps: number;
+            swapSec: number;
+            double: number;
+            night: number;
+          }
+        >
+      >,
+      /**
+       * The bins stand on this line (scene y). Their middles are this far
+       * apart at most, and the row spans at most this much (so 7 and 8 bins
+       * stand closer; my guesses).
+       */
+      binY: 150,
+      binGap: 60,
+      binSpan: 260,
+      /** A swapped bin lifts this high as it arcs over (my guess). */
+      arc: 26,
+      /** The show (lids open), the picked bin open on its own, then every bin open (seconds). */
+      showSec: 2.5,
+      pickedSec: 0.8,
+      afterSec: 1,
+      /** A raccoon with an energy card takes this much energy. */
+      raccoonEnergy: 1,
+      /** Night: the light around the pointer (across, units), its soft edge, and how dark the rest is. */
+      light: 40,
+      lightEdge: 6,
+      dark: 0.93,
+      /** The testing tab's made-up packs: this many resources each (from–to). */
+      testPack: [2, 6] as const,
     },
 
     /*

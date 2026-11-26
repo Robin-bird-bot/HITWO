@@ -1,0 +1,123 @@
+/* Raccoon Shuffle (9 to 11-raccoon-shuffle-*.png), in scene units (320 × 240). */
+
+.bin {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.can {
+  position: absolute;
+  width: 36px;
+  height: 44px;
+}
+
+/* The bin under the pointer (or selected with keys) while picking. */
+.can[data-lit] {
+  filter: drop-shadow(0 0 0.75px #f4f8dc) drop-shadow(0 0 0.75px #f4f8dc);
+}
+
+.raccoon {
+  position: absolute;
+  width: 36px;
+  height: 30px;
+}
+
+/* The card a raccoon holds up: the resource (or energy) in its top square, on a stick. */
+.card {
+  position: absolute;
+  width: 20px;
+  height: 26px;
+}
+
+.card > img {
+  position: absolute;
+  inset: 0;
+  width: 20px;
+  height: 26px;
+}
+
+.icon {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon > img {
+  width: 12px;
+  height: 12px;
+  object-fit: contain;
+}
+
+.stick {
+  position: absolute;
+  left: 9.25px;
+  top: 26px;
+  width: 1.5px;
+  height: 10px;
+  background: #1d2918;
+}
+
+/* The EMPTY tag. */
+.empty {
+  position: absolute;
+  width: 30px;
+  height: 11px;
+}
+
+.empty > img {
+  position: absolute;
+  inset: 0;
+  width: 30px;
+  height: 11px;
+}
+
+.empty > span {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.6px;
+}
+
+/* Show the empty bins (tuning): a dashed frame. */
+.mark {
+  position: absolute;
+  width: 38px;
+  height: 46px;
+  box-sizing: border-box;
+  border: 0.75px dashed #f4f8dc;
+  border-radius: 2px;
+}
+
+.verdict {
+  position: absolute;
+  top: 26px;
+  height: 11px;
+  padding: 0 6px;
+  font-size: 4.5px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.verdict[data-bad] {
+  color: #e5624a;
+}
+
+/* Night: below the top HUD, which stays readable. */
+.night {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 173px;
+  pointer-events: none;
+  z-index: 2;
+}

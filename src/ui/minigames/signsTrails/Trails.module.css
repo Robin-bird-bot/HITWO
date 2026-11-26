@@ -1,0 +1,61 @@
+/* Trails (16-trails-switchbacks.png, 17-trails-off.png), in scene units (320 × 240). */
+
+/* The type's ground, from y 22 to 195, scrolling down. */
+.ground {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 173px;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+.cpText {
+  font-family: var(--font-pixel);
+  font-size: 3.6px;
+  letter-spacing: 0.05em;
+}
+
+.hiker {
+  position: absolute;
+  width: 10px;
+  height: 12px;
+  pointer-events: none;
+}
+
+/* Off the trail: a red ring around the icon. */
+.offRing {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Each hiker's off-trail bar, in their color. */
+.bar {
+  position: relative;
+  width: 34px;
+  height: 4px;
+  border-radius: 1px;
+  background: #3c4e2f;
+  overflow: hidden;
+}
+
+.bar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}

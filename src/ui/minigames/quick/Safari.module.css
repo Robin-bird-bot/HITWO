@@ -1,0 +1,170 @@
+/* Safari (5-safari-parade.png, 6-safari-question.png, 7-safari-night.png), in scene units (320 × 240). */
+
+/* The hillside, from y 22 to 202 (what's above and below it is clipped). */
+.hill {
+  position: absolute;
+  left: 0;
+  width: 320px;
+  overflow: hidden;
+}
+
+.bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 180px;
+}
+
+/* An animal stopping to look around. */
+.huh {
+  position: absolute;
+  font-size: 6px;
+  color: #f4f8dc;
+  text-shadow: 0.75px 0.75px 0 #111a10;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fog {
+  position: absolute;
+  border-radius: 50%;
+  background: #d3dfaf;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.dark {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* An animal in the dark: just its eyes. */
+.eyes {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.eyes > span {
+  width: 1.5px;
+  height: 1.5px;
+  border-radius: 50%;
+  background: #f4f8dc;
+}
+
+/* The screen dims for the question. */
+.dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(29, 41, 24, 0.5);
+}
+
+.question {
+  position: absolute;
+  left: 30px;
+  top: 40px;
+  width: 260px;
+  height: 30px;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 5.5px;
+  white-space: normal;
+  text-align: center;
+}
+
+.qOf {
+  color: #a0b37d;
+  font-size: 3.6px;
+}
+
+.signs {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 98px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.sign {
+  position: relative;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.sign > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 30px;
+}
+
+.sign:disabled {
+  cursor: default;
+}
+
+.sign:focus-visible {
+  outline: 1px solid #e9b44c;
+  outline-offset: 1px;
+}
+
+.signWords {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 4px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 5px;
+}
+
+.cross {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 30px;
+}
+
+.status {
+  position: absolute;
+  left: 60px;
+  right: 60px;
+  top: 150px;
+  height: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.75px solid #1d2918;
+  border-radius: 1.5px;
+  background: #d3dfaf;
+  font-size: 4px;
+  white-space: normal;
+  text-align: center;
+}
+
+/* Show answer (tuning). */
+.answer {
+  position: absolute;
+  left: 5px;
+  bottom: 48px;
+  max-width: 200px;
+  padding: 2px 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.5px;
+  font-size: 3.2px;
+  white-space: normal;
+  z-index: 3;
+}

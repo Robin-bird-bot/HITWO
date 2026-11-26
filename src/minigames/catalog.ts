@@ -11,6 +11,9 @@ import { ART_STYLES } from './bearrels/styles';
 import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal, rankFor } from './dodge/animals';
 import type { TileThing } from './endScreen';
 import { VERSIONS as CROSSING_VERSIONS } from './crossing/logic';
+import { TRAIL_TYPES } from './trails/course';
+import { QUESTION_TYPES } from './safari/logic';
+import { FINDS } from './sizeUp/logic';
 import { VERSIONS as TRAIL_BLOCK_VERSIONS } from './trailBlocks/logic';
 import {
   CATEGORIES,
@@ -133,6 +136,7 @@ const override = (
   id: string,
   label: string,
   options: readonly [string, string][],
+  hint?: string,
 ): MinigameSetting => ({
   kind: 'pick',
   id,
@@ -142,6 +146,7 @@ const override = (
     ...options.map(([oid, olabel]) => ({ id: oid, label: olabel })),
   ],
   default: 'auto',
+  ...(hint ? { hint } : {}),
 });
 
 const ON_OFF: readonly [string, string][] = [
@@ -783,6 +788,430 @@ export const RAFTING: MinigameInfo = {
   ],
 };
 
+// ── New challenges, step 3: the quick games (docs/design/18-minigames-quick.md) ──
+
+const TBZ = BALANCE.minigames.trailBlazes;
+const FC = BALANCE.minigames.fireflyCatch;
+const SZ = BALANCE.minigames.sizeUp;
+const FSW = BALANCE.minigames.flySwatter;
+const RSH = BALANCE.minigames.raccoonShuffle;
+
+/** An Off/On switch for a tuning helper. */
+const helper = (id: string, label: string, hint: string): MinigameSetting => ({
+  kind: 'pick',
+  id,
+  label,
+  options: [
+    { id: 'off', label: 'Off' },
+    { id: 'on', label: 'On' },
+  ],
+  default: 'off',
+  hint,
+});
+
+export const TRAIL_BLAZES: MinigameInfo = {
+  id: 'trailBlazes',
+  name: 'Trail Blazes',
+  baseGame: 'Timing',
+  category: 'reaction',
+  description: 'Tap when the two lit blazes are level. One hiker at a time.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'mode',
+      label: 'Mode',
+      options: [
+        { id: 'tries', label: 'Tries' },
+        { id: 'clock', label: 'Clock' },
+      ],
+      default: 'tries',
+      hint: `Clock: a miss costs ${TBZ.missCostSec} s`,
+    },
+    autoRange('tries', 'Tries', 1, 5, TBZ.tiers[1].tries, ''),
+  ],
+};
+
+export const FIREFLY_CATCH: MinigameInfo = {
+  id: 'fireflyCatch',
+  name: 'Firefly Catch',
+  baseGame: 'Timing',
+  category: 'reaction',
+  description: 'Tap when the firefly is inside your jar ring. One hiker at a time.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange('catches', 'Catches', 1, 6, FC.tiers[1].catches, ''),
+    autoRange('time', 'Time', 5, 30, FC.tiers[1].timeSec, ' s'),
+  ],
+};
+
+export const SIZE_UP: MinigameInfo = {
+  id: 'sizeUp',
+  name: 'Size Up',
+  baseGame: 'Matching',
+  category: 'reaction',
+  description: 'Grow or shrink the find to match the field guide. One try each.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'find',
+      label: 'Find',
+      options: [
+        { id: 'random', label: 'Random' },
+        ...FINDS.map((f) => ({ id: f.id, label: f.name })),
+      ],
+      default: 'random',
+      hint: 'Random: four finds at Tiers I and II, all six from III',
+    },
+    autoRange(
+      'time',
+      'Time',
+      4,
+      20,
+      SZ.tiers[1].timeSec,
+      ' s',
+      1,
+      `${byTier((t) => SZ.tiers[t].timeSec)} s`,
+    ),
+    helper('live', 'Show % live', 'Shows how far off you are while playing, for tuning'),
+  ],
+};
+
+export const FLY_SWATTER: MinigameInfo = {
+  id: 'flySwatter',
+  name: 'Fly Swatter',
+  baseGame: 'Reaction',
+  category: 'reaction',
+  description: 'Swat each circle before the fly lands. Leave the bees alone.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override('bees', 'Bees', ON_OFF, 'Auto: from Tier III'),
+    autoRange('strikes', 'Strikes', 1, 5, FSW.tiers[1].strikes, ''),
+  ],
+};
+
+export const SAFARI: MinigameInfo = {
+  id: 'safari',
+  name: 'Safari',
+  baseGame: 'Memory',
+  category: 'memory',
+  description: 'Watch the animals come down the hill, then answer together.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'version',
+      label: 'Version',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'day', label: 'Day' },
+        { id: 'night', label: 'Night' },
+        { id: 'fog', label: 'Fog' },
+      ],
+      default: 'auto',
+      hint: 'Auto: night can come from Tier III, fog from Tier IV',
+    },
+    {
+      kind: 'pick',
+      id: 'questions',
+      label: 'Questions',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: '1', label: '1' },
+        { id: '2', label: '2' },
+      ],
+      default: 'auto',
+      hint: 'Auto: 2 with 3 or more hikers',
+    },
+    {
+      kind: 'pick',
+      id: 'bigfoot',
+      label: 'Bigfoot',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'always', label: 'Always' },
+        { id: 'never', label: 'Never' },
+      ],
+      default: 'auto',
+      hint: 'Auto: rare from Tier III',
+    },
+    {
+      kind: 'pick',
+      id: 'question',
+      label: 'Question',
+      options: [
+        { id: 'random', label: 'Random' },
+        ...QUESTION_TYPES.map((t) => ({ id: t.id, label: t.label })),
+      ],
+      default: 'random',
+      menu: true,
+      hint: 'One type every time (the run is planned to fit it)',
+    },
+    helper('answer', 'Show answer', 'Shows the counts in a corner, for tuning'),
+  ],
+};
+
+export const RACCOON_SHUFFLE: MinigameInfo = {
+  id: 'raccoonShuffle',
+  name: 'Raccoon Shuffle',
+  baseGame: 'Shell game',
+  category: 'luck',
+  description: 'Watch which bins hold raccoons, follow the shuffle, and pick an empty one.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    override(
+      'night',
+      'Night',
+      ON_OFF,
+      `Auto: a ${RSH.tiers[4].night * 100}% chance at Tiers IV and V`,
+    ),
+    {
+      kind: 'pick',
+      id: 'packs',
+      label: 'Packs',
+      options: [
+        { id: 'random', label: 'Random' },
+        { id: 'empty', label: 'Empty' },
+      ],
+      default: 'random',
+      hint: 'Made-up packs for the test hikers. Empty: every raccoon takes energy',
+    },
+    helper('empties', 'Show the empty bins', 'Marks them through the shuffle, for tuning'),
+  ],
+};
+
+// ── New challenges, step 3 (part 2): signs and trails (docs/design/19-minigames-signs-trails.md) ──
+
+const FKS = BALANCE.minigames.fakeSigns;
+const TRL = BALANCE.minigames.trails;
+const CRX = BALANCE.minigames.crossroads;
+const RCL = BALANCE.minigames.rockClimb;
+
+/** A number setting that can be switched off ("Off", or a value), with no Auto. */
+const offRange = (
+  id: string,
+  label: string,
+  min: number,
+  max: number,
+  unit: string,
+): MinigameSetting => ({
+  kind: 'autoRange',
+  id,
+  label,
+  min,
+  max,
+  autoValue: 0,
+  hint: `Off, or ${min} to ${max}${unit}`,
+  off: true,
+});
+
+export const FAKE_SIGNS: MinigameInfo = {
+  id: 'fakeSigns',
+  name: 'Fake Trail Signs',
+  baseGame: 'Logic',
+  category: 'puzzle',
+  description: 'Learn the rules, then call each trail sign REAL or FAKE. Every round adds a rule.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'signs',
+      'Signs per round',
+      1,
+      6,
+      FKS.tiers[1].signs,
+      '',
+      1,
+      byTier((t) => FKS.tiers[t].signs),
+    ),
+    autoRange(
+      'cap',
+      'Most rules',
+      2,
+      8,
+      FKS.tiers[1].cap,
+      '',
+      1,
+      byTier((t) => FKS.tiers[t].cap),
+    ),
+    {
+      kind: 'pick',
+      id: 'showOld',
+      label: 'Show old rules',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'always', label: 'Always' },
+        { id: 'never', label: 'Never' },
+      ],
+      default: 'auto',
+      hint: 'Auto: hidden at Tiers IV and V (they still count)',
+    },
+    offRange('time', 'Time per sign', 5, 20, ' s'),
+    helper('answers', 'Show answers', 'Marks each sign REAL or FAKE in a corner, for tuning'),
+  ],
+};
+
+export const TRAILS: MinigameInfo = {
+  id: 'trails',
+  name: 'Trails',
+  baseGame: 'Steering',
+  category: 'move',
+  description:
+    'Stay on the trail as it comes down the screen. Each hiker has a checkpoint to reach.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    {
+      kind: 'pick',
+      id: 'type',
+      label: 'Type',
+      options: TRAIL_TYPES.map((t) => ({ id: t.id, label: t.name })),
+      default: 'forest',
+    },
+    TIER,
+    HIKERS,
+    autoRange(
+      'bar',
+      'Bar',
+      1,
+      5,
+      TRL.tiers[1].barSec,
+      ' s',
+      0.25,
+      `${byTier((t) => TRL.tiers[t].barSec)} s`,
+    ),
+    autoRange(
+      'section',
+      'Section length',
+      200,
+      1500,
+      TRL.tiers[1].section,
+      '',
+      100,
+      byTier((t) => TRL.tiers[t].section),
+    ),
+  ],
+};
+
+export const CROSSROADS: MinigameInfo = {
+  id: 'crossroads',
+  name: 'Crossroads',
+  baseGame: 'Memory',
+  category: 'memory',
+  description: 'Remember the arrows, then walk them through the trail crossings.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'arrows',
+      'Arrows',
+      3,
+      12,
+      CRX.arrows[1],
+      '',
+      1,
+      byTier((t) => CRX.arrows[t]),
+    ),
+    {
+      kind: 'autoRange',
+      id: 'study',
+      label: 'Study time',
+      min: 5,
+      max: 20,
+      autoValue: 0,
+      hint: 'No limit, or 5 to 20 s',
+      off: true,
+    },
+    {
+      kind: 'pick',
+      id: 'newArrows',
+      label: 'New arrows per hiker',
+      options: [
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'off',
+    },
+    offRange('turn', 'Time per turn', 2, 6, ' s'),
+  ],
+};
+
+export const ROCK_CLIMB: MinigameInfo = {
+  id: 'rockClimb',
+  name: 'Rock Climb',
+  baseGame: 'Jumping',
+  category: 'move',
+  description: 'Aim, hold for power, jump, and grab a hold in the active hand’s color.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    // Up to 6 here, so the uneven 5 and 6 can be tried. TODO(wyatt): not handled yet.
+    { ...HIKERS, max: 6 },
+    autoRange(
+      'holds',
+      'Holds to the top',
+      4,
+      24,
+      RCL.tiers[1].holds,
+      '',
+      1,
+      byTier((t) => RCL.tiers[t].holds),
+    ),
+    autoRange(
+      'time',
+      'Time',
+      20,
+      120,
+      RCL.tiers[1].timeSec,
+      ' s',
+      5,
+      `${byTier((t) => RCL.tiers[t].timeSec)} s`,
+    ),
+    {
+      kind: 'pick',
+      id: 'tries',
+      label: 'Grab tries',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'one', label: 'One' },
+        { id: 'any', label: 'Any' },
+      ],
+      default: 'auto',
+      hint: 'Auto: any at Tiers I and II, one from Tier III',
+    },
+  ],
+  note: (settings) => {
+    const n = Array.isArray(settings.hikers) ? settings.hikers.length : 0;
+    return n >= 5
+      ? `With ${n} hikers the color sequence can’t give everyone the same number of turns. Wyatt hasn’t decided how to handle 5 or 6 yet.`
+      : null;
+  },
+};
+
 const soon = (
   id: string,
   name: string,
@@ -803,21 +1232,30 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   CROSSING,
   TRAIN,
   RAFTING,
+  TRAILS,
+  ROCK_CLIMB,
   soon('antsAreMarching', 'Ants Are Marching', 'Snake', 'move'),
   soon('crackedBridge', 'Cracked Bridge', 'Platformer', 'move'),
   TRAILDLE,
   FIND_PATH,
+  FAKE_SIGNS,
   TRAIL_MAP,
   PICTURE_PUZZLE,
   THIN_ICE,
   REMEMBER_PATH,
   MEMORY,
+  SAFARI,
+  CROSSROADS,
   FIND_OBJECT,
   TRAIL_BLOCKS,
   SLEEPING_BEAR,
   WHACKOON,
-  soon('flySwatter', 'Fly Swatter', 'Reaction', 'reaction'),
+  TRAIL_BLAZES,
+  FIREFLY_CATCH,
+  SIZE_UP,
+  FLY_SWATTER,
   BEARRELS,
+  RACCOON_SHUFFLE,
 ];
 
 /** The testing tab's list: each category with its games, in order (empty ones left out). */
@@ -921,6 +1359,12 @@ export function endInfo(
     thing = CROSSING_THINGS[v.id] ?? thing;
   }
   if (info.id === 'train') thing = { name: 'trains', plural: true };
+  if (info.id === 'trails') {
+    const t = TRAIL_TYPES.find((x) => x.id === settings.type) ?? TRAIL_TYPES[0]!;
+    name = t.name;
+    thing = { name: 'trail' };
+  }
+  if (info.id === 'rockClimb') thing = { name: 'wall' };
   if (info.id === 'rafting') thing = { name: 'rapids', plural: true };
   const tier = isTier(settings.tier) ? ` · Tier ${TIER_LABELS[settings.tier]}` : '';
   return { subtitle: `${name}${tier}`.toUpperCase(), thing };

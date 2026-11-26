@@ -68,7 +68,8 @@ export interface TrailBlocksState {
   /** Animals: how long the current circle has been shrinking, and where this try's ring is. */
   circle: number;
   ring: { x: number; y: number };
-  lastSwing?: { work: number; quality: Quality; at: number };
+  /** The last swing: its work and quality, when, and (Animals) where the ring was. */
+  lastSwing?: { work: number; quality: Quality; at: number; ring?: { x: number; y: number } };
   swings: number;
   rng: RngState;
 }
@@ -154,9 +155,92 @@ export function newTrailBlocks(
 /** Chop and River: where the marker is on the bar (0 to 1). */
 export const markerAt = (s: TrailBlocksState): number => s.marker.pos;
 
-/** Chop: the axe is in the hand on the side the marker is heading toward. */
-export const axeSide = (s: TrailBlocksState): 'left' | 'right' =>
-  s.marker.dir > 0 ? 'right' : 'left';
+/**
+ * Chop: where the axe is (third pass). It's on the side of the bar the
+ * marker is on. After the marker turns at an edge and heads back to the
+ * middle, the axe slides down out of view (passed behind the hiker's back);
+ * once the marker crosses the middle, it slides up on that side. Each slide
+ * takes [0.2 s] or [20%] of the pass, whichever is shorter, so it's always
+ * in place before the far zone. While a swing plays out, it's up on the
+ * marker's side (a click mid-bar pops it into place there).
+ *
+ * `up`: 1 in place, 0 out of view.
+ */
+export function axePose(s: TrailBlocksState): { side: 'left' | 'right'; up: number } {
+  const { pos, dir, passSec } = s.marker;
+  const side = pos < 0.5 ? 'left' : 'right';
+  if (s.phase === 'swing') return { side, up: 1 };
+  const slide = Math.min(B.axeSlideSec, B.axeSlideShare * passSec);
+  const towardEdge = side === 'left' ? dir < 0 : dir > 0;
+  if (towardEdge) {
+    // Crossed the middle this long ago: sliding up.
+    const since = Math.abs(pos - 0.5) * passSec;
+    return { side, up: Math.min(1, since / slide) };
+  }
+  // Turned at this side's edge this long ago, heading for the middle: sliding down.
+  const since = (side === 'left' ? pos : 1 - pos) * passSec;
+  return { side, up: Math.max(0, 1 - since / slide) };
+}
+
+/** Chop: the axe's frame, this long after a swing: ready → raise → chop-1 → chop-2 (the hit) → back to ready. */
+export function chopFrame(since: number): 'axe-ready' | 'axe-raise' | 'axe-chop-1' | 'axe-chop-2' {
+  const c = B.chopSec;
+  if (since < 0) return 'axe-ready';
+  if (since < c.raise) return 'axe-raise';
+  if (since < c.raise + c.chop1) return 'axe-chop-1';
+  if (since < c.raise + c.chop1 + c.chop2) return 'axe-chop-2';
+  // Back over [0.15 s]: chop-1 for the first half, then ready.
+  if (since < c.raise + c.chop1 + c.chop2 + c.back / 2) return 'axe-chop-1';
+  return 'axe-ready';
+}
+
+/** When the chop hits (chop-2 starts): chips fly then. */
+export const chopHitSec = (): number => B.chopSec.raise + B.chopSec.chop1;
+
+export type Lean = (typeof B.whistle.leans)[number];
+
+/** Animals: the whistle's lean frame whose direction is closest to the ring's, as seen from the mouthpiece. */
+export function leanFor(ring: { x: number; y: number }): Lean {
+  const W = B.whistle;
+  const mx = W.x + W.mouth.x;
+  const my = W.y + W.mouth.y;
+  const deg = (Math.atan2(-(ring.y - my), ring.x - mx) * 180) / Math.PI;
+  return W.leans.reduce((a, b) => (Math.abs(b - deg) < Math.abs(a - deg) ? b : a));
+}
+
+/**
+ * Animals: the whistle now. At rest; a good whistle (full or weak) leans
+ * toward the ring and moves [6] toward it, then eases back; a whiff just
+ * shakes it [1] unit.
+ */
+export function whistlePose(s: TrailBlocksState): {
+  frame: string;
+  dx: number;
+  dy: number;
+  lean: Lean | null;
+} {
+  const W = B.whistle;
+  const rest = { frame: 'whistle-rest', dx: 0, dy: 0, lean: null };
+  const sw = s.lastSwing;
+  if (!sw) return rest;
+  const since = s.time - sw.at;
+  if (sw.quality === 'miss') {
+    if (since >= W.shakeSec) return rest;
+    return { ...rest, dx: Math.sin(since * Math.PI * 2 * 25) * W.shake };
+  }
+  if (since >= W.leanSec + W.backSec || !sw.ring) return rest;
+  const lean = leanFor(sw.ring);
+  const mx = W.x + W.mouth.x;
+  const my = W.y + W.mouth.y;
+  const d = Math.hypot(sw.ring.x - mx, sw.ring.y - my) || 1;
+  const k = since < W.leanSec ? 1 : 1 - (since - W.leanSec) / W.backSec;
+  return {
+    frame: `whistle-lean-${lean}`,
+    dx: ((sw.ring.x - mx) / d) * W.move * k,
+    dy: ((sw.ring.y - my) / d) * W.move * k,
+    lean,
+  };
+}
 
 /** Whether the control is frozen where the last swing stopped it. */
 export const frozen = (s: TrailBlocksState): boolean => s.phase === 'swing';
@@ -258,7 +342,12 @@ function land(
     ranOut,
     work: done,
     swings: s0.swings + 1,
-    lastSwing: { work, quality, at: s0.time },
+    lastSwing: {
+      work,
+      quality,
+      at: s0.time,
+      ...(s0.version === 'animals' ? { ring: { ...s0.ring } } : {}),
+    },
   };
   // A River spot that's hit is gone at once (the Rockslide and the Animals move on after the freeze).
   if (s.version === 'river' && spot !== undefined) {

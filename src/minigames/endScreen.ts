@@ -5,6 +5,7 @@
  * and what they pay; and, for a passing challenge, a line about the tile.
  */
 import { BALANCE } from '../config/balance';
+import { stolenCounts } from './passing';
 import type { MinigameResult, Pay } from './types';
 
 const E = BALANCE.minigames.endScreen;
@@ -16,12 +17,13 @@ export const endPassed = (r: MinigameResult): boolean => r.safe.length > 0;
 export const endTitle = (r: MinigameResult): string =>
   endPassed(r) ? 'CHALLENGE PASSED' : 'CHALLENGE FAILED';
 
-/** What a hiker pays, as the end screen writes it: "−1 RESOURCE, BLEEDING". */
+/** What a hiker pays, as the end screen writes it: "−1 RESOURCE, −1 WOOD, BLEEDING". */
 export function costText(p: Pay | undefined): string {
   if (!p) return '';
   const parts: string[] = [];
   if (p.energy) parts.push(`−${p.energy} ENERGY`);
   if (p.resources) parts.push(`−${p.resources} RESOURCE${p.resources === 1 ? '' : 'S'}`);
+  for (const [name, n] of stolenCounts(p.stolen)) parts.push(`−${n} ${name.toUpperCase()}`);
   for (const c of p.conditions ?? []) parts.push(c.toUpperCase());
   return parts.join(', ');
 }

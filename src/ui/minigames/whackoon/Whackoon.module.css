@@ -69,10 +69,9 @@
 }
 
 /* The mallet cursor. */
+/* Sized and placed by the game (35 × 37, from balance). */
 .mallet {
   position: absolute;
-  width: 48px;
-  height: 48px;
   pointer-events: none;
   z-index: 3;
 }

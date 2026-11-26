@@ -2,7 +2,7 @@
  * Whackoon on the GPS (docs/design/14-minigames-trail-blocks.md, section 4;
  * mockup 6-whackoon.png), in scene units (320 × 240): raccoons pop out of
  * ribbed trash cans at a campsite; click or tap one to whack it with the
- * mallet (the cursor). Everyone plays at once on one clock.
+ * mallet (the cursor: Wyatt's hammer, Nov 25). Everyone plays at once on one clock.
  *
  * - Each raccoon's bandit mask is in a hiker's color; the bottom bar shows
  *   each hiker's squares filling with whacks on their color, and DONE.
@@ -117,7 +117,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
   };
 
   const fogged = game.time < game.fogUntil;
-  const swinging = mallet && game.time - mallet.at < 0.15;
+  const swinging = mallet && game.time - mallet.at < W.mallet.swingSec;
   const resting = game.time < game.malletUntil;
   const done = game.order.filter((id) => isDone(game, id));
   const names = done.map((id) => byId(id).name.toUpperCase());
@@ -236,7 +236,12 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
             src={art(swinging ? 'mallet-whack.png' : 'mallet-ready.png')}
             alt=""
             draggable={false}
-            style={{ left: mallet.x - 20, top: mallet.y - 30 }}
+            style={{
+              left: mallet.x - W.mallet.hotX,
+              top: mallet.y - W.mallet.hotY,
+              width: W.mallet.w,
+              height: W.mallet.h,
+            }}
           />
         )}
 

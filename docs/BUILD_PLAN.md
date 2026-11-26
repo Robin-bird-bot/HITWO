@@ -1668,7 +1668,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** as in each revised design file, plus: every game accepts Tiers IV and V, and below Tier V Dodge never overlaps attacks.
 
-### Phase 10.8, step 7: End screens, Dodge portrait motion, step-1 fixes, tiers by biome, and the lane games
+### Phase 10.8, step 7: End screens, Dodge portrait motion, step-1 fixes, tiers by biome, and the lane games (done)
 
 (New in the Nov 25 update: `docs/UPDATE-2026-11-25-end-screens-lanes-fixes.md`. The designs are the revised `docs/design/12-minigames-dodge.md`, `14-minigames-trail-blocks.md` and `15-challenge-tiers.md`, and the new `16-challenge-end-screen.md` and `17-minigames-lanes.md`. New mockups in `docs/mockups/minigames/dodge/`, `end-screens/`, `lanes/` and `trail-blocks/`, plus three overview boards. New art: Dodge's bob frames and the Woods Monster's hands, Wyatt's tool, tree and rock sprites, the ribbed cans and the mallet, and placeholder art for Crossing, Train! and Rafting.)
 
@@ -1685,8 +1685,34 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
 
 **Tests:** as in each revised or new design file, plus: each biome's tiers come out close to its table over many rolls.
 
+### Phase 10.8, step 8: The quick games, signs and trails, and the axe, whistle and mallet
+
+(New in the Nov 25 update: `docs/UPDATE-2026-11-25-quick-games.md`, revised. The designs are the revised `docs/design/14-minigames-trail-blocks.md` (third pass) and the new `18-minigames-quick.md` and `19-minigames-signs-trails.md`. New mockups in `docs/mockups/minigames/quick-games/` and `signs-trails/`, plus the axe and whistle GIFs and the mallet in `trail-blocks/`. New placeholder art for the ten games, Wyatt's new axe and whistle frames, and his hammer for Whackoon's mallet.)
+
+**Goal:** ten new games in the testing tab, and three fixes to the step-1 games. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`.
+
+**Build**
+0. **Fixes (14, third pass):** Chop Tree's axe chops on its own side, is passed behind the back between edges, and turns around the end of its handle; Clearing Animals' whistle rests further in and leans toward the ring on a hit; Whackoon's mallet is Wyatt's hammer.
+1. **Trail Blazes** (Reaction and timing): two trunks scroll past each other; tap when the lit blazes are level. Tries or Clock mode.
+2. **Firefly Catch** (Reaction and timing): tap when the bouncing firefly is inside the drifting jar ring.
+3. **Size Up** (Reaction and timing): grow or shrink a find to match the field guide's drawing; one try each.
+4. **Safari** (Memory, Wildlife): watch animals come down a hillside, then answer a question as a team (two, as a relay, with 3 or more hikers). Night with a flashlight aimed by the mouse, fog, and a rare Bigfoot.
+5. **Fly Swatter** (Reaction and timing): tap each circle before it shrinks away and the fly lands; leave bee circles alone.
+6. **Raccoon Shuffle** (Guess and luck, Wildlife): watch which bins hold raccoons, follow the shuffle, pick an empty bin. A raccoon steals the item on its card instead of energy.
+7. **Fake Trail Signs** (Puzzle and logic): learn the rules, then judge signs REAL or FAKE; each round adds a rule, from a rule generator.
+8. **Trails** (Movement and dodging, passing): keep your hiker on a scrolling trail to your checkpoint; Forest Path, Switchbacks, Ridgeline or Riverbank.
+9. **Crossroads** (Memory): remember a row of arrows, then walk them through 4-way crossings.
+10. **Rock Climb** (Movement and dodging, passing, Mountain): aim, jump and grab holds in the active hand's color. 5 or 6 hikers isn't handled yet (Wyatt).
+
+All ten end on the Challenge Passed / Challenge Failed screen. In the eight that aren't passing challenges, hikers who fail lose [1] energy, except in Raccoon Shuffle.
+
+**Tests:** as in `18`, section 9, `19`, section 7, and the axe, whistle and Whackoon tests in `14`.
+
 ### Phase 10.8, next steps (outline only)
 
+- Step 4: Sketchy Bridge and Falling Rocks (Rock Climb moved up to step 3).
 - More minigames, added to the testing tab one at a time.
 - Then hooking minigames into real challenges, with Prepare and stakes.
 

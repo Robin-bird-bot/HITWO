@@ -15,6 +15,7 @@
  * shows it. Test mode never changes the save.
  */
 import { BALANCE } from '../config/balance';
+import { RESOURCES } from '../content/resources';
 import type { MinigameResult, Pay, Tier } from './types';
 
 const P = BALANCE.minigames.passing;
@@ -22,7 +23,7 @@ const P = BALANCE.minigames.passing;
 export type { Tier };
 
 const isEmpty = (p: Pay | undefined) =>
-  !p || (!p.energy && !p.resources && !(p.conditions && p.conditions.length));
+  !p || (!p.energy && !p.resources && !p.stolen?.length && !(p.conditions && p.conditions.length));
 
 /**
  * The result of a passing challenge. `costs` is what each hiker who fails
@@ -55,12 +56,23 @@ export function passingResult(
   };
 }
 
-/** A cost in words: "−1 Energy · −1 resource · Bleeding". */
+/** A cost in words: "−1 Energy · −1 resource · −1 Wood · Bleeding". */
 export function payText(p: Pay | undefined): string {
   if (!p) return '';
   const parts: string[] = [];
   if (p.energy) parts.push(`−${p.energy} Energy`);
   if (p.resources) parts.push(`−${p.resources} resource${p.resources === 1 ? '' : 's'}`);
+  for (const [name, n] of stolenCounts(p.stolen)) parts.push(`−${n} ${name}`);
   for (const c of p.conditions ?? []) parts.push(c.charAt(0).toUpperCase() + c.slice(1));
   return parts.join(' · ');
+}
+
+/** Stolen resources as [name, how many], in the order first taken: wood, wood, salt → Wood 2, Salt 1. */
+export function stolenCounts(stolen: readonly string[] | undefined): [string, number][] {
+  const counts = new Map<string, number>();
+  for (const id of stolen ?? []) {
+    const name = RESOURCES.find((r) => r.id === id)?.name ?? id;
+    counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return [...counts];
 }

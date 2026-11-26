@@ -39,6 +39,8 @@ Close to how it works now, spread over five tiers. Each challenge rolls its tier
 - **Dodge** (`12-minigames-dodge.md`, section 4): animals play at levels, and overlaps only happen at Tier V.
 - **Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice** (`13-minigames-puzzles-2.md`).
 - **Trail Blocks, Sleeping Bear, Whackoon** (`14-minigames-trail-blocks.md`).
+- **Trail Blazes, Firefly Catch, Size Up, Safari, Fly Swatter, Raccoon Shuffle** (`18-minigames-quick.md`).
+- **Fake Trail Signs, Trails, Crossroads, Rock Climb** (`19-minigames-signs-trails.md`).
 
 ## Every other game: the fallback rule
 **Which games:** Bearrels, Traildle, Find the Object, Remember the Path and Find the Path don't have their own Tier IV and V numbers yet.

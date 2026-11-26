@@ -1,0 +1,170 @@
+/* Fake Trail Signs (12 to 15b-fake-signs-*.png), in scene units (320 × 240). */
+
+/* The sign: the two ends (the right one mirrored) and a dark middle as wide as the text plus 6. */
+.sign {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  display: flex;
+  height: 24px;
+  border: 0 solid transparent;
+  transform: translateX(-50%);
+}
+
+.sign[data-wrong] {
+  border-width: 1px;
+  margin: -1px;
+}
+
+.sign > img {
+  width: 12px;
+  height: 24px;
+  flex: none;
+}
+
+.sign > .right {
+  transform: scaleX(-1);
+}
+
+.board {
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  font-size: 6px;
+  letter-spacing: 0.06em;
+}
+
+.post {
+  position: absolute;
+  left: 156px;
+  top: 94px;
+  width: 8px;
+  height: 34px;
+  background-size: 8px 34px;
+  image-rendering: pixelated;
+}
+
+.ask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 160px;
+  margin: 0;
+  font-size: 3.6px;
+  text-align: center;
+}
+
+.choice {
+  position: absolute;
+  top: 171px;
+  width: 90px;
+  height: 19px;
+  background: #b9c793;
+  color: #1d2918;
+  font-size: 5px;
+}
+
+.choice:hover:not(:disabled) {
+  background: #d3dfaf;
+}
+
+.why {
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 134px;
+  min-height: 18px;
+  padding: 3px 6px;
+  font-size: 4.2px;
+  white-space: normal;
+  text-align: center;
+  z-index: 2;
+}
+
+.answer {
+  position: absolute;
+  right: 8px;
+  top: 26px;
+  height: 10px;
+  padding: 0 4px;
+  font-size: 3.6px;
+}
+
+.dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(29, 41, 24, 0.45);
+}
+
+/* The rules box. */
+.rules {
+  position: absolute;
+  left: 20px;
+  top: 30px;
+  width: 280px;
+  min-height: 120px;
+  max-height: 136px;
+  padding: 8px 10px;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 4px;
+  overflow: hidden;
+  white-space: normal;
+}
+
+.rulesTitle {
+  align-self: center;
+  margin-bottom: 4px;
+  font-size: 6px;
+}
+
+.hidden {
+  color: #a0b37d;
+  font-size: 3.6px;
+}
+
+.rule {
+  display: flex;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 1.5px;
+  font-size: 4.2px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.rule[data-newest] {
+  background: #2b3a23;
+}
+
+.ruleN {
+  flex: none;
+  width: 12px;
+}
+
+.understand {
+  position: absolute;
+  left: 110px;
+  top: 172px;
+  width: 100px;
+  height: 18px;
+  background: #d3dfaf;
+  color: #1d2918;
+  font-size: 5px;
+}
+
+.understand:hover:not(:disabled) {
+  background: #e9f0cf;
+}
+
+.whoNext {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 162px;
+  margin: 0;
+  color: #f4f8dc;
+  font-size: 3.6px;
+  text-align: center;
+}

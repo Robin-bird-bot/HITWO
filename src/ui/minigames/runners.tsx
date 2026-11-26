@@ -4,7 +4,8 @@
  * - **Bearrels** runs its own rounds and results card.
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
  *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Thin Ice,
- *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train! and Rafting)
+ *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting and the
+ *   quick games)
  *   report how they ended; the play stage shows the shared results card.
  *   Their preview is a still frame for now.
  */
@@ -28,6 +29,16 @@ import { TrailBlocks } from './trailBlocks/TrailBlocks';
 import { Crossing } from './lanes/Crossing';
 import { Rafting } from './lanes/Rafting';
 import { Train } from './lanes/Train';
+import { FireflyCatch } from './quick/FireflyCatch';
+import { FlySwatter } from './quick/FlySwatter';
+import { RaccoonShuffle } from './quick/RaccoonShuffle';
+import { Safari } from './quick/Safari';
+import { SizeUp } from './quick/SizeUp';
+import { TrailBlazes } from './quick/TrailBlazes';
+import { Crossroads } from './signsTrails/Crossroads';
+import { FakeSigns } from './signsTrails/FakeSigns';
+import { RockClimb } from './signsTrails/RockClimb';
+import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
 import { ThinIce } from './thinIce/ThinIce';
 import { TrailMap } from './trailMap/TrailMap';
@@ -92,6 +103,16 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   crossing: Crossing,
   train: Train,
   rafting: Rafting,
+  trailBlazes: TrailBlazes,
+  fireflyCatch: FireflyCatch,
+  sizeUp: SizeUp,
+  safari: Safari,
+  flySwatter: FlySwatter,
+  raccoonShuffle: RaccoonShuffle,
+  fakeSigns: FakeSigns,
+  trails: Trails,
+  crossroads: Crossroads,
+  rockClimb: RockClimb,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -144,6 +165,37 @@ function RaftingStill({ settings, hikers }: MinigamePreviewProps) {
   return <Rafting settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
 
+function TrailBlazesStill({ settings, hikers }: MinigamePreviewProps) {
+  return <TrailBlazes settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FireflyCatchStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FireflyCatch settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function SizeUpStill({ settings, hikers }: MinigamePreviewProps) {
+  return <SizeUp settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function SafariStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Safari settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FlySwatterStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FlySwatter settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function RaccoonShuffleStill({ settings, hikers }: MinigamePreviewProps) {
+  return <RaccoonShuffle settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FakeSignsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FakeSigns settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function TrailsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Trails settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function CrossroadsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <Crossroads settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function RockClimbStill({ settings, hikers }: MinigamePreviewProps) {
+  return <RockClimb settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+
 export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProps>>> = {
   bearrels: BearrelsPreviewRun,
   traildle: TraildleStill,
@@ -161,4 +213,14 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   crossing: CrossingStill,
   train: TrainStill,
   rafting: RaftingStill,
+  trailBlazes: TrailBlazesStill,
+  fireflyCatch: FireflyCatchStill,
+  sizeUp: SizeUpStill,
+  safari: SafariStill,
+  flySwatter: FlySwatterStill,
+  raccoonShuffle: RaccoonShuffleStill,
+  fakeSigns: FakeSignsStill,
+  trails: TrailsStill,
+  crossroads: CrossroadsStill,
+  rockClimb: RockClimbStill,
 };

@@ -16,6 +16,11 @@ export interface MinigameHiker {
   color: string;
   /** The id their minigame art uses (hiker-<art>-100.png): Grandpa Wink is "wink". */
   art: string;
+  /**
+   * The resources they carry, by resource id, for games that take things
+   * (Raccoon Shuffle). In the testing tab it's a made-up pack (`testPack`).
+   */
+  pack?: Readonly<Partial<Record<string, number>>>;
 }
 
 /**
@@ -42,10 +47,12 @@ export interface MinigameResult {
   passing?: { moveOn: string[]; goBack: string[]; stays: boolean };
 }
 
-/** A cost: energy, resources lost at random, and conditions gained. */
+/** A cost: energy, resources lost at random, resources taken (by id), and conditions gained. */
 export interface Pay {
   energy?: number;
   resources?: number;
+  /** Resources taken, by id, one each (Raccoon Shuffle: what the raccoon stole). */
+  stolen?: string[];
   conditions?: string[];
 }
 
@@ -182,4 +189,6 @@ export interface MinigameInfo {
   /** The hikers set their order first (Line up) when 2 or more play. */
   lineUp?: boolean;
   settings: readonly MinigameSetting[];
+  /** A note for the testing tab, shown under the hikers when it applies (Rock Climb with 5 or 6 hikers). */
+  note?(settings: MinigameSettings): string | null;
 }

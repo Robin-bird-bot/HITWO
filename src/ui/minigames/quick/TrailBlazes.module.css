@@ -1,0 +1,49 @@
+/* Trail Blazes (1-trail-blazes.png), in scene units (320 × 240). */
+
+.trunk {
+  position: absolute;
+  top: 0;
+  height: 200px;
+  background-repeat: repeat-y;
+  background-size: 44px 64px;
+  image-rendering: pixelated;
+}
+
+/* The frame around a lit blaze, in the hiker's color. */
+.frame {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid;
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.line {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+/* The UP and DOWN signs beside the trunks. */
+.sign {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 25px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  border-radius: 1.5px;
+  background: #d3dfaf;
+  font-size: 3.4px;
+}
+
+.sign > svg {
+  width: 12px;
+  height: 14px;
+}

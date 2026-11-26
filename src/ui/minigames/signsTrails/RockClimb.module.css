@@ -1,0 +1,168 @@
+/* Rock Climb (20-rock-climb-aim.png, 21-rock-climb-leap.png), in scene units (320 × 240). */
+
+.play {
+  cursor: pointer;
+}
+
+.wall {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 200px;
+  background-size: 320px 240px;
+  image-rendering: pixelated;
+}
+
+.ledge {
+  position: absolute;
+  left: 0;
+  width: 320px;
+  height: 6px;
+  background: #3c4e2f;
+  box-shadow: 0 1px 0 #1d2918;
+  pointer-events: none;
+}
+
+.hold {
+  position: absolute;
+  width: 16px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.hold[data-grabbed] {
+  filter: drop-shadow(0 0 1px #f4f8dc);
+}
+
+.arcDot {
+  position: absolute;
+  width: 1.5px;
+  height: 1.5px;
+  background: #d3dfaf;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* The aim arrow: points up, turned around its base at the hand. */
+.arrow {
+  position: absolute;
+  width: 9px;
+  height: 26px;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.climber {
+  position: absolute;
+  width: 26px;
+  height: 34px;
+  pointer-events: none;
+}
+
+.climber > img {
+  position: absolute;
+  inset: 0;
+  width: 26px;
+  height: 34px;
+}
+
+.handDot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+}
+
+.handRing {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* The power meter on the right. */
+.meter {
+  position: absolute;
+  left: 293px;
+  top: 60px;
+  width: 12px;
+  height: 114px;
+  box-sizing: border-box;
+  border: 1px solid #1d2918;
+  border-radius: 2px;
+  background: #2b3a23;
+  overflow: hidden;
+}
+
+.meter > span {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  background: #d3dfaf;
+}
+
+.meterLabel {
+  position: absolute;
+  left: 287px;
+  top: 178px;
+  color: #1d2918;
+  font-size: 3.4px;
+}
+
+/* The bottom bar: HANDS, the sequence, the time and who fell. */
+.bar {
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.handsLabel {
+  font-size: 4px;
+}
+
+.seq {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  align-items: center;
+}
+
+.seqDot {
+  position: relative;
+  display: flex;
+  border-radius: 50%;
+}
+
+.seqDot[data-next] {
+  box-shadow: 0 0 0 1.25px #d3dfaf;
+}
+
+.seqDot[data-used] {
+  opacity: 0.55;
+}
+
+.seqDot[data-used]::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: 50%;
+  height: 1px;
+  background: #1d2918;
+  transform: rotate(-45deg);
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 4px;
+}
+
+.fell {
+  color: #a0b37d;
+  font-size: 3.4px;
+}

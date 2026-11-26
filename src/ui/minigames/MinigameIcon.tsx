@@ -113,6 +113,76 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M9 6v9M12 6v9M15 6v9M3 19c3-2 6 2 9 0s6 2 9 0" />
     </>
   ),
+  // Two trunks, each with a blaze.
+  trailBlazes: (
+    <>
+      <path d="M6 3v18M10 3v18M14 3v18M18 3v18" />
+      <path d="M7 13h2M15 8h2" />
+    </>
+  ),
+  // A jar ring and a firefly.
+  fireflyCatch: (
+    <>
+      <circle cx="10" cy="13" r="7" />
+      <circle cx="17" cy="6" r="2" />
+    </>
+  ),
+  // Arrows out from a corner: grow or shrink.
+  sizeUp: (
+    <>
+      <rect x="3" y="13" width="8" height="8" rx="1" />
+      <path d="M13 11l7-7M14 4h6v6" />
+    </>
+  ),
+  // A fly swatter.
+  flySwatter: (
+    <>
+      <rect x="7" y="3" width="10" height="10" rx="1.5" />
+      <path d="M12 13v8M7 8h10M12 3v10" />
+    </>
+  ),
+  // Binoculars.
+  safari: (
+    <>
+      <circle cx="7" cy="16" r="4" />
+      <circle cx="17" cy="16" r="4" />
+      <path d="M11 16h2M4.5 13l2-8h3l1 7M19.5 13l-2-8h-3l-1 7" />
+    </>
+  ),
+  // A trash bin.
+  raccoonShuffle: (
+    <>
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" />
+    </>
+  ),
+  // A trail sign with a question mark.
+  fakeSigns: (
+    <>
+      <path d="M4 5h14l3 4-3 4H4z" />
+      <path d="M11 13v8M10 8.2a1.6 1.6 0 1 1 2.2 1.5c-.6.3-.9.6-.9 1.3" />
+    </>
+  ),
+  // A winding trail with a flag.
+  trails: (
+    <>
+      <path d="M8 21c0-4 6-5 6-9s-5-4-5-8" />
+      <path d="M17 3v7M17 3h4l-1 1.5 1 1.5h-4" />
+    </>
+  ),
+  // A 4-way crossing with an arrow.
+  crossroads: (
+    <>
+      <path d="M12 3v18M3 12h18" />
+      <path d="M9 6l3-3 3 3" />
+    </>
+  ),
+  // A climbing hold and a hand reaching.
+  rockClimb: (
+    <>
+      <ellipse cx="15" cy="6" rx="4" ry="2.5" />
+      <path d="M6 21l3-8 4-3M13 10l2-2" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>
