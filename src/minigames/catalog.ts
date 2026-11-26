@@ -214,7 +214,7 @@ function dodgeAttacks(settings: MinigameSettings): PickOption[] {
   const animal = isAnimal(settings.animal) ? settings.animal : 'bees';
   const tier = isTier(settings.tier) ? settings.tier : 1;
   const rank = rankFor(animal, tier, dodgeLevelPick(settings));
-  const choices = attackChoices(animal, rank, settings.ideas !== 'off');
+  const choices = attackChoices(animal, rank, settings.ideas !== 'off', tier);
   return [
     { id: 'all', label: 'All' },
     ...choices.map((c) => ({
@@ -286,7 +286,7 @@ export const DODGE: MinigameInfo = {
         { id: '3', label: '3' },
       ],
       default: 'auto',
-      hint: 'Auto uses the tier’s. Easy is for Bees and Squirrel Army (the others play 1)',
+      hint: 'Auto uses the tier’s. Easy is for Bees, Squirrel Army and Ants (the others play 1)',
     },
     {
       kind: 'pick',
@@ -1124,16 +1124,9 @@ export const ROCK_CLIMB: MinigameInfo = {
       1,
       byTier((t) => RCL.tiers[t].holds),
     ),
-    autoRange(
-      'time',
-      'Time',
-      20,
-      120,
-      RCL.tiers[1].timeSec,
-      ' s',
-      5,
-      `${byTier((t) => RCL.tiers[t].timeSec)} s`,
-    ),
+    // No timer in runs (22-minigame-revisions.md, section 2.1): the tries are the limit.
+    autoRange('time', 'Time', 20, 120, RCL.testTimeSec, ' s', 5, 'no timer'),
+    autoRange('triesEach', 'Tries each', 1, 5, RCL.tries, '', 1),
     {
       kind: 'pick',
       id: 'tries',

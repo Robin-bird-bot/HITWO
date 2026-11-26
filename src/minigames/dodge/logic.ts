@@ -71,9 +71,8 @@ export type { AnimalId, AttackId, Attacker, DodgeState, Level, Part, Tier } from
 export type { LevelPick, Rank } from './animals';
 export type { Box } from './geometry';
 export type { Point, Shape } from './shapes';
-export { clampToBox, markSpot, SPRITE_HALF } from './geometry';
+export { clampToBox, markSpot, rayToWall, SPRITE_HALF } from './geometry';
 export { beeAt } from './attacks/bees';
-export { swingAngle, swingWarnSec, swordPivot } from './attacks/sword';
 
 const D = BALANCE.minigames.dodge;
 
@@ -177,7 +176,7 @@ export function newDodge(
   const wanted = options.attack ?? 'all';
   const only =
     wanted !== 'all' &&
-    attackChoices(animal, rank, ideas).some((c) => c.id === wanted && c.unlocked)
+    attackChoices(animal, rank, ideas, hudTier).some((c) => c.id === wanted && c.unlocked)
       ? wanted
       : 'all';
   const first: Attacker = animal === 'stampede' ? 'herd' : animal;
@@ -238,8 +237,6 @@ export function newDodge(
     showing: animal === 'stampede' ? [] : [animal],
     nextId: 1,
     roundNo: 1,
-    swings: 0,
-    sides: [],
     shrunkFor: 0,
     slowUntil: 0,
     over: order.length === 0,
@@ -357,7 +354,7 @@ function fits(s: DodgeState, e: PoolEntry): boolean {
  * animal that isn't attacking yet when one fits.
  */
 function pick(s: DodgeState, rng: RngState): PoolEntry | undefined {
-  const all = pool(s.animal, rankOf(s), s.ideas, s.only).filter((e) => fits(s, e));
+  const all = pool(s.animal, rankOf(s), s.ideas, s.only, s.hudTier).filter((e) => fits(s, e));
   if (!all.length) return undefined;
   const last = s.history.at(-1);
   const recent = s.history.slice(-D.stampede.maxSameAnimal).map((h) => h.attacker);
@@ -388,9 +385,18 @@ function pick(s: DodgeState, rng: RngState): PoolEntry | undefined {
  */
 function startRound(s: DodgeState, rng: RngState, entry: PoolEntry): DodgeState {
   let state = s;
-  // The sword bear's shrunk box lasts for a few of its attacks.
-  if (entry.attacker === 'swordBear')
+  // The sword bear's shrunk box lasts for a few of its attacks. From Tier III
+  // any of its attacks can start it (22-minigame-revisions.md, section 5),
+  // but never while another changer (a bear hug) is on.
+  if (entry.attacker === 'swordBear') {
     state = { ...state, shrunkFor: Math.max(0, state.shrunkFor - 1) };
+    const shrink =
+      state.level >= D.sword.shrinkFrom &&
+      state.shrunkFor <= 0 &&
+      !state.rounds.some((r) => r.kind === 'changer') &&
+      coin(rng, D.sword.shrinkChance);
+    if (shrink) state = { ...state, shrunkFor: D.sword.shrinkSwings };
+  }
   const alone = !state.rounds.some((r) => r.kind !== 'changer');
   const overlapped = state.rounds.some((r) => r.kind !== 'changer');
   const box = alone ? targetBox(entry.attacker, state).box : state.boxMove.to;

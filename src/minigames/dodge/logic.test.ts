@@ -1,6 +1,6 @@
 /**
  * Dodge (docs/design/12-minigames-dodge.md, section 13): switching hikers,
- * hits and lives, the ending, the sword's warning floor, staying in the box,
+ * hits and lives, the ending, staying in the box,
  * and the controls. The attack library's tests are in attacks.test.ts.
  */
 import { describe, expect, it } from 'vitest';
@@ -13,7 +13,6 @@ import {
   newDodge,
   result,
   step,
-  swingWarnSec,
   type DodgeState,
 } from './logic';
 
@@ -127,41 +126,6 @@ describe('the ending', () => {
       1,
     );
     expect([custom.lengthSec, custom.maxLives, custom.switchSec]).toEqual([45, 3, 8]);
-  });
-});
-
-describe('the sword sweep', () => {
-  it('each swing warns a little less, never below the minimum', () => {
-    expect(swingWarnSec(0)).toBeCloseTo(D.sword.warnStartSec);
-    expect(swingWarnSec(1)).toBeLessThan(swingWarnSec(0));
-    for (let n = 0; n < 200; n++)
-      expect(swingWarnSec(n)).toBeGreaterThanOrEqual(D.sword.warnMinSec);
-  });
-
-  it('a swing hits a sprite in the half it sweeps, and misses one in the other half', () => {
-    const base = newDodge({ animal: 'swordBear', tier: 1, lives: 3 }, THREE, 1);
-    const swing = (x: number) => {
-      let s: DodgeState = {
-        ...base,
-        nextAttackAt: Infinity,
-        pos: { x, y: base.box.cy + 10 },
-        parts: [
-          {
-            kind: 'swing',
-            id: 1,
-            round: 0,
-            side: 'right',
-            warnAt: 0,
-            activeAt: 0.1,
-            sweepSec: 0.35,
-          },
-        ],
-      };
-      s = run(s, 0.6);
-      return s.hits.finn;
-    };
-    expect(swing(base.box.cx + 50)).toBe(1);
-    expect(swing(base.box.cx - 50)).toBe(0);
   });
 });
 

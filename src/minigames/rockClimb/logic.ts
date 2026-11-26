@@ -19,11 +19,21 @@
  *   [0.9 s] jump. Space (or a tap off any hold) queues the hold the rest of
  *   the jump passes closest to. From Tier III the queued grab is the one
  *   try; at Tiers I and II a new tap replaces it.
- * - **A fall** (no grab): the climber slides back to the last hold; the
- *   hiker whose color that hand had fails, once (later falls only cost
- *   time); the same hand and color go again.
- * - **Results:** the top in time: hikers who never fell pass, the rest
- *   fail (they lose [1] energy). Time runs out: nobody passes.
+ * - **Tries and falls** (22-minigame-revisions.md, section 2.1): each hiker
+ *   has [3] tries. A fall (no grab) drops the climber off the screen and
+ *   costs the hiker whose color the hand had one try and [1] energy (paid
+ *   at the end, even if they pass later); the same hand and color go again.
+ *   The Harness takes the first fall: no try, no energy.
+ * - **Out of tries:** the hiker leaves the color sequence, and every hold in
+ *   their color changes to a color of a hiker still in (decoys with the same
+ *   check as the wall's plan). Everyone out: everyone fails.
+ * - **The top** (section 2.2): a line [40–70] above the last path hold. The
+ *   last move is a jump, in the next color, that must carry the hand above
+ *   it; no grab is needed. Short of it is a fall.
+ * - **No timer** by default (the Time setting stays for testing).
+ * - **Results:** over the top, every hiker still in passes and moves on;
+ *   hikers who are out stay back and pay nothing more (their falls already
+ *   cost energy). Time out (testing) or everyone out: nobody passes.
  *
  * Wall positions: x across, h up from the start.
  *
@@ -52,16 +62,27 @@ export interface RockClimbOptions {
   tier: Tier;
   /** Holds to the top ("auto": the tier's). */
   holds?: number | 'auto';
-  /** Time (seconds; "auto": the tier's). */
+  /** Time (seconds; "auto": no timer). */
   timeSec?: number | 'auto';
   /** Grab tries per jump ("auto": the tier's). */
   tries?: 'auto' | 'one' | 'any';
-  /** Prepare: more grab reach (Chalk), and the first fall fails nobody (Harness). */
+  /** Tries each hiker has ("auto": [3]). */
+  triesEach?: number | 'auto';
+  /** Prepare: more grab reach (Chalk), the first fall free (Harness), +1 try for some hikers. */
   extraReach?: number;
   harness?: boolean;
+  extraTries?: Readonly<Record<string, number>>;
 }
 
-export type ClimbPhase = 'aim' | 'power' | 'jump' | 'slide' | 'top' | 'out';
+/** `fall`: dropping off the screen, then the box, then the camera back to the last hold. */
+export type ClimbPhase = 'aim' | 'power' | 'jump' | 'fall' | 'top' | 'out';
+
+/** Holds that changed color when a hiker went out: they blink from `from` over [0.6 s] at `at`. */
+export interface Recolor {
+  at: number;
+  from: string;
+  ids: number[];
+}
 
 export interface RockClimbState {
   tier: Tier;
@@ -69,10 +90,14 @@ export interface RockClimbState {
   holds: Hold[];
   /** The planned path's holds in order (ids). */
   path: number[];
+  /** The top line (its height), and the last move's color: the jump over it. */
+  topH: number;
+  topColor: string | null;
   reach: number;
   oneTry: boolean;
   swingSec: number;
   powerSec: number;
+  /** 0: no timer. */
   timeSec: number;
   timeLeft: number;
   /** The last path hold grabbed (−1: still at the start), and where the climber hangs. */
@@ -96,13 +121,23 @@ export interface RockClimbState {
     tried: boolean;
     queued?: number | null;
   } | null;
-  /** The Harness: the first fall fails nobody (used up once it saves someone). */
+  /** The Harness: the first fall costs nothing (used up once it saves someone). */
   harness: boolean;
-  /** Hikers who've fallen (each fails once). */
-  fell: string[];
-  /** The last grab (for a moment's flash) and the last fall. */
-  lastGrab?: { at: number; hold: number };
-  lastFall?: { at: number; by: string };
+  /** Tries left, and energy the falls cost, by hiker; the hikers who are out, in order. */
+  triesLeft: Record<string, number>;
+  energy: Record<string, number>;
+  out: string[];
+  /** The last grab (for a moment's flash), the last fall (who, from where, and whether it put them out). */
+  lastGrab?: { at: number; hold: number; fromH: number };
+  lastFall?: {
+    at: number;
+    by: string;
+    from: { x: number; h: number };
+    hand: { x: number; h: number };
+    free: boolean;
+    out: boolean;
+  };
+  recolor?: Recolor;
   time: number;
   over: boolean;
   rng: RngState;
@@ -124,7 +159,7 @@ export function makeSequence(rng: RngState, order: readonly string[]): string[] 
 }
 
 /** The color for each move along the path: sequences one after another. */
-function colorsFor(rng: RngState, order: readonly string[], n: number): string[] {
+export function colorsFor(rng: RngState, order: readonly string[], n: number): string[] {
   const out: string[] = [];
   while (out.length < n) out.push(...makeSequence(rng, order));
   return out.slice(0, n);
@@ -141,9 +176,10 @@ export function planWall(
   tier: Tier,
   order: readonly string[],
   count: number,
-): { holds: Hold[]; path: number[] } {
+): { holds: Hold[]; path: number[]; topH: number; topColor: string | null } {
   const t = R.tiers[tier];
-  const colors = colorsFor(rng, order, count);
+  // One more color than holds: the last move is the jump over the top.
+  const colors = colorsFor(rng, order, count + 1);
   const holds: Hold[] = [];
   const path: number[] = [];
   let p = { x: 160, h: 0 };
@@ -183,7 +219,13 @@ export function planWall(
       }
     }
   }
-  return { holds, path };
+  const [lo, hi] = R.topAbove;
+  return {
+    holds,
+    path,
+    topH: top + lo + nextFloat(rng) * (hi - lo),
+    topColor: colors[count] ?? null,
+  };
 }
 
 /**
@@ -231,13 +273,17 @@ export function newRockClimb(
   const t = R.tiers[options.tier];
   const rng = seedRng(seed);
   const count = typeof options.holds === 'number' ? options.holds : t.holds;
-  const timeSec = typeof options.timeSec === 'number' ? options.timeSec : t.timeSec;
-  const { holds, path } = planWall(rng, options.tier, order, count);
+  // No timer unless the testing tab sets one.
+  const timeSec = typeof options.timeSec === 'number' ? options.timeSec : 0;
+  const each = typeof options.triesEach === 'number' ? options.triesEach : R.tries;
+  const { holds, path, topH, topColor } = planWall(rng, options.tier, order, count);
   return {
     tier: options.tier,
     order,
     holds,
     path,
+    topH,
+    topColor,
     reach: t.reach + (options.extraReach ?? 0),
     harness: options.harness ?? false,
     oneTry: options.tries === 'one' ? true : options.tries === 'any' ? false : t.oneTry,
@@ -252,7 +298,9 @@ export function newRockClimb(
     phaseAt: 0,
     aimDeg: 90,
     jump: null,
-    fell: [],
+    triesLeft: Object.fromEntries(order.map((id) => [id, each + (options.extraTries?.[id] ?? 0)])),
+    energy: {},
+    out: [],
     time: 0,
     over: order.length === 0,
     rng,
@@ -263,8 +311,12 @@ export function newRockClimb(
 export const nextHold = (s: RockClimbState): Hold | undefined =>
   s.holds[s.path[s.pathAt + 1] ?? -1];
 
-/** Whose color the active hand has (the next path hold's), and which hand it is. */
-export const activeColor = (s: RockClimbState): string | null => nextHold(s)?.color ?? null;
+/** Whether the next move is the last: the jump over the top. */
+export const onLastMove = (s: RockClimbState): boolean => s.pathAt >= s.path.length - 1;
+
+/** Whose color the active hand has (the next path hold's, or the top's), and which hand it is. */
+export const activeColor = (s: RockClimbState): string | null =>
+  onLastMove(s) ? s.topColor : (nextHold(s)?.color ?? null);
 export const activeHand = (s: RockClimbState): 'left' | 'right' =>
   s.moves % 2 === 0 ? 'left' : 'right';
 
@@ -335,20 +387,19 @@ export function letGo(s: RockClimbState): RockClimbState {
   };
 }
 
-/** The hand takes hold: it hangs there, and the next move is the other hand's. */
+/** The hand takes hold: it hangs there, and the next move is the other hand's (the last path hold: the jump over the top). */
 function take(s: RockClimbState, h: Hold): RockClimbState {
   const pathAt = h.path !== null ? Math.max(s.pathAt, h.path) : s.pathAt;
-  const out: RockClimbState = {
+  return {
     ...s,
     at: { x: h.x, h: h.h },
     pathAt,
     moves: s.moves + 1,
     jump: null,
-    lastGrab: { at: s.time, hold: h.id },
+    lastGrab: { at: s.time, hold: h.id, fromH: s.at.h },
     phase: 'aim',
     phaseAt: s.time,
   };
-  return pathAt >= s.path.length - 1 ? { ...out, phase: 'top' } : out;
 }
 
 /**
@@ -358,7 +409,8 @@ function take(s: RockClimbState, h: Hold): RockClimbState {
  * queued grab is the one try; at Tiers I and II a new tap replaces it.
  */
 export function grab(s: RockClimbState, holdId: number): RockClimbState {
-  if (s.over || s.phase !== 'jump' || !s.jump) return s;
+  // The jump over the top grabs nothing: it only has to clear the line.
+  if (s.over || s.phase !== 'jump' || !s.jump || onLastMove(s)) return s;
   const h = s.holds[holdId];
   if (!h || h.color === null || h.color !== activeColor(s)) return s;
   if (s.oneTry && s.jump.tried) return s;
@@ -369,7 +421,7 @@ export function grab(s: RockClimbState, holdId: number): RockClimbState {
 
 /** Space, or a tap off any hold: queue the active-color hold the rest of the jump passes closest to. */
 export function grabClosest(s: RockClimbState): RockClimbState {
-  if (s.over || s.phase !== 'jump' || !s.jump) return s;
+  if (s.over || s.phase !== 'jump' || !s.jump || onLastMove(s)) return s;
   const color = activeColor(s);
   const best = s.holds
     .filter((h) => h.color !== null && h.color === color)
@@ -378,54 +430,125 @@ export function grabClosest(s: RockClimbState): RockClimbState {
   return best ? grab(s, best.h.id) : s;
 }
 
+/** How long a fall takes, all told: dropping off the screen, the box, and the camera sliding back. */
+export const fallDropSec = Math.sqrt((2 * R.fall.drop) / R.fall.gravity);
+export const fallSec = fallDropSec + R.fall.boxSec + R.fall.backSec;
+
+/**
+ * A hiker goes out (section 2.1): every hold in their color changes to a
+ * color of a hiker still in. Path holds still to climb (and the top) are
+ * given the colors used least so far among those left, so the turns stay
+ * even; decoys get theirs with the wall plan's check (never a color a
+ * nearby move needs, unless grabbing it can't strand the climber).
+ */
+export function goOut(s: RockClimbState, id: string, rng: RngState): RockClimbState {
+  const out = [...s.out, id];
+  const left = s.order.filter((h) => !out.includes(h));
+  if (!left.length) return { ...s, out };
+  const holds = s.holds.map((h) => ({ ...h }));
+  const ids: number[] = [];
+  const pickOf = (list: readonly string[]) => list[Math.floor(nextFloat(rng) * list.length)]!;
+  // The moves still to make, in order: the uses so far keep the turns even.
+  const uses: Record<string, number> = Object.fromEntries(left.map((h) => [h, 0]));
+  const ahead = s.path.slice(s.pathAt + 1).map((pid) => holds[pid]!);
+  for (const h of ahead) if (h.color && h.color !== id) uses[h.color] = (uses[h.color] ?? 0) + 1;
+  const least = () => {
+    const low = Math.min(...left.map((h) => uses[h] ?? 0));
+    const c = pickOf(left.filter((h) => (uses[h] ?? 0) === low));
+    uses[c] = (uses[c] ?? 0) + 1;
+    return c;
+  };
+  for (const h of ahead) {
+    if (h.color !== id) continue;
+    h.color = least();
+    ids.push(h.id);
+  }
+  const topColor = s.topColor === id ? least() : s.topColor;
+  // Holds already climbed: any color still in (they won't be needed again).
+  for (const pid of s.path.slice(0, s.pathAt + 1)) {
+    const h = holds[pid]!;
+    if (h.color !== id) continue;
+    h.color = pickOf(left);
+    ids.push(h.id);
+  }
+  // Decoys: the plan's check against the path as it is now.
+  const t = R.tiers[s.tier];
+  for (const h of holds) {
+    if (h.path !== null || h.color !== id) continue;
+    h.color = decoyColor(rng, left, holds, s.path, t.reach, h.x, h.h);
+    ids.push(h.id);
+  }
+  return {
+    ...s,
+    out,
+    holds,
+    topColor,
+    recolor: { at: s.time + fallDropSec + R.fall.boxSec, from: id, ids },
+  };
+}
+
+/** No grab: a fall (section 2.1). It costs the hand's hiker a try and [1] energy, unless the Harness takes it. */
+function fall(s: RockClimbState): RockClimbState {
+  const by = activeColor(s);
+  const base = { ...s, phase: 'fall' as const, phaseAt: s.time };
+  const hand = handAt(s);
+  const record = (free: boolean, isOut: boolean) =>
+    by ? { at: s.time, by, from: s.at, hand, free, out: isOut } : s.lastFall;
+  if (!by) return base;
+  if (s.harness) return { ...base, harness: false, lastFall: record(true, false) };
+  const triesLeft = { ...s.triesLeft, [by]: Math.max(0, (s.triesLeft[by] ?? 0) - 1) };
+  const energy = { ...s.energy, [by]: (s.energy[by] ?? 0) + R.fallEnergy };
+  const isOut = triesLeft[by] === 0;
+  const next: RockClimbState = { ...base, triesLeft, energy, lastFall: record(false, isOut) };
+  if (!isOut) return next;
+  const rng: RngState = [...s.rng];
+  return { ...goOut(next, by, rng), rng };
+}
+
 export function tick(s0: RockClimbState, dt: number): RockClimbState {
   if (s0.over) return s0;
   let s: RockClimbState = { ...s0, time: s0.time + dt };
-  if (s.phase === 'top' || s.phase === 'out') return { ...s, over: true };
-  s = { ...s, timeLeft: s.timeLeft - dt };
-  if (s.timeLeft <= 0) return { ...s, timeLeft: 0, phase: 'out', over: true };
+  // Over the top: a moment to land on the ledge before it's over.
+  if (s.phase === 'top') return s.time - s.phaseAt >= R.topSec ? { ...s, over: true } : s;
+  if (s.phase === 'out') return { ...s, over: true };
+  if (s.timeSec > 0) {
+    s = { ...s, timeLeft: s.timeLeft - dt };
+    if (s.timeLeft <= 0) return { ...s, timeLeft: 0, phase: 'out', over: true };
+  }
   const since = s.time - s.phaseAt;
   if (s.phase === 'jump' && s.jump) {
+    // The last move: over the top the moment the hand clears the line.
+    if (onLastMove(s)) {
+      const hand = handAt(s);
+      if (hand.h >= s.topH)
+        return { ...s, at: hand, moves: s.moves + 1, phase: 'top', phaseAt: s.time };
+    }
     // A queued grab happens the moment the hand passes within reach.
     const q = s.jump.queued != null ? s.holds[s.jump.queued] : undefined;
     if (q) {
       const hand = handAt(s);
       if (Math.hypot(hand.x - q.x, hand.h - q.h) <= s.reach) return take(s, q);
     }
-    if (since >= R.jumpSec + R.hangSec) {
-      // No grab: a fall. The hand's hiker fails (once), unless the Harness takes the first fall.
-      const by = activeColor(s);
-      if (s.harness)
-        return {
-          ...s,
-          harness: false,
-          phase: 'slide',
-          phaseAt: s.time,
-          lastFall: by ? { at: s.time, by } : s.lastFall,
-        };
-      const fell = by && !s.fell.includes(by) ? [...s.fell, by] : s.fell;
-      return {
-        ...s,
-        fell,
-        phase: 'slide',
-        phaseAt: s.time,
-        lastFall: by ? { at: s.time, by } : s.lastFall,
-      };
-    }
+    if (since >= R.jumpSec + R.hangSec) return fall(s);
   }
-  if (s.phase === 'slide' && since >= R.slideSec)
+  if (s.phase === 'fall' && since >= fallSec) {
+    // Everyone out: the climb is over, and nobody passes.
+    if (s.out.length >= s.order.length) return { ...s, phase: 'out', over: true, jump: null };
     return { ...s, phase: 'aim', phaseAt: s.time, jump: null };
+  }
   return s;
 }
 
-/** The top in time: hikers who never fell pass (the rest lose [1] energy). Time out: nobody passes. */
+/**
+ * Over the top: every hiker still in passes; hikers who are out stay back
+ * and pay nothing more. Every fall's energy is paid, passed or not. Time
+ * out (testing) or everyone out: nobody passes.
+ */
 export function result(s: RockClimbState): MinigameResult {
-  const top = s.pathAt >= s.path.length - 1;
-  const passed = top ? s.order.filter((id) => !s.fell.includes(id)) : [];
+  const top = s.phase === 'top';
+  const passed = top ? s.order.filter((id) => !s.out.includes(id)) : [];
   const costs: Record<string, Pay> = Object.fromEntries(
-    s.order
-      .filter((id) => !passed.includes(id))
-      .map((id) => [id, { energy: BALANCE.minigames.quick.failEnergy }]),
+    s.order.filter((id) => (s.energy[id] ?? 0) > 0).map((id) => [id, { energy: s.energy[id]! }]),
   );
   return passingResult(s.order, s.tier, passed, costs);
 }

@@ -10,6 +10,10 @@
  *
  * At night it's dark except a circle of light around the pointer (where the
  * finger last touched on phones; the selected bin with keys).
+ *
+ * From Tier III, after the last swap a raccoon hauls an empty bin up into
+ * the woods (22-minigame-revisions.md, section 1.2; mockup 34): a dashed
+ * gap and a TAKEN! tag stay where it stood, and it can't be picked.
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { asset } from '../../../config/assets';
@@ -29,6 +33,8 @@ import {
   type Bin,
   type Card,
 } from '../../../minigames/raccoonShuffle/logic';
+import { raccoonShuffleBot } from '../../../minigames/raccoonShuffle/bot';
+import { useDemoBot, useDemoMode } from '../demo';
 import { TIER_LABELS } from '../../../minigames/types';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
@@ -51,6 +57,8 @@ const CAN_H = 44;
 const RESOURCE_NAME = new Map(RESOURCES.map((r) => [r.id, r.name]));
 
 const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2);
+/** Where a hauled bin ends up: up in the woods. */
+const WOODS_Y = 24;
 const resourceName = (id: string) => RESOURCE_NAME.get(id) ?? id;
 
 export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }: PuzzleRunProps) {
@@ -77,6 +85,7 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
   const [keysUsed, setKeysUsed] = useState(false);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
@@ -117,6 +126,8 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
       setHover(k >= 0 ? k : null);
     }
   };
+  // The pop-up's demo: the bot picks a bin, as a click would.
+  useDemoBot(demo && running, game, raccoonShuffleBot, (slot) => choose(slot));
   useKeys(running, (key) => {
     if (key === 'ArrowLeft' || key === 'a' || key === 'ArrowRight' || key === 'd') {
       const out = select(game, key === 'ArrowLeft' || key === 'a' ? -1 : 1);
@@ -176,23 +187,73 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
   const flyOff =
     game.phase === 'open' ? Math.min(1, since / RS.pickedSec) : game.phase === 'after' ? 1 : 0;
 
-  // The card: the green pixel icon (12 × 12) at (4, 1) inside card.png, 1:1 (revised Nov 26).
+  // The card (30 × 26, a red minus painted in): the green pixel icon (12 × 12) right of the
+  // minus, 1:1 (22-minigame-revisions.md, section 1.1). It stays centered over its raccoon.
+  const C = RS.card;
   const drawCard = (card: Card, x: number, top: number, style?: React.CSSProperties) => (
-    <span className={styles.card} style={{ left: x - 10, top, ...style }}>
+    <span
+      className={styles.card}
+      style={{ left: x - C.w / 2, top, width: C.w, height: C.h, ...style }}
+    >
       <img className={ui.sprite} src={art('card.png')} alt="" draggable={false} />
       <img
         className={`${ui.sprite} ${styles.icon}`}
+        style={{ left: C.icon[0], top: C.icon[1] }}
         src={asset(`resources-green/${card.kind === 'resource' ? card.id : 'energy'}.png`)}
         alt={card.kind === 'resource' ? resourceName(card.id) : 'Energy'}
         draggable={false}
       />
-      <span className={styles.stick} />
+      <span className={styles.stick} style={{ left: C.w / 2 - 0.75, top: C.h }} />
     </span>
   );
+
+  /** A bin's haul (if it's being taken away): how far up it is, 0 to 1, or null. */
+  const haulOf = (bin: Bin) => {
+    const h = game.hauls.find((x) => x.bin === bin.id);
+    if (!h || game.time < h.at) return null;
+    return Math.min(1, (game.time - h.at) / RS.takeAway.haulSec);
+  };
 
   const drawBin = (bin: Bin) => {
     const slot = game.slots.indexOf(bin.id);
     const { x, lift, over } = posOf(bin.id);
+    const haul = haulOf(bin);
+    if (haul !== null) {
+      // Hauled up into the woods (a raccoon on top), fading at the end; a dashed gap stays.
+      const top = canTop - ease(haul) * (canTop - WOODS_Y);
+      const fade = haul < 0.7 ? 1 : 1 - (haul - 0.7) / 0.3;
+      return (
+        <span key={bin.id} className={styles.bin} style={{ zIndex: 1 }}>
+          <span className={styles.gap} style={{ left: x - CAN_W / 2 - 1, top: canTop - 1 }} />
+          <span className={`${ui.text} ${styles.empty}`} style={{ left: x - 15, top: lineY + 3 }}>
+            <img className={ui.sprite} src={art('tag-empty.png')} alt="" draggable={false} />
+            <span>TAKEN!</span>
+          </span>
+          {haul < 1 && (
+            <>
+              <span
+                className={styles.trail}
+                style={{ left: x - 0.5, top: top + CAN_H, height: Math.max(0, canTop - top - 4) }}
+              />
+              <img
+                className={`${ui.sprite} ${styles.can}`}
+                src={can('can.png')}
+                alt=""
+                draggable={false}
+                style={{ left: x - CAN_W / 2, top, opacity: fade }}
+              />
+              <img
+                className={`${ui.sprite} ${styles.raccoon}`}
+                src={can('raccoon-up.png')}
+                alt="A raccoon taking a bin away"
+                draggable={false}
+                style={{ left: x - CAN_W / 2 + 14, top: top - 14, opacity: fade }}
+              />
+            </>
+          )}
+        </span>
+      );
+    }
     const open = isOpen(slot);
     const picked = slot === game.picked && (game.phase === 'open' || game.phase === 'after');
     const lit =
@@ -259,7 +320,7 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
   const word =
     game.phase === 'show'
       ? 'WATCH'
-      : game.phase === 'shuffle'
+      : game.phase === 'shuffle' || game.phase === 'takeAway'
         ? `SWAP ${Math.min(game.swapsTotal, game.swapsDone + pairs.length)}/${game.swapsTotal}`
         : game.phase === 'pick'
           ? 'PICK'

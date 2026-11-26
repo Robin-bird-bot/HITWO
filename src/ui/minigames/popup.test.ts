@@ -1,7 +1,8 @@
 /**
  * The challenge pop-up and its demo (docs/design/20-challenge-popup.md,
- * section 8): the bars and lives show the tier's value and every change;
- * filling SKIP IT turns Start into SKIP IT; the demo plays the game with
+ * section 8): the bars and lives show the tier's value and every change
+ * (a bar as a share of the most it can be); a filled slot's badge says
+ * what it does; filling SKIP IT turns Start into SKIP IT; the demo plays the game with
  * the current Prepare settings, as a still frame with reduced motion or
  * when skipped, and it never reports a result of its own to the flow.
  */
@@ -12,7 +13,7 @@ import { BEAR_COUNTRY, testChallenge } from '../../content/minigameChallenges';
 import { DODGE } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import { POPUPS } from '../../minigames/popups';
-import { applyPrepare, rowsFor, slotsFor, type Fills, type Packs } from '../../minigames/prepare';
+import { applyPrepare, cardsFor, slotsFor, type Fills, type Packs } from '../../minigames/prepare';
 import { ChallengePopup } from './ChallengePopup';
 import { DemoRunner } from './DemoRunner';
 
@@ -37,12 +38,10 @@ function popupHtml(
 ) {
   const popup = POPUPS[challenge.minigame]!;
   const base = { ...settings, ...(challenge.settings ?? {}), tier: challenge.tier };
-  const slots = slotsFor(
-    rowsFor([...popup.prepare(base), ...(challenge.prepareRows ?? [])], base),
-    IDS,
-  );
+  const cards = cardsFor([...popup.options(base), ...(challenge.options ?? [])], base, IDS.length);
+  const slots = slotsFor(cards);
   const prepared = applyPrepare(base, slots, fills);
-  const skip = slots.some((s) => s.row.skip && fills[s.key]);
+  const skip = slots.some((s) => fills[s.key]?.effect === 'skip');
   return renderToStaticMarkup(
     createElement(ChallengePopup, {
       challenge,
@@ -51,6 +50,7 @@ function popupHtml(
       base,
       settings: prepared,
       hikers: HIKERS,
+      cards,
       slots,
       fills,
       packs: PACKS,
@@ -64,34 +64,54 @@ function popupHtml(
 }
 
 describe('the pop-up', () => {
-  it('shows How to play with its red phrase, the controls, the bars and the lives', () => {
-    const html = popupHtml(testChallenge(DODGE, 2), { animal: 'bees', tier: 2 }, {});
+  it('shows How to play with its red phrase and rule lines, the controls, the bars, the lives and the cards', () => {
+    const html = popupHtml(testChallenge(DODGE, 3), { animal: 'bees', tier: 3 }, {});
     expect(html).toContain('HOW TO PLAY');
     expect(html).toContain('<b>Each sting costs a heart.</b>');
+    expect(html).toContain('A hiker who loses every heart is out.');
+    expect(html).toContain('TIER III AND UP');
     expect(html).toContain('CONTROLS');
     expect(html).toContain('ATTACK SPEED');
     expect(html).toContain('BEES PER WAVE');
+    expect(html).toContain('FOOD');
+    expect(html).toContain('×1 MEAT, FISH OR MUSHROOM');
+    expect(html).toContain('SMOKY FIRE');
+    expect(html).toContain('×2 FOREST RESOURCES');
     expect(html).toContain('>START<');
     expect(html).not.toContain('SKIP IT');
   });
 
-  it('a Prepare change shows in green on its bar, and a new heart pops in for that hiker', () => {
+  it('a Prepare change shows on its bar as a share of the most, a badge says what each slot does, and a new heart pops in', () => {
     const fills: Fills = {
-      'slower:0': { hiker: 'finn', thing: { kind: 'resource', id: 'meat' } },
-      'lives:mom': { hiker: 'finn', thing: { kind: 'resource', id: 'meat' } },
+      'lives+slower:0': {
+        hiker: 'finn',
+        thing: { kind: 'resource', id: 'meat' },
+        effect: 'slower',
+      },
+      'lives+slower:1': {
+        hiker: 'finn',
+        thing: { kind: 'resource', id: 'meat' },
+        effect: 'lives',
+        target: 'mom',
+      },
     };
     const html = popupHtml(testChallenge(DODGE, 2), { animal: 'bees', tier: 2 }, fills);
+    // Attack speed 5/10 at Tier II, one slower: 4/10, the tenth between them cut.
     expect(html).toContain('4/10');
     expect(html).toContain('−1');
-    expect(html.match(/data-cut="true"/g)).toHaveLength(1);
+    expect(html).toMatch(/cut[^"]*" style="left:40%;width:10%"/);
     expect(html.match(/data-new="true"/g)).toHaveLength(1);
+    expect(html).toContain('SLOW');
+    expect(html).toContain('♥ MOM');
   });
 
   it('Bear Country: filling SKIP IT turns Start into SKIP IT', () => {
     const before = popupHtml(BEAR_COUNTRY, {}, {});
     expect(before).toContain('SKIP IT');
     expect(before).toContain('>START<');
-    const fills: Fills = { 'skip:0': { hiker: 'mom', thing: { kind: 'item', id: 'bearSpray' } } };
+    const fills: Fills = {
+      'skip:0': { hiker: 'mom', thing: { kind: 'item', id: 'bearSpray' }, effect: 'skip' },
+    };
     const after = popupHtml(BEAR_COUNTRY, {}, fills);
     expect(after).not.toContain('>START<');
     expect(after).toContain('>SKIP IT<');

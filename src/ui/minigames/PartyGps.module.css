@@ -166,29 +166,26 @@
  * Scanlines on the glass: 1-px lines about 8% dark, every 3 px. They turn
  * with the GPS (up and down once it's sideways). During play they drift.
  */
-.scanlines {
+/* The scanlines: a canvas at device pixels (ScanlineCanvas, section 2.1), drifting while a game plays. */
+.scanCanvas {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(100% + var(--period, 3px));
   pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, var(--scan-dark, 0.08)) 0,
-    rgba(0, 0, 0, var(--scan-dark, 0.08)) 1px,
-    transparent 1px,
-    transparent var(--scan-every, 3px)
-  );
 }
 
-.scanlines[data-drift] {
+.scanCanvas[data-drift] {
   animation: scanDrift var(--scan-ms) linear infinite;
 }
 
 @keyframes scanDrift {
   from {
-    background-position: 0 0;
+    transform: translateY(calc(-1 * var(--period, 3px)));
   }
   to {
-    background-position: 0 var(--scan-every, 3px);
+    transform: translateY(0);
   }
 }
 

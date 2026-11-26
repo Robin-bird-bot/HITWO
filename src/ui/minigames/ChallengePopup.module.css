@@ -1,7 +1,7 @@
 /*
- * The challenge pop-up, version 2 (docs/design/20-challenge-popup.md;
+ * The challenge pop-up, version 3 (docs/design/20-challenge-popup.md;
  * mockups/challenge-popup/prototype.html). Stage pixels: the window is
- * 1380 × 880 at (110, 60); the columns sit 104 below its top.
+ * 1380 × 880 at (110, 60); the columns sit 102 below its top.
  */
 
 .backdrop {
@@ -94,28 +94,28 @@
 
 .col {
   position: absolute;
-  top: 104px;
+  top: 102px;
 }
 
 .left {
   left: 36px;
-  width: 420px;
+  width: 430px;
 }
 
 .mid {
-  left: 486px;
+  left: 494px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 400px;
+  width: 392px;
 }
 
 .right {
-  left: 920px;
-  width: 424px;
-  max-height: 760px;
-  overflow-y: auto;
+  left: 916px;
+  width: 428px;
+  max-height: 764px;
   overflow-x: visible;
+  overflow-y: auto;
   scrollbar-width: thin;
 }
 
@@ -124,19 +124,19 @@
 .intro {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 18px;
+  gap: 18px;
+  margin-bottom: 20px;
 }
 
 .poster {
   flex: none;
-  width: 112px;
-  height: 168px;
+  width: 156px;
+  height: 234px;
   box-sizing: border-box;
-  padding: 6px;
+  padding: 7px;
   border: 1.5px solid #2a2420;
   background: #fbf4e2;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15);
 }
 
 .poster > img,
@@ -153,10 +153,10 @@
 }
 
 .flavor {
-  margin: 4px 0 12px;
+  margin: 2px 0 14px;
   color: #6a5844;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: 15px;
+  font-size: 16px;
   font-style: italic;
   line-height: 1.35;
 }
@@ -183,11 +183,52 @@
 }
 
 .howto {
-  margin: 0 0 22px;
-  font-size: 22px;
+  margin: 0 0 8px;
+  font-size: 21px;
   font-weight: 600;
-  line-height: 1.38;
-  letter-spacing: -0.1px;
+  line-height: 1.4;
+}
+
+/* The rule lines: only those that apply, each with a red diamond and its tier tag. */
+.also {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.also li {
+  position: relative;
+  padding: 6px 0 6px 22px;
+  color: #2a2420;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.also li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 13px;
+  width: 8px;
+  height: 8px;
+  background: #c8423a;
+  transform: rotate(45deg);
+}
+
+.also b {
+  color: #c8423a;
+  font-weight: 800;
+}
+
+.when {
+  margin-left: 6px;
+  color: #9a3b2e;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  font-weight: normal;
+  letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 .howto b {
@@ -209,7 +250,7 @@
 
 .what {
   flex: none;
-  width: 74px;
+  width: 66px;
   font-family: var(--font-pixel);
   font-size: 12px;
   letter-spacing: 1px;
@@ -264,16 +305,6 @@
   margin-top: 6px;
 }
 
-.democap {
-  margin: 18px 0 0;
-  color: #6a5844;
-  font-family: var(--font-pixel);
-  font-size: 10px;
-  letter-spacing: 1.3px;
-  line-height: 1.6;
-  text-align: center;
-}
-
 /* ── Right ── */
 
 .sec {
@@ -297,10 +328,51 @@
 
 .bar {
   display: grid;
-  grid-template-columns: 128px 1fr 70px;
+  grid-template-columns: 124px 1fr 64px;
   align-items: center;
-  gap: 10px;
-  margin: 6px 0;
+  gap: 12px;
+  margin: 9px 0;
+}
+
+/* A solid tan track; the deep brown fill; Prepare's drop hatched green, its gain solid green. */
+.track {
+  position: relative;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #d8c092;
+  box-shadow:
+    inset 0 2px 0 rgba(107, 74, 43, 0.28),
+    0 0 0 2px #a98a5c;
+}
+
+.fill,
+.cut,
+.add {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition:
+    left var(--slide, 0.35s) ease,
+    width var(--slide, 0.35s) ease;
+}
+
+.fill {
+  left: 0;
+  border-radius: 8px 0 0 8px;
+  background: linear-gradient(180deg, #7d5835, #6b4a2b);
+}
+
+.cut {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(79, 127, 62, 0.75) 0 3px,
+    rgba(79, 127, 62, 0.25) 3px 6px
+  );
+}
+
+.add {
+  background: #4f7f3e;
 }
 
 .barLabel {
@@ -309,34 +381,7 @@
   letter-spacing: 1px;
 }
 
-.segs {
-  display: flex;
-  gap: 3px;
-  height: 16px;
-}
-
-.seg {
-  flex: 1;
-  box-sizing: border-box;
-  border: 2px solid #2a2420;
-  border-radius: 2px;
-}
-
-.seg[data-on] {
-  background: #2a2420;
-}
-
 /* Prepare's change, always green: taken away (hatched) or added (filled). */
-.seg[data-cut] {
-  border-color: #3f7a3a;
-  background: repeating-linear-gradient(-45deg, rgba(63, 122, 58, 0.55) 0 3px, transparent 3px 6px);
-}
-
-.seg[data-add] {
-  border-color: #3f7a3a;
-  background: #3f7a3a;
-}
-
 .barValue {
   font-family: var(--font-pixel);
   font-size: 11px;
@@ -345,7 +390,7 @@
 }
 
 .delta {
-  color: #3f7a3a;
+  color: #4f7f3e;
 }
 
 .lives {
@@ -355,14 +400,14 @@
 
 .lrow {
   display: grid;
-  grid-template-columns: 38px 58px auto 1fr;
+  grid-template-columns: 34px 64px 1fr;
   align-items: center;
   gap: 10px;
 }
 
 .pfp {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   box-sizing: border-box;
   border: 3px solid;
   border-radius: 50%;
@@ -437,39 +482,73 @@
   color: #c8423a;
 }
 
-.hs {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  color: #6a5844;
-  font-family: var(--font-pixel);
-  font-size: 11px;
+/* The cost cards (section 4.1): rounded, color-coded, the title, the cost and what it does, then the slots. */
+.cards {
+  display: grid;
+  gap: 10px;
 }
 
-.plus {
-  color: #6a5844;
-}
-
-.prow {
+.card {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
-  border-top: 1.5px dashed #dcc79c;
+  padding: 11px 14px 14px;
+  border: 2px solid;
+  border-radius: 14px;
 }
 
-.prowTitle {
+.right[data-dense] .cards {
+  gap: 7px;
+}
+
+.right[data-dense] .card {
+  padding: 7px 14px 9px;
+}
+
+.right[data-dense] .lives {
+  gap: 4px;
+}
+
+.card[data-color='green'] {
+  border-color: #b4be8c;
+  background: #e3e6c6;
+}
+
+.card[data-color='blue'] {
+  border-color: #a9b8b4;
+  background: #dde3df;
+}
+
+.card[data-color='red'] {
+  border-color: #cda28e;
+  background: #edd8cb;
+}
+
+.cardTitle {
   font-family: var(--font-pixel);
   font-size: 12px;
   letter-spacing: 1px;
 }
 
-.prowLine {
-  margin-top: 3px;
+.cost {
+  margin-top: 5px;
   color: #6a5844;
-  font-size: 13px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+}
+
+.does {
+  margin-top: 5px;
+  color: #2a2420;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.does i {
+  color: #6a5844;
+  font-style: normal;
 }
 
 .slots {
@@ -477,23 +556,33 @@
   gap: 10px;
 }
 
-.footer {
-  padding-bottom: 8px;
-}
-
 .start {
-  width: 100%;
-  height: 56px;
-  margin-top: 12px;
+  width: 352px;
+  height: 60px;
+  margin-top: 26px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: #c8423a;
   color: #fbf4e2;
   font-family: var(--font-pixel);
-  font-size: 20px;
-  letter-spacing: 3px;
-  box-shadow: 0 5px 0 #8e2a24;
+  font-size: 22px;
+  letter-spacing: 4px;
+  box-shadow: 0 6px 0 #8e2a24;
   cursor: pointer;
+}
+
+/* After a game: how it went and the buttons, under the GPS. */
+.afterGame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 352px;
+}
+
+.afterGame .start,
+.afterGame .secondary {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .start:focus-visible,
@@ -521,15 +610,8 @@
   cursor: pointer;
 }
 
-.note {
-  margin: 10px 0 0;
-  color: #6a5844;
-  font-size: 12.5px;
-  line-height: 1.4;
-}
-
 .resultLine {
-  margin: 10px 0 0;
+  margin: 18px 0 0;
   font-family: var(--font-pixel);
   font-size: 14px;
   letter-spacing: 1px;
@@ -542,24 +624,52 @@
   display: inline-block;
 }
 
+@property --spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .slotRing {
   position: relative;
   display: block;
-  width: 52px;
-  height: 52px;
+  width: 54px;
+  height: 54px;
   box-sizing: border-box;
   padding: 3px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 11px;
   background: transparent;
   cursor: pointer;
 }
 
-.slotRing[data-who] {
-  background: var(--ring);
+.slotRing::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
 }
 
-.slotRing[data-filled] {
+.slotRing[data-who]::before {
+  background: conic-gradient(from var(--spin), var(--ring));
+  animation:
+    spin var(--turn, 2.4s) linear infinite,
+    breathe var(--breathe, 1.6s) ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    --spin: 360deg;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: var(--low, 0.55);
+  }
+}
+
+.slotRing[data-filled]::before {
   background: var(--owner);
 }
 
@@ -574,10 +684,10 @@
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  border: 1.5px dashed #b9a272;
-  border-radius: 7px;
-  background: #eadbb4;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.18);
+  border: 2px solid #8c6b43;
+  border-radius: 8px;
+  background: #c9ae7e;
+  box-shadow: inset 0 3px 4px rgba(60, 40, 20, 0.35);
 }
 
 .slotRing[data-who] .slot,
@@ -595,17 +705,16 @@
 
 .ghost {
   position: absolute;
-  inset: 6px;
-  width: calc(100% - 12px);
-  height: calc(100% - 12px);
+  inset: 7px;
+  width: calc(100% - 14px);
+  height: calc(100% - 14px);
   object-fit: contain;
   opacity: 0;
-  filter: grayscale(0.35);
   transition: opacity 0.45s;
 }
 
 .ghostOn {
-  opacity: 0.26;
+  opacity: 0.5;
 }
 
 .full {
@@ -628,28 +737,20 @@
 .need {
   position: absolute;
   right: 3px;
-  bottom: 2px;
-  color: #6a5844;
+  bottom: 1px;
+  color: #fbf4e2;
   font-family: var(--font-pixel);
   font-size: 10px;
-}
-
-.tag {
-  position: absolute;
-  left: 4px;
-  top: 3px;
-  color: #6a5844;
-  font-family: var(--font-pixel);
-  font-size: 9px;
+  text-shadow: 0 1px 0 #8c6b43;
 }
 
 .x {
   position: absolute;
-  right: -8px;
-  top: -8px;
+  right: -9px;
+  top: -9px;
   z-index: 2;
-  width: 20px;
-  height: 20px;
+  width: 21px;
+  height: 21px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -657,10 +758,28 @@
   color: #fbf4e2;
   font-family: var(--font-pixel);
   font-size: 11px;
-  line-height: 20px;
+  line-height: 21px;
   text-align: center;
   box-shadow: 0 0 0 2px #f4e8cc;
   cursor: pointer;
+}
+
+/* What a filled slot does: "♥ ELLIE" on her color, or "SLOW" on dark ink. */
+.badge {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  z-index: 2;
+  padding: 3px 5px 2px;
+  border-radius: 5px;
+  background: #2a2420;
+  color: #fbf4e2;
+  font-family: var(--font-pixel);
+  font-size: 8.5px;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .x:hover {
@@ -672,7 +791,8 @@
 .inv {
   position: absolute;
   z-index: 50;
-  min-width: 220px;
+  width: max-content;
+  min-width: 230px;
   box-sizing: border-box;
   padding: 10px 10px 8px;
   border: 2px solid #4a5a44;
@@ -706,6 +826,7 @@
   display: flex;
   justify-content: space-between;
   gap: 14px;
+  white-space: nowrap;
   margin: 0 2px 8px;
   color: #a0b37d;
   font-family: var(--font-pixel);
@@ -804,8 +925,87 @@
   font-style: normal;
 }
 
+/* Steps 2 and 3: WHAT SHOULD IT DO? and WHO GETS +1 HEART? */
+.choices {
+  display: grid;
+  gap: 6px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border: 2px solid #3c4e2f;
+  border-radius: 8px;
+  background: #2b3a23;
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover:not(:disabled),
+.choice:focus-visible {
+  border-color: #d3dfaf;
+  background: #3c4e2f;
+  outline: none;
+}
+
+.choice:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.choice small {
+  display: block;
+  margin-top: 2px;
+  color: #a0b37d;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.whoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(74px, 1fr));
+  gap: 6px;
+  min-width: 240px;
+}
+
+.whoChoice {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  min-height: 74px;
+  text-align: center;
+}
+
+.whoPfp {
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 2px solid;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ghost {
+    transition: none;
+  }
+  .slotRing[data-who]::before {
+    animation: none;
+  }
+  .fill,
+  .cut,
+  .add {
     transition: none;
   }
   .heart[data-new] {

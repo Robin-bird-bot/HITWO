@@ -134,7 +134,7 @@ describe('the party GPS', () => {
     expect(scanlineMotion(true, true)).toEqual({ drift: false, band: false });
     // Upright in the pop-up they stand still.
     expect(scanlineMotion(false, false)).toEqual({ drift: false, band: false });
-    expect(G.scanlines).toMatchObject({ dark: 0.08, everyPx: 3, driftPxPerSec: 10 });
+    expect(G.scanlines).toMatchObject({ dark: 0.1, everyPx: 3, driftPxPerSec: 10 });
   });
 
   it('the Style button sits on the turned body, beside the screen, on the stage', () => {
@@ -294,7 +294,15 @@ describe('the minigame list', () => {
       'knives',
     ]);
     expect(ids(CROSSROADS)).toEqual(['tier', 'hikers', 'arrows', 'study', 'newArrows', 'turn']);
-    expect(ids(ROCK_CLIMB)).toEqual(['tier', 'hikers', 'holds', 'time', 'tries', 'reach']);
+    expect(ids(ROCK_CLIMB)).toEqual([
+      'tier',
+      'hikers',
+      'holds',
+      'time',
+      'triesEach',
+      'tries',
+      'reach',
+    ]);
     expect(FAKE_SIGNS.category).toBe('puzzle');
     expect(CROSSROADS.category).toBe('memory');
     expect([TRAILS, ROCK_CLIMB].every((m) => m.category === 'move')).toBe(true);
@@ -514,8 +522,17 @@ describe('the minigame list', () => {
       'traps',
       'snipe',
       'ricochet',
+      'bulletRing (closed)',
       'quickDraw (closed)',
     ]);
+    // Bullet Ring goes by the tier: open at Tier IV.
+    expect(
+      attack.optionsFor!({ animal: 'gunBear', tier: 3 }).find((o) => o.id === 'bulletRing'),
+    ).toMatchObject({ label: 'Bullet Ring · from Tier IV', disabled: true });
+    expect(
+      attack.optionsFor!({ animal: 'gunBear', tier: 4 }).find((o) => o.id === 'bulletRing')
+        ?.disabled,
+    ).toBeFalsy();
     expect(open26({ animal: 'ants', tier: 2, ideas: 'off' })).toEqual([
       'all',
       'marching',

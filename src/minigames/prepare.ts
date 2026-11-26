@@ -1,27 +1,35 @@
 /**
- * Prepare (docs/design/20-challenge-popup.md, section 4): hikers spend
- * resources and items from their packs to make a challenge easier. Pure:
- * the pop-up keeps the fills and asks this module what's possible.
+ * Prepare, version 3 (docs/design/20-challenge-popup.md, section 4): hikers
+ * spend resources and items from their packs to make a challenge easier.
+ * Pure: the pop-up keeps the fills and asks this module what's possible.
  *
- * - **A row** is one effect (SLOWER ATTACKS) with a few **slots**, each one
- *   use of it. Per-hiker rows (+1 HEART) have one slot in each hiker's row.
- * - **A slot** takes one of a few things (`accepts`), `need` of it, from any
- *   hiker who has that many free: a stack used in one slot can't be used in
- *   another.
- * - **The inventory** shows one tile per hiker stack of each thing the slot
- *   takes (a faded tile with no owner when nobody has one), the ones that
- *   can be picked first.
- * - **Effects** add up per row: each filled slot adds the row's `step` to
- *   its setting, which the game reads when it starts (and so does the demo).
- *   Per-hiker rows list the hikers instead.
+ * - **An option** is one effect (+1 HEART, SLOWER ATTACKS) and its cost.
+ * - **A cost card** holds every option with the same cost (the same things
+ *   accepted, the same number needed). Its slots are the options' limits
+ *   added up, at most [3]. A Food card is titled FOOD; any other takes its
+ *   first option's title and color.
+ * - **Filling a slot:** pick a hiker's stack in the pop-up inventory, then
+ *   (when the card has several effects) what it does, then (for a per-hiker
+ *   effect) who gets it. An effect with no use left, or a hiker who already
+ *   has the most of it, can't be picked.
+ * - **A slot's outline** shows the hikers who could fill it now: none when
+ *   nobody has enough free, or when the card's effects are all used up. A
+ *   ×2 slot takes 2 of the same thing from one hiker.
+ * - **Effects** add up: each fill adds its effect's step to its setting,
+ *   which the game reads when it starts (and so does the demo). A per-hiker
+ *   effect lists its hikers instead.
  * - **Spending** happens only on Start: resources come out of the owners'
  *   packs, and an item loses one use (it's gone at none). Items that don't
  *   track uses stay in the pack; they're listed so the summary can say so.
  */
+import { BALANCE } from '../config/balance';
+import { ITEMS } from '../content/items';
+import { RESOURCES } from '../content/resources';
 import type { MinigameSettings } from './types';
 
+/** A resource, an item, or a group: any resource of one node ("forest"). */
 export interface Thing {
-  kind: 'resource' | 'item';
+  kind: 'resource' | 'item' | 'group';
   id: string;
 }
 
@@ -31,30 +39,62 @@ const things =
     ids.map((id) => ({ kind, id }));
 export const res = things('resource');
 export const item = things('item');
+export const group = things('group');
 
 /** Food: Meat, Fish or Mushroom ×1, the general stamina help (section 7). */
 export const FOOD: readonly Thing[] = res('meat', 'fish', 'mushroom');
 
-export interface PrepRow {
+/** What a slot really takes: a group stands for every resource of its node. */
+export function expand(accepts: readonly Thing[]): Thing[] {
+  return accepts.flatMap((t) =>
+    t.kind === 'group'
+      ? RESOURCES.filter((r) => r.node === t.id).map((r) => ({
+          kind: 'resource' as const,
+          id: r.id,
+        }))
+      : [t],
+  );
+}
+
+export type CardColor = 'green' | 'blue' | 'red';
+
+/** One Prepare effect and its cost. */
+export interface Option {
   id: string;
-  /** In the pixel font: SLOWER ATTACKS. */
-  label: string;
-  /** One short line on what each slot does: −1 speed each. */
-  line: string;
-  /** How many slots (a per-hiker row has one in each hiker's row instead). */
-  slots: number;
-  perHiker?: true;
+  /** The card's title when the option has the card to itself (a Food card is always FOOD). */
+  title: string;
+  /** Green: more for you. Blue: see or know more. Red: a weaker challenge. */
+  color: CardColor;
   accepts: readonly Thing[];
-  /** How many of the thing one slot takes (Grass or Moss ×2). */
+  /** How many of the thing one slot takes (×2 Clay). */
   need: number;
-  /** The setting each filled slot adds `step` to (a per-hiker row lists the hikers). */
-  effect: { param: string; step: number };
+  /** Its name in the pixel font: "+1 HEART", "SLOWER ATTACKS". */
+  label: string;
+  /** On a filled slot's badge: "SLOW", "−1 BEE" (a per-hiker one shows the hiker instead). */
+  short: string;
+  /** One short note in softer ink: "−1 speed". */
+  note: string;
+  /** Given to one hiker, picked after filling. */
+  perHiker?: true;
+  /** Uses at most (each hiker, for a per-hiker effect). */
+  max: number;
+  /** The setting each use adds `step` to (a per-hiker effect lists its hikers). */
+  param: string;
+  step: number;
   /** Only when this holds for the run (the night version, Tier III and up). */
   onlyIf?(settings: MinigameSettings): boolean;
   /** Filling it skips the challenge: Start becomes SKIP IT. */
   skip?: true;
-  /** A per-hiker slot's corner tag: "+1♥". */
-  tag?: string;
+}
+
+export interface Card {
+  id: string;
+  title: string;
+  color: CardColor;
+  accepts: readonly Thing[];
+  need: number;
+  slots: number;
+  effects: readonly Option[];
 }
 
 export interface PackItem {
@@ -73,41 +113,91 @@ export type Packs = Readonly<Record<string, Pack>>;
 
 export interface Slot {
   key: string;
-  row: PrepRow;
-  /** A per-hiker slot: whose row it's in. */
-  hiker?: string;
+  card: Card;
 }
 
-/** What fills a slot: whose stack of what. */
+/** A filled slot: whose stack of what, what it does, and (per-hiker) who gets it. */
 export interface Fill {
   hiker: string;
   thing: Thing;
+  effect: string;
+  target?: string;
 }
 
 export type Fills = Readonly<Record<string, Fill>>;
 
 const same = (a: Thing, b: Thing) => a.kind === b.kind && a.id === b.id;
+const costKey = (o: Pick<Option, 'accepts' | 'need'>) =>
+  `${o.need}|${o.accepts.map((t) => `${t.kind}:${t.id}`).join(',')}`;
+const FOOD_KEY = costKey({ accepts: FOOD, need: 1 });
 
-/** The rows that apply this run (section 4, "Only rows that can apply this run"). */
-export const rowsFor = (rows: readonly PrepRow[], settings: MinigameSettings): PrepRow[] =>
-  rows.filter((r) => !r.onlyIf || r.onlyIf(settings));
+/** An option's most uses in all: per-hiker effects once (or `max`) for each hiker. */
+const limitOf = (o: Option, hikers: number) => (o.perHiker ? o.max * hikers : o.max);
 
-/** Every slot: a row's slots in order, and a per-hiker row's one per hiker in line order. */
-export function slotsFor(rows: readonly PrepRow[], hikers: readonly string[]): Slot[] {
-  return rows.flatMap((row) =>
-    row.perHiker
-      ? hikers.map((hiker) => ({ key: `${row.id}:${hiker}`, row, hiker }))
-      : Array.from({ length: row.slots }, (_, k) => ({ key: `${row.id}:${k}`, row })),
+/**
+ * The cards for this run (section 4.1): the options that apply, grouped by
+ * cost in their order. A challenge's own options join the same grouping.
+ */
+export function cardsFor(
+  options: readonly Option[],
+  settings: MinigameSettings,
+  hikers: number,
+): Card[] {
+  const cards = new Map<string, Option[]>();
+  for (const o of options) {
+    if (o.onlyIf && !o.onlyIf(settings)) continue;
+    const key = costKey(o);
+    cards.set(key, [...(cards.get(key) ?? []), o]);
+  }
+  const most = BALANCE.minigames.prepare.cardSlots;
+  return [...cards.entries()].map(([key, effects]) => {
+    const first = effects[0]!;
+    return {
+      id: effects.map((e) => e.id).join('+'),
+      title: key === FOOD_KEY ? 'FOOD' : first.title,
+      color: first.color,
+      accepts: first.accepts,
+      need: first.need,
+      slots: Math.max(
+        1,
+        Math.min(
+          most,
+          effects.reduce((n, e) => n + limitOf(e, hikers), 0),
+        ),
+      ),
+      effects,
+    };
+  });
+}
+
+/** Every slot, card by card. */
+export const slotsFor = (cards: readonly Card[]): Slot[] =>
+  cards.flatMap((card) =>
+    Array.from({ length: card.slots }, (_, k) => ({ key: `${card.id}:${k}`, card })),
   );
+
+/** A thing's name: "Meat", "Bear Spray"; an item the game doesn't have yet from its id. */
+export function thingName(t: Thing): string {
+  if (t.kind === 'resource') return RESOURCES.find((r) => r.id === t.id)?.name ?? t.id;
+  if (t.kind === 'group') return `${t.id[0]!.toUpperCase()}${t.id.slice(1)} resources`;
+  return ITEMS[t.id]?.name ?? t.id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+}
+
+/** The cost written out (section 4.2): "×1 MEAT, FISH OR MUSHROOM", "×2 FOREST RESOURCES". */
+export function costText(card: Pick<Card, 'accepts' | 'need'>): string {
+  const names = card.accepts.map((t) => thingName(t).toUpperCase());
+  const list =
+    names.length > 1 ? `${names.slice(0, -1).join(', ')} OR ${names.at(-1)}` : (names[0] ?? '');
+  return `×${card.need} ${list}`;
 }
 
 /** How many of a thing a hiker carries (items: how many of that item). */
 export function have(packs: Packs, hiker: string, thing: Thing): number {
   const pack = packs[hiker];
   if (!pack) return 0;
-  return thing.kind === 'resource'
-    ? (pack.resources[thing.id] ?? 0)
-    : pack.items.filter((i) => i.itemId === thing.id).length;
+  return thing.kind === 'item'
+    ? pack.items.filter((i) => i.itemId === thing.id).length
+    : (pack.resources[thing.id] ?? 0);
 }
 
 /** How many of a hiker's thing the filled slots use (all but `except`). */
@@ -120,7 +210,7 @@ export function used(
 ): number {
   return slots.reduce((n, s) => {
     const f = fills[s.key];
-    return f && s.key !== except && f.hiker === hiker && same(f.thing, thing) ? n + s.row.need : n;
+    return f && s.key !== except && f.hiker === hiker && same(f.thing, thing) ? n + s.card.need : n;
   }, 0);
 }
 
@@ -134,6 +224,29 @@ export const free = (
   except?: string,
 ): number => have(packs, hiker, thing) - used(slots, fills, hiker, thing, except);
 
+/** How many fills use an effect (for one hiker, when given), all but `except`. */
+export function uses(fills: Fills, effect: string, target?: string, except?: string): number {
+  return Object.entries(fills).filter(
+    ([key, f]) =>
+      key !== except && f.effect === effect && (target === undefined || f.target === target),
+  ).length;
+}
+
+/** Whether a hiker can still get a per-hiker effect (they don't have the most yet). */
+export const targetOpen = (effect: Option, hiker: string, fills: Fills, except?: string): boolean =>
+  uses(fills, effect.id, hiker, except) < effect.max;
+
+/** Whether an effect has a use left (for a per-hiker one: some hiker can still get it). */
+export const effectOpen = (
+  effect: Option,
+  fills: Fills,
+  hikers: readonly string[],
+  except?: string,
+): boolean =>
+  effect.perHiker
+    ? hikers.some((h) => targetOpen(effect, h, fills, except))
+    : uses(fills, effect.id, undefined, except) < effect.max;
+
 /** Whether a hiker has enough of something the slot takes, free, to fill it. */
 export const canFill = (
   slot: Slot,
@@ -142,16 +255,42 @@ export const canFill = (
   packs: Packs,
   hiker: string,
 ): boolean =>
-  slot.row.accepts.some((t) => free(packs, slots, fills, hiker, t, slot.key) >= slot.row.need);
+  expand(slot.card.accepts).some(
+    (t) => free(packs, slots, fills, hiker, t, slot.key) >= slot.card.need,
+  );
 
-/** The hikers (in line order) who could fill an empty slot now: its outline's colors. */
-export const whoCanFill = (
+/**
+ * The hikers (in line order) who could fill an empty slot now: its
+ * outline's colors. None when the card's effects are all used up.
+ */
+export function whoCanFill(
   slot: Slot,
   slots: readonly Slot[],
   fills: Fills,
   packs: Packs,
   order: readonly string[],
-): string[] => (fills[slot.key] ? [] : order.filter((h) => canFill(slot, slots, fills, packs, h)));
+): string[] {
+  if (fills[slot.key]) return [];
+  if (!slot.card.effects.some((e) => effectOpen(e, fills, order, slot.key))) return [];
+  return order.filter((h) => canFill(slot, slots, fills, packs, h));
+}
+
+/** The cards in their order, but cards nobody can fill go last (section 4.1). */
+export function orderCards(
+  cards: readonly Card[],
+  slots: readonly Slot[],
+  fills: Fills,
+  packs: Packs,
+  order: readonly string[],
+): Card[] {
+  const fillable = (c: Card) =>
+    slots.some(
+      (s) =>
+        s.card.id === c.id &&
+        (!!fills[s.key] || whoCanFill(s, slots, fills, packs, order).length > 0),
+    );
+  return [...cards.filter(fillable), ...cards.filter((c) => !fillable(c))];
+}
 
 export interface Tile {
   thing: Thing;
@@ -167,7 +306,7 @@ export interface Tile {
 
 /**
  * The inventory for a slot: one tile per hiker stack of each thing it
- * takes, in the slot's order of things, then line order; a faded tile with
+ * takes, in the card's order of things, then line order; a faded tile with
  * no owner for a thing nobody has; the ones that can be picked first.
  */
 export function tilesFor(
@@ -178,28 +317,56 @@ export function tilesFor(
   order: readonly string[],
 ): Tile[] {
   const out: Tile[] = [];
-  for (const thing of slot.row.accepts) {
+  for (const thing of expand(slot.card.accepts)) {
     let any = false;
     for (const hiker of order) {
       const n = have(packs, hiker, thing);
       if (n <= 0) continue;
       any = true;
       const f = free(packs, slots, fills, hiker, thing, slot.key);
-      out.push({ thing, hiker, free: f, ok: f >= slot.row.need, partlyUsed: f < n });
+      out.push({ thing, hiker, free: f, ok: f >= slot.card.need, partlyUsed: f < n });
     }
     if (!any) out.push({ thing, hiker: null, free: 0, ok: false, partlyUsed: false });
   }
-  // Stable: usable ones first, each group keeping its order.
   return [...out.filter((t) => t.ok), ...out.filter((t) => !t.ok)];
 }
 
-/** Fills a slot from a tile (nothing happens for a tile that can't be picked). */
-export function fillSlot(fills: Fills, slot: Slot, tile: Tile): Fills {
-  if (!tile.ok || !tile.hiker) return fills;
-  return { ...fills, [slot.key]: { hiker: tile.hiker, thing: tile.thing } };
+/**
+ * What's left to pick after a tile (section 4.4): what it does (only with
+ * several effects), then who gets it (only for a per-hiker effect).
+ */
+export function nextStep(slot: Slot, effectId: string | null): 'what' | 'who' | 'done' {
+  const effects = slot.card.effects;
+  if (effectId === null) {
+    if (effects.length > 1) return 'what';
+    return effects[0]?.perHiker ? 'who' : 'done';
+  }
+  return effects.find((e) => e.id === effectId)?.perHiker ? 'who' : 'done';
 }
 
-/** Empties a slot. */
+/**
+ * Fills a slot (section 4.4): a tile that can be picked, an effect with a
+ * use left, and a hiker who can still get it when it's per-hiker. Anything
+ * else leaves the fills as they were.
+ */
+export function fillSlot(
+  fills: Fills,
+  slot: Slot,
+  tile: Tile,
+  effectId: string,
+  hikers: readonly string[],
+  target?: string,
+): Fills {
+  if (!tile.ok || !tile.hiker) return fills;
+  const effect = slot.card.effects.find((e) => e.id === effectId);
+  if (!effect || !effectOpen(effect, fills, hikers, slot.key)) return fills;
+  if (effect.perHiker && (!target || !targetOpen(effect, target, fills, slot.key))) return fills;
+  const fill: Fill = { hiker: tile.hiker, thing: tile.thing, effect: effect.id };
+  if (effect.perHiker && target) fill.target = target;
+  return { ...fills, [slot.key]: fill };
+}
+
+/** Empties a slot (its effect is free again). */
 export function emptySlot(fills: Fills, key: string): Fills {
   if (!fills[key]) return fills;
   const next = { ...fills };
@@ -207,7 +374,11 @@ export function emptySlot(fills: Fills, key: string): Fills {
   return next;
 }
 
-/** How many of each row's slots are filled, and for per-hiker rows, whose. */
+/** A fill's effect. */
+export const effectOf = (slot: Slot, fill: Fill): Option | undefined =>
+  slot.card.effects.find((e) => e.id === fill.effect);
+
+/** How many times each effect is used, who got the per-hiker ones, and whether SKIP IT is filled. */
 export function effects(
   slots: readonly Slot[],
   fills: Fills,
@@ -216,18 +387,19 @@ export function effects(
   const perHiker: Record<string, string[]> = {};
   let skip = false;
   for (const s of slots) {
-    if (!fills[s.key]) continue;
-    counts[s.row.id] = (counts[s.row.id] ?? 0) + 1;
-    if (s.row.perHiker && s.hiker) (perHiker[s.row.id] ??= []).push(s.hiker);
-    if (s.row.skip) skip = true;
+    const f = fills[s.key];
+    const e = f && effectOf(s, f);
+    if (!f || !e) continue;
+    counts[e.id] = (counts[e.id] ?? 0) + 1;
+    if (e.perHiker && f.target) (perHiker[e.id] ??= []).push(f.target);
+    if (e.skip) skip = true;
   }
   return { counts, perHiker, skip };
 }
 
 /**
- * The game's settings with Prepare on top: each filled slot adds its row's
- * step to the row's setting; a per-hiker row's setting lists the hikers
- * (one entry per filled slot).
+ * The game's settings with Prepare on top: each fill adds its effect's step
+ * to the effect's setting; a per-hiker effect's setting lists its hikers.
  */
 export function applyPrepare(
   settings: MinigameSettings,
@@ -236,15 +408,17 @@ export function applyPrepare(
 ): MinigameSettings {
   const out: MinigameSettings = { ...settings };
   for (const s of slots) {
-    if (!fills[s.key] || s.row.skip) continue;
-    const { param, step } = s.row.effect;
-    if (s.row.perHiker && s.hiker) {
-      const list = Array.isArray(out[param]) ? (out[param] as readonly string[]) : [];
-      out[param] = [...list, s.hiker];
+    const f = fills[s.key];
+    const e = f && effectOf(s, f);
+    if (!f || !e || e.skip) continue;
+    if (e.perHiker) {
+      if (!f.target) continue;
+      const list = Array.isArray(out[e.param]) ? (out[e.param] as readonly string[]) : [];
+      out[e.param] = [...list, f.target];
       continue;
     }
-    const now = typeof out[param] === 'number' ? (out[param] as number) : 0;
-    out[param] = Math.round((now + step) * 1e6) / 1e6;
+    const now = typeof out[e.param] === 'number' ? (out[e.param] as number) : 0;
+    out[e.param] = Math.round((now + e.step) * 1e6) / 1e6;
   }
   return out;
 }
@@ -255,7 +429,7 @@ export const prepNumber = (settings: MinigameSettings, param: string): number =>
   return typeof v === 'number' ? v : 0;
 };
 
-/** How many times Prepare added a hiker to a per-hiker setting (+1 heart each). */
+/** How many times Prepare gave a hiker a per-hiker effect (+1 heart each). */
 export const prepFor = (settings: MinigameSettings, param: string, hiker: string): number => {
   const v = settings[param];
   return Array.isArray(v) ? v.filter((h) => h === hiker).length : 0;
@@ -300,13 +474,13 @@ export function spend(
     if (!f) continue;
     const pack = next[f.hiker];
     if (!pack) continue;
-    spent.push({ hiker: f.hiker, thing: f.thing, count: s.row.need });
-    if (f.thing.kind === 'resource') {
-      pack.resources[f.thing.id] = Math.max(0, (pack.resources[f.thing.id] ?? 0) - s.row.need);
+    spent.push({ hiker: f.hiker, thing: f.thing, count: s.card.need });
+    if (f.thing.kind !== 'item') {
+      pack.resources[f.thing.id] = Math.max(0, (pack.resources[f.thing.id] ?? 0) - s.card.need);
       continue;
     }
     // Each slot uses its own item (a stack of two Bear Sprays fills two slots).
-    for (let k = 0; k < s.row.need; k++) {
+    for (let k = 0; k < s.card.need; k++) {
       const at = pack.items.findIndex((i) => i.itemId === f.thing.id && !usedUids.has(i.uid));
       if (at < 0) break;
       const it = pack.items[at]!;

@@ -1091,14 +1091,26 @@ export const BALANCE = {
        * every this many px; during play they drift sideways this fast, and a
        * soft brighter band this share of the screen wide sweeps across this often.
        */
-      scanlines: { dark: 0.08, everyPx: 3, driftPxPerSec: 10, bandShare: 0.15, bandEveryMs: 6000 },
+      scanlines: {
+        dark: 0.1,
+        everyPx: 3,
+        /** Lines are spaced as on the prototype's 288-px-wide screen (section 2.1, version 3). */
+        referenceWidth: 288,
+        driftPxPerSec: 10,
+        bandShare: 0.15,
+        bandEveryMs: 6000,
+      },
     },
     /** Every game's Hikers setting in the testing tab: how many, and who by default. */
     hikers: { min: 1, max: 4, default: ['finn', 'ellie', 'mom'] as readonly string[] },
     /** The line-up: a press becomes a drag after moving this far (screen px). */
     lineUp: { dragStartPx: 6 },
     /**
-     * The challenge pop-up's Prepare and bars (docs/design/20-challenge-popup.md).
+     * The challenge pop-up's Prepare and bars (docs/design/20-challenge-popup.md,
+     * version 3: cost cards hold at most [3] slots; slots are [54] across with
+     * ghost icons at [50%]; a fillable slot's outline turns once every [2.4 s]
+     * and breathes down to [55%] every [1.6 s]; up to [4] rule lines under
+     * How to play; bar changes slide in over [0.35 s]. TODO(wyatt).)
      * - Level bars have this many segments; the tier sets the start at tier +
      *   this (Tier I is 4/10); each SLOWER slot is one level, this share
      *   slower. TODO(wyatt): the design gives no mapping; these are my guesses.
@@ -1118,9 +1130,15 @@ export const BALANCE = {
       segSec: 5,
       longSegSec: 10,
       longGameSec: 60,
-      slotPx: 52,
-      ghostOpacity: 0.26,
+      slotPx: 54,
+      ghostOpacity: 0.5,
       ghostCycleSec: 1.3,
+      cardSlots: 3,
+      ringTurnSec: 2.4,
+      ringBreatheSec: 1.6,
+      ringBreatheLow: 0.55,
+      ruleLines: 4,
+      barSlideSec: 0.35,
       demo: { resultSec: 2.4, cutSec: 30, mistake: [0.15, 0.25] as const },
       packs: { madeUp: { kinds: [3, 6] as const, items: [1, 3] as const }, lots: 6 },
     },
@@ -2278,10 +2296,16 @@ export const BALANCE = {
      * any number, and decoy holds per screen.
      */
     rockClimb: {
+      /**
+       * By tier: holds to the top, the arrow's swing and the power meter
+       * (seconds; faster at high tiers, 22-minigame-revisions.md section 2.3,
+       * TODO(wyatt): [1.6, 1.3, 1.0, 0.75, 0.6] and [1.2, 1.0, 0.8, 0.6, 0.48]),
+       * grab reach, one grab try or any, and decoys a screen. No timer by
+       * default (section 2.1): the tries are the limit now.
+       */
       tiers: {
         1: {
           holds: 8,
-          timeSec: 50,
           swingSec: 1.6,
           powerSec: 1.2,
           reach: 16,
@@ -2290,36 +2314,32 @@ export const BALANCE = {
         },
         2: {
           holds: 10,
-          timeSec: 50,
-          swingSec: 1.4,
-          powerSec: 1.1,
+          swingSec: 1.3,
+          powerSec: 1.0,
           reach: 14,
           oneTry: false,
           decoys: 4,
         },
         3: {
           holds: 12,
-          timeSec: 55,
-          swingSec: 1.2,
-          powerSec: 1.0,
+          swingSec: 1.0,
+          powerSec: 0.8,
           reach: 12,
           oneTry: true,
           decoys: 5,
         },
         4: {
           holds: 14,
-          timeSec: 60,
-          swingSec: 1.0,
-          powerSec: 0.9,
+          swingSec: 0.75,
+          powerSec: 0.6,
           reach: 11,
           oneTry: true,
           decoys: 6,
         },
         5: {
           holds: 16,
-          timeSec: 60,
-          swingSec: 0.9,
-          powerSec: 0.8,
+          swingSec: 0.6,
+          powerSec: 0.48,
           reach: 10,
           oneTry: true,
           decoys: 7,
@@ -2329,7 +2349,6 @@ export const BALANCE = {
           MgTier,
           {
             holds: number;
-            timeSec: number;
             swingSec: number;
             powerSec: number;
             reach: number;
@@ -2338,6 +2357,52 @@ export const BALANCE = {
           }
         >
       >,
+      /**
+       * Tries (22-minigame-revisions.md, section 2.1): each hiker has this
+       * many; a fall costs one and this much energy (paid at the end).
+       * "<NAME> IS OUT" shows this long, and their holds blink this long as
+       * they change color. TODO(wyatt): [3], [1], [1.2 s] and [0.6 s].
+       */
+      tries: 3,
+      fallEnergy: 1,
+      outSec: 1.2,
+      blinkSec: 0.6,
+      /** The Time setting's first value when it's turned on (testing only; Auto is no timer). */
+      testTimeSec: 60,
+      /** The top line sits this far above the last path hold (section 2.2). TODO(wyatt): [40–70]. */
+      topAbove: [40, 70] as const,
+      /**
+       * A fall (section 2.4): the climber drops with this gravity (units/s²),
+       * turning this far, until it's this far down (off the bottom of the
+       * screen); then the box shows this long; then the camera slides back
+       * to the last hold this long. TODO(wyatt): [600], [20°], [1.2 s], [0.6 s].
+       */
+      fall: { gravity: 600, turnDeg: 20, drop: 240, boxSec: 1.2, backSec: 0.6 },
+      /** Over the top: the climber goes on up and lands on the ledge, and OVER THE TOP! shows this long (my guess). */
+      topSec: 1.2,
+      /**
+       * How it looks (section 2.4). The camera slides up this long after a
+       * grab, so the climber sits this far down the screen. The arms are this
+       * thick with this outline, from shoulders this far from the body's
+       * middle and this far down from its top. The free hand sits this far
+       * from its shoulder, catching up with the arrow this fast, its elbow
+       * wiggling this much this often, pulling in up to this much at full
+       * power. The ring around it: this radius and thickness.
+       * TODO(wyatt): every number is from the design's [brackets].
+       */
+      look: {
+        cameraSec: 0.5,
+        cameraAt: 0.65,
+        arm: 3,
+        armOutline: 1,
+        shoulder: [5, 8] as const,
+        handReach: 24,
+        catchSec: 0.08,
+        wiggle: 1.5,
+        wigglePerSec: 3,
+        pullIn: 4,
+        ring: [11, 1.4] as const,
+      },
       /** A jump goes this far (from empty to full power), and each planned hold is this far from the last. */
       power: [30, 110] as const,
       step: [40, 90] as const,
@@ -2359,7 +2424,6 @@ export const BALANCE = {
       jumpSec: 0.9,
       hangSec: 0.25,
       tapTolerance: 16,
-      slideSec: 0.5,
       wallX: [24, 296] as const,
       screen: 170,
       decoyClear: 20,
@@ -2422,11 +2486,16 @@ export const BALANCE = {
        * between them), the share of far swaps (not neighbors), the chance a
        * step is a fake-out, the chance of two swaps at once, the show's
        * length, and the chance of night.
+       *
+       * Nov 26, second round (22-minigame-revisions.md, section 1): Tiers III
+       * and IV have [2] empty bins and Tier V [3], and at the end a raccoon
+       * takes [1] (Tier V: [2]) of them away. TODO(wyatt).
        */
       tiers: {
         1: {
           bins: 4,
           empty: 1,
+          takeAway: 0,
           swaps: 7,
           swapSec: [0.5, 0.35],
           far: 0.3,
@@ -2438,6 +2507,7 @@ export const BALANCE = {
         2: {
           bins: 5,
           empty: 1,
+          takeAway: 0,
           swaps: 9,
           swapSec: [0.45, 0.3],
           far: 0.45,
@@ -2448,7 +2518,8 @@ export const BALANCE = {
         },
         3: {
           bins: 6,
-          empty: 1,
+          empty: 2,
+          takeAway: 1,
           swaps: 11,
           swapSec: [0.4, 0.26],
           far: 0.6,
@@ -2459,7 +2530,8 @@ export const BALANCE = {
         },
         4: {
           bins: 7,
-          empty: 1,
+          empty: 2,
+          takeAway: 1,
           swaps: 13,
           swapSec: [0.36, 0.22],
           far: 0.7,
@@ -2470,7 +2542,8 @@ export const BALANCE = {
         },
         5: {
           bins: 8,
-          empty: 1,
+          empty: 3,
+          takeAway: 2,
           swaps: 15,
           swapSec: [0.32, 0.2],
           far: 0.8,
@@ -2485,6 +2558,7 @@ export const BALANCE = {
           {
             bins: number;
             empty: number;
+            takeAway: number;
             swaps: number;
             swapSec: readonly [number, number];
             far: number;
@@ -2495,6 +2569,14 @@ export const BALANCE = {
           }
         >
       >,
+      /**
+       * The take-away (Nov 26, second round): a pause after the last swap,
+       * then each bin is hauled up into the woods over this long, this long
+       * apart. TODO(wyatt): [0.4 s], [0.9 s] and [0.5 s].
+       */
+      takeAway: { pauseSec: 0.4, haulSec: 0.9, apartSec: 0.5 },
+      /** The card (30 × 26 now) and where its 12 × 12 icon goes (right of the red minus). */
+      card: { w: 30, h: 26, icon: [13, 2] as const },
       /** Far swaps arc this much higher, to pass over the bins between. A fake-out crosses this share of the way before going back (my guess). */
       farArc: 10,
       fakeReach: 0.35,
@@ -2729,7 +2811,7 @@ export const BALANCE = {
        * Monster comes from the night monster event, from Tier III.
        */
       roster: {
-        1: { bees: 0, squirrels: 0 },
+        1: { bees: 0, squirrels: 0, ants: 0 },
         2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1 },
         3: {
           bees: 2,
@@ -2768,10 +2850,11 @@ export const BALANCE = {
       /**
        * How common each animal is when one is picked at random for a tier
        * (not the Woods Monster). Ants and Bear with a Gun (Nov 26):
-       * TODO(wyatt): [25] at Tier II, then [20] each.
+       * TODO(wyatt): [25] at Tier II, then [20] each; at Tier I (Nov 26, second
+       * round) bees [40], squirrels [30], ants [30].
        */
       weights: {
-        1: { bees: 60, squirrels: 40 },
+        1: { bees: 40, squirrels: 30, ants: 30 },
         2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
         3: {
           bees: 5,
@@ -2941,29 +3024,39 @@ export const BALANCE = {
         /** Aimed swarm (Level 3): this many bees at once from random edges, aimed at the sprite. */
         aimed: { bees: 4 },
       },
-      /** Bear with a Sword's sweep (unchanged), and its shrinking box on Tier III. */
+      /**
+       * Bear with a Sword. Its shrinking box on Tier III: the box sometimes
+       * shrinks to this for this many of the bear's attacks (any of them,
+       * Nov 26). The sword is this long from its hilt, and its blade this
+       * thick. (The Sword sweep was removed Nov 26: Sword Volley replaces it.)
+       */
       sword: {
-        /** Tier III: the box sometimes shrinks to this for this many of the bear's attacks. */
         shrunk: [140, 70] as const,
         shrinkFrom: 3,
         shrinkChance: 0.3,
         shrinkSwings: 3,
-        /** The sword is this long from its pivot (above the box); the blade is this thick. */
         blade: 116,
         bladeHalfWidth: 2,
-        pivotAbove: 8,
-        /** The warning starts at this, gets this much shorter each swing, and never goes under this. */
-        warnStartSec: 0.8,
-        warnShrink: 0.08,
-        warnMinSec: 0.35,
-        /** The sweep takes this long, a little quicker each swing, never under this. */
-        sweepSec: 0.35,
-        sweepShrink: 0.03,
-        sweepMinSec: 0.2,
-        /** Tier II and up: sometimes a double swing, the second this long after the first. */
-        doubleFrom: 2,
-        doubleChance: 0.35,
-        doubleGapSec: 0.3,
+      },
+      /**
+       * Sword Volley (22-minigame-revisions.md, section 5): this many swords
+       * by level, each on the box's edge at least this far from the others
+       * and from a corner, its tip this far in. They appear this long apart,
+       * warn this long after the last, then fly in order this long apart at
+       * this speed; each hits as a segment this long and half this wide.
+       * TODO(wyatt): every number is a first guess.
+       */
+      volley: {
+        swords: { 1: 3, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+        apart: 24,
+        corner: 16,
+        tipIn: 10,
+        appearSec: 0.15,
+        warnSec: 0.6,
+        flyGapSec: 0.35,
+        speed: 260,
+        length: 24,
+        half: 2,
       },
       /**
        * Claws (Bear, Bear with a Sword, Bobcat): always curved. Each row of
@@ -3391,6 +3484,8 @@ export const BALANCE = {
           count: { 1: 2, 2: 3, 3: 4 } as Readonly<Record<1 | 2 | 3, number>>,
           tossGapSec: 0.15,
           shadowSec: 0.6,
+          /** Nov 26, second round: a trap lands gray and harmless this much longer, then turns red. TODO(wyatt): [1 s]. */
+          armSec: 1,
           openSec: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
           openFadeSec: 0.5,
           slow: 0.5,
@@ -3418,9 +3513,29 @@ export const BALANCE = {
         },
         /** Ricochet (Claude's idea, Level 2 and up): one slow shot whose path shows this long first, bouncing this many times. */
         ricochet: {
-          speed: 150,
+          speed: 260,
           warnSec: 0.8,
-          bounces: { 1: 2, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          bounces: { 1: 3, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          radius: 2,
+          /** Shots by tier (Nov 26, second round): [2] at Tier III, [3] at IV, [4] at V, [0.25 s] apart. */
+          shots: { 1: 2, 2: 2, 3: 2, 4: 3, 5: 4 } as Readonly<Record<MgTier, number>>,
+          gapSec: 0.25,
+        },
+        /**
+         * Bullet Ring (Nov 26, second round), only from Tier IV: "!" over the
+         * portrait and the muzzle flash at the top edge's middle this long,
+         * then this many rings by tier, this long apart, each this many
+         * pellets moving out at this speed, turned this many degrees from
+         * the last. A pellet hits as a circle this big. TODO(wyatt).
+         */
+        bulletRing: {
+          fromTier: 4,
+          warnSec: 0.6,
+          rings: { 1: 3, 2: 3, 3: 3, 4: 3, 5: 4 } as Readonly<Record<MgTier, number>>,
+          apartSec: 0.45,
+          bullets: 16,
+          speed: 70,
+          turnDeg: 11,
           radius: 2,
         },
         /**
@@ -3440,6 +3555,8 @@ export const BALANCE = {
       ants: {
         radius: 3,
         frameSec: 0.12,
+        /** Easy (Tier I, Nov 26) plays only these. */
+        easy: ['marching', 'antMill'] as readonly string[],
         /**
          * Marching Lines: this many ants a line on a grid this big, turning
          * every so many cells, at this speed; this many lines, this long
@@ -3447,11 +3564,17 @@ export const BALANCE = {
          * Level 1 the lead shows its next turn this many cells ahead.
          */
         march: {
-          ants: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          ants: { 0: 6, 1: 8, 2: 10, 3: 12 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
           grid: 7,
-          turnEvery: [3, 6] as const,
-          speed: { 1: 45, 2: 55, 3: 65 } as Readonly<Record<1 | 2 | 3, number>>,
-          lines: { 1: 1, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          /** Cells between turns by level (0 is Easy, Nov 26): turning more often as it gets harder. */
+          turnEvery: {
+            0: [5, 8],
+            1: [4, 7],
+            2: [3, 6],
+            3: [3, 6],
+          } as Readonly<Record<0 | 1 | 2 | 3, readonly [number, number]>>,
+          speed: { 0: 38, 1: 45, 2: 55, 3: 65 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          lines: { 0: 1, 1: 1, 2: 2, 3: 3 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
           apartSec: 0.5,
           walkSec: 5,
           hintUpTo: 1,
@@ -3465,11 +3588,11 @@ export const BALANCE = {
          * fast. Level 3: two rings, turning opposite ways.
          */
         mill: {
-          ring: { 1: 12, 2: 14, 3: 16 } as Readonly<Record<1 | 2 | 3, number>>,
+          ring: { 0: 10, 1: 12, 2: 14, 3: 16 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
           radius: 22,
           sec: 4,
-          turn: 1.2,
-          column: { 1: 8, 2: 10, 3: 12 } as Readonly<Record<1 | 2 | 3, number>>,
+          turn: { 0: 0.9, 1: 1.2, 2: 1.2, 3: 1.2 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          column: { 0: 0, 1: 8, 2: 10, 3: 12 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
           clear: 8,
           driftFrom: 2,
           drift: 10,

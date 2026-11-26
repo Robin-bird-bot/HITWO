@@ -153,6 +153,34 @@ export function Sword({
   );
 }
 
+/**
+ * A Sword Volley sword (sword.png, 7 × 64), its blade as long as the part
+ * that hits, drawn by its tip and pointing along `angle`.
+ */
+export function ShortSword({ x, y, angle }: { x: number; y: number; angle: number }) {
+  const h = BALANCE.minigames.dodge.volley.length * SWORD_PER_BLADE;
+  const w = (h * 7) / 64;
+  return (
+    <img
+      className={`${ui.sprite} ${styles.part}`}
+      src={art('sword.png')}
+      alt=""
+      draggable={false}
+      style={{
+        left: x - w / 2,
+        top: y - h,
+        width: w,
+        height: h,
+        transformOrigin: `${w / 2}px ${h}px`,
+        transform: `rotate(${(deg(angle) - 90).toFixed(1)}deg)`,
+      }}
+    />
+  );
+}
+
+/** sword.png's whole length over its blade's (the hilt and guard take the top 12 of its 64 rows). */
+const SWORD_PER_BLADE = 64 / 52;
+
 /** The thrown sword spinning (sword.png, 7 × 64, scaled to its length), by its middle. */
 export function Spinning({
   x,

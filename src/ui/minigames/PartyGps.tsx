@@ -29,6 +29,7 @@ import {
   type TurnedGps,
 } from './gpsLayout';
 import styles from './PartyGps.module.css';
+import { ScanlineCanvas } from './ScanlineCanvas';
 
 export function PartyGps({
   turned,
@@ -94,9 +95,6 @@ export function PartyGps({
             transform: gpsTransform(pose, gpsUpright(layout, slot)),
             '--u': u,
             '--ms': `${motion.ms}ms`,
-            '--scan-dark': S.dark,
-            '--scan-every': `${S.everyPx}px`,
-            '--scan-ms': `${(S.everyPx / S.driftPxPerSec) * 1000}ms`,
             '--band-share': `${S.bandShare * 100}%`,
             '--band-ms': `${S.bandEveryMs}ms`,
           } as CSSProperties
@@ -129,11 +127,7 @@ export function PartyGps({
               {showContent && mode === 'demo' && skipped && (
                 <span className={styles.skipped}>SKIPPED</span>
               )}
-              <span
-                className={styles.scanlines}
-                data-drift={scan.drift || undefined}
-                aria-hidden="true"
-              />
+              <ScanlineCanvas drift={scan.drift} settleKey={`${pose}|${mode}|${u}`} />
               {scan.band && <span className={styles.band} aria-hidden="true" />}
               <span className={styles.sheen} aria-hidden="true" />
               <span className={styles.inner} aria-hidden="true" />

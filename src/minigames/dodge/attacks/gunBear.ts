@@ -11,11 +11,18 @@
  *   leaves a hole the sprite can't enter, which fades after a while. At most
  *   [3] holes, never more than [30%] of the box. Level 3: two in a row.
  * - **Bear Traps** (changer): traps are tossed in (a shadow shows where),
- *   lie open for a while, and snap shut on the sprite: 1 heart and slowed.
+ *   land gray and harmless for a moment (22-minigame-revisions.md, section
+ *   3.1), then turn red and lie open for a while, snapping shut on the
+ *   sprite: 1 heart and slowed.
  * - **Rapid Fire** (missile): a cone flashes from one spot, then a spray of
  *   bullets flies out within it.
- * - **Ricochet** (Claude's idea, Level 2 and up; missile): one slow shot
- *   whose whole bouncing path shows first; the bullet follows it exactly.
+ * - **Ricochet** (Claude's idea, Level 2 and up; missile): fast shots
+ *   whose whole bouncing paths show first, all at once; the bullets follow
+ *   them exactly, a moment apart. More shots by tier (section 3.2).
+ * - **Bullet Ring** (Tier IV and up; missile, section 3.3): a "!" over the
+ *   portrait and a muzzle flash at the middle of the box's top, then rings
+ *   of pellets fly out from there, each ring turned from the last so the
+ *   gaps move.
  * - **Quick Draw** (Claude's idea, Level 3; area): a "!" over the portrait,
  *   then a band across the sprite's row, then one down its column.
  *
@@ -84,13 +91,17 @@ export interface HolePart extends PartBase {
   until: number;
 }
 
-/** A bear trap: tossed (`warnAt`, its shadow showing), landing open (`activeAt`) until `openUntil`. */
+/**
+ * A bear trap: tossed (`warnAt`, its shadow showing), landing gray and
+ * harmless (`activeAt`), turning red at `armAt`, open until `openUntil`.
+ */
 export interface TrapPart extends PartBase {
   kind: 'trap';
   /** Where it's tossed from (the bear, above the box) and where it lands. */
   from: Point;
   x: number;
   y: number;
+  armAt: number;
   openUntil: number;
   /** When it snapped shut on the sprite (harmless from then). */
   shutAt?: number;
@@ -116,6 +127,17 @@ export interface RicochetPart extends PartBase {
   speed: number;
 }
 
+/** One ring of a Bullet Ring: pellets flying out from `from`, the first at angle `a0`. */
+export interface BulletRingPart extends PartBase {
+  kind: 'bulletRing';
+  from: Point;
+  a0: number;
+  pellets: number;
+  speed: number;
+  /** The first ring carries the warning (the "!" and the muzzle flash). */
+  first?: true;
+}
+
 /** Quick Draw: a band across the row (`row`, at `activeAt`), then down the column (`col`, at `colAt`). */
 export interface QuickDrawPart extends PartBase {
   kind: 'quickDraw';
@@ -127,7 +149,14 @@ export interface QuickDrawPart extends PartBase {
 }
 
 export type GunPart =
-  ShotPart | CrosshairPart | HolePart | TrapPart | BulletPart | RicochetPart | QuickDrawPart;
+  | ShotPart
+  | CrosshairPart
+  | HolePart
+  | TrapPart
+  | BulletPart
+  | RicochetPart
+  | BulletRingPart
+  | QuickDrawPart;
 
 // ── Shared ─────────────────────────────────────────────────────────────────
 
@@ -379,13 +408,16 @@ export const BEAR_TRAPS: AttackDef = {
       taken.push(spot);
       const warnAt = ctx.time + k * T.tossGapSec;
       const activeAt = warnAt + warnFor(T.shadowSec);
+      // It lands gray and harmless, then turns red; its open time starts then.
+      const armAt = activeAt + T.armSec;
       parts.push({
         kind: 'trap',
         ...base(ctx, warnAt, activeAt),
         from: tossFrom(ctx.box),
         x: spot.x,
         y: spot.y,
-        openUntil: activeAt + open,
+        armAt,
+        openUntil: armAt + open,
       });
     }
     // The round is over once they've landed; the traps stay.
@@ -405,7 +437,8 @@ const TRAP_RULES: PartRules<TrapPart> = {
     return { part: p };
   },
   shapes(p, w) {
-    if (p.gone || p.shutAt !== undefined || w.time < p.activeAt || w.time >= p.openUntil) return [];
+    // Gray (arming) traps never bite.
+    if (p.gone || p.shutAt !== undefined || w.time < p.armAt || w.time >= p.openUntil) return [];
     return [{ kind: 'ellipse', cx: p.x, cy: p.y, rx: T.hit[0], ry: T.hit[1] }];
   },
   onHit: (p, w) => ({ part: { ...p, shutAt: w.time }, slowSec: T.slowSec }),
@@ -512,24 +545,79 @@ export const RICOCHET: AttackDef = {
   kind: 'missile',
   claudesIdea: true,
   start(ctx) {
-    const gun = gunSpot(ctx.rng, ctx.box);
-    return {
-      parts: [
-        {
-          kind: 'ricochet',
-          ...base(ctx, ctx.time, ctx.time + warnFor(RI.warnSec)),
-          path: ricochetPath(ctx.box, gun, ctx.pos, RI.bounces[ctx.level]),
-          speed: RI.speed * ctx.state.pace,
-        },
-      ],
-      endsAt: 'parts',
-    };
+    // Every path shows at once; then the shots fire a moment apart, each from its own spot.
+    const fireAt = ctx.time + warnFor(RI.warnSec);
+    const parts: RicochetPart[] = Array.from({ length: ricochetShots(ctx) }, (_, k) => ({
+      kind: 'ricochet',
+      ...base(ctx, ctx.time, fireAt + k * RI.gapSec),
+      path: ricochetPath(ctx.box, gunSpot(ctx.rng, ctx.box), ctx.pos, RI.bounces[ctx.level]),
+      speed: RI.speed * ctx.state.pace,
+    }));
+    return { parts, endsAt: 'parts' };
   },
 };
+
+/** How many Ricochet shots: by the tier (section 3.2). */
+export const ricochetShots = (ctx: Pick<AttackCtx, 'state'>): number => RI.shots[ctx.state.hudTier];
 
 const RICOCHET_RULES: PartRules<RicochetPart> = {
   shapes: (p, w, t0) => sweep((t) => ricochetAt(p, t).at, p.activeAt, t0, w.time, RI.radius),
   done: (p, w) => w.time > p.activeAt && ricochetAt(p, w.time).end,
+};
+
+// ── Bullet Ring ────────────────────────────────────────────────────────────
+
+const BR = G.bulletRing;
+
+/** Where the rings come from: the middle of the box's top edge. */
+export const ringFrom = (box: Box): Point => ({ x: box.cx, y: edges(box).top });
+
+/**
+ * A ring's pellets now: only the ones flying into the box count (those
+ * that start out of it, up and away from the top edge, don't).
+ */
+export function ringPellets(p: BulletRingPart, time: number): Point[] {
+  const r = Math.max(0, time - p.activeAt) * p.speed;
+  const out: Point[] = [];
+  for (let k = 0; k < p.pellets; k++) {
+    const a = p.a0 + (2 * Math.PI * k) / p.pellets;
+    const dy = Math.sin(a);
+    if (dy <= 1e-6) continue;
+    out.push({ x: p.from.x + Math.cos(a) * r, y: p.from.y + dy * r });
+  }
+  return out;
+}
+
+export const BULLET_RING: AttackDef = {
+  id: 'bulletRing',
+  name: 'Bullet Ring',
+  kind: 'missile',
+  fromTier: BR.fromTier as 4,
+  start(ctx) {
+    const from = ringFrom(ctx.box);
+    const fireAt = ctx.time + warnFor(BR.warnSec);
+    const turn = BR.turnDeg * DEG;
+    const a0 = nextFloat(ctx.rng) * ((2 * Math.PI) / BR.bullets);
+    const parts: BulletRingPart[] = Array.from({ length: BR.rings[ctx.state.hudTier] }, (_, k) => ({
+      kind: 'bulletRing',
+      ...base(ctx, ctx.time, fireAt + k * BR.apartSec),
+      from,
+      a0: a0 + k * turn,
+      pellets: BR.bullets,
+      speed: BR.speed * ctx.state.pace,
+      ...(k === 0 ? { first: true as const } : {}),
+    }));
+    return { parts, endsAt: 'parts' };
+  },
+};
+
+const BULLET_RING_RULES: PartRules<BulletRingPart> = {
+  shapes: (p, w) =>
+    w.time < p.activeAt
+      ? []
+      : ringPellets(p, w.time).map((q) => ({ kind: 'circle', x: q.x, y: q.y, r: BR.radius })),
+  // Gone once every pellet is past the box's far corners.
+  done: (p, w) => w.time > p.activeAt + (Math.hypot(w.box.w, w.box.h) + 8) / p.speed,
 };
 
 // ── Quick Draw (Claude's idea) ─────────────────────────────────────────────
@@ -611,6 +699,7 @@ export const GUN_ATTACKS: readonly AttackDef[] = [
   BEAR_TRAPS,
   RAPID_FIRE,
   RICOCHET,
+  BULLET_RING,
   QUICK_DRAW,
 ];
 
@@ -623,5 +712,6 @@ export const GUN_RULES: {
   trap: TRAP_RULES,
   bullet: BULLET_RULES,
   ricochet: RICOCHET_RULES,
+  bulletRing: BULLET_RING_RULES,
   quickDraw: QUICK_DRAW_RULES,
 };

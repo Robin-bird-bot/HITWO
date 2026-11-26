@@ -5,29 +5,14 @@
  */
 import { ASSETS } from '../../config/assets';
 import { ITEMS } from '../../content/items';
-import { RESOURCES } from '../../content/resources';
-import type { Thing, Tile } from '../../minigames/prepare';
+import { thingName, type Thing, type Tile } from '../../minigames/prepare';
 import type { MinigameHiker } from '../../minigames/types';
-
-/** "Bear Spray"; an item the game doesn't have yet gets its name from its id ("Woodcutting Axe"). */
-export function thingName(t: Thing): string {
-  if (t.kind === 'resource') return RESOURCES.find((r) => r.id === t.id)?.name ?? t.id;
-  return ITEMS[t.id]?.name ?? t.id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
-}
 
 /** Its picture, or none (an item without art yet). */
 export function thingArt(t: Thing): string | null {
   if (t.kind === 'resource') return ASSETS.resources[t.id] ?? null;
   const art = ITEMS[t.id]?.art;
   return art ? ASSETS.itemArt(art) : null;
-}
-
-/** "MEAT, FISH OR MUSHROOM". */
-export function acceptsLine(things: readonly Thing[]): string {
-  const names = things.map((t) => thingName(t).toUpperCase());
-  return names.length > 1
-    ? `${names.slice(0, -1).join(', ')} OR ${names.at(-1)}`
-    : (names[0] ?? '');
 }
 
 /** The foot line for a tile: "MOM'S GRASS · 3 FREE", "… (REST IN OTHER SLOTS) · NEEDS 1", "FISH · NOBODY HAS ANY". */
