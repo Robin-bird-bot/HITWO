@@ -20,6 +20,8 @@ Numbers in [brackets] are first guesses for `balance.ts`, with `TODO(wyatt)`. Se
 ---
 
 ## 1. Bear with a Gun (Dodge)
+**Revised November 26 (second round): see `22-minigame-revisions.md`, sections 3 and 4.**
+
 A cowboy bear with a revolver. See `mockups/dodge-new/22-gun-aimed-shot.png` to `25-gun-rapid-fire.png`.
 
 - **Box:** [160 × 110].
@@ -81,6 +83,8 @@ A cowboy bear with a revolver. See `mockups/dodge-new/22-gun-aimed-shot.png` to 
 ---
 
 ## 2. Ants (Dodge)
+**Revised November 26 (second round): see `22-minigame-revisions.md`, sections 3 and 4.**
+
 A swarm of ants. See `mockups/dodge-new/26-ants-lines.png` to `29-ants-hill.png`.
 
 - **Box:** [150 × 120].
