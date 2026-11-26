@@ -2773,6 +2773,53 @@ export const BALANCE = {
     },
 
     /**
+     * Sketchy Bridge (23-minigames-final.md, section 1), Stardew-style. The
+     * balance bar is this tall; the zone rises this fast (units/s²) while
+     * held, falls this fast when let go, and bounces off the bottom (speed ×
+     * this). By tier: the zone's height, the icon's speed (units/s), the
+     * in-zone seconds a crossing takes, integrity lost a second outside the
+     * zone, and whether wind gusts blow. Integrity starts at this; a plank
+     * falls every this many points. The icon picks a new height every this
+     * long (staying this far from the ends). From this tier it darts this
+     * far (this often a pick: my guess). Gusts flap this long, then push the
+     * icon this long at this speed, every so often (speed and how often: my
+     * guesses). The hiker who breaks the bridge gets this (the challenge's
+     * stake, until challenges are hooked up).
+     * TODO(wyatt): every number here; [600], [400], [0.3], [44–24], [50–96], [8–12 s], [14–22], [100], [4].
+     */
+    sketchyBridge: {
+      barH: 150,
+      rise: 600,
+      fall: 400,
+      bounce: 0.3,
+      tiers: {
+        1: { zone: 44, sway: 50, crossSec: 8, drain: 14, gusts: false },
+        2: { zone: 38, sway: 60, crossSec: 9, drain: 16, gusts: false },
+        3: { zone: 32, sway: 72, crossSec: 10, drain: 18, gusts: false },
+        4: { zone: 28, sway: 84, crossSec: 11, drain: 20, gusts: true },
+        5: { zone: 24, sway: 96, crossSec: 12, drain: 22, gusts: true },
+      } as Readonly<
+        Record<
+          MgTier,
+          { zone: number; sway: number; crossSec: number; drain: number; gusts: boolean }
+        >
+      >,
+      integrity: 100,
+      plankEvery: 4,
+      retargetSec: [0.6, 1.4] as const,
+      iconMargin: 8,
+      dartFrom: 3,
+      dartChance: 0.25,
+      dart: [30, 50] as const,
+      gust: { flapSec: 0.5, pushSec: 0.6, speed: 70, everySec: [3, 6] as const },
+      fallCondition: 'injury',
+      /** Prepare (section 10): PATCH THE PLANKS adds this much; FOOD makes the zone this much bigger; the Hiking Stick cuts the sway by this share. */
+      patch: 20,
+      extraZone: 4,
+      lessSway: 0.25,
+    },
+
+    /**
      * Thin Ice, the crossing (23-minigames-final.md, section 7): by tier,
      * the ice (columns × rows), the share of it that's holes, and each
      * hiker's ice picks. A pick tests a square this many steps away. Falling

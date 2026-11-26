@@ -1,0 +1,103 @@
+/* Sketchy Bridge (40-sketchy-bridge.png), in scene units (320 × 240). */
+
+.play {
+  cursor: pointer;
+}
+
+.bg {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 176px;
+}
+
+.ropes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+.plank {
+  position: absolute;
+  width: 9px;
+  height: 4px;
+}
+
+.post {
+  position: absolute;
+  width: 6px;
+  height: 22px;
+}
+
+.hiker {
+  position: absolute;
+  width: 10px;
+  height: 13px;
+}
+
+/* The bridge broke: the hiker on it drops into the gorge. */
+.hiker[data-falling] {
+  animation: drop 0.9s ease-in forwards;
+}
+
+@keyframes drop {
+  to {
+    transform: translateY(120px) rotate(40deg);
+    opacity: 0;
+  }
+}
+
+/* The balance bar: dark, with the zone (lighter while the icon is in it). */
+.bar {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #111a10;
+  border-radius: 3px;
+  background: #2b3a23;
+  overflow: hidden;
+}
+
+.zone {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  border-radius: 2px;
+  background: #a0b37d;
+}
+
+.zone[data-in] {
+  background: #d3dfaf;
+}
+
+/* Show the icon's target (testing). */
+.target {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #e5624a;
+}
+
+.icon {
+  position: absolute;
+  pointer-events: none;
+}
+
+.barLabel {
+  position: absolute;
+  width: 20px;
+  text-align: center;
+  color: #1d2918;
+  font-size: 3.4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hiker[data-falling] {
+    animation: none;
+    opacity: 0;
+  }
+}

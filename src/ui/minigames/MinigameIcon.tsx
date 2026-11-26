@@ -54,6 +54,13 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
   picturePuzzle: (
     <path d="M4 8h4a2 2 0 1 1 4 0h4v4a2 2 0 1 0 0 4v4h-4a2 2 0 1 0-4 0H4v-4a2 2 0 1 1 0-4z" />
   ),
+  // A rope bridge: two sagging ropes and hangers.
+  sketchyBridge: (
+    <>
+      <path d="M2 8q10 7 20 0M2 14q10 7 20 0" />
+      <path d="M7 11v5M12 12v6M17 11v5M2 6v10M22 6v10" />
+    </>
+  ),
   // A pile, three tiers high, with a stink line (Minefield, the Dog Waste Zone).
   minefield: (
     <>

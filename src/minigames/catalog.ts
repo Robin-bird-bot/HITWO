@@ -1201,20 +1201,36 @@ export const ROCK_CLIMB: MinigameInfo = {
   },
 };
 
-const soon = (
-  id: string,
-  name: string,
-  baseGame: string,
-  category: MinigameInfo['category'],
-): MinigameInfo => ({
-  id,
-  name,
-  baseGame,
-  category,
-  description: '',
-  status: 'soon',
-  settings: [],
-});
+// ── Sketchy Bridge (docs/design/23-minigames-final.md, section 1) ──
+
+const SKB = BALANCE.minigames.sketchyBridge;
+
+export const SKETCHY_BRIDGE: MinigameInfo = {
+  id: 'sketchyBridge',
+  name: 'Sketchy Bridge',
+  baseGame: 'Balance bar',
+  category: 'move',
+  description:
+    'Hold to keep each hiker in the zone as they cross. Outside it, the bridge weakens, and it never recovers.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange('bridge', 'Bridge', 40, 160, SKB.integrity, '', 10),
+    {
+      kind: 'pick',
+      id: 'showTarget',
+      label: 'Show the icon’s target',
+      options: [
+        { id: 'off', label: 'Off' },
+        { id: 'on', label: 'On' },
+      ],
+      default: 'off',
+      hint: 'A red line where the icon is heading (testing)',
+    },
+  ],
+};
 
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
@@ -1281,7 +1297,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   TRAILS,
   ROCK_CLIMB,
   CAMP_CLEANUP,
-  soon('crackedBridge', 'Cracked Bridge', 'Platformer', 'move'),
+  SKETCHY_BRIDGE,
   TRAILDLE,
   FIND_PATH,
   FAKE_SIGNS,

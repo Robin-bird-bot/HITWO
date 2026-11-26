@@ -9,7 +9,7 @@ import { VERSIONS as CROSSING_VERSIONS } from '../crossing/logic';
 import { ANIMALS, isAnimal, levelFor } from '../dodge/animals';
 import { autoLength } from '../dodge/logic';
 import type { AnimalId } from '../dodge/types';
-import { group, item, prepNumber, res } from '../prepare';
+import { FOOD, group, item, prepNumber, res } from '../prepare';
 import { TRAIL_TYPES } from '../trails/course';
 import { TIERS, type MinigameSettings, type Tier } from '../types';
 import {
@@ -643,5 +643,109 @@ export const ROCK_CLIMB_POPUP: GamePopup = {
       param: P_('harness'),
       step: 1,
     }),
+  ],
+};
+
+// ── Sketchy Bridge (23-minigames-final.md, section 10) ─────────────────────
+
+const SB = MG.sketchyBridge;
+
+export const SKETCHY_BRIDGE_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Cross the bridge one at a time. Hold to raise the zone and keep your hiker inside it: you only walk while you’re in it. **Outside it, the bridge weakens.**',
+    ),
+  rules: (s) =>
+    rulesOf(
+      line('The bridge doesn’t recover between hikers.'),
+      line('If it breaks, the hiker on it falls, and everyone still waiting fails.'),
+      tierIn(s) >= SB.dartFrom &&
+        line('Your hiker sometimes darts.', fromTier(SB.dartFrom as Tier)),
+      SB.tiers[tierIn(s)].gusts && line('Wind gusts push your hiker.', fromTier(4)),
+    ),
+  controls: [
+    {
+      action: 'HOLD',
+      inputs: [...key('SPACE'), OR, mouse('The button'), OR, finger('Anywhere')],
+    },
+  ],
+  chips: () => ['ONE AT A TIME'],
+  ifFail: [
+    { who: 'each', label: 'On it when it breaks:', value: 'hurt' },
+    { who: 'everyone', label: 'Still waiting:', value: '−1 Energy each' },
+  ],
+  bars(s) {
+    const t = SB.tiers[tierIn(s)];
+    const bridge = numOr(s, 'bridge', SB.integrity);
+    const sway = t.sway;
+    return [
+      countBar(
+        'bridge',
+        'BRIDGE',
+        bridge,
+        bridge + prepNumber(s, P_('patch')),
+        SB.integrity + 2 * SB.patch,
+      ),
+      countBar(
+        'zone',
+        'ZONE SIZE',
+        t.zone,
+        t.zone + prepNumber(s, P_('zone')),
+        mostOver((x) => SB.tiers[x].zone) + 2 * SB.extraZone,
+      ),
+      countBar(
+        'sway',
+        'SWAY SPEED',
+        sway,
+        Math.round(sway * (prepNumber(s, P_('stick')) > 0 ? 1 - SB.lessSway : 1)),
+        mostOver((x) => SB.tiers[x].sway),
+      ),
+    ];
+  },
+  options: () => [
+    opt(
+      'patch',
+      'green',
+      res('wood'),
+      'PATCH THE PLANKS',
+      `+${SB.patch}`,
+      `+${SB.patch} bridge`,
+      { param: P_('patch'), step: SB.patch },
+      { need: 2, max: 2 },
+    ),
+    opt(
+      'zone',
+      'green',
+      FOOD,
+      'BIGGER ZONE',
+      'ZONE',
+      `+${SB.extraZone} zone`,
+      { param: P_('zone'), step: SB.extraZone },
+      { max: 2 },
+    ),
+    opt(
+      'stick',
+      'red',
+      item('hikingStick'),
+      'HIKING STICK',
+      'STICK',
+      `${Math.round(SB.lessSway * 100)}% less sway`,
+      {
+        param: P_('stick'),
+        step: 1,
+      },
+    ),
+    opt(
+      'harness',
+      'green',
+      item('harness'),
+      'HARNESS',
+      'HARNESS',
+      'whoever’s on it when it breaks isn’t hurt',
+      {
+        param: P_('harness'),
+        step: 1,
+      },
+    ),
   ],
 };
