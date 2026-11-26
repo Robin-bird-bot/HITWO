@@ -1,0 +1,140 @@
+/* Squirrel Theft (43a and 43b), in scene units (320 × 240). */
+
+.play {
+  cursor: crosshair;
+}
+
+.bg {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 176px;
+}
+
+/* The intro: a dark arcade screen. */
+.intro {
+  position: absolute;
+  left: 0;
+  top: 22px;
+  width: 320px;
+  height: 173px;
+  background: #1d2918;
+}
+
+.title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  text-align: center;
+  color: #d3dfaf;
+  font-size: 14px;
+}
+
+.thief {
+  position: absolute;
+  top: 60px;
+  width: 40px;
+  height: 30px;
+  transform: scale(2);
+  transform-origin: 50% 50%;
+}
+
+.took {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 124px;
+  text-align: center;
+  font-size: 4px;
+}
+
+.stolen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 134px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.stolen > img {
+  width: 14px;
+  height: 14px;
+  padding: 1px;
+  border-radius: 2px;
+  background: #d3dfaf;
+}
+
+.target {
+  position: absolute;
+  pointer-events: none;
+  animation: pop 0.12s ease-out;
+}
+
+@keyframes pop {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+}
+
+.nut {
+  position: absolute;
+  width: 7px;
+  height: 8px;
+  pointer-events: none;
+}
+
+/* The thrower's hand: a sleeve in their color, holding a nut. */
+.hand {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
+
+.sleeve {
+  position: absolute;
+  left: 2px;
+  top: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  box-shadow: 0 0 0 0.75px #1d2918;
+}
+
+.hand > img {
+  position: absolute;
+  left: 2.5px;
+  top: 0;
+  width: 7px;
+  height: 8px;
+}
+
+/* The HAPPY line on the bar. */
+.line {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: #e5624a;
+}
+
+.nuts {
+  display: flex;
+  gap: 1px;
+}
+
+.nuts > img {
+  width: 5px;
+  height: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .target {
+    animation: none;
+  }
+}

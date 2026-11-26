@@ -31,6 +31,7 @@ import {
 import {
   FIREFLY_CATCH_POPUP,
   FLY_BLOCK_POPUP,
+  SQUIRREL_THEFT_POPUP,
   FLY_SWATTER_POPUP,
   RACCOON_SHUFFLE_POPUP,
   SIZE_UP_POPUP,
@@ -66,6 +67,7 @@ export const POPUPS: Readonly<Record<string, GamePopup>> = {
   findObject: FIND_OBJECT_POPUP,
   trailBlocks: TRAIL_BLOCKS_POPUP,
   flyBlock: FLY_BLOCK_POPUP,
+  squirrelTheft: SQUIRREL_THEFT_POPUP,
   sleepingBear: SLEEPING_BEAR_POPUP,
   whackoon: WHACKOON_POPUP,
   trailBlazes: TRAIL_BLAZES_POPUP,

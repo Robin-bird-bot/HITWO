@@ -1305,6 +1305,38 @@ export const FLY_BLOCK: MinigameInfo = {
   ],
 };
 
+// ── Squirrel Theft (docs/design/23-minigames-final.md, section 4) ──
+
+const SQK = BALANCE.minigames.squirrelTheft;
+
+export const SQUIRREL_THEFT: MinigameInfo = {
+  id: 'squirrelTheft',
+  name: 'Squirrel Theft',
+  baseGame: 'Shooting gallery',
+  category: 'reaction',
+  description:
+    'Throw nuts to the squirrels to win back what they stole. Fill the HAPPY bar past the line.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange('stolen', 'Stolen', 1, 6, SQK.stolenAuto, ''),
+    {
+      kind: 'pick',
+      id: 'bears',
+      label: 'Bears',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'on', label: 'On' },
+        { id: 'off', label: 'Off' },
+      ],
+      default: 'auto',
+      hint: `Auto: from Tier ${TIER_LABELS[SQK.bear.from as Tier]}`,
+    },
+  ],
+};
+
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
 const CC = BALANCE.minigames.campCleanup;
@@ -1392,6 +1424,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   SIZE_UP,
   FLY_SWATTER,
   FLY_BLOCK,
+  SQUIRREL_THEFT,
   RACCOON_SHUFFLE,
 ];
 

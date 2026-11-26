@@ -669,3 +669,90 @@ export const FLY_BLOCK_POPUP: GamePopup = {
     ),
   ],
 };
+
+// ── Squirrel Theft (23-minigames-final.md, section 10) ─────────────────────
+
+const SQT = MG.squirrelTheft;
+const squirrelBears = (s: MinigameSettings) =>
+  s.bears === 'on' ? true : s.bears === 'off' ? false : tierIn(s) >= SQT.bear.from;
+
+export const SQUIRREL_THEFT_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'A squirrel stole from your packs! Tap the squirrels to throw them nuts. Nuts take a moment to land, so aim where they’ll be. **Fill the HAPPY bar past the line,** or what they took is gone.',
+    ),
+  rules: (s) =>
+    rulesOf(
+      line('Each hiker throws their own nuts, in turn.'),
+      tierIn(s) >= SQT.runner.from && line('Some squirrels run along the branches.', fromTier(2)),
+      squirrelBears(s) &&
+        prepNumber(s, P_('bearSpray')) === 0 &&
+        line(
+          `Don’t feed the bears: it takes ${SQT.bear.cost} off the bar.`,
+          tierIn(s) >= SQT.bear.from ? fromTier(3) : undefined,
+        ),
+    ),
+  controls: [{ action: 'THROW', inputs: [mouse('Click'), OR, finger('Tap')] }],
+  chips: () => ['TAKE TURNS'],
+  ifFail: [{ who: 'everyone', label: 'Below the line:', value: 'what they took is lost' }],
+  bars(s) {
+    const t = SQT.tiers[tierIn(s)];
+    const bait = prepNumber(s, P_('bait')) > 0 ? SQT.baitSec : 0;
+    const pct = (v: number) => Math.round(v * 100);
+    return [
+      countBar('nuts', 'NUTS EACH', t.nuts, t.nuts, mostOver((x) => SQT.tiers[x].nuts) + 2),
+      {
+        ...countBar(
+          'line',
+          'HAPPY LINE',
+          pct(t.line),
+          pct(t.line),
+          mostOver((x) => pct(SQT.tiers[x].line)),
+        ),
+        display: (v: number) => `${v}%`,
+      },
+      {
+        ...countBar(
+          'up',
+          'POP-UP TIME',
+          t.upSec,
+          Math.round((t.upSec + bait) * 10) / 10,
+          SQT.tiers[1].upSec + SQT.baitSec,
+        ),
+        display: (v: number) => `${v.toFixed(1)} S`,
+      },
+    ];
+  },
+  options: () => [
+    opt(
+      'nuts',
+      'green',
+      FOOD,
+      '+1 NUT',
+      '+1',
+      'pick a hiker',
+      { param: P_('nuts'), step: 1 },
+      { perHiker: true, max: 2 },
+    ),
+    opt(
+      'bait',
+      'red',
+      group('forest'),
+      'SQUIRRELS STAY UP LONGER',
+      'BAIT',
+      `+${SQT.baitSec} s up`,
+      { param: P_('bait'), step: 1 },
+      { title: 'BAIT', need: 2 },
+    ),
+    opt(
+      'bearSpray',
+      'red',
+      item('bearSpray'),
+      'NO BEARS',
+      'SPRAY',
+      'the bears stay away',
+      { param: P_('bearSpray'), step: 1 },
+      { title: 'BEAR SPRAY', onlyIf: (x) => squirrelBears(x) },
+    ),
+  ],
+};

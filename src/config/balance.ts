@@ -2773,6 +2773,66 @@ export const BALANCE = {
     },
 
     /**
+     * Squirrel Theft (23-minigames-final.md, section 4), a shooting
+     * gallery. By tier: how long a squirrel stays up, each hiker's nuts, and
+     * the HAPPY line as a share of all the party's nuts. The intro lasts
+     * this long; the thief takes this many things when the challenge
+     * doesn't say (the challenge sets it: [3–6]). A nut lands this long
+     * after it's thrown and feeds a target within this far of the spot. A
+     * squirrel's body (and a bear's) is this big around its middle, for
+     * aiming. The first target comes this long in, then one every so often,
+     * at most this many up at once; a fed squirrel ducks this long after
+     * (all my guesses). Where targets pop up: the far bushes, the log and
+     * the near bushes (rows), and the branches (runners, from Tier II, this
+     * often, at this speed: my guesses), all matching bg.png. Bears (from
+     * Tier III, this often: my guess) take this much off the bar; from Tier
+     * IV one pops up where a squirrel just ducked this often (my guess).
+     * BAIT keeps squirrels up this much longer.
+     * TODO(wyatt): [1.4–0.8 s], [6, 6, 5, 5, 4], [40–60]%, [3 s], [3–6], [0.35 s], [7], [2], [0.3 s].
+     */
+    squirrelTheft: {
+      tiers: {
+        1: { upSec: 1.4, nuts: 6, line: 0.4 },
+        2: { upSec: 1.2, nuts: 6, line: 0.45 },
+        3: { upSec: 1.0, nuts: 5, line: 0.5 },
+        4: { upSec: 0.9, nuts: 5, line: 0.55 },
+        5: { upSec: 0.8, nuts: 4, line: 0.6 },
+      } as Readonly<Record<MgTier, { upSec: number; nuts: number; line: number }>>,
+      introSec: 3,
+      stolenAuto: 4,
+      flightSec: 0.35,
+      reach: 7,
+      half: [9, 7] as const,
+      firstSec: 0.6,
+      everySec: [0.5, 0.9] as const,
+      maxUp: 3,
+      fedSec: 0.4,
+      rows: [
+        { x0: 20, x1: 300, y: 104 },
+        { x0: 50, x1: 270, y: 140 },
+        { x0: 20, x1: 300, y: 167 },
+      ] as const,
+      branches: [
+        { x0: 36, x1: 62, y: 53 },
+        { x0: 116, x1: 144, y: 53 },
+        { x0: 210, x1: 238, y: 53 },
+        { x0: 292, x1: 316, y: 53 },
+      ] as const,
+      runner: { from: 2, chance: 0.3, speed: 22 },
+      bear: {
+        from: 3,
+        chance: 0.2,
+        cost: 2,
+        half: [12, 9] as const,
+        ambushFrom: 4,
+        ambushChance: 0.35,
+      },
+      baitSec: 0.3,
+      /** The demo bot misjudges this share of its throws. */
+      botMiss: 0.3,
+    },
+
+    /**
      * Fly Block (23-minigames-final.md, section 3), Tempest-style. By tier:
      * panels around the pie, the flies' speed (units/s), flies a round, and
      * a fly every so often (seconds). A lane runs this far out from the ring
