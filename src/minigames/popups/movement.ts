@@ -6,9 +6,16 @@
  */
 import { BALANCE } from '../../config/balance';
 import { VERSIONS as CROSSING_VERSIONS } from '../crossing/logic';
-import { ANIMALS, isAnimal, levelFor } from '../dodge/animals';
+import {
+  ANIMALS,
+  EAGLE_NAMES,
+  EAGLE_VERSIONS,
+  eagleVersionFor,
+  isAnimal,
+  levelFor,
+} from '../dodge/animals';
 import { autoLength } from '../dodge/logic';
-import type { AnimalId } from '../dodge/types';
+import type { AnimalId, EagleVersion } from '../dodge/types';
 import { FOOD, group, item, prepNumber, res } from '../prepare';
 import { TRAIL_TYPES } from '../trails/course';
 import { TIERS, type MinigameSettings, type Tier } from '../types';
@@ -57,7 +64,24 @@ const ANIMAL_WORDS: Readonly<Record<AnimalId, string>> = {
   ants: 'the ants',
   stampede: 'the stampede',
   monster: 'the Woods Monster',
+  eagle: 'the eagle',
+  snowLeopard: 'the snow leopard',
+  snowgirl: 'the Abominable Snowgirl',
 };
+
+/** The Eagle's version this run: the testing tab's Version, or the level's (23, section 9.1). */
+function eagleOf(s: MinigameSettings): EagleVersion {
+  const v = s.eagleVersion;
+  return typeof v === 'string' && (EAGLE_VERSIONS as readonly string[]).includes(v)
+    ? (v as EagleVersion)
+    : eagleVersionFor(dodgeRank(s));
+}
+
+/** The animals the GRIP card helps: the ones that make you slide. */
+const SLIPPERY = (s: MinigameSettings) =>
+  animalOf(s) === 'snowLeopard' ||
+  animalOf(s) === 'snowgirl' ||
+  (animalOf(s) === 'eagle' && eagleOf(s) === 'freeagle');
 
 /** Dodge's length after Prepare's Bear Spray. */
 function dodgeLength(s: MinigameSettings): { base: number; value: number } {
@@ -138,6 +162,32 @@ function animalLines(s: MinigameSettings) {
       return [line('At half time the box shrinks, and the lights can go out.')];
     case 'stampede':
       return [line('Animals take turns attacking. The box follows whoever’s attacking.')];
+    case 'eagle': {
+      // Each version keeps the earlier ones' lines; the tier's version gets a tag.
+      const v = EAGLE_VERSIONS.indexOf(eagleOf(s));
+      const auto = typeof s.eagleVersion !== 'string' || s.eagleVersion === 'auto';
+      return [
+        line('He swoops along the dotted path.'),
+        v >= 1 &&
+          line(
+            'Curly hairs curve in. Watch for the gap in the comb-over.',
+            auto ? fromTier(2) : undefined,
+          ),
+        v >= 2 &&
+          line('Oil barrels blow up when their number runs out.', auto ? fromTier(3) : undefined),
+        v >= 2 && line('The puddles they leave are slippery.'),
+      ];
+    }
+    case 'snowLeopard':
+      return [
+        line('The floor is ice: you slide.'),
+        line('He pounces at where you are when he crouches.'),
+      ];
+    case 'snowgirl':
+      return [
+        line('The floor is ice: you slide.'),
+        line('Snowballs break into chunks that slide.'),
+      ];
   }
 }
 
@@ -162,7 +212,7 @@ export const DODGE_POPUP: GamePopup = {
   chips: (s) => [
     seconds(dodgeLength(s).value),
     'TAKE TURNS',
-    ANIMALS[animalOf(s)].name.toUpperCase(),
+    (animalOf(s) === 'eagle' ? EAGLE_NAMES[eagleOf(s)] : ANIMALS[animalOf(s)].name).toUpperCase(),
   ],
   ifFail: [],
   bars(s) {
@@ -260,6 +310,16 @@ export const DODGE_POPUP: GamePopup = {
           max: 2,
           onlyIf: (x) => animalOf(x) === 'ants',
         },
+      ),
+      opt(
+        'grip',
+        'red',
+        item('workBoots', 'trailShoes', 'liftedBoots'),
+        'HALF AS SLIPPERY',
+        'GRIP',
+        'you stop sliding sooner',
+        { param: P_('grip'), step: 1 },
+        { title: 'GRIP', onlyIf: SLIPPERY },
       ),
     ];
   },

@@ -794,7 +794,7 @@ export const BIRDSONG_POPUP: GamePopup = {
   controls: [
     {
       action: 'PICK',
-      inputs: [mouse('Click a color'), OR, finger('Tap'), OR, ...key('1'), OR, ...key('8')],
+      inputs: [mouse('Click a color'), OR, finger('Tap'), OR, ...key('1–8')],
     },
   ],
   chips: () => ['TAKE TURNS'],

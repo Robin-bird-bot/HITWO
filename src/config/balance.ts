@@ -3094,9 +3094,10 @@ export const BALANCE = {
        * Monster comes from the night monster event, from Tier III.
        */
       roster: {
-        1: { bees: 0, squirrels: 0, ants: 0 },
-        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1 },
+        1: { bees: 0, squirrels: 0, ants: 0, eagle: 0 },
+        2: { bees: 1, squirrels: 1, bobcat: 1, bear: 1, ants: 1, eagle: 1 },
         3: {
+          eagle: 2,
           bees: 2,
           squirrels: 2,
           bobcat: 2,
@@ -3108,6 +3109,7 @@ export const BALANCE = {
           monster: 3,
         },
         4: {
+          eagle: 3,
           bees: 3,
           squirrels: 3,
           bobcat: 3,
@@ -3119,6 +3121,7 @@ export const BALANCE = {
           monster: 3,
         },
         5: {
+          eagle: 3,
           bees: 3,
           squirrels: 3,
           bobcat: 3,
@@ -3134,12 +3137,14 @@ export const BALANCE = {
        * How common each animal is when one is picked at random for a tier
        * (not the Woods Monster). Ants and Bear with a Gun (Nov 26):
        * TODO(wyatt): [25] at Tier II, then [20] each; at Tier I (Nov 26, second
-       * round) bees [40], squirrels [30], ants [30].
+       * round) bees [40], squirrels [30], ants [30]. The Eagle (Nov 26, third
+       * round): [20] at every tier. The snow animals aren't picked at random.
        */
       weights: {
-        1: { bees: 40, squirrels: 30, ants: 30 },
-        2: { bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
+        1: { eagle: 20, bees: 40, squirrels: 30, ants: 30 },
+        2: { eagle: 20, bees: 20, squirrels: 25, bobcat: 30, bear: 25, ants: 25 },
         3: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 25,
@@ -3150,6 +3155,7 @@ export const BALANCE = {
           gunBear: 20,
         },
         4: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 20,
@@ -3160,6 +3166,7 @@ export const BALANCE = {
           gunBear: 20,
         },
         5: {
+          eagle: 20,
           bees: 5,
           squirrels: 10,
           bobcat: 20,
@@ -3209,6 +3216,12 @@ export const BALANCE = {
         /** Nov 26. TODO(wyatt): boxes [160 × 110] and [150 × 120]. */
         gunBear: { box: [160, 110], at: [160, 142] },
         ants: { box: [150, 120], at: [160, 136] },
+        /** Nov 26, third round (my guesses): the Eagle's three versions, the Snow Leopard and the Snowgirl. */
+        eagle: { box: [150, 110], at: [160, 141] },
+        toupeeEagle: { box: [150, 110], at: [160, 141] },
+        freeagle: { box: [160, 105], at: [160, 144] },
+        snowLeopard: { box: [160, 110], at: [160, 141] },
+        snowgirl: { box: [150, 110], at: [160, 141] },
       } as Readonly<
         Record<
           | 'bees'
@@ -3219,7 +3232,12 @@ export const BALANCE = {
           | 'herd'
           | 'monster'
           | 'gunBear'
-          | 'ants',
+          | 'ants'
+          | 'eagle'
+          | 'toupeeEagle'
+          | 'freeagle'
+          | 'snowLeopard'
+          | 'snowgirl',
           { box: readonly [number, number]; at: readonly [number, number] }
         >
       >,
@@ -3244,6 +3262,9 @@ export const BALANCE = {
         fireAnts: 2,
         antHill: 2,
         crumbRush: 3,
+        wingGust: 2,
+        oilBarrels: 2,
+        avalanche: 3,
       } as Readonly<Partial<Record<string, 1 | 2 | 3>>>,
       /**
        * Wild Predator Stampede: this much longer than the tier's length by
@@ -3694,6 +3715,125 @@ export const BALANCE = {
           monster: { units: 3, sec: 1.6 },
         } as Readonly<Partial<Record<string, { units: number; sec: number }>>>,
         bobSec: 0.4,
+      },
+      /**
+       * Ice physics (23-minigames-final.md, section 9.4): on ice, input
+       * speeds the sprite up at this rate (units/s²) to the normal top
+       * speed; with no input it slides, its speed shrinking by this much a
+       * second (speed × e^(−this × dt)). GRIP (Prepare) multiplies the
+       * friction by this. TODO(wyatt): [240], [1.2], [2].
+       */
+      ice: { accel: 240, friction: 1.2, grip: 2 },
+      /**
+       * The Eagle (section 9.1): his version by level (Easy: Eagle; Level 1:
+       * Toupeeagle; Levels 2 and 3: Freeagle). At Easy he only swoops and
+       * drops feathers. Swoop: "!" and the dotted path this long, then he
+       * flies it this fast, hitting within this radius; this many in a row by
+       * level (the last aimed at the sprite from Level 2), this far apart
+       * (my guess). Feather Fall: this many by level, falling this fast,
+       * swaying this far every this long (hitting within this radius, and
+       * coming in over this long: my guesses). Talon Drop: a shadow follows
+       * the sprite this long, then the talons strike this long after,
+       * within this radius (shown this long: my guess). Wing Gust: feathers
+       * stream this long, then the sprite is pushed this fast for this long.
+       * Hair Toss: this many curly hairs by level, this fast, curving this
+       * much (and hitting within this radius: my guesses). Comb-Over: a wall
+       * of hair with one gap this wide sweeps across (this thick, this fast,
+       * after this warning: my guesses). Oil Barrels: this many by level,
+       * landing on a shadow this long, a fuse this long, bursting within
+       * this radius (shown this long: my guess); each leaves a puddle this
+       * big for this long, where the sprite slides.
+       * TODO(wyatt): every number from the design's [brackets]; the rest are my guesses.
+       */
+      eagle: {
+        easy: ['swoop', 'featherFall'] as readonly string[],
+        swoop: {
+          warnSec: 0.8,
+          speed: 220,
+          radius: 7,
+          count: { 0: 1, 1: 2, 2: 3, 3: 3 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          apartSec: 0.7,
+        },
+        feather: {
+          count: { 0: 6, 1: 8, 2: 10, 3: 12 } as Readonly<Record<0 | 1 | 2 | 3, number>>,
+          speed: 30,
+          sway: 12,
+          swaySec: 1.2,
+          radius: 3,
+          spreadSec: 2,
+        },
+        talon: { followSec: 1, strikeSec: 0.4, radius: 12, showSec: 0.2 },
+        gust: { warnSec: 0.4, push: 40, sec: 1.2 },
+        hair: {
+          count: { 1: 3, 2: 4, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          speed: 110,
+          curve: 40,
+          radius: 3,
+          apartSec: 0.3,
+        },
+        comb: { gap: 20, thick: 8, speed: 70, warnSec: 0.8 },
+        oil: {
+          barrels: { 1: 2, 2: 2, 3: 3 } as Readonly<Record<1 | 2 | 3, number>>,
+          landSec: 0.6,
+          fuseSec: 1.4,
+          burst: 18,
+          burstShowSec: 0.2,
+          puddle: 20,
+          puddleSec: 6,
+        },
+      },
+      /**
+       * The snow animals (sections 9.2 and 9.3): only from their snow
+       * challenges and the testing tab; Level 2 at Tier III and Level 3 at
+       * Tiers IV and V (their lowest, 2, when tested at Tiers I and II). The
+       * whole box is ice. Every attack is Claude's idea but the Claws.
+       * Pounce: a red dotted line to where the sprite is, then a leap this
+       * long after at this speed, hitting within this radius; at Level 3
+       * sometimes a second (this often: my guess). Prowl: he pads round the
+       * box for this long (my guess) at this speed (my guess), then pounces
+       * with this shorter warning. Tail Sweep: a band this wide (my guess) is
+       * warned this long, then the tail sweeps it over this long (my guess).
+       * Snow Kick: this many pellets in a cone this wide, this fast, hitting
+       * within this radius (after this warning: my guesses). Snowballs: this
+       * many by level, each landing on a shadow that grows this long, hitting
+       * within this radius as it lands, then bursting into this many chunks
+       * that slide out this fast for this long (my guesses). Icicles: this
+       * many glint along the top this long, then drop this far apart at this
+       * speed (my guesses). Antler Charge: a stripe this wide is warned this
+       * long, then she charges through it this fast (my guesses). Shake Off:
+       * a ring of this many flakes from the middle, then a second turned half
+       * a gap this long after, this fast (my guesses). Avalanche (Level 3):
+       * snow falls in columns this wide, with one gap, after this warning,
+       * this fast, in a band this tall (my guesses).
+       * TODO(wyatt): every number from the design's [brackets]; the rest are my guesses.
+       */
+      snow: {
+        levels: { 1: 2, 2: 2, 3: 2, 4: 3, 5: 3 } as Readonly<Record<MgTier, 2 | 3>>,
+        pounce: { warnSec: 0.7, speed: 260, radius: 8, doubleChance: 0.35 },
+        prowl: { sec: 1.6, speed: 90, warnSec: 0.5 },
+        tail: { band: 24, warnSec: 0.8, sweepSec: 0.4 },
+        kick: { count: [8, 12] as const, spreadDeg: 30, speed: 90, radius: 2.5, warnSec: 0.6 },
+        snowballs: {
+          count: { 1: 3, 2: 3, 3: 5 } as Readonly<Record<1 | 2 | 3, number>>,
+          lobSec: 0.8,
+          apartSec: 0.35,
+          radius: 6,
+          chunks: 4,
+          chunkSpeed: 50,
+          chunkRadius: 3,
+          chunkSec: 1.6,
+        },
+        icicles: {
+          count: [5, 8] as const,
+          glintSec: 0.6,
+          apartSec: 0.18,
+          speed: 160,
+          half: 2,
+          length: 14,
+        },
+        charge: { band: 18, warnSec: 1, speed: 200, radius: 12 },
+        shake: { flakes: 16, apartSec: 0.4, speed: 70, radius: 2, warnSec: 0.6 },
+        avalanche: { column: 16, warnSec: 0.8, speed: 120, band: 20 },
       },
       /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },

@@ -461,10 +461,11 @@ describe('the minigame list', () => {
     for (const info of [TRAILDLE, FIND_OBJECT, REMEMBER_PATH, FIND_PATH, DODGE]) {
       expect(info.lineUp).toBe(true);
     }
-    // Dodge: Animal, Attack, Overlaps, Level, Include Claude's ideas, Show hitboxes, Portrait
+    // Dodge: Animal, Version (the Eagle only), Attack, Overlaps, Level, Include Claude's ideas, Show hitboxes, Portrait
     // style and motion, Tier, Hikers, Lives (1 to 3), Length (10 to 60 s) and Switch every (3 to 10 s).
     expect(ids(DODGE)).toEqual([
       'animal',
+      'eagleVersion',
       'attack',
       'overlaps',
       'level',
@@ -502,7 +503,7 @@ describe('the minigame list', () => {
     expect(cleanSettings(FIND_PATH, { fog: 'on' }, TEST_HIKERS).fog).toBe('on');
   });
 
-  it('Dodge’s Animal and Attack: nine animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
+  it('Dodge’s Animal and Attack: twelve animals; the Attack list follows the Animal, the level (from the Tier or the Level setting) and Claude’s ideas', () => {
     const animal = DODGE.settings.find((s) => s.id === 'animal');
     const attack = DODGE.settings.find((s) => s.id === 'attack');
     if (animal?.kind !== 'pick' || attack?.kind !== 'pick' || !attack.optionsFor) {
@@ -516,8 +517,11 @@ describe('the minigame list', () => {
       'Squirrel Army',
       'Bear with a Gun',
       'Ants',
+      'Eagle',
       'Wild Predator Stampede',
       'Woods Monster',
+      'Snow Leopard',
+      'Abominable Snowgirl',
     ]);
     expect(animal.menu && attack.menu).toBe(true);
     // Nov 26: their attacks in the picker, Claude's ideas marked.

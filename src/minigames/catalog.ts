@@ -7,7 +7,16 @@
  * (src/ui/minigames/runners.tsx).
  */
 import { BALANCE } from '../config/balance';
-import { ANIMAL_IDS, ANIMALS, attackChoices, isAnimal, rankFor } from './dodge/animals';
+import {
+  ANIMAL_IDS,
+  ANIMALS,
+  attackChoices,
+  EAGLE_NAMES,
+  EAGLE_VERSIONS,
+  isAnimal,
+  rankFor,
+} from './dodge/animals';
+import type { EagleVersion } from './dodge/types';
 import type { TileThing } from './endScreen';
 import { VERSIONS as CROSSING_VERSIONS } from './crossing/logic';
 import { TRAIL_TYPES } from './trails/course';
@@ -214,7 +223,12 @@ function dodgeAttacks(settings: MinigameSettings): PickOption[] {
   const animal = isAnimal(settings.animal) ? settings.animal : 'bees';
   const tier = isTier(settings.tier) ? settings.tier : 1;
   const rank = rankFor(animal, tier, dodgeLevelPick(settings));
-  const choices = attackChoices(animal, rank, settings.ideas !== 'off', tier);
+  const v = settings.eagleVersion;
+  const version =
+    typeof v === 'string' && (EAGLE_VERSIONS as readonly string[]).includes(v)
+      ? (v as EagleVersion)
+      : undefined;
+  const choices = attackChoices(animal, rank, settings.ideas !== 'off', tier, version);
   return [
     { id: 'all', label: 'All' },
     ...choices.map((c) => ({
@@ -254,6 +268,26 @@ export const DODGE: MinigameInfo = {
     },
     {
       kind: 'pick',
+      id: 'eagleVersion',
+      label: 'Version',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        ...EAGLE_VERSIONS.map((id) => ({ id, label: EAGLE_NAMES[id] })),
+      ],
+      default: 'auto',
+      // The Eagle only (23-minigames-final.md, section 12).
+      optionsFor: (s) => [
+        { id: 'auto', label: 'Auto' },
+        ...EAGLE_VERSIONS.map((id) => ({
+          id,
+          label: EAGLE_NAMES[id],
+          disabled: s.animal !== 'eagle',
+        })),
+      ],
+      hint: 'The Eagle only. Auto follows the level: Eagle at Easy, Toupeeagle at 1, Freeagle at 2 and 3',
+    },
+    {
+      kind: 'pick',
       id: 'attack',
       label: 'Attack',
       options: [{ id: 'all', label: 'All' }, ...ALL_DODGE_ATTACKS],
@@ -286,7 +320,7 @@ export const DODGE: MinigameInfo = {
         { id: '3', label: '3' },
       ],
       default: 'auto',
-      hint: 'Auto uses the tier’s. Easy is for Bees, Squirrel Army and Ants (the others play 1)',
+      hint: 'Auto uses the tier’s. Easy is for Bees, Squirrel Army, Ants and the Eagle (the others play 1)',
     },
     {
       kind: 'pick',

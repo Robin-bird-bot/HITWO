@@ -124,7 +124,13 @@ describe('what each animal uses, by level', () => {
   it('switching Claude’s ideas off removes every attack marked as one', () => {
     for (const animal of ANIMAL_IDS) {
       for (const level of [0, ...LEVELS] as const) {
+        const on = pool(animal, level, true);
         const off = pool(animal, level, false);
+        // An animal with nothing but Claude's ideas (the Snowgirl) keeps them all.
+        if (on.length > 0 && on.every((e) => ATTACKS[e.attack].claudesIdea)) {
+          expect(off).toEqual(on);
+          continue;
+        }
         expect(off.every((e) => !ATTACKS[e.attack].claudesIdea)).toBe(true);
         expect(attackChoices(animal, level, false).some((c) => c.claudesIdea)).toBe(false);
       }
@@ -246,6 +252,8 @@ describe('warnings', () => {
     hand: D.hands.crackSec,
     // Aimed Shot at Level 3: the aim tracks [0.32 s], then locks [0.2 s].
     shot: D.gun.aimed.trackSec[3] + D.gun.aimed.lockSec,
+    // Wing Gust only pushes: feathers stream across for [0.4 s] first.
+    gust: D.eagle.gust.warnSec,
   };
   it.each([
     ['bees', 0] as const,

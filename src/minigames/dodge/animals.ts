@@ -13,6 +13,11 @@
  * Which attacks can be picked: the ones that play at the level, without
  * Claude's ideas when they're off, and (in the testing tab) only the one
  * chosen attack.
+ *
+ * Nov 26, third round (23-minigames-final.md, section 9): the Eagle, whose
+ * version follows the level (Eagle, Toupeeagle, Freeagle), each keeping the
+ * earlier ones' attacks; and the Snow Leopard and the Snowgirl, who only
+ * come from their snow challenges (not the random roster).
  */
 import { BALANCE } from '../../config/balance';
 import { weightedPick } from '../../engine/rng';
@@ -21,7 +26,7 @@ import { isTier, TIER_LABELS, type Tier } from '../types';
 import type { Box } from './geometry';
 import type { Point } from './shapes';
 import { ATTACKS, playsAt, ranksOf, type Rank } from './library';
-import type { AnimalId, AttackId, Attacker, Tweak } from './types';
+import type { AnimalId, AttackId, Attacker, EagleVersion, Tweak } from './types';
 
 export type { Rank } from './library';
 
@@ -122,7 +127,49 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     hud: 'Woods monster',
     attacks: plain('fire', 'arms', 'hands', 'wisps', 'runes', 'ritual', 'glare', 'darkness'),
   },
+  eagle: {
+    id: 'eagle',
+    name: 'Eagle',
+    hud: 'Eagle',
+    attacks: plain('swoop', 'featherFall', 'talonDrop', 'wingGust'),
+  },
+  snowLeopard: {
+    id: 'snowLeopard',
+    name: 'Snow Leopard',
+    hud: 'Snow leopard',
+    attacks: plain('leopardPounce', 'prowl', 'claws', 'tailSweep', 'snowKick'),
+  },
+  snowgirl: {
+    id: 'snowgirl',
+    name: 'Abominable Snowgirl',
+    hud: 'Snowgirl',
+    attacks: plain('snowballs', 'icicles', 'antlerCharge', 'shakeOff', 'avalanche'),
+  },
 };
+
+/** The Eagle's versions, in order, each keeping the earlier ones' attacks and adding its own. */
+export const EAGLE_VERSIONS: readonly EagleVersion[] = ['eagle', 'toupeeEagle', 'freeagle'];
+const EAGLE_ADDS: Readonly<Record<EagleVersion, AnimalAttack[]>> = {
+  eagle: ANIMALS.eagle.attacks.slice(),
+  toupeeEagle: plain('hairToss', 'combOver'),
+  freeagle: plain('aimedShot', 'rapidFire', 'oilBarrels'),
+};
+export const EAGLE_NAMES: Readonly<Record<EagleVersion, string>> = {
+  eagle: 'Eagle',
+  toupeeEagle: 'Toupeeagle',
+  freeagle: 'Freeagle',
+};
+
+/** The Eagle's version at a level: Easy is the Eagle, Level 1 Toupeeagle, Levels 2 and 3 Freeagle. */
+export const eagleVersionFor = (rank: Rank): EagleVersion =>
+  rank === 0 ? 'eagle' : rank === 1 ? 'toupeeEagle' : 'freeagle';
+
+/** A version's attacks: its own and every earlier version's. */
+export const eagleAttacks = (v: EagleVersion): AnimalAttack[] =>
+  EAGLE_VERSIONS.slice(0, EAGLE_VERSIONS.indexOf(v) + 1).flatMap((x) => EAGLE_ADDS[x]);
+
+/** The animals whose whole box is ice, and who only come from their snow challenges. */
+export const SNOW_ANIMALS: readonly AnimalId[] = ['snowLeopard', 'snowgirl'];
 
 export const ANIMAL_IDS: readonly AnimalId[] = [
   'bees',
@@ -132,12 +179,15 @@ export const ANIMAL_IDS: readonly AnimalId[] = [
   'squirrels',
   'gunBear',
   'ants',
+  'eagle',
   'stampede',
   'monster',
+  'snowLeopard',
+  'snowgirl',
 ];
 
 /** The animals whose attacks the Stampede uses, in the order of its row of heads. */
-export const STAMPEDE_ANIMALS: readonly Exclude<Attacker, 'herd'>[] = [
+export const STAMPEDE_ANIMALS: readonly Exclude<AnimalId, 'stampede'>[] = [
   'bees',
   'bear',
   'swordBear',
@@ -154,8 +204,15 @@ export interface PoolEntry {
   tweak: Tweak;
 }
 
-/** Every attack an animal can make, ignoring tiers and switches. */
-function everything(animal: AnimalId): PoolEntry[] {
+/** Every attack an animal can make, ignoring tiers and switches (the Eagle's by his version). */
+function everything(animal: AnimalId, version: EagleVersion = 'eagle'): PoolEntry[] {
+  if (animal === 'eagle') {
+    return eagleAttacks(version).map((x) => ({
+      attacker: version,
+      attack: x.attack,
+      tweak: x.tweak ?? {},
+    }));
+  }
   if (animal === 'stampede') {
     return [
       ...STAMPEDE_ANIMALS.flatMap((a) =>
@@ -172,7 +229,7 @@ function everything(animal: AnimalId): PoolEntry[] {
 }
 
 /** The animals with an Easy level of their own (Ants from Nov 26, 22-minigame-revisions.md section 4). */
-export const HAS_EASY: readonly AnimalId[] = ['bees', 'squirrels', 'ants'];
+export const HAS_EASY: readonly AnimalId[] = ['bees', 'squirrels', 'ants', 'eagle'];
 
 /** The testing tab's Level setting: Auto (the tier's), Easy, or a numbered level. */
 export type LevelPick = 'auto' | 'easy' | 1 | 2 | 3;
@@ -184,6 +241,8 @@ export type LevelPick = 'auto' | 'easy' | 1 | 2 | 3;
  */
 export function levelFor(animal: AnimalId, tier: Tier): Rank {
   if (animal === 'monster') return 3;
+  // The snow animals: Level 2 at Tier III, Level 3 at Tiers IV and V (their lowest below that).
+  if (SNOW_ANIMALS.includes(animal)) return D.snow.levels[tier];
   const here = D.roster[tier][animal];
   if (here !== undefined) return here;
   const tiers = ([1, 2, 3, 4, 5] as const).filter((t) => D.roster[t][animal] !== undefined);
@@ -192,7 +251,7 @@ export function levelFor(animal: AnimalId, tier: Tier): Rank {
 
 /**
  * The level a game plays at: Auto uses the tier's; a picked level
- * overrides it. Easy is only for Bees, the Squirrel Army and Ants (the
+ * overrides it. Easy is only for Bees, the Squirrel Army, Ants and the Eagle (the
  * others play Level 1), and the Stampede never plays Easy.
  */
 export function rankFor(animal: AnimalId, tier: Tier, pick: LevelPick = 'auto'): Rank {
@@ -225,12 +284,16 @@ export function pool(
   ideas: boolean,
   only: AttackId | 'all' = 'all',
   tier: Tier = 5,
+  version?: EagleVersion,
 ): PoolEntry[] {
-  return everything(animal).filter(
+  const all = everything(animal, version ?? eagleVersionFor(rank));
+  // An animal with nothing but Claude's ideas (the Snowgirl) keeps them when they're switched off.
+  const keepIdeas = ideas || all.every((e) => ATTACKS[e.attack].claudesIdea);
+  return all.filter(
     (e) =>
       playsAt(e.attack, rank) &&
       atTier(e.attack, tier) &&
-      (ideas || !ATTACKS[e.attack].claudesIdea) &&
+      (keepIdeas || !ATTACKS[e.attack].claudesIdea) &&
       (only === 'all' || e.attack === only),
   );
 }
@@ -265,12 +328,15 @@ export function attackChoices(
   rank: Rank,
   ideas: boolean,
   tier: Tier = 5,
+  version?: EagleVersion,
 ): { id: AttackId; name: string; where: string; claudesIdea: boolean; unlocked: boolean }[] {
   const seen = new Set<AttackId>();
   const out: ReturnType<typeof attackChoices> = [];
-  for (const e of everything(animal)) {
+  const all = everything(animal, version ?? eagleVersionFor(rank));
+  const keepIdeas = ideas || all.every((e) => ATTACKS[e.attack].claudesIdea);
+  for (const e of all) {
     const def = ATTACKS[e.attack];
-    if (seen.has(e.attack) || (!ideas && def.claudesIdea)) continue;
+    if (seen.has(e.attack) || (!keepIdeas && def.claudesIdea)) continue;
     seen.add(e.attack);
     out.push({
       id: e.attack,
@@ -302,6 +368,11 @@ export const PORTRAITS: Readonly<
   monster: { file: 'woods-monster', w: 65, h: 56 },
   gunBear: { file: 'bear-gun', w: 76, h: 50 },
   ants: { file: 'ant', w: 50, h: 46 },
+  eagle: { file: 'eagle', w: 72, h: 44 },
+  toupeeEagle: { file: 'toupee-eagle', w: 72, h: 50 },
+  freeagle: { file: 'freeagle', w: 108, h: 60 },
+  snowLeopard: { file: 'snow-leopard', w: 60, h: 42 },
+  snowgirl: { file: 'snowgirl', w: 70, h: 54 },
   cultist: { file: 'cultist', w: 33, h: 38 },
 };
 
