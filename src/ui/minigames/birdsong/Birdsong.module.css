@@ -1,0 +1,144 @@
+/* Birdsong (44a and 44b), in scene units (320 × 240). */
+
+.branch {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+.bird {
+  position: absolute;
+  left: 148px;
+  top: 42px;
+  width: 30px;
+  height: 24px;
+}
+
+.note {
+  position: absolute;
+  width: 14px;
+  height: 18px;
+  pointer-events: none;
+}
+
+/* A note flashing into its color at the middle line. */
+.note[data-lit] {
+  filter: drop-shadow(0 0 2px #f4f8dc) drop-shadow(0 0 1px #e9b44c);
+}
+
+/* The notebook page: ruled lines and a red margin. */
+.page {
+  position: absolute;
+  left: 40px;
+  top: 26px;
+  width: 240px;
+  height: 166px;
+  box-sizing: border-box;
+  border: 1px solid #1d2918;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, transparent 15px, #e5624a 15px, #e5624a 15.6px, transparent 15.6px),
+    repeating-linear-gradient(#e9eecb 0 9.5px, #c9d3a8 9.5px 10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.ask {
+  color: #1d2918;
+  font-size: 5px;
+}
+
+.slots {
+  display: flex;
+  gap: 4px;
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 0.75px solid #1d2918;
+  border-radius: 2px;
+  background: #d3dfaf;
+}
+
+.slot > img {
+  width: 11px;
+  height: 14px;
+}
+
+.x {
+  position: absolute;
+  bottom: -8px;
+  color: #e5624a;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+}
+
+.squares {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid #1d2918;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.square:disabled {
+  cursor: default;
+}
+
+.square > img {
+  width: 14px;
+  height: 18px;
+}
+
+/* After a wrong note, the right color blinks. */
+.square[data-blink] {
+  animation: blink 0.25s steps(2) infinite;
+}
+
+@keyframes blink {
+  50% {
+    box-shadow: 0 0 0 2px #1d2918;
+  }
+}
+
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pips > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #2b3a23;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .square[data-blink] {
+    animation: none;
+    box-shadow: 0 0 0 2px #1d2918;
+  }
+}

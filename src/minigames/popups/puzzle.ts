@@ -8,7 +8,7 @@ import { BALANCE } from '../../config/balance';
 import { isDark, isWindy, targetsFor, type Mode } from '../findObject/logic';
 import { FOOD, item, prepNumber, res } from '../prepare';
 import { newSafari } from '../safari/logic';
-import type { MinigameSettings } from '../types';
+import type { MinigameSettings, Tier } from '../types';
 import {
   countBar,
   finger,
@@ -28,6 +28,7 @@ import {
   plusSecOpt,
   rulesOf,
   slowerOpt,
+  slowerShare,
   tapRow,
   tierIn,
   timeBar,
@@ -763,6 +764,92 @@ export const FIND_OBJECT_POPUP: GamePopup = {
       '−1',
       'one snack fewer each round',
       { param: P_('fewer'), step: 1 },
+    ),
+  ],
+};
+
+// ── Birdsong (23-minigames-final.md, section 10) ───────────────────────────
+
+const BSG = MG.birdsong;
+const songMode = (s: MinigameSettings) =>
+  s.songs === 'grow' || s.songs === 'new' ? s.songs : tierIn(s) >= BSG.newFrom ? 'new' : 'grow';
+
+export const BIRDSONG_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      `Listen to the bird: each note takes its color as it crosses the middle. Then tap the colors in the same order. **A wrong note is a strike:** ${BSG.strikes} strikes and you’re out. Hikers take turns, one song each.`,
+    ),
+  rules: (s) => {
+    const auto = s.songs !== 'grow' && s.songs !== 'new';
+    return rulesOf(
+      songMode(s) === 'grow'
+        ? line('Each song is the last one plus one more note.', auto ? 'TIERS I AND II' : undefined)
+        : line(
+            'Every song is new, and one note longer.',
+            auto ? fromTier(BSG.newFrom as Tier) : undefined,
+          ),
+      line('After a wrong note, finish the song anyway.'),
+    );
+  },
+  controls: [
+    {
+      action: 'PICK',
+      inputs: [mouse('Click a color'), OR, finger('Tap'), OR, ...key('1'), OR, ...key('8')],
+    },
+  ],
+  chips: () => ['TAKE TURNS'],
+  ifFail: [{ who: 'each', label: 'Each hiker out of strikes:', value: '−1 Energy' }],
+  bars(s) {
+    const t = BSG.tiers[tierIn(s)];
+    const colors = numOr(s, 'colors', t.colors);
+    const slow = 1 - slowerShare(prepNumber(s, P_('slower')));
+    return [
+      countBar('colors', 'COLORS', colors, colors, BSG.palette.length),
+      countBar(
+        'longest',
+        'LONGEST SONG',
+        t.longest,
+        t.longest,
+        mostOver((x) => BSG.tiers[x].longest),
+      ),
+      countBar(
+        'speed',
+        'NOTE SPEED',
+        t.speed,
+        Math.round(t.speed * slow),
+        mostOver((x) => BSG.tiers[x].speed),
+      ),
+    ];
+  },
+  perHiker: () => ({
+    label: 'STRIKES',
+    kind: 'pips',
+    base: BSG.strikes,
+    param: P_('strikes'),
+    step: 1,
+  }),
+  options: () => [
+    plusFor('STRIKE', '+1', 'strikes'),
+    slowerOpt('SLOWER NOTES', 'green', 'the notes slow down'),
+    opt(
+      'notebook',
+      'blue',
+      item('fieldNotebook'),
+      'EACH SONG TWICE',
+      'TWICE',
+      'each song plays twice',
+      { param: P_('notebook'), step: 1 },
+      { title: 'FIELD NOTEBOOK' },
+    ),
+    opt(
+      'ukulele',
+      'blue',
+      item('ukulele'),
+      'HEAR THE COLORS',
+      'UKE',
+      'the colors play their tones when you hover them',
+      { param: P_('ukulele'), step: 1 },
+      { title: 'UKULELE' },
     ),
   ],
 };

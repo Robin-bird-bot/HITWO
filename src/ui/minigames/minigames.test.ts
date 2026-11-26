@@ -187,6 +187,7 @@ describe('the minigame list', () => {
           ['Memory Puzzle', 'ready'],
           ['Safari', 'ready'],
           ['Crossroads', 'ready'],
+          ['Birdsong', 'ready'],
         ],
       ],
       ['Search', [['Find the Object', 'ready']]],

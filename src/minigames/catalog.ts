@@ -1337,6 +1337,47 @@ export const SQUIRREL_THEFT: MinigameInfo = {
   ],
 };
 
+// ── Birdsong (docs/design/23-minigames-final.md, section 5) ──
+
+const BSK = BALANCE.minigames.birdsong;
+
+export const BIRDSONG: MinigameInfo = {
+  id: 'birdsong',
+  name: 'Birdsong',
+  baseGame: 'Simon',
+  category: 'memory',
+  description:
+    'Listen to the bird’s colored notes, then tap them back in order. Hikers take turns, a song each.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'colors',
+      'Colors',
+      4,
+      8,
+      BSK.tiers[1].colors,
+      '',
+      1,
+      byTier((t) => BSK.tiers[t].colors),
+    ),
+    {
+      kind: 'pick',
+      id: 'songs',
+      label: 'Songs',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'grow', label: 'Grow' },
+        { id: 'new', label: 'New each round' },
+      ],
+      default: 'auto',
+      hint: `Auto: the song grows at Tiers I and II, a new one each round from Tier ${TIER_LABELS[BSK.newFrom as Tier]}`,
+    },
+  ],
+};
+
 // ── Camp Cleanup (docs/design/21-minigames-dodge-camp.md, section 4) ──
 
 const CC = BALANCE.minigames.campCleanup;
@@ -1415,6 +1456,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   MEMORY,
   SAFARI,
   CROSSROADS,
+  BIRDSONG,
   FIND_OBJECT,
   TRAIL_BLOCKS,
   SLEEPING_BEAR,

@@ -2773,6 +2773,50 @@ export const BALANCE = {
     },
 
     /**
+     * Birdsong (23-minigames-final.md, section 5), Simon with colored
+     * notes. By tier: colors in play, the longest song, how fast the notes
+     * cross (units/s) and how far apart they come (seconds). The colors, in
+     * the order they're used, each with its shape (white art, tinted). Round
+     * 1 has this many notes; songs are new each round from this tier (before
+     * it, the same song grows). Each hiker has this many strikes. The screen
+     * is this wide; notes start and end this far off it; a second play
+     * (Field Notebook) comes this long after the first. A hiker's turn
+     * starts after this hand-off, and the answer shows this long before the
+     * next round (my guesses). The demo bot gets a note right this often.
+     * TODO(wyatt): [4–8], [5–9], [70–110], [0.55–0.35 s], [2], [3], [92%].
+     */
+    birdsong: {
+      tiers: {
+        1: { colors: 4, longest: 5, speed: 70, gapSec: 0.55 },
+        2: { colors: 5, longest: 6, speed: 80, gapSec: 0.5 },
+        3: { colors: 6, longest: 7, speed: 90, gapSec: 0.45 },
+        4: { colors: 7, longest: 8, speed: 100, gapSec: 0.4 },
+        5: { colors: 8, longest: 9, speed: 110, gapSec: 0.35 },
+      } as Readonly<
+        Record<MgTier, { colors: number; longest: number; speed: number; gapSec: number }>
+      >,
+      palette: [
+        { name: 'orange', shape: 'star', color: '#E07040' },
+        { name: 'blue', shape: 'ring', color: '#4A8FD4' },
+        { name: 'yellow', shape: 'diamond', color: '#E9B44C' },
+        { name: 'purple', shape: 'cross', color: '#A86CD0' },
+        { name: 'red', shape: 'heart', color: '#C8423A' },
+        { name: 'teal', shape: 'circle', color: '#3FB3A8' },
+        { name: 'pink', shape: 'square', color: '#E58FB0' },
+        { name: 'white', shape: 'triangle', color: '#F1EADB' },
+      ] as const,
+      firstLength: 2,
+      newFrom: 3,
+      strikes: 3,
+      screenW: 320,
+      noteMargin: 14,
+      replayPauseSec: 0.6,
+      handoffSec: 1.2,
+      afterSec: 1.2,
+      botRight: 0.92,
+    },
+
+    /**
      * Squirrel Theft (23-minigames-final.md, section 4), a shooting
      * gallery. By tier: how long a squirrel stays up, each hiker's nuts, and
      * the HAPPY line as a share of all the party's nuts. The intro lasts

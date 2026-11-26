@@ -79,7 +79,7 @@ describe('every game’s pop-up content', () => {
         const rules = popup.rules(s);
         expect(rules.length).toBeLessThanOrEqual(BALANCE.minigames.prepare.ruleLines);
         for (const r of rules) {
-          if (r.when) expect(r.when).toMatch(/^TIER (I|II|III|IV|V)( AND UP)?$/);
+          if (r.when) expect(r.when).toMatch(/^(TIER (I|II|III|IV|V)( AND UP)?|TIERS I AND II)$/);
           expect(text(r.text).length).toBeGreaterThan(0);
         }
         expect(

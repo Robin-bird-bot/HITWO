@@ -2,7 +2,8 @@
  * Sound hooks for minigames (Phase 10.8). No sound files yet: each call
  * marks where a sound will play (Phase 16 adds audio).
  */
-export type MinigameSound = 'place' | 'ready' | 'bearUp' | 'tick' | 'pop' | 'hit' | 'miss';
+/** `note`: a Birdsong note (each color will get its own tone when audio comes in Phase 16). */
+export type MinigameSound = 'place' | 'ready' | 'bearUp' | 'tick' | 'pop' | 'hit' | 'miss' | 'note';
 
 const listeners = new Set<(sound: MinigameSound) => void>();
 
