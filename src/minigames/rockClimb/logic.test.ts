@@ -1,8 +1,11 @@
 /**
- * Rock Climb (docs/design/19-minigames-signs-trails.md, sections 4 and 7):
- * for 1 to 4 hikers the sequence gives everyone equal turns; only
- * same-color holds grab, within reach; a fall fails that hiker only once;
- * the planned path is always reachable.
+ * Rock Climb (docs/design/19-minigames-signs-trails.md, sections 4 and 7,
+ * and 22-minigame-revisions.md, sections 2 and 6): for 1 to 4 hikers the
+ * sequence gives everyone equal turns; only same-color holds grab, within
+ * reach; the planned path is always reachable; a fall costs one try and [1]
+ * energy (none with the Harness, once); a hiker with no tries leaves the
+ * sequence and no hold keeps their color; everyone out fails everyone; the
+ * top passes only when the hand goes above the line; no timer by default.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
@@ -11,6 +14,7 @@ import { TIERS } from '../types';
 import {
   activeColor,
   activeHand,
+  fallSec,
   grab,
   grabClosest,
   handAt,
@@ -20,6 +24,7 @@ import {
   makeSequence,
   newRockClimb,
   nextHold,
+  onLastMove,
   planWall,
   result,
   tick,
@@ -57,6 +62,41 @@ function climbOne(s0: RockClimbState): RockClimbState {
   return s;
 }
 
+/** A jump that goes nowhere near a hold (or the top): a fall, played out until the next aim. */
+const fallOnce = (x: RockClimbState) =>
+  tick(
+    tick(
+      {
+        ...x,
+        phase: 'jump',
+        phaseAt: x.time,
+        jump: { from: x.at, deg: 10, dist: 30, tried: false },
+      },
+      R.jumpSec + R.hangSec + 0.01,
+    ),
+    fallSec + 0.01,
+  );
+
+/** Straight up from the last hold, `past` units beyond the top line (negative: short of it). */
+function jumpTop(s0: RockClimbState, past: number): RockClimbState {
+  let s: RockClimbState = {
+    ...s0,
+    phase: 'jump',
+    phaseAt: s0.time,
+    jump: { from: s0.at, deg: 90, dist: s0.topH - s0.at.h + past, tried: false },
+  };
+  for (let k = 0; k < 400 && s.phase === 'jump'; k++) s = tick(s, 1 / 120);
+  return s;
+}
+
+/** Climbs every path hold, then over the top. */
+function climbAll(s0: RockClimbState): RockClimbState {
+  let s = s0;
+  while (!onLastMove(s) && !s.over) s = climbOne(s);
+  s = jumpTop(s, 10);
+  return tick(s, R.topSec + 0.01);
+}
+
 describe('Rock Climb: the sequence and the wall', () => {
   it('for 1 to 4 hikers, everyone gets the same number of turns (8 for even parties, 9 for odd)', () => {
     for (const party of PARTIES) {
@@ -74,8 +114,18 @@ describe('Rock Climb: the sequence and the wall', () => {
     (tier) => {
       for (const party of PARTIES) {
         for (let seed = 1; seed <= 10; seed++) {
-          const { holds, path } = planWall(seedRng(seed), tier, party, R.tiers[tier].holds);
+          const { holds, path, topH, topColor } = planWall(
+            seedRng(seed),
+            tier,
+            party,
+            R.tiers[tier].holds,
+          );
           expect(path).toHaveLength(R.tiers[tier].holds);
+          // The top line: [40–70] above the last path hold; the last move has a color too.
+          const last = holds[path.at(-1)!]!.h;
+          expect(topH - last).toBeGreaterThanOrEqual(R.topAbove[0]);
+          expect(topH - last).toBeLessThanOrEqual(R.topAbove[1]);
+          expect(party).toContain(topColor);
           let p = { x: 160, h: 0 };
           for (const id of path) {
             const h = holds[id]!;
@@ -167,7 +217,7 @@ describe('Rock Climb: moves', () => {
             s = grab(s, target.id);
             for (let t = 0; t < R.jumpSec + R.hangSec + 0.1 && s.phase === 'jump'; t += 1 / 120)
               s = tick(s, 1 / 120);
-            expect(s.phase === 'aim' || s.phase === 'top').toBe(true);
+            expect(s.phase).toBe('aim');
             expect(s.at).toEqual({ x: target.x, h: target.h });
           }
         }
@@ -191,7 +241,7 @@ describe('Rock Climb: moves', () => {
     s = grab(s, target.id);
     for (let t = 0; t < R.jumpSec + R.hangSec + 0.1 && s.phase === 'jump'; t += 1 / 120)
       s = tick(s, 1 / 120);
-    expect(s.phase).toBe('slide');
+    expect(s.phase).toBe('fall');
     expect(s.pathAt).toBe(-1);
   });
 
@@ -215,27 +265,19 @@ describe('Rock Climb: moves', () => {
     expect(grabClosest(s).jump?.queued).toBe(target.id);
   });
 
-  it('Prepare: Chalk adds reach; the Harness takes the first fall', () => {
+  it('Prepare: Chalk adds reach; the Harness takes the first fall (no try, no energy); +1 try', () => {
     expect(newRockClimb({ tier: 3, extraReach: 4 }, ['finn'], 1).reach).toBe(R.tiers[3].reach + 4);
     let s = newRockClimb({ tier: 1, harness: true }, ['finn', 'mom'], 7);
-    const fallOnce = (x: RockClimbState) =>
-      tick(
-        tick(
-          {
-            ...x,
-            phase: 'jump',
-            phaseAt: x.time,
-            jump: { from: x.at, deg: 10, dist: 30, tried: false },
-          },
-          R.jumpSec + R.hangSec + 0.01,
-        ),
-        R.slideSec + 0.01,
-      );
+    const by = activeColor(s)!;
     s = fallOnce(s);
-    expect(s.fell).toEqual([]);
+    expect(s.triesLeft[by]).toBe(R.tries);
+    expect(s.energy[by] ?? 0).toBe(0);
     expect(s.harness).toBe(false);
     s = fallOnce(s);
-    expect(s.fell).toHaveLength(1);
+    expect(s.triesLeft[by]).toBe(R.tries - 1);
+    expect(s.energy[by]).toBe(R.fallEnergy);
+    const more = newRockClimb({ tier: 1, extraTries: { mom: 1 } }, ['finn', 'mom'], 7);
+    expect(more.triesLeft).toEqual({ finn: R.tries, mom: R.tries + 1 });
   });
 
   it('from Tier III, one try per jump: a miss within the hand’s color uses it up', () => {
@@ -250,31 +292,10 @@ describe('Rock Climb: moves', () => {
     expect(missed.jump!.tried).toBe(true);
   });
 
-  it('a fall fails that hand’s hiker once; the same color goes again', () => {
+  it('a fall costs that hand’s hiker one try and [1] energy; the same color goes again', () => {
     let s = newRockClimb({ tier: 1 }, ['finn', 'mom'], 7);
     const color = activeColor(s)!;
-    for (let k = 0; k < 2; k++) {
-      s = {
-        ...s,
-        phase: 'jump',
-        phaseAt: s.time,
-        jump: { from: s.at, deg: 10, dist: 30, tried: false },
-      };
-      s = tick(s, R.jumpSec + R.hangSec + 0.01);
-      expect(s.phase).toBe('slide');
-      s = tick(s, R.slideSec + 0.01);
-      expect(s.phase).toBe('aim');
-      expect(activeColor(s)).toBe(color);
-      expect(s.pathAt).toBe(-1);
-    }
-    expect(s.fell).toEqual([color]);
-  });
-
-  it('the top in time: hikers who never fell pass; time running out: nobody passes', () => {
-    for (const party of PARTIES) {
-      let s = newRockClimb({ tier: 1 }, party, 11);
-      // One fall first.
-      const faller = activeColor(s)!;
+    for (let k = 1; k <= 2; k++) {
       s = tick(
         {
           ...s,
@@ -284,18 +305,91 @@ describe('Rock Climb: moves', () => {
         },
         R.jumpSec + R.hangSec + 0.01,
       );
-      s = tick(s, R.slideSec + 0.01);
-      while (s.phase !== 'top' && !s.over) s = climbOne(s);
-      s = tick(s, 0.01);
-      expect(s.over).toBe(true);
-      const r = result(s);
-      expect(r.safe).toEqual(party.filter((id) => id !== faller));
-      expect(r.passing?.stays).toBe(party.length === 1);
+      expect(s.phase).toBe('fall');
+      s = tick(s, fallSec + 0.01);
+      expect(s.phase).toBe('aim');
+      expect(activeColor(s)).toBe(color);
+      expect(s.pathAt).toBe(-1);
+      expect(s.triesLeft[color]).toBe(R.tries - k);
+      expect(s.energy[color]).toBe(R.fallEnergy * k);
     }
+  });
+
+  it('out of tries: the hiker leaves the sequence, and no hold keeps their color', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const party = ['finn', 'mom', 'ellie'];
+      let s = newRockClimb({ tier: 2 }, party, seed);
+      const color = activeColor(s)!;
+      for (let k = 0; k < R.tries; k++) s = fallOnce(s);
+      expect(s.out).toEqual([color]);
+      expect(s.triesLeft[color]).toBe(0);
+      expect(s.holds.some((h) => h.color === color)).toBe(false);
+      expect(s.topColor).not.toBe(color);
+      expect(activeColor(s)).not.toBe(color);
+      expect(s.recolor?.from).toBe(color);
+      // The rest of the climb is still possible: every path hold has a color still in.
+      for (const id of s.path)
+        expect(party.filter((h) => h !== color)).toContain(s.holds[id]!.color);
+    }
+  });
+
+  it('everyone out fails everyone; their falls still cost energy', () => {
+    let s = newRockClimb({ tier: 1 }, ['finn', 'mom'], 3);
+    for (let k = 0; k < 2 * R.tries && !s.over; k++) s = fallOnce(s);
+    expect(s.over).toBe(true);
+    expect(s.out.sort()).toEqual(['finn', 'mom']);
+    const r = result(s);
+    expect(r.safe).toEqual([]);
+    expect(r.passing?.stays).toBe(true);
+    expect(r.pays?.finn!.energy).toBeGreaterThanOrEqual(R.tries * R.fallEnergy);
+  });
+
+  it('the top passes only when the hand goes above the line; no grab is needed', () => {
+    let s = newRockClimb({ tier: 1 }, ['finn', 'mom'], 5);
+    while (!onLastMove(s)) s = climbOne(s);
+    expect(s.phase).toBe('aim');
+    // Short of the line: a fall, and the last move goes again.
+    const short = jumpTop(s, -5);
+    expect(short.phase).toBe('fall');
+    // Over it: the top.
+    const over = jumpTop(s, 5);
+    expect(over.phase).toBe('top');
+    expect(tick(over, R.topSec + 0.01).over).toBe(true);
+  });
+
+  it('no timer by default; a testing Time still ends it', () => {
+    let s = newRockClimb({ tier: 3 }, ['finn'], 1);
+    expect(s.timeSec).toBe(0);
+    s = tick(s, 500);
+    expect(s.over).toBe(false);
     let late = newRockClimb({ tier: 1, timeSec: 2 }, ['finn', 'mom'], 1);
     late = tick(late, 2.01);
     expect(late.over).toBe(true);
     expect(result(late).safe).toEqual([]);
     expect(result(late).passing?.stays).toBe(true);
+  });
+
+  it('over the top: every hiker still in passes (falls or not); everyone pays for their falls; out hikers pay nothing more', () => {
+    for (const party of PARTIES) {
+      let s = newRockClimb({ tier: 1 }, party, 11);
+      // One fall first.
+      const faller = activeColor(s)!;
+      s = fallOnce(s);
+      s = climbAll(s);
+      expect(s.over).toBe(true);
+      const r = result(s);
+      expect(r.safe).toEqual(party);
+      expect(r.pays?.[faller]).toEqual({ energy: R.fallEnergy });
+      expect(r.passing?.stays).toBe(false);
+    }
+    // A hiker who's out stays back, paying only for their falls.
+    let s = newRockClimb({ tier: 1 }, ['finn', 'mom', 'ellie'], 4);
+    const out = activeColor(s)!;
+    for (let k = 0; k < R.tries; k++) s = fallOnce(s);
+    s = climbAll(s);
+    const r = result(s);
+    expect(r.safe).not.toContain(out);
+    expect(r.passing?.goBack).toEqual([out]);
+    expect(r.pays?.[out]).toEqual({ energy: R.tries * R.fallEnergy });
   });
 });

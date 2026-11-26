@@ -2,11 +2,10 @@
  * Bear with a Sword's sword attacks (docs/design/12-minigames-dodge.md,
  * section 6):
  *
- * - **Sweep** (unchanged from step 3): the half about to be swept is
- *   hatched, then the blade sweeps it from straight down to flat sideways
- *   around a pivot above the box. Each swing warns a little less, never
- *   under the minimum. Tier II: sometimes a double swing. Tier III: the box
- *   sometimes shrinks for a few of the bear's attacks.
+ * - **Sword Volley** (22-minigame-revisions.md, section 5; it replaced the
+ *   Sword sweep): swords appear one by one on the box's edges, numbered,
+ *   with only their tips inside. After a warning they fly straight across
+ *   in number order. A waiting sword doesn't hit.
  * - **Jab:** a thin lane shows, then the blade thrusts along it to the far
  *   wall, stays, and pulls back. Tier II: two in a row, and diagonal lanes.
  *   Tier III: a pair or a fan of three from one point.
@@ -19,14 +18,15 @@
  *   wave out of step, leaving a winding path between them.
  *
  * The bear's sword attacks sometimes bring a row of Claws with them (a
- * tweak in animals.ts; logic.ts adds the row).
+ * tweak in animals.ts; logic.ts adds the row). From Tier III any of the
+ * bear's attacks can shrink the box for a few attacks (logic.ts).
  */
 import { BALANCE } from '../../../config/balance';
-import { nextFloat } from '../../../engine/rng';
 import type { RngState } from '../../../engine/types';
 import {
   between,
   coin,
+  dist,
   DEG,
   edges,
   INWARD,
@@ -42,11 +42,10 @@ import type { Point } from '../shapes';
 import type {
   AttackCtx,
   AttackDef,
-  DodgeState,
   JabPart,
   PartRules,
   PokePart,
-  SwingPart,
+  VolleyPart,
   WavePart,
 } from '../types';
 import { base, from, warnFor } from './common';
@@ -54,99 +53,74 @@ import { base, from, warnFor } from './common';
 const D = BALANCE.minigames.dodge;
 const S = D.sword;
 
-// ── Sweep ──────────────────────────────────────────────────────────────────
+// ── Sword Volley ───────────────────────────────────────────────────────────
 
-/** The warning before a swing: it starts long and gets shorter each swing, never under the minimum. */
-export const swingWarnSec = (swings: number): number =>
-  Math.max(S.warnMinSec, D.warnMinSec, S.warnStartSec * (1 - S.warnShrink) ** swings);
+const V = D.volley;
 
-export const swingSweepSec = (swings: number): number =>
-  Math.max(S.sweepMinSec, S.sweepSec * (1 - S.sweepShrink) ** swings);
-
-/** One side, or the other at random, never the same side more than twice in a row. */
-function pickSide(s: DodgeState, rng: RngState): 'left' | 'right' {
-  const [a, b] = s.sides.slice(-2);
-  if (a && a === b) return a === 'left' ? 'right' : 'left';
-  return nextFloat(rng) < 0.5 ? 'left' : 'right';
+/** Where a volley sword's tip is now: still until it flies, then straight across. */
+export function volleyTip(p: VolleyPart, time: number): Point {
+  const d = Math.max(0, time - p.activeAt) * p.speed;
+  return { x: p.tip.x + p.dir.x * d, y: p.tip.y + p.dir.y * d };
 }
 
-/** The pivot the sword turns around, above the middle of the box. */
-export const swordPivot = (box: Box): Point => ({
-  x: box.cx,
-  y: box.cy - box.h / 2 - S.pivotAbove,
-});
+/** How far a volley sword's tip goes before the whole sword is past the far wall. */
+const volleyReach = (box: Box, side: Side): number =>
+  (side === 'left' || side === 'right' ? box.w : box.h) - V.tipIn + V.length * 2;
 
 /**
- * The blade's angle from pointing straight down, toward the swing's side:
- * 0 at the start of the sweep, 90° (flat sideways) at the end.
+ * Spots on the box's edge for `n` swords: any side, at least `corner` from
+ * a corner and `apart` from each other (as far as the box has room).
  */
-export function swingAngle(sw: SwingPart, time: number): number | null {
-  if (time < sw.activeAt || time > sw.activeAt + sw.sweepSec) return null;
-  return ((time - sw.activeAt) / sw.sweepSec) * (Math.PI / 2);
+export function volleySpots(rng: RngState, box: Box, n: number): { side: Side; at: Point }[] {
+  const spots: { side: Side; at: Point }[] = [];
+  for (let tries = 0; spots.length < n && tries < 400; tries++) {
+    const side = oneOf(rng, SIDES);
+    const len = side === 'left' || side === 'right' ? box.h : box.w;
+    if (len <= 2 * V.corner) continue;
+    const at = onSide(box, side, between(rng, V.corner, len - V.corner) / len);
+    if (spots.some((o) => dist(o.at, at) < V.apart)) continue;
+    spots.push({ side, at });
+  }
+  return spots;
 }
 
-/** The blade, from the pivot, at an angle on a side. */
-export function bladeAt(box: Box, side: 'left' | 'right', angle: number): [Point, Point] {
-  const p = swordPivot(box);
-  const sx = side === 'right' ? 1 : -1;
-  return [p, { x: p.x + sx * Math.sin(angle) * S.blade, y: p.y + Math.cos(angle) * S.blade }];
-}
-
-export const SWEEP: AttackDef = {
-  id: 'sweep',
-  name: 'Sword sweep',
-  kind: 'area',
+export const VOLLEY: AttackDef = {
+  id: 'volley',
+  name: 'Sword Volley',
+  kind: 'missile',
   start(ctx) {
-    const s = ctx.state;
-    const side = pickSide(s, ctx.rng);
-    const warn = swingWarnSec(s.swings);
-    const sweep = swingSweepSec(s.swings);
-    const first: SwingPart = {
-      kind: 'swing',
-      ...base(ctx, ctx.time, ctx.time + warn),
-      side,
-      sweepSec: sweep,
-    };
-    const parts = [first];
-    const sides = [side];
-    if (from(ctx, S.doubleFrom) && nextFloat(ctx.rng) < S.doubleChance) {
-      // Straight back across the other half; its warning shows from the first sweep on.
-      const other = side === 'left' ? 'right' : 'left';
-      parts.push({
-        kind: 'swing',
-        ...base(ctx, first.activeAt, first.activeAt + sweep + S.doubleGapSec),
-        side: other,
-        sweepSec: sweep,
-      });
-      sides.push(other);
-    }
-    // The shrinking box is a changer: never while another one (a bear hug) is on.
-    const changerOn = s.rounds.some((r) => r.kind === 'changer');
-    const shrink =
-      from(ctx, S.shrinkFrom) &&
-      s.shrunkFor <= 0 &&
-      !changerOn &&
-      nextFloat(ctx.rng) < S.shrinkChance;
-    return {
-      parts,
-      endsAt: Math.max(...parts.map((p) => p.activeAt + p.sweepSec)),
-      patch: {
-        swings: s.swings + parts.length,
-        sides: [...s.sides, ...sides].slice(-4),
-        ...(shrink ? { shrunkFor: S.shrinkSwings } : {}),
-      },
-    };
+    const spots = volleySpots(ctx.rng, ctx.box, V.swords[ctx.level]);
+    // They appear one by one, warn after the last, then fly in number order.
+    const lastAppears = ctx.time + (spots.length - 1) * V.appearSec;
+    const firstFlies = lastAppears + warnFor(V.warnSec);
+    const parts: VolleyPart[] = spots.map(({ side, at }, k) => {
+      const dir = INWARD[side];
+      return {
+        kind: 'volley',
+        ...base(ctx, ctx.time + k * V.appearSec, firstFlies + k * V.flyGapSec),
+        n: k + 1,
+        side,
+        tip: { x: at.x + dir.x * V.tipIn, y: at.y + dir.y * V.tipIn },
+        dir,
+        speed: V.speed * ctx.speed,
+        reach: volleyReach(ctx.box, side),
+        // The next to fly shows its path: the first through the warning, then each after the one before flies.
+        pathAt: k === 0 ? lastAppears : firstFlies + (k - 1) * V.flyGapSec,
+      };
+    });
+    return { parts, endsAt: 'parts' };
   },
 };
 
-export const SWING_RULES: PartRules<SwingPart> = {
+/** A flying sword hits as a short segment from its tip back; a waiting one doesn't hit. */
+export const VOLLEY_RULES: PartRules<VolleyPart> = {
   shapes(p, w) {
-    const angle = swingAngle(p, w.time);
-    if (angle === null) return [];
-    const [a, b] = bladeAt(w.box, p.side, angle);
-    return [{ kind: 'segment', x1: a.x, y1: a.y, x2: b.x, y2: b.y, half: S.bladeHalfWidth }];
+    if (w.time < p.activeAt) return [];
+    const a = volleyTip(p, w.time);
+    const b = { x: a.x - p.dir.x * V.length, y: a.y - p.dir.y * V.length };
+    return [{ kind: 'segment', x1: a.x, y1: a.y, x2: b.x, y2: b.y, half: V.half }];
   },
-  done: (p, w) => w.time > p.activeAt + p.sweepSec + 0.05,
+  done: (p, w) => w.time >= p.activeAt + p.reach / p.speed,
 };
 
 // ── Jab ────────────────────────────────────────────────────────────────────
@@ -426,4 +400,4 @@ export const WAVE_RULES: PartRules<WavePart> = {
   done: (p, w) => waveRun(p, w.time) > w.box.w + 4,
 };
 
-export const SWORD_ATTACKS: readonly AttackDef[] = [SWEEP, JAB, POKE, WAVE];
+export const SWORD_ATTACKS: readonly AttackDef[] = [VOLLEY, JAB, POKE, WAVE];

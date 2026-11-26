@@ -199,6 +199,8 @@ Remember a row of arrows, then walk them through 4-way trail crossings. See `moc
 ---
 
 ## 4. Rock Climb (from the decisions in the design doc)
+**Tries, the top and the look revised November 26: see `22-minigame-revisions.md`, section 2.**
+
 Climb a wall by jumping between holds in the right hikers' colors. See `mockups/signs-trails/20-rock-climb-aim.png` and `21-rock-climb-leap.png`.
 
 ### The screen

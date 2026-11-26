@@ -24,10 +24,10 @@ import { passFailResult } from '../../minigames/lineup';
 import { POPUPS } from '../../minigames/popups';
 import {
   applyPrepare,
+  cardsFor,
   effects,
   emptySlot,
   fillSlot,
-  rowsFor,
   slotsFor,
   spend,
   type Fills,
@@ -114,15 +114,17 @@ export function MinigameFlow({
     return { ...s, ...(popup?.version?.(s, seed) ?? {}) };
   }, [settings, challenge, popup, seed]);
   const idKey = ids.join(',');
-  const slots = useMemo(
+  // The cost cards (section 4.1): the game's options and the challenge's own, grouped by cost.
+  const cards = useMemo(
     () =>
-      slotsFor(
-        rowsFor([...(popup?.prepare(base) ?? []), ...(challenge.prepareRows ?? [])], base),
-        idKey.split(','),
+      cardsFor(
+        [...(popup?.options(base) ?? []), ...(challenge.options ?? [])],
+        base,
+        idKey.split(',').length,
       ),
     [popup, base, challenge, idKey],
   );
-
+  const slots = useMemo(() => slotsFor(cards), [cards]);
   const packs: Packs = useMemo(
     () =>
       Object.fromEntries(
@@ -174,12 +176,13 @@ export function MinigameFlow({
         base={base}
         settings={prepared}
         hikers={hikers}
+        cards={cards}
         slots={slots}
         fills={fills}
         packs={packs}
-        onFill={(key, tile) => {
+        onFill={(key, tile, effect, target) => {
           const s = slots.find((x) => x.key === key);
-          if (s) setFills((f) => fillSlot(f, s, tile));
+          if (s) setFills((f) => fillSlot(f, s, tile, effect, ids, target));
         }}
         onEmpty={(key) => setFills((f) => emptySlot(f, key))}
         skip={skip}

@@ -17,7 +17,7 @@ import {
   SHRAPNEL_RULES,
   SQUIRREL_ATTACKS,
 } from './attacks/squirrels';
-import { JAB_RULES, POKE_RULES, SWING_RULES, SWORD_ATTACKS, WAVE_RULES } from './attacks/sword';
+import { JAB_RULES, POKE_RULES, SWORD_ATTACKS, VOLLEY_RULES, WAVE_RULES } from './attacks/sword';
 import type { AttackDef, AttackId, Level, Part, PartRules } from './types';
 
 const D = BALANCE.minigames.dodge;
@@ -47,13 +47,19 @@ const RANKS: readonly Rank[] = [0, 1, 2, 3];
 /** The levels a bee pattern plays at, or none for an attack that isn't one. */
 const beeRanks = (id: AttackId): Rank[] => RANKS.filter((r) => D.bees.levels[r].includes(id));
 
+/** Ants at Easy play only Marching Lines and Ant Mill (22-minigame-revisions.md, section 4). */
+const ANT_IDS: ReadonlySet<AttackId> = new Set(ANT_ATTACKS.map((a) => a.id));
+const easyOk = (id: AttackId): boolean => !ANT_IDS.has(id) || D.ants.easy.includes(id);
+
 /**
  * The levels an attack plays at: a bee pattern's own list; anything else
  * from its first level up (Easy plays Level 1's attacks).
  */
 export function ranksOf(id: AttackId): Rank[] {
   const bees = beeRanks(id);
-  return bees.length ? bees : RANKS.filter((r) => Math.max(1, r) >= unlockLevel(id));
+  return bees.length
+    ? bees
+    : RANKS.filter((r) => Math.max(1, r) >= unlockLevel(id) && (r > 0 || easyOk(id)));
 }
 
 /** Whether an attack plays at a level. */
@@ -61,7 +67,7 @@ export const playsAt = (id: AttackId, rank: Rank): boolean => ranksOf(id).includ
 
 const RULES: { [K in Part['kind']]: PartRules<Extract<Part, { kind: K }>> } = {
   bee: BEE_RULES,
-  swing: SWING_RULES,
+  volley: VOLLEY_RULES,
   jab: JAB_RULES,
   poke: POKE_RULES,
   claws: CLAWS_RULES,

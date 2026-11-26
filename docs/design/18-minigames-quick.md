@@ -237,6 +237,8 @@ Flies are heading for the picnic. Circles pop up where each one will land: tap a
 ---
 
 ## 6. Raccoon Shuffle (the challenge version)
+**Revised again November 26: see `22-minigame-revisions.md`, section 1.**
+
 Raccoons hide in trash bins, then the bins get shuffled like the cup-and-ball game. Find an empty bin. Each hiker gets their own shuffle (Wyatt). The opportunity version comes later. See `mockups/quick-games/9-raccoon-shuffle-show.png`, `10-raccoon-shuffle-swap.png` and `11-raccoon-shuffle-night.png`.
 
 ### Play

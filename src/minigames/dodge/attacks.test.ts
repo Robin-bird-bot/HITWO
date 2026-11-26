@@ -69,8 +69,8 @@ describe('what each animal uses, by level', () => {
     ['bear', 1, ['bite', 'claws']],
     ['bear', 2, ['bite', 'claws', 'hug', 'shout']],
     ['bear', 3, ['bite', 'claws', 'honey', 'hug', 'shout']],
-    ['swordBear', 1, ['claws', 'jab', 'poke', 'sweep', 'wave']],
-    ['swordBear', 3, ['claws', 'jab', 'poke', 'sweep', 'thrown', 'wave', 'xSlash']],
+    ['swordBear', 1, ['claws', 'jab', 'poke', 'volley', 'wave']],
+    ['swordBear', 3, ['claws', 'jab', 'poke', 'thrown', 'volley', 'wave', 'xSlash']],
     ['bobcat', 1, ['claws', 'pounce', 'stalk']],
     ['bobcat', 2, ['claws', 'dash', 'pounce', 'stalk']],
     ['bobcat', 3, ['claws', 'dash', 'landingSwipe', 'pounce', 'stalk']],
@@ -81,9 +81,15 @@ describe('what each animal uses, by level', () => {
     ['monster', 2, ['arms', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
     ['monster', 3, ['arms', 'darkness', 'fire', 'glare', 'hands', 'ritual', 'runes', 'wisps']],
     // Bear with a Gun and Ants (Nov 26).
-    ['gunBear', 1, ['aimedShot', 'rapidFire', 'traps']],
-    ['gunBear', 2, ['aimedShot', 'rapidFire', 'ricochet', 'snipe', 'traps']],
-    ['gunBear', 3, ['aimedShot', 'quickDraw', 'rapidFire', 'ricochet', 'snipe', 'traps']],
+    // Bullet Ring goes by the tier (IV and up), not the level: the pool here is Tier V's.
+    ['gunBear', 1, ['aimedShot', 'bulletRing', 'rapidFire', 'traps']],
+    ['gunBear', 2, ['aimedShot', 'bulletRing', 'rapidFire', 'ricochet', 'snipe', 'traps']],
+    [
+      'gunBear',
+      3,
+      ['aimedShot', 'bulletRing', 'quickDraw', 'rapidFire', 'ricochet', 'snipe', 'traps'],
+    ],
+    ['ants', 0, ['antMill', 'marching']],
     ['ants', 1, ['antMill', 'leafcutter', 'marching']],
     ['ants', 2, ['antHill', 'antMill', 'fireAnts', 'leafcutter', 'marching']],
     ['ants', 3, ['antHill', 'antMill', 'crumbRush', 'fireAnts', 'leafcutter', 'marching']],
@@ -112,6 +118,7 @@ describe('what each animal uses, by level', () => {
     expect(many('stampede', 0).level).toBe(1);
     expect(many('bear', 0).easy).toBe(false);
     expect(many('bees', 0).easy).toBe(true);
+    expect(many('ants', 0).easy).toBe(true);
   });
 
   it('switching Claude’s ideas off removes every attack marked as one', () => {
@@ -235,7 +242,6 @@ describe('warnings', () => {
     jab: D.jab.warnSec,
     claws: D.claws.bobcat.warnSec,
     pounce: D.pounce.feintRealSec,
-    swing: D.sword.warnMinSec,
     stalk: D.warnMinSec,
     hand: D.hands.crackSec,
     // Aimed Shot at Level 3: the aim tracks [0.32 s], then locks [0.2 s].
@@ -244,6 +250,7 @@ describe('warnings', () => {
   it.each([
     ['bees', 0] as const,
     ['squirrels', 0] as const,
+    ['ants', 0] as const,
     ...ANIMAL_IDS.flatMap((a) => LEVELS.map((l) => [a, l] as const)),
   ])('%s at Level %i: every attack warns first, never under the minimum', (animal, level) => {
     const seen = partsSeen(many(animal, level)).filter((p) => !p.child);

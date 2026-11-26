@@ -175,6 +175,25 @@
   pointer-events: none;
 }
 
+/* A Sword Volley number (22-minigame-revisions.md, mockup 39): a cream square, outside the wall. */
+.volleyNo {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 1px solid #0f170c;
+  border-radius: 1.5px;
+  background: #d3dfaf;
+  color: #0f170c;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 /* The sword: 7 × 64 at 2×, turning around its hilt. */
 .sword {
   position: absolute;

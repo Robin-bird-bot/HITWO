@@ -1,27 +1,39 @@
 /**
- * The challenge pop-up, version 2 (docs/design/20-challenge-popup.md;
+ * The challenge pop-up, version 3 (docs/design/20-challenge-popup.md;
  * mockups/challenge-popup/prototype.html): the cream window with the red
  * banner, and three columns.
  *
- * - **Left:** a small poster with the flavor line and chips; HOW TO PLAY
- *   (the biggest text, its red phrase); CONTROLS as keycaps, mouse and finger.
+ * - **Left:** the poster (156 × 234) with the flavor line and chips; HOW TO
+ *   PLAY (the biggest text, its red phrase) and the rule lines that apply to
+ *   this run, each with its tier tag; CONTROLS as keycaps, mouse and finger.
  * - **Middle:** the slot the upright GPS stands in (MinigameFlow draws it
- *   there, playing the demo), with its caption.
- * - **Right:** IF YOU FAIL, the bars, the per-hiker values with each
- *   hiker's slot, the PREPARE rows, then START (SKIP IT when that's filled).
+ *   there, playing the demo), and START under it (SKIP IT when that's
+ *   filled). After a game, how it went and the buttons go there instead.
+ * - **Right:** IF YOU FAIL, the solid bars, the per-hiker values, and the
+ *   PREPARE cost cards.
  *
- * Slots: hover peeks at the pop-up inventory, a click opens it to pick, ×
- * takes the thing back. Nothing is spent until Start (never in test mode).
- * After a game it shows how it went, then Continue, or in test mode Back
- * to testing and Play again.
+ * Filling a slot (section 4.4): pick the thing in the pop-up inventory,
+ * then what it does (only with several effects), then who gets it (only
+ * for a per-hiker effect). Closing early leaves the slot empty; × empties
+ * it. Nothing is spent until Start (never in test mode).
  */
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from 'react';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
 import type { GamePopup, Input } from '../../minigames/popups';
 import {
+  costText,
+  effectOf,
+  effectOpen,
+  nextStep,
+  orderCards,
+  prepFor,
+  targetOpen,
+  thingName,
   tilesFor,
   whoCanFill,
+  type Card,
   type Fills,
+  type Option,
   type Packs,
   type Slot,
   type Tile,
@@ -36,7 +48,15 @@ import {
 } from '../../minigames/types';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 import { MinigameIcon } from './MinigameIcon';
-import { BarRow, Heart, Inventory, PrepSlot } from './PrepareParts';
+import {
+  BarRow,
+  Heart,
+  Inventory,
+  PrepSlot,
+  WhatPanel,
+  WhoPanel,
+  type PanelAt,
+} from './PrepareParts';
 import styles from './ChallengePopup.module.css';
 
 const CATEGORY: Readonly<Record<string, string>> = {
@@ -52,7 +72,7 @@ const CATEGORY: Readonly<Record<string, string>> = {
 function InputPic({ input }: { input: Input }): ReactNode {
   if (input === 'or') return <span className={styles.or}>or</span>;
   if ('key' in input) return <span className={styles.key}>{input.key}</span>;
-  const mouse = 'mouse' in input;
+  const isMouse = 'mouse' in input;
   return (
     <span className={styles.input}>
       <svg
@@ -64,7 +84,7 @@ function InputPic({ input }: { input: Input }): ReactNode {
         strokeLinecap="round"
         aria-hidden="true"
       >
-        {mouse ? (
+        {isMouse ? (
           <>
             <rect x="6" y="2" width="12" height="20" rx="6" />
             <line x1="12" y1="2" x2="12" y2="9" />
@@ -73,16 +93,16 @@ function InputPic({ input }: { input: Input }): ReactNode {
           <path d="M9 11V4.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4c0 4-2.5 7-6 7s-4.8-1.6-6.4-4.4L4.3 13.4a1.6 1.6 0 0 1 2.7-1.7L9 14" />
         )}
       </svg>
-      {mouse ? input.mouse : input.finger}
+      {isMouse ? input.mouse : input.finger}
     </span>
   );
 }
 
-interface Open {
-  key: string;
-  mode: 'peek' | 'pick';
-  at: { x: number; top: number; minX: number; maxX: number };
-}
+/** What's open over a slot: peeking, picking, then what it does, then who gets it. */
+type Open =
+  | { key: string; mode: 'peek' | 'pick'; at: PanelAt }
+  | { key: string; mode: 'what'; at: PanelAt; tile: Tile }
+  | { key: string; mode: 'who'; at: PanelAt; tile: Tile; effect: Option };
 
 export function ChallengePopup({
   challenge,
@@ -91,6 +111,7 @@ export function ChallengePopup({
   base,
   settings,
   hikers,
+  cards,
   slots,
   fills,
   packs,
@@ -113,10 +134,11 @@ export function ChallengePopup({
   base: MinigameSettings;
   settings: MinigameSettings;
   hikers: readonly MinigameHiker[];
+  cards: readonly Card[];
   slots: readonly Slot[];
   fills: Fills;
   packs: Packs;
-  onFill(key: string, tile: Tile): void;
+  onFill(key: string, tile: Tile, effect: string, target?: string): void;
   onEmpty(key: string): void;
   /** SKIP IT is filled: Start becomes SKIP IT. */
   skip?: boolean;
@@ -136,9 +158,10 @@ export function ChallengePopup({
   const byId = (id: string) => hikers.find((h) => h.id === id);
   const color = (id: string) => byId(id)?.color ?? '#888';
 
-  // A click anywhere else, or Esc, closes a picking inventory.
+  // A click anywhere else, or Esc, closes an open panel (leaving its slot as it was).
+  const pinned = open !== null && open.mode !== 'peek';
   useEffect(() => {
-    if (open?.mode !== 'pick') return;
+    if (!pinned) return;
     const close = () => setOpen(null);
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
     window.addEventListener('click', close);
@@ -147,10 +170,10 @@ export function ChallengePopup({
       window.removeEventListener('click', close);
       window.removeEventListener('keydown', onKey);
     };
-  }, [open?.mode]);
+  }, [pinned]);
 
-  /** Where the inventory goes: above the slot, kept inside the window (window px). */
-  const anchor = (el: HTMLElement): Open['at'] => {
+  /** Where a panel goes: above the slot, kept inside the window (window px). */
+  const anchor = (el: HTMLElement): PanelAt => {
     const w = win.current!;
     const wr = w.getBoundingClientRect();
     const r = el.getBoundingClientRect();
@@ -163,6 +186,37 @@ export function ChallengePopup({
     };
   };
 
+  /** After the tile: what it does, then who gets it, each only when needed. */
+  const afterTile = (slot: Slot, at: PanelAt, tile: Tile) => {
+    const step = nextStep(slot, null);
+    const only = slot.card.effects[0]!;
+    if (step === 'done') {
+      onFill(slot.key, tile, only.id);
+      setOpen(null);
+    } else if (step === 'who') setOpen({ key: slot.key, mode: 'who', at, tile, effect: only });
+    else setOpen({ key: slot.key, mode: 'what', at, tile });
+  };
+  const afterEffect = (slot: Slot, at: PanelAt, tile: Tile, e: Option) => {
+    if (nextStep(slot, e.id) === 'who')
+      setOpen({ key: slot.key, mode: 'who', at, tile, effect: e });
+    else {
+      onFill(slot.key, tile, e.id);
+      setOpen(null);
+    }
+  };
+
+  /** A filled slot's badge: the hiker who got it ("♥ ELLIE" on her color), or the effect's short name. */
+  const badgeOf = (s: Slot) => {
+    const f = fills[s.key];
+    const e = f && effectOf(s, f);
+    if (!f || !e) return undefined;
+    if (e.perHiker && f.target) {
+      const h = byId(f.target);
+      return { text: `${e.short} ${(h?.name ?? f.target).toUpperCase()}`, color: h?.color };
+    }
+    return { text: e.short };
+  };
+
   const slotFor = (s: Slot) => (
     <PrepSlot
       key={s.key}
@@ -170,9 +224,10 @@ export function ChallengePopup({
       fill={fills[s.key]}
       who={whoCanFill(s, slots, fills, packs, order).map(color)}
       owner={fills[s.key] ? color(fills[s.key]!.hiker) : undefined}
+      badge={badgeOf(s)}
       open={open?.key === s.key}
       onPeek={(el) => {
-        if (dimmed || open?.mode === 'pick') return;
+        if (dimmed || pinned) return;
         setOpen(el ? { key: s.key, mode: 'peek', at: anchor(el) } : null);
       }}
       onOpen={(el) => {
@@ -186,18 +241,17 @@ export function ChallengePopup({
     />
   );
 
-  const per = popup?.perHiker?.(settings) ?? null;
-  const perBase = per ? popup?.perHiker?.(base) : null;
-  const perSlots = per ? slots.filter((s) => s.row.id === per.row && s.row.perHiker) : [];
-  const rows = [...new Set(slots.filter((s) => !s.row.perHiker).map((s) => s.row))];
+  const per = popup?.perHiker?.(base) ?? null;
   const ifFail = challenge.ifHit.length ? challenge.ifHit : (popup?.ifFail ?? []);
   const bars = popup?.bars(settings) ?? [];
   const how = popup?.howToPlay(settings) ?? [{ text: challenge.game.line }];
+  const rules = popup?.rules(settings) ?? [];
   const chips = [
     challenge.game.name.toUpperCase(),
     ...(info ? [CATEGORY[info.category] ?? ''] : []),
     ...(popup?.chips(settings) ?? []),
   ].filter(Boolean);
+  const shownCards = orderCards(cards, slots, fills, packs, order);
   const openSlot = open ? slots.find((s) => s.key === open.key) : undefined;
 
   return (
@@ -225,7 +279,7 @@ export function ChallengePopup({
           </span>
         </header>
 
-        {/* Left: the poster and chips, how to play, the controls. */}
+        {/* Left: the poster and chips, how to play and its rules, the controls. */}
         <div className={`${styles.col} ${styles.left}`}>
           <div className={styles.intro}>
             <div className={styles.poster}>
@@ -250,6 +304,18 @@ export function ChallengePopup({
           <p className={styles.howto}>
             {how.map((p, i) => (p.red ? <b key={i}>{p.text}</b> : <span key={i}>{p.text}</span>))}
           </p>
+          {rules.length > 0 && (
+            <ul className={styles.also}>
+              {rules.map((r, i) => (
+                <li key={i}>
+                  {r.text.map((p, k) =>
+                    p.red ? <b key={k}>{p.text}</b> : <span key={k}>{p.text}</span>,
+                  )}
+                  {r.when && <span className={styles.when}>{r.when}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
           {popup && (
             <>
               <h3 className={styles.h}>CONTROLS</h3>
@@ -269,18 +335,42 @@ export function ChallengePopup({
           )}
         </div>
 
-        {/* Middle: the GPS stands here, playing the demo. */}
+        {/* Middle: the GPS stands here, playing the demo; Start under it. */}
         <div className={`${styles.col} ${styles.mid}`}>
           <div ref={gpsSlotRef} className={styles.gpsSlot} />
-          <p className={styles.democap}>
-            A BOT PLAYS A DEMO ROUND.
-            <br />
-            IT USES WHATEVER YOU’VE PREPARED.
-          </p>
+          {result ? (
+            <div className={styles.afterGame}>
+              <p className={styles.resultLine} role="status">
+                {resultLine(result)}
+              </p>
+              {testMode ? (
+                <span className={styles.buttons}>
+                  <button type="button" className={styles.secondary} onClick={onBack}>
+                    BACK TO TESTING
+                  </button>
+                  <button type="button" className={styles.start} onClick={onPlayAgain}>
+                    PLAY AGAIN
+                  </button>
+                </span>
+              ) : (
+                <button type="button" className={styles.start} onClick={onContinue}>
+                  CONTINUE
+                </button>
+              )}
+            </div>
+          ) : (
+            <button type="button" className={styles.start} onClick={onStart} autoFocus>
+              {skip ? 'SKIP IT' : 'START'}
+            </button>
+          )}
         </div>
 
-        {/* Right: what failing costs, the bars, the hikers, Prepare, Start. */}
-        <div className={`${styles.col} ${styles.right}`}>
+        {/* Right: what failing costs, the bars, the hikers, the cost cards. */}
+        {/* Four cards or more (Bear Country): a little tighter, so the column still fits. */}
+        <div
+          className={`${styles.col} ${styles.right}`}
+          data-dense={cards.length >= 4 || undefined}
+        >
           {ifFail.length > 0 && (
             <div className={styles.sec}>
               <h3 className={styles.h}>IF YOU FAIL</h3>
@@ -307,9 +397,8 @@ export function ChallengePopup({
               <div className={styles.lives}>
                 {hikers.map((h) => {
                   const status = result ? hikerStatus(result, h.id) : undefined;
-                  const mine = perSlots.find((s) => s.hiker === h.id);
-                  const extra = mine && fills[mine.key] ? (per?.step ?? 0) : 0;
-                  const startValue = perBase?.base ?? per?.base ?? 0;
+                  const start = per?.base ?? 0;
+                  const extra = per ? prepFor(settings, per.param, h.id) * per.step : 0;
                   return (
                     <div key={h.id} className={styles.lrow}>
                       <HikerPortrait
@@ -320,22 +409,23 @@ export function ChallengePopup({
                       <span className={styles.nm}>{h.name}</span>
                       <span className={styles.hearts}>
                         {per?.kind === 'hearts' &&
-                          Array.from({ length: startValue + extra }, (_, i) => (
-                            <Heart key={i} fresh={i >= startValue} />
+                          Array.from({ length: start + extra }, (_, i) => (
+                            <Heart key={i} fresh={i >= start} />
                           ))}
                         {per?.kind === 'pips' && (
                           <span className={styles.pips}>
                             {Array.from(
-                              { length: Math.round((startValue + extra) / per.step) },
+                              { length: Math.round((start + extra) / per.step) },
                               (_, i) => (
                                 <span
                                   key={i}
-                                  data-new={i >= Math.round(startValue / per.step) || undefined}
+                                  style={{ background: h.color }}
+                                  data-new={i >= Math.round(start / per.step) || undefined}
                                 />
                               ),
                             )}
                             <span className={styles.pipValue}>
-                              {per.format ? per.format(startValue + extra) : startValue + extra}
+                              {per.format ? per.format(start + extra) : start + extra}
                             </span>
                           </span>
                         )}
@@ -345,75 +435,41 @@ export function ChallengePopup({
                           </span>
                         )}
                       </span>
-                      <span className={styles.hs}>
-                        {mine && !result && (
-                          <>
-                            <span className={styles.plus}>+</span>
-                            {slotFor(mine)}
-                          </>
-                        )}
-                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-          {rows.length > 0 && !result && (
+          {shownCards.length > 0 && !result && (
             <div className={styles.sec}>
               <h3 className={styles.h}>PREPARE</h3>
-              {rows.map((r) => (
-                <div key={r.id} className={styles.prow}>
-                  <div>
-                    <div className={styles.prowTitle}>{r.label}</div>
-                    <div className={styles.prowLine}>{r.line}</div>
+              <div className={styles.cards}>
+                {shownCards.map((c) => (
+                  <div key={c.id} className={styles.card} data-color={c.color}>
+                    <div>
+                      <div className={styles.cardTitle}>{c.title}</div>
+                      <div className={styles.cost}>{costText(c)}</div>
+                      <div className={styles.does}>
+                        {c.effects.map((e, i) => (
+                          <span key={e.id}>
+                            {i > 0 && <i> or </i>}
+                            {e.label.toLowerCase()} <i>({e.perHiker ? 'pick a hiker' : e.note})</i>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.slots}>
+                      {slots.filter((s) => s.card.id === c.id).map(slotFor)}
+                    </div>
                   </div>
-                  <div className={styles.slots}>
-                    {slots.filter((s) => s.row === r).map(slotFor)}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
-          <div className={styles.footer}>
-            {result ? (
-              <>
-                <p className={styles.resultLine} role="status">
-                  {resultLine(result)}
-                </p>
-                {testMode ? (
-                  <span className={styles.buttons}>
-                    <button type="button" className={styles.secondary} onClick={onBack}>
-                      BACK TO TESTING
-                    </button>
-                    <button type="button" className={styles.start} onClick={onPlayAgain}>
-                      PLAY AGAIN
-                    </button>
-                  </span>
-                ) : (
-                  <button type="button" className={styles.start} onClick={onContinue}>
-                    CONTINUE
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                <button type="button" className={styles.start} onClick={onStart} autoFocus>
-                  {skip ? 'SKIP IT' : 'START'}
-                </button>
-                {slots.length > 0 && (
-                  <p className={styles.note}>
-                    Nothing is used until you press Start. Hover a slot to see what fits; click it,
-                    then pick whose resource to use. Click × to take it back.
-                    {testMode ? ' Test mode: nothing is really spent.' : ''}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
         </div>
 
-        {open && openSlot && (
+        {open && openSlot && (open.mode === 'peek' || open.mode === 'pick') && (
           <Inventory
             key={`${open.key}:${open.mode}`}
             slot={openSlot}
@@ -422,8 +478,28 @@ export function ChallengePopup({
             current={fills[open.key]}
             at={open.at}
             byId={byId}
-            onPick={(tile) => {
-              onFill(open.key, tile);
+            onPick={(tile) => afterTile(openSlot, open.at, tile)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {open && openSlot && open.mode === 'what' && (
+          <WhatPanel
+            effects={openSlot.card.effects}
+            open={(e) => effectOpen(e, fills, order, open.key)}
+            from={`${thingName(open.tile.thing).toUpperCase()} FROM ${(byId(open.tile.hiker ?? '')?.name ?? '').toUpperCase()}`}
+            at={open.at}
+            onPick={(e) => afterEffect(openSlot, open.at, open.tile, e)}
+            onClose={() => setOpen(null)}
+          />
+        )}
+        {open && openSlot && open.mode === 'who' && (
+          <WhoPanel
+            effect={open.effect}
+            hikers={hikers}
+            open={(h) => targetOpen(open.effect, h, fills, open.key)}
+            at={open.at}
+            onPick={(h) => {
+              onFill(open.key, open.tile, open.effect.id, h);
               setOpen(null);
             }}
             onClose={() => setOpen(null)}

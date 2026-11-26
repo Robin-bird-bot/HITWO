@@ -11,6 +11,7 @@ import {
   holeRadius,
   quickDrawBands,
   ricochetAt,
+  ringPellets,
   shotFront,
   shotLanes,
   trapArc,
@@ -32,7 +33,7 @@ const flash = (x: number, y: number) => (
 const blink = (time: number, every = 0.05) => Math.floor(time / every) % 2 === 0;
 
 export const GUN_DRAW: DrawTable<
-  'shot' | 'crosshair' | 'hole' | 'trap' | 'bullet' | 'ricochet' | 'quickDraw'
+  'shot' | 'crosshair' | 'hole' | 'trap' | 'bullet' | 'ricochet' | 'bulletRing' | 'quickDraw'
 > = {
   shot: {
     svg(p, c) {
@@ -179,6 +180,10 @@ export const GUN_DRAW: DrawTable<
           <Sprite file={gun('trap-closed.png')} x={p.x} y={p.y} w={18} h={12} opacity={fade} />
         );
       }
+      // Landed gray and harmless; red (open) once it's armed.
+      if (c.time < p.armAt) {
+        return <Sprite file={gun('trap-arming.png')} x={p.x} y={p.y} w={18} h={12} />;
+      }
       const fade = c.time < p.openUntil ? 1 : 1 - (c.time - p.openUntil) / G.traps.openFadeSec;
       return <Sprite file={gun('trap-open.png')} x={p.x} y={p.y} w={18} h={12} opacity={fade} />;
     },
@@ -281,6 +286,38 @@ export const GUN_DRAW: DrawTable<
         : null,
     warn: (p, c) =>
       c.time < p.activeAt ? <Bang x={p.path[0]!.x} y={p.path[0]!.y - 6} box={c.box} /> : null,
+  },
+
+  bulletRing: {
+    over(p, c) {
+      if (c.time < p.activeAt) return null;
+      return (
+        <>
+          {ringPellets(p, c.time).map((q, k) => (
+            <Sprite key={k} file={gun('pellet.png')} x={q.x} y={q.y} w={4} h={4} />
+          ))}
+        </>
+      );
+    },
+    // The muzzle flash at the top's middle: blinking through the warning, then as each ring fires.
+    outside(p, c) {
+      const warning = p.first && c.time >= p.warnAt && c.time < p.activeAt;
+      const firing = c.time >= p.activeAt && c.time < p.activeAt + 0.1;
+      return (warning && blink(c.time, 0.1)) || firing ? flash(p.from.x, p.from.y - 4) : null;
+    },
+    // The "!" over the bear's head.
+    warn(p, c) {
+      if (!p.first || c.time >= p.activeAt) return null;
+      const at = portraitAt('gunBear');
+      return (
+        <span
+          className={styles.mark}
+          style={{ left: at.x + PORTRAITS.gunBear.w / 2 - 3.5, top: at.y - 9, color: RED }}
+        >
+          !
+        </span>
+      );
+    },
   },
 
   quickDraw: {

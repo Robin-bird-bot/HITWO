@@ -52,7 +52,7 @@ export type AttackId =
   | 'zigzag'
   | 'aimed'
   // Wyatt's list
-  | 'sweep'
+  | 'volley'
   | 'claws'
   | 'bite'
   | 'jab'
@@ -87,6 +87,7 @@ export type AttackId =
   | 'traps'
   | 'rapidFire'
   | 'ricochet'
+  | 'bulletRing'
   | 'quickDraw'
   // Ants (section 2)
   | 'marching'
@@ -133,11 +134,23 @@ export interface BeePart extends PartBase {
   mark: Point;
 }
 
-/** A sword sweep: the half of the box it'll sweep is warned, then the blade sweeps it. */
-export interface SwingPart extends PartBase {
-  kind: 'swing';
-  side: 'left' | 'right';
-  sweepSec: number;
+/**
+ * A Sword Volley sword: it appears on the box's edge (`warnAt`) with its
+ * tip inside, numbered, then flies straight across (`activeAt`).
+ */
+export interface VolleyPart extends PartBase {
+  kind: 'volley';
+  /** Its number: they fly in this order. */
+  n: number;
+  /** The wall it sits on, its tip while it waits, and the way it flies. */
+  side: Side;
+  tip: Point;
+  dir: Point;
+  speed: number;
+  /** How far the tip goes before the whole sword is past the far wall. */
+  reach: number;
+  /** When its path shows, dotted: once it's the next to fly. */
+  pathAt: number;
 }
 
 /** A sword jab: a lane shows, then the blade thrusts along it to the far wall and back. */
@@ -287,7 +300,7 @@ export interface CrumbsPart extends PartBase {
 
 export type Part =
   | BeePart
-  | SwingPart
+  | VolleyPart
   | JabPart
   | PokePart
   | ClawsPart
@@ -380,8 +393,8 @@ export interface AttackStart {
   parts: Part[];
   /** When the round is over: a time, or once all its parts are done. */
   endsAt: number | 'parts';
-  /** The sword bear's memory: swings so far, the last sides, and attacks left with the box shrunk. */
-  patch?: Partial<Pick<DodgeState, 'swings' | 'sides' | 'shrunkFor'>>;
+  /** The sword bear's memory: attacks left with the box shrunk. */
+  patch?: Partial<Pick<DodgeState, 'shrunkFor'>>;
 }
 
 /** A piece of the attack library. */
@@ -394,6 +407,8 @@ export interface AttackDef {
   claudesIdea?: true;
   /** Only in the Woods Monster's second half (Darkness). */
   secondHalf?: true;
+  /** Only from this tier (Bullet Ring: Tier IV), whatever the level. */
+  fromTier?: Tier;
   start(ctx: AttackCtx): AttackStart;
 }
 
@@ -470,9 +485,7 @@ export interface DodgeState {
   showing: Attacker[];
   nextId: number;
   roundNo: number;
-  /** Bear with a Sword: swings so far, the last sides, and attacks left with the box shrunk. */
-  swings: number;
-  sides: ('left' | 'right')[];
+  /** Bear with a Sword: attacks left with the box shrunk. */
   shrunkFor: number;
   /** The sprite moves slower until this time (a bear trap). */
   slowUntil: number;

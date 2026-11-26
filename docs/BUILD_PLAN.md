@@ -1730,6 +1730,29 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Eve
 
 **Tests:** as in `20`, section 8, `21`, section 9, and the new Raccoon Shuffle lines in `18`, section 9.
 
+### Phase 10.8, step 10: The challenge pop-up, version 3, and game revisions
+
+(New in the Nov 26 second-round update: `docs/UPDATE-2026-11-26-popup-v3.md`. The designs are `docs/design/20-challenge-popup.md` (version 3, replaces version 2) and the new `22-minigame-revisions.md`. The pop-up's reference is the version 3 prototype: `docs/mockups/minigames/challenge-popup/prototype.html`, with `v3-*.png` screenshots. New mockups in `revisions-nov-26/`. New art: Raccoon Shuffle's wider card, Rock Climb's climber body and hands, and the arming bear trap.)
+
+**Goal:** pop-up version 3 for every game, and Wyatt's revisions to five games. Keep everything else as it is.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Every game's Prepare cards are first guesses.
+
+**Build**
+1. **The pop-up, version 3** (sections 1 to 4 first, with the Dodge (Bees) example):
+   - How to play covers every important rule, with rule lines that show only when they apply (and a tier tag);
+   - solid tan-brown bars;
+   - cost cards: one card per cost, color-coded; after filling a slot, pick what it does and who gets it;
+   - the bigger poster, Start under the GPS, and the demo's scanlines on a canvas at device pixels.
+2. **Every game's text, rules, bars and cards** (`20`, section 7).
+3. **Raccoon Shuffle:** wider cards with a red minus; from Tier III, extra empty bins that a raccoon carries off at the end.
+4. **Rock Climb:** tries and energy per fall, hikers going out, the top line, no timer, faster at high tiers, and the new climber with reaching arms.
+5. **Bear with a Gun:** traps arm gray first; a faster Ricochet with more shots; Bullet Ring from Tier IV.
+6. **Ants** get an Easy level and join Tier I.
+7. **Bear with a Sword:** Sword Volley replaces the Sword sweep.
+
+**Tests:** as in `20`, section 8, and `22`, section 6.
+
 ### Phase 10.8, next steps (outline only)
 
 - Step 4: Sketchy Bridge and Falling Rocks (Rock Climb moved up to step 3).

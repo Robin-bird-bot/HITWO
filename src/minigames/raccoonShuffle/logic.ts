@@ -17,6 +17,12 @@
  *   swap's time but don't count). Each shuffle starts at the tier's first
  *   swap time and speeds up evenly to its last. A bin keeps its contents as
  *   it moves.
+ * - **The take-away** (22-minigame-revisions.md, section 1.2; Tier III and
+ *   up): after the last swap, a short pause, then a raccoon hauls off one
+ *   of the empty bins at random (Tier V: two, one after the other). A
+ *   dashed gap stays where it was, and it can't be picked. LURE ONE OUT's
+ *   extra empty bin is never taken, so one empty bin is always left (two
+ *   with the lure).
  * - **The pick:** empty passes with no cost; a raccoon steals the item on
  *   its card (the hiker fails, and loses that instead of energy).
  * - Then the other bins open for [1 s], and the next hiker gets a new fill.
@@ -49,9 +55,17 @@ export type Card = { kind: 'resource'; id: string } | { kind: 'energy' };
 export interface Bin {
   id: number;
   card: Card | null;
+  /** An empty bin LURE ONE OUT added: never taken away. */
+  lure?: true;
 }
 
-export type ShufflePhase = 'show' | 'shuffle' | 'pick' | 'open' | 'after';
+export type ShufflePhase = 'show' | 'shuffle' | 'takeAway' | 'pick' | 'open' | 'after';
+
+/** A bin a raccoon hauls off (by id), and when the haul starts (game time). */
+export interface Haul {
+  bin: number;
+  at: number;
+}
 
 export interface RaccoonShuffleOptions {
   tier: Tier;
@@ -74,6 +88,8 @@ export interface ShuffleStep {
 export interface RaccoonShuffleState {
   tier: Tier;
   emptyCount: number;
+  /** Of those, how many LURE ONE OUT added (never taken). */
+  lureCount: number;
   extraSwapSec: number;
   night: boolean;
   packs: Readonly<Record<string, Pack>>;
@@ -83,6 +99,8 @@ export interface RaccoonShuffleState {
   slots: number[];
   /** The shuffle's steps. */
   steps: ShuffleStep[];
+  /** The bins hauled off after the shuffle (Tier III and up): gaps that can't be picked. */
+  hauls: Haul[];
   /** The step under way (during the shuffle), and swaps done so far. */
   step: number;
   swapsDone: number;
@@ -111,17 +129,25 @@ export const packUnits = (pack: Pack | undefined): string[] =>
  * the rest, each card a random unit from their pack (not put back), energy
  * once it runs out.
  */
-export function fill(rng: RngState, tier: Tier, pack: Pack | undefined, emptyCount: number): Bin[] {
+export function fill(
+  rng: RngState,
+  tier: Tier,
+  pack: Pack | undefined,
+  emptyCount: number,
+  lureCount = 0,
+): Bin[] {
   const n = RS.tiers[tier].bins;
   emptyCount = Math.min(n - 1, emptyCount);
-  const empties = new Set(
-    shuffle(
-      rng,
-      Array.from({ length: n }, (_, i) => i),
-    ).slice(0, emptyCount),
-  );
+  const order = shuffle(
+    rng,
+    Array.from({ length: n }, (_, i) => i),
+  ).slice(0, emptyCount);
+  const empties = new Set(order);
+  // The last of them are the lure's.
+  const lures = new Set(order.slice(Math.max(0, emptyCount - lureCount)));
   const units = shuffle(rng, packUnits(pack));
   return Array.from({ length: n }, (_, id) => {
+    if (lures.has(id)) return { id, card: null, lure: true as const };
     if (empties.has(id)) return { id, card: null };
     const unit = units.shift();
     return {
@@ -187,12 +213,13 @@ export function planSwaps(rng: RngState, tier: Tier, bins: number, extraSec = 0)
 /** A fresh turn for the hiker now up: a new fill and a new shuffle. */
 function startTurn(s: RaccoonShuffleState, rng: RngState): RaccoonShuffleState {
   const id = current(s.turns);
-  const bins = fill(rng, s.tier, id ? s.packs[id] : undefined, s.emptyCount);
+  const bins = fill(rng, s.tier, id ? s.packs[id] : undefined, s.emptyCount, s.lureCount);
   return {
     ...s,
     bins,
     slots: bins.map((b) => b.id),
     steps: planSwaps(rng, s.tier, bins.length, s.extraSwapSec),
+    hauls: [],
     step: 0,
     swapsDone: 0,
     phase: 'show',
@@ -214,6 +241,7 @@ export function newRaccoonShuffle(
   const s: RaccoonShuffleState = {
     tier: options.tier,
     emptyCount: t.empty + (options.extraEmpty ?? 0),
+    lureCount: options.extraEmpty ?? 0,
     extraSwapSec: options.extraSwapSec ?? 0,
     night,
     packs: options.packs,
@@ -221,6 +249,7 @@ export function newRaccoonShuffle(
     bins: [],
     slots: [],
     steps: [],
+    hauls: [],
     step: 0,
     swapsDone: 0,
     swapsTotal: t.swaps,
@@ -246,18 +275,65 @@ function swapped(slots: readonly number[], pairs: readonly [number, number][]): 
   return out;
 }
 
-/** Pick the bin in a slot (only while it's time to pick). */
+/** Whether the bin in a slot was hauled off (its haul has started): a gap. */
+export const takenAt = (s: RaccoonShuffleState, slot: number): boolean =>
+  s.hauls.some((h) => h.bin === s.slots[slot] && s.time >= h.at);
+
+/** Pick the bin in a slot (only while it's time to pick; never a gap). */
 export function pickBin(s: RaccoonShuffleState, slot: number): RaccoonShuffleState {
   if (s.over || s.phase !== 'pick' || !playing(s.turns)) return s;
-  if (slot < 0 || slot >= s.slots.length) return s;
+  if (slot < 0 || slot >= s.slots.length || takenAt(s, slot)) return s;
   return { ...s, picked: slot, selected: slot, phase: 'open', phaseAt: s.time };
 }
 
-/** Move the key selection left or right. */
+/** Move the key selection left or right, over any gaps. */
 export function select(s: RaccoonShuffleState, by: -1 | 1): RaccoonShuffleState {
   if (s.over || s.phase === 'open' || s.phase === 'after') return s;
-  const selected = Math.min(s.slots.length - 1, Math.max(0, s.selected + by));
+  let selected = s.selected;
+  for (let k = s.selected + by; k >= 0 && k < s.slots.length; k += by) {
+    if (!takenAt(s, k)) {
+      selected = k;
+      break;
+    }
+  }
   return selected === s.selected ? s : { ...s, selected };
+}
+
+/** How many bins are taken away this turn: the tier's, but never the last empty one the tier gave. */
+export function takeCount(s: Pick<RaccoonShuffleState, 'tier' | 'bins'>): number {
+  const plain = s.bins.filter((b) => !b.card && !b.lure).length;
+  return Math.max(0, Math.min(RS.tiers[s.tier].takeAway, plain - 1));
+}
+
+/**
+ * After the last swap: a pause, then the hauls, one after the other, each
+ * an empty bin (never the lure's) picked at random. Then the pick.
+ */
+function afterShuffle(s: RaccoonShuffleState): RaccoonShuffleState {
+  const n = takeCount(s);
+  if (n <= 0) return { ...s, phase: 'pick', phaseAt: s.time };
+  const rng: RngState = [...s.rng];
+  const T = RS.takeAway;
+  const plain = s.bins.filter((b) => !b.card && !b.lure).map((b) => b.id);
+  const hauls = shuffle(rng, plain)
+    .slice(0, n)
+    .map((bin, k) => ({ bin, at: s.time + T.pauseSec + k * (T.haulSec + T.apartSec) }));
+  return { ...s, rng, hauls, phase: 'takeAway', phaseAt: s.time };
+}
+
+/** When the take-away is over: the last haul is done. */
+const takeAwayEnds = (s: RaccoonShuffleState): number =>
+  Math.max(s.phaseAt, ...s.hauls.map((h) => h.at + RS.takeAway.haulSec));
+
+/** The selection, moved off a gap (to the nearest bin still there). */
+function offGaps(s: RaccoonShuffleState): RaccoonShuffleState {
+  if (!takenAt(s, s.selected)) return s;
+  for (let d = 1; d < s.slots.length; d++) {
+    for (const k of [s.selected - d, s.selected + d]) {
+      if (k >= 0 && k < s.slots.length && !takenAt(s, k)) return { ...s, selected: k };
+    }
+  }
+  return s;
 }
 
 function finish(s: RaccoonShuffleState, rng: RngState): RaccoonShuffleState {
@@ -280,7 +356,7 @@ export function tick(s0: RaccoonShuffleState, dt: number): RaccoonShuffleState {
       if (since < RS.tiers[s.tier].showSec) return s;
       return s.steps.length
         ? { ...s, phase: 'shuffle', phaseAt: s.time, step: 0 }
-        : { ...s, phase: 'pick', phaseAt: s.time };
+        : afterShuffle(s);
     case 'shuffle': {
       const now = s.steps[s.step];
       if (now && since < now.sec) return s;
@@ -289,10 +365,11 @@ export function tick(s0: RaccoonShuffleState, dt: number): RaccoonShuffleState {
       const slots = swapped(s.slots, pairs);
       const step = s.step + 1;
       const swapsDone = s.swapsDone + pairs.length;
-      if (step >= s.steps.length)
-        return { ...s, slots, step, swapsDone, phase: 'pick', phaseAt: s.time };
+      if (step >= s.steps.length) return afterShuffle({ ...s, slots, step, swapsDone });
       return { ...s, slots, step, swapsDone, phaseAt: s.time };
     }
+    case 'takeAway':
+      return s.time < takeAwayEnds(s) ? s : offGaps({ ...s, phase: 'pick', phaseAt: s.time });
     case 'open':
       return since < RS.pickedSec ? s : { ...s, phase: 'after', phaseAt: s.time };
     case 'after': {

@@ -1,4 +1,4 @@
-/* Rock Climb (20-rock-climb-aim.png, 21-rock-climb-leap.png), in scene units (320 × 240). */
+/* Rock Climb (mockups 35a to 35c, 22-minigame-revisions.md section 2), in scene units (320 × 240). */
 
 .play {
   cursor: pointer;
@@ -14,13 +14,47 @@
   image-rendering: pixelated;
 }
 
+/* The top: a lighter ledge above the line, the line (glowing in the last move's color), and its words. */
 .ledge {
   position: absolute;
   left: 0;
   width: 320px;
-  height: 6px;
-  background: #3c4e2f;
-  box-shadow: 0 1px 0 #1d2918;
+  height: 60px;
+  background: #8fa36c;
+  pointer-events: none;
+}
+
+.topLine {
+  position: absolute;
+  left: 0;
+  width: 320px;
+  height: 2px;
+  background: #e9eecb;
+  pointer-events: none;
+}
+
+.topLine[data-glow] {
+  background: var(--glow);
+  box-shadow:
+    0 0 2px var(--glow),
+    0 0 4px var(--glow);
+  animation: glow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.topWord {
+  position: absolute;
+  left: 28px;
+  color: #1d2918;
+  font-size: 5px;
   pointer-events: none;
 }
 
@@ -35,52 +69,132 @@
   filter: drop-shadow(0 0 1px #f4f8dc);
 }
 
-.arcDot {
+/* The aim: the half circle of ticks and the arrow (an SVG over the whole scene). */
+.aim,
+.arms {
   position: absolute;
-  width: 1.5px;
-  height: 1.5px;
-  background: #d3dfaf;
-  opacity: 0.7;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
   pointer-events: none;
 }
 
-/* The aim arrow: points up, turned around its base at the hand. */
-.arrow {
-  position: absolute;
-  width: 9px;
-  height: 26px;
-  transform-origin: 50% 100%;
-  pointer-events: none;
-}
-
+/* The climber: the body art, the arms in code, the hands. */
 .climber {
   position: absolute;
-  width: 26px;
-  height: 34px;
+  inset: 0;
   pointer-events: none;
 }
 
-.climber > img {
+.body {
   position: absolute;
-  inset: 0;
   width: 26px;
-  height: 34px;
+  height: 30px;
+}
+
+.grip {
+  position: absolute;
+  width: 12px;
+  height: 10px;
+}
+
+.open {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+}
+
+/* The ring around the free hand, pulsing slowly. */
+.handRing {
+  position: absolute;
+  box-sizing: border-box;
+  border-style: solid;
+  border-radius: 50%;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.6;
+  }
+}
+
+/* "<NAME>'S HAND", top left under the HUD, with a dot in their color. */
+.handLabel {
+  position: absolute;
+  left: 8px;
+  top: 26px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 13px;
+  padding: 0 4px 0 6px;
+  font-size: 4px;
+  pointer-events: none;
 }
 
 .handDot {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-}
-
-.handRing {
-  position: absolute;
   width: 9px;
   height: 9px;
-  box-sizing: border-box;
-  border: 1px solid;
   border-radius: 50%;
+}
+
+.time {
+  position: absolute;
+  left: 10px;
+  top: 42px;
+  color: #1d2918;
+  font-size: 3.6px;
+}
+
+/* The fall's box (and OVER THE TOP!). */
+.fallBox {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  font-size: 5px;
+  transform: translateX(-50%);
+  white-space: nowrap;
   pointer-events: none;
+  z-index: 3;
+}
+
+.fallLine {
+  color: #a0b37d;
+  font-size: 3.8px;
+}
+
+/* Each hiker's tries in the bottom bar: pips in their color (dark when used). */
+.pips {
+  display: flex;
+  gap: 2px;
+}
+
+.pips > span {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #2b3a23;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .handRing,
+  .topLine[data-glow] {
+    animation: none;
+  }
 }
 
 /* The power meter on the right. */
@@ -110,60 +224,6 @@
   left: 287px;
   top: 178px;
   color: #1d2918;
-  font-size: 3.4px;
-}
-
-/* The bottom bar: HANDS, the sequence, the time and who fell. */
-.bar {
-  gap: 6px;
-  padding: 0 8px;
-}
-
-.handsLabel {
-  font-size: 4px;
-}
-
-.seq {
-  display: flex;
-  flex: 1;
-  gap: 4px;
-  align-items: center;
-}
-
-.seqDot {
-  position: relative;
-  display: flex;
-  border-radius: 50%;
-}
-
-.seqDot[data-next] {
-  box-shadow: 0 0 0 1.25px #d3dfaf;
-}
-
-.seqDot[data-used] {
-  opacity: 0.55;
-}
-
-.seqDot[data-used]::after {
-  content: '';
-  position: absolute;
-  left: -1px;
-  right: -1px;
-  top: 50%;
-  height: 1px;
-  background: #1d2918;
-  transform: rotate(-45deg);
-}
-
-.status {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  font-size: 4px;
-}
-
-.fell {
-  color: #a0b37d;
   font-size: 3.4px;
 }
 

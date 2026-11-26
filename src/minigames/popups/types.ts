@@ -3,7 +3,7 @@
  * section 6): How to play, Controls, chips, the bars, per-hiker values,
  * Prepare rows, and its random version pinned before the pop-up opens.
  */
-import type { PrepRow } from '../prepare';
+import type { Option } from '../prepare';
 import type { MinigameSettings } from '../types';
 
 /** How to play, in pieces: the red one is what costs you. */
@@ -38,14 +38,21 @@ export interface Bar {
   display?(v: number): string;
 }
 
-/** Per-hiker values (LIVES, BAR): hearts or pips per hiker, and the per-hiker row that adds to them. */
+/** A rule line under How to play (section 1.1): only lines that apply, with a tier tag when the tier is why. */
+export interface RuleLine {
+  text: readonly Phrase[];
+  /** "FROM TIER II", "TIER III AND UP". */
+  when?: string;
+}
+
+/** Per-hiker values (LIVES, BAR): hearts or pips per hiker, and the per-hiker effect that adds to them. */
 export interface PerHiker {
   label: string;
   kind: 'hearts' | 'pips';
   /** Each hiker's value before Prepare. */
   base: number;
-  /** The per-hiker Prepare row whose slots add to it, and how much each adds. */
-  row: string;
+  /** The per-hiker effect's setting (it lists the hikers who got it), and how much each adds. */
+  param: string;
   step: number;
   /** Pips: how a value reads ("2.5 S"). */
   format?(v: number): string;
@@ -59,7 +66,10 @@ export interface IfFail {
 }
 
 export interface GamePopup {
+  /** The main text (section 1.1), with this run's numbers after Prepare. */
   howToPlay(settings: MinigameSettings): Phrase[];
+  /** The rule lines that apply to this run, at most [4]. */
+  rules(settings: MinigameSettings): RuleLine[];
   controls: readonly ControlRow[];
   /** After the game's own chip and its category: how long, how hikers take part, the version. */
   chips(settings: MinigameSettings): string[];
@@ -67,8 +77,8 @@ export interface GamePopup {
   /** The bars, from the settings with Prepare applied (a Prepare setting missing means none). */
   bars(settings: MinigameSettings): Bar[];
   perHiker?(settings: MinigameSettings): PerHiker | null;
-  /** Every Prepare row it could offer (`onlyIf` says which apply this run). */
-  prepare(settings: MinigameSettings): PrepRow[];
+  /** Every Prepare option it could offer (`onlyIf` says which apply this run); the pop-up groups them into cost cards. */
+  options(settings: MinigameSettings): Option[];
   /**
    * Pins a random version (night, fog) from the run's seed, so the pop-up,
    * the demo and the game all agree. Returns settings to merge in.

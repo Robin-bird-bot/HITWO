@@ -159,6 +159,10 @@ function nearestOutside(box: Box, p: Point, out = 5): Point {
 
 const M = AN.march;
 
+/** An ants table's row: Easy is its own row (0), then Levels 1 to 3 (22-minigame-revisions.md, section 4). */
+export const antRank = (ctx: { level: 1 | 2 | 3; easy: boolean }): 0 | 1 | 2 | 3 =>
+  ctx.easy ? 0 : ctx.level;
+
 /** The grid the lines walk on: the middles of its cells across and down, centered in the box. */
 export function antGrid(box: Box, grid: number = M.grid): { xs: number[]; ys: number[] } {
   const e = edges(box);
@@ -191,6 +195,7 @@ export function marchPath(
   side: Side,
   cells: number,
   out: number,
+  turnEvery: readonly [number, number] = M.turnEvery[1],
 ): Point[] {
   const { xs, ys } = antGrid(box);
   const nx = xs.length;
@@ -213,7 +218,7 @@ export function marchPath(
   const at = (a: number, b: number): Point => ({ x: xs[a]!, y: ys[b]! });
   const path: Point[] = [{ x: xs[i]! - dir.dx * (out + g), y: ys[j]! - dir.dy * (out + g) }];
   const room = (d: Step) => (d.dx > 0 ? nx - 1 - i : d.dx < 0 ? i : d.dy > 0 ? ny - 1 - j : j);
-  let run = int(rng, M.turnEvery[0], M.turnEvery[1]);
+  let run = int(rng, turnEvery[0], turnEvery[1]);
   for (let walked = 0, guard = 0; walked < cells && guard < 1000; guard++) {
     if (run <= 0 || room(dir) <= 0) {
       const turns = [leftOf(dir), rightOf(dir)].filter((d) => room(d) > 0);
@@ -225,7 +230,7 @@ export function marchPath(
       const other = roomy === a ? b : a;
       dir = nextFloat(rng) < 0.7 ? roomy : other;
       path.push(at(i, j));
-      run = int(rng, M.turnEvery[0], M.turnEvery[1]);
+      run = int(rng, turnEvery[0], turnEvery[1]);
       continue;
     }
     i += dir.dx;
@@ -302,16 +307,17 @@ export const MARCHING: AttackDef = {
   name: 'Marching Lines',
   kind: 'missile',
   start(ctx) {
-    const ants = M.ants[ctx.level];
+    const rank = antRank(ctx);
+    const ants = M.ants[rank];
     // Prepare's Salt Line slows the lines; Slower Attacks slows everything.
-    const speed = M.speed[ctx.level] * (1 - ctx.state.antSlow) * ctx.state.pace;
+    const speed = M.speed[rank] * (1 - ctx.state.antSlow) * ctx.state.pace;
     const cells = Math.ceil((speed * M.walkSec) / M.grid);
-    const sides = shuffle(ctx.rng, [...SIDES]).slice(0, M.lines[ctx.level]);
+    const sides = shuffle(ctx.rng, [...SIDES]).slice(0, M.lines[rank]);
     const parts = sides.map((side, k) =>
       line(
         ctx,
         ctx.time + k * M.apartSec,
-        marchPath(ctx.rng, ctx.box, side, cells, ants * M.grid),
+        marchPath(ctx.rng, ctx.box, side, cells, ants * M.grid, M.turnEvery[rank]),
         ants,
         speed,
         ctx.level <= M.hintUpTo,
@@ -362,7 +368,9 @@ export const ANT_MILL: AttackDef = {
   kind: 'missile',
   start(ctx) {
     const activeAt = ctx.time + warnFor();
-    const two = ctx.level >= MI.twoFrom;
+    const rank = antRank(ctx);
+    // Two rings only at Level 3; Easy never drifts (section 4).
+    const two = rank >= MI.twoFrom;
     const centers: Point[] = [];
     for (let tries = 0; tries < 80 && centers.length < (two ? 2 : 1); tries++) {
       const c = spotIn(ctx.rng, ctx.box, MI.radius + 5);
@@ -381,22 +389,23 @@ export const ANT_MILL: AttackDef = {
     const lane = lines.find(({ axis, at }) =>
       centers.every((c) => Math.abs((axis === 'y' ? c.y : c.x) - at) >= clear),
     );
-    const drift = ctx.level >= MI.driftFrom ? MI.drift : 0;
+    const drift = rank >= MI.driftFrom ? MI.drift : 0;
     const parts: (MillPart | MarchPart)[] = centers.map((c, k) => ({
       kind: 'mill',
       ...base(ctx, ctx.time, activeAt),
       cx: c.x,
       cy: c.y,
       r: MI.radius,
-      ants: MI.ring[ctx.level],
-      turn: MI.turn * (k % 2 === 0 ? 1 : -1),
+      ants: MI.ring[rank],
+      turn: MI.turn[rank] * (k % 2 === 0 ? 1 : -1),
       a0: nextFloat(ctx.rng) * 2 * Math.PI,
       until: activeAt + MI.sec,
       drift,
       ...(lane ? { keepOff: lane } : {}),
     }));
-    if (lane) {
-      const n = MI.column[ctx.level];
+    // Easy has no column (its count is 0).
+    const n = MI.column[rank];
+    if (lane && n > 0) {
       const out = n * M.grid;
       parts.push(
         line(
@@ -404,7 +413,7 @@ export const ANT_MILL: AttackDef = {
           ctx.time,
           columnPath(ctx.box, lane.axis, lane.at, nextFloat(ctx.rng) < 0.5, out),
           n,
-          M.speed[ctx.level] * (1 - ctx.state.antSlow) * ctx.state.pace,
+          M.speed[rank] * (1 - ctx.state.antSlow) * ctx.state.pace,
           false,
         ),
       );

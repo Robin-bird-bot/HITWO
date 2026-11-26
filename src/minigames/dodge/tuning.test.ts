@@ -74,7 +74,7 @@ const kindOf = (id: AttackId) => ATTACKS[id].kind;
 
 describe('tiers and levels', () => {
   it('each tier offers only the animals in the table, at their level; the Woods Monster is always Level 3', () => {
-    expect(animalsAt(1).sort()).toEqual(['bees', 'squirrels']);
+    expect(animalsAt(1).sort()).toEqual(['ants', 'bees', 'squirrels']);
     expect(animalsAt(2).sort()).toEqual(['ants', 'bear', 'bees', 'bobcat', 'squirrels']);
     expect(animalsAt(3)).toHaveLength(9);
     // Nov 26: Ants from Tier II, Bear with a Gun from Tier III (his first tier, Level 2).
@@ -84,6 +84,9 @@ describe('tiers and levels', () => {
     expect(animalsAt(2)).not.toContain('gunBear');
     expect(levelFor('bees', 1)).toBe(0);
     expect(levelFor('squirrels', 1)).toBe(0);
+    // Nov 26, second round: Ants at Tier I play Easy.
+    expect(levelFor('ants', 1)).toBe(0);
+    expect(atTier('ants', 1).easy).toBe(true);
     expect(levelFor('bear', 2)).toBe(1);
     expect(levelFor('swordBear', 3)).toBe(2);
     expect(levelFor('stampede', 4)).toBe(3);
@@ -94,7 +97,7 @@ describe('tiers and levels', () => {
     // Not in the table at a tier (testing only): its lowest level.
     expect(levelFor('bear', 1)).toBe(1);
     expect(levelFor('swordBear', 1)).toBe(2);
-    // The Level setting overrides; Easy only for Bees and the Squirrel Army.
+    // The Level setting overrides; Easy only for Bees, the Squirrel Army and Ants.
     expect(atTier('bear', 1, { level: 3 }).level).toBe(3);
     expect(atTier('bear', 1, { level: 'easy' }).easy).toBe(false);
     expect(atTier('bees', 5, { level: 'easy' }).easy).toBe(true);
@@ -201,7 +204,8 @@ describe('pacing and overlaps', () => {
   });
 
   it('every attack has a kind, as in the design', () => {
-    expect(kindOf('sweep')).toBe('area');
+    expect(kindOf('volley')).toBe('missile');
+    expect(kindOf('bulletRing')).toBe('missile');
     expect(kindOf('shout')).toBe('area');
     expect(kindOf('fire')).toBe('area');
     expect(kindOf('herd')).toBe('area');
@@ -435,12 +439,12 @@ describe('claws', () => {
   it('Bear with a Sword’s sword attacks sometimes bring a row of claws, but not with one attack picked', () => {
     const rows = (extra: Partial<DodgeOptions>) =>
       partsSeen(game('swordBear', 3, extra)).filter((p) => p.kind === 'claws').length;
-    expect(rows({ attack: 'sweep' })).toBe(0);
+    expect(rows({ attack: 'volley' })).toBe(0);
     const withClaws = partsSeen(game('swordBear', 3));
     const swordRounds = new Set(
       withClaws
         .filter(
-          (p) => p.kind === 'swing' || p.kind === 'jab' || p.kind === 'poke' || p.kind === 'wave',
+          (p) => p.kind === 'volley' || p.kind === 'jab' || p.kind === 'poke' || p.kind === 'wave',
         )
         .map((p) => p.round),
     );

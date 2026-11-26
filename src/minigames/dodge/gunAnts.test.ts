@@ -182,9 +182,10 @@ describe('Bear with a Gun', () => {
   it('a trap snaps once (1 heart), slows the sprite for 1.5 s, and is harmless after', () => {
     let s = only('gunBear', 'traps', 1);
     s = play(s, (q) =>
-      ofKind(q, 'trap').some((p) => q.time > p.activeAt) ? { ...q, over: true } : q,
+      ofKind(q, 'trap').some((p) => q.time > p.armAt) ? { ...q, over: true } : q,
     );
-    const trap = ofKind(s, 'trap').find((p) => s.time > p.activeAt && !p.gone)!;
+    // Once it's red (armed): gray traps never bite (revisions.test.ts).
+    const trap = ofKind(s, 'trap').find((p) => s.time > p.armAt && !p.gone)!;
     expect(trap).toBeDefined();
     const before = s.lives[s.active]!;
     s = { ...s, over: false, pos: { x: trap.x, y: trap.y }, safeFor: 0 };

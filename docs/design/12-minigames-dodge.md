@@ -258,6 +258,8 @@ Wyatt wants more going on at once, with shorter gaps.
 - **Tier III:** two bites in a row. The second aims at where the sprite is when the first snaps.
 
 ### Sword sweep (Bear with a Sword, unchanged)
+**Removed November 26: replaced by Sword Volley (`22-minigame-revisions.md`, section 5).**
+
 - **The sword** (`sword.png`, drawn at 2×) turns around a pivot above the middle of the box: the hilt at `PIVOT` = (3, 6) in sword pixels. The blade is about [128] units long.
 - **Warning:** the half of the box about to be swept is hatched, with a "!".
 - **The sweep:** the blade sweeps that half over [0.35 s], from pointing straight down to flat sideways (mirrored for the left side). A light trail follows the blade.

@@ -17,7 +17,7 @@
 import { BALANCE } from '../../config/balance';
 import { weightedPick } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
-import { isTier, type Tier } from '../types';
+import { isTier, TIER_LABELS, type Tier } from '../types';
 import type { Box } from './geometry';
 import type { Point } from './shapes';
 import { ATTACKS, playsAt, ranksOf, type Rank } from './library';
@@ -63,7 +63,7 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     name: 'Bear with a Sword',
     hud: 'Bear + sword',
     attacks: [
-      sword('sweep'),
+      sword('volley'),
       { attack: 'claws' },
       sword('jab'),
       sword('poke'),
@@ -94,7 +94,15 @@ export const ANIMALS: Readonly<Record<AnimalId, Animal>> = {
     id: 'gunBear',
     name: 'Bear with a Gun',
     hud: 'Bear + gun',
-    attacks: plain('aimedShot', 'rapidFire', 'traps', 'snipe', 'ricochet', 'quickDraw'),
+    attacks: plain(
+      'aimedShot',
+      'rapidFire',
+      'traps',
+      'snipe',
+      'ricochet',
+      'bulletRing',
+      'quickDraw',
+    ),
   },
   ants: {
     id: 'ants',
@@ -163,8 +171,8 @@ function everything(animal: AnimalId): PoolEntry[] {
   }));
 }
 
-/** The animals with an Easy level of their own. */
-export const HAS_EASY: readonly AnimalId[] = ['bees', 'squirrels'];
+/** The animals with an Easy level of their own (Ants from Nov 26, 22-minigame-revisions.md section 4). */
+export const HAS_EASY: readonly AnimalId[] = ['bees', 'squirrels', 'ants'];
 
 /** The testing tab's Level setting: Auto (the tier's), Easy, or a numbered level. */
 export type LevelPick = 'auto' | 'easy' | 1 | 2 | 3;
@@ -184,8 +192,8 @@ export function levelFor(animal: AnimalId, tier: Tier): Rank {
 
 /**
  * The level a game plays at: Auto uses the tier's; a picked level
- * overrides it. Easy is only for Bees and the Squirrel Army (the others
- * play Level 1), and the Stampede never plays Easy.
+ * overrides it. Easy is only for Bees, the Squirrel Army and Ants (the
+ * others play Level 1), and the Stampede never plays Easy.
  */
 export function rankFor(animal: AnimalId, tier: Tier, pick: LevelPick = 'auto'): Rank {
   const rank: Rank = pick === 'auto' ? levelFor(animal, tier) : pick === 'easy' ? 0 : pick;
@@ -216,14 +224,19 @@ export function pool(
   rank: Rank,
   ideas: boolean,
   only: AttackId | 'all' = 'all',
+  tier: Tier = 5,
 ): PoolEntry[] {
   return everything(animal).filter(
     (e) =>
       playsAt(e.attack, rank) &&
+      atTier(e.attack, tier) &&
       (ideas || !ATTACKS[e.attack].claudesIdea) &&
       (only === 'all' || e.attack === only),
   );
 }
+
+/** Whether an attack plays at a tier (Bullet Ring only from Tier IV; the rest at any). */
+export const atTier = (id: AttackId, tier: Tier): boolean => (ATTACKS[id].fromTier ?? 1) <= tier;
 
 const LEVEL_WORD: Readonly<Record<Rank, string>> = {
   0: 'Easy',
@@ -251,6 +264,7 @@ export function attackChoices(
   animal: AnimalId,
   rank: Rank,
   ideas: boolean,
+  tier: Tier = 5,
 ): { id: AttackId; name: string; where: string; claudesIdea: boolean; unlocked: boolean }[] {
   const seen = new Set<AttackId>();
   const out: ReturnType<typeof attackChoices> = [];
@@ -261,9 +275,11 @@ export function attackChoices(
     out.push({
       id: e.attack,
       name: def.name,
-      where: levelsWord(e.attack),
+      where: atTier(e.attack, tier)
+        ? levelsWord(e.attack)
+        : `from Tier ${TIER_LABELS[def.fromTier ?? 1]}`,
       claudesIdea: !!def.claudesIdea,
-      unlocked: playsAt(e.attack, rank),
+      unlocked: playsAt(e.attack, rank) && atTier(e.attack, tier),
     });
   }
   return out;

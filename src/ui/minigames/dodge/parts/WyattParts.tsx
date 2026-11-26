@@ -1,7 +1,7 @@
 /**
  * Drawing the parts of Wyatt's attacks (docs/design/12-minigames-dodge.md,
- * sections 5 and 6; mockups 1 to 8 and 10 to 12): bees, the sword's sweep,
- * jabs, poke-ups and the wave, claws, the bite, the pounce and the stalk,
+ * sections 5 and 6; mockups 1 to 8 and 10 to 12): bees, the Sword Volley
+ * (22-minigame-revisions.md, mockup 39), jabs, poke-ups and the wave, claws, the bite, the pounce and the stalk,
  * acorns, bombs, shrapnel and crumbs.
  */
 import { biteOpen, clawsAt, clawsEntry, clawTurn } from '../../../../minigames/dodge/attacks/bear';
@@ -11,21 +11,22 @@ import {
   jabDepth,
   pokeDepth,
   pokeX,
+  volleyTip,
   waveAt,
   wavePath,
   waveWall,
 } from '../../../../minigames/dodge/attacks/sword';
-import { beeAt, swingAngle, swordPivot } from '../../../../minigames/dodge/logic';
+import { beeAt, rayToWall } from '../../../../minigames/dodge/logic';
 import { BALANCE } from '../../../../config/balance';
 import styles from '../Dodge.module.css';
-import { Arrow, Bang, Sprite, Sword } from './Bits';
+import { Arrow, Bang, ShortSword, Sprite, Sword } from './Bits';
 import { arcPath, deg, DARK, LIGHT, MID, pathOf, type DrawTable } from './drawTypes';
 
 const D = BALANCE.minigames.dodge;
 
 export const WYATT_DRAW: DrawTable<
   | 'bee'
-  | 'swing'
+  | 'volley'
   | 'jab'
   | 'poke'
   | 'wave'
@@ -47,45 +48,42 @@ export const WYATT_DRAW: DrawTable<
     warn: (p, c) => (c.time < p.activeAt ? <Bang x={p.mark.x} y={p.mark.y} box={c.box} /> : null),
   },
 
-  swing: {
-    under(p, c) {
-      if (c.time >= p.activeAt) return null;
+  volley: {
+    svg(p, c) {
+      // The next sword to fly shows its path, dotted, to the far wall.
+      if (c.time < p.pathAt || c.time >= p.activeAt) return null;
+      const far = rayToWall(c.box, p.tip, p.dir);
       return (
-        <span
-          className={styles.hatch}
-          style={{
-            left: p.side === 'left' ? c.left : c.box.cx,
-            top: c.top,
-            width: c.box.w / 2,
-            height: c.box.h,
-          }}
-        >
-          <span className={styles.bang}>!</span>
-        </span>
+        <line
+          x1={p.tip.x}
+          y1={p.tip.y}
+          x2={p.tip.x + p.dir.x * far}
+          y2={p.tip.y + p.dir.y * far}
+          stroke={LIGHT}
+          strokeWidth={0.75}
+          strokeDasharray="0.75 3"
+          strokeLinecap="round"
+          opacity={0.55}
+        />
       );
     },
-    outside(p, c) {
-      // The sword, turning around its pivot above the box, with a light trail.
-      const angle = swingAngle(p, c.time);
-      const shown = angle ?? (c.time < p.activeAt ? 0 : null);
-      if (shown === null) return null;
-      const pivot = swordPivot(c.box);
-      const toward = (a: number) => (p.side === 'right' ? Math.PI / 2 - a : Math.PI / 2 + a);
+    over(p, c) {
+      // Only what's inside the box shows: the tip while it waits, then the sword flying across.
+      if (c.time < p.warnAt) return null;
+      const tip = volleyTip(p, c.time);
+      return <ShortSword x={tip.x} y={tip.y} angle={Math.atan2(p.dir.y, p.dir.x)} />;
+    },
+    warn(p, c) {
+      // Its number, just outside the wall, until it flies.
+      if (c.time < p.warnAt || c.time >= p.activeAt) return null;
+      const out = D.volley.tipIn + 7;
       return (
-        <>
-          {angle !== null &&
-            [0.12, 0.24, 0.36].map((back, k) => (
-              <Sword
-                key={back}
-                x={pivot.x}
-                y={pivot.y}
-                angle={toward(Math.max(0, shown - back))}
-                opacity={0.35 - k * 0.1}
-                ghost
-              />
-            ))}
-          <Sword x={pivot.x} y={pivot.y} angle={toward(shown)} />
-        </>
+        <span
+          className={styles.volleyNo}
+          style={{ left: p.tip.x - p.dir.x * out - 4.5, top: p.tip.y - p.dir.y * out - 4.5 }}
+        >
+          {p.n}
+        </span>
       );
     },
   },

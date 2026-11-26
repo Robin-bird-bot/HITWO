@@ -4,7 +4,10 @@
  * with what was put in it; each card shows something from the active
  * hiker's pack, or energy when they have nothing; an empty bin passes with
  * no cost, and a raccoon takes exactly the item on its card; each hiker gets
- * a new fill and a new shuffle.
+ * a new fill and a new shuffle. The take-away (22-minigame-revisions.md,
+ * sections 1.2 and 6): only empty bins are ever taken, exactly one empty
+ * bin is left at every tier (two with LURE ONE OUT), and the gap can't be
+ * picked.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
@@ -21,9 +24,13 @@ import {
   planSwaps,
   result,
   select,
+  takenAt,
+  takeCount,
   tick,
   type RaccoonShuffleState,
 } from './logic';
+import { playing } from '../quick/turns';
+import { raccoonShuffleBot } from './bot';
 
 const RS = BALANCE.minigames.raccoonShuffle;
 const Q = BALANCE.minigames.quick;
@@ -41,7 +48,10 @@ const runUntil = (
 };
 const toPick = (s: RaccoonShuffleState) => runUntil(s, (x) => x.phase === 'pick');
 const slotOf = (s: RaccoonShuffleState, empty: boolean) =>
-  s.slots.findIndex((id) => (s.bins[id]!.card === null) === empty);
+  s.slots.findIndex((id, k) => (s.bins[id]!.card === null) === empty && !takenAt(s, k));
+/** The empty bins still there (not taken away). */
+const emptiesLeft = (s: RaccoonShuffleState) =>
+  s.slots.filter((id, k) => s.bins[id]!.card === null && !takenAt(s, k));
 
 describe('Raccoon Shuffle', () => {
   it.each(TIERS)(
@@ -214,6 +224,85 @@ describe('Raccoon Shuffle', () => {
       expect(binX(0, n) - 18).toBeGreaterThanOrEqual(0);
       expect(binX(n - 1, n) + 18).toBeLessThanOrEqual(320);
       if (n > 1) expect(binX(1, n) - binX(0, n)).toBeGreaterThanOrEqual(36);
+    }
+  });
+
+  it.each(TIERS)(
+    'Tier %i: only empty bins are taken, and exactly one is left (two with LURE ONE OUT)',
+    (tier) => {
+      for (let seed = 1; seed <= 25; seed++) {
+        for (const lure of [0, 1]) {
+          const s = toPick(
+            newRaccoonShuffle({ tier, packs: PACKS, extraEmpty: lure }, ['finn'], seed),
+          );
+          expect(s.phase).toBe('pick');
+          expect(s.hauls).toHaveLength(RS.tiers[tier].takeAway);
+          for (const h of s.hauls) {
+            const bin = s.bins[h.bin]!;
+            expect(bin.card).toBeNull();
+            expect(bin.lure).toBeUndefined();
+          }
+          expect(emptiesLeft(s)).toHaveLength(1 + lure);
+          expect(takeCount(s)).toBe(RS.tiers[tier].takeAway);
+        }
+      }
+    },
+  );
+
+  it('the hauls come after a pause, one after the other, and the pick only after the last', () => {
+    let s = newRaccoonShuffle({ tier: 5, packs: PACKS }, ['finn'], 3);
+    s = runUntil(s, (x) => x.phase === 'takeAway');
+    const T = RS.takeAway;
+    const [a, b] = s.hauls;
+    expect(a!.at - s.phaseAt).toBeCloseTo(T.pauseSec);
+    expect(b!.at - a!.at).toBeCloseTo(T.haulSec + T.apartSec);
+    const picked = toPick(s);
+    expect(picked.time).toBeGreaterThanOrEqual(b!.at + T.haulSec - 1e-9);
+  });
+
+  it('a gap can’t be picked, and keys skip over it', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const s = toPick(newRaccoonShuffle({ tier: 3, packs: PACKS }, ['finn', 'mom'], seed));
+      const gap = s.slots.findIndex((_, k) => takenAt(s, k));
+      expect(gap).toBeGreaterThanOrEqual(0);
+      expect(pickBin(s, gap)).toBe(s);
+      expect(takenAt(s, s.selected)).toBe(false);
+      // Walk the selection from one end to the other: it never lands on the gap.
+      let x: RaccoonShuffleState = { ...s, selected: 0 };
+      if (takenAt(x, 0)) x = select(x, 1);
+      for (let k = 0; k < s.slots.length; k++) {
+        expect(takenAt(x, x.selected)).toBe(false);
+        x = select(x, 1);
+      }
+    }
+  });
+
+  it('Tiers I and II take nothing away', () => {
+    for (const tier of [1, 2] as const) {
+      const s = toPick(newRaccoonShuffle({ tier, packs: PACKS }, ['finn'], 9));
+      expect(s.hauls).toEqual([]);
+    }
+  });
+
+  it('the demo bot follows one empty bin, and picks from what’s left when that one is taken', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      // It picks its bin once the hiker's turn starts (the show).
+      let s = runUntil(newRaccoonShuffle({ tier: 4, packs: PACKS }, ['finn'], seed), (x) =>
+        playing(x.turns),
+      );
+      const mem: Record<string, unknown> = {};
+      const rng = seedRng(seed);
+      raccoonShuffleBot(s, mem, rng, 0);
+      const follow = mem.follow as number;
+      expect(s.bins[follow]!.card).toBeNull();
+      s = toPick(s);
+      // It waits a moment before picking, like a player would.
+      expect(raccoonShuffleBot(s, mem, rng, 100)).toBeNull();
+      const slot = raccoonShuffleBot(s, mem, rng, 200);
+      expect(slot).not.toBeNull();
+      expect(takenAt(s, slot!)).toBe(false);
+      const followed = s.slots.indexOf(follow);
+      if (!takenAt(s, followed)) expect(slot).toBe(followed);
     }
   });
 });
