@@ -13,6 +13,10 @@ import {
   type Draft,
 } from './challengeDraft';
 import { openCardDef } from '../../engine';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 function opened(cardId: string, setup: (s: GameState) => void = () => {}) {
   const s = fixtureGame({ seed: 3, challenges: true });

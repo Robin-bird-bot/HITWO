@@ -463,6 +463,27 @@ export const BALANCE = {
      */
     tierScale: 1.5,
     /**
+     * The punishments (24-challenges-reset.md, section 2), by tier: X for
+     * Energy, Appetite, random resources and a category (and the backup
+     * rule's "took nothing" Energy), and Y phases of Bleeding. Tiers IV and V
+     * scale Tier III's by tierScale.
+     * TODO(wyatt): X [1–2], [2–3], [3–4]; Y [2], [2–3], [3].
+     */
+    /**
+     * The biome's pool (25-challenges-on-the-map.md, section 1): challenge
+     * tiles ÷ this many, rounded up, at least and at most this many cards;
+     * cost cards are this share of it in the 1st, 2nd and 3rd biome (Claude's
+     * idea). TODO(wyatt): [2.5], [3], [7], [40%, 30%, 25%].
+     */
+    pool: { tilesPerCard: 2.5, min: 3, max: 7, costShare: [0.4, 0.3, 0.25] as readonly number[] },
+    punish: {
+      x: { 1: [1, 2], 2: [2, 3], 3: [3, 4] },
+      bleeding: { 1: [2, 2], 2: [2, 3], 3: [3, 3] },
+    } as {
+      readonly x: Readonly<Record<1 | 2 | 3, readonly [number, number]>>;
+      readonly bleeding: Readonly<Record<1 | 2 | 3, readonly [number, number]>>;
+    },
+    /**
      * Which tier a challenge gets (15-challenge-tiers.md, Nov 25): each
      * challenge rolls its tier from its biome's table (Biome 1, 2, 3) when
      * it's placed, as [tier, weight] pairs. Normal is used on Easy, Medium

@@ -13,7 +13,7 @@ import { rollWishLists } from '../items/wishLists';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
-import { pickForTile } from '../challenges/pick';
+import { pickForTile, playable } from '../challenges/pick';
 import { openCard, revealCardOn } from '../challenges/reveal';
 import { ITEMS, findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
@@ -276,13 +276,13 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       const here = state.hikers.filter((h) => h.tileId === op.tileId && h.status !== 'abandoned');
       if (!card || !here.length) return;
       delete state.challenge;
-      const tier = card.tier;
+      const { tier, scale, shownTier } = playable(op.tier ?? card.tier);
       openCard(
         state,
         card,
         op.tileId,
         here.map((h) => h.id),
-        { tier, scale: 1 },
+        { tier, scale, shownTier },
       );
       pushEvent(state, { kind: 'debug', note: `Opened ${card.name}` });
       break;

@@ -1,32 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import doc from '../../docs/design/04-challenges.md?raw';
-import type { Amount, CardDef, Effect, TextPart } from '../engine/challenges/types';
+import doc04 from '../../docs/design/04-challenges.md?raw';
+import doc24 from '../../docs/design/24-challenges-reset.md?raw';
+import type { Amount, CardDef, ChallengeDef, Effect, TextPart } from '../engine/challenges/types';
+import { MINIGAME_BY_ID } from '../minigames/catalog';
 import { CARDS, CHALLENGES, OPPORTUNITIES, TRIALS, slug } from './challenges';
 import { CONDITIONS } from './conditions';
-
-type Table = 'challenges' | 'trials' | 'wonders' | 'opportunities';
-
-/** Rows of the doc's tables, by section: name, whether it has art, and the tier. */
-function docRows() {
-  const rows: { name: string; art: boolean; tier: number; table: Table }[] = [];
-  let tier = 0;
-  let table: Table = 'challenges';
-  for (const line of doc.split('\n')) {
-    const heading = line.match(/^### Tier (I+)$/);
-    if (heading) tier = heading[1]?.length ?? 0;
-    if (line.startsWith('## Trials')) table = 'trials';
-    if (line.startsWith('## Wonders')) table = 'wonders';
-    if (line.startsWith('## Opportunities')) table = 'opportunities';
-    if (!line.startsWith('| ') || line.startsWith('| ---')) continue;
-    const cells = line.split('|').map((c) => c.trim());
-    const name = cells[1] ?? '';
-    if (['Challenge', 'Trial', 'Wonder', 'Opportunity'].includes(name)) continue;
-    const art = cells[2] !== '—';
-    const rowTier = table === 'trials' ? (cells[4]?.length ?? 0) : tier;
-    rows.push({ name, art, tier: rowTier, table });
-  }
-  return rows;
-}
+import { MINIGAME_CHALLENGES } from './minigameChallenges';
 
 /** File names in a folder, from Vite's glob (keys only: nothing is loaded). */
 const fileNames = (glob: Record<string, unknown>) =>
@@ -38,34 +17,130 @@ const PUBLIC_WONDER_ART = fileNames(import.meta.glob('/public/assets/wonders/*.j
 const OPPORTUNITY_ART = fileNames(import.meta.glob('/assets/opportunities/*.jpg'));
 const PUBLIC_OPPORTUNITY_ART = fileNames(import.meta.glob('/public/assets/opportunities/*.jpg'));
 
-const TIER_WORD = { I: 1, II: 2, III: 3 } as const;
+const TIER_WORD: Record<string, number> = { I: 1, II: 2, III: 3 };
+const NODE_WORD: Record<string, string> = {
+  Forest: 'forest',
+  River: 'river',
+  Wildlife: 'wildlife',
+  Mountain: 'mountain',
+};
 
-describe('challenge content matches docs/design/04-challenges.md', () => {
-  const rows = docRows();
-  const cardRows = rows.filter((r) => r.table === 'challenges' || r.table === 'trials');
+/** The rows of 24-challenges-reset.md, section 4: minigame tables and the cost cards. */
+function listRows() {
+  const rows: {
+    name: string;
+    cost: boolean;
+    nodes: string[] | 'any';
+    snow: boolean;
+    from: number;
+    art: string[];
+  }[] = [];
+  const section = doc24.slice(doc24.indexOf('## 4. The challenge list'), doc24.indexOf('## 5.'));
+  let cost = false;
+  for (const line of section.split('\n')) {
+    if (line.startsWith('### ')) cost = line.startsWith('### Cost cards');
+    if (!line.startsWith('| ') || line.startsWith('| ---') || line.startsWith('| Challenge'))
+      continue;
+    const cells = line.split('|').map((c) => c.trim());
+    const nodeCell = cells[cost ? 3 : 3] ?? '';
+    const from = cells[cost ? 4 : 4] ?? '';
+    const art = cells.at(-2) ?? '';
+    rows.push({
+      name: cells[1] ?? '',
+      cost,
+      nodes: nodeCell.startsWith('Any')
+        ? 'any'
+        : nodeCell
+            .replace(/\(.*\)/, '')
+            .split(',')
+            .map((w) => NODE_WORD[w.trim()] ?? w.trim()),
+      snow: /snow only/.test(nodeCell) || /snow only/.test(cells[2] ?? ''),
+      from: TIER_WORD[from] ?? 0,
+      art:
+        art === 'none yet'
+          ? []
+          : art
+              .replace(/\(.*\)/, '')
+              .split(',')
+              .map((a) => a.trim()),
+    });
+  }
+  return rows;
+}
 
-  it('has every challenge and Trial, with its tier and art', () => {
-    expect(cardRows).toHaveLength(96);
-    for (const row of cardRows) {
-      const card = CARDS[slug(row.name)];
-      expect(card, row.name).toBeDefined();
-      expect(card?.name).toBe(row.name.replace(/'/g, '’'));
-      expect(card?.kind === 'trial').toBe(row.table === 'trials');
-      expect(card?.tier, row.name).toBe(row.tier || TIER_WORD.I);
-      expect(card?.art, row.name).toBe(row.art);
+describe('the challenge list matches docs/design/24-challenges-reset.md (Nov 26 evening)', () => {
+  const rows = listRows();
+
+  it('has 45 minigame challenges and 22 cost cards, and nothing else', () => {
+    expect(rows.filter((r) => !r.cost)).toHaveLength(45);
+    expect(rows.filter((r) => r.cost)).toHaveLength(22);
+    expect(CHALLENGES).toHaveLength(67);
+    expect(MINIGAME_CHALLENGES).toHaveLength(45);
+    expect(CHALLENGES.map((c) => c.id).sort()).toEqual(rows.map((r) => slug(r.name)).sort());
+    // No risk cards for now (Wyatt).
+    expect(CHALLENGES.some((c) => c.risk)).toBe(false);
+  });
+
+  it.each(listRows().map((r) => [r.name, r] as const))('%s', (_, row) => {
+    const card = CARDS[slug(row.name)] as ChallengeDef;
+    expect(card?.kind).toBe('challenge');
+    expect(card.name).toBe(row.name.replace(/'/g, '’'));
+    expect(card.tier).toBe(row.from);
+    expect(!!card.minigame).toBe(!row.cost);
+    if (row.nodes === 'any') expect(card.nodes).toBe('any');
+    else expect([...(card.nodes as readonly string[])].sort()).toEqual([...row.nodes].sort());
+    expect((card.gates ?? []).includes('snow')).toBe(row.snow);
+    // Art for now: the first file named; none yet means a plain panel.
+    expect(card.art).toBe(row.art.length > 0);
+    if (row.art.length) expect(card.artFile ?? card.id).toBe(row.art[0]);
+    // Failing always costs something (the minigames whose game takes it are the exception).
+    if (!card.minigame?.keepsPays) expect(card.penalty.length).toBeGreaterThan(0);
+    expect(card.backup).toBe(true);
+    if (card.minigame)
+      expect(MINIGAME_BY_ID.get(card.minigame.game), card.minigame.game).toBeDefined();
+  });
+
+  it('has the picture for every card with art (old pictures stay for later)', () => {
+    for (const c of Object.values(CARDS)) {
+      if (!c.art || c.kind === 'opportunity') continue;
+      expect(MASTERS, c.id).toContain(`${c.artFile ?? c.id}.jpg`);
+    }
+    for (const c of MINIGAME_CHALLENGES) {
+      for (const v of c.minigame?.versions ?? []) {
+        if (v.artFile) expect(MASTERS, `${c.id}: ${v.artFile}`).toContain(`${v.artFile}.jpg`);
+      }
     }
   });
 
-  it('counts 36 + 22 + 13 challenges and 25 Trials (Nov 6: Firewatch and Lost Pup cut)', () => {
-    expect(CHALLENGES.filter((c) => c.tier === 1)).toHaveLength(36);
-    expect(CHALLENGES.filter((c) => c.tier === 2)).toHaveLength(22);
-    expect(CHALLENGES.filter((c) => c.tier === 3)).toHaveLength(13);
-    expect(TRIALS).toHaveLength(25);
-    for (const gone of ['bone-collector', 'firewatch', 'lost-pup'])
-      expect(CARDS[gone]).toBeUndefined();
+  it('has the shrunk copy of every picture in public/assets', () => {
+    expect([...COPIES].sort()).toEqual([...MASTERS].sort());
+    expect([...PUBLIC_OPPORTUNITY_ART].sort()).toEqual([...OPPORTUNITY_ART].sort());
+    expect([...PUBLIC_WONDER_ART].sort()).toEqual([...WONDER_ART].sort());
   });
+});
 
-  it('lists 7 Wonders and 17 opportunities, each with its picture', () => {
+describe('opportunities, Wonders and Trials still match docs/design/04-challenges.md', () => {
+  /** Rows of 04's Wonders, Opportunities and Trials tables. */
+  function docRows() {
+    const out: { name: string; table: 'trials' | 'wonders' | 'opportunities' }[] = [];
+    let table: 'trials' | 'wonders' | 'opportunities' | null = null;
+    for (const line of doc04.split('\n')) {
+      if (line.startsWith('## ')) table = null;
+      if (line.startsWith('## Trials')) table = 'trials';
+      if (line.startsWith('## Wonders')) table = 'wonders';
+      if (line.startsWith('## Opportunities')) table = 'opportunities';
+      if (!table || !line.startsWith('| ') || line.startsWith('| ---')) continue;
+      const name = line.split('|')[1]?.trim() ?? '';
+      if (['Trial', 'Wonder', 'Opportunity'].includes(name)) continue;
+      out.push({ name, table });
+    }
+    return out;
+  }
+
+  it('has 25 Trials, 7 Wonders and 17 opportunities, each with its picture', () => {
+    const rows = docRows();
+    expect(TRIALS).toHaveLength(25);
+    expect(rows.filter((r) => r.table === 'trials')).toHaveLength(25);
     const wonders = rows.filter((r) => r.table === 'wonders').map((r) => `${slug(r.name)}.jpg`);
     const opportunities = rows
       .filter((r) => r.table === 'opportunities')
@@ -75,19 +150,8 @@ describe('challenge content matches docs/design/04-challenges.md', () => {
     expect([...WONDER_ART].sort()).toEqual([...wonders].sort());
     expect([...OPPORTUNITY_ART].sort()).toEqual([...opportunities].sort());
     expect(OPPORTUNITIES.map((o) => `${o.id}.jpg`).sort()).toEqual([...opportunities].sort());
-  });
-
-  it('has a picture for every challenge and Trial, and no stray pictures', () => {
-    const withArt = Object.values(CARDS)
-      .filter((c) => c.art && c.kind !== 'opportunity')
-      .map((c) => `${c.id}.jpg`);
-    expect([...MASTERS].sort()).toEqual(withArt.sort());
-  });
-
-  it('has the shrunk copy of every picture in public/assets', () => {
-    expect([...COPIES].sort()).toEqual([...MASTERS].sort());
-    expect([...PUBLIC_OPPORTUNITY_ART].sort()).toEqual([...OPPORTUNITY_ART].sort());
-    expect([...PUBLIC_WONDER_ART].sort()).toEqual([...WONDER_ART].sort());
+    // Trials that share a name with a new card keep "-trial" on their id (and their art).
+    for (const t of TRIALS) expect(t.artFile ?? t.id).toBe(slug(t.name));
   });
 });
 

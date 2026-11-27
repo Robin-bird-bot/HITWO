@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { CARDS } from '../../content';
 import type { CardDef, CardRolls } from '../../engine';
 import { cardText, rangeText } from './cardText';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const card = (id: string): CardDef => {
   const c = CARDS[id];

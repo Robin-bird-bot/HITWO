@@ -4,6 +4,7 @@
  * src/content/challenges.ts fills these in; the engine reads them. Nothing
  * here names a particular challenge.
  */
+import type { CategoryId } from '../../content/resources';
 import type { ItemType } from '../effects';
 import type { LineKind, NodeType, ResourceId, StatName } from '../types';
 
@@ -17,6 +18,12 @@ export interface RollDef {
   range: readonly [number, number];
   /** A higher number is better for the party (Dangerous Current). */
   reverse?: true;
+  /**
+   * The punishment table's ranges by tier (24-challenges-reset.md, section
+   * 2): the tile's tier picks one (above III, Tier III's scaled up), instead
+   * of `range` scaled up from the card's "From" tier.
+   */
+  byTier?: Readonly<Record<1 | 2 | 3, readonly [number, number]>>;
 }
 
 /** Things a cost or penalty can scale with on this tile. */
@@ -39,7 +46,12 @@ export type Amount = number | string | { base: number | string; per: Per; plus?:
 export interface ResourceFilter {
   nodes?: readonly NodeType[];
   ids?: readonly ResourceId[];
-  /** X resources picked at random from all 16 when revealed (Fox with a Specific Taste). */
+  /** Resource categories (24-challenges-reset.md, section 1): "×2 Fiber". */
+  categories?: readonly CategoryId[];
+  /**
+   * X resources picked when revealed (Fox with a Specific Taste): from those
+   * the hikers on the tile carry (Nov 26 evening), or all 16 if they carry none.
+   */
   randomOf?: string;
 }
 
@@ -48,13 +60,27 @@ export type Requirement =
       kind: 'resources';
       count: Amount;
       filter?: ResourceFilter;
-      /** All the same resource (Spooky Ghost!). */
+      /** All the same resource (Crow Collector). */
       same?: true;
       /** One from each hiker on the tile (Ninja Turtle's "1 Shell from each hiker"). */
       fromEach?: true;
+      /**
+       * The new general costs (24-challenges-reset.md, section 3):
+       * - most: of the resource the hiker has the most of (a party card: the
+       *   party's most on this tile); with `same`, all of that one.
+       * - singles: every resource the hiker has exactly 1 of (at least 1).
+       * - bigStacks: 1 of every resource the hiker has 3 or more of.
+       * - distinct: each one a different resource (Variety).
+       * - mixedBag: each from a different category.
+       */
+      most?: true;
+      singles?: true;
+      bigStacks?: true;
+      distinct?: true;
+      mixedBag?: true;
     }
-  /** Item cards; with several types, any mix ("1 tool or 1 food card"). */
-  | { kind: 'items'; count: Amount; itemTypes?: readonly ItemType[] }
+  /** Item cards; with several types, any mix ("1 tool or 1 food card"); or particular items (a map). */
+  | { kind: 'items'; count: Amount; itemTypes?: readonly ItemType[]; itemIds?: readonly string[] }
   | { kind: 'caps'; count: Amount }
   /** Stat points. With several stats, any mix. */
   | { kind: 'stat'; stats: readonly StatName[]; count: Amount }
@@ -145,7 +171,8 @@ export type EffectOp =
   | { op: 'loseEachResource'; chance: Chance; filter?: ResourceFilter }
   /** Lose every one of a set, picking one set at random (all Wood, or all Fish). */
   | { op: 'loseAllOf'; sets: readonly (readonly ResourceId[])[] }
-  | { op: 'loseItem'; mode: 'randomUnequipped' }
+  /** A random unequipped item; with none, `orResources` random resources (Crow Collector). */
+  | { op: 'loseItem'; mode: 'randomUnequipped'; orResources?: Amount }
   /** Each item in the bags (not equipped) has this chance to go. */
   | { op: 'loseBagItems'; chance: Chance }
   /** Food cards: all of them, a number of them, or each with a chance. */
@@ -213,11 +240,22 @@ export type EffectOp =
   /** Swaps a random bag item with a random one from a hiker on another tile. */
   | { op: 'swapItemFar' }
   /** Takes N random bag items from the hiker. */
-  | { op: 'stealItems'; count: Amount };
+  | { op: 'stealItems'; count: Amount }
+  /** The new punishments (24-challenges-reset.md, section 2): every resource the hiker has only 1 of. */
+  | { op: 'loseSingles' }
+  /** 1 of every resource the hiker has 3 or more of. */
+  | { op: 'loseBigStacks' }
+  /** Half (rounded up) of the resource the hiker has the most of; all of it from Tier III. */
+  | { op: 'loseMost' }
+  /** N of one category (any mix), from the hiker or across the party. */
+  | { op: 'loseCategory'; category: CategoryId; count: Amount; from?: 'hiker' | 'party' };
 
 export type Effect = EffectOp & {
   /** The chance this effect happens, rolled for each hiker it applies to. */
   chance?: Chance;
+  /** Only at these tiers of the tile (I to V): "1 injury from Tier III". */
+  fromTier?: number;
+  upToTier?: number;
   /** Only if this "(25%)" part was included when the challenge was revealed. */
   onlyIf?: string;
   /** Hiker effects on a party card hit every hiker on the tile; this limits it. */
@@ -302,6 +340,46 @@ export type TrialGoal =
 export type Deadline =
   { phases: Amount } | { days: Amount } | { until: 'endOfNextPhase' | 'nextMorning' | 'night' };
 
+/**
+ * A version of a minigame challenge, picked by the tile it's on
+ * (24-challenges-reset.md, section 4: "the tile decides which one plays").
+ */
+export interface MinigameVersion {
+  /** The tile nodes it plays on (any, when left out). */
+  nodes?: readonly NodeType[];
+  /** The tiers it plays at (I to V, from–to). */
+  fromTier?: number;
+  upToTier?: number;
+  /** Only on a snowy section, or only off one. */
+  snow?: boolean;
+  /** The game's settings for this version (Trails' course, Trail Blocks' version). */
+  settings: Readonly<Record<string, string | number>>;
+  /** Its art for now, when not the card's own. */
+  artFile?: string;
+}
+
+/** A challenge played as a minigame (24-challenges-reset.md, section 4; 25-challenges-on-the-map.md, section 3). */
+export interface MinigameCard {
+  /** The game's id in src/minigames/catalog.ts. */
+  game: string;
+  /** Settings every version plays with (Dodge's animal). */
+  settings?: Readonly<Record<string, string | number>>;
+  /** The versions; the first that fits the tile plays (none: the game as it is). */
+  versions?: readonly MinigameVersion[];
+  /** A passing challenge: hikers who fail go back first; if nobody passes, it stays on the tile. */
+  passing?: true;
+  /** Hikers it can't run without (Dog Waste Zone: a Dog on the tile). */
+  needs?: 'dog';
+  /**
+   * The game's own costs are paid as well (Rock Climb's energy for each fall,
+   * what Raccoon Shuffle and Squirrel Theft steal). Otherwise the
+   * punishment replaces the game's default fail cost.
+   */
+  keepsPays?: true;
+  /** What the hiker the game hurts takes instead of the punishment (Sketchy Bridge: whoever breaks it). */
+  hurt?: readonly Effect[];
+}
+
 interface BaseDef {
   id: string;
   name: string;
@@ -310,8 +388,10 @@ interface BaseDef {
   /** Node types it can appear on, or 'any'. */
   nodes: readonly NodeType[] | 'any';
   gates?: readonly Gate[];
-  /** Has art in public/assets/challenges/<id>.jpg. */
+  /** Has art in public/assets/challenges/<id>.jpg (or `artFile`). */
   art: boolean;
+  /** The art's file name when it isn't the id: the old art reused for now (24-challenges-reset.md, section 4). */
+  artFile?: string;
   /** The flavor line under the title. Wyatt is writing these. */
   description: string;
   /** The description is a stand-in until Wyatt writes it. */
@@ -325,6 +405,14 @@ interface BaseDef {
 
 export interface ChallengeDef extends BaseDef {
   kind: 'challenge' | 'opportunity';
+  /** Played as a minigame (no cost: the game decides who passes). */
+  minigame?: MinigameCard;
+  /**
+   * Its punishment follows the backup rule (24-challenges-reset.md, section
+   * 2), with the X Energy for "took nothing" in the roll `backup`. Every card
+   * in the Nov 26 list has it.
+   */
+  backup?: true;
   /**
    * party: one section; each: one per hiker; select: a ✓/✗ per hiker and only
    * ticked hikers take part; one: exactly one hiker takes part.

@@ -17,7 +17,7 @@ import { noteGone } from '../items/gone';
 import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content';
 import { CARDS } from '../../content/challenges';
-import { RESOURCES } from '../../content/resources';
+import { categoriesOf, RESOURCES, type CategoryId } from '../../content/resources';
 import { resourceCount } from '../inventory';
 import { pushEvent } from '../log';
 import { changeStat } from '../stats';
@@ -99,6 +99,60 @@ export function challengeSections(state: GameState, open: OpenChallenge): { hike
   return here.filter((h) => whoMatches(card.who ?? 'all', h)).map((h) => ({ hikerId: h.id }));
 }
 
+/**
+ * The resources a cost is judged on (24-challenges-reset.md, section 3):
+ * "your most", "your singles" and "your big stacks" are the judged hiker's
+ * (a section's), or the party's on this tile for a party card.
+ */
+export function judgedPack(
+  state: GameState,
+  open: OpenChallenge,
+  hikerId?: HikerId,
+): Partial<Record<ResourceId, number>> {
+  const here = challengeHikers(state, open);
+  const who = hikerId ? here.filter((h) => h.id === hikerId) : here;
+  const out: Partial<Record<ResourceId, number>> = {};
+  for (const h of who) {
+    for (const [id, n] of Object.entries(h.inventory.resources)) {
+      if ((n ?? 0) > 0) out[id as ResourceId] = (out[id as ResourceId] ?? 0) + (n ?? 0);
+    }
+  }
+  return out;
+}
+
+/** The resources a "most", "singles" or "big stacks" cost takes, for the judged hiker (or party). */
+export function judgedIds(
+  state: GameState,
+  open: OpenChallenge,
+  req: Extract<Requirement, { kind: 'resources' }>,
+  hikerId?: HikerId,
+): ResourceId[] | undefined {
+  if (!req.most && !req.singles && !req.bigStacks) return undefined;
+  const pack = Object.entries(judgedPack(state, open, hikerId)) as [ResourceId, number][];
+  if (req.singles) return pack.filter(([, n]) => n === 1).map(([id]) => id);
+  if (req.bigStacks) return pack.filter(([, n]) => n >= 3).map(([id]) => id);
+  const top = Math.max(0, ...pack.map(([, n]) => n));
+  return top ? pack.filter(([, n]) => n === top).map(([id]) => id) : [];
+}
+
+/** Can these resources each come from a different category (Mixed bag)? A small matching. */
+export function differentCategories(ids: readonly ResourceId[]): boolean {
+  const taken = new Map<CategoryId, number>();
+  const place = (k: number, seen: Set<CategoryId>): boolean => {
+    for (const c of categoriesOf(ids[k]!)) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      const was = taken.get(c);
+      if (was === undefined || place(was, seen)) {
+        taken.set(c, k);
+        return true;
+      }
+    }
+    return false;
+  };
+  return ids.every((_, k) => place(k, new Set()));
+}
+
 /** How many of a requirement a section needs (a Y uses that section's hiker). */
 export function requirementNeed(
   state: GameState,
@@ -113,8 +167,12 @@ export function requirementNeed(
   // TODO(wyatt): 1 less of each thing a cost asks for, not 1 less overall.
   const ease = challengeEase(state, open.tileId);
   switch (req.kind) {
-    case 'resources':
+    case 'resources': {
+      // Singles and big stacks: one of each (at least 1: with none, nothing fits it).
+      const ids = req.singles || req.bigStacks ? judgedIds(state, open, req, hikerId) : undefined;
+      if (ids) return Math.max(1, ids.length - ease);
       return Math.max(0, (req.fromEach ? here.length : amount(req.count, ctx)) - ease);
+    }
     case 'carryLimit':
       return hiker ? Math.max(0, resourceCount(hiker) - req.max) : 0;
     default:
@@ -133,6 +191,8 @@ export function resourceFits(
   const def = RESOURCES.find((r) => r.id === id);
   if (filter.ids && !filter.ids.includes(id)) return false;
   if (filter.nodes && (!def || !filter.nodes.includes(def.node))) return false;
+  if (filter.categories && !categoriesOf(id).some((c) => filter.categories!.includes(c)))
+    return false;
   return true;
 }
 
@@ -147,8 +207,11 @@ export function giftFits(
   const here = challengeHikers(state, open);
   if (gift.kind !== 'caps' && !here.some((h) => h.id === gift.from)) return false;
   switch (req.kind) {
-    case 'resources':
-      return gift.kind === 'resource' && resourceFits(req.filter, gift.resource, open);
+    case 'resources': {
+      if (gift.kind !== 'resource' || !resourceFits(req.filter, gift.resource, open)) return false;
+      const ids = judgedIds(state, open, req, hikerId);
+      return !ids || ids.includes(gift.resource);
+    }
     case 'carryLimit':
       // Rocky Path: a hiker sheds their own extra resources.
       return gift.kind === 'resource' && gift.from === hikerId;
@@ -158,6 +221,7 @@ export function giftFits(
         .find((h) => h.id === gift.from)
         ?.inventory.bag.find((i) => i.uid === gift.uid);
       const type = item && ITEMS[item.itemId]?.type;
+      if (req.itemIds) return !!item && req.itemIds.includes(item.itemId);
       return !!type && (!req.itemTypes || req.itemTypes.includes(type));
     }
     case 'caps':
@@ -214,9 +278,22 @@ export function optionShortfall(
     const got = mine.reduce((n, g) => n + giftCount(g), 0);
     if (got < need) return `Needs ${need - got} more.`;
     if (got > need) return 'That’s more than it asks for.';
-    if (req.kind === 'resources' && req.same) {
+    if (req.kind === 'resources' && (req.same || req.most)) {
       const kinds = new Set(mine.map((g) => (g.kind === 'resource' ? g.resource : '')));
       if (kinds.size > 1) return 'Those all have to be the same resource.';
+    }
+    if (
+      req.kind === 'resources' &&
+      (req.distinct || req.singles || req.bigStacks || req.mixedBag)
+    ) {
+      const kinds = mine.map((g) => (g.kind === 'resource' ? g.resource : ''));
+      const counts = new Map<string, number>();
+      for (const g of mine)
+        if (g.kind === 'resource') counts.set(g.resource, (counts.get(g.resource) ?? 0) + g.count);
+      if ([...counts.values()].some((n) => n > 1) || new Set(kinds).size < kinds.length)
+        return 'Each one has to be a different resource.';
+      if (req.mixedBag && !differentCategories([...counts.keys()] as ResourceId[]))
+        return 'Each one has to come from a different category.';
     }
     if (req.kind === 'durability' && req.oneItem) {
       const items = new Set(mine.map((g) => (g.kind === 'durability' ? g.uid : '')));
@@ -515,12 +592,15 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     card.kind === 'challenge' && !card.risk ? BALANCE.challenges.passXpPerTier * open.tier : 0;
   const targetsOf = (s: ChallengeSection) =>
     s.hikerId ? here.filter((h) => h.id === s.hikerId) : here;
+  const backup = backupFor(card, open);
   const run = (targets: Hiker[], risk?: number) => ({
     card,
     tileId: open.tileId,
     targets,
     onTile: here,
     rolls: open.rolls,
+    tier: open.shownTier ?? open.tier,
+    ...(backup ? { backup } : {}),
     ...(risk !== undefined ? { risk } : {}),
   });
 
@@ -650,6 +730,19 @@ export function applyResolve(state: GameState, action: ResolveAction): void {
     ];
   }
   openNext(state);
+}
+
+/**
+ * The backup rule for a card in the Nov 26 list (24-challenges-reset.md,
+ * section 2): its "took nothing" Energy, and who's been hurt by going below
+ * 0 Energy this challenge.
+ */
+export function backupFor(
+  card: ChallengeDef,
+  open: Pick<OpenChallenge, 'rolls'>,
+): { energy: number; injured: Set<HikerId> } | undefined {
+  if (!card.backup) return undefined;
+  return { energy: open.rolls.x.backup ?? 1, injured: new Set() };
 }
 
 /** What spending any amount gets (Nov 6 update, 2): per thing spent, per N spent, or by the stat left. */

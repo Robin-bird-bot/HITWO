@@ -27,12 +27,12 @@ describe('starting a Trial', () => {
     place(s, 'ash', 'L');
     const open = run(s, {
       type: 'debug',
-      op: { kind: 'openChallenge', cardId: 'train', tileId: 'L' },
+      op: { kind: 'openChallenge', cardId: 'train-trial', tileId: 'L' },
     });
     expect(validateAction(open, END)).toBe('Finish the challenge first.');
     const after = run(open, ACCEPT);
     expect(after.challenge).toBeUndefined();
-    expect(after.trials).toMatchObject([{ cardId: 'train', tileId: 'L', hikers: ['ash'] }]);
+    expect(after.trials).toMatchObject([{ cardId: 'train-trial', tileId: 'L', hikers: ['ash'] }]);
     expect(after.log.at(-1)).toMatchObject({ kind: 'trial', outcome: 'started' });
     expect(timeLeft(after, after.trials![0]!)).toBe('1 MORE PHASE');
   });
@@ -57,14 +57,14 @@ describe('starting a Trial', () => {
 
 describe('Train!! (leave the tile by the end of the next phase)', () => {
   it('ends early once everyone has left', () => {
-    const s = run(started('train'), END, move('ash', 'T'), move('birch', 'T'), END);
+    const s = run(started('train-trial'), END, move('ash', 'T'), move('birch', 'T'), END);
     expect(s.trials).toBeUndefined();
     expect(s.log.some((e) => e.kind === 'trial' && e.outcome === 'passed')).toBe(true);
     expect(hiker(s, 'ash').injuries).toBe(0);
   });
 
   it('injures whoever is still there at the deadline', () => {
-    const s = run(started('train'), END, move('ash', 'T'), END);
+    const s = run(started('train-trial'), END, move('ash', 'T'), END);
     expect(s.trials).toBeUndefined();
     expect(hiker(s, 'ash').injuries).toBe(0);
     expect(hiker(s, 'birch').injuries).toBe(1);
@@ -170,7 +170,7 @@ describe('Trial content', () => {
     const off = Object.values(CARDS).filter(
       (c): c is TrialDef => c.kind === 'trial' && c.goal.kind === 'off',
     );
-    expect(off.map((c) => c.id).sort()).toEqual(['frozen-fingers']);
+    expect(off.map((c) => c.id).sort()).toEqual(['frozen-fingers-trial']);
   });
 });
 

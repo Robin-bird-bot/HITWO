@@ -19,7 +19,7 @@ import { ITEMS, TIER_3_ITEMS, findableItems } from '../../content';
 import { craftableItems } from '../../content/items';
 import { BALANCE } from '../../config/balance';
 import { CONDITIONS, NEGATIVE_CONDITIONS } from '../../content/conditions';
-import { RESOURCES } from '../../content/resources';
+import { categoriesOf, RESOURCES } from '../../content/resources';
 import { changeAbundance } from '../abundance';
 import { addCondition, hasCondition, removeCondition } from '../conditions';
 import { gainCaps, type ItemType } from '../effects';
@@ -57,6 +57,16 @@ export interface EffectRun {
   rolls: CardRolls;
   /** A Risk challenge's worked-out loss, or how many steps the wind blows. */
   risk?: number;
+  /** The tile's tier (I to V): Your Most takes all of it from Tier III. */
+  tier?: number;
+  /**
+   * A challenge's punishment (24-challenges-reset.md, section 2), with the
+   * backup rule: each thing it can't take costs 1 Energy instead; one that
+   * takes nothing at all costs `energy` instead; and a hiker who'd go below
+   * 0 Energy gains 1 injury instead, once per challenge (`injured`, shared
+   * across the challenge's sections).
+   */
+  backup?: { energy: number; injured: Set<HikerId> };
 }
 
 type MoveTo = (
@@ -94,7 +104,7 @@ const ONCE: ReadonlySet<EffectOp['op']> = new Set([
 
 const isOnce = (e: Effect) =>
   ONCE.has(e.op) ||
-  (e.op === 'loseResources' && e.from === 'party') ||
+  ((e.op === 'loseResources' || e.op === 'loseCategory') && e.from === 'party') ||
   (e.op === 'move' && (e.how === 'falseTrail' || e.how === 'tunnel'));
 
 /** Can't be moved by anything (Frozen, Napping). */
@@ -121,7 +131,48 @@ function matches(filter: ResourceFilter | undefined, id: ResourceId): boolean {
   const def = RESOURCES.find((r) => r.id === id);
   if (filter.ids && !filter.ids.includes(id)) return false;
   if (filter.nodes && (!def || !filter.nodes.includes(def.node))) return false;
+  if (filter.categories && !categoriesOf(id).some((c) => filter.categories!.includes(c)))
+    return false;
   return true;
+}
+
+/**
+ * Energy lost to a challenge's punishment. With the backup rule, a hiker who
+ * would go below 0 gains 1 injury instead, once per challenge: the game's
+ * own rule already turns hitting 0 Energy into an injury (and lifts their
+ * stats), so the loss stops at 0 the first time, and at 1 after that.
+ */
+function loseEnergy(state: GameState, run: EffectRun, h: Hiker, n: number, cause: string): void {
+  if (n <= 0) return;
+  const backup = run.backup;
+  if (backup && h.stats.energy - n <= 0) {
+    if (backup.injured.has(h.id)) {
+      if (h.stats.energy > 1) changeStat(state, h, 'energy', 1 - h.stats.energy, cause);
+      return;
+    }
+    backup.injured.add(h.id);
+    if (h.stats.energy > 0) changeStat(state, h, 'energy', -h.stats.energy, cause);
+    else addInjury(state, h, cause);
+    return;
+  }
+  changeStat(state, h, 'energy', -n, cause);
+}
+
+/** The backup rule: each of `missing` things a punishment couldn't take costs 1 Energy. */
+function backupMissing(state: GameState, run: EffectRun, h: Hiker, missing: number, cause: string) {
+  if (run.backup && missing > 0) loseEnergy(state, run, h, missing, cause);
+}
+
+/** The backup rule: a punishment that took nothing at all costs X Energy for the tier. */
+function backupNothing(state: GameState, run: EffectRun, h: Hiker, cause: string) {
+  if (run.backup) loseEnergy(state, run, h, run.backup.energy, cause);
+}
+
+/** The resources a hiker has exactly this many of (or at least, with `atLeast`). */
+function heldAt(h: Hiker, test: (n: number) => boolean): ResourceId[] {
+  return Object.entries(h.inventory.resources)
+    .filter(([, n]) => test(n ?? 0))
+    .map(([id]) => id as ResourceId);
 }
 
 /** One entry per single resource a hiker carries. */
@@ -227,6 +278,10 @@ export function applyEffects(
 
   for (const effect of effects) {
     if (effect.onlyIf && !run.rolls.includes[effect.onlyIf]) continue;
+    // "1 injury from Tier III": tier-bound parts of a punishment.
+    const tier = run.tier ?? 1;
+    if (effect.fromTier !== undefined && tier < effect.fromTier) continue;
+    if (effect.upToTier !== undefined && tier > effect.upToTier) continue;
 
     if (isOnce(effect)) {
       if (effect.chance !== undefined && !roll(state.rng, chanceOf(effect.chance, ctxFor())))
@@ -301,6 +356,17 @@ function applyToHiker(
       return;
     case 'stat': {
       const n = amount(e.delta, ctx);
+      if (e.lose && e.stat === 'energy') {
+        loseEnergy(state, run, h, n, cause);
+        return;
+      }
+      if (e.lose && e.stat === 'appetite') {
+        // The backup rule: Appetite they haven't got costs Energy.
+        const short = Math.max(0, n - h.stats.appetite);
+        changeStat(state, h, e.stat, -n, cause);
+        backupMissing(state, run, h, short, cause);
+        return;
+      }
       changeStat(state, h, e.stat, e.lose ? -n : n, cause);
       return;
     }
@@ -311,8 +377,54 @@ function applyToHiker(
       return;
     }
     case 'loseResources': {
-      const lost = shuffle(state.rng, units(h)).slice(0, amount(e.count, ctx));
+      const want = amount(e.count, ctx);
+      const lost = shuffle(state.rng, units(h)).slice(0, want);
       for (const id of lost) takeResource(h, id);
+      logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
+      backupMissing(state, run, h, want - lost.length, cause);
+      return;
+    }
+    case 'loseCategory': {
+      const want = amount(e.count, ctx);
+      const lost = shuffle(state.rng, units(h, { categories: [e.category] })).slice(0, want);
+      for (const id of lost) takeResource(h, id);
+      logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
+      backupMissing(state, run, h, want - lost.length, cause);
+      return;
+    }
+    case 'loseSingles': {
+      const lost = heldAt(h, (n) => n === 1);
+      for (const id of lost) takeResource(h, id);
+      logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
+      if (!lost.length) backupNothing(state, run, h, cause);
+      return;
+    }
+    case 'loseBigStacks': {
+      const lost = heldAt(h, (n) => n >= 3);
+      for (const id of lost) takeResource(h, id);
+      logLost(state, h, lost, [], cause);
+      result.touched.resources += lost.length;
+      if (!lost.length) backupNothing(state, run, h, cause);
+      return;
+    }
+    case 'loseMost': {
+      const counts = Object.entries(h.inventory.resources).filter(([, n]) => (n ?? 0) > 0);
+      const top = Math.max(0, ...counts.map(([, n]) => n ?? 0));
+      if (!top) {
+        backupNothing(state, run, h, cause);
+        return;
+      }
+      const id = pick(
+        state.rng,
+        counts.filter(([, n]) => n === top).map(([r]) => r as ResourceId),
+      );
+      // Half (rounded up); at Tier III and up, all of it.
+      const n = (run.tier ?? 1) >= 3 ? top : Math.ceil(top / 2);
+      const lost: ResourceId[] = Array.from({ length: n }, () => id);
+      for (const r of lost) takeResource(h, r);
       logLost(state, h, lost, [], cause);
       result.touched.resources += lost.length;
       return;
@@ -526,16 +638,25 @@ function applyOnce(
   const tile = state.section.tiles[run.tileId];
   const targets = only ? [only] : run.targets;
   switch (e.op) {
-    case 'loseResources': {
+    case 'loseResources':
+    case 'loseCategory': {
+      // Across the party: from anyone here, at random.
+      const filter = e.op === 'loseCategory' ? { categories: [e.category] } : undefined;
+      const want = amount(e.count, ctx);
       const pool = shuffle(
         state.rng,
-        targets.flatMap((h) => units(h).map((id) => ({ h, id }))),
-      ).slice(0, amount(e.count, ctx));
+        targets.flatMap((h) => units(h, filter).map((id) => ({ h, id }))),
+      ).slice(0, want);
       for (const h of targets) {
         const mine = pool.filter((u) => u.h === h).map((u) => u.id);
         for (const id of mine) takeResource(h, id);
         logLost(state, h, mine, [], cause);
       }
+      result.touched.resources += pool.length;
+      // The backup rule: what the party hadn't got costs Energy, shared out in turn.
+      const live = targets.filter((h) => h.status !== 'abandoned');
+      for (let k = 0; run.backup && live.length && k < want - pool.length; k++)
+        loseEnergy(state, run, live[k % live.length]!, 1, cause);
       return;
     }
     case 'loseAllOf': {
@@ -549,7 +670,24 @@ function applyOnce(
     }
     case 'loseItem': {
       const holders = targets.filter((h) => h.inventory.bag.length > 0);
-      if (!holders.length) return;
+      if (!holders.length) {
+        // Crow Collector: with no item to take, random resources instead.
+        if (e.orResources !== undefined) {
+          for (const h of targets) {
+            applyToHiker(
+              state,
+              run,
+              { op: 'loseResources', count: e.orResources, from: 'hiker' },
+              h,
+              { ...ctx, hiker: h },
+              cause,
+              result,
+              moveTo,
+            );
+          }
+        }
+        return;
+      }
       const h = pick(state.rng, holders);
       const item = pick(state.rng, h.inventory.bag);
       h.inventory.bag = h.inventory.bag.filter((i) => i !== item);

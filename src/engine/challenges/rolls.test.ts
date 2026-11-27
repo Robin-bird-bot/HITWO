@@ -4,6 +4,10 @@ import { seedRng } from '../rng';
 import { fixtureGame, hiker, place } from '../test/fixtures';
 import { amount, rollCard, rollValue, scaledRange } from './rolls';
 import type { RollDef } from './types';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const X = (min: number, max: number, reverse = false): RollDef => ({
   roll: 'x',

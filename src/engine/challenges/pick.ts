@@ -74,8 +74,9 @@ export function cardFits(
   tier: Tier,
 ): boolean {
   if (notPlayableYet(card)) return false;
-  // Opportunities are written for Tier I and can appear at any tier.
-  if (card.kind === 'opportunity' ? card.tier > tier : card.tier !== tier) return false;
+  // Opportunities are written for Tier I and can appear at any tier; a
+  // challenge from its "From" tier on (24-challenges-reset.md, section 4).
+  if (card.kind === 'trial' ? card.tier !== tier : card.tier > tier) return false;
   if (!nodesMatch(card, tile)) return false;
   return (card.gates ?? []).every((g) => gatePasses(g, state, onTile));
 }
@@ -99,7 +100,8 @@ function pickOne(
   const fits = pool(kind).filter(
     (c) => cardFits(c, state, tile, onTile, tier) && !exclude.includes(c.id),
   );
-  const fresh = fits.filter((c) => !state.usedCards.includes(c.id));
+  // Repeats are fine for challenges now (Nov 26 evening); opportunities keep their rule.
+  const fresh = kind === 'challenge' ? fits : fits.filter((c) => !state.usedCards.includes(c.id));
   const from = fresh.length ? fresh : fits;
   if (!from.length) return undefined;
   return weightedPick(
@@ -168,7 +170,7 @@ function opportunityScale(tier: number): number {
 }
 
 /** Splits a tier (I to V) into the card's tier (I to III) and a scale (above III). */
-function playable(tier0: number): { tier: Tier; scale: number; shownTier: number } {
+export function playable(tier0: number): { tier: Tier; scale: number; shownTier: number } {
   const tier = Math.max(1, Math.min(TOP_TIER, tier0));
   if (tier <= MAX_TIER) return { tier: tier as Tier, scale: 1, shownTier: tier };
   return {

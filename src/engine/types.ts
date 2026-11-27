@@ -112,8 +112,10 @@ export interface Tile {
     /** The tier it shows (I to V; above III, a Tier III card scaled up). Older saves: `tier`. */
     shownTier?: number;
     alternative?: string;
-    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
+    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera); placed with the pool. */
     hidden?: true;
+    /** A minigame challenge's version, picked by the tile (24-challenges-reset.md, section 4). */
+    version?: number;
   };
   /** No card here: a quiet tile (Phase 10.6 difficulty), or a Fire Flower burned it away. */
   quiet?: true;
@@ -154,6 +156,13 @@ export interface Section {
   lines: Line[];
   trailheadId: TileId;
   checkpointId: TileId;
+  /**
+   * The biome's challenge pool, placed on its tiles when the section is made
+   * (25-challenges-on-the-map.md, section 1). Missing on sections made before.
+   */
+  pool?: string[];
+  /** The Trail Infoboard: posters pinned face up, and tiles found with WHERE IS IT? (section 2). */
+  infoboard?: { faceUp: string[]; found: TileId[] };
 }
 
 // ── Night events ───────────────────────────────────────────────────────────
@@ -750,6 +759,8 @@ export interface OpenChallenge {
   trial?: { targetTile?: TileId; resource?: ResourceId; itemType?: ItemTypeName };
   /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
   presses?: Record<string, number>;
+  /** A minigame challenge's version, picked by the tile (24-challenges-reset.md, section 4). */
+  version?: number;
 }
 
 /**
@@ -1088,7 +1099,12 @@ export type DebugOp =
   /** Takes every condition off a hiker. */
   | { kind: 'clearConditions'; hikerId: HikerId }
   /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
-  | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  | {
+      kind: 'openChallenge';
+      cardId: string;
+      tileId: TileId;
+      /** The tile's tier (I to V); the card's own when left out. */ tier?: number;
+    }
   /** Reveals a tile's card early, as Old Firewatch Tower does. */
   | { kind: 'revealCard'; tileId: TileId }
   /** Reveals this section's Wonder where it stands. */
@@ -1698,6 +1714,11 @@ export interface GameState {
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
   snowy?: true;
+  /**
+   * Testing tools (Settings → Testing; 25-challenges-on-the-map.md, section
+   * 3.2): pools with no cost cards. (Auto-pass and showing placed cards are the UI's.)
+   */
+  testing?: { minigamesOnly?: true };
   /** Today's weather, since when, and the days ahead (the forecast). */
   weather: WeatherState;
   nextEventId: number;

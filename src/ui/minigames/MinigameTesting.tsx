@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import {
-  BEAR_COUNTRY,
+  GUN_BEAR_ATTACK,
   testChallenge,
   type MinigameChallenge,
 } from '../../content/minigameChallenges';
@@ -52,7 +52,7 @@ function challengeFor(
 ): MinigameChallenge | undefined {
   if (info.status !== 'ready') return undefined;
   if (info.id === 'dodge' && settings.animal === 'gunBear')
-    return { ...BEAR_COUNTRY, tier: tierOf(settings) };
+    return { ...GUN_BEAR_ATTACK, tier: tierOf(settings) };
   return testChallenge(info, tierOf(settings));
 }
 

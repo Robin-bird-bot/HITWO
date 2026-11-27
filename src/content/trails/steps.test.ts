@@ -21,6 +21,10 @@ import { END, hiker, place, run, toNight, trailGame } from '../../engine/test/fi
 import { learnStep } from '../../engine/trails';
 import { gainXp } from '../../engine/xp';
 import type { Action, GameState, ItemTypeName } from '../../engine/types';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const B = BALANCE.trails;
 
@@ -74,8 +78,9 @@ function scavengeTake(s: GameState, id: string, type: GameState['debugDeal'] = [
   return run(open, { type: 'scavengeFlip', cards: [0] }, { type: 'scavengeTake', card: 0 });
 }
 
+/** A challenge that plays at this tier on any tile (Nov 26: a card plays from its "From" tier on). */
 const firstChallenge = (tier: 1 | 2) =>
-  CHALLENGES.find((c) => c.tier === tier && c.nodes === 'any' && !c.gates?.length)!;
+  CHALLENGES.find((c) => c.tier <= tier && c.nodes === 'any' && !c.gates?.length)!;
 
 // ── Finn ───────────────────────────────────────────────────────────────────
 

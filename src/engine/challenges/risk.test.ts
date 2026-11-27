@@ -7,6 +7,10 @@ import type { Action, ChallengeSection, GameState, Gift } from '../types';
 import { tileTier } from './pick';
 import { riskReading } from './risk';
 import type { ChallengeDef } from './types';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 function opened(cardId: string, setup: (s: GameState) => void = () => {}, tileId = 'L') {
   const s = fixtureGame({ seed: 5, challenges: true });
@@ -202,7 +206,9 @@ describe('special spaces', () => {
       const s = space('challenge', seed);
       const next = Math.min(3, tileTier(s, s.section.tiles.L!) + 1);
       expect(open).toMatchObject({ tier: next, special: 'challenge' });
-      expect(card(open.cardId)).toMatchObject({ kind: 'challenge', tier: next });
+      // A card from its "From" tier on (Nov 26 evening).
+      expect(card(open.cardId).kind).toBe('challenge');
+      expect(card(open.cardId).tier).toBeLessThanOrEqual(next);
     }
     expect(opened).toBeGreaterThan(10);
   });

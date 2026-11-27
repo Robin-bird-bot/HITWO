@@ -9,6 +9,10 @@ import { END, fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action, ChallengeSection, GameState, Gift, ItemInstance } from '../types';
 import { wonderProgress } from '../wonders/wonders';
 import { requirementNeed } from './resolve';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 /** Ash and Birch on L, with a card of our choosing open there. */
 function opened(cardId: string, setup: (s: GameState) => void = () => {}, seed = 3): GameState {

@@ -4,6 +4,10 @@ import { fixtureGame, hiker, place } from '../test/fixtures';
 import type { CardRolls, GameState } from '../types';
 import { applyEffects, backTile } from './applyEffects';
 import type { Effect } from './types';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const ROLLS: CardRolls = {
   x: { n: 2, chance: 100 },

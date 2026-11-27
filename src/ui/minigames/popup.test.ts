@@ -9,7 +9,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { BEAR_COUNTRY, testChallenge } from '../../content/minigameChallenges';
+import { GUN_BEAR_ATTACK, testChallenge } from '../../content/minigameChallenges';
 import { DODGE } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import { POPUPS } from '../../minigames/popups';
@@ -32,7 +32,7 @@ const PACKS: Packs = {
 };
 
 function popupHtml(
-  challenge: typeof BEAR_COUNTRY,
+  challenge: typeof GUN_BEAR_ATTACK,
   settings: Record<string, string | number>,
   fills: Fills,
 ) {
@@ -106,13 +106,13 @@ describe('the pop-up', () => {
   });
 
   it('Bear Country: filling SKIP IT turns Start into SKIP IT', () => {
-    const before = popupHtml(BEAR_COUNTRY, {}, {});
+    const before = popupHtml(GUN_BEAR_ATTACK, {}, {});
     expect(before).toContain('SKIP IT');
     expect(before).toContain('>START<');
     const fills: Fills = {
       'skip:0': { hiker: 'mom', thing: { kind: 'item', id: 'bearSpray' }, effect: 'skip' },
     };
-    const after = popupHtml(BEAR_COUNTRY, {}, fills);
+    const after = popupHtml(GUN_BEAR_ATTACK, {}, fills);
     expect(after).not.toContain('>START<');
     expect(after).toContain('>SKIP IT<');
   });

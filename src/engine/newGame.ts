@@ -30,6 +30,7 @@ import type {
   Stats,
   TraitSlot,
 } from './types';
+import { placePool } from './challenges/pool';
 
 /**
  * What a character brings (07-characters.md, "Starting bags"): items, which
@@ -167,6 +168,9 @@ export function createGame({
     if (h && setup.startingBag) giveStartingBag(state, h, setup.startingBag);
   });
   if (startingResources) giveStartingResources(state);
+  // The biome's challenge pool goes on its tiles (25-challenges-on-the-map.md,
+  // section 1). A ready-made section (tests) draws its cards on landing, as before.
+  if (!given) placePool(state);
   // The run begins (Gift Wrapper rolls the wish lists), then the first day's daily
   // traits, then the first biome begins (Prepared, Tactical), and Scouts see around the trailhead.
   fireRunStart(state);

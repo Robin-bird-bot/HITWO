@@ -3,6 +3,10 @@ import { CARDS } from '../../content';
 import type { GameEvent, GameState } from '../../engine';
 import { fixtureGame, hiker, place, run } from '../../engine/test/fixtures';
 import { isRandom, nothingHappenedLine, showsResult } from './showsResult';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 type ChallengeEvent = Extract<GameEvent, { kind: 'challenge' }>;
 

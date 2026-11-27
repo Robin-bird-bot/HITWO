@@ -16,6 +16,10 @@ import { fullDurability, makeItem } from './make';
 import type { Quality } from './quality';
 import { itemText } from './text';
 import { loseDurability } from './wear';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 /** Puts clothes on a hiker, at a Quality; returns the item. */
 function wear(s: GameState, id: string, itemId: string, quality: Quality = 3): ItemInstance {

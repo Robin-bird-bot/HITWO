@@ -30,51 +30,34 @@ describe('which cards fit a tile', () => {
   const s = fixtureGame();
 
   it('matches a node on the tile, or any', () => {
-    expect(cardFits(card('withered-forest'), s, forest, s.hikers, 1)).toBe(true);
-    expect(cardFits(card('low-water-levels'), s, forest, s.hikers, 1)).toBe(false);
+    expect(cardFits(card('squirrel-attack'), s, forest, s.hikers, 1)).toBe(true);
+    expect(cardFits(card('cracked-pots'), s, forest, s.hikers, 1)).toBe(false);
     expect(cardFits(card('tummy-rumbling'), s, forest, s.hikers, 1)).toBe(true);
   });
 
-  it('matches the tier', () => {
-    expect(cardFits(card('withered-forest'), s, forest, s.hikers, 2)).toBe(false);
-    expect(cardFits(card('thorn-thicket'), s, forest, s.hikers, 1)).toBe(false);
+  it('a challenge fits from its "From" tier on (Nov 26 evening)', () => {
+    expect(cardFits(card('squirrel-attack'), s, forest, s.hikers, 1)).toBe(true);
+    expect(cardFits(card('squirrel-attack'), s, forest, s.hikers, 3)).toBe(true);
+    expect(cardFits(card('bobcat-attack'), s, forest, s.hikers, 1)).toBe(false);
+    expect(cardFits(card('bobcat-attack'), s, forest, s.hikers, 2)).toBe(true);
   });
 
   it('checks each gate', () => {
-    const afternoon = { ...fixtureGame(), phase: 'afternoon' as const };
-    expect(cardFits(card('long-night-ahead'), s, forest, s.hikers, 1)).toBe(false);
-    expect(cardFits(card('long-night-ahead'), afternoon, forest, s.hikers, 1)).toBe(true);
-
     expect(cardFits(card('dog-waste-zone'), s, forest, s.hikers, 1)).toBe(false);
     const dog = fixtureGame({ hikers: [{ ...fixtureHiker('rex'), family: 'dog' }] });
     expect(cardFits(card('dog-waste-zone'), dog, forest, dog.hikers, 1)).toBe(true);
 
     const snowy = { ...fixtureGame(), snowy: true as const };
     const anyTile = tile([{ type: 'mountain', revealed: true }]);
-    expect(cardFits(card('snow-leopard'), s, anyTile, s.hikers, 3)).toBe(false);
-    expect(cardFits(card('snow-leopard'), snowy, anyTile, s.hikers, 3)).toBe(true);
-
-    // Weather no longer picks challenges (Phase 10.6): Lightning and Blazing Sun fit any day.
-    expect(cardFits(card('lightning'), s, anyTile, s.hikers, 3)).toBe(true);
-    expect(cardFits(card('blazing-sun'), s, anyTile, s.hikers, 2)).toBe(true);
+    expect(cardFits(card('snow-leopard-attack'), s, anyTile, s.hikers, 3)).toBe(false);
+    expect(cardFits(card('snow-leopard-attack'), snowy, anyTile, s.hikers, 3)).toBe(true);
   });
 
-  it('leaves out cards whose systems aren’t built yet', () => {
-    // Durability, tool uses, eating and crafting all work now (Phase 8).
-    for (const id of [
-      'thorn-thicket',
-      'fashion-critic',
-      'sticky-sap',
-      'mold-invasion',
-      'bear-country',
-    ]) {
-      const c = card(id);
-      if (c.kind === 'trial') expect(notPlayableYet(c)).toMatch(/switched off/);
-      else expect(notPlayableYet(c)).toBeUndefined();
-    }
-    // Trials (Frozen Fingers, Train) are switched off for now (Phase 10.6).
-    expect(notPlayableYet(card('frozen-fingers'))).toMatch(/switched off/);
-    expect(notPlayableYet(card('train'))).toMatch(/switched off/);
+  it('every challenge in the list can be played; every Trial is switched off', () => {
+    for (const c of CHALLENGES) expect(notPlayableYet(c), c.id).toBeUndefined();
+    // Trials that share a name with a new card keep "-trial" on their id.
+    expect(notPlayableYet(card('train-trial'))).toMatch(/switched off/);
+    expect(card('train').kind).toBe('challenge');
     // Every Trial is switched off for now (Phase 10.6), Rocco's included.
     expect(TRIALS.every((t) => notPlayableYet(t))).toBe(true);
   });
@@ -100,14 +83,11 @@ describe('picking a card for a new tile', () => {
     expect(picks(s, forest).some((p) => card(p.cardId).kind === 'trial')).toBe(false);
   });
 
-  it('prefers cards this section hasn’t used', () => {
+  it('repeats are fine for challenges now (Nov 26 evening)', () => {
     const s = fixtureGame();
-    const forestTier1 = CHALLENGES.filter(
-      (c) => c.tier === 1 && (c.nodes === 'any' || c.nodes.includes('forest')),
-    );
-    s.usedCards = forestTier1.map((c) => c.id).filter((id) => id !== 'withered-forest');
-    const challenges = picks(s, forest).filter((p) => card(p.cardId).kind === 'challenge');
-    expect(new Set(challenges.map((p) => p.cardId))).toEqual(new Set(['withered-forest']));
+    s.usedCards = CHALLENGES.map((c) => c.id).filter((id) => id !== 'squirrel-attack');
+    const challenges = picks(s, forest, 400).filter((p) => card(p.cardId).kind === 'challenge');
+    expect(new Set(challenges.map((p) => p.cardId)).size).toBeGreaterThan(3);
   });
 
   it('makes an Opportunity space an opportunity', () => {
@@ -121,7 +101,8 @@ describe('picking a card for a new tile', () => {
     const s = fixtureGame();
     const base = rolledTier(s, forest);
     for (const p of picks(s, { ...forest, special: 'challenge' }, 200)) {
-      expect(card(p.cardId).tier).toBe(Math.min(3, base + 1));
+      expect(card(p.cardId).tier).toBeLessThanOrEqual(Math.min(3, base + 1));
+      expect(p.tier).toBe(Math.min(3, base + 1));
       expect(p.shownTier).toBe(base + 1);
       expect(p.scale).toBe(base + 1 > 3 ? BALANCE.challenges.tierScale ** (base - 2) : 1);
     }
@@ -149,8 +130,8 @@ describe('picking a card for a new tile', () => {
     const s = fixtureGame();
     const raised = { ...forest, tierBonus: 1 };
     for (const p of picks(s, raised, 300)) {
-      const c = card(p.cardId);
-      if (c.kind === 'challenge') expect(c.tier).toBe(2);
+      expect(p.tier).toBe(Math.min(3, rolledTier(s, forest) + 1));
+      expect(card(p.cardId).tier).toBeLessThanOrEqual(p.tier);
     }
     expect(hiker(s, 'ash')).toBeDefined();
   });
