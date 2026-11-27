@@ -1800,6 +1800,24 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ide
 
 ---
 
+## Phase 10.9: The packing screen
+
+(New in the Nov 26 late update: `docs/UPDATE-2026-11-26-packing-screen-v3.md`, which replaces both earlier packing-screen zips. The designs are the new `docs/design/27-packing-screen.md` (the rules and the cabinet look) and `28-packing-screen-trailmate.md` (the TrailMate look). Prototypes to match: `docs/mockups/packing/prototype.html` and `docs/mockups/packing-trailmate/prototype.html`, each with screenshots. Art: `assets/packing/squirrel-wheel.svg` and the greens recipe `assets/packing-trailmate/greenify.py`. The packing screen comes before the hike, so it doesn't depend on Phase 10.8 step 12.)
+
+**Goal:** after the hikers are picked, the party packs for the hike on a slot machine: 2 items plus 1 per hiker, then 2 resource bundles each. Wyatt: "if there's an item in the slots that's decent but you think you could do better, it's a risk to respin or a safe bet to take." It replaces the placeholder starting resources in real runs. This is the "starting kit draft" of Phase 14.
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ideas marked *(Claude's idea)* are the design assistant's. Each spec's "Things to flag to Wyatt" goes in its PR.
+
+**Build**
+1. **The rules** as plain functions with Vitest tests (`27`, sections 3, 4, 6 and 7): the item reels, taking, respins, the bonuses, Second Wind, the resource turns and handing over to `createGame`. Seeded from the run's seed.
+2. **The screen** between hiker select and the hike (`27`, section 1), with Back, the hiker cards, the drawers, the card preview, drag and click, and the testing tab's "Skip packing" and "Force next spin".
+3. **The TrailMate look** (`28`), the default, with its dark version of hiker select's background (shared shader, a "dark" preset).
+4. **The Lucky Trail Outfitters cabinet** (`27`, sections 2 and 5) as the second look, and the setting (Settings → Look → "Packing machine": TrailMate / Cabinet). A separate PR is fine.
+
+**Tests:** as in `27`, section 7.
+
+---
+
 ## Phase 11: Biomes, tiers and weather
 
 Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
@@ -1850,7 +1868,7 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 ## Phase 14: Setup flow
 
 **Build**
-- Title → party pick (4 hikers, filter by class label) → starting kit draft → objective draw → hike.
+- Title → party pick (4 hikers, filter by class label) → starting kit draft → objective draw → hike. The starting kit draft is the packing screen (Phase 10.9).
 - With several people playing, label who controls each hiker.
 - The title screen gets real title art from Wyatt later. Keep a placeholder until then.
 

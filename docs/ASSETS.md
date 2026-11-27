@@ -137,6 +137,13 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Posters** (`public/assets/posters/`, 1200 × 1800): `bear-country.png`. Wyatt is painting the rest; a challenge without one shows a plain cream panel.
 - **The party GPS** is drawn in CSS and SVG: no image files.
 
+## Packing screen (Phase 10.9)
+
+- **The cabinet's squirrel in its wheel** (`assets/packing/squirrel-wheel.svg`): an inline SVG with named parts (`.legs-a`, `.legs-b`, `.legs-sit`, `.tongue`, `.sweat`, `.eye-shut`; `#wheel` rotates), so it animates in code. The rest of the Lucky Trail Outfitters cabinet (the sign, the bulbs, the hiking-pole lever, the log reels and the drawers) is drawn in code. Wyatt may want to redraw any of it.
+- **TrailMate's LCD greens recipe** (`assets/packing-trailmate/greenify.py`): how the TrailMate look turns item art into 4 LCD greens with a dark outline (about 42 px, drawn at 2× with crisp pixels). The game does the same in code, so there are no extra files.
+- **Reused art:** the acorn cap (`icons/acorn-caps.png`) in the cabinet's respin tray; Squirrel Theft's pixel squirrel (`minigames/squirrel-theft/squirrel.png` and `squirrel-happy.png`) as TrailMate's mascot; Dodge's pixel acorn (`minigames/dodge/acorn-0.png`) for TrailMate's jackpot rain; the green resource icons (`resources-green/`) on TrailMate's reels; and the item type icons (`item-cards/type-icons/`) on its badges.
+- **The device itself** (the TrailMate shell, antenna, SCAN button, battery and screens) is drawn in CSS, like the party GPS.
+
 ## Still missing
 
 - **Bigger icon:** a hi-res mushroom.
