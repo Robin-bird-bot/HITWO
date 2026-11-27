@@ -82,10 +82,12 @@ export type CostKey =
   /** The mover's Appetite for bringing one hiker along (subjectId = that hiker). */
   | 'moveAll.perHiker'
   | 'night.noSleepEnergy'
-  /** Scavenging: the Appetite paid when a card is taken (with the night extra). */
-  | 'scavenge.appetite'
-  /** Tend's Appetite cost (Nov 14 update; it was Energy). */
-  | 'tend.appetite'
+  /** Scavenging: the Energy paid when a card is taken (with the night extra; 29-core-loop.md, section 1). */
+  | 'scavenge.energy'
+  /** Tend's Energy cost (29-core-loop.md, section 1). */
+  | 'tend.energy'
+  /** Crafting's Energy cost, paid when the craft happens (29-core-loop.md, section 1). */
+  | 'craft.energy'
   /** How much Abundance a scavenge drains (Eco-conscious). */
   | 'scavenge.drain'
   /** What a purchase costs the buyer, in caps (Frugal). */
@@ -936,8 +938,14 @@ export interface ItemDef {
   values?: Readonly<Record<string, QualityValues>>;
   /** Tools: uses. */
   uses?: QualityValues | number;
-  /** Food: bites. */
+  /** Food: bites (a drink's are sips). */
   bites?: QualityValues | number;
+  /**
+   * A drink (29-core-loop.md, section 3): still food (eaten, crafted, found
+   * and packed as food), but it restores Energy, and its card says DRINK and
+   * counts SIPS.
+   */
+  drink?: true;
   /** Clothes: days of durability, when not the tier's usual (Plain Shirt lasts longer). */
   durability?: QualityValues;
   /** Shelters: how many times it can be set up (Phase 10.6). */

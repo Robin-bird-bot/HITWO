@@ -272,12 +272,12 @@ const BODY: ItemDef[] = [
     id: 'jeans',
     name: 'Jeans',
     tier: 1,
-    text: 'Scavenging costs 1 less Appetite; each time, it loses 1 durability.',
+    text: 'Scavenging costs 1 less Energy; each time, it loses 1 durability.',
     recipe: 'Moss 3, Metal 1, any 2',
     hooksAt: (_v, self) => ({
       modifyCost: (q) =>
-        q.key === 'scavenge.appetite'
-          ? { source: 'Jeans', flat: -BALANCE.items.jeansAppetite }
+        q.key === 'scavenge.energy'
+          ? { source: 'Jeans', flat: -BALANCE.items.jeansEnergy }
           : undefined,
       onScavenge: (_e, ctx) => ctx.wearItem(ctx.self, self.uid, 1, 'Jeans'),
     }),

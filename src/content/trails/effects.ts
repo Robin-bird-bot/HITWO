@@ -136,11 +136,11 @@ function copydog(name: string, tier: 1 | 2 | 3): Hooks {
       }
       return out;
     },
-    // III: scavenging first costs no Appetite.
+    // III: scavenging first costs no Energy (29-core-loop.md, section 1).
     ...(tier === 3
       ? {
           modifyCost: (q, ctx) =>
-            q.key === 'scavenge.appetite' &&
+            q.key === 'scavenge.energy' &&
             q.subjectId === ctx.self.id &&
             earlierThisPhase(ctx, ctx.self.tileId) === 0
               ? { source: name, percent: -100 }

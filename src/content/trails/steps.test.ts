@@ -212,7 +212,7 @@ describe('Finn: Scavenger Path (Copydog)', () => {
     expect(scavengeSetup(s, hiker(s, 'finn')).count).toBe(base);
     // Ellie scavenged: he's last, not first.
     s = scavengeTake(s, 'ellie');
-    expect(scavengeCost(s, hiker(s, 'finn'))).toBe(BALANCE.scavenge.appetite);
+    expect(scavengeCost(s, hiker(s, 'finn'))).toBe(BALANCE.scavenge.energy);
     expect(scavengeSetup(s, hiker(s, 'finn')).count).toBe(base + B.copydog.cards);
   });
 });

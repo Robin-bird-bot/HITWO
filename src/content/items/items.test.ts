@@ -96,8 +96,9 @@ describe('card text at each Quality', () => {
     expect(at('pelmeni', 2)).toBe('+1 Appetite.');
     expect(at('trailMix', 1)).toBe('+2 Appetite.');
     expect(at('trailMix', 3)).toBe('+2 Appetite, and Lucky this phase.');
-    expect(at('wine', 1)).toBe('+1 Appetite, then Unlucky for 1 day.');
-    expect(at('wine', 3)).toBe('+2 Appetite, then Lucky or Unlucky (50/50) for 1 day.');
+    // Drinks restore Energy (29-core-loop.md, section 3).
+    expect(at('wine', 1)).toBe('+1 Energy, then Unlucky for 1 day.');
+    expect(at('wine', 3)).toBe('+2 Energy, then Lucky or Unlucky (50/50) for 1 day.');
     expect(at('energyDrink', 1)).toBe('Buzzed for 2 days.');
     expect(at('energyDrink', 5)).toBe('Energized for 2 days, then Buzzed for 1 day.');
     expect(at('butterfinger', 2)).toBe(

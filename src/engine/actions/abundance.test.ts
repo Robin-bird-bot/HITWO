@@ -156,7 +156,8 @@ describe('Empty cards', () => {
     expect(validateAction(open, { type: 'scavengeTake', card: 0 })).toBeNull();
     const after = run(open, { type: 'scavengeTake', card: 0 });
     expect(hiker(after, 'ash').inventory.resources).toEqual({});
-    expect(hiker(after, 'ash').stats.appetite).toBe(10 - BALANCE.scavenge.appetite);
+    expect(hiker(after, 'ash').stats.energy).toBe(10 - BALANCE.scavenge.energy);
+    expect(hiker(after, 'ash').stats.appetite).toBe(10);
     expect(after.abundance).toBe(10 - SCAVENGE_CARDS.choice.drain);
     expect(after.log.findLast((e) => e.kind === 'scavenge')).toMatchObject({ empty: true });
   });
@@ -177,14 +178,14 @@ describe('Appetite: no more overnight loss', () => {
 });
 
 describe('Tend', () => {
-  it('raises Abundance, costs 1 Appetite and no Energy, and uses the phase', () => {
+  it('raises Abundance, costs 1 Energy and no Appetite, and uses the phase (29, section 1)', () => {
     const s = onForest();
     s.abundance = 3;
     const after = run(s, { type: 'tend', hikerId: 'ash' });
     expect(after.abundance).toBe(3 + A.tend);
     expect(hiker(after, 'ash').acted).toBe(true);
-    expect(hiker(after, 'ash').stats.appetite).toBe(10 - A.tendAppetite);
-    expect(hiker(after, 'ash').stats.energy).toBe(10);
+    expect(hiker(after, 'ash').stats.energy).toBe(10 - A.tendEnergy);
+    expect(hiker(after, 'ash').stats.appetite).toBe(10);
     expect(after.log.find((e) => e.kind === 'tend')).toMatchObject({ from: 3, to: 5 });
   });
 

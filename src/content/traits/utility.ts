@@ -542,11 +542,11 @@ export const UTILITY_TRAITS: readonly TraitDef[] = [
       },
     },
   ),
-  utility(2, 'pirate', 'Pirate', 'Scavenging alone costs no Appetite.', {
+  utility(2, 'pirate', 'Pirate', 'Scavenging alone costs no Energy.', {
     hooks: {
       workingNow: (ctx) => ctx.isAlone(ctx.self),
       modifyCost: (q, ctx) =>
-        q.key === 'scavenge.appetite' && q.subjectId === ctx.self.id && ctx.isAlone(ctx.self)
+        q.key === 'scavenge.energy' && q.subjectId === ctx.self.id && ctx.isAlone(ctx.self)
           ? { source: 'Pirate', percent: -100 }
           : undefined,
     },

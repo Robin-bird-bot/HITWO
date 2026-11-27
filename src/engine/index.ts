@@ -212,7 +212,7 @@ export {
   CRAFT_TYPES,
   type CraftSetup,
 } from './items/craft';
-export { craftOpenReason, teachCost } from './actions/craft';
+export { craftCost, craftOpenReason, teachCost } from './actions/craft';
 export { keepsItemsReason, wrapsPresents } from './effects';
 export {
   isPresent,

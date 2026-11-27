@@ -9,9 +9,17 @@ export interface TypeLook {
   label: string;
   accent: string;
   /** The counter on the bottom right, and how its pips look. */
-  count: 'USES' | 'DURABILITY' | 'BITES' | 'SET UP: FREE ·' | null;
+  count: 'USES' | 'DURABILITY' | 'BITES' | 'SIPS' | 'SET UP: FREE ·' | null;
   shape: 'square' | 'bar' | 'circle';
 }
+
+/** A drink (29-core-loop.md, section 3): food that says DRINK and counts SIPS. */
+export const DRINK_LOOK: TypeLook = {
+  label: 'Drink',
+  accent: '#8BE6DD',
+  count: 'SIPS',
+  shape: 'circle',
+};
 
 export const TYPE_LOOK: Record<ItemType, TypeLook> = {
   tool: { label: 'Tool', accent: '#F2A65A', count: 'USES', shape: 'square' },

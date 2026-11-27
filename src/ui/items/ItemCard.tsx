@@ -35,7 +35,7 @@ import {
   type ItemInstance,
   type Quality,
 } from '../../engine';
-import { SLOT_NAME, TIER_LOOK, TYPE_LOOK } from './itemLook';
+import { DRINK_LOOK, SLOT_NAME, TIER_LOOK, TYPE_LOOK } from './itemLook';
 import styles from './ItemCard.module.css';
 
 type Counters = Pick<
@@ -100,7 +100,7 @@ export function ItemCard({
 }: ItemCardProps) {
   const def = ITEMS[itemId];
   if (!def) return null;
-  const look = TYPE_LOOK[def.type];
+  const look = def.drink ? DRINK_LOOK : TYPE_LOOK[def.type];
   // An item with a fixed Quality (or none) has nothing left to roll.
   const unrolled = unrolledProp && hasQuality(def) && !def.fixedQuality;
   const quality = hasQuality(def)

@@ -2,6 +2,7 @@
  * Food in Phase 10.6 (docs/design/08-overhaul-plan.md, "Food"): only 9 foods
  * are switched on, with new numbers, and Rotisserie Chicken is a camp meal.
  */
+import { BALANCE } from '../../config/balance';
 import { describe, expect, it } from 'vitest';
 import {
   ITEMS,
@@ -37,14 +38,14 @@ const eat = (hikerId: string, itemUid: string, fromHikerId?: string): Action => 
   ...(fromHikerId ? { fromHikerId } : {}),
 });
 
-describe('only 9 foods are switched on', () => {
+describe('only 9 foods and 6 drinks are switched on', () => {
   it('every other food is switched off (Puked Nuggets stay, but are never found)', () => {
     const foods = Object.values(ITEMS).filter((d) => d.type === 'food');
     for (const d of foods) {
       if (ON.has(d.id) || d.id === 'pukedNuggets') expect(d.enabled, d.id).toBeUndefined();
       else expect(d.enabled, d.id).toBe(false);
     }
-    expect(FOODS_ON).toHaveLength(9);
+    expect(FOODS_ON).toHaveLength(15);
   });
 
   it('only those 9 come from scavenging, crafting, Presents and Tier III rewards', () => {
@@ -85,9 +86,44 @@ describe('only 9 foods are switched on', () => {
   it('a switched-off food already in a pack still works', () => {
     let s = fixtureGame();
     place(s, 'ash', 'T', { appetite: 2 });
-    const uid = give(s, 'ash', 'wine');
+    const uid = give(s, 'ash', 'pelmeni');
     s = run(s, eat('ash', uid));
     expect(hiker(s, 'ash').stats.appetite).toBeGreaterThan(2);
+  });
+});
+
+describe('drinks restore Energy (29-core-loop.md, section 3)', () => {
+  const DRINKS = ['coffee', 'sevenUp', 'citroDrink', 'wine', 'pinaColada', 'venteCoffeeMisto'];
+
+  it('the six are on, Energy Drink is off, and exactly those seven are drinks', () => {
+    for (const id of DRINKS) expect(ITEMS[id]?.enabled, id).toBeUndefined();
+    expect(ITEMS.energyDrink?.enabled).toBe(false);
+    const drinks = Object.values(ITEMS).filter((d) => d.drink);
+    expect(drinks.map((d) => d.id).sort()).toEqual([...DRINKS, 'energyDrink'].sort());
+    for (const d of drinks) expect(d.type, d.id).toBe('food');
+  });
+
+  it('each gives Energy and no Appetite', () => {
+    for (const id of DRINKS) {
+      for (let seed = 1; seed <= 3; seed++) {
+        let s = fixtureGame({ seed });
+        place(s, 'ash', 'T', { appetite: 2, energy: 2 });
+        s = run(s, eat('ash', give(s, 'ash', id)));
+        expect(hiker(s, 'ash').stats.appetite, id).toBe(2);
+        expect(hiker(s, 'ash').stats.energy, id).toBeGreaterThan(2);
+      }
+    }
+  });
+
+  it('Coffee, 7-Up and Citro Drink give their plain Energy', () => {
+    for (const [id, n] of Object.entries(BALANCE.items.drinkEnergy)) {
+      let s = fixtureGame();
+      place(s, 'ash', 'T', { energy: 2 });
+      // Quality 1: no Energized extra (Energized itself gives Energy).
+      s = run(s, eat('ash', give(s, 'ash', id, 1)));
+      expect(hiker(s, 'ash').stats.energy, id).toBe(2 + n);
+    }
+    expect(BALANCE.items.drinkEnergy).toEqual({ coffee: 2, sevenUp: 1, citroDrink: 2 });
   });
 });
 

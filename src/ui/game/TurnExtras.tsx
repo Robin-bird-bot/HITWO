@@ -111,14 +111,14 @@ interface TendConfirmProps {
   /** Abundance now, and after Tend. */
   from: number;
   to: number;
-  /** Tend's Appetite cost. */
-  appetite: number;
+  /** Tend's Energy cost. */
+  energy: number;
   onConfirm(): void;
   onCancel(): void;
 }
 
-/** Tend: raise the biome's Abundance, for 1 Appetite (Nov 14 update). */
-export function TendConfirm({ name, from, to, appetite, onConfirm, onCancel }: TendConfirmProps) {
+/** Tend: raise the biome's Abundance, for 1 Energy (29-core-loop.md, section 1). */
+export function TendConfirm({ name, from, to, energy, onConfirm, onCancel }: TendConfirmProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     confirmRef.current?.focus();
@@ -132,7 +132,7 @@ export function TendConfirm({ name, from, to, appetite, onConfirm, onCancel }: T
   return (
     <div className={styles.box}>
       <span className={styles.kicker}>
-        TEND · +{to - from} ABUNDANCE · −{appetite} APPETITE
+        TEND · +{to - from} ABUNDANCE · −{energy} ENERGY
       </span>
       <span className={styles.text}>
         {name} tends the land: Abundance {from} → <b>{to}</b>.

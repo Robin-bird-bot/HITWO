@@ -42,6 +42,7 @@ import {
   findHiker,
   mustFindHiker,
   notActiveReason,
+  payCost,
   phaseActionReason,
   spendAction,
 } from './common';
@@ -121,6 +122,8 @@ export function applyCraft(state: GameState, action: CraftAction): void {
   const biteMod = subs && recipe ? subs.perSwap * swapsIn(recipe, slots) : 0;
   if (!atWorkbench(state, hiker)) spendAction(state, hiker);
   spend(state, slots);
+  // Work costs Energy, a workbench visit too (29-core-loop.md, section 1).
+  payCost(state, hiker, { appetite: 0, energy: craftCost(state, hiker), morale: 0 }, 'Craft');
 
   if (action.blueprint) {
     const quality = craftQuality(state.rng, action.blueprint, setup);
@@ -229,6 +232,25 @@ function finishCraft(
   });
   // Work Boots: a free move after crafting.
   earnFreeMove(state, hiker, 'afterCraft');
+}
+
+/**
+ * Crafting's Energy cost, paid when the craft happens (29-core-loop.md,
+ * section 1; Wyatt: "let's make crafting also cost 1 energy for now").
+ */
+export function craftCost(state: GameState, hiker: Hiker): number {
+  return computeCost(
+    state,
+    [hiker],
+    {
+      key: 'craft.energy',
+      actorId: hiker.id,
+      subjectId: hiker.id,
+      role: 'actor',
+      phase: state.phase,
+    },
+    BALANCE.items.craft.energy,
+  );
 }
 
 /** What teaching this blueprint costs the teacher: by its tier, and half for a Teacher. */

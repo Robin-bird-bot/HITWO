@@ -132,11 +132,12 @@ describe('scavenging: taking a card', () => {
     );
   });
 
-  it('pays 1 Appetite, uses the phase, gives the card and drains its node', () => {
+  it('pays 1 Energy (not Appetite), uses the phase, gives the card and drains its node', () => {
     const s = withCard(onForest(), { type: 'x2', resources: ['wood', 'wood'] });
     const after = run(s, { type: 'scavengeTake', card: 0 });
     const ash = hiker(after, 'ash');
-    expect(ash.stats.appetite).toBe(9);
+    expect(ash.stats.energy).toBe(9);
+    expect(ash.stats.appetite).toBe(10);
     expect(ash.acted).toBe(true);
     expect(ash.inventory.resources.wood).toBe(2);
     expect(after.abundance).toBe(BALANCE.abundance.start - 2);
@@ -151,11 +152,11 @@ describe('scavenging: taking a card', () => {
     });
   });
 
-  it('costs 1 extra Appetite at night', () => {
+  it('costs 1 extra Energy at night', () => {
     const night = toNight(onForest());
     const s = withCard(night, { type: 'resource', resources: ['moss'] });
-    expect(hiker(run(s, { type: 'scavengeTake', card: 0 }), 'ash').stats.appetite).toBe(
-      hiker(s, 'ash').stats.appetite - 2,
+    expect(hiker(run(s, { type: 'scavengeTake', card: 0 }), 'ash').stats.energy).toBe(
+      hiker(s, 'ash').stats.energy - 2,
     );
   });
 

@@ -171,18 +171,27 @@ export function ScavengeWindow({
                 style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
               />
               <span className={styles.hikerName}>{hiker.name.toUpperCase()}</span>
-              <Icon name="utensils" size={14} />
+              {/* Work costs Energy (29-core-loop.md, section 1); Copier's bonus costs Appetite. */}
+              <Icon name="zap" size={14} />
               <span className={styles.change}>
-                {hiker.stats.appetite} →{' '}
+                {hiker.stats.energy} →{' '}
                 <b>
                   {Math.max(
                     0,
-                    hiker.stats.appetite -
-                      (open.took ? BALANCE.items.sackAppetite : scavengeCost(state, hiker)) -
-                      bonus.appetite,
+                    hiker.stats.energy -
+                      (open.took ? BALANCE.items.sackEnergy : scavengeCost(state, hiker)),
                   )}
                 </b>
               </span>
+              {bonus.appetite > 0 && (
+                <>
+                  <Icon name="utensils" size={14} />
+                  <span className={styles.change}>
+                    {hiker.stats.appetite} →{' '}
+                    <b>{Math.max(0, hiker.stats.appetite - bonus.appetite)}</b>
+                  </span>
+                </>
+              )}
             </span>
           )}
         </header>

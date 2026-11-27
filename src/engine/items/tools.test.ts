@@ -300,7 +300,7 @@ describe('scavenging tools', () => {
     expect(hiker(s, 'ash').boosts).toBeUndefined();
   });
 
-  it('Sack: keep another card, with no more Appetite, then Done', () => {
+  it('Sack: keep another card, with no more Energy, then Done', () => {
     let s = onM(3);
     s = run(s, use('ash', tool(s, 'ash', 'sack')), SCAVENGE('ash'), {
       type: 'scavengeFlip',
@@ -309,11 +309,12 @@ describe('scavenging tools', () => {
     s = run(s, takeAny(s, 0));
     expect(s.scavenge?.took).toBe(1);
     expect(s.scavenge?.cards[0]?.taken).toBe(true);
-    expect(hiker(s, 'ash').stats.appetite).toBe(9);
+    expect(hiker(s, 'ash').stats.energy).toBe(9);
     expect(validateAction(s, takeAny(s, 0))).toBe('That card is already taken.');
     s = run(s, takeAny(s, 1));
     expect(s.scavenge).toBeUndefined();
-    expect(hiker(s, 'ash').stats.appetite).toBe(9);
+    expect(hiker(s, 'ash').stats.energy).toBe(9);
+    expect(hiker(s, 'ash').stats.appetite).toBe(10);
     expect(s.log.filter((e) => e.kind === 'scavenge')).toHaveLength(2);
   });
 

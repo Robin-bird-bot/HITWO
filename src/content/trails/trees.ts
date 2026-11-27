@@ -275,9 +275,9 @@ export const HIKER_TREES: readonly HikerTrees[] = [
           step: 'upgrade',
           kind: 'passive',
           upgrades: 'finn-scavenger-t2',
-          text: `${copyBase} Scavenging first costs him no Appetite, and he sees ${B.copydog.cards} more cards when he scavenges last.`,
+          text: `${copyBase} Scavenging first costs him no Energy, and he sees ${B.copydog.cards} more cards when he scavenges last.`,
           changed: [
-            'Scavenging first costs him no Appetite',
+            'Scavenging first costs him no Energy',
             `he sees ${B.copydog.cards} more cards when he scavenges last`,
           ],
         }),

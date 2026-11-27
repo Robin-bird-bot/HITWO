@@ -140,15 +140,15 @@ function weatherSwapFor(state: GameState): Pick<DealInput, 'weatherSwap'> {
   };
 }
 
-/** The Appetite a scavenge costs (paid when the card is taken). */
+/** The Energy a scavenge costs, paid when the card is taken (29-core-loop.md, section 1). */
 export function scavengeCost(state: GameState, hiker: Hiker): number {
   const base =
-    BALANCE.scavenge.appetite + (state.phase === 'night' ? BALANCE.night.scavengeExtraAppetite : 0);
+    BALANCE.scavenge.energy + (state.phase === 'night' ? BALANCE.night.scavengeExtraEnergy : 0);
   return computeCost(
     state,
     [hiker],
     {
-      key: 'scavenge.appetite',
+      key: 'scavenge.energy',
       actorId: hiker.id,
       subjectId: hiker.id,
       role: 'actor',

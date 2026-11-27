@@ -29,19 +29,19 @@ export function tendAmount(state: GameState, hiker: Hiker): number {
   );
 }
 
-/** The Appetite Tend costs this hiker. */
+/** The Energy Tend costs this hiker (29-core-loop.md, section 1). */
 export function tendCost(state: GameState, hiker: Hiker): number {
   return computeCost(
     state,
     [hiker],
     {
-      key: 'tend.appetite',
+      key: 'tend.energy',
       actorId: hiker.id,
       subjectId: hiker.id,
       role: 'actor',
       phase: state.phase,
     },
-    BALANCE.abundance.tendAppetite,
+    BALANCE.abundance.tendEnergy,
   );
 }
 
@@ -68,6 +68,6 @@ export function applyTend(state: GameState, action: TendAction): void {
   changeAbundance(state, tendAmount(state, hiker));
   spendAction(state, hiker);
   pushEvent(state, { kind: 'tend', hikerId: hiker.id, from, to: state.abundance });
-  payCost(state, hiker, { appetite: tendCost(state, hiker), energy: 0, morale: 0 }, 'Tend');
+  payCost(state, hiker, { appetite: 0, energy: tendCost(state, hiker), morale: 0 }, 'Tend');
   fireAction(state, hiker, { kind: 'tend', role: 'actor', tileId: hiker.tileId });
 }
