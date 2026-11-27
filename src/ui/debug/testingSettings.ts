@@ -23,6 +23,22 @@ export const SHOW_PLACED_SETTING = deviceSetting<'on' | 'off'>(
   'off',
 );
 
+/**
+ * Skip packing (27-packing-screen.md, section 1): hiker select's Start packs
+ * at random and goes straight to the hike.
+ */
+export const SKIP_PACKING_SETTING = deviceSetting<'on' | 'off'>(
+  'hike-in-the-woods/test-skip-packing',
+  ['on', 'off'],
+  'off',
+);
+
+/** Skip packing is on (and the debug tools are). */
+export function useSkipPacking(): boolean {
+  const on = useDeviceSetting(SKIP_PACKING_SETTING) === 'on';
+  return on && debugEnabled();
+}
+
 /** Auto-pass minigames is on (and the debug tools are). */
 export function useAutoPass(): boolean {
   const on = useDeviceSetting(AUTO_PASS_SETTING) === 'on';

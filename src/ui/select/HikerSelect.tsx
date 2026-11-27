@@ -68,32 +68,42 @@ const GHOST_SCALE = 0.6;
 
 const nameOf = (id: string) => ROSTER_BY_ID.get(id)?.name ?? id;
 
+/** The spots as they were, so coming back from packing keeps the party. */
+export interface Selection {
+  party: Party;
+  starts: Starts;
+}
+
 export function HikerSelect({
+  remembered,
   onStart,
   onBack,
 }: {
+  remembered?: Selection | null;
   /** The run's hikers, in spot order, in their spot colors. */
-  onStart(hikers: HikerSetup[]): void;
+  onStart(hikers: HikerSetup[], selection: Selection): void;
   onBack(): void;
 }) {
   return (
     <PreviewLayer>
       <DragLayer>
-        <SelectScreen onStart={onStart} onBack={onBack} />
+        <SelectScreen remembered={remembered ?? null} onStart={onStart} onBack={onBack} />
       </DragLayer>
     </PreviewLayer>
   );
 }
 
 function SelectScreen({
+  remembered,
   onStart,
   onBack,
 }: {
-  onStart(hikers: HikerSetup[]): void;
+  remembered: Selection | null;
+  onStart(hikers: HikerSetup[], selection: Selection): void;
   onBack(): void;
 }) {
-  const [party, setParty] = useState<Party>(EMPTY_PARTY);
-  const [starts, setStarts] = useState<Starts>({});
+  const [party, setParty] = useState<Party>(remembered?.party ?? EMPTY_PARTY);
+  const [starts, setStarts] = useState<Starts>(remembered?.starts ?? {});
   /** A card from BY STARTING TRAIT brings its start along. */
   const withStart = (hikerId: string, start?: string) => {
     if (start) setStarts((s) => ({ ...s, [hikerId]: start }));
@@ -164,7 +174,7 @@ function SelectScreen({
               ? 'Pick a starting trait for each hiker first.'
               : undefined
           }
-          onClick={() => onStart(startingParty(party, starts))}
+          onClick={() => onStart(startingParty(party, starts), { party, starts })}
         >
           {startLabel(party)}
         </button>

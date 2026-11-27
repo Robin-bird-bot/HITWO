@@ -1,25 +1,15 @@
 /**
  * The packing screen's rules (docs/design/27-packing-screen.md, section 7):
  * the picks, the odds, respins, bonuses, Second Wind, the resource turns,
- * the hand-over to the hike, seeding and the card preview.
+ * the hand-over to the hike and seeding. The card preview's test is in
+ * src/ui/packing/preview.test.ts.
  */
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../config/balance';
 import { ITEMS } from '../content/items';
 import { DEFAULT_PARTY } from '../content/roster';
-import {
-  bagSlots,
-  counterRange,
-  createGame,
-  itemRangeText,
-  rangeWords,
-  resourceCount,
-  resourceLimit,
-} from '../engine';
+import { bagSlots, createGame, resourceCount, resourceLimit } from '../engine';
 import { seedRng } from '../engine/rng';
-import { ItemCard } from '../ui/items/ItemCard';
 import {
   PACK_TYPES,
   autoPack,
@@ -418,33 +408,5 @@ describe('seeding', () => {
     expect(play(77).reels).not.toEqual(play(78).reels);
     const seats = party(4);
     expect(autoPack({ seed: 5, seats })).toEqual(autoPack({ seed: 5, seats }));
-  });
-});
-
-describe('the card preview', () => {
-  const escape = (t: string) =>
-    t
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;');
-
-  it('every item that can land has a card, unrolled to ranges', () => {
-    for (const t of PACK_TYPES) {
-      for (const tier of [1, 2] as const) {
-        for (const id of itemPool(t, tier)) {
-          const def = ITEMS[id];
-          expect(def?.art, id).toBeTruthy();
-          if (!def) continue;
-          const html = renderToStaticMarkup(
-            createElement(ItemCard, { itemId: id, width: 230, unrolled: true }),
-          );
-          expect(html, id).toContain(escape(itemRangeText(def)));
-          const range = counterRange(def);
-          if (range) expect(html, id).toContain(rangeWords(range));
-        }
-      }
-    }
   });
 });

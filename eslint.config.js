@@ -13,8 +13,11 @@ const PURE_FILES = [
   'src/engine/**/*.{ts,tsx}',
   'src/content/**/*.{ts,tsx}',
   'src/config/**/*.{ts,tsx}',
+  // The packing screen's rules (Phase 10.9).
+  'src/packing/**/*.{ts,tsx}',
 ];
-const PURE_MESSAGE = 'src/engine, src/content and src/config must stay pure (CLAUDE.md rule 1).';
+const PURE_MESSAGE =
+  'src/engine, src/content, src/config and src/packing must stay pure (CLAUDE.md rule 1).';
 const RNG_MESSAGE = 'Use the seeded RNG stored in GameState (CLAUDE.md rule 2).';
 const TIME_MESSAGE =
   'Wall-clock time breaks replays. Pass time in through an action (CLAUDE.md rule 2).';
