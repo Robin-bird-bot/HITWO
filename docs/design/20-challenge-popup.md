@@ -206,6 +206,9 @@ Unchanged: resources on the GPS screen use the green pixel icons (`art/resources
 ---
 
 ## 7. Every game: how to play, rules, bars and cards
+
+**November 26 (evening): the Prepare cards' costs move to resource categories (Food, Building, Fiber, Fire, Trinkets). See `24-challenges-reset.md`, section 5, which wins where they differ.**
+
 **How to read this:**
 - **Food** means ×1 Meat, Fish or Mushroom.
 - Bold words in How to play are the red phrase. <angle brackets> are this run's numbers.

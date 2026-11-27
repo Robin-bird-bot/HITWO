@@ -1753,7 +1753,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Eve
 
 **Tests:** as in `20`, section 8, and `22`, section 6.
 
-### Phase 10.8, step 11: The last minigame batch
+### Phase 10.8, step 11: The last minigame batch (done)
 
 (New in the Nov 26 third-round update: `docs/UPDATE-2026-11-26-final-games.md`. The design is the new `docs/design/23-minigames-final.md`, with mockups in `docs/mockups/minigames/final-games/`. Builds on step 10's pop-up.)
 
@@ -1772,9 +1772,31 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Rul
 
 **Tests:** as in `23`, section 13.
 
-### Phase 10.8, next steps (outline only)
+### Phase 10.8, step 12: Challenges on the trail map
 
-- Hooking minigames into real challenges on the trail map, with Prepare and stakes.
+(New in the Nov 26 evening update: `docs/UPDATE-2026-11-26-challenges-on-map.md`. The designs are the new `docs/design/24-challenges-reset.md`, `25-challenges-on-the-map.md` and `26-fixes-and-wyatt-trees.md`. Mockups in `docs/mockups/minigames/new-challenges/`, `docs/mockups/minigames/fixes-nov-26-evening/` and `docs/mockups/infoboard/` (the Trail Infoboard prototype). New art: `assets/minigames/spooky-ghost/` and `assets/minigames/cracked-pots/`.)
+
+**Goal:** the minigames become the game's challenges, placed on the trail map, with Prepare paid from real packs and a punishment for failing. Wyatt: "We can make general guesses to costs and things so far, and then choose them after playtesting."
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ideas marked *(Claude's idea)* go behind a setting where they change gameplay a lot. Each spec's "Things to flag to Wyatt" goes in its PR.
+
+**Part A: fixes and two new games** (one PR)
+1. **The bar audit** (`26`, section 1): check every bar, report it as a table in the PR, and fix them all.
+2. **Camp Cleanup, Dodge and Sketchy Bridge** (`26`, sections 2 to 4).
+3. **Spooky Ghost! and Cracked Pots** (`24`, sections 6 and 7) in the testing tab, with their pop-ups.
+
+**Part B: the challenges on the map** (one PR)
+1. **The challenge content** (`24`): resource categories, punishments with the backup rule, the new costs, the 45 minigame challenges and the 22 cost cards. Retire the old challenges (`25`, section 1.1).
+2. **The pool, placed on tiles when a biome is made** (`25`, section 1).
+3. **Minigame challenges played from tiles** (`25`, section 3), and Prepare in the real game (`25`, section 5).
+4. **The Trail Infoboard** (`25`, section 2).
+5. **Testing tools** (`25`, section 3.2).
+
+**Part C: Wyatt's new trees** (one PR; Game Sight needs Part B's placed cards)
+1. **Levels within a step** (`26`, section 5.1).
+2. **Daredevil Loop** (Rule Changer, Rule Changer II, Minigame Master) and **Scout Trail** (Game Sight), replacing Smith Path (`26`, sections 5.2 to 5.4).
+
+**Tests:** as in `25`, section 6, and `26`, sections 1, 3.1 and 5.4.
 
 ---
 

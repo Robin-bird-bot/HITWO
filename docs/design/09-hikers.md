@@ -4,6 +4,8 @@ Wyatt's design for hiker traits, skill trees, party XP and morale types. This re
 
 ## The system
 
+**November 26 (evening): some steps now have levels (press a learned step again to raise it). See `26-fixes-and-wyatt-trees.md`, section 5.1.**
+
 - **Every hiker has 3 trees**, and each tree is one class. A hiker's 3 trees are their 3 class tags.
 - **Start of a run:** the player picks 1 of the hiker's 3 Tier 1 traits, for free.
 - **Each tree has 3 tiers.** A tier either adds a **new trait** or **upgrades** one the hiker already has (Leash Puller → Leash Puller II). An upgrade replaces the trait it upgrades.
@@ -221,6 +223,8 @@ Morale type: Ambivert.
 
 ### Wyatt: Naturalist, Daredevil, Smith
 
+**Replaced (November 26, evening): Wyatt's Daredevil Loop is now Rule Changer, Rule Changer II and Minigame Master, and his third tree is Scout Trail (Game Sight), replacing Smith Path. See `26-fixes-and-wyatt-trees.md`, sections 5.2 and 5.3.**
+
 Morale type: Energetic.
 
 **Naturalist Path**
@@ -248,6 +252,8 @@ Morale type: Energetic.
 | 3 | Master Smith | Upgrade, always on | He can craft Tier 3 tools, and sees 2 more cards when crafting tools. |
 
 ## Rules that need care
+
+**November 26 (evening): Rule Changer's rules here are replaced by `26-fixes-and-wyatt-trees.md`, section 5.2, which also covers Minigame Master and Game Sight (5.3).**
 
 - **Upgrades show the full text** of the trait, with what changed from the tier before in yellow (`changed` in the data).
 - **Move All** traits: "brought along" means moved by someone else's Move All. Leash Puller, Lead the Way, Short II, Whatcha Up To? and Experienced Traveler can stack when both hikers have them. Apply cost cuts before chances, and never go below 0 Appetite.

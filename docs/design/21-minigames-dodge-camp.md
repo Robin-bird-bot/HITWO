@@ -156,6 +156,9 @@ Add these rows to the two tables:
 ---
 
 ## 4. Camp Cleanup (it replaces Ants Are Marching, the planned snake game)
+
+**November 26 (evening): smaller grids, more obstacles (from Tier II), a shorter timer and an all-done countdown. See `26-fixes-and-wyatt-trees.md`, section 2, which wins.**
+
 Clean up the campsite as one long line of hikers, like Google's snake. See `mockups/dodge-new/30-camp-cleanup.png` and `30b-camp-cleanup-crash.png`.
 
 - **Movement and dodging,** any tile. It isn't a passing challenge: hikers pass or fail on their own, and those who fail lose [1] energy.
