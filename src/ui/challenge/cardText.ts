@@ -34,8 +34,8 @@ export function cardText(
       })
       .join('')
       .replace(/\{(\w+)\}/g, (whole, name: string) => fill(card, name, opts) ?? whole)
-      // "for 1 days" reads "for 1 day" once the number is rolled.
-      .replace(/\b1 (day|phase|night|resource|food card|tool|cap)s\b/g, '1 $1')
+      // "for 1 days" reads "for 1 day" (and "1 random resources", "1 random resource") once rolled.
+      .replace(/\b1 ((?:random )?)(day|phase|night|resource|food card|tool|cap)s\b/g, '1 $1$2')
       .trim()
   );
 }

@@ -431,8 +431,10 @@ function hintFor(state: GameState, open: OpenChallenge, card: ChallengeDef, draf
   }
   const who = draft.sections[t.section]?.hikerId;
   const name = who ? state.hikers.find((h) => h.id === who)?.name : undefined;
+  // "YOUR SINGLES: OIL · MOSS" reads "the singles space" here; the space itself lists them.
   const what = reqLabel(req, open, { state, ...(who ? { hikerId: who } : {}) })
     .toLowerCase()
+    .replace(/^(your|the party’s) (.*?):.*$/, '$2')
     .replaceAll(' · ', ' or ');
   const space = `${what} space${name ? ` for ${name}` : ''}`;
   if (req.kind === 'caps') return `Tap the ${space} to pay from the party purse.`;

@@ -265,5 +265,6 @@ describe('Camp Cleanup', () => {
       }
       expect(made, `Tier ${tier}`).toBeGreaterThanOrEqual(6);
     }
-  });
+    // 20 whole games: about 2 s alone, more when every test file runs at once.
+  }, 30000);
 });
