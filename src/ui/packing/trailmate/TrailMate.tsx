@@ -66,10 +66,13 @@ function noiseUrl(): string {
 
 const greenResource = (id: string) => asset(`resources-green/${id}.png`);
 
-/** An item's art in LCD greens (blank until it's made). */
+/** An item's art in LCD greens (blank until it's made); its type's icon when it has no art yet. */
 export function GreenItem({ itemId, className }: { itemId: string; className?: string }) {
   const def = ITEMS[itemId];
   const url = useGreenArt(def?.art ? ASSETS.itemArt(def.art) : undefined);
+  if (def && !def.art) {
+    return <Icon name={TYPE_ICON[def.type]} size={26} color="#2B3A23" strokeWidth={2.4} />;
+  }
   return url ? (
     <img className={className} src={url} alt="" draggable={false} />
   ) : (

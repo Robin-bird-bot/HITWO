@@ -1584,6 +1584,10 @@
     width: 100%;
   }
 }
+/* While the bar fills, it stands where the resources go. */
+.dl + .res {
+  display: none;
+}
 .left {
   font-family: var(--font-pixel);
   font-size: 9px;

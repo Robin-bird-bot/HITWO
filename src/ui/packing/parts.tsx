@@ -298,17 +298,17 @@ export function PartyRow({
                     </div>
                   );
                 })}
-              {view.opening === i && opened < bundles.length ? (
+              {/* TrailMate fills a download bar here while the bundles open. */}
+              {view.opening === i && opened < bundles.length && (
                 <div className={cx.dl}>
                   <i key={opened} />
                 </div>
-              ) : (
-                <div className={cx.res}>
-                  {resources.map((r, k) => (
-                    <span key={k}>{paint.resourceIcon(r, RESOURCE_BY_ID.get(r)?.name ?? r)}</span>
-                  ))}
-                </div>
               )}
+              <div className={cx.res}>
+                {resources.map((r, k) => (
+                  <span key={k}>{paint.resourceIcon(r, RESOURCE_BY_ID.get(r)?.name ?? r)}</span>
+                ))}
+              </div>
               {dropped > 0 && <span className={cx.left}>+{dropped} LEFT BEHIND</span>}
             </div>
           </div>

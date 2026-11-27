@@ -1800,7 +1800,7 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ide
 
 ---
 
-## Phase 10.9: The packing screen
+## Phase 10.9: The packing screen (done)
 
 (New in the Nov 26 late update: `docs/UPDATE-2026-11-26-packing-screen-v3.md`, which replaces both earlier packing-screen zips. The designs are the new `docs/design/27-packing-screen.md` (the rules and the cabinet look) and `28-packing-screen-trailmate.md` (the TrailMate look). Prototypes to match: `docs/mockups/packing/prototype.html` and `docs/mockups/packing-trailmate/prototype.html`, each with screenshots. Art: `assets/packing/squirrel-wheel.svg` and the greens recipe `assets/packing-trailmate/greenify.py`. The packing screen comes before the hike, so it doesn't depend on Phase 10.8 step 12.)
 
@@ -1815,6 +1815,11 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ide
 4. **The Lucky Trail Outfitters cabinet** (`27`, sections 2 and 5) as the second look, and the setting (Settings → Look → "Packing machine": TrailMate / Cabinet). A separate PR is fine.
 
 **Tests:** as in `27`, section 7.
+
+**Phase 10.9 notes (built Nov 26–27)**
+- The rules are `src/packing/logic.ts` (pure and seeded, linted like the engine), with a dry run of the hike (`seats.ts`) for START items and room. `createGame` takes `packed` in place of the random starting resources; tests, the debug panel and the title's test-hike picker keep the old resources.
+- The screen is `src/ui/packing/`: a director plays the rules step by step on a look (`trailmate/` or `cabinet/`), which draws the machine and plays its own effects and sounds. The hiker cards, drawers, card preview and controls are shared.
+- Calls made where the specs were silent (flagged in the PR): "replace my saved hike?" is asked before packing; picks are capped at the party's free bag room; Back keeps the party and asks first once something is packed; items with no art yet show their type's icon.
 
 ---
 

@@ -37,13 +37,14 @@ import type { Kit, Rect, ReelHandlers, Skin, SkinFx } from './machine';
 import { PACKING_SOUND_SETTING, usePackingLook, type PackingLook } from './packingSettings';
 import { Particles } from './particles';
 import { Drawers, Header, PartyRow } from './parts';
+import { CABINET } from './cabinet/skin';
 import { TRAILMATE } from './trailmate/skin';
 import { useDirector } from './useDirector';
 import styles from './PackingScreen.module.css';
 
 const SKINS: Readonly<Record<PackingLook, Skin>> = {
   trailmate: TRAILMATE,
-  cabinet: TRAILMATE,
+  cabinet: CABINET,
 };
 
 /** The look's background, behind the whole window. */
