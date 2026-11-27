@@ -23,6 +23,8 @@ import {
   workingNow,
 } from '../../engine';
 import type { ForecastView } from './forecastView';
+import { atLevel, stepLevelOf, STEPS } from '../../content/trails/trees';
+import { stepText } from '../../content/trails/traits';
 import { shade, stepBadge } from '../trails/stepLook';
 
 export type BadgeState = 'on' | 'ready' | 'used' | 'during' | 'empty';
@@ -246,7 +248,14 @@ export function traitBadges(state: GameState, hiker: Hiker, view?: ForecastView)
  * glyph, and for a toggle whether it's on and can be switched now.
  */
 function trailBase(state: GameState, hiker: Hiker, traitId: string, slot: number): BadgeInfo {
-  const base = stepBadge(traitId, slot);
+  // A step raised past level 1 says what it does now (26-fixes-and-wyatt-trees.md, section 5.1).
+  const step = STEPS.get(traitId)?.step;
+  const level = stepLevelOf(hiker, traitId);
+  const base = stepBadge(
+    traitId,
+    slot,
+    step && level > 1 ? { text: stepText({ ...step, ...atLevel(step, level) }) } : {},
+  );
   if (base.shape !== 'square') return base;
   const on = toggleOn(hiker, traitId);
   const canSwitch = hiker.status === 'active' && !blockingWindow(state);

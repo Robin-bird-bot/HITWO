@@ -82,7 +82,11 @@ import { finishSection, readyToLeave } from './station/checkIn';
 import { pushEvent } from './log';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
-import { applyResolveMinigame, validateResolveMinigame } from './challenges/minigame';
+import {
+  applyResolveMinigame,
+  passIfMastered,
+  validateResolveMinigame,
+} from './challenges/minigame';
 import { applyInfoboard, validateInfoboard } from './challenges/infoboard';
 
 /** What can happen while a scavenge is open (plus the debug tools). */
@@ -413,6 +417,8 @@ export function applyAction(state: GameState, action: Action): GameState {
       applyDebug(draft, action.op);
       break;
   }
+  // A minigame challenge that just opened: Minigame Master may pass it without playing.
+  passIfMastered(draft);
   // Scouts see the nodes around wherever they are now.
   scoutAround(draft);
   // The XP row rule: a hiker who moved forward starts their new row now.

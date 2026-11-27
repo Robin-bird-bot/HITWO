@@ -30,6 +30,7 @@ import {
   effects,
   emptySlot,
   fillSlot,
+  freeKeys,
   slotsFor,
   spend,
   type Fills,
@@ -137,7 +138,10 @@ export function MinigameFlow({
 
   const start = () => {
     if (stage !== 'popup') return;
-    if (!testMode) spentRef.current = spend(packs, slots, fills).spent;
+    if (!testMode) {
+      const free = freeKeys(fills, challenge.free?.count ?? 0);
+      spentRef.current = spend(packs, slots, fills, free).spent;
+    }
     if (skip) {
       // SKIP IT: everyone passes without playing.
       setResult(passFailResult(ids, () => true));

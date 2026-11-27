@@ -18,6 +18,7 @@ import {
   hikersWhoHaventActed,
   atLastSection,
   abilitiesFor,
+  abilityOptions,
   isHikeOver,
   resourceCount,
   isAccomplished,
@@ -797,6 +798,11 @@ export function GameScreen({
     selected && mode.kind === 'abilityTile'
       ? abilitiesFor(state, selected).find((a) => a.ability.id === mode.abilityId)
       : undefined;
+  // Rule Changer at its higher levels: what the picked tile's challenge can become.
+  const pickOptions =
+    abilityTile && abilityTileId && selected
+      ? abilityOptions(state, selected, abilityTile.ability.id, abilityTileId)
+      : [];
   const targets = tactical
     ? tilesAhead(state).map((tileId) => ({ tileId, reason: null }))
     : abilityTile
@@ -1645,9 +1651,19 @@ export function GameScreen({
                     (section.tiles[abilityTileId]
                       ? tileName(section.tiles[abilityTileId])
                       : 'that tile')
-                  }. ${abilityTile.usesLeft - 1} use${abilityTile.usesLeft - 1 === 1 ? '' : 's'} left this section after this.`}
+                  }. ${abilityTile.usesLeft - 1} use${abilityTile.usesLeft - 1 === 1 ? '' : 's'} left this section after this.${
+                    pickOptions.length ? ' Pick what it becomes:' : ''
+                  }`}
                   confirmLabel="Yes, use it"
                   cancelLabel="Not now"
+                  options={pickOptions}
+                  onOption={(option) => {
+                    const id = abilityTileId;
+                    setAbilityTileId(null);
+                    setMode({ kind: 'idle' });
+                    setNote(undefined);
+                    onAbility(abilityTile.ability.id, `${id}|${option}`);
+                  }}
                   onCancel={() => setAbilityTileId(null)}
                   onConfirm={() => {
                     const id = abilityTileId;

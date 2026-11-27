@@ -71,7 +71,8 @@ const items = (...ids: string[]): StartingBag => ({ items: ids });
 /** In the roster's order: the 10 starters first, then families, then the variants. */
 const ENTRIES: RosterHiker[] = [
   // ── Starters (07-characters.md, "Roster") ──
-  hiker('wyatt', 'Wyatt', 'human', ['naturalist', 'daredevil', 'smith'], {
+  // Nov 26 evening: Scout in place of Smith (26-fixes-and-wyatt-trees.md, section 5.3).
+  hiker('wyatt', 'Wyatt', 'human', ['naturalist', 'daredevil', 'scout'], {
     title: 'Rain Hiker',
     starter: true,
     // Phase 10.7: Skill Trails (src/content/trails/trees.ts) in place of slots.

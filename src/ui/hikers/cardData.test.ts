@@ -152,7 +152,9 @@ describe('the card', () => {
   it('the back: the 3 trees and the bag bar', () => {
     const wyatt = html({ hikerId: 'wyatt', side: 'back' });
     expect(wyatt).toContain('Naturalist Path');
-    expect(wyatt).toContain('Rule Changer III');
+    // Nov 26 evening: Minigame Master tops the Daredevil Loop; Scout Trail replaced Smith Path.
+    expect(wyatt).toContain('Minigame Master');
+    expect(wyatt).toContain('Scout Trail');
     expect(wyatt).toContain('RAIN JACKET');
   });
 

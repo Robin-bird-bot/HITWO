@@ -19,6 +19,7 @@ import {
   effects,
   emptySlot,
   fillSlot,
+  freeKeys,
   FOOD,
   group,
   item,
@@ -303,6 +304,17 @@ describe('effects and spending', () => {
     expect(packs.mom!.resources).toEqual({ meat: 1, fish: 1, grass: 1, moss: 2 });
     expect(packs.ellie).toEqual(PACKS.ellie);
     expect(spent).toHaveLength(4);
+  });
+
+  it('Rule Changer II: the first slots filled are free, in the order they were filled', () => {
+    const fills = filled();
+    const order = Object.keys(fills);
+    expect(freeKeys(fills, 1)).toEqual(order.slice(0, 1));
+    expect(freeKeys(fills, 2)).toEqual(order.slice(0, 2));
+    expect(freeKeys(fills, 0)).toEqual([]);
+    const all = spend(PACKS, SLOTS, fills);
+    const free = spend(PACKS, SLOTS, fills, freeKeys(fills, 2));
+    expect(free.spent).toHaveLength(all.spent.length - 2);
   });
 
   it('items lose one use (gone at none); an item that doesn’t track uses stays, and is listed', () => {

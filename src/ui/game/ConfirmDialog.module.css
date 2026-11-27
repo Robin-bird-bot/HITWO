@@ -62,6 +62,14 @@
   color: var(--page);
 }
 
+/* Pick one (Rule Changer): the options, one per row, over the cancel button. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
 .backdrop:focus {
   outline: none;
 }

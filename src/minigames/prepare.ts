@@ -480,7 +480,16 @@ export interface Spent {
 }
 
 /**
- * Start: what's in the slots comes out of the owners' packs. Resources are
+ * The slots that cost nothing: the first `count` filled, in the order they
+ * were filled, whoever filled them (Rule Changer II's free Prepare slots).
+ */
+export const freeKeys = (fills: Fills, count: number): string[] =>
+  Object.keys(fills)
+    .filter((k) => fills[k])
+    .slice(0, Math.max(0, count));
+
+/**
+ * Start: what's in the slots comes out of the owners' packs (not the free ones). Resources are
  * taken; an item loses one use and is gone at none. An item that doesn't
  * track uses (clothes, trinkets) stays, and is listed in `untracked`.
  */
@@ -488,6 +497,7 @@ export function spend(
   packs: Packs,
   slots: readonly Slot[],
   fills: Fills,
+  free: readonly string[] = [],
 ): { packs: Packs; spent: Spent[]; untracked: string[] } {
   const next: Record<string, { resources: Partial<Record<string, number>>; items: PackItem[] }> =
     Object.fromEntries(
@@ -501,7 +511,7 @@ export function spend(
   const usedUids = new Set<string>();
   for (const s of slots) {
     const f = fills[s.key];
-    if (!f) continue;
+    if (!f || free.includes(s.key)) continue;
     const pack = next[f.hiker];
     if (!pack) continue;
     spent.push({ hiker: f.hiker, thing: f.thing, count: s.card.need });

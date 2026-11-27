@@ -36,8 +36,6 @@ const ICONS: Readonly<Record<string, string>> = {
   'wink-architect-t3': 'master-architect',
   'wyatt-naturalist-t1': 'rain-lover',
   'wyatt-daredevil-t1': 'rule-changer',
-  'wyatt-smith-t2': 'artisan-crafter',
-  'wyatt-smith-t3': 'master-crafter',
 };
 
 /** A step's icon: its own, or the one its chain started with. */

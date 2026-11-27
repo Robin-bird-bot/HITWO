@@ -17,6 +17,7 @@ export { hikersWhoHaventActed } from './dayLoop';
 export { moveCost, moveAllCost, type HikerCost } from './costs';
 export {
   abilitiesFor,
+  abilityOptions,
   workingTrait,
   type AvailableAbility,
   type TraitDef,
@@ -46,6 +47,7 @@ export {
   heldTraits,
   holdsToggle,
   learnReason,
+  levelCost,
   rootStep,
   SPEND_WHEN,
   stepCost,

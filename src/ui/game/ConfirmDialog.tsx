@@ -14,6 +14,12 @@ interface ConfirmDialogProps {
   lines?: readonly string[];
   /** Something under the buttons (a "Don't ask again" box). */
   extra?: ReactNode;
+  /**
+   * Pick one: a button each in place of the confirm button; picking one is
+   * the yes (Rule Changer's 1 of 2 or 4).
+   */
+  options?: readonly { id: string; label: string }[];
+  onOption?(id: string): void;
   onConfirm(): void;
   onCancel(): void;
 }
@@ -31,6 +37,8 @@ export function ConfirmDialog({
   focusCancel = false,
   lines,
   extra,
+  options,
+  onOption,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -74,13 +82,29 @@ export function ConfirmDialog({
             ))}
           </ul>
         )}
+        {options && options.length > 0 && (
+          <div className={styles.options}>
+            {options.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                className={styles.confirm}
+                onClick={() => onOption?.(o.id)}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className={styles.buttons}>
           <button ref={cancelRef} type="button" className={styles.cancel} onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
-            {confirmLabel}
-          </button>
+          {!options?.length && (
+            <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
+              {confirmLabel}
+            </button>
+          )}
         </div>
         {extra}
       </div>

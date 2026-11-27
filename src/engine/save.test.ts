@@ -3,7 +3,7 @@ import { applyAction } from './applyAction';
 import { SAVE_VERSION, deserialize, serialize } from './save';
 import { CARDS } from '../content/challenges';
 import { createGame } from './newGame';
-import { END, fixtureGame, fixtureHiker, run } from './test/fixtures';
+import { END, fixtureGame, fixtureHiker, run, trailGame } from './test/fixtures';
 import type { Action, GameState } from './types';
 
 const SCRIPT: Action[] = [
@@ -191,5 +191,58 @@ describe('the Nov 26 evening challenge reset (save v22 → v23)', () => {
     const now = s.section.tiles[tile.id]!.revealedCard;
     expect(now?.cardId).not.toBe('withered-forest');
     expect(CARDS[now!.cardId]?.kind).toBe('challenge');
+  });
+});
+
+describe('Wyatt’s new trees (save v23 → v24)', () => {
+  /** A v23 save where Wyatt learned these steps (the log says what each cost). */
+  const oldSave = (learned: { id: string; cost: number; start?: true }[], points = 0) => {
+    const game = trailGame([['wyatt', 'wyatt-naturalist']]);
+    const wyatt = game.hikers.find((h) => h.id === 'wyatt')!;
+    wyatt.classes = ['naturalist', 'daredevil', 'smith'];
+    wyatt.trails = { learned: learned.map((l) => l.id) };
+    wyatt.slots = learned.map((l) => ({ type: 'trail', traitId: l.id }));
+    game.party = { xp: 0, level: 3, points };
+    game.log = learned.map((l, i) => ({
+      id: i,
+      day: 1,
+      phase: 'night' as const,
+      kind: 'learned' as const,
+      hikerId: 'wyatt',
+      stepId: l.id,
+      cost: l.cost,
+      ...(l.start ? { start: l.start } : {}),
+    }));
+    const loaded = deserialize(JSON.stringify({ ...JSON.parse(serialize(game)), saveVersion: 23 }));
+    if (!loaded.ok) throw new Error(loaded.reason);
+    return loaded.state;
+  };
+  const wyattOf = (s: GameState) => s.hikers.find((h) => h.id === 'wyatt')!;
+
+  it('Smith steps and the old Rule Changer II and III are unlearned, and their points come back', () => {
+    const s = oldSave(
+      [
+        { id: 'wyatt-naturalist-t1', cost: 0, start: true },
+        { id: 'wyatt-daredevil-t1', cost: 2 },
+        { id: 'wyatt-daredevil-t2', cost: 1 },
+        { id: 'wyatt-smith-t1', cost: 2 },
+      ],
+      1,
+    );
+    expect(s.saveVersion).toBe(SAVE_VERSION);
+    const w = wyattOf(s);
+    expect(w.trails?.learned).toEqual(['wyatt-naturalist-t1', 'wyatt-daredevil-t1']);
+    expect(w.slots.map((x) => x.traitId)).toEqual(['wyatt-naturalist-t1', 'wyatt-daredevil-t1']);
+    expect(w.classes).toEqual(['naturalist', 'daredevil', 'scout']);
+    expect(s.party?.points).toBe(1 + 1 + 2);
+  });
+
+  it('a hiker who started on Smith Path starts on the Scout Trail instead, free', () => {
+    const s = oldSave([
+      { id: 'wyatt-smith-t1', cost: 0, start: true },
+      { id: 'wyatt-smith-t2', cost: 1 },
+    ]);
+    expect(wyattOf(s).trails?.learned).toEqual(['wyatt-scout-t1']);
+    expect(s.party?.points).toBe(1);
   });
 });

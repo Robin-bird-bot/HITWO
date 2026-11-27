@@ -23,6 +23,7 @@ import {
   type OpenChallenge,
   type PrepSpend,
 } from '../../engine';
+import { freePrepareSlots } from '../../engine/effects';
 import {
   minigameSettings,
   openMinigameCard,
@@ -44,6 +45,8 @@ export function popupFor(state: GameState, open: OpenChallenge): MinigameChallen
   const art = versionOf(card, open.version)?.artFile ?? card.artFile ?? card.id;
   const poster = POSTERS[card.id] ?? (card.art ? asset(`challenges/${art}.jpg`) : undefined);
   const here = challengeHikers(state, open);
+  // Rule Changer II: the first Prepare slots filled cost nothing.
+  const free = freePrepareSlots(state, here);
   const fail = cardText(card, card.penaltyText, { rolls: open.rolls, at: tier }).replace(
     /^If (failed|caught):\s*/i,
     '',
@@ -66,6 +69,7 @@ export function popupFor(state: GameState, open: OpenChallenge): MinigameChallen
         value: fail.charAt(0).toUpperCase() + fail.slice(1),
       },
     ],
+    ...(free ? { free } : {}),
   };
 }
 

@@ -68,9 +68,12 @@ export function PrepSlot({
   onPeek,
   onOpen,
   onEmpty,
+  free,
 }: {
   slot: Slot;
   fill?: Fill | undefined;
+  /** It costs nothing: "FREE (WYATT)" in place of its cost (Rule Changer II). */
+  free?: string;
   /** The colors of the hikers who could fill it now. */
   who: readonly string[];
   /** The filled slot's owner's color. */
@@ -94,7 +97,7 @@ export function PrepSlot({
   }, [many, fill, reduced]);
   const ref = useRef<HTMLButtonElement>(null);
   const label = fill
-    ? `${slot.card.title}: ${thingName(fill.thing)}${badge ? `, ${badge.text}` : ''}. Press to change.`
+    ? `${slot.card.title}: ${thingName(fill.thing)}${badge ? `, ${badge.text}` : ''}${free ? `, ${free.toLowerCase()}` : ''}. Press to change.`
     : `${slot.card.title}: takes ${costText(slot.card).toLowerCase()}. Press to pick.`;
   return (
     <span className={styles.slotWrap}>
@@ -149,6 +152,7 @@ export function PrepSlot({
           x
         </button>
       )}
+      {fill && free && <span className={styles.freeTag}>{free}</span>}
       {fill && badge && (
         <span
           className={styles.badge}

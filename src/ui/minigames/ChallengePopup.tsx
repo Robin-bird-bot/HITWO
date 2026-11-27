@@ -25,6 +25,7 @@ import {
   effectOf,
   effectOpen,
   nextStep,
+  freeKeys,
   orderCards,
   prepFor,
   targetOpen,
@@ -217,11 +218,15 @@ export function ChallengePopup({
     return { text: e.short };
   };
 
+  // Rule Changer II: the first slots filled cost nothing (FREE (WYATT)).
+  const free = new Set(testMode ? [] : freeKeys(fills, challenge.free?.count ?? 0));
+  const freeTag = challenge.free ? `FREE (${challenge.free.who.toUpperCase()})` : undefined;
   const slotFor = (s: Slot) => (
     <PrepSlot
       key={s.key}
       slot={s}
       fill={fills[s.key]}
+      {...(free.has(s.key) && freeTag ? { free: freeTag } : {})}
       who={whoCanFill(s, slots, fills, packs, order).map(color)}
       owner={fills[s.key] ? color(fills[s.key]!.hiker) : undefined}
       badge={badgeOf(s)}

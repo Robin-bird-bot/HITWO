@@ -41,6 +41,53 @@ export interface TrailStep {
   uses?: string;
   /** Its own cost in points, when it isn't the tier's (Wyatt wants per-step costs later). */
   cost?: number;
+  /**
+   * Levels past the first (26-fixes-and-wyatt-trees.md, section 5.1): once
+   * learned, pressing the step again raises it to the next one.
+   */
+  levels?: readonly StepLevel[];
+  /** A toggle that starts off (Minigame Master); every other toggle starts on. */
+  startsOff?: true;
+}
+
+/** A step's next level: what it does then, the words that changed, and its cost. */
+export interface StepLevel {
+  text?: string;
+  /** A toggle: what it does when on (and off, if that changes too). */
+  on?: string;
+  off?: string;
+  /** Parts of this level's text that changed from the level before. */
+  changed?: readonly string[];
+  /** Its own cost in points, when it isn't BALANCE.trails.cost.level. */
+  cost?: number;
+}
+
+/** How many levels a step has (1 for a step without levels). */
+export const levelCount = (step: Pick<TrailStep, 'levels'>): number =>
+  1 + (step.levels?.length ?? 0);
+
+/** The level a hiker has a step at: 0 when not learned, 1 when learned, more when pressed again. */
+export function stepLevelOf(
+  h: { trails?: { learned: readonly string[]; levels?: Partial<Record<string, number>> } },
+  stepId: string,
+): number {
+  if (!h.trails?.learned.includes(stepId)) return 0;
+  return h.trails.levels?.[stepId] ?? 1;
+}
+
+/** A step's words at a level (1 is the step itself). */
+export function atLevel(
+  step: TrailStep,
+  level: number,
+): Pick<TrailStep, 'text' | 'on' | 'off' | 'changed'> {
+  const extra = level > 1 ? step.levels?.[level - 2] : undefined;
+  if (!extra) return step;
+  return {
+    ...((extra.text ?? step.text) ? { text: extra.text ?? step.text } : {}),
+    ...((extra.on ?? step.on) ? { on: extra.on ?? step.on } : {}),
+    ...((extra.off ?? step.off) ? { off: extra.off ?? step.off } : {}),
+    ...(extra.changed ? { changed: extra.changed } : {}),
+  };
 }
 
 export interface Tree {
@@ -94,7 +141,7 @@ const winkArchitect = step('wink-architect');
 const winkPacker = step('wink-packer');
 const wyattNaturalist = step('wyatt-naturalist');
 const wyattDaredevil = step('wyatt-daredevil');
-const wyattSmith = step('wyatt-smith');
+const wyattScout = step('wyatt-scout');
 
 const LEASH_ON = `Finn’s Move All costs him ${LP.energy} Energy instead of any Appetite.`;
 const copyBase =
@@ -149,14 +196,14 @@ const [artisanArch, masterArch] = craftTiers(
   'Architect',
   'shelters',
 );
-const [artisanSmith, masterSmith] = craftTiers(
-  wyattSmith,
-  'Wyatt',
-  'He',
-  'Smith',
-  'Smith',
-  'tools',
-);
+const RC = B.ruleChanger;
+const MM = B.minigameMaster;
+const GS = B.gameSight;
+const SWITCH = 'Switch a revealed minigame challenge next to Wyatt';
+const masterOn = (energy: number, uses: string) =>
+  `The next minigame challenge Wyatt lands on is passed without playing, for ${energy} Energy from Wyatt. Then this turns off. ${uses} per section.`;
+const sight = (chance: string) =>
+  `At the start of each phase, each minigame challenge next to Wyatt has ${chance} to be revealed.`;
 
 export const HIKER_TREES: readonly HikerTrees[] = [
   {
@@ -499,32 +546,94 @@ export const HIKER_TREES: readonly HikerTrees[] = [
         wyattDaredevil(1, 'Rule Changer', {
           step: 'new',
           kind: 'usable',
-          uses: '1 per section',
-          text: 'Swap a revealed Tier 1 challenge on a tile next to Wyatt for another random Tier 1 challenge.',
+          uses: `${RC.uses} per section`,
+          text: `${SWITCH} for a random one of the same tier.`,
+          levels: [
+            {
+              text: `${SWITCH}: pick 1 of ${RC.picks[1]} of the same tier.`,
+              changed: [`pick 1 of ${RC.picks[1]}`],
+            },
+            {
+              text: `${SWITCH}: pick 1 of ${RC.picks[2]} of the same tier.`,
+              changed: [`pick 1 of ${RC.picks[2]}`],
+            },
+          ],
         }),
         wyattDaredevil(2, 'Rule Changer II', {
           step: 'upgrade',
           kind: 'usable',
           upgrades: 'wyatt-daredevil-t1',
-          uses: `${B.ruleChanger.uses[2]} per section`,
-          text: 'Swap a revealed Tier 1 or 2 challenge on any tile for another random one of the same tier.',
-          changed: ['Tier 1 or 2', 'any tile'],
+          uses: `${RC.uses} per section`,
+          text: 'As Rule Changer. When Wyatt lands on a minigame challenge, the first Prepare slot is free.',
+          changed: ['the first Prepare slot is free'],
+          levels: [
+            {
+              text: 'As Rule Changer. When Wyatt lands on a minigame challenge, the first two Prepare slots are free.',
+              changed: ['the first two Prepare slots are free'],
+            },
+          ],
         }),
-        wyattDaredevil(3, 'Rule Changer III', {
-          step: 'upgrade',
-          kind: 'usable',
-          upgrades: 'wyatt-daredevil-t2',
-          uses: `${B.ruleChanger.uses[3]} per section`,
-          text: 'Remove the challenge from any tile, even one nobody has revealed. If there’s no challenge there, the use is wasted.',
-          changed: [
-            'Remove the challenge from any tile, even one nobody has revealed. If there’s no challenge there, the use is wasted.',
+        wyattDaredevil(3, 'Minigame Master', {
+          step: 'new',
+          kind: 'toggle',
+          startsOff: true,
+          on: masterOn(MM.energy[0]!, 'Once'),
+          off: 'Nothing.',
+          levels: [
+            { on: masterOn(MM.energy[1]!, 'Once'), changed: [`${MM.energy[1]} Energy`] },
+            {
+              on: masterOn(MM.energy[2]!, 'Twice'),
+              changed: [`${MM.energy[2]} Energy`, 'Twice per section'],
+            },
           ],
         }),
       ]),
-      tree('wyatt-smith', 'smith', [
-        wyattSmith(1, 'Toy Chest', { step: 'new', kind: 'grant', ...recipes('tool') }),
-        artisanSmith,
-        masterSmith,
+      tree('wyatt-scout', 'scout', [
+        wyattScout(1, 'Game Sight', {
+          step: 'new',
+          kind: 'passive',
+          text: sight(`a ${pct(GS.chance[0]!)} chance`),
+          levels: [
+            {
+              text: sight(`a ${pct(GS.chance[1]!)} chance`),
+              changed: [pct(GS.chance[1]!)],
+            },
+            {
+              text: sight(`a ${pct(GS.chance[2]!)} chance`),
+              changed: [pct(GS.chance[2]!)],
+            },
+            {
+              text: 'At the start of each phase, every minigame challenge next to Wyatt is revealed.',
+              changed: ['every minigame challenge next to Wyatt is revealed'],
+            },
+          ],
+        }),
+        wyattScout(2, 'Game Sight II', {
+          step: 'upgrade',
+          kind: 'passive',
+          upgrades: 'wyatt-scout-t1',
+          text: `As Game Sight, up to ${GS.reach[1]} tiles away.`,
+          changed: [`up to ${GS.reach[1]} tiles away`],
+          levels: [
+            {
+              text: `As Game Sight, up to ${GS.reach[2]} tiles away.`,
+              changed: [`up to ${GS.reach[2]} tiles away`],
+            },
+          ],
+        }),
+        wyattScout(3, 'Game Sight III', {
+          step: 'upgrade',
+          kind: 'passive',
+          upgrades: 'wyatt-scout-t2',
+          text: 'As Game Sight II, and it reveals cost cards too.',
+          changed: ['and it reveals cost cards too'],
+          levels: [
+            {
+              text: 'As Game Sight II, and it reveals cost cards and opportunities too.',
+              changed: ['and opportunities'],
+            },
+          ],
+        }),
       ]),
     ],
   },

@@ -43,6 +43,11 @@ export interface MinigameChallenge {
   options?: readonly Option[];
   /** What failing costs, as the pop-up shows it (none for a test challenge). */
   ifHit: readonly { who: 'each' | 'everyone'; label: string; value: string }[];
+  /**
+   * The first Prepare slots filled cost nothing, and whose gift that is
+   * (Rule Changer II; 26-fixes-and-wyatt-trees.md, section 5.2).
+   */
+  free?: { count: number; who: string };
 }
 
 /**

@@ -12,10 +12,16 @@
  *   `hiker.slots` lists the traits held (type `trail`), so every hook point
  *   reads them as it reads any trait.
  * - A toggle (Leash Puller) starts on and is switched with a free action.
+ *   One that says so starts off (Minigame Master).
+ * - **Levels** (26-fixes-and-wyatt-trees.md, section 5.1): a learned step
+ *   with levels is pressed again to raise it, for [1] point a level. A level
+ *   needs the one before it, not a higher party level.
  */
 import { BALANCE } from '../config/balance';
 import { TRAITS } from '../content/traits';
 import {
+  levelCount,
+  stepLevelOf,
   STEPS,
   TREES_BY_HIKER,
   type HikerTrees,
@@ -93,6 +99,14 @@ export function stepCost(step: TrailStep): number {
   return B.cost.openTree;
 }
 
+/** What a learned step's next level costs, or undefined when it's at its last level. */
+export function levelCost(h: Hiker, stepId: string): number | undefined {
+  const step = STEPS.get(stepId)?.step;
+  const level = stepLevelOf(h, stepId);
+  if (!step || level < 1 || level >= levelCount(step)) return undefined;
+  return step.levels?.[level - 1]?.cost ?? B.cost.level;
+}
+
 /** The party level a step needs (Tier 1: any). */
 export const unlockLevel = (step: TrailStep): number =>
   step.tier === 1 ? 0 : B.unlockLevel[step.tier];
@@ -119,7 +133,16 @@ export function learnReason(
     return `${h.name} can’t learn that.`;
   }
   if (h.status === 'abandoned') return `${h.name} has left the hike.`;
-  if (hasLearned(h, stepId)) return 'Already learned.';
+  if (hasLearned(h, stepId)) {
+    // Pressed again: its next level, if it has one.
+    const next = levelCost(h, stepId);
+    if (next === undefined) {
+      return levelCount(place.step) > 1 ? 'At its last level.' : 'Already learned.';
+    }
+    if (partyOf(state).points < next) return `Needs ${next} point${next === 1 ? '' : 's'}.`;
+    if (!anyTime && !canSpendNow(state)) return SPEND_WHEN;
+    return undefined;
+  }
   if (place.below && !hasLearned(h, place.below.id)) return `Learn ${place.below.name} first.`;
   const party = partyOf(state);
   const level = unlockLevel(place.step);
@@ -142,16 +165,35 @@ export function learnStep(
 ): void {
   const place = placeOf(stepId);
   if (!place) return;
+  if (hasLearned(h, stepId)) {
+    raiseLevel(state, h, stepId);
+    return;
+  }
   const cost = start ? 0 : stepCost(place.step);
   h.trails ??= { learned: [] };
   h.trails.learned.push(stepId);
   syncTrailSlots(h);
+  // A toggle that starts off (Minigame Master).
+  if (place.step.kind === 'toggle' && place.step.startsOff) {
+    h.trails.off = [...new Set([...(h.trails.off ?? []), rootStep(stepId)])];
+  }
   if (cost) {
     const party = (state.party ??= { xp: 0, level: 0, points: 0 });
     party.points = Math.max(0, party.points - cost);
   }
   pushEvent(state, { kind: 'learned', hikerId: h.id, stepId, cost, ...(start ? { start } : {}) });
   TRAITS[stepId]?.hooks?.onLearn?.(effectContext(state, h));
+}
+
+/** A learned step's next level: its points are paid, and it's logged. */
+function raiseLevel(state: GameState, h: Hiker, stepId: string): void {
+  const cost = levelCost(h, stepId);
+  if (cost === undefined || !h.trails) return;
+  const level = stepLevelOf(h, stepId) + 1;
+  h.trails.levels = { ...h.trails.levels, [stepId]: level };
+  const party = (state.party ??= { xp: 0, level: 0, points: 0 });
+  party.points = Math.max(0, party.points - cost);
+  pushEvent(state, { kind: 'learned', hikerId: h.id, stepId, cost, level });
 }
 
 /** Gives a designed hiker their trees, starting with one tree's Tier 1 (the first by default). */

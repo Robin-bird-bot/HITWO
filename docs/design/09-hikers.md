@@ -4,8 +4,6 @@ Wyatt's design for hiker traits, skill trees, party XP and morale types. This re
 
 ## The system
 
-**November 26 (evening): some steps now have levels (press a learned step again to raise it). See `26-fixes-and-wyatt-trees.md`, section 5.1.**
-
 - **Every hiker has 3 trees**, and each tree is one class. A hiker's 3 trees are their 3 class tags.
 - **Start of a run:** the player picks 1 of the hiker's 3 Tier 1 traits, for free.
 - **Each tree has 3 tiers.** A tier either adds a **new trait** or **upgrades** one the hiker already has (Leash Puller → Leash Puller II). An upgrade replaces the trait it upgrades.
@@ -13,6 +11,7 @@ Wyatt's design for hiker traits, skill trees, party XP and morale types. This re
 - **Costs:** a Tier 2 step costs [1] point and a Tier 3 step [2]. Opening another tree (its Tier 1) costs [2]. Later, some steps may get their own cost, so keep an optional per-step cost in the data.
 - **Unlocks:** Tier 1 at any party level, Tier 2 at party level [2], Tier 3 at [4]. A step also needs the step below it in the same tree.
 - **When to spend:** at night or at a ranger station, so leveling never interrupts a move.
+- **Levels within a step** (November 26, evening; `26-fixes-and-wyatt-trees.md`, section 5.1): some steps have levels. Once a step is learned, pressing it again raises it to its next level for [1] point. A level needs the one before it, not a higher party level. The panel shows pips under the badge (●○○), the current level's text, and the next level in the hover. An upgrade keeps the level of the step it upgrades (Rule Changer II uses Rule Changer's level for its picks).
 - **No trait slots.** Morale is a morale type, separate from the trees.
 - Only **Finn, Ellie, Wyatt, Mom, Gdog and Wink** have trees. Every other hiker is locked for now.
 
@@ -221,9 +220,9 @@ Morale type: Ambivert.
 | 2 | The Proper Way | New trait, always on | Tools in Wink's pack have 1 more use. The extra use is lost if the tool is traded away. |
 | 3 | Prepper | New trait, always on | Wink doesn't set off challenges that are already revealed (by anyone). The challenge stays for the others. Moving onto that tile with other hikers: they do the challenge, Wink sits it out (no reward, no penalty). Moving there alone: nothing happens and the challenge stays. |
 
-### Wyatt: Naturalist, Daredevil, Smith
+### Wyatt: Naturalist, Daredevil, Scout
 
-**Replaced (November 26, evening): Wyatt's Daredevil Loop is now Rule Changer, Rule Changer II and Minigame Master, and his third tree is Scout Trail (Game Sight), replacing Smith Path. See `26-fixes-and-wyatt-trees.md`, sections 5.2 and 5.3.**
+**Updated November 26 (evening):** the Daredevil Loop is Rule Changer, Rule Changer II and Minigame Master, and his third tree is the Scout Trail (Game Sight), replacing Smith Path. Steps with levels list each level. See `26-fixes-and-wyatt-trees.md`, sections 5.2 and 5.3.
 
 Morale type: Energetic.
 
@@ -239,21 +238,19 @@ Morale type: Energetic.
 
 | Tier | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| 1 | **Rule Changer** | New trait, usable (1 per section) | Swap a revealed Tier 1 challenge on a tile next to Wyatt for another random Tier 1 challenge. |
-| 2 | Rule Changer II | Upgrade, usable (2 per section) | Swap a revealed Tier 1 or 2 challenge on any tile for another random one of the same tier. |
-| 3 | Rule Changer III | Upgrade, usable (2 per section) | Remove the challenge from any tile, even one nobody has revealed. If there's no challenge there, the use is wasted. |
+| 1 | **Rule Changer** | New trait, usable ([1] per section) | Switch a revealed minigame challenge on a tile next to Wyatt to a random minigame challenge of the same tier. **Level 2:** pick 1 of 2. **Level 3:** pick 1 of 4. |
+| 2 | Rule Changer II | Upgrade, usable ([1] per section) | As Rule Changer (at its level). Also, always on: when Wyatt lands on a minigame challenge, the first Prepare slot is free. **Level 2:** the first two. |
+| 3 | **Minigame Master** | New trait, toggle (starts off) | **On:** the next minigame challenge Wyatt lands on is passed without playing, for [4] Energy from Wyatt. Then it turns off. Once per section. **Off:** nothing. **Level 2:** [3] Energy. **Level 3:** [2] Energy, twice per section. |
 
-**Smith Path**
+**Scout Trail**
 
 | Tier | Trait | Kind | Effect |
 | --- | --- | --- | --- |
-| 1 | **Toy Chest** | New trait, gives something | Learn 3 random tool recipes. At the start of a run: "Start with 3 random tool recipes." |
-| 2 | Artisan Smith | New trait, always on | Wyatt can craft Tier 2 tools, and sees 1 more card when crafting tools. |
-| 3 | Master Smith | Upgrade, always on | He can craft Tier 3 tools, and sees 2 more cards when crafting tools. |
+| 1 | **Game Sight** | New trait, always on | At the start of each phase, each minigame challenge on a tile next to Wyatt has a [25%] chance to be revealed. **Level 2:** [50%]. **Level 3:** [75%]. **Level 4:** all of them. |
+| 2 | Game Sight II | Upgrade, always on | As Game Sight, but up to **2** tiles away. **Level 2:** up to **3**. |
+| 3 | Game Sight III | Upgrade, always on | As Game Sight II, and it reveals **cost cards** too. **Level 2:** **opportunities** too. |
 
 ## Rules that need care
-
-**November 26 (evening): Rule Changer's rules here are replaced by `26-fixes-and-wyatt-trees.md`, section 5.2, which also covers Minigame Master and Game Sight (5.3).**
 
 - **Upgrades show the full text** of the trait, with what changed from the tier before in yellow (`changed` in the data).
 - **Move All** traits: "brought along" means moved by someone else's Move All. Leash Puller, Lead the Way, Short II, Whatcha Up To? and Experienced Traveler can stack when both hikers have them. Apply cost cuts before chances, and never go below 0 Appetite.
@@ -263,7 +260,20 @@ Morale type: Energetic.
 - **Garbage Connoisseur:** the −1 (and III's +1) is per bite, for each swapped resource.
 - **Fur Trade:** a recipe that uses Ellie's action like crafting. No limit.
 - **Prepper:** "revealed" means revealed by anyone (Scout, Overlook, Rule Changer, being entered before). The challenge stays: with others, Wink sits it out; alone, nothing happens.
-- **Rule Changer:** uses reset each section. II and III work on any tile. III replaces II's swaps (2 removals per section, not 2 + 2), and can target an unrevealed tile; if it has no challenge, the use is wasted. Don't tell the player whether it had one.
+- **Rule Changer** (November 26, evening): uses reset each section, and II shares them.
+  - The new challenge is any minigame challenge that fits the tile's nodes and can play at its tier, other than the one there.
+  - The swap changes the tile's placed card, which shows face up. The Trail Infoboard doesn't change.
+  - At levels 2 and 3, the options come from the run's seed, the moment and the tile, so the same ones show until something changes.
+- **Rule Changer II's free Prepare slots:** the first slot (or two) filled on the Prepare screen costs nothing, whoever fills it. It counts once per challenge, and the slot shows FREE (WYATT).
+- **Minigame Master:**
+  - "Passed" means everyone on the tile passes and gets their XP, as if they won.
+  - If Wyatt hasn't the Energy (or its uses this section are spent), it doesn't fire and stays on.
+  - Its uses reset each section.
+  - A Choice space fires it only once the minigame is the card chosen.
+- **Game Sight:**
+  - Each tile is rolled once a phase, at the start of the phase.
+  - "Tiles away" counts steps along the trail.
+  - A reveal works like an Old Firewatch Tower's: the tile's card shows face up on the map.
 - **Recipe and tier traits** (Family Cookbook, Artisan Chef and the rest): "recipes" are blueprints of that item type, from enabled items only, picked from Tier 1 for the starting step. "Can craft Tier 2" gives access to that tier for this hiker. If today's crafting already lets anyone craft that tier, keep the extra-card part and flag it to Wyatt.
 - **Packed Toolbox:** tools come from enabled Tier 1 tools. If the pack is full, use the usual overflow choice.
 - **The Proper Way:** the extra use is marked on the tool and removed when it leaves Wink's pack.

@@ -38,11 +38,18 @@ export function validateUseAbility(state: GameState, action: UseAbilityAction): 
       return `Pick ${ability.resourcePick} resources.`;
     }
   }
-  const chosen = ability.resourcePick ? base : action.choice;
+  const chosen = ability.resourcePick || ability.optionsFor ? base : action.choice;
   if (choices && !choices.some((c) => c.id === chosen)) {
     return choices.length
       ? `Choose ${choices.map((c) => c.label).join(' or ')}.`
       : `There’s nothing for ${ability.label} to do right now.`;
+  }
+  // An option picked after the choice rides after it too: "choice|option" (Rule Changer).
+  if (ability.optionsFor && chosen) {
+    const options = ability.optionsFor(queryContext(state, hiker), chosen);
+    if (options.length && !options.some((o) => o.id === picked)) {
+      return `Pick ${options.map((o) => o.label).join(' or ')}.`;
+    }
   }
   return ability.validate?.(queryContext(state, hiker), action.choice);
 }

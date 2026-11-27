@@ -515,7 +515,11 @@ export interface Hiker {
    * switched off (by trait id; every toggle starts on). Only the designed
    * hikers have it.
    */
-  trails?: { learned: string[]; off?: string[] };
+  /**
+   * Steps learned, toggles switched off, and steps raised past level 1
+   * (26-fixes-and-wyatt-trees.md, section 5.1).
+   */
+  trails?: { learned: string[]; off?: string[]; levels?: Partial<Record<string, number>> };
   /** Their morale type, checked at the end of every phase (Phase 10.7). */
   moraleType?: MoraleTypeId;
   /** Has used their action this phase. */
@@ -741,6 +745,8 @@ export interface CardRolls {
 export interface OpenChallenge {
   cardId: string;
   tileId: TileId;
+  /** A minigame challenge: traits that act when one opens have looked at it (Minigame Master). */
+  looked?: true;
   /** The hiker who led the group onto the tile, if a Move All did (Alpha Dog). */
   leaderId?: HikerId;
   /** The tier it plays at, and its range scale (Tier III one tier up: ×1.5). */
@@ -1435,7 +1441,15 @@ export type GameEventBody =
   /** The party reached a level (Phase 10.7): "Party level 3! +1 point". */
   | { kind: 'partyLevel'; level: number; points: number }
   /** A hiker learned a Skill Trails step (or started with it). */
-  | { kind: 'learned'; hikerId: HikerId; stepId: string; cost: number; start?: true }
+  /** `level`: a learned step pressed again for its next level. */
+  | {
+      kind: 'learned';
+      hikerId: HikerId;
+      stepId: string;
+      cost: number;
+      start?: true;
+      level?: number;
+    }
   /** A toggle trait switched on or off. */
   | { kind: 'toggled'; hikerId: HikerId; traitId: TraitId; on: boolean }
   /** A level-up or a trinket gave a trait or a slot (and maybe replaced a trait). */
