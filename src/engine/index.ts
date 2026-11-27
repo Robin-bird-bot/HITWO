@@ -143,7 +143,7 @@ export { bonusTaken, cardGains, pickOptions, rerollAbility, rerollsLeft } from '
 export { emptyChance } from './abundance';
 export { tendAmount, tendCost, tendableNodes } from './actions/tend';
 export { blockedByStatus, withoutStatus } from './status';
-export { amount, rollCard, scaledRange, type CardRolls } from './challenges/rolls';
+export { amount, rangeAt, rollCard, scaledRange, type CardRolls } from './challenges/rolls';
 export { notPlayableYet, pickForTile, type Picked } from './challenges/pick';
 export { hasCondition } from './conditions';
 export type * from './challenges/types';
@@ -153,6 +153,7 @@ export {
   giftCount,
   giftFits,
   harnessFor,
+  judgedIds,
   openCardDef,
   optionShortfall,
   paidCause,
@@ -160,6 +161,7 @@ export {
   resourceFits,
 } from './challenges/resolve';
 export { foodCarried } from './challenges/applyEffects';
+export type { MinigameOutcome, PrepSpend } from './challenges/minigame';
 export { riskReading, riskSpendFits, type RiskReading } from './challenges/risk';
 export { deadlineOf, phaseIndex, timeLeft } from './challenges/trials';
 export { pressKey, pressesLeft, revealableFrom, unrevealedTiles } from './challenges/buttons';

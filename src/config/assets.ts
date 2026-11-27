@@ -129,9 +129,10 @@ export const ASSETS = {
  * A card's picture, named by its id (16:9, 960×540): challenges and Trials in
  * challenges/, opportunities in opportunities/.
  */
-export function cardArt(card: { id: string; kind: string }): string {
+export function cardArt(card: { id: string; kind: string; artFile?: string }): string {
   const folder = card.kind === 'opportunity' ? 'opportunities' : 'challenges';
-  return asset(`${folder}/${card.id}.jpg`);
+  // The Nov 26 list reuses old art for now (artFile).
+  return asset(`${folder}/${card.artFile ?? card.id}.jpg`);
 }
 
 /** A Wonder's banner picture (16:9, 1600×900). */

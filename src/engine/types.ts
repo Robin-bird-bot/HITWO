@@ -1030,6 +1030,8 @@ export type Action =
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
+  /** Finishes a minigame challenge (25-challenges-on-the-map.md, section 3): how it went, and what Prepare spent. */
+  | import('./challenges/minigame').ResolveMinigameAction
   /** On a Choice space: which of the two challenges the party takes on. */
   | { type: 'chooseChallenge'; cardId: string }
   /** "Got it": the open Trial starts its countdown. */

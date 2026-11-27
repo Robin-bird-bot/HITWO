@@ -16,11 +16,12 @@ import {
 } from '../dodge/animals';
 import { autoLength } from '../dodge/logic';
 import type { AnimalId, EagleVersion } from '../dodge/types';
-import { FOOD, group, item, prepNumber, res } from '../prepare';
+import { category, item, prepNumber, res } from '../prepare';
 import { TRAIL_TYPES } from '../trails/course';
 import { TIERS, type MinigameSettings, type Tier } from '../types';
 import {
   ARROWS,
+  bandages,
   countBar,
   FAIL_ENERGY,
   finger,
@@ -251,7 +252,7 @@ export const DODGE_POPUP: GamePopup = {
   }),
   options(s) {
     const animal = animalOf(s);
-    const heart = plusFor('HEART', '♥');
+    const heart = bandages('HEART', '♥');
     if (animal === 'monster') return [heart];
     return [
       heart,
@@ -259,13 +260,13 @@ export const DODGE_POPUP: GamePopup = {
       opt(
         'smoke',
         'red',
-        group('forest'),
+        category('fire'),
         '−1 BEE PER WAVE',
         '−1 BEE',
         'smoke calms them',
         { param: P_('smoke'), step: 1 },
         {
-          title: 'SMOKY FIRE',
+          title: 'SMOKE',
           need: 2,
           onlyIf: (x) => animalOf(x) === 'bees',
         },
@@ -286,7 +287,7 @@ export const DODGE_POPUP: GamePopup = {
       opt(
         'sandbags',
         'red',
-        res('clay'),
+        category('building'),
         'TRAPS AND HOLES LAST HALF AS LONG',
         'BAGS',
         'sandbags fill them',
@@ -449,12 +450,12 @@ export const CROSSING_POPUP: GamePopup = {
     };
   },
   options: () => [
-    plusFor('LIFE', '♥'),
+    bandages('LIFE', '♥'),
     slowerOpt('SLOWER TRAFFIC', 'green'),
     opt(
       'logs',
       'green',
-      res('wood'),
+      category('building'),
       'MORE LOGS',
       'LOGS',
       'more logs on the river',
@@ -515,17 +516,18 @@ export const TRAIN_POPUP: GamePopup = {
     step: 1,
   }),
   options: () => [
-    plusFor('LIFE', '♥'),
+    bandages('LIFE', '♥'),
     slowerOpt('SLOWER TRAINS', 'green'),
     opt(
       'brighter',
       'blue',
-      res('oil'),
-      'BRIGHTER WARNING',
+      category('fire'),
+      'LONGER WARNING',
       '+WARN',
       '+0.3 s warning',
       { param: P_('brighter'), step: 0.3 },
       {
+        title: 'LANTERN',
         onlyIf: trainFog,
       },
     ),
@@ -553,12 +555,12 @@ export const RAFTING_POPUP: GamePopup = {
   bars: (s) => [levelBar('speed', 'RIVER SPEED', s, -prepNumber(s, P_('slower')))],
   perHiker: () => ({ label: 'LIVES', kind: 'hearts', base: 1, param: P_('lives'), step: 1 }),
   options: () => [
-    plusFor('LIFE', '♥'),
+    bandages('LIFE', '♥'),
     slowerOpt('SLOWER RIVER', 'green'),
     opt(
       'sturdy',
       'green',
-      res('wood'),
+      category('building'),
       'STURDIER RAFT',
       'STURDY',
       'the first hit doesn’t count',
@@ -695,14 +697,23 @@ export const ROCK_CLIMB_POPUP: GamePopup = {
     opt(
       'chalk',
       'green',
-      res('salt'),
+      category('building'),
       'CHALK',
       'CHALK',
       '+2 reach',
       { param: P_('chalk'), step: 2 },
       { max: 2 },
     ),
-    plusFor('TRY', '+1', 'tries'),
+    opt(
+      'tries',
+      'green',
+      category('fiber'),
+      '+1 TRY',
+      '+1',
+      'pick a hiker',
+      { param: P_('tries'), step: 1 },
+      { perHiker: true, need: 2, title: 'ROPE' },
+    ),
     opt('harness', 'green', item('harness'), 'HARNESS', 'HARNESS', 'the first fall costs nothing', {
       param: P_('harness'),
       step: 1,
@@ -770,7 +781,7 @@ export const SKETCHY_BRIDGE_POPUP: GamePopup = {
     opt(
       'patch',
       'green',
-      res('wood'),
+      category('building'),
       'PATCH THE PLANKS',
       `+${SB.patch}`,
       `+${SB.patch} bridge`,
@@ -780,12 +791,12 @@ export const SKETCHY_BRIDGE_POPUP: GamePopup = {
     opt(
       'zone',
       'green',
-      FOOD,
+      category('fiber'),
       'BIGGER ZONE',
       'ZONE',
       `+${SB.extraZone} zone`,
       { param: P_('zone'), step: SB.extraZone },
-      { max: 2 },
+      { max: 2, need: 2, title: 'ROPE' },
     ),
     opt(
       'stick',
@@ -871,7 +882,7 @@ export const FALLING_ROCKS_POPUP: GamePopup = {
     step: 1,
   }),
   options: () => [
-    plusFor('LIFE', '♥'),
+    bandages('LIFE', '♥'),
     slowerOpt('SLOWER ROCKS', 'green', 'rocks come less often'),
     opt(
       'hardhat',

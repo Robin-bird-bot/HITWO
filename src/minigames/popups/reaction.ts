@@ -5,7 +5,7 @@
  * Swatter and Raccoon Shuffle.
  */
 import { BALANCE } from '../../config/balance';
-import { FOOD, group, item, prepNumber, res } from '../prepare';
+import { category, FOOD, item, prepNumber } from '../prepare';
 import { newRaccoonShuffle } from '../raccoonShuffle/logic';
 import { VERSIONS as BLOCK_VERSIONS } from '../trailBlocks/logic';
 import type { MinigameSettings } from '../types';
@@ -26,7 +26,6 @@ import {
   OR,
   P_,
   phrases,
-  plusFor,
   plusSecOpt,
   rulesOf,
   seconds,
@@ -124,19 +123,20 @@ export const RACCOON_SHUFFLE_POPUP: GamePopup = {
     opt(
       'lure',
       'red',
-      res('meat', 'fish'),
+      category('trinkets'),
       'LURE ONE OUT',
       '+1 BIN',
       '+1 empty bin (never taken)',
       { param: P_('lure'), step: 1 },
       {
         max: 2,
+        title: 'SHINY LURE',
       },
     ),
     opt(
       'slowShuffle',
       'red',
-      res('mushroom'),
+      FOOD,
       'SLOWER SHUFFLE',
       'SLOW',
       '+0.06 s a swap',
@@ -177,8 +177,17 @@ const HOW_BY_VERSION: Readonly<Record<string, string>> = {
 const halfWork = (id: string, label: string, thing: string, note = 'half the work') =>
   opt(id, 'red', item(thing), label, '½ WORK', note, { param: P_('lessWork'), step: 0.5 });
 /** SHARPEN and the like: bigger zones. */
-const biggerZones = (id: string, label: string, thing: string, note = 'bigger zones') =>
-  opt(id, 'green', res(thing), label, 'BIGGER', note, { param: P_('zones'), step: 1 }, { max: 2 });
+const biggerZones = (id: string, label: string, note = 'bigger zones') =>
+  opt(
+    id,
+    'green',
+    category('building'),
+    label,
+    'BIGGER',
+    note,
+    { param: P_('zones'), step: 1 },
+    { max: 2, title: 'BETTER GRIP' },
+  );
 
 export const TRAIL_BLOCKS_POPUP: GamePopup = {
   howToPlay: (s) => phrases(HOW_BY_VERSION[blockVersion(s).id] ?? HOW_BY_VERSION.chop!),
@@ -212,32 +221,29 @@ export const TRAIL_BLOCKS_POPUP: GamePopup = {
     switch (blockVersion(s).id) {
       case 'chop':
         return [
-          biggerZones('sharpen', 'SHARPEN', 'flint'),
+          biggerZones('sharpen', 'SHARPEN'),
           halfWork('axe', 'BRING AN AXE', 'woodcuttingAxe'),
         ];
       case 'rockslide':
-        return [
-          halfWork('pickaxe', 'BRING A PICKAXE', 'pickaxe'),
-          biggerZones('wedges', 'WEDGES', 'metal'),
-        ];
+        return [halfWork('pickaxe', 'BRING A PICKAXE', 'pickaxe'), biggerZones('wedges', 'WEDGES')];
       case 'river':
         return [
           halfWork('ditch', 'DIG A DITCH', 'shovel', 'half the water'),
-          biggerZones('patch', 'PATCH THE BUCKET', 'clay'),
+          biggerZones('patch', 'PATCH THE BUCKET'),
         ];
       case 'animals':
         return [
           opt(
             'bait',
             'red',
-            res('meat', 'fish'),
+            FOOD,
             'BAIT',
             '−1',
             'one animal fewer',
             { param: P_('bait'), step: 1 },
             { max: 2 },
           ),
-          biggerZones('ring', 'BIGGER RING', 'grass', 'a bigger ring'),
+          biggerZones('ring', 'BIGGER RING', 'a bigger ring'),
         ];
     }
   },
@@ -290,7 +296,7 @@ export const SLEEPING_BEAR_POPUP: GamePopup = {
     opt(
       'quiet',
       'red',
-      res('fur'),
+      category('fiber'),
       'QUIET STEPS',
       'QUIET',
       '−1 light sleeper',
@@ -348,12 +354,13 @@ export const WHACKOON_POPUP: GamePopup = {
     opt(
       'noSkunks',
       'red',
-      res('oil'),
+      category('fire'),
       'NO SKUNKS',
       'NO SKUNK',
       'only raccoons pop up',
       { param: P_('noSkunks'), step: 1 },
       {
+        title: 'SMOKE THEM OUT',
         onlyIf: (s) => s.skunks === 'on' || (s.skunks !== 'off' && WH.tiers[tierIn(s)].skunks > 0),
       },
     ),
@@ -406,7 +413,7 @@ export const TRAIL_BLAZES_POPUP: GamePopup = {
     opt(
       'brighter',
       'green',
-      res('oil'),
+      category('fire'),
       'BRIGHTER PAINT',
       'BRIGHT',
       '+1 window',
@@ -463,7 +470,7 @@ export const FIREFLY_CATCH_POPUP: GamePopup = {
     opt(
       'ring',
       'green',
-      res('clay'),
+      category('building'),
       'BIGGER JAR',
       'JAR',
       '+3 ring',
@@ -523,7 +530,7 @@ export const SIZE_UP_POPUP: GamePopup = {
     opt(
       'pass',
       'green',
-      res('wood'),
+      category('building'),
       'MEASURING STICK',
       '+1%',
       '+1% that passes',
@@ -571,7 +578,7 @@ export const FLY_SWATTER_POPUP: GamePopup = {
     opt(
       'bigger',
       'green',
-      res('grass'),
+      category('fiber'),
       'BIGGER SWATTER',
       'BIGGER',
       '+4 circle size',
@@ -655,12 +662,21 @@ export const FLY_BLOCK_POPUP: GamePopup = {
   },
   perHiker: () => ({ label: 'BITES', kind: 'pips', base: FLB.bites, param: P_('bites'), step: 1 }),
   options: () => [
-    plusFor('BITE ALLOWED', '+1', 'bites'),
+    opt(
+      'bites',
+      'green',
+      category('fiber'),
+      '+1 BITE ALLOWED',
+      '+1',
+      'pick a hiker',
+      { param: P_('bites'), step: 1 },
+      { perHiker: true, title: 'NETTING' },
+    ),
     slowerOpt('SLOWER FLIES', 'green', 'the flies slow down'),
     opt(
       'smoke',
       'red',
-      group('forest'),
+      category('fire'),
       `−${FLB.smoke} FLIES`,
       `−${FLB.smoke}`,
       'smoke keeps some away',
@@ -737,12 +753,12 @@ export const SQUIRREL_THEFT_POPUP: GamePopup = {
     opt(
       'bait',
       'red',
-      group('forest'),
+      category('trinkets'),
       'SQUIRRELS STAY UP LONGER',
       'BAIT',
       `+${SQT.baitSec} s up`,
       { param: P_('bait'), step: 1 },
-      { title: 'BAIT', need: 2 },
+      { title: 'SHINY BAIT', need: 2 },
     ),
     opt(
       'bearSpray',

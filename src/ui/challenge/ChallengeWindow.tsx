@@ -85,6 +85,7 @@ import {
 import { useTooltip } from '../layout/Tooltip';
 import styles from './ChallengeWindow.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
+import { MINIGAME_BY_ID } from '../../minigames/catalog';
 
 type ResolveAction = Extract<Action, { type: 'resolveChallenge' }>;
 
@@ -267,7 +268,11 @@ function ChallengeBody({
                 <div className={styles.words}>
                   {card.quote && <p className={styles.quote}>“{card.quote}”</p>}
                   <p className={styles.cost}>
-                    {cardText(card, card.costText, { rolls: open.rolls, scale: open.scale })}
+                    {cardText(card, card.costText, {
+                      rolls: open.rolls,
+                      scale: open.scale,
+                      at: open.shownTier ?? open.tier,
+                    })}
                   </p>
                   {!simple && !card.descriptionPlaceholder && (
                     <p className={styles.description}>{card.description}</p>
@@ -426,7 +431,9 @@ function hintFor(state: GameState, open: OpenChallenge, card: ChallengeDef, draf
   }
   const who = draft.sections[t.section]?.hikerId;
   const name = who ? state.hikers.find((h) => h.id === who)?.name : undefined;
-  const what = reqLabel(req, open).toLowerCase().replaceAll(' · ', ' or ');
+  const what = reqLabel(req, open, { state, ...(who ? { hikerId: who } : {}) })
+    .toLowerCase()
+    .replaceAll(' · ', ' or ');
   const space = `${what} space${name ? ` for ${name}` : ''}`;
   if (req.kind === 'caps') return `Tap the ${space} to pay from the party purse.`;
   if (req.kind === 'stat') return `Use + and − in the packs below to fill the ${space}.`;
@@ -732,7 +739,8 @@ function Space({ state, open, draft, target, req, size, peeking, onDraft, onPeek
           ? 'other'
           : 'idle';
   const k = size / 150;
-  const label = reqLabel(req, open);
+  const judge = section?.hikerId;
+  const label = reqLabel(req, open, { state, ...(judge ? { hikerId: judge } : {}) });
 
   const onClick = () => {
     if (req.kind === 'caps') {
@@ -1444,7 +1452,7 @@ function OutcomeBox({
   open: OpenChallenge;
   rolls?: OpenChallenge['rolls'];
 }) {
-  const opts = { rolls: rolls ?? open.rolls, scale: open.scale };
+  const opts = { rolls: rolls ?? open.rolls, scale: open.scale, at: open.shownTier ?? open.tier };
   if (card.kind === 'opportunity') {
     return (
       <div className={styles.reward}>
@@ -1953,12 +1961,20 @@ function ChoicePicker({ open, onChoose }: { open: OpenChallenge; onChoose(cardId
                 <div className={styles.choiceHead}>
                   <h3 className={styles.choiceName}>{card.name.toUpperCase()}</h3>
                   <span className={styles.choiceScope}>
-                    {card.risk ? 'RISK · ' : ''}
-                    {SCOPE_WORD[card.scope]}
+                    {/* 25-challenges-on-the-map.md, section 3.1: which kind each one is. */}
+                    {card.minigame
+                      ? `MINIGAME · ${(MINIGAME_BY_ID.get(card.minigame.game)?.name ?? '').toUpperCase()}`
+                      : `COST CARD · ${card.risk ? 'RISK · ' : ''}${SCOPE_WORD[card.scope]}`}
                   </span>
                 </div>
                 <p className={styles.cost}>
-                  {cardText(card, card.costText, { rolls, scale: open.scale })}
+                  {card.minigame
+                    ? (MINIGAME_BY_ID.get(card.minigame.game)?.description ?? '')
+                    : cardText(card, card.costText, {
+                        rolls,
+                        scale: open.scale,
+                        at: open.shownTier ?? open.tier,
+                      })}
                 </p>
                 <OutcomeBox card={card} open={open} rolls={rolls} />
                 <button type="button" className={styles.choose1} onClick={() => onChoose(card.id)}>

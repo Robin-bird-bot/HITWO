@@ -18,6 +18,7 @@ import {
   challengeSections,
   giftCount,
   giftFits,
+  judgedIds,
   openCardDef,
   optionShortfall,
   requirementNeed,
@@ -43,6 +44,7 @@ import {
   type ItemInstance,
 } from '../../engine';
 import { CONDITIONS } from '../../content/conditions';
+import { CATEGORY_BY_ID } from '../../content/resources';
 import { NODE_NAME } from '../map/looks';
 import { rangeText } from './cardText';
 
@@ -667,21 +669,38 @@ const names = (ids: readonly string[]) =>
   ids.map((id) => (RESOURCES.find((r) => r.id === id)?.name ?? id).toUpperCase()).join(' · ');
 
 /** "FISH · MEAT · MUSHROOM", "FOOD CARD", "ENERGY". */
-export function reqLabel(req: Requirement, open: OpenChallenge): string {
+export function reqLabel(
+  req: Requirement,
+  open: OpenChallenge,
+  judged?: { state: GameState; hikerId?: string },
+): string {
   switch (req.kind) {
     case 'resources': {
+      // The new general costs name what they mean for this hiker (25, section 4).
+      const ids = judged ? judgedIds(judged.state, open, req, judged.hikerId) : undefined;
+      const whose = judged?.hikerId ? 'YOUR' : 'THE PARTY’S';
+      if (req.most) return ids?.length ? `${whose} MOST: ${names(ids)}` : `${whose} MOST`;
+      if (req.singles) return ids?.length ? `${whose} SINGLES: ${names(ids)}` : 'NO SINGLES';
+      if (req.bigStacks)
+        return ids?.length ? `${whose} BIG STACKS: ${names(ids)}` : 'NO BIG STACKS';
+      if (req.mixedBag) return 'ONE FROM EACH CATEGORY';
       const f = req.filter;
       const what = f?.randomOf
         ? names(open.rolls.options ?? [])
         : f?.ids
           ? names(f.ids)
-          : f?.nodes
-            ? f.nodes.map((n) => NODE_NAME[n].toUpperCase()).join(' · ')
-            : 'ANY RESOURCE';
+          : f?.categories
+            ? f.categories.map((c) => CATEGORY_BY_ID.get(c)?.name.toUpperCase() ?? c).join(' · ')
+            : f?.nodes
+              ? f.nodes.map((n) => NODE_NAME[n].toUpperCase()).join(' · ')
+              : 'ANY RESOURCE';
       if (req.fromEach) return `${what} FROM EACH`;
+      if (req.distinct) return `${what} (ALL DIFFERENT)`;
       return req.same ? `${what} (ALL THE SAME)` : what;
     }
     case 'items':
+      if (req.itemIds)
+        return req.itemIds.map((id) => (ITEMS[id]?.name ?? id).toUpperCase()).join(' OR ');
       return req.itemTypes
         ? `${req.itemTypes.map((t) => t.toUpperCase()).join(' OR ')} CARD`
         : 'ANY ITEM';
@@ -704,6 +723,9 @@ export function reqIcons(req: Requirement, open: OpenChallenge): ResourceId[] {
   const f = req.filter;
   if (f?.randomOf) return (open.rolls.options ?? []).slice(0, 3);
   if (f?.ids) return f.ids.slice(0, 3);
+  if (f?.categories) {
+    return f.categories.flatMap((c) => CATEGORY_BY_ID.get(c)?.resources ?? []).slice(0, 3);
+  }
   if (f?.nodes) {
     return RESOURCES.filter((r) => f.nodes?.includes(r.node))
       .slice(0, 3)

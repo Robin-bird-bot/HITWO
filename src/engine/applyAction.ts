@@ -82,6 +82,7 @@ import { finishSection, readyToLeave } from './station/checkIn';
 import { pushEvent } from './log';
 import { applyAccomplish, validateAccomplish } from './wonders/wonders';
 import type { Action, GameState } from './types';
+import { applyResolveMinigame, validateResolveMinigame } from './challenges/minigame';
 
 /** What can happen while a scavenge is open (plus the debug tools). */
 const SCAVENGE_STEPS = new Set<Action['type']>([
@@ -138,6 +139,7 @@ export function validateAction(state: GameState, action: Action): string | null 
   const challengeSteps: Action['type'][] = [
     'pickTrait',
     'resolveChallenge',
+    'resolveMinigameChallenge',
     'chooseChallenge',
     'acceptTrial',
     'pressButton',
@@ -231,6 +233,8 @@ export function validateAction(state: GameState, action: Action): string | null 
       return validatePutDown(state, action) ?? null;
     case 'resolveChallenge':
       return validateResolve(state, action) ?? null;
+    case 'resolveMinigameChallenge':
+      return validateResolveMinigame(state, action) ?? null;
     case 'chooseChallenge':
       return validateChoose(state, action) ?? null;
     case 'acceptTrial':
@@ -366,6 +370,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       break;
     case 'resolveChallenge':
       applyResolve(draft, action);
+      break;
+    case 'resolveMinigameChallenge':
+      applyResolveMinigame(draft, action);
       break;
     case 'chooseChallenge':
       applyChoose(draft, action);

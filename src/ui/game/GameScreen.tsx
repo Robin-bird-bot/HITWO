@@ -160,6 +160,8 @@ import { NightEventWindow, type NightEventShown } from '../night/NightEventWindo
 import { SkillTrails } from '../trails/SkillTrails';
 import { PartyLevel, PartyToast } from '../trails/PartyLevel';
 import { usePartyToast, useSkillTrails } from '../trails/useSkillTrails';
+import { MinigameFlow } from '../minigames/MinigameFlow';
+import { minigameHikersFor, outcomeOf, popupFor, spendsOf } from '../challenge/minigameOnTile';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
@@ -435,6 +437,16 @@ export function GameScreen({
   // Predator Bait: tiles that just got easier, shown in blue until a few seconds
   // after the pop-up closes (Wyatt, Nov 6).
   const easier = useEasierTiles(state, !!state.challenge || !!result);
+  // A minigame challenge plays in its pop-up (25-challenges-on-the-map.md, section 3).
+  // A Choice space shows both cards in the challenge window first.
+  const openChallenge = state.challenge;
+  const minigame = useMemo(() => {
+    if (!openChallenge || openChallenge.alternative) return undefined;
+    const challenge = popupFor(state, openChallenge);
+    return challenge && { challenge, hikers: minigameHikersFor(state, openChallenge) };
+    // Only a new challenge changes the pop-up: the game runs inside it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openChallenge]);
   const marks: Partial<Record<string, 'trial' | 'target' | 'easier'>> = Object.fromEntries(
     (state.trials ?? []).flatMap((t) => [
       [t.tileId, 'trial' as const],
@@ -1453,7 +1465,22 @@ export function GameScreen({
                 />
               )}
 
-              {state.challenge && (
+              {state.challenge && minigame && (
+                <MinigameFlow
+                  key={`${state.challenge.tileId}:${state.challenge.cardId}`}
+                  challenge={minigame.challenge}
+                  hikers={minigame.hikers}
+                  settings={minigame.challenge.settings ?? {}}
+                  onFinish={(result, spent, skipped) =>
+                    dispatch({
+                      type: 'resolveMinigameChallenge',
+                      outcome: outcomeOf(result, skipped),
+                      spent: spendsOf(spent),
+                    })
+                  }
+                />
+              )}
+              {state.challenge && !minigame && (
                 <ChallengeWindow
                   state={state}
                   simple={simple}

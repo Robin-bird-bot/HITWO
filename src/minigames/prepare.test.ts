@@ -134,7 +134,8 @@ describe('cost cards', () => {
       ['FOOD', 'green', ['lives', 'slower']],
       ['SMOKY FIRE', 'red', ['smoke']],
     ]);
-    expect(costText(CARDS[0]!)).toBe('×1 MEAT, FISH OR MUSHROOM');
+    // Food is the category now (24-challenges-reset.md, section 5).
+    expect(costText(CARDS[0]!)).toBe('×1 FOOD');
     expect(costText(CARDS[1]!)).toBe('×2 GRASS OR MOSS');
     expect(costText({ accepts: group('forest'), need: 2 })).toBe('×2 FOREST RESOURCES');
   });

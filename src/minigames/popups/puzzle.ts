@@ -39,7 +39,8 @@ import type { GamePopup } from './types';
 const MG = BALANCE.minigames;
 
 const MAPS = item('supplyMap', 'treasureMap');
-const LANTERN = [...res('oil'), ...item('campingLamp')];
+/** A lantern: ×1 Fire, or the Camping Lamp (24-challenges-reset.md, section 5). */
+const LANTERN = [...category('fire'), ...item('campingLamp')];
 const square = (n: number) => `${n}×${n}`;
 const odd = (s: MinigameSettings) => hikerCount(s) % 2 === 1 && hikerCount(s) > 1;
 
@@ -167,6 +168,16 @@ export const FIND_PATH_POPUP: GamePopup = {
       param: P_('showStep'),
       step: 1,
     }),
+    opt(
+      'marker',
+      'blue',
+      category('trinkets'),
+      'SHOW ONE STEP',
+      'STEP',
+      'one step of the trail shows',
+      { param: P_('showStep'), step: 1 },
+      { title: 'TRAIL MARKER', max: 2 },
+    ),
     opt(
       'lantern',
       'blue',
@@ -405,6 +416,16 @@ export const MINEFIELD_POPUP: GamePopup = {
   },
   options: () => [
     opt(
+      'treat',
+      'blue',
+      FOOD,
+      'SNIFF OUT A PILE',
+      'SNIFF',
+      'the dog sniffs out one pile, bagged before you start',
+      { param: P_('bags'), step: 1 },
+      { max: 3, title: 'TREAT' },
+    ),
+    opt(
       'pooBags',
       'blue',
       item('pooBag'),
@@ -476,12 +497,22 @@ export const THIN_ICE_POPUP: GamePopup = {
     opt(
       'testIce',
       'blue',
-      res('stone'),
+      category('building'),
       'TEST THE ICE',
       'TESTED',
       'marks one hole before you start',
       { param: P_('testIce'), step: 1 },
-      { max: 3 },
+      { max: 3, title: 'TEST STONES' },
+    ),
+    opt(
+      'rope',
+      'green',
+      category('fiber'),
+      'FIRST FALL ONLY CRACKS',
+      'ROPE',
+      'each hiker’s first hole only cracks',
+      { param: P_('stick'), step: 1 },
+      { need: 2, title: 'ROPE' },
     ),
     opt(
       'stick',
@@ -998,7 +1029,16 @@ export const BIRDSONG_POPUP: GamePopup = {
     step: 1,
   }),
   options: () => [
-    plusFor('STRIKE', '+1', 'strikes'),
+    opt(
+      'strikes',
+      'green',
+      category('trinkets'),
+      '+1 STRIKE',
+      '+1',
+      'pick a hiker',
+      { param: P_('strikes'), step: 1 },
+      { perHiker: true, title: 'LUCKY CHARM' },
+    ),
     slowerOpt('SLOWER NOTES', 'green', 'the notes slow down'),
     opt(
       'notebook',

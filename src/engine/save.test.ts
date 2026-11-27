@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction } from './applyAction';
 import { SAVE_VERSION, deserialize, serialize } from './save';
-import { END, fixtureGame, run } from './test/fixtures';
+import { CARDS } from '../content/challenges';
+import { createGame } from './newGame';
+import { END, fixtureGame, fixtureHiker, run } from './test/fixtures';
 import type { Action, GameState } from './types';
 
 const SCRIPT: Action[] = [
@@ -163,5 +165,31 @@ describe('determinism', () => {
       expect(serialize(state)).toBe(before);
       state = deepFreeze(next);
     }
+  });
+});
+
+describe('the Nov 26 evening challenge reset (save v22 → v23)', () => {
+  it('retired cards leave the tiles, and the section gets its pool', () => {
+    const game = createGame({
+      seed: 4,
+      hikers: ['finn', 'mom'].map((id) => fixtureHiker(id)),
+      startingResources: false,
+    });
+    // As a v22 save: no pool, the tiles drawing on landing, one with an old card shown.
+    delete game.section.pool;
+    for (const t of Object.values(game.section.tiles)) delete t.revealedCard;
+    const tile = Object.values(game.section.tiles).find(
+      (t) => t.kind === 'normal' && !t.quiet && !t.opportunity,
+    )!;
+    tile.revealedCard = { cardId: 'withered-forest', tier: 1, scale: 1 };
+    const old = { ...JSON.parse(serialize(game)), saveVersion: 22 };
+    const loaded = deserialize(JSON.stringify(old));
+    if (!loaded.ok) throw new Error(loaded.reason);
+    const s = loaded.state;
+    expect(s.saveVersion).toBe(SAVE_VERSION);
+    expect(s.section.pool?.length).toBeGreaterThan(0);
+    const now = s.section.tiles[tile.id]!.revealedCard;
+    expect(now?.cardId).not.toBe('withered-forest');
+    expect(CARDS[now!.cardId]?.kind).toBe('challenge');
   });
 });

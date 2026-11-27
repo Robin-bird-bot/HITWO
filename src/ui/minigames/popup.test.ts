@@ -73,24 +73,27 @@ describe('the pop-up', () => {
     expect(html).toContain('CONTROLS');
     expect(html).toContain('ATTACK SPEED');
     expect(html).toContain('BEES PER WAVE');
+    // The cards and their costs (24-challenges-reset.md, section 5).
+    expect(html).toContain('BANDAGES');
+    expect(html).toContain('×2 FIBER');
     expect(html).toContain('FOOD');
-    expect(html).toContain('×1 MEAT, FISH OR MUSHROOM');
-    expect(html).toContain('SMOKY FIRE');
-    expect(html).toContain('×2 FOREST RESOURCES');
+    expect(html).toContain('×1 FOOD');
+    expect(html).toContain('SMOKE');
+    expect(html).toContain('×2 FIRE');
     expect(html).toContain('>START<');
     expect(html).not.toContain('SKIP IT');
   });
 
   it('a Prepare change shows on its bar as a share of the most, a badge says what each slot does, and a new heart pops in', () => {
     const fills: Fills = {
-      'lives+slower:0': {
+      'slower:0': {
         hiker: 'finn',
         thing: { kind: 'resource', id: 'meat' },
         effect: 'slower',
       },
-      'lives+slower:1': {
+      'lives:0': {
         hiker: 'finn',
-        thing: { kind: 'resource', id: 'meat' },
+        thing: { kind: 'resource', id: 'moss' },
         effect: 'lives',
         target: 'mom',
       },
