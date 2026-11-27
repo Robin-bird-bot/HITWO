@@ -44,7 +44,7 @@ describe('the pool, placed when the section is made', () => {
     }
   });
 
-  it('the pool is challenge tiles ÷ [2.5] rounded up, [3] to [7] cards, with a share of cost cards', () => {
+  it('the pool is challenge tiles ÷ [2.5] rounded up, [3] to [7] cards', () => {
     for (let seed = 1; seed <= 25; seed++) {
       const s = game(seed);
       const n = placedTiles(s).length;
@@ -61,16 +61,20 @@ describe('the pool, placed when the section is made', () => {
           expect(s.section.pool).toContain(t.revealedCard!.alternative);
       }
     }
-    // The first biome: about [40%] cost cards over many runs.
-    let costs = 0;
-    let all = 0;
+  });
+
+  it('every challenge is a minigame: no cost card or opportunity is ever placed (29, section 6)', () => {
+    expect(PB.costShare).toEqual([0, 0, 0]);
     for (let seed = 1; seed <= 40; seed++) {
-      const pool = poolCards(game(seed));
-      costs += pool.filter((c) => !c.minigame).length;
-      all += pool.length;
+      const s = game(seed);
+      for (const c of poolCards(s)) expect(c.minigame, c.id).toBeDefined();
+      for (const t of placedTiles(s)) {
+        expect((CARDS[t.revealedCard!.cardId] as ChallengeDef).minigame).toBeDefined();
+        const alt = t.revealedCard!.alternative;
+        if (alt) expect((CARDS[alt] as ChallengeDef).minigame).toBeDefined();
+      }
+      expect(Object.values(s.section.tiles).some((t) => t.opportunity)).toBe(false);
     }
-    expect(costs / all).toBeGreaterThan(PB.costShare[0]! - 0.15);
-    expect(costs / all).toBeLessThan(PB.costShare[0]! + 0.15);
   });
 
   it('every pool card is on at least one tile when there are enough tiles', () => {

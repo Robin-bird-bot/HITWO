@@ -484,9 +484,19 @@ export const BALANCE = {
      * The biome's pool (25-challenges-on-the-map.md, section 1): challenge
      * tiles ÷ this many, rounded up, at least and at most this many cards;
      * cost cards are this share of it in the 1st, 2nd and 3rd biome (Claude's
-     * idea). TODO(wyatt): [2.5], [3], [7], [40%, 30%, 25%].
+     * idea). TODO(wyatt): [2.5], [3], [7].
      */
-    pool: { tilesPerCard: 2.5, min: 3, max: 7, costShare: [0.4, 0.3, 0.25] as readonly number[] },
+    pool: {
+      tilesPerCard: 2.5,
+      min: 3,
+      max: 7,
+      /**
+       * The cost cards' share of each biome's pool: 0 now that every
+       * challenge is a minigame (29-core-loop.md, section 6). It was [40%,
+       * 30%, 25%]; kept for when cost cards come back.
+       */
+      costShare: [0, 0, 0] as readonly number[],
+    },
     /**
      * The Trail Infoboard (25-challenges-on-the-map.md, section 2): posters
      * pinned face up at the start (or a third of the pool, rounded down, if

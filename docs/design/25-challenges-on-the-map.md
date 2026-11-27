@@ -13,6 +13,8 @@ Numbers in [brackets] are first guesses: put them in `balance.ts` with `TODO(wya
 ---
 
 ## 1. The biome's challenge pool, placed when the biome is made (Wyatt)
+
+**Changed Nov 27 (`29-core-loop.md`, sections 5 and 6):** half the plain tiles hold a challenge at every difficulty and the rest are empty; no opportunities for now. Every challenge is a minigame: the cost-card share is 0, and the cost cards are switched off (four come back as quick minigames, `30-quick-minigames.md`). The mix below is the old rule.
 Today a tile's card is picked when someone lands on it (`pickForTile`), and a section never repeats a card (`usedCards`). Both change: the Infoboard and Wyatt's Game Sight (`26`, section 5) need to know what each tile holds ahead of time.
 
 - **When a section is made:** right after `placeCards` picks the challenge tiles (`src/engine/trail/generate.ts`):
@@ -114,6 +116,8 @@ A trailhead kiosk on the first tile of every biome, like the boards at the start
 ---
 
 ## 4. Cost cards: the new costs and punishments
+
+**Switched off Nov 27 (`29-core-loop.md`, section 6):** no cost card is placed for now; the rules below stay for when they come back.
 Cost cards keep using today's card system (`resolve.ts` and the challenge panel). Add these:
 - **Resource categories** (24, section 1) in `src/content/resources.ts`: Food, Building, Fiber, Fire, Trinkets. Wood and Metal are in two.
 - **Tiers:** a cost card's numbers are written for its "From" tier and scale up by `tierScale` for each tier above it.

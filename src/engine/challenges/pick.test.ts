@@ -32,7 +32,8 @@ describe('which cards fit a tile', () => {
   it('matches a node on the tile, or any', () => {
     expect(cardFits(card('squirrel-attack'), s, forest, s.hikers, 1)).toBe(true);
     expect(cardFits(card('cracked-pots'), s, forest, s.hikers, 1)).toBe(false);
-    expect(cardFits(card('tummy-rumbling'), s, forest, s.hikers, 1)).toBe(true);
+    // Cost cards are switched off now (29-core-loop.md, section 6).
+    expect(cardFits(card('tummy-rumbling'), s, forest, s.hikers, 1)).toBe(false);
   });
 
   it('a challenge fits from its "From" tier on (Nov 26 evening)', () => {
@@ -53,8 +54,11 @@ describe('which cards fit a tile', () => {
     expect(cardFits(card('snow-leopard-attack'), snowy, anyTile, s.hikers, 3)).toBe(true);
   });
 
-  it('every challenge in the list can be played; every Trial is switched off', () => {
-    for (const c of CHALLENGES) expect(notPlayableYet(c), c.id).toBeUndefined();
+  it('every minigame challenge can be played; cost cards and Trials are switched off', () => {
+    for (const c of CHALLENGES) {
+      if (c.minigame) expect(notPlayableYet(c), c.id).toBeUndefined();
+      else expect(notPlayableYet(c), c.id).toMatch(/switched off/i);
+    }
     // Trials that share a name with a new card keep "-trial" on their id.
     expect(notPlayableYet(card('train-trial'))).toMatch(/switched off/);
     expect(card('train').kind).toBe('challenge');

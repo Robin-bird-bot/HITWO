@@ -44,14 +44,18 @@ describe('challenge density', () => {
     });
   }
 
-  it('Nightmare has no opportunities or quiet tiles among the plain tiles', () => {
-    for (const seed of SEEDS) {
-      const s = generateSection(seedRng(seed), {
-        biome: 'meadow',
-        tier: 1,
-        difficulty: 'nightmare',
-      });
-      expect(plainOf(s).every(isChallengeTile)).toBe(true);
+  it('about half the plain tiles hold a challenge at every difficulty, and none an opportunity (29, section 5)', () => {
+    for (const id of DIFFICULTY_IDS) {
+      expect(DIFFICULTY[id]).toMatchObject({ challengeShare: 0.5, opportunitiesPerSection: 0 });
+      for (const seed of SEEDS) {
+        const s = generateSection(seedRng(seed), { biome: 'meadow', tier: 1, difficulty: id });
+        const plain = plainOf(s);
+        const share = plain.filter(isChallengeTile).length / plain.length;
+        expect(Math.abs(share - 0.5), `${id} ${seed}`).toBeLessThanOrEqual(
+          0.5 / plain.length + 1e-9,
+        );
+        expect(plain.some((t) => t.opportunity)).toBe(false);
+      }
     }
   });
 

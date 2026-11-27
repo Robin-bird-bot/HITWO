@@ -41,6 +41,7 @@ export function notPlayableYet(card: CardDef): string | undefined {
     if (card.enabled === false) return 'Trials are switched off for now.';
     return card.goal.kind === 'off' ? card.goal.waitingOn : undefined;
   }
+  if (card.kind === 'challenge' && card.enabled === false) return 'Switched off for now.';
   return card.waitingOn;
 }
 
