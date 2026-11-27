@@ -65,3 +65,13 @@ export function resourceLimit(state: GameState, hiker: Hiker): number {
 export function resourceCount(hiker: Hiker): number {
   return Object.values(hiker.inventory.resources).reduce((sum: number, n) => sum + (n ?? 0), 0);
 }
+
+/** The item picks a hiker adds to the packing machine (Packed Toolbox picked at the start). */
+export function packingPicks(state: GameState, hiker: Hiker): number {
+  const ctx = queryContext(state, hiker);
+  let picks = 0;
+  for (const source of effectSourcesFor(state, hiker)) {
+    picks += source.hooks.packingPicks?.(ctx) ?? 0;
+  }
+  return picks;
+}

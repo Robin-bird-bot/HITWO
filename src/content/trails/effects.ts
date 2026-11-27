@@ -325,8 +325,15 @@ const JUST_AROUND: Hooks = {
   },
 };
 
+/**
+ * Packed Toolbox: learned on the trail, 2 random Tier 1 tools. Picked at the
+ * start, the party gets 2 more item picks on the packing machine instead
+ * (29-core-loop.md, section 7; Claude's idea), so the start stays all slots.
+ */
 const PACKED_TOOLBOX: Hooks = {
-  onLearn(ctx) {
+  packingPicks: () => B.packedToolbox.picks,
+  onLearn(ctx, { start }) {
+    if (start) return;
     const pool = Object.values(ITEMS).filter(
       (d) => d.type === 'tool' && d.tier === 1 && isOffered(d),
     );

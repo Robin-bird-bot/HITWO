@@ -79,7 +79,7 @@ Numbers in [brackets] are first guesses. Ideas marked *(Claude's idea)* are mine
   - the status screen flashes on;
   - "TRAILMATE OS 2.6" types out, and the satellites lock one by one (bars and blips);
   - each reel screen turns on like an old CRT, a bright line that opens up, one after another with a blip;
-  - then the first scan starts. About [2.5 s] in all; picking a new party skips most of it.
+  - then the screens read READY, the top line says PRESS SCAN and the SCAN button glows, until the player presses (changed Nov 27, `29-core-loop.md`, section 8). About [2.5 s] in all; picking a new party skips most of it.
 - **Scanning:**
   - the button presses in and the antenna swings;
   - a battery cell flashes white and drains, and a spark runs from the battery to the button;

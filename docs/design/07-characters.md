@@ -620,60 +620,22 @@ No group traits for now. Instead, characters who belong together have traits tha
 
 ## Starting bags
 
-At the start of a run, the player picks items and resources for each hiker. Some hikers also come with their own **starting bag**: special items, or blueprints they already know. \[First guesses.\]
+**Changed Nov 27 (`29-core-loop.md`, section 7):** Wyatt: "let's get rid of the starting items for hikers, and make it purely based on slots." Hikers start with no items: the packing machine (`27-packing-screen.md`) is the whole start. **Blueprints stay, and so do the holiday hikers' Presents** (gifts to hand out, not a kit; Claude's reading). Everyone not in the table starts with nothing.
 
-- **Starters** get 1 thing that fits them.
-- **Unlockable characters** get 1 or 2.
-- **Variants** can get a little more, since they're unlocked last.
 - A starting blueprint is already learned, and doesn't take an item slot.
-- Items in a starting bag roll Quality like any other item.
 
 | Character | Starting bag |
 | --- | --- |
-| Wyatt | Rain Jacket |
-| Mom | Dog Food, and 1 random Tier 1 blueprint |
-| Ellie | Mystery Meat |
-| Finn | Leash |
+| Mom | 1 random Tier 1 blueprint |
 | Gdog | 2 random Tier 1 food blueprints |
-| Grandpa Wink | Hiking Stick |
-| Cody | Dill Rolls (he loves bread) |
-| Grandpa Sherman | Hardhat |
-| Pearl | Binoculars |
-| Brutus | Pajamas |
-| Duke | Stuffed Animal |
-| Scarlet | Snack Pack |
-| Sinjon | Heavy Jacket |
-| Hershal | Postcard (more XP at checkpoints and challenges) |
-| Kai | Citro Drink |
-| Boss & Gracie | Fanny Pack |
-| Pepper | Light-Up Skechers |
-| Goldie | Cozy Sweater |
-| Loki | Backpack |
-| Coco | Camping Lamp |
 | Muffin | 1 random Tier 1 tool blueprint |
 | Catie | 1 random Tier 1 blueprint |
-| Melissa | Trail Shoes |
-| Leah | Bandaid |
 | Erin | 1 random Tier 1 shelter blueprint |
-| Jackson | Trowel |
-| Anni | Supply Map |
-| Mitchell | Flannel |
-| Nathan | Ukulele |
-| Ben | Survival Kit |
-| Mindy | Hello Kitty Bandaid |
-| Madeline | Wine |
-| Follower Finn | Sack |
-| Agility Finn | Jogging Shoes |
-| Ellie the Devourer | 2 Dog Food |
-| Nosework Ellie | Treasure Map |
-| Prepared Wink | Tent, Binoculars and Scanner |
-| Graduate Mom | Diploma and Wallet |
-| Showqueen Gdog | Fancy Attire |
-| Wywee | Trooper Mask |
 | Grammy Clause | 2 Presents |
 | Lelf | 1 random Tier 1 tool blueprint |
 | Grinch | 1 Present |
-| Redolf | Camping Lamp |
+
+**The old starting items (before Nov 27), kept for reference:** Wyatt, Rain Jacket; Mom, Dog Food; Ellie, Mystery Meat; Finn, Leash; Grandpa Wink, Hiking Stick; Cody, Dill Rolls; Grandpa Sherman, Hardhat; Pearl, Binoculars; Brutus, Pajamas; Duke, Stuffed Animal; Scarlet, Snack Pack; Sinjon, Heavy Jacket; Hershal, Postcard; Kai, Citro Drink; Boss & Gracie, Fanny Pack; Pepper, Light-Up Skechers; Goldie, Cozy Sweater; Loki, Backpack; Coco, Camping Lamp; Melissa, Trail Shoes; Leah, Bandaid; Jackson, Trowel; Anni, Supply Map; Mitchell, Flannel; Nathan, Ukulele; Ben, Survival Kit; Mindy, Hello Kitty Bandaid; Madeline, Wine; Follower Finn, Sack; Agility Finn, Jogging Shoes; Ellie the Devourer, 2 Dog Food; Nosework Ellie, Treasure Map; Prepared Wink, Tent, Binoculars and Scanner; Graduate Mom, Diploma and Wallet; Showqueen Gdog, Fancy Attire; Wywee, Trooper Mask; Redolf, Camping Lamp.
 
 ## Template builds
 

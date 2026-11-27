@@ -6,7 +6,8 @@
  * returns a new one, and all randomness comes from the state's own stream.
  *
  * - **Items (5 reels):** the party takes 2 items plus 1 per hiker. The first
- *   spin is free; a respin spins every lit reel and costs 1. Taking an item
+ *   spin is free but waits for the player to press (29-core-loop.md,
+ *   section 8); a respin spins every lit reel and costs 1. Taking an item
  *   puts it in a hiker's bag and darkens its reel for the rest of the step.
  *   Every reel dark with items still owed: Second Wind, all five light up
  *   and spin for free.
@@ -58,12 +59,14 @@ export interface Seat {
   id: string;
   name: string;
   color: string;
-  /** Items they start with anyway (kits, gift traits): in the bag first, marked START. */
+  /** Items they start with anyway (the holiday hikers' Presents): in the bag first, marked START. */
   start: readonly ItemId[];
   /** Bag slots in all, START items included. */
   bagSlots: number;
   /** Resources they can still hold after their kit and gifts. */
   resourceRoom: number;
+  /** More item picks they bring the party (Packed Toolbox picked at the start). */
+  extraPicks?: number;
 }
 
 /** What a hiker has taken. */
@@ -132,8 +135,12 @@ export const FORCE_BUNDLES: readonly { id: ForceSpin; label: string }[] = [
 /** Mixed into the run's seed for packing's own stream. */
 const STREAM = 0x9ac4ed;
 
-/** Items the party takes: 2 plus 1 per hiker (Wyatt), from 3 for 1 hiker to 8 for 6. */
-export const picksFor = (hikers: number): number => P.picks.base + P.picks.perHiker * hikers;
+/**
+ * Items the party takes: 2 plus 1 per hiker (Wyatt), from 3 for 1 hiker to 8
+ * for 6, plus any extras (Packed Toolbox picked at the start: +2).
+ */
+export const picksFor = (hikers: number, extra = 0): number =>
+  P.picks.base + P.picks.perHiker * hikers + extra;
 
 /** Free bag slots a seat has before packing. */
 const roomOf = (seat: Seat): number => Math.max(0, seat.bagSlots - seat.start.length);
@@ -206,8 +213,14 @@ export function newPacking({ seed, seats }: NewPacking): PackingState {
     seats: seats.map((s) => ({ ...s, start: [...s.start] })),
     packs: seats.map(() => ({ items: [], bundles: [] })),
     reels: freshReels(P.itemReels),
-    // Starting kits can fill bags: never owe more items than there's room for.
-    picksLeft: Math.min(picksFor(seats.length), room),
+    // Presents can fill bags: never owe more items than there's room for.
+    picksLeft: Math.min(
+      picksFor(
+        seats.length,
+        seats.reduce((sum, seat) => sum + (seat.extraPicks ?? 0), 0),
+      ),
+      room,
+    ),
     respins: P.itemRespins,
     freeSpin: true,
     jackpotOpen: false,
@@ -397,12 +410,16 @@ export function spin(s0: PackingState, force?: ForceSpin): PackingState {
   return s;
 }
 
-/** All reels light up again, empty, with a free spin due. */
+/**
+ * All reels light up again, empty, with a free spin due: nothing old can be
+ * taken before the player presses for it (29-core-loop.md, section 8).
+ */
 function relight(s: PackingState): void {
   for (const r of s.reels) {
     r.lit = true;
     r.locked = false;
     r.takenBy = null;
+    r.value = null;
   }
   s.freeSpin = true;
   s.jackpotOpen = false;

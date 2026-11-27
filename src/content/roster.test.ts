@@ -229,11 +229,11 @@ describe('the roster matches 07-characters.md', () => {
     ]);
   });
 
-  it('starting bags', () => {
-    const itemByName = new Map(Object.values(ITEMS).map((i) => [i.name.toLowerCase(), i.id]));
+  it('starting bags: no items, only blueprints and Presents (29-core-loop.md, section 7)', () => {
+    const listed = new Set<string>();
     for (const [name, text] of tableAfter('## Starting bags')) {
       const h = hikerNamed(name ?? '');
-      const items: string[] = [];
+      listed.add(h.id);
       let blueprints: { count: number; type?: string } | undefined;
       let presents = 0;
       const parts = (text ?? '')
@@ -249,26 +249,19 @@ describe('the roster matches 07-characters.md', () => {
         }
         // "2 Presents", "1 Present" (the holiday hikers): plain ones.
         const gift = /^(\d+) Presents?$/.exec(part);
-        if (gift) {
-          presents = Number(gift[1]);
-          continue;
-        }
-        const many = /^(\d+) (.+)$/.exec(part);
-        const n = many ? Number(many[1]) : 1;
-        const id = itemByName.get((many ? many[2]! : part).toLowerCase());
-        expect(id, `${name}: ${part}`).toBeDefined();
-        // Phase 10.6: a switched-off food in the doc's bag is Trail Mix in the game.
-        const def = ITEMS[id!];
-        const given = def?.type === 'food' && def.enabled === false ? 'trailMix' : id!;
-        for (let i = 0; i < n; i++) items.push(given);
+        expect(gift, `${name}: ${part}`).not.toBeNull();
+        presents = Number(gift?.[1] ?? 0);
       }
-      expect(h.startingBag.items ?? [], name).toEqual(items);
       expect(h.startingBag.presents ?? 0, name).toBe(presents);
       if (blueprints) {
         expect(h.startingBag.blueprints, name).toEqual({ ...blueprints, tier: 1 });
       } else {
         expect(h.startingBag.blueprints, name).toBeUndefined();
       }
+    }
+    // Anyone not in the table starts with nothing.
+    for (const h of ROSTER) {
+      if (!listed.has(h.id)) expect(h.startingBag, h.name).toEqual({});
     }
   });
 
@@ -414,15 +407,14 @@ describe('the roster’s rules', () => {
 describe('starting a run with real hikers', () => {
   const pick = (...ids: string[]) => ids.map((id) => ROSTER_BY_ID.get(id)!);
 
-  it('hands out the starting bags: items roll Quality, blueprints are learned', () => {
+  it('hands out the starting bags: no items, blueprints are learned', () => {
     const s = createGame({
       seed: 3,
       hikers: pick('mom', 'gdog', 'preparedWink', 'ellieDevourer'),
       startingResources: false,
     });
     const [mom, gdog, wink, devourer] = s.hikers;
-    expect(mom!.inventory.bag.map((i) => i.itemId)).toEqual(['dogFood']);
-    expect(mom!.inventory.bag[0]?.quality).toBeGreaterThanOrEqual(1);
+    expect(mom!.inventory.bag).toEqual([]);
     expect(mom!.blueprints).toHaveLength(1);
     expect(ITEMS[mom!.blueprints![0]!]?.tier).toBe(1);
     // 2 from her bag, and 3 from Family Cookbook, her first tree's start (Phase 10.7).
@@ -430,8 +422,9 @@ describe('starting a run with real hikers', () => {
     expect(
       gdog!.blueprints!.every((id) => ITEMS[id]?.type === 'food' && ITEMS[id]?.tier === 1),
     ).toBe(true);
-    expect(wink!.inventory.bag.map((i) => i.itemId)).toEqual(['tent', 'binoculars', 'scanner']);
-    expect(devourer!.inventory.bag.map((i) => i.itemId)).toEqual(['dogFood', 'dogFood']);
+    // The old signature kits are gone (29-core-loop.md, section 7).
+    expect(wink!.inventory.bag).toEqual([]);
+    expect(devourer!.inventory.bag).toEqual([]);
   });
 
   it('holiday hikers start with their Presents: Grammy’s are hers, the Grinch’s nobody’s', () => {
@@ -450,7 +443,7 @@ describe('starting a run with real hikers', () => {
       ['present', 'plain', undefined],
     ]);
     expect(lelf!.blueprints?.every((id) => ITEMS[id]?.type === 'tool')).toBe(true);
-    expect(redolf!.inventory.bag.map((i) => i.itemId)).toEqual(['campingLamp']);
+    expect(redolf!.inventory.bag).toEqual([]);
   });
 
   it('the 4 random starting resources stay', () => {

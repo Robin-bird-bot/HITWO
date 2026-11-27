@@ -779,7 +779,12 @@ export const BALANCE = {
     homemade: { cards: 1, luck: 1 },
     leadTheWay: { discount: 1 },
     justAroundTheNextCorner: { tiles: 3, chance: 0.5 },
-    packedToolbox: { tools: 2 },
+    /**
+     * Packed Toolbox: learned on the trail, this many random Tier 1 tools;
+     * picked at the start, this many more item picks on the packing machine
+     * (29-core-loop.md, section 7). TODO(wyatt): +[2] picks (Claude's idea).
+     */
+    packedToolbox: { tools: 2, picks: 2 },
     properWay: { uses: 1 },
     rainLover: { luck: { 1: 1, 2: 2, 3: 2 }, cards: 1, xpPercent: 100 },
     /**

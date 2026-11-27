@@ -417,6 +417,7 @@ export function CabinetMachine({
       async intro() {
         await wait(150);
       },
+      armed() {},
       lever() {
         SND.ratchet();
         lever.current?.animate(
@@ -679,6 +680,12 @@ export function CabinetMachine({
           </div>
         )}
         <div className={styles.window}>
+          {/* Wyatt: the slots wait for the player to press before each free spin. */}
+          {state.freeSpin && need && !view.busy && (
+            <div className={styles.pressme}>
+              PULL THE POLE<small>FREE SPIN · OR PRESS SPACE</small>
+            </div>
+          )}
           <div className={styles.reels}>
             {view.reels.map((rv, i) => {
               const taker = rv.takenBy !== null ? state.seats[rv.takenBy] : null;
@@ -758,7 +765,7 @@ export function CabinetMachine({
         className={join(
           styles.lever,
           leverOff && styles.leverOff,
-          !leverOff && locked && styles.leverGlow,
+          !leverOff && (locked || state.freeSpin) && styles.leverGlow,
         )}
         aria-label="Pull the hiking pole to spin"
         aria-disabled={leverOff}
@@ -771,7 +778,15 @@ export function CabinetMachine({
       </button>
       {need && (
         <p className={styles.lvtag}>
-          {leverOff ? (
+          {state.freeSpin ? (
+            <>
+              FREE SPIN!
+              <br />
+              PULL THE POLE
+              <br />
+              OR PRESS SPACE
+            </>
+          ) : leverOff ? (
             <>
               NO RESPINS LEFT:
               <br />

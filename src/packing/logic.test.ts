@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../config/balance';
 import { ITEMS } from '../content/items';
-import { DEFAULT_PARTY } from '../content/roster';
+import { DEFAULT_PARTY, ROSTER_BY_ID } from '../content/roster';
 import { bagSlots, createGame, resourceCount, resourceLimit } from '../engine';
 import { seedRng } from '../engine/rng';
 import {
@@ -278,6 +278,9 @@ describe('Second Wind', () => {
     expect(s.picksLeft).toBe(3);
     expect(s.reels.every((r) => r.lit && r.takenBy === null)).toBe(true);
     expect(s.freeSpin).toBe(true);
+    // The reels come back empty: nothing can be taken before the free spin.
+    expect(s.reels.every((r) => r.value === null)).toBe(true);
+    expect(s.reels.some((_, i) => canTake(s, i))).toBe(false);
 
     // Party of 3: the 5th item is the last one owed, so the reels stay dark.
     let t = spin(fresh(3));
@@ -285,6 +288,19 @@ describe('Second Wind', () => {
     expect(itemsDone(t)).toBe(true);
     expect(t.reels.every((r) => !r.lit)).toBe(true);
     expect(canSpin(t)).toBe(false);
+  });
+});
+
+describe('waiting for a press (29-core-loop.md, section 8)', () => {
+  it('nothing can be taken until the free spin, at the start and on each turn', () => {
+    const s = fresh(2);
+    expect(s.freeSpin).toBe(true);
+    expect(s.reels.some((_, i) => canTake(s, i))).toBe(false);
+    const turn = toResources(packAllItems(spin(s)));
+    expect(turn.freeSpin).toBe(true);
+    expect(turn.reels.every((r) => r.lit && r.value === null)).toBe(true);
+    expect(turn.reels.some((_, i) => canTake(turn, i))).toBe(false);
+    expect(spin(turn).last?.paid).toBe(false);
   });
 });
 
@@ -340,15 +356,36 @@ describe('Skip packing', () => {
   });
 });
 
+describe('the start (29-core-loop.md, section 7)', () => {
+  it('the holiday hikers’ Presents show as START and take room', () => {
+    const grammy = ROSTER_BY_ID.get('grammyClause')!;
+    const [seat] = seatsFor(4, [grammy]);
+    expect(seat?.start).toEqual(['present', 'present']);
+    expect(newPacking({ seed: 4, seats: [seat!] }).picksLeft).toBe(
+      Math.min(picksFor(1), seat!.bagSlots - 2),
+    );
+  });
+
+  it('Packed Toolbox picked at the start adds 2 item picks instead of tools', () => {
+    const wink = { ...ROSTER_BY_ID.get('grandpaWink')!, start: 'wink-packer' };
+    const seats = seatsFor(9, [wink, ROSTER_BY_ID.get('mom')!]);
+    expect(seats[0]?.start).toEqual([]);
+    expect(seats[0]?.extraPicks).toBe(BALANCE.trails.packedToolbox.picks);
+    expect(seats[1]?.extraPicks).toBe(0);
+    expect(newPacking({ seed: 9, seats }).picksLeft).toBe(picksFor(2) + 2);
+    // Learned on the trail later, it still gives 2 random Tier 1 tools.
+    const game = createGame({ seed: 9, hikers: [wink], startingResources: false });
+    expect(game.hikers[0]?.inventory.bag).toEqual([]);
+  });
+});
+
 describe('handing over', () => {
   it('puts the items in the right bags and the bundles’ resources in, after kits and gifts', () => {
     const seed = 2026;
     const seats = seatsFor(seed, DEFAULT_PARTY);
     const dry = createGame({ seed, hikers: DEFAULT_PARTY, startingResources: false });
-    // The starting kits show as START items.
-    for (const [i, setup] of DEFAULT_PARTY.entries()) {
-      for (const id of setup.startingBag?.items ?? []) expect(seats[i]?.start).toContain(id);
-    }
+    // No starting kits (29-core-loop.md, section 7): nothing shows as START.
+    for (const seat of seats) expect(seat.start).toEqual([]);
     const packed = autoPack({ seed, seats });
     const game = createGame({ seed, hikers: DEFAULT_PARTY, packed });
     game.hikers.forEach((h, i) => {

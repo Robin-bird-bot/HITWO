@@ -416,6 +416,11 @@ export interface Hooks {
   onPhaseEnd?(e: { phase: Phase }, ctx: EffectContext): void;
   modifyGain?(q: GainQuery, ctx: QueryContext): ModifierResult;
   modifyCapacity?(q: CapacityQuery, ctx: QueryContext): ModifierResult;
+  /**
+   * More item picks for the party on the packing machine (Packed Toolbox
+   * picked at the start; 29-core-loop.md, section 7). Asked once, before the hike.
+   */
+  packingPicks?(ctx: QueryContext): number;
   /** Returns a reason when this source stops the action. */
   canAct?(q: ActQuery, ctx: QueryContext): string | undefined;
   onMove?(e: MoveHookEvent, ctx: EffectContext): void;
@@ -641,7 +646,7 @@ export interface Hooks {
   /** A new run began: everyone in the party hears of it once (Gift Wrapper rolls the wish lists). */
   onRunStart?(ctx: EffectContext): void;
   /** A Skill Trails step that gives something gives it when learned (Family Cookbook, Packed Toolbox). */
-  onLearn?(ctx: EffectContext): void;
+  onLearn?(ctx: EffectContext, how: { start: boolean }): void;
   /** Crafts only Presents, with Gift Wrapper's recipes (Gift Wrapper). */
   wrapsPresents?(ctx: QueryContext): boolean;
   /** How much more likely each item type is in the Presents this hiker opens (Toy Maker, Treat Sniffer). */

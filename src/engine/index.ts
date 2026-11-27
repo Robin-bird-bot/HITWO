@@ -82,7 +82,14 @@ export { SAVE_VERSION, serialize, deserialize, type LoadResult, type LoadFailure
 export { generateSection, type SectionOptions } from './trail/generate';
 export { checkSection } from './trail/check';
 export { seedRng, nextFloat, shuffle } from './rng';
-export { bagSlots, resourceCount, resourceLimit, type BagSlots, type ItemSlots } from './inventory';
+export {
+  bagSlots,
+  packingPicks,
+  resourceCount,
+  resourceLimit,
+  type BagSlots,
+  type ItemSlots,
+} from './inventory';
 export type { ItemDef, ItemType, ItemUse, FamilyDef, AbilityDef } from './effects';
 export {
   clothesOf,

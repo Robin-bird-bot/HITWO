@@ -92,6 +92,8 @@ export interface SkinFx {
   readonly lightGapMs: number;
   /** Before the first spin (TrailMate boots up). */
   intro(): Promise<void>;
+  /** A free spin is armed and waits for the player's press (start, Second Wind, each turn). */
+  armed(): void;
   lever(): void;
   noRespins(): void;
   /** A respin is spent (`left` are left): the acorn to the squirrel, or a battery cell drains. */

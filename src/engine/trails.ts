@@ -182,7 +182,7 @@ export function learnStep(
     party.points = Math.max(0, party.points - cost);
   }
   pushEvent(state, { kind: 'learned', hikerId: h.id, stepId, cost, ...(start ? { start } : {}) });
-  TRAITS[stepId]?.hooks?.onLearn?.(effectContext(state, h));
+  TRAITS[stepId]?.hooks?.onLearn?.(effectContext(state, h), { start });
 }
 
 /** A learned step's next level: its points are paid, and it's logged. */

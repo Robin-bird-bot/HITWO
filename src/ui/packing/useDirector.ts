@@ -140,7 +140,10 @@ export class PackingDirector {
     return this.state.step === 'items' ? rollItem(this.fillerRng) : rollBundle(this.fillerRng);
   }
 
-  /** Boot up, light the reels and take the free first spin (once). */
+  /**
+   * Boot up and light the (empty) reels, once. The free first spin waits for
+   * the player's press (Wyatt: "have the player press them first").
+   */
   start(): void {
     const run = ++this.run;
     if (this.booted) return;
@@ -152,10 +155,8 @@ export class PackingDirector {
       this.booted = true;
       await f.intro();
       await this.lightUp();
-      this.view.busy = false;
-      this.render();
-      await wait(250);
-      if (run === this.run) this.pull();
+      if (run !== this.run) return;
+      this.arm();
     })();
   }
 
@@ -191,7 +192,14 @@ export class PackingDirector {
     }, 300);
   }
 
-  /** Lights every reel, one after another (or all at once). */
+  /** The free spin is armed: the machine waits for the lever, SCAN or Space. */
+  private arm(): void {
+    this.view.busy = false;
+    this.fx()?.armed();
+    this.render();
+  }
+
+  /** Lights every reel, one after another (or all at once), empty. */
   private async lightUp(): Promise<void> {
     const f = this.fx();
     if (!f) return;
@@ -200,6 +208,9 @@ export class PackingDirector {
       r.locked = false;
       r.takenBy = null;
       r.quiet = false;
+      r.shown = null;
+      r.above = null;
+      r.below = null;
       r.onId = this.id();
       f.reelOn(i);
       this.render();
@@ -397,10 +408,7 @@ export class PackingDirector {
         f.secondWind();
         await this.stamp('secondWind', false);
         await this.lightUp();
-        v.busy = false;
-        this.render();
-        await wait(250);
-        this.pull();
+        this.arm();
         return;
       }
     } else if (s.turn !== prev.turn) {
@@ -416,7 +424,7 @@ export class PackingDirector {
     this.render();
   }
 
-  /** A hiker's resource turn: fresh reels, their tag or portrait, a free spin. */
+  /** A hiker's resource turn: fresh empty reels, their tag or portrait, and a free spin armed. */
   private async startTurn(s: PackingState): Promise<void> {
     const f = this.fx();
     if (!f) return;
@@ -426,10 +434,7 @@ export class PackingDirector {
     this.render();
     await f.turn(s.turn);
     await this.lightUp();
-    v.busy = false;
-    this.render();
-    await wait(250);
-    this.pull();
+    this.arm();
   }
 
   /** The button at the right: NEXT: RESOURCES, or START THE HIKE. */

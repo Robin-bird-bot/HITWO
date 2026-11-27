@@ -106,12 +106,11 @@ describe('the front', () => {
 });
 
 describe('the starting bag in words', () => {
-  it('items, counts and random blueprints', () => {
-    expect(card('finn').bag).toBe('Leash');
-    expect(card('ellie').bag).toBe('Mystery Meat');
-    expect(card('mom').bag).toBe('Dog Food + 1 random Tier 1 blueprint');
+  it('random blueprints and Presents; no items (29-core-loop.md, section 7)', () => {
+    expect(card('finn').bag).toBe('');
+    expect(card('ellie').bag).toBe('');
+    expect(card('mom').bag).toBe('1 random Tier 1 blueprint');
     expect(card('gdog').bag).toBe('2 random Tier 1 food blueprints');
-    expect(bagWords({ items: ['dogFood', 'dogFood'] })).toBe('2 Dog Food');
     expect(bagWords({ presents: 2 })).toBe('2 Presents');
     expect(bagWords({})).toBe('');
   });
@@ -145,7 +144,9 @@ describe('the card', () => {
     expect(out).toContain('&quot;THE FOLLOWER&quot;');
     expect(out).toContain('LEADER');
     expect(out).toContain('LEASH PULLER');
-    expect(out).toContain('STARTING BAG');
+    // No starting items now (29-core-loop.md, section 7): only a bag with blueprints shows.
+    expect(out).not.toContain('STARTING BAG');
+    expect(html({ hikerId: 'mom' })).toContain('STARTING BAG');
     expect(out).toContain('aria-pressed="false"');
   });
 
@@ -155,7 +156,8 @@ describe('the card', () => {
     // Nov 26 evening: Minigame Master tops the Daredevil Loop; Scout Trail replaced Smith Path.
     expect(wyatt).toContain('Minigame Master');
     expect(wyatt).toContain('Scout Trail');
-    expect(wyatt).toContain('RAIN JACKET');
+    expect(wyatt).not.toContain('RAIN JACKET');
+    expect(html({ hikerId: 'gdog', side: 'back' })).toContain('2 RANDOM TIER 1 FOOD BLUEPRINTS');
   });
 
   it('a locked card: no button, no name, no back', () => {
