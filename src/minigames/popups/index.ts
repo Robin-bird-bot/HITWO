@@ -17,7 +17,9 @@ import {
 import {
   CROSSROADS_POPUP,
   FAKE_SIGNS_POPUP,
+  CRACKED_POTS_POPUP,
   FIND_OBJECT_POPUP,
+  SPOOKY_GHOST_POPUP,
   FIND_PATH_POPUP,
   MEMORY_POPUP,
   PICTURE_PUZZLE_POPUP,
@@ -69,6 +71,8 @@ export const POPUPS: Readonly<Record<string, GamePopup>> = {
   safari: SAFARI_POPUP,
   crossroads: CROSSROADS_POPUP,
   findObject: FIND_OBJECT_POPUP,
+  crackedPots: CRACKED_POTS_POPUP,
+  spookyGhost: SPOOKY_GHOST_POPUP,
   trailBlocks: TRAIL_BLOCKS_POPUP,
   flyBlock: FLY_BLOCK_POPUP,
   squirrelTheft: SQUIRREL_THEFT_POPUP,

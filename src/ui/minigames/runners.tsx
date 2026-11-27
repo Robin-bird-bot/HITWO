@@ -36,6 +36,8 @@ import { FlyBlock } from './flyBlock/FlyBlock';
 import { SquirrelTheft } from './squirrelTheft/SquirrelTheft';
 import { Birdsong } from './birdsong/Birdsong';
 import { PackItUp } from './packItUp/PackItUp';
+import { SpookyGhost } from './spookyGhost/SpookyGhost';
+import { CrackedPots } from './crackedPots/CrackedPots';
 import { Trails } from './signsTrails/Trails';
 import { Whackoon } from './whackoon/Whackoon';
 import { Minefield } from './minefield/Minefield';
@@ -85,6 +87,8 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   squirrelTheft: SquirrelTheft,
   birdsong: Birdsong,
   packItUp: PackItUp,
+  spookyGhost: SpookyGhost,
+  crackedPots: CrackedPots,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -188,6 +192,12 @@ function SquirrelTheftStill({ settings, hikers }: MinigamePreviewProps) {
 function BirdsongStill({ settings, hikers }: MinigamePreviewProps) {
   return <Birdsong settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function SpookyGhostStill({ settings, hikers }: MinigamePreviewProps) {
+  return <SpookyGhost settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function CrackedPotsStill({ settings, hikers }: MinigamePreviewProps) {
+  return <CrackedPots settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 function PackItUpStill({ settings, hikers }: MinigamePreviewProps) {
   return <PackItUp settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
@@ -226,4 +236,6 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   squirrelTheft: SquirrelTheftStill,
   birdsong: BirdsongStill,
   packItUp: PackItUpStill,
+  spookyGhost: SpookyGhostStill,
+  crackedPots: CrackedPotsStill,
 };

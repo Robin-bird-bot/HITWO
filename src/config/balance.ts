@@ -2782,6 +2782,43 @@ export const BALANCE = {
       swapsOnTier1: 2,
     },
 
+    /**
+     * Cracked Pots (24-challenges-reset.md, section 7): Picture Puzzle with
+     * shards of pot. By tier: shards per pot, seconds per shard, and what a
+     * shard snapping in adds to the clock (as in Picture Puzzle).
+     * - A shard snaps in when dropped this close to its spot (units).
+     * - The two pots' top-left corners on the screen (one hiker: the first),
+     *   and the blanket the shards lie on.
+     * - Shards are cut from random points at least this share of the even
+     *   spacing apart. Up to this tier, faint crack lines show where the
+     *   shards go (Claude's idea, like Picture Puzzle's Tier I locks).
+     * - Prepare: FOOD adds this many seconds; GLUE puts one shard of each
+     *   pot in place before you start.
+     * - Between pairs the screen holds this long. The demo bot drops a shard
+     *   every so often, the wrong spot first this often, this far off.
+     * TODO(wyatt): [6, 8, 10, 12, 14] shards, [6] snap, +10 s; the seconds and bonuses are my guesses.
+     */
+    crackedPots: {
+      tiers: {
+        1: { shards: 6, secPerShard: 6, snapSec: 3 },
+        2: { shards: 8, secPerShard: 5, snapSec: 2 },
+        3: { shards: 10, secPerShard: 4.5, snapSec: 2 },
+        4: { shards: 12, secPerShard: 4, snapSec: 1.5 },
+        5: { shards: 14, secPerShard: 3.5, snapSec: 1 },
+      } as Readonly<Record<MgTier, { shards: number; secPerShard: number; snapSec: number }>>,
+      snap: 6,
+      pots: [
+        { x: 22, y: 42 },
+        { x: 222, y: 42 },
+      ] as const,
+      blanket: { left: 106, top: 34, right: 214, bottom: 190 },
+      apart: 0.55,
+      cracksUpTo: 1,
+      extraSec: 10,
+      breakSec: 1.5,
+      bot: { everySec: 0.9, wrongChance: 0.25, wrongBy: 18 },
+    },
+
     /** Picture Puzzle: rebuild pictures from stacked piles; two hikers share one tray. */
     picturePuzzle: {
       /**
@@ -2965,6 +3002,56 @@ export const BALANCE = {
       baitSec: 0.3,
       /** The demo bot misjudges this share of its throws. */
       botMiss: 0.3,
+    },
+
+    /**
+     * Spooky Ghost! (24-challenges-reset.md, section 6): a haunted Find the
+     * Object, always in the dark. By tier: each hiker's finds, the sanity
+     * bar's seconds, the ghosts at a time, and the flashlight's radius (the
+     * doc's [30] and [26] read as the radius, as mockup 54 draws it, so a
+     * ghost that drains you is always in the light).
+     * - The field (scene units); a new mitten lands at least this far from
+     *   the light; a tap this close to a lit mitten finds it.
+     * - Ghosts: while the light is this close to one, sanity drains this many
+     *   times as fast. Each fades in over this long, stays this long
+     *   (from–to), fades out, and comes back somewhere else: never this
+     *   close to the pointer, or this close to a mitten. From this tier they
+     *   drift this fast; from this tier this share of them drift toward the
+     *   light (my guess). "BOO" shows this long when the light finds one.
+     * - Prepare: FOOD makes sanity drain this share slower, LANTERN makes the
+     *   light this much bigger, LUCKY CHARM makes ghosts drain this share as much.
+     * - The demo bot's light moves this fast, and turns away from a ghost this late.
+     * TODO(wyatt): [3, 4, 4, 5, 5], [45, 45, 40, 40, 35 s], [4–8], [30], [26], [80], [20],
+     * [4×], [0.8 s], [3–6 s], [50], [20], [10], [15%], [+6], half; the rest are my guesses.
+     */
+    spookyGhost: {
+      tiers: {
+        1: { finds: 3, sanitySec: 45, ghosts: 4, light: 30 },
+        2: { finds: 4, sanitySec: 45, ghosts: 5, light: 30 },
+        3: { finds: 4, sanitySec: 40, ghosts: 6, light: 26 },
+        4: { finds: 5, sanitySec: 40, ghosts: 7, light: 26 },
+        5: { finds: 5, sanitySec: 35, ghosts: 8, light: 26 },
+      } as Readonly<
+        Record<MgTier, { finds: number; sanitySec: number; ghosts: number; light: number }>
+      >,
+      field: { left: 8, right: 312, top: 28, bottom: 190 },
+      newAway: 80,
+      tapReach: 9,
+      ghostNear: 20,
+      ghostDrain: 4,
+      fadeSec: 0.8,
+      staySec: [3, 6] as const,
+      clearOfLight: 50,
+      clearOfMitten: 20,
+      driftFrom: 3,
+      drift: 10,
+      chaseFrom: 4,
+      chaseShare: 0.5,
+      booSec: 0.8,
+      foodSlower: 0.15,
+      lanternBigger: 6,
+      charmDrain: 0.5,
+      bot: { speed: 110, lateSec: 0.35 },
     },
 
     /**

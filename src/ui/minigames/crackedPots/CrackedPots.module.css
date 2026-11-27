@@ -1,0 +1,101 @@
+/* Cracked Pots (24-challenges-reset.md, section 7; mockup 55). */
+
+.play {
+  background: #b9c793;
+}
+
+/* The blanket the shards lie on, with faint rows. */
+.blanket {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.75px solid #6f8752;
+  border-radius: 2px;
+  background-color: #9fb37a;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 9.5px,
+    rgba(211, 223, 175, 0.45) 9.5px 10px
+  );
+}
+
+.blanketTitle {
+  position: absolute;
+  top: 27px;
+  text-align: center;
+  font-size: 3.6px;
+  color: #1d2918;
+}
+
+/* A hiker's pot: its label, and their color above. */
+.label {
+  position: absolute;
+  text-align: center;
+  font-size: 3.8px;
+  color: #1d2918;
+}
+
+.dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.6px #1d2918;
+}
+
+/* CAMERA or OLD PHOTO: a faint picture of the whole pot. */
+.ghost {
+  position: absolute;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.shard {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+}
+
+.shard > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.shard[data-placed] {
+  cursor: default;
+}
+
+/* Picked up: a light frame around it, lifted above the rest. */
+.shard[data-lifted] {
+  cursor: grabbing;
+  z-index: 3;
+  outline: 0.75px solid #f4f8dc;
+  outline-offset: 1px;
+}
+
+/* Before the shards are cut (or in a still frame): a plain box. */
+.box {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 0.6px solid #1d2918;
+  background: #6f8752;
+}
+
+.squares {
+  display: flex;
+  gap: 1.2px;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: 60px;
+}
+
+.squares > span {
+  width: 3.6px;
+  height: 3.6px;
+  border-radius: 0.6px;
+  background: #3c4e2f;
+}

@@ -6,11 +6,12 @@
  */
 import { BALANCE } from '../../config/balance';
 import { isDark, isWindy, targetsFor, type Mode } from '../findObject/logic';
-import { FOOD, item, prepNumber, res } from '../prepare';
+import { category, FOOD, item, prepNumber, res } from '../prepare';
 import { newSafari } from '../safari/logic';
-import type { MinigameSettings, Tier } from '../types';
+import { TIER_LABELS, type MinigameSettings, type Tier } from '../types';
 import {
   countBar,
+  FAIL_ENERGY,
   finger,
   fromTier,
   hikerCount,
@@ -269,6 +270,85 @@ export const PICTURE_PUZZLE_POPUP: GamePopup = {
       'GHOST PICTURE',
       'GHOST',
       'a faint picture under the frame',
+      { param: P_('ghost'), step: 1 },
+    ),
+  ],
+};
+
+// ── Cracked Pots (24-challenges-reset.md, section 7) ───────────────────────
+
+const CP = MG.crackedPots;
+
+export const CRACKED_POTS_POPUP: GamePopup = {
+  howToPlay: () =>
+    phrases(
+      'Your pot broke into shards. Drag each shard back where it broke off: it snaps in when it’s close. Hikers play in pairs and share one blanket of shards. **No turning: the shapes are the puzzle.**',
+    ),
+  rules: (s) => {
+    const cracks = s.cracks === 'on' || (s.cracks !== 'off' && tierIn(s) <= CP.cracksUpTo);
+    return rulesOf(
+      line('Each shard that snaps in adds a little time.'),
+      cracks &&
+        line(
+          'Faint cracks show where the shards go.',
+          s.cracks === 'on' ? undefined : `TIER ${TIER_LABELS[CP.cracksUpTo as Tier]}`,
+        ),
+      odd(s) && line('The last hiker plays alone.'),
+    );
+  },
+  controls: [{ action: 'MOVE', inputs: [mouse('Drag a shard'), OR, finger('Drag a shard')] }],
+  chips: () => ['IN PAIRS'],
+  ifFail: FAIL_ENERGY,
+  bars(s) {
+    const t = CP.tiers[tierIn(s)];
+    const shards = numOr(s, 'shards', t.shards);
+    const pots = Math.min(2, Math.max(1, hikerCount(s)));
+    const sec = t.secPerShard * shards * pots;
+    return [
+      timeBar(
+        'time',
+        'TIME',
+        sec,
+        sec + prepNumber(s, P_('extraSec')),
+        mostOver((x) => CP.tiers[x].secPerShard * CP.tiers[x].shards * 2),
+      ),
+      countBar(
+        'shards',
+        'SHARDS',
+        shards,
+        shards,
+        mostOver((x) => CP.tiers[x].shards),
+      ),
+    ];
+  },
+  options: () => [
+    opt(
+      'extraSec',
+      'green',
+      category('food'),
+      `+${CP.extraSec} S`,
+      `+${CP.extraSec}S`,
+      `+${CP.extraSec} seconds`,
+      { param: P_('extraSec'), step: CP.extraSec },
+      { max: 2 },
+    ),
+    opt(
+      'glue',
+      'red',
+      res('clay'),
+      'ONE SHARD IN',
+      'GLUE',
+      'one shard of each pot starts in place',
+      { param: P_('glue'), step: 1 },
+      { max: 2, title: 'GLUE' },
+    ),
+    opt(
+      'ghost',
+      'blue',
+      item('camera', 'oldPhoto'),
+      'GHOST PICTURE',
+      'GHOST',
+      'a faint picture of the whole pot',
       { param: P_('ghost'), step: 1 },
     ),
   ],
@@ -764,6 +844,95 @@ export const FIND_OBJECT_POPUP: GamePopup = {
       '−1',
       'one snack fewer each round',
       { param: P_('fewer'), step: 1 },
+    ),
+  ],
+};
+
+// ── Spooky Ghost! (24-challenges-reset.md, section 6) ──────────────────────
+
+const SG = MG.spookyGhost;
+
+export const SPOOKY_GHOST_POPUP: GamePopup = {
+  howToPlay(s) {
+    const finds = numOr(s, 'finds', SG.tiers[tierIn(s)].finds);
+    return phrases(
+      `It’s pitch black: only your flashlight shows anything. Find each hiker’s lost mitten and tap it; a new one turns up somewhere else. **Ghosts drain your sanity when your light is near them.** Each hiker needs ${finds} finds before your sanity runs out.`,
+    );
+  },
+  rules: (s) =>
+    rulesOf(
+      line('Ghosts only show up in your light.'),
+      line('Everyone plays at once. There’s nothing wrong to tap.'),
+      tierIn(s) >= SG.driftFrom && line('Ghosts drift around.', fromTier(SG.driftFrom as Tier)),
+      tierIn(s) >= SG.chaseFrom &&
+        line('Some ghosts drift toward your light.', fromTier(SG.chaseFrom as Tier)),
+    ),
+  controls: [
+    { action: 'LIGHT', inputs: [mouse('Move the mouse'), OR, finger('Drag')] },
+    tapRow('FIND'),
+  ],
+  chips: () => ['ALL TOGETHER'],
+  ifFail: FAIL_ENERGY,
+  bars(s) {
+    const tier = tierIn(s);
+    const sanity = numOr(s, 'sanity', SG.tiers[tier].sanitySec);
+    const slower = prepNumber(s, P_('slower')) * SG.foodSlower;
+    const finds = numOr(s, 'finds', SG.tiers[tier].finds);
+    const ghosts = numOr(s, 'ghosts', SG.tiers[tier].ghosts);
+    return [
+      timeBar(
+        'sanity',
+        'SANITY',
+        sanity,
+        sanity / Math.max(0.1, 1 - slower),
+        mostOver((t) => SG.tiers[t].sanitySec) / (1 - 2 * SG.foodSlower),
+      ),
+      countBar(
+        'finds',
+        'FINDS EACH',
+        finds,
+        finds,
+        mostOver((t) => SG.tiers[t].finds),
+      ),
+      countBar(
+        'ghosts',
+        'GHOSTS',
+        ghosts,
+        ghosts,
+        mostOver((t) => SG.tiers[t].ghosts),
+      ),
+    ];
+  },
+  options: () => [
+    opt(
+      'slower',
+      'green',
+      category('food'),
+      'SANITY LASTS',
+      'SLOW',
+      `sanity drains ${Math.round(SG.foodSlower * 100)}% slower`,
+      { param: P_('slower'), step: 1 },
+      { max: 2 },
+    ),
+    opt(
+      'lantern',
+      'blue',
+      category('fire'),
+      'BIGGER LIGHT',
+      `+${SG.lanternBigger}`,
+      'a bigger flashlight',
+      { param: P_('lantern'), step: 1 },
+      { max: 2, title: 'LANTERN' },
+    ),
+    opt(
+      'charm',
+      'red',
+      category('trinkets'),
+      'CALMER GHOSTS',
+      'CALM',
+      'ghosts drain half as much',
+      { param: P_('charm'), step: 1 },
+      { title: 'LUCKY CHARM', need: 2 },
     ),
   ],
 };

@@ -170,6 +170,55 @@ export const FIND_OBJECT: MinigameInfo = {
   ],
 };
 
+// ── Spooky Ghost! (docs/design/24-challenges-reset.md, section 6) ──
+
+const SGK = BALANCE.minigames.spookyGhost;
+
+export const SPOOKY_GHOST: MinigameInfo = {
+  id: 'spookyGhost',
+  name: 'Spooky Ghost!',
+  baseGame: 'Flashlight search',
+  category: 'search',
+  description:
+    'Find the hikers’ lost mittens in the dark with one flashlight. Keep the light off the ghosts.',
+  status: 'ready',
+  lineUp: false,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'finds',
+      'Finds each',
+      1,
+      8,
+      SGK.tiers[1].finds,
+      '',
+      1,
+      byTier((t) => SGK.tiers[t].finds),
+    ),
+    autoRange(
+      'sanity',
+      'Sanity',
+      15,
+      90,
+      SGK.tiers[1].sanitySec,
+      ' s',
+      5,
+      `${byTier((t) => SGK.tiers[t].sanitySec)} s`,
+    ),
+    autoRange(
+      'ghosts',
+      'Ghosts',
+      0,
+      12,
+      SGK.tiers[1].ghosts,
+      '',
+      1,
+      byTier((t) => SGK.tiers[t].ghosts),
+    ),
+  ],
+};
+
 export const REMEMBER_PATH: MinigameInfo = {
   id: 'rememberPath',
   name: 'Remember the Path',
@@ -538,6 +587,40 @@ export const PICTURE_PUZZLE: MinigameInfo = {
       menu: true,
       hint: 'The first hiker’s picture; a second one is always different',
     },
+  ],
+};
+
+// ── Cracked Pots (docs/design/24-challenges-reset.md, section 7) ──
+
+const CPK = BALANCE.minigames.crackedPots;
+
+export const CRACKED_POTS: MinigameInfo = {
+  id: 'crackedPots',
+  name: 'Cracked Pots',
+  baseGame: 'Shard puzzle',
+  category: 'puzzle',
+  description: 'Put the broken pots back together, shard by shard. Two hikers share one blanket.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'shards',
+      'Shards each',
+      4,
+      16,
+      CPK.tiers[1].shards,
+      '',
+      1,
+      byTier((t) => CPK.tiers[t].shards),
+    ),
+    override(
+      'cracks',
+      'Crack lines',
+      ON_OFF,
+      `Auto: on up to Tier ${TIER_LABELS[CPK.cracksUpTo as Tier]}`,
+    ),
   ],
 };
 
@@ -1535,6 +1618,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FAKE_SIGNS,
   TRAIL_MAP,
   PICTURE_PUZZLE,
+  CRACKED_POTS,
   MINEFIELD,
   THIN_ICE,
   PACK_IT_UP,
@@ -1544,6 +1628,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   CROSSROADS,
   BIRDSONG,
   FIND_OBJECT,
+  SPOOKY_GHOST,
   TRAIL_BLOCKS,
   SLEEPING_BEAR,
   WHACKOON,
