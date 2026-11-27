@@ -14,6 +14,7 @@ import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { CONDITIONS } from '../../content/conditions';
 import { pickForTile, playable } from '../challenges/pick';
+import { challengeTiles, placePool } from '../challenges/pool';
 import { openCard, revealCardOn } from '../challenges/reveal';
 import { ITEMS, findableItems } from '../../content';
 import { addCondition, removeCondition } from '../conditions';
@@ -409,6 +410,19 @@ export function applyDebug(state: GameState, op: DebugOp): void {
       else delete state.snowy;
       pushEvent(state, { kind: 'debug', note: `Snowy section ${op.on ? 'on' : 'off'}` });
       break;
+    case 'setMinigamesOnly': {
+      // Settings → Testing (25-challenges-on-the-map.md, section 3.2): pools
+      // with no cost cards. The tiles nobody has reached get a new pool now.
+      if (op.on) state.testing = { ...state.testing, minigamesOnly: true };
+      else delete state.testing;
+      for (const t of challengeTiles(state)) {
+        if (t.id !== state.challenge?.tileId) delete t.revealedCard;
+      }
+      delete state.section.infoboard;
+      placePool(state);
+      pushEvent(state, { kind: 'debug', note: `Minigames only ${op.on ? 'on' : 'off'}` });
+      break;
+    }
     case 'setWeather':
       if (op.weather !== state.weather.today) changeWeather(state, op.weather);
       if (op.hold) state.weather.hold = true;

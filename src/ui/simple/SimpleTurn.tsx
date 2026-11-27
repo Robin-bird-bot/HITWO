@@ -45,6 +45,8 @@ interface SimpleTurnProps {
   onBlueprints?(): void;
   /** Opens the Merchant or Traveling Trader on the hiker's tile. */
   onFeature?(): void;
+  /** Opens the Trail Infoboard (on the trailhead tile, when the biome has one). */
+  onInfoboard?(): void;
   /** The hikers picked together (multi-select), in turn order. */
   group?: readonly HikerId[];
   /** A tapped usable badge: the Abilities panel opens at it. */
@@ -65,6 +67,7 @@ export function SimpleTurn({
   onAbandon,
   onBlueprints,
   onFeature,
+  onInfoboard,
   group,
   focusAbility,
 }: SimpleTurnProps) {
@@ -137,6 +140,7 @@ export function SimpleTurn({
             state={state}
             hiker={hiker}
             {...(onFeature ? { onFeature } : {})}
+            {...(onInfoboard ? { onInfoboard } : {})}
             {...(onFree ? { onFree } : {})}
           />
           <Equipped hiker={hiker} compact {...(onPick ? { onPick } : {})} />

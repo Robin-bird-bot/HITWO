@@ -476,6 +476,12 @@ export const BALANCE = {
      * idea). TODO(wyatt): [2.5], [3], [7], [40%, 30%, 25%].
      */
     pool: { tilesPerCard: 2.5, min: 3, max: 7, costShare: [0.4, 0.3, 0.25] as readonly number[] },
+    /**
+     * The Trail Infoboard (25-challenges-on-the-map.md, section 2): posters
+     * pinned face up at the start (or a third of the pool, rounded down, if
+     * more), and the tip boxes' prices in caps. TODO(wyatt): [2], [1], [3].
+     */
+    infoboard: { startUp: 2, pinCaps: 1, findCaps: 3 },
     punish: {
       x: { 1: [1, 2], 2: [2, 3], 3: [3, 4] },
       bleeding: { 1: [2, 2], 2: [2, 3], 3: [3, 3] },

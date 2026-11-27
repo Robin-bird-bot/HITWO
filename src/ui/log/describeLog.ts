@@ -745,6 +745,13 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text: `${cardName}: ${text}.`, tone: 'challenge' });
         break;
       }
+      case 'infoboardPin':
+        lines.push({
+          id: e.id,
+          text: `A poster went up on the Trail Infoboard: ${CARDS[e.cardId]?.name ?? 'a challenge'} (−${e.caps} ${e.caps === 1 ? 'cap' : 'caps'}).`,
+          tone: 'challenge',
+        });
+        break;
       case 'revealedCard': {
         const tile = state.section.tiles[e.tileId];
         const where = tile ? tileName(tile) : 'A tile';

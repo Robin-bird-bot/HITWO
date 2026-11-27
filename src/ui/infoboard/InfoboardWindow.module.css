@@ -1,0 +1,770 @@
+/* The Trail Infoboard (25-challenges-on-the-map.md, section 2), ported from
+   docs/mockups/infoboard/prototype.html on the 1600×1000 stage. */
+
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  font-family: var(--font-body);
+  color: #f1eadb;
+  --ink: #2a2420;
+  --paper: #f2ebd8;
+  --red: #c8423a;
+  --gold: #e8c55a;
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.55) 100%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0 2px, transparent 2px 44px),
+    repeating-linear-gradient(90deg, rgba(255, 220, 170, 0.025) 0 1px, transparent 1px 9px),
+    linear-gradient(#3e2618, #2a1810);
+}
+
+.wood {
+  composes: wood from '../station/StationScreen.module.css';
+}
+
+.brass {
+  composes: brass from '../station/StationScreen.module.css';
+  color: #3a2410;
+}
+
+/* ── The purse and the way back ── */
+
+.purse {
+  position: absolute;
+  left: 36px;
+  top: 900px;
+  width: 230px;
+  height: 64px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  box-shadow:
+    0 6px 0 #2a170c,
+    0 10px 18px rgba(0, 0, 0, 0.4);
+}
+
+.purse img {
+  width: 40px;
+  height: 40px;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.4));
+}
+
+.purseLabel {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #f3dcae;
+}
+
+.purseCount {
+  font-family: var(--font-pixel);
+  font-size: 30px;
+  color: #fff3d2;
+  margin-left: auto;
+  text-shadow: 0 2px 0 #3a2410;
+}
+
+.purse[data-bump] .purseCount {
+  animation: bump 0.35s ease;
+}
+
+@keyframes bump {
+  40% {
+    transform: scale(1.35);
+    color: #ffd36a;
+  }
+}
+
+.help {
+  position: absolute;
+  left: 372px;
+  top: 884px;
+  width: 860px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #d9c7a6;
+}
+
+.close {
+  position: absolute;
+  right: 36px;
+  top: 900px;
+  height: 64px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #3a2410;
+  box-shadow:
+    0 6px 0 #8a6a3a,
+    0 10px 18px rgba(0, 0, 0, 0.4);
+}
+
+.close:hover {
+  filter: brightness(1.06);
+}
+
+/* ── The kiosk ── */
+
+.roof {
+  position: absolute;
+  left: 170px;
+  top: 40px;
+  width: 1260px;
+  height: 128px;
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0 2px, transparent 2px 46px),
+    repeating-linear-gradient(0deg, #4b3a2c 0 30px, #2e231a 30px 32px), #4b3a2c;
+  filter: drop-shadow(0 8px 0 #1c140d);
+}
+
+.roof::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+      90deg,
+      transparent 0 23px,
+      rgba(0, 0, 0, 0.25) 23px 25px,
+      transparent 25px 46px
+    )
+    0 32px / 100% 32px repeat-y;
+  opacity: 0.9;
+}
+
+/* Moss along the shingle rows. */
+.roof::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  height: 4px;
+  background: #6f7d3a;
+  box-shadow:
+    0 32px 0 #627033,
+    0 64px 0 #6f7d3a;
+  opacity: 0.8;
+}
+
+.header {
+  position: absolute;
+  left: 216px;
+  top: 166px;
+  width: 1168px;
+  height: 64px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    inset 0 -4px 0 rgba(0, 0, 0, 0.25),
+    0 4px 0 #1c140d;
+}
+
+.header span {
+  font-family: var(--font-pixel);
+  font-size: 34px;
+  letter-spacing: 6px;
+  color: var(--gold);
+  text-shadow:
+    0 -2px 0 rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 240, 200, 0.25);
+}
+
+.header small {
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 3px;
+  color: #e6cf98;
+  margin-left: 18px;
+  vertical-align: 6px;
+}
+
+.frame {
+  position: absolute;
+  left: 236px;
+  top: 232px;
+  width: 1128px;
+  height: 600px;
+  border-radius: 6px;
+  padding: 22px;
+  box-shadow:
+    0 10px 0 #1c140d,
+    0 20px 30px rgba(0, 0, 0, 0.45);
+}
+
+.cork {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(90, 55, 25, 0.35) 0 1px, transparent 2px) 0 0 / 9px 11px,
+    radial-gradient(circle at 70% 60%, rgba(255, 230, 180, 0.25) 0 1px, transparent 2px) 0 0 / 13px
+      7px,
+    radial-gradient(circle at 40% 80%, rgba(80, 45, 20, 0.3) 0 1.5px, transparent 2.5px) 0 0 / 17px
+      15px,
+    linear-gradient(#c49a63, #b4874f);
+  box-shadow:
+    inset 0 0 0 3px #4a2c17,
+    inset 0 6px 14px rgba(0, 0, 0, 0.35);
+}
+
+.shelf {
+  position: absolute;
+  left: 216px;
+  top: 828px;
+  width: 1168px;
+  height: 26px;
+  border-radius: 3px;
+  box-shadow: 0 6px 0 #1c140d;
+}
+
+.post {
+  position: absolute;
+  top: 850px;
+  width: 40px;
+  height: 160px;
+}
+
+/* ── The printed map and the notices ── */
+
+.map {
+  position: absolute;
+  left: 372px;
+  top: 24px;
+  width: 380px;
+  height: 400px;
+  background: #efe6cc;
+  padding: 12px;
+  transform: rotate(-0.6deg);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.map svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.note {
+  position: absolute;
+  background: #fbf5e3;
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  text-align: center;
+  padding: 8px;
+  font-size: 9px;
+  line-height: 1.5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Posters ── */
+
+.poster {
+  position: absolute;
+  width: 156px;
+  height: 214px;
+  perspective: 800px;
+  transform-origin: 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.poster[data-up] {
+  cursor: help;
+}
+
+.inner {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1.2);
+  transform-style: preserve-3d;
+}
+
+.poster[data-down] .inner {
+  transform: rotateY(180deg);
+}
+
+.face,
+.back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.face {
+  background: var(--paper);
+  padding: 9px 9px 0;
+  color: var(--ink);
+}
+
+.face img,
+.noArt {
+  width: 100%;
+  height: 118px;
+  object-fit: cover;
+  display: block;
+  filter: sepia(0.15) contrast(1.05);
+}
+
+.noArt {
+  background: repeating-linear-gradient(45deg, #d9ceb0 0 6px, #e6dcc1 6px 12px);
+}
+
+.posterName {
+  font-family: var(--font-pixel);
+  font-size: 12.5px;
+  letter-spacing: 0.6px;
+  margin-top: 8px;
+  line-height: 1.15;
+}
+
+.posterKind {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #7a6a52;
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.posterTier {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.back {
+  transform: rotateY(180deg);
+  background: #e9dfc3;
+  display: grid;
+  place-items: center;
+  color: #8a7a5a;
+}
+
+.back b {
+  font-family: var(--font-callout);
+  font-size: 64px;
+  color: #b9a67d;
+}
+
+.back i {
+  position: absolute;
+  bottom: 14px;
+  font-style: normal;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.pin {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border-radius: 50%;
+  z-index: 3;
+  background: radial-gradient(circle at 35% 35%, #ff8a7a, #c8423a 55%, #7a1d17);
+  box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);
+}
+
+.poster[data-pop] .pin {
+  animation: pop 0.35s ease 0.45s both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.poster[data-found] .face::after {
+  content: 'ALL FOUND';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 62px;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-align: center;
+  color: var(--red);
+  border: 3px solid var(--red);
+  padding: 4px;
+  transform: rotate(-12deg);
+  background: rgba(242, 235, 216, 0.85);
+}
+
+.root[data-picking] .poster[data-up]:not([data-found]) {
+  cursor: pointer;
+}
+
+.root[data-picking] .poster[data-up]:not([data-found]) .face {
+  outline: 4px solid var(--gold);
+  animation: glow 1s ease-in-out infinite;
+}
+
+@keyframes glow {
+  50% {
+    outline-color: #fff2b0;
+    box-shadow: 0 0 22px 6px rgba(255, 220, 120, 0.7);
+  }
+}
+
+.poster[data-nope] {
+  animation: nope 0.25s ease;
+}
+
+@keyframes nope {
+  33% {
+    translate: -6px 0;
+  }
+  66% {
+    translate: 6px 0;
+  }
+}
+
+/* ── The tooltip ── */
+
+.tip {
+  position: absolute;
+  width: 320px;
+  pointer-events: none;
+  background: rgba(20, 26, 20, 0.96);
+  border: 2px solid #4a5a44;
+  border-radius: 10px;
+  padding: 14px 16px;
+  z-index: 30;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+}
+
+.tipName {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #d3dfaf;
+}
+
+.tipText {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #e8e2cf;
+  margin: 8px 0 10px;
+}
+
+.tipMore {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  color: #a0b37d;
+  line-height: 1.6;
+}
+
+.tipMore b {
+  color: #e8c55a;
+  font-weight: normal;
+}
+
+/* ── The tip boxes ── */
+
+.box {
+  position: absolute;
+  top: 686px;
+  width: 176px;
+  height: 142px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+}
+
+.boxBody {
+  position: absolute;
+  inset: 22px 0 0 0;
+  border-radius: 6px;
+  box-shadow:
+    0 6px 0 #2a170c,
+    inset 0 -6px 0 rgba(0, 0, 0, 0.2);
+}
+
+.lid {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  top: 8px;
+  height: 24px;
+  border-radius: 5px;
+  background: linear-gradient(#8a5a34, #6a4224);
+  box-shadow: 0 3px 0 #3c2414;
+}
+
+.slot {
+  position: absolute;
+  left: 50%;
+  top: 15px;
+  width: 56px;
+  height: 8px;
+  margin-left: -28px;
+  border-radius: 4px;
+  background: #1a0e06;
+  box-shadow: inset 0 2px 2px #000;
+}
+
+.plate {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 50px;
+  height: 76px;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.plate img {
+  width: 38px;
+  height: 38px;
+}
+
+.price {
+  font-family: var(--font-pixel);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.what {
+  grid-column: 1 / 3;
+  font-family: var(--font-pixel);
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: -8px;
+}
+
+.box:hover .boxBody,
+.box:focus-visible .boxBody {
+  filter: brightness(1.08);
+}
+
+.box[data-jiggle] {
+  animation: jiggle 0.4s ease;
+}
+
+@keyframes jiggle {
+  20% {
+    transform: rotate(-4deg);
+  }
+  45% {
+    transform: rotate(3deg);
+  }
+  70% {
+    transform: rotate(-1.5deg);
+  }
+}
+
+.box[data-no] {
+  animation: shake 0.4s ease;
+}
+
+.box[data-no] .price {
+  color: var(--red);
+}
+
+@keyframes shake {
+  20%,
+  60% {
+    transform: translateX(-7px);
+  }
+  40%,
+  80% {
+    transform: translateX(7px);
+  }
+}
+
+.box:disabled {
+  cursor: default;
+  filter: grayscale(0.5) brightness(0.8);
+}
+
+.stamp {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 64px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #fff3d2;
+  background: rgba(60, 30, 15, 0.85);
+  padding: 4px;
+  border-radius: 4px;
+}
+
+/* ── Picking a poster, and the acorn ── */
+
+.banner {
+  position: absolute;
+  left: 50%;
+  top: 248px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px 10px 22px;
+  border-radius: 10px;
+  background: rgba(20, 26, 20, 0.95);
+  border: 2px solid var(--gold);
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--gold);
+  z-index: 25;
+}
+
+.banner button {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 0;
+  cursor: pointer;
+  background: #e9d6ab;
+  color: #3a2410;
+  box-shadow: 0 3px 0 #8a6a3a;
+}
+
+.acorn {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  z-index: 40;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.45));
+}
+
+/* ── Found on your map ── */
+
+.reveal {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 8, 5, 0.72);
+  z-index: 50;
+  display: grid;
+  place-items: center;
+}
+
+.revealCard {
+  width: 760px;
+  border-radius: 14px;
+  padding: 22px 26px 24px;
+  background: #efe6cc;
+  color: var(--ink);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.revealCard h2 {
+  margin: 0 0 4px;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 18px;
+  letter-spacing: 2px;
+}
+
+.revealCard p {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.revealCard svg {
+  width: 100%;
+  height: 420px;
+  display: block;
+  background: #e6dcbd;
+  border-radius: 8px;
+}
+
+.revealCard button {
+  margin-top: 14px;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 1px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--red);
+  color: #fff3d2;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #7a231d;
+}
+
+.dropPin {
+  animation: drop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both 0.3s;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+@keyframes drop {
+  0% {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner {
+    transition: none;
+  }
+  .poster[data-pop] .pin,
+  .purse[data-bump] .purseCount,
+  .box[data-jiggle],
+  .box[data-no],
+  .poster[data-nope],
+  .root[data-picking] .poster[data-up]:not([data-found]) .face,
+  .dropPin {
+    animation: none;
+  }
+}

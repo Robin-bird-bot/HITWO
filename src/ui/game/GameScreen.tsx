@@ -79,6 +79,7 @@ import {
   ZOOM,
   type Camera,
 } from '../map/mapLayout';
+import type { TileMark } from '../map/MapTile';
 import { MapView } from '../map/MapView';
 import { SideRail } from '../map/SideRail';
 import type { ActionId } from '../panels/hikerInfo';
@@ -162,6 +163,10 @@ import { PartyLevel, PartyToast } from '../trails/PartyLevel';
 import { usePartyToast, useSkillTrails } from '../trails/useSkillTrails';
 import { MinigameFlow } from '../minigames/MinigameFlow';
 import { minigameHikersFor, outcomeOf, popupFor, spendsOf } from '../challenge/minigameOnTile';
+import { atTrailhead } from '../../engine/challenges/infoboard';
+import { debugEnabled } from '../debug/debugEnabled';
+import { useAutoPass, useShowPlaced } from '../debug/testingSettings';
+import { InfoboardWindow } from '../infoboard/InfoboardWindow';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
 
@@ -383,6 +388,14 @@ export function GameScreen({
   const [craftOpen, setCraftOpen] = useState<{ hikerId: string; tab: CraftTab } | null>(null);
   /** The tile whose Merchant or Traveling Trader is open. */
   const [shopTile, setShopTile] = useState<TileId | null>(null);
+  // The Trail Infoboard (25-challenges-on-the-map.md, section 2), and the tile it just found.
+  const [infoboardOpen, setInfoboardOpen] = useState(false);
+  const [foundPin, setFoundPin] = useState<TileId | null>(null);
+  useEffect(() => {
+    if (!foundPin) return;
+    const t = window.setTimeout(() => setFoundPin(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [foundPin]);
   /** A drag in progress (Nov 14 update): a hiker being dragged to a tile. */
   const [drag, setDrag] = useState<DragState | null>(null);
   /** A drop that asks first (eat, feed, place, use a map tool), where it was dropped. */
@@ -447,13 +460,14 @@ export function GameScreen({
     // Only a new challenge changes the pop-up: the game runs inside it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openChallenge]);
-  const marks: Partial<Record<string, 'trial' | 'target' | 'easier'>> = Object.fromEntries(
+  const marks: Partial<Record<string, TileMark>> = Object.fromEntries(
     (state.trials ?? []).flatMap((t) => [
       [t.tileId, 'trial' as const],
       ...(t.targetTile ? [[t.targetTile, 'target' as const] as const] : []),
     ]),
   );
   for (const id of easier) marks[id] = 'easier';
+  if (foundPin) marks[foundPin] = 'found';
 
   const centerOf = (tileId: string | undefined) => {
     const tile = tileId ? section.tiles[tileId] : undefined;
@@ -491,6 +505,23 @@ export function GameScreen({
     const first = easier[0];
     if (first && !easier.some(inView)) setCamera(focusOn(centerOf(first), camera.zoom, bounds));
   }
+
+  /** The kiosk on the trailhead tile: it only opens while a hiker stands there. */
+  const openInfoboard = () => {
+    if (state.challenge || state.scavenge || state.station) return;
+    if (!atTrailhead(state)) {
+      setNote('The Trail Infoboard opens while a hiker stands on the trailhead tile.');
+      return;
+    }
+    setNote(undefined);
+    setInfoboardOpen(true);
+  };
+  /** WHERE IS IT? found a tile: close the board, pan the map there and drop a pin. */
+  const showFound = (tileId: TileId) => {
+    setInfoboardOpen(false);
+    setCamera(focusOn(centerOf(tileId), camera.zoom, bounds));
+    setFoundPin(tileId);
+  };
 
   const reset = () => {
     setMode({ kind: 'idle' });
@@ -614,6 +645,27 @@ export function GameScreen({
     }
     return true;
   };
+
+  // Settings → Testing (25-challenges-on-the-map.md, section 3.2), with the debug tools on.
+  const debugOn = debugEnabled();
+  const autoPass = useAutoPass();
+  const showPlaced = useShowPlaced();
+  const testing = {
+    minigamesOnly: !!state.testing?.minigamesOnly,
+    onMinigamesOnly: (on: boolean) =>
+      dispatch({ type: 'debug', op: { kind: 'setMinigamesOnly', on } }),
+  };
+  // Auto-pass minigames: everyone in the game passes without playing.
+  useEffect(() => {
+    if (!autoPass || !minigame) return;
+    dispatch({
+      type: 'resolveMinigameChallenge',
+      outcome: { passed: minigame.hikers.map((h) => h.id) },
+      spent: [],
+    });
+    // Only a new minigame challenge (or switching it on) passes it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minigame, autoPass]);
 
   /** Finishes a challenge; a random outcome then shows what happened. */
   const resolveChallenge = (action: Extract<Action, { type: 'resolveChallenge' }>) => {
@@ -1219,6 +1271,8 @@ export function GameScreen({
                 marks={marks}
                 onRevealedClick={setRevealedOpen}
                 onWonderClick={setWonderOpen}
+                {...(section.pool?.length ? { onInfoboardClick: openInfoboard } : {})}
+                showPlaced={showPlaced}
                 selectedId={selected?.id ?? null}
                 onSelectHiker={pickHiker}
                 camera={camera}
@@ -1278,7 +1332,7 @@ export function GameScreen({
                     onOpen={() => openTrails()}
                     style={{ left: 184, top: 16 }}
                   />
-                  <MenuButton onTitle={onQuit} />
+                  <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
                   <SimpleParty
                     state={state}
                     selectedId={selected?.id ?? null}
@@ -1318,6 +1372,7 @@ export function GameScreen({
                       onAbandon={setConfirmAbandon}
                       onBlueprints={openBlueprints}
                       onFeature={() => setShopTile(selected.tileId)}
+                      onInfoboard={openInfoboard}
                       group={group}
                     />
                   )}
@@ -1333,7 +1388,7 @@ export function GameScreen({
                     onOpen={() => openTrails()}
                     style={{ left: 470, top: 86 }}
                   />
-                  <MenuButton onTitle={onQuit} />
+                  <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
                   <PartyPanel
                     state={state}
                     selectedId={selected?.id ?? null}
@@ -1365,6 +1420,7 @@ export function GameScreen({
                       onAbandon={setConfirmAbandon}
                       onBlueprints={openBlueprints}
                       onFeature={() => setShopTile(selected.tileId)}
+                      onInfoboard={openInfoboard}
                       group={group}
                     />
                   )}
@@ -1465,7 +1521,20 @@ export function GameScreen({
                 />
               )}
 
-              {state.challenge && minigame && (
+              {infoboardOpen &&
+                !state.challenge &&
+                !state.scavenge &&
+                !result &&
+                !state.station && (
+                  <InfoboardWindow
+                    state={state}
+                    dispatch={(action) => dispatch(action)}
+                    onClose={() => setInfoboardOpen(false)}
+                    onShow={showFound}
+                  />
+                )}
+
+              {state.challenge && minigame && !autoPass && (
                 <MinigameFlow
                   key={`${state.challenge.tileId}:${state.challenge.cardId}`}
                   challenge={minigame.challenge}

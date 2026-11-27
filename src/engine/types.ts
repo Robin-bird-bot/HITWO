@@ -1032,6 +1032,8 @@ export type Action =
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
   /** Finishes a minigame challenge (25-challenges-on-the-map.md, section 3): how it went, and what Prepare spent. */
   | import('./challenges/minigame').ResolveMinigameAction
+  /** The Trail Infoboard's tip boxes (25-challenges-on-the-map.md, section 2). */
+  | import('./challenges/infoboard').InfoboardAction
   /** On a Choice space: which of the two challenges the party takes on. */
   | { type: 'chooseChallenge'; cardId: string }
   /** "Got it": the open Trial starts its countdown. */
@@ -1139,6 +1141,8 @@ export type DebugOp =
   | { kind: 'setTier'; tier: 1 | 2 | 3 }
   /** Counts the section as snowy (Phase 11 makes this real). */
   | { kind: 'setSnowy'; on: boolean }
+  /** Settings → Testing: pools with no cost cards; the unreached tiles are placed again. */
+  | { kind: 'setMinigamesOnly'; on: boolean }
   /** The weather challenge gates check (Phase 6 makes this real). */
   /** Sets today's weather (it starts today), and whether it holds instead of changing. */
   | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
@@ -1487,6 +1491,8 @@ export type GameEventBody =
     }
   /** A tile's card was revealed early, and shows on the map. */
   | { kind: 'revealedCard'; tileId: TileId; cardId: string; cause: string }
+  /** The Trail Infoboard: a poster pinned face up for caps (25-challenges-on-the-map.md, section 2). */
+  | { kind: 'infoboardPin'; cardId: string; caps: number }
   /** A Wonder was found: its 3 goals are picked. `cause` is how, if nobody landed there. */
   | { kind: 'wonderRevealed'; tileId: TileId; wonderId: string; cause?: string }
   /** A Wonder was accomplished, and who took which reward. */

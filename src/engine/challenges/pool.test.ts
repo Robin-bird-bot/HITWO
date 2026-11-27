@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { CARDS } from '../../content/challenges';
 import { createGame } from '../newGame';
-import { fixtureHiker } from '../test/fixtures';
+import { fixtureHiker, run } from '../test/fixtures';
 import type { GameState, Tile } from '../types';
 import { challengeTiles, fitsTile, placePool, placedTier, poolCards } from './pool';
 import { revealTile } from './reveal';
@@ -166,5 +166,18 @@ describe('the pool, placed when the section is made', () => {
     s.testing = { minigamesOnly: true };
     placePool(s);
     expect(poolCards(s).every((c) => !!c.minigame)).toBe(true);
+  });
+
+  it('switching Minigames only places the unreached tiles again, and switching back undoes it', () => {
+    const s = game(5);
+    const before = s.section.pool;
+    const on = run(s, { type: 'debug', op: { kind: 'setMinigamesOnly', on: true } });
+    expect(on.testing?.minigamesOnly).toBe(true);
+    expect(poolCards(on).every((c) => !!c.minigame)).toBe(true);
+    for (const t of placedTiles(on))
+      expect(CARDS[t.revealedCard!.cardId]).toHaveProperty('minigame');
+    const off = run(on, { type: 'debug', op: { kind: 'setMinigamesOnly', on: false } });
+    expect(off.testing).toBeUndefined();
+    expect(off.section.pool).toEqual(before);
   });
 });
