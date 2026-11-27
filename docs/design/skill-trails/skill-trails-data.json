@@ -1,5 +1,5 @@
 {
-  "_about": "Phase 10.7 Skill Trails data for the first 6 hikers. Field names are a suggestion: fit them to the repo's data format. Text is player-facing. [Brackets] are first guesses: move them to balance.ts with TODO(wyatt).",
+  "_about": "Phase 10.7 Skill Trails data for the first 6 hikers. Field names are a suggestion: fit them to the repo's data format. Text is player-facing. [Brackets] are first guesses: move them to balance.ts with TODO(wyatt). Nov 26 evening: a step's optional `levels` lists its levels past the first (26-fixes-and-wyatt-trees.md, section 5.1); Wyatt's Daredevil Loop and Scout Trail are from section 5.2 and 5.3.",
   "kinds": {
     "passive": "Always on. Diamond badge.",
     "usable": "Button with limited uses. Round badge.",
@@ -702,14 +702,29 @@
           "id": "wyatt-daredevil",
           "area": "utility",
           "name": "Daredevil Loop",
+          "class": "daredevil",
           "steps": [
             {
               "tier": 1,
               "name": "Rule Changer",
               "step": "new",
               "kind": "usable",
-              "text": "Swap a revealed Tier 1 challenge on a tile next to Wyatt for another random Tier 1 challenge.",
-              "uses": "1 per section",
+              "uses": "[1] per section",
+              "text": "Switch a revealed minigame challenge next to Wyatt for a random one of the same tier.",
+              "levels": [
+                {
+                  "text": "Switch a revealed minigame challenge next to Wyatt: pick 1 of 2 of the same tier.",
+                  "changed": [
+                    "pick 1 of 2"
+                  ]
+                },
+                {
+                  "text": "Switch a revealed minigame challenge next to Wyatt: pick 1 of 4 of the same tier.",
+                  "changed": [
+                    "pick 1 of 4"
+                  ]
+                }
+              ],
               "id": "wyatt-daredevil-t1"
             },
             {
@@ -717,67 +732,121 @@
               "name": "Rule Changer II",
               "step": "upgrade",
               "kind": "usable",
-              "text": "Swap a revealed Tier 1 or 2 challenge on any tile for another random one of the same tier.",
-              "uses": "2 per section",
+              "uses": "[1] per section",
+              "text": "As Rule Changer. When Wyatt lands on a minigame challenge, the first Prepare slot is free.",
               "changed": [
-                "Tier 1 or 2",
-                "any tile",
-                "twice"
+                "the first Prepare slot is free"
+              ],
+              "levels": [
+                {
+                  "text": "As Rule Changer. When Wyatt lands on a minigame challenge, the first two Prepare slots are free.",
+                  "changed": [
+                    "the first two Prepare slots are free"
+                  ]
+                }
               ],
               "id": "wyatt-daredevil-t2"
             },
             {
               "tier": 3,
-              "name": "Rule Changer III",
-              "step": "upgrade",
-              "kind": "usable",
-              "text": "Remove the challenge from any tile, even one nobody has revealed. If there's no challenge there, the use is wasted.",
-              "uses": "2 per section",
-              "changed": [
-                "remove instead of swap",
-                "unrevealed tiles"
+              "name": "Minigame Master",
+              "step": "new",
+              "kind": "toggle",
+              "startsOff": true,
+              "on": "The next minigame challenge Wyatt lands on is passed without playing, for [4] Energy from Wyatt. Then this turns off. Once per section.",
+              "off": "Nothing.",
+              "levels": [
+                {
+                  "on": "The next minigame challenge Wyatt lands on is passed without playing, for [3] Energy from Wyatt. Then this turns off. Once per section.",
+                  "changed": [
+                    "[3] Energy"
+                  ]
+                },
+                {
+                  "on": "The next minigame challenge Wyatt lands on is passed without playing, for [2] Energy from Wyatt. Then this turns off. Twice per section.",
+                  "changed": [
+                    "[2] Energy",
+                    "Twice per section"
+                  ]
+                }
               ],
               "id": "wyatt-daredevil-t3"
             }
-          ],
-          "class": "daredevil"
+          ]
         },
         {
-          "id": "wyatt-smith",
-          "area": "resources",
-          "name": "Smith Path",
+          "id": "wyatt-scout",
+          "area": "movement",
+          "name": "Scout Trail",
+          "class": "scout",
           "steps": [
             {
               "tier": 1,
-              "name": "Toy Chest",
+              "name": "Game Sight",
               "step": "new",
-              "kind": "grant",
-              "text": "Learn 3 random tool recipes.",
-              "startText": "Start with 3 random tool recipes.",
-              "id": "wyatt-smith-t1"
+              "kind": "passive",
+              "text": "At the start of each phase, each minigame challenge next to Wyatt has a [25%] chance to be revealed.",
+              "levels": [
+                {
+                  "text": "At the start of each phase, each minigame challenge next to Wyatt has a [50%] chance to be revealed.",
+                  "changed": [
+                    "[50%]"
+                  ]
+                },
+                {
+                  "text": "At the start of each phase, each minigame challenge next to Wyatt has a [75%] chance to be revealed.",
+                  "changed": [
+                    "[75%]"
+                  ]
+                },
+                {
+                  "text": "At the start of each phase, every minigame challenge next to Wyatt is revealed.",
+                  "changed": [
+                    "every minigame challenge next to Wyatt is revealed"
+                  ]
+                }
+              ],
+              "id": "wyatt-scout-t1"
             },
             {
               "tier": 2,
-              "name": "Artisan Smith",
-              "step": "new",
+              "name": "Game Sight II",
+              "step": "upgrade",
               "kind": "passive",
-              "text": "Wyatt can craft Tier 2 tools, and sees 1 more card when crafting tools.",
-              "id": "wyatt-smith-t2"
+              "text": "As Game Sight, up to 2 tiles away.",
+              "changed": [
+                "up to 2 tiles away"
+              ],
+              "levels": [
+                {
+                  "text": "As Game Sight, up to 3 tiles away.",
+                  "changed": [
+                    "up to 3 tiles away"
+                  ]
+                }
+              ],
+              "id": "wyatt-scout-t2"
             },
             {
               "tier": 3,
-              "name": "Master Smith",
+              "name": "Game Sight III",
               "step": "upgrade",
               "kind": "passive",
-              "text": "He can craft Tier 3 tools, and sees 2 more cards when crafting tools.",
+              "text": "As Game Sight II, and it reveals cost cards too.",
               "changed": [
-                "Tier 3",
-                "2 more cards"
+                "and it reveals cost cards too"
               ],
-              "id": "wyatt-smith-t3"
+              "levels": [
+                {
+                  "text": "As Game Sight II, and it reveals cost cards and opportunities too.",
+                  "changed": [
+                    "and opportunities"
+                  ]
+                }
+              ],
+              "id": "wyatt-scout-t3"
             }
-          ],
-          "class": "smith"
+          ]
         }
       ]
     }

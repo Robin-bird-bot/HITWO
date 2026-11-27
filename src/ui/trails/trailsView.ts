@@ -8,12 +8,21 @@
  * - **Can learn now** (`open`): the step below is learned and the party level
  *   is high enough. Moving dashes, a pulsing badge, and its cost.
  * - **Not yet:** dark dashes, a dim badge, and the party level it needs.
+ * - **Levels** (26-fixes-and-wyatt-trees.md, section 5.1): a learned step
+ *   with levels shows pips (●○○) and can be pressed again for the next one.
  */
 import { CLASS_COLORS } from '../../content/classes';
-import type { TrailStep, Tree } from '../../content/trails/trees';
+import {
+  atLevel,
+  levelCount,
+  stepLevelOf,
+  type TrailStep,
+  type Tree,
+} from '../../content/trails/trees';
 import {
   hasLearned,
   learnReason,
+  levelCost,
   partyOf,
   stepCost,
   treesOf,
@@ -26,14 +35,20 @@ import { stepLook, type StepLook } from './stepLook';
 export type StepState = 'learned' | 'open' | 'notYet';
 
 export interface StepView {
+  /** The step with its words at the hiker's level. */
   step: TrailStep;
   look: StepLook;
   state: StepState;
   cost: number;
   /** The party level it needs, when the party isn't there yet. */
   needLevel?: number;
-  /** Why Learn is greyed out right now, if it is. */
+  /** Why Learn (or the next level) is greyed out right now, if it is. */
   reason?: string;
+  /** Its levels: the hiker's (0 before it's learned) and how many it has. */
+  level: number;
+  levels: number;
+  /** A learned step's next level: its words and its cost. */
+  next?: { step: TrailStep; cost: number };
 }
 
 export interface TreeView {
@@ -49,20 +64,40 @@ export function trailsView(state: GameState, hiker: Hiker): TreeView[] {
   return trees.trees.map((tree) => ({
     tree,
     color: CLASS_COLORS[tree.cls],
-    steps: tree.steps.map((step, i): StepView => {
-      const look = stepLook(step.id)!;
-      const cost = stepCost(step);
-      if (hasLearned(hiker, step.id)) return { step, look, state: 'learned', cost };
+    steps: tree.steps.map((base, i): StepView => {
+      const look = stepLook(base.id)!;
+      const levels = levelCount(base);
+      const level = stepLevelOf(hiker, base.id);
+      const step = { ...base, ...atLevel(base, Math.max(1, level)) };
+      if (hasLearned(hiker, base.id)) {
+        const nextCost = levelCost(hiker, base.id);
+        const reason = nextCost === undefined ? undefined : learnReason(state, hiker, base.id);
+        return {
+          step,
+          look,
+          state: 'learned',
+          cost: stepCost(base),
+          level,
+          levels,
+          ...(nextCost !== undefined
+            ? { next: { step: { ...base, ...atLevel(base, level + 1) }, cost: nextCost } }
+            : {}),
+          ...(reason ? { reason } : {}),
+        };
+      }
+      const cost = stepCost(base);
       const below = tree.steps[i - 1];
-      const level = unlockLevel(step);
-      const open = (!below || hasLearned(hiker, below.id)) && party.level >= level;
+      const need = unlockLevel(step);
+      const open = (!below || hasLearned(hiker, below.id)) && party.level >= need;
       const reason = learnReason(state, hiker, step.id);
       return {
         step,
         look,
         state: open ? 'open' : 'notYet',
         cost,
-        ...(party.level < level ? { needLevel: level } : {}),
+        level,
+        levels,
+        ...(party.level < need ? { needLevel: need } : {}),
         ...(reason ? { reason } : {}),
       };
     }),

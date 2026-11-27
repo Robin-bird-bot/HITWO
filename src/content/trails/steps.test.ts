@@ -1,15 +1,15 @@
 /**
  * Every Skill Trails step (Phase 10.7, 09-hikers.md "The first 6 hikers" and
  * "Rules that need care"), with the stacking cases: two Move All cost cuts,
- * Copydog alone, Prepper with and without others, Rule Changer III on an
- * empty tile. Chances are set to 1 or 0 where a test needs a sure result.
+ * Copydog alone, Prepper with and without others, and Wyatt's levels
+ * (Nov 26 evening). Chances are set to 1 or 0 where a test needs a sure result.
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { CHALLENGES } from '../challenges';
+import { CARDS, CHALLENGES } from '../challenges';
 import { ITEMS } from '../items';
 import { validateAction } from '../../engine/applyAction';
-import { abilitiesFor, watchReach } from '../../engine/effects';
+import { abilitiesFor, freePrepareSlots, queryContext, watchReach } from '../../engine/effects';
 import { bagSlots } from '../../engine/inventory';
 import { craftSetup, ownCraftTier } from '../../engine/items/craft';
 import { makeItem } from '../../engine/items/make';
@@ -482,12 +482,11 @@ describe('Mom: Trekker Trail (Experienced Traveler)', () => {
 
 // ── Gdog ───────────────────────────────────────────────────────────────────
 
-describe('Gdog, Wink and Wyatt: recipes, Artisan and Master', () => {
+describe('Gdog and Wink: recipes, Artisan and Master', () => {
   const recipeSteps: [string, string, ItemTypeName][] = [
     ['gdog', 'gdog-chef', 'food'],
     ['gdog', 'gdog-tailor', 'clothes'],
     ['grandpaWink', 'wink-architect', 'shelter'],
-    ['wyatt', 'wyatt-smith', 'tool'],
   ];
 
   it.each(recipeSteps)('%s, %s Tier 1: start with 3 random Tier 1 recipes', (id, tree, type) => {
@@ -692,66 +691,257 @@ describe('Wyatt: Naturalist Path (Rain Lover)', () => {
   });
 });
 
-describe('Wyatt: Daredevil Loop (Rule Changer)', () => {
+describe('Wyatt: Daredevil Loop (26-fixes-and-wyatt-trees.md, section 5.2)', () => {
+  /** Minigame challenges and cost cards that fit the fixture's forest tiles at Tier I. */
+  const fits = (minigame: boolean) =>
+    CHALLENGES.filter(
+      (c) => !!c.minigame === minigame && c.tier === 1 && c.nodes === 'any' && !c.gates?.length,
+    );
   const game = (...steps: string[]) => {
     const s = learn(
       trailGame([['wyatt', 'wyatt-daredevil']], { challenges: true }),
       'wyatt',
       ...steps,
     );
-    s.section.tiles.L!.revealedCard = { cardId: firstChallenge(1).id, tier: 1, scale: 1 };
+    s.section.tiles.L!.revealedCard = {
+      cardId: fits(true)[0]!.id,
+      tier: 1,
+      scale: 1,
+      shownTier: 1,
+    };
     return s;
   };
-  const choices = (s: GameState) =>
-    abilitiesFor(s, hiker(s, 'wyatt'))
-      .find((a) => a.ability.id === 'ruleChanger')
-      ?.choices?.map((c) => c.id) ?? [];
+  const rc = (s: GameState) =>
+    abilitiesFor(s, hiker(s, 'wyatt')).find((a) => a.ability.id === 'ruleChanger');
+  const level = (s: GameState, stepId: string, to: number) => {
+    hiker(s, 'wyatt').trails!.levels = { ...hiker(s, 'wyatt').trails!.levels, [stepId]: to };
+    return s;
+  };
 
-  it('Rule Changer: swaps a revealed Tier 1 challenge next to him for another; once a section', () => {
+  it('Rule Changer: switches a revealed minigame challenge next to him for a random one of its tier; once a section', () => {
     let s = game();
-    expect(choices(s)).toEqual(['L']);
+    expect(rc(s)?.choices?.map((c) => c.id)).toEqual(['L']);
+    // Not a cost card, and not a tile two steps away.
+    s.section.tiles.M!.revealedCard = { cardId: fits(false)[0]!.id, tier: 1, scale: 1 };
+    expect(rc(s)?.choices?.map((c) => c.id)).toEqual(['L']);
     place(s, 'wyatt', 'R');
-    expect(choices(s)).toEqual([]);
+    expect(rc(s)?.choices?.map((c) => c.id)).not.toContain('L');
     place(s, 'wyatt', 'T');
+    expect(rc(s)?.ability.optionsFor?.(queryContext(s, hiker(s, 'wyatt')), 'L')).toEqual([]);
     s = run(s, use('wyatt', 'ruleChanger', 'L'));
     const card = s.section.tiles.L?.revealedCard;
-    expect(card?.cardId).not.toBe(firstChallenge(1).id);
+    expect(card?.cardId).not.toBe(fits(true)[0]!.id);
+    expect(CHALLENGES.find((c) => c.id === card?.cardId)?.minigame).toBeDefined();
     expect(card?.tier).toBe(1);
-    expect(CHALLENGES.some((c) => c.id === card?.cardId)).toBe(true);
+    expect(card?.hidden).toBeUndefined();
     expect(() => run(s, use('wyatt', 'ruleChanger', 'L'))).toThrow();
   });
 
-  it('Rule Changer II: Tier 1 or 2 on any tile, twice a section', () => {
-    let s = game('wyatt-daredevil-t2');
-    s.section.tiles.M!.revealedCard = { cardId: firstChallenge(2).id, tier: 2, scale: 1 };
-    place(s, 'wyatt', 'R');
-    expect(choices(s).sort()).toEqual(['L', 'M']);
-    s = run(s, use('wyatt', 'ruleChanger', 'M'), use('wyatt', 'ruleChanger', 'L'));
-    expect(s.section.tiles.M?.revealedCard?.tier).toBe(2);
-    expect(s.section.tiles.M?.revealedCard?.cardId).not.toBe(firstChallenge(2).id);
-    expect(() => run(s, use('wyatt', 'ruleChanger', 'L'))).toThrow();
+  it.each([
+    [2, B.ruleChanger.picks[1]!],
+    [3, B.ruleChanger.picks[2]!],
+  ])('Rule Changer at level %i: pick 1 of %i', (lv, picks) => {
+    const s = level(game(), 'wyatt-daredevil-t1', lv);
+    const ctx = queryContext(s, hiker(s, 'wyatt'));
+    const options = rc(s)!.ability.optionsFor!(ctx, 'L');
+    expect(options).toHaveLength(picks);
+    // The same options for the panel, the check and the switch.
+    expect(rc(s)!.ability.optionsFor!(ctx, 'L')).toEqual(options);
+    expect(validateAction(s, use('wyatt', 'ruleChanger', 'L'))).toMatch(/Pick/);
+    const outside = CHALLENGES.find(
+      (c) => !!c.minigame && !options.some((o) => o.id === c.id) && c.id !== fits(true)[0]!.id,
+    )!;
+    expect(validateAction(s, use('wyatt', 'ruleChanger', `L|${outside.id}`))).toMatch(/Pick/);
+    const pick = options.at(-1)!.id;
+    const after = run(s, use('wyatt', 'ruleChanger', `L|${pick}`));
+    expect(after.section.tiles.L?.revealedCard?.cardId).toBe(pick);
   });
 
-  it('Rule Changer III: removes a challenge from any tile, even unrevealed', () => {
-    let s = game('wyatt-daredevil-t2', 'wyatt-daredevil-t3');
-    delete s.section.tiles.L!.revealedCard;
-    expect(choices(s).sort()).toEqual(['L', 'M', 'R']);
-    s = run(s, use('wyatt', 'ruleChanger', 'L'));
-    expect(s.section.tiles.L?.quiet).toBe(true);
-    s = run(s, move('wyatt', 'L'));
-    expect(s.challenge).toBeUndefined();
+  it('Rule Changer II: as Rule Changer, and the first Prepare slot is free (two at level 2)', () => {
+    const s = game('wyatt-daredevil-t2');
+    expect(rc(s)?.ability.label).toBe('Rule Changer II');
+    expect(freePrepareSlots(s, [hiker(s, 'wyatt')])).toEqual({
+      count: B.ruleChanger.freeSlots[0],
+      who: 'Wyatt',
+    });
+    level(s, 'wyatt-daredevil-t2', 2);
+    expect(freePrepareSlots(s, [hiker(s, 'wyatt')])?.count).toBe(B.ruleChanger.freeSlots[1]);
+    // Rule Changer's own level still sets the picks.
+    level(s, 'wyatt-daredevil-t1', 3);
+    const ctx = queryContext(s, hiker(s, 'wyatt'));
+    expect(rc(s)!.ability.optionsFor!(ctx, 'L')).toHaveLength(B.ruleChanger.picks[2]!);
+    expect(freePrepareSlots(game(), [hiker(game(), 'wyatt')])).toBeUndefined();
   });
 
-  it('Rule Changer III on an empty tile: the use is wasted, and nothing says so', () => {
-    let s = game('wyatt-daredevil-t2', 'wyatt-daredevil-t3');
-    s.section.tiles.M!.quiet = true;
-    const before = structuredClone(s.section.tiles.M);
-    s = run(s, use('wyatt', 'ruleChanger', 'M'));
-    expect(s.section.tiles.M).toEqual(before);
+  describe('Minigame Master', () => {
+    const MM = B.minigameMaster;
+    const master = (...extra: string[]) => {
+      const s = game('wyatt-daredevil-t2', 'wyatt-daredevil-t3', ...extra);
+      hiker(s, 'wyatt').stats.energy = 10;
+      return s;
+    };
+    const land = (s: GameState) =>
+      run(s, {
+        type: 'debug',
+        op: { kind: 'openChallenge', cardId: fits(true)[0]!.id, tileId: hiker(s, 'wyatt').tileId },
+      });
+
+    it('starts off: a minigame challenge opens as usual', () => {
+      const s = land(master());
+      expect(s.challenge?.cardId).toBe(fits(true)[0]!.id);
+    });
+
+    it('on: the next minigame challenge passes for everyone without playing, for Energy, then turns off', () => {
+      let s = run(master(), toggle('wyatt', 'wyatt-daredevil-t3'));
+      const xp = hiker(s, 'wyatt').xp ?? 0;
+      s = land(s);
+      expect(s.challenge).toBeUndefined();
+      expect(hiker(s, 'wyatt').stats.energy).toBe(10 - MM.energy[0]!);
+      expect((hiker(s, 'wyatt').xp ?? 0) - xp).toBe(BALANCE.challenges.passXpPerTier);
+      // Off now: the next one opens.
+      expect(land(s).challenge).toBeDefined();
+    });
+
+    it('not enough Energy: it waits, still on', () => {
+      let s = run(master(), toggle('wyatt', 'wyatt-daredevil-t3'));
+      hiker(s, 'wyatt').stats.energy = MM.energy[0]! - 1;
+      s = land(s);
+      expect(s.challenge).toBeDefined();
+      expect(hiker(s, 'wyatt').stats.energy).toBe(MM.energy[0]! - 1);
+      expect(hiker(s, 'wyatt').trails?.off ?? []).not.toContain('wyatt-daredevil-t3');
+    });
+
+    it('once a section; level 3 costs less and works twice', () => {
+      let s = run(master(), toggle('wyatt', 'wyatt-daredevil-t3'));
+      s = land(s);
+      s = run(s, toggle('wyatt', 'wyatt-daredevil-t3'));
+      expect(land(s).challenge).toBeDefined();
+
+      let t = level(master(), 'wyatt-daredevil-t3', 3);
+      for (let k = 0; k < MM.uses[2]!; k++) {
+        t = run(t, toggle('wyatt', 'wyatt-daredevil-t3'));
+        t = land(t);
+        expect(t.challenge).toBeUndefined();
+      }
+      expect(hiker(t, 'wyatt').stats.energy).toBe(10 - MM.energy[2]! * MM.uses[2]!);
+      t = run(t, toggle('wyatt', 'wyatt-daredevil-t3'));
+      expect(land(t).challenge).toBeDefined();
+    });
+  });
+});
+
+describe('Wyatt: Scout Trail, Game Sight (26-fixes-and-wyatt-trees.md, section 5.3)', () => {
+  const GS = B.gameSight;
+  const minigame = CHALLENGES.find((c) => !!c.minigame && c.nodes === 'any' && c.tier === 1)!;
+  const cost = CHALLENGES.find((c) => !c.minigame && c.nodes === 'any' && c.tier === 1)!;
+  const game = (...steps: string[]) => {
+    const s = learn(trailGame([['wyatt', 'wyatt-scout']], { challenges: true }), 'wyatt', ...steps);
+    for (const id of ['L', 'M', 'C'] as const) delete s.section.tiles[id]!.revealedCard;
+    return s;
+  };
+  const hide = (s: GameState, tileId: string, cardId: string) => {
+    s.section.tiles[tileId]!.revealedCard = { cardId, tier: 1, scale: 1, hidden: true };
+  };
+  const shown = (s: GameState, tileId: string) => {
+    const card = s.section.tiles[tileId]?.revealedCard;
+    return !!card && !card.hidden;
+  };
+  /** Ends the phase so the next one starts (Game Sight looks then). */
+  const nextPhase = (s: GameState) => run(s, END);
+
+  it('at the start of each phase, a minigame challenge next to him may be revealed ([25%] at level 1)', () => {
+    let seen = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const s = game();
+      s.rng = seedRng(seed);
+      hide(s, 'L', minigame.id);
+      if (shown(nextPhase(s), 'L')) seen++;
+    }
+    expect(seen / 200).toBeGreaterThan(GS.chance[0]! - 0.1);
+    expect(seen / 200).toBeLessThan(GS.chance[0]! + 0.1);
+  });
+
+  it('level 4 reveals every one next to him; cost cards wait for Game Sight III', () => {
+    const s = game();
+    hiker(s, 'wyatt').trails!.levels = { 'wyatt-scout-t1': 4 };
+    hide(s, 'L', minigame.id);
+    hide(s, 'M', cost.id);
+    const after = nextPhase(s);
+    expect(shown(after, 'L')).toBe(true);
+    expect(shown(after, 'M')).toBe(false);
+  });
+
+  it('Game Sight II reaches 2 tiles away', () => {
+    // From L, R is two steps away (through M or the trailhead).
+    const far = (...steps: string[]) => {
+      const s = game(...steps);
+      hiker(s, 'wyatt').trails!.levels = { 'wyatt-scout-t1': 4 };
+      s.section.tiles.R!.special = null;
+      place(s, 'wyatt', 'L');
+      hide(s, 'R', minigame.id);
+      return shown(nextPhase(s), 'R');
+    };
+    expect(far()).toBe(false);
+    expect(far('wyatt-scout-t2')).toBe(true);
+  });
+
+  it('Game Sight III shows cost cards; at level 2, opportunities too', () => {
+    const s = game('wyatt-scout-t2', 'wyatt-scout-t3');
+    hiker(s, 'wyatt').trails!.levels = { 'wyatt-scout-t1': 4 };
+    hide(s, 'M', cost.id);
+    s.section.tiles.L!.opportunity = true;
+    let after = nextPhase(s);
+    expect(shown(after, 'M')).toBe(true);
+    expect(after.section.tiles.L?.revealedCard).toBeUndefined();
+    hiker(s, 'wyatt').trails!.levels = { 'wyatt-scout-t1': 4, 'wyatt-scout-t3': 2 };
+    after = nextPhase(s);
+    const card = after.section.tiles.L?.revealedCard;
+    expect(card && !card.hidden).toBe(true);
+    expect(CARDS[card!.cardId]?.kind).toBe('opportunity');
+  });
+});
+
+describe('Levels within a step (26-fixes-and-wyatt-trees.md, section 5.1)', () => {
+  const night = (stepId?: string) => {
+    const s = toNight(trailGame([['wyatt', 'wyatt-scout']]));
+    if (stepId) learnStep(s, hiker(s, 'wyatt'), stepId);
+    s.party = { xp: 0, level: 0, points: 3 };
+    return s;
+  };
+  const learnIt = (stepId: string): Action => ({ type: 'learnStep', hikerId: 'wyatt', stepId });
+
+  it('a learned step is pressed again for its next level: [1] point, no party level', () => {
+    let s = night();
+    s = run(s, learnIt('wyatt-scout-t1'));
+    expect(hiker(s, 'wyatt').trails?.levels?.['wyatt-scout-t1']).toBe(2);
+    expect(s.party?.points).toBe(3 - B.cost.level);
+    expect(s.log.at(-1)).toMatchObject({ kind: 'learned', stepId: 'wyatt-scout-t1', level: 2 });
+  });
+
+  it('a level needs the one before it, and stops at the last', () => {
+    let s = night();
+    s.party = { xp: 0, level: 0, points: 10 };
+    for (let lv = 2; lv <= 4; lv++) s = run(s, learnIt('wyatt-scout-t1'));
+    expect(hiker(s, 'wyatt').trails?.levels?.['wyatt-scout-t1']).toBe(4);
+    expect(validateAction(s, learnIt('wyatt-scout-t1'))).toMatch(/last level/);
+  });
+
+  it('needs the points, and only at night or a station', () => {
+    const s = night();
+    s.party = { xp: 0, level: 0, points: 0 };
+    expect(validateAction(s, learnIt('wyatt-scout-t1'))).toMatch(/point/);
+    const day = trailGame([['wyatt', 'wyatt-scout']]);
+    day.party = { xp: 0, level: 0, points: 5 };
+    expect(validateAction(day, learnIt('wyatt-scout-t1'))).toMatch(/night/);
+  });
+
+  it('a step without levels is just learned', () => {
+    const s = night();
+    expect(validateAction(s, learnIt('wyatt-scout-t1'))).toBeNull();
+    const finn = toNight(trailGame([['finn', 'finn-leader']]));
+    finn.party = { xp: 0, level: 0, points: 5 };
     expect(
-      abilitiesFor(s, hiker(s, 'wyatt')).find((a) => a.ability.id === 'ruleChanger')?.usesLeft,
-    ).toBe(B.ruleChanger.uses[3] - 1);
-    const said = s.log.filter((e) => e.kind === 'ability' && e.hikerId === 'wyatt');
-    expect(said).toHaveLength(1);
+      validateAction(finn, { type: 'learnStep', hikerId: 'finn', stepId: 'finn-leader-t1' }),
+    ).toMatch(/Already learned/);
   });
 });

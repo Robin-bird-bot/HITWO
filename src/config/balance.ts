@@ -676,8 +676,12 @@ export const BALANCE = {
   trails: {
     /** Points each party level gives. */
     pointsPerLevel: 1,
-    /** What a step costs, unless the step sets its own: Tier 2, Tier 3, and another tree's Tier 1. */
-    cost: { tier2: 1, tier3: 2, openTree: 2 },
+    /**
+     * What a step costs, unless the step sets its own: Tier 2, Tier 3, and
+     * another tree's Tier 1. `level`: pressing a learned step again for its
+     * next level (26-fixes-and-wyatt-trees.md, section 5.1). TODO(wyatt): [1].
+     */
+    cost: { tier2: 1, tier3: 2, openTree: 2, level: 1 },
     /** The party level each tier needs (Tier 1: any). */
     unlockLevel: { 2: 2, 3: 4 },
     /** The steps' own numbers, by trait. */
@@ -720,7 +724,34 @@ export const BALANCE = {
     packedToolbox: { tools: 2 },
     properWay: { uses: 1 },
     rainLover: { luck: { 1: 1, 2: 2, 3: 2 }, cards: 1, xpPercent: 100 },
-    ruleChanger: { uses: { 1: 1, 2: 2, 3: 2 } },
+    /**
+     * Wyatt's Daredevil Loop (26-fixes-and-wyatt-trees.md, section 5.2).
+     * Rule Changer: uses per biome, and how many minigame challenges to pick
+     * from at its levels 1–3 (1: a random one). Rule Changer II: free Prepare
+     * slots at its levels 1–2. TODO(wyatt): [1] use.
+     */
+    ruleChanger: {
+      uses: 1,
+      picks: [1, 2, 4] as readonly number[],
+      freeSlots: [1, 2] as readonly number[],
+    },
+    /**
+     * Minigame Master (26, section 5.2): Wyatt's Energy and the uses per
+     * biome at its levels 1–3. TODO(wyatt): [4], [3], [2] Energy.
+     */
+    minigameMaster: {
+      energy: [4, 3, 2] as readonly number[],
+      uses: [1, 1, 2] as readonly number[],
+    },
+    /**
+     * Game Sight (26, section 5.3): each phase's chance to reveal a minigame
+     * challenge at Game Sight's levels 1–4, and the reach in tiles (Game
+     * Sight; Game Sight II at its levels 1–2). TODO(wyatt): [25%], [50%], [75%].
+     */
+    gameSight: {
+      chance: [0.25, 0.5, 0.75, 1] as readonly number[],
+      reach: [1, 2, 3] as readonly number[],
+    },
     garbageConnoisseur: {
       /** Appetite per bite for each resource swapped in (I, II, III). */
       perSwap: { 1: -1, 2: 0, 3: 1 },

@@ -19,7 +19,8 @@ import {
   shortenCondition,
   takeCondition,
 } from './conditions';
-import { removeChallenge, revealCardOn, swapChallenge } from './challenges/reveal';
+import { revealCardOn } from './challenges/reveal';
+import { switchChallenge, switchOptions } from './challenges/ruleChanger';
 import { makeItem } from './items/make';
 import { bagSlots } from './inventory';
 import { pushEvent } from './log';
@@ -34,7 +35,7 @@ import { loseDurability, removeItem } from './items/wear';
 import { noteGone } from './items/gone';
 import { revealAhead, tilesAhead } from './traits/reveal';
 import { gainXp } from './xp';
-import { toggleOn } from './trails';
+import { switchToggle, toggleOn } from './trails';
 import { rollWishLists } from './items/wishLists';
 import { valueAt, type QualityValues } from './items/quality';
 import type { Recipe } from './items/recipe';
@@ -240,6 +241,8 @@ export interface QueryContext {
   boost(abilityId: string): { reach: number; items: boolean };
   /** Can this hiker move by themselves right now (a Plush with Shifty, alone)? */
   canMoveAlone(): boolean;
+  /** Rule Changer: the minigame challenges a tile's shown one could become, `count` of them. */
+  switchOptions(tileId: TileId, count: number): string[];
   /** How many more items fit in a hiker's bag. */
   bagRoom(hiker: Hiker): number;
   /** How many more resources a hiker can carry. */
@@ -305,10 +308,15 @@ export interface EffectContext extends QueryContext {
   gainCaps(n: number, cause: string): void;
   /** Picks a new card for a tile whose card is shown (Rule Changer). */
   rerollCard(tileId: TileId, cause: string): void;
-  /** Swaps a tile's revealed challenge for another random one of its tier (Rule Changer). */
-  swapChallenge(tileId: TileId, cause: string): void;
-  /** Takes the challenge off a tile nobody has reached, if it has one (Rule Changer III). */
-  removeChallenge(tileId: TileId, cause: string): void;
+  /**
+   * Switches a tile's shown minigame challenge to another of its tier: `to`
+   * when it's an option, else a random one (Rule Changer).
+   */
+  switchChallenge(tileId: TileId, to: string | undefined, cause: string): void;
+  /** Shows a tile's card on the map, as the Old Firewatch Tower does (Game Sight). */
+  showCard(tileId: TileId, cause: string): void;
+  /** Switches one of this hiker's toggles off (Minigame Master, once it's used). */
+  switchOff(traitId: string): void;
   /** Learns up to `count` random blueprints of a type and tier the hiker doesn't know (Family Cookbook). */
   learnBlueprints(hiker: Hiker, type: ItemType, tier: number, count: number, cause: string): void;
   /** Uses up the hiker's action for this phase (Good Boy gives his away). */
@@ -446,6 +454,13 @@ export interface Hooks {
   nightShield?(ctx: QueryContext): number;
   /** At the start of every phase, after the last one ended (Dog Socks, Sleepy Socks). */
   onPhaseStart?(e: { phase: Phase }, ctx: EffectContext): void;
+  /**
+   * A minigame challenge opened on this hiker's tile with them in it. True
+   * passes it for everyone without playing (Minigame Master).
+   */
+  onMinigameOpen?(e: { tileId: TileId }, ctx: EffectContext): boolean | undefined;
+  /** Prepare slots this hiker makes free in a minigame challenge they're in (Rule Changer II). */
+  freePrepareSlots?(ctx: QueryContext): number | undefined;
   /** The hiker took a scavenge card (the first, with a Sack) (Jeans, Pajamas). */
   onScavenge?(e: { tileId: TileId }, ctx: EffectContext): void;
   /** Someone on this hiker's tile (them included) ate a bite (Soup Socks). */
@@ -684,6 +699,11 @@ export interface AbilityDef {
   usesAction?: true;
   /** Its choices are tiles: they can be picked on the map too (Rule Changer). */
   tileChoices?: true;
+  /**
+   * After the choice, the player picks one of these (Rule Changer's higher
+   * levels): the choice is sent as `choice|option`. None: nothing to pick.
+   */
+  optionsFor?(ctx: QueryContext, choice: string): AbilityChoice[];
   validate?(ctx: QueryContext, choice: string | undefined): string | undefined;
   apply(ctx: EffectContext, choice: string | undefined): void;
 }
@@ -1243,6 +1263,7 @@ export function queryContext(state: GameState, self: Hiker): QueryContext {
       const ctx = queryContext(state, self);
       return effectSourcesFor(state, self).some((s) => s.hooks.movesAlone?.(ctx));
     },
+    switchOptions: (tileId, count) => switchOptions(state, tileId, count),
     bagRoom: (hiker) => Math.max(0, bagSlots(state, hiker).total - hiker.inventory.bag.length),
     resourceRoom: (hiker) =>
       Math.max(
@@ -1421,8 +1442,13 @@ export function effectContext(state: GameState, self: Hiker): EffectContext {
         pushEvent(state, { kind: 'trait', hikerId: self.id, trait: cause, text: `+${got} caps.` });
       }
     },
-    swapChallenge: (tileId, cause) => swapChallenge(state, tileId, cause),
-    removeChallenge: (tileId) => removeChallenge(state, tileId),
+    switchChallenge: (tileId, to, cause) => switchChallenge(state, tileId, to, cause),
+    showCard: (tileId, cause) => {
+      revealCardOn(state, tileId, cause);
+    },
+    switchOff: (traitId) => {
+      if (toggleOn(self, traitId)) switchToggle(state, self, traitId);
+    },
     learnBlueprints: (hiker, type, tier, count, cause) => {
       const known = new Set(hiker.blueprints ?? []);
       const pool = Object.values(ITEMS).filter(
@@ -2117,6 +2143,54 @@ export function firePhaseStart(state: GameState): void {
       source.hooks.onPhaseStart?.({ phase: state.phase }, ctx);
     }
   }
+}
+
+/** What the player picks after an ability's choice (Rule Changer: what the tile's challenge becomes). */
+export function abilityOptions(
+  state: GameState,
+  hiker: Hiker,
+  abilityId: string,
+  choice: string,
+): AbilityChoice[] {
+  const found = abilitiesFor(state, hiker).find((a) => a.ability.id === abilityId);
+  return found?.ability.optionsFor?.(queryContext(state, hiker), choice) ?? [];
+}
+
+/**
+ * A minigame challenge opened with these hikers in it: does a trait pass it
+ * for everyone without playing (Minigame Master)?
+ */
+export function fireMinigameOpen(
+  state: GameState,
+  hikers: readonly Hiker[],
+  tileId: TileId,
+): boolean {
+  for (const hiker of hikers) {
+    const ctx = effectContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) {
+      if (source.hooks.onMinigameOpen?.({ tileId }, ctx)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Prepare slots that cost nothing in a minigame challenge with these hikers
+ * (Rule Changer II), and whose they are. The most any one hiker gives.
+ */
+export function freePrepareSlots(
+  state: GameState,
+  hikers: readonly Hiker[],
+): { count: number; who: string } | undefined {
+  let best: { count: number; who: string } | undefined;
+  for (const hiker of hikers) {
+    const ctx = queryContext(state, hiker);
+    for (const source of effectSourcesFor(state, hiker)) {
+      const count = source.hooks.freePrepareSlots?.(ctx) ?? 0;
+      if (count > (best?.count ?? 0)) best = { count, who: hiker.name };
+    }
+  }
+  return best;
 }
 
 /** A hiker took a scavenge card (Jeans and Pajamas wear). */

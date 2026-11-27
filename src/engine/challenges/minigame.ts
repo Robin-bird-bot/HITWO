@@ -23,7 +23,7 @@ import { ITEMS } from '../../content';
 import { CARDS } from '../../content/challenges';
 import { RESOURCES } from '../../content/resources';
 import { countChallenge } from '../counters';
-import { fireChallengeResult } from '../effects';
+import { fireChallengeResult, fireMinigameOpen } from '../effects';
 import { earnFreeMove } from '../items/freeMoves';
 import { usesLeftOf } from '../items/make';
 import { loseUses } from '../items/wear';
@@ -275,4 +275,25 @@ export function applyResolveMinigame(state: GameState, action: ResolveMinigameAc
   delete state.challenge;
   for (const e of entered) revealTile(state, e.tileId, e.hikerIds);
   openNext(state);
+}
+
+/**
+ * A minigame challenge that just opened, not waiting on a Choice: a trait
+ * may pass it for everyone without playing, as if they all passed (Minigame
+ * Master; 26-fixes-and-wyatt-trees.md, section 5.2). Each opened challenge
+ * is looked at once; passing it may open the next one queued.
+ */
+export function passIfMastered(state: GameState): void {
+  for (let guard = 0; guard < 10; guard++) {
+    const open = state.challenge;
+    if (!open || open.alternative || open.looked || !openMinigameCard(open)) return;
+    open.looked = true;
+    const here = challengeHikers(state, open);
+    if (!fireMinigameOpen(state, here, open.tileId)) return;
+    applyResolveMinigame(state, {
+      type: 'resolveMinigameChallenge',
+      outcome: { passed: here.map((h) => h.id) },
+      spent: [],
+    });
+  }
 }

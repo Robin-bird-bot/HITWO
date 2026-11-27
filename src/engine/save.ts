@@ -12,7 +12,8 @@ import { WONDERS } from '../content/wonders';
 import { STARTING_PARTY } from '../content/characters';
 import { PARTY_COLORS } from '../content/partyColors';
 import { TEST_HIKERS } from '../content/testHikers';
-import { TREES_BY_HIKER } from '../content/trails/trees';
+import { STEPS, TREES_BY_HIKER } from '../content/trails/trees';
+import { syncTrailSlots } from './trails';
 import { RENAMED_ITEMS } from '../content/items';
 import { withDefaults } from './items/make';
 import { shelterDeployments } from './items/shelters';
@@ -30,7 +31,7 @@ import { CARDS } from '../content/challenges';
 import { placePool } from './challenges/pool';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -95,6 +96,9 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Nov 26 evening: the challenge reset (24-challenges-reset.md) and the pool
   // on the tiles (25-challenges-on-the-map.md, section 1).
   22: (save) => challengeReset(save),
+  // Nov 26 evening: Wyatt's new trees (26-fixes-and-wyatt-trees.md, section 5).
+  // Steps that were removed or changed are unlearned and their points come back.
+  23: (save) => wyattTrees(save),
 };
 
 function skillTrails(save: SaveData): SaveData {
@@ -467,6 +471,53 @@ function challengeReset(save: SaveData): SaveData {
   if (state.challenge?.alternative && !known(state.challenge.alternative.cardId))
     delete state.challenge.alternative;
   if (state.section && !state.section.pool) placePool(state);
+  return save;
+}
+
+/**
+ * Wyatt's new trees (Nov 26 evening): Smith Path became the Scout Trail, and
+ * the Daredevil Loop's Rule Changer II and III became new steps. Steps that
+ * no longer exist, and those two, are unlearned, and the points they cost
+ * (from the log, or their tier's cost) go back to the party. A hiker left
+ * with no step gets the new tree's first step in place of their starting
+ * one, free. Classes follow the trees (Scout in place of Smith).
+ */
+function wyattTrees(save: SaveData): SaveData {
+  const state = save as unknown as GameState;
+  const CHANGED = new Set(['wyatt-daredevil-t2', 'wyatt-daredevil-t3']);
+  const REPLACED: Readonly<Record<string, string>> = { 'wyatt-smith': 'wyatt-scout' };
+  let refund = 0;
+  for (const h of state.hikers ?? []) {
+    const trees = h.characterId ? TREES_BY_HIKER.get(h.characterId) : undefined;
+    if (!trees || !h.trails) continue;
+    h.classes = trees.trees.map((t) => t.cls);
+    const gone = h.trails.learned.filter((id) => !STEPS.has(id) || CHANGED.has(id));
+    if (!gone.length) continue;
+    for (const id of gone) {
+      const learned = (state.log ?? []).find(
+        (e) => e.kind === 'learned' && e.hikerId === h.id && e.stepId === id && !e.level,
+      );
+      const tier = Number(id.slice(-1));
+      refund +=
+        learned?.kind === 'learned'
+          ? learned.cost
+          : tier === 3
+            ? BALANCE.trails.cost.tier3
+            : tier === 2
+              ? BALANCE.trails.cost.tier2
+              : BALANCE.trails.cost.openTree;
+    }
+    h.trails.learned = h.trails.learned.filter((id) => !gone.includes(id));
+    if (h.trails.off) h.trails.off = h.trails.off.filter((id) => !gone.includes(id));
+    if (!h.trails.learned.length) {
+      // Their starting step went: the tree that took its place starts them, free.
+      const tree = REPLACED[gone[0]!.replace(/-t\d$/, '')];
+      const first = trees.trees.find((t) => t.id === tree) ?? trees.trees[0];
+      h.trails.learned = [first.steps[0].id];
+    }
+    syncTrailSlots(h);
+  }
+  if (refund && state.party) state.party.points += refund;
   return save;
 }
 

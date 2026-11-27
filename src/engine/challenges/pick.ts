@@ -110,17 +110,6 @@ function pickOne(
   );
 }
 
-/** Another challenge of this tier for a tile, not one of `exclude` (Rule Changer's swap). */
-export function pickChallengeAt(
-  state: GameState,
-  rng: RngState,
-  tile: Tile,
-  tier: Tier,
-  exclude: readonly string[],
-): string | undefined {
-  return pickOne(rng, 'challenge', state, tile, [], tier, exclude);
-}
-
 /** The highest tier a challenge can have. */
 export const TOP_TIER = 5;
 

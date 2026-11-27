@@ -285,11 +285,15 @@ function StepBadge({
       aria-pressed={selected}
       aria-label={`${step.step.name}, ${step.look.stepWord}. ${
         step.state === 'learned'
-          ? 'Learned.'
+          ? step.levels > 1
+            ? `Learned, level ${step.level} of ${step.levels}.`
+            : 'Learned.'
           : step.needLevel
             ? `Party level ${step.needLevel}.`
             : `${step.cost} points.`
       }`}
+      // The next level, on hover (26-fixes-and-wyatt-trees.md, section 5.1).
+      title={step.next ? `Next level: ${stepText(step.next.step)}` : undefined}
       onClick={onSelect}
     >
       {upgrade && <span className={styles.arrow} aria-hidden="true" />}
@@ -305,6 +309,13 @@ function StepBadge({
       )}
       {step.state === 'notYet' && step.needLevel !== undefined && (
         <span className={styles.need}>PARTY LV {step.needLevel}</span>
+      )}
+      {step.levels > 1 && (
+        <span className={styles.pips} aria-hidden="true">
+          {Array.from({ length: step.levels }, (_, i) => (
+            <span key={i} data-on={i < step.level || undefined} />
+          ))}
+        </span>
       )}
     </button>
   );
@@ -346,6 +357,7 @@ function SidePanel({ hiker, step, onLearn }: { hiker: Hiker; step: StepView; onL
   // Planning by day: everything else is fine, but Learn waits for night or a station.
   const why = step.reason;
   const canLearn = !learned && !why;
+  const next = learned ? step.next : undefined;
   return (
     <aside className={styles.side} style={{ width: SIDE }} aria-label={step.step.name}>
       <TrailBadgeIcon look={step.look} size={78} />
@@ -353,11 +365,38 @@ function SidePanel({ hiker, step, onLearn }: { hiker: Hiker; step: StepView; onL
       <span className={styles.sideTree} style={{ color: step.look.color }}>
         {step.look.tree.name}
       </span>
+      {step.levels > 1 && (
+        <span className={styles.sideLevel}>
+          {learned ? `LEVEL ${step.level} OF ${step.levels}` : `${step.levels} LEVELS`}
+        </span>
+      )}
       <div className={styles.sideText}>
         <StepText step={step.step} />
+        {next && (
+          <div className={styles.nextLevel}>
+            <span className={styles.nextLabel}>NEXT LEVEL</span>
+            <StepText step={next.step} />
+          </div>
+        )}
       </div>
       <div className={styles.learnBox}>
-        {learned ? (
+        {next ? (
+          <>
+            {why && <span className={styles.why}>{why}</span>}
+            <button
+              type="button"
+              className={styles.learn}
+              disabled={!!why}
+              onClick={onLearn}
+              aria-label={`Raise ${step.step.name} to level ${step.level + 1} for ${next.cost} points (${hiker.name})`}
+            >
+              LEVEL UP{' '}
+              <span>
+                {next.cost} point{next.cost === 1 ? '' : 's'}
+              </span>
+            </button>
+          </>
+        ) : learned ? (
           <span className={styles.learned}>LEARNED</span>
         ) : (
           <>

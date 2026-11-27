@@ -23,9 +23,10 @@ import type {
   TraitDef,
 } from '../../engine/effects';
 import type { Hiker, ItemTypeName, Tile } from '../../engine/types';
-import { CARDS, CHALLENGES } from '../challenges';
+import { CARDS } from '../challenges';
 import { ITEMS, isOffered } from '../items';
 import { RESOURCES } from '../resources';
+import { stepLevelOf } from './trees';
 
 export type StepEffect = Pick<TraitDef, 'hooks' | 'ability' | 'toggle'>;
 
@@ -358,38 +359,92 @@ function tileLabel(ctx: QueryContext, tile: Tile): string {
   return row.length === 1 ? `Row ${tile.row + 1}` : `Row ${tile.row + 1}, ${nth} from the left`;
 }
 
-const isChallenge = (cardId: string) => CHALLENGES.some((c) => c.id === cardId);
+// Wyatt's Daredevil Loop and Scout Trail (26-fixes-and-wyatt-trees.md, sections 5.2 and 5.3).
+const RULE_CHANGER = 'wyatt-daredevil-t1';
+const RULE_CHANGER_II = 'wyatt-daredevil-t2';
+const MINIGAME_MASTER = 'wyatt-daredevil-t3';
+const GAME_SIGHT = 'wyatt-scout-t1';
+const GAME_SIGHT_II = 'wyatt-scout-t2';
+const GAME_SIGHT_III = 'wyatt-scout-t3';
 
-function ruleChanger(label: string, tier: 1 | 2 | 3): AbilityDef {
+/**
+ * Rule Changer (and II, at Rule Changer's level): switch a revealed minigame
+ * challenge on a tile next to the hiker. Level 1 switches to a random one;
+ * levels 2 and 3 pick 1 of 2 or 4.
+ */
+function ruleChanger(label: string): AbilityDef {
   return {
     id: 'ruleChanger',
     label,
-    limit: { per: 'biome', uses: B.ruleChanger.uses[tier] },
+    limit: { per: 'biome', uses: B.ruleChanger.uses },
     tileChoices: true,
     choicesFor(ctx) {
-      const tiles = Object.values(ctx.state.section.tiles).filter((t) => !t.visited);
-      if (tier === 3) {
-        // Any tile nobody has reached, whether or not it holds a challenge.
-        return tiles
-          .filter((t) => t.kind === 'normal')
-          .map((t) => ({ id: t.id, label: tileLabel(ctx, t) }));
-      }
-      return tiles
-        .filter((t) => {
-          const card = t.revealedCard;
-          if (!card || card.hidden || !isChallenge(card.cardId)) return false;
-          if (tier === 1) return card.tier === 1 && ctx.distance(t.id, ctx.self.tileId) === 1;
-          return card.tier <= 2;
-        })
+      return Object.values(ctx.state.section.tiles)
+        .filter(
+          (t) => ctx.distance(t.id, ctx.self.tileId) === 1 && ctx.switchOptions(t.id, 1).length > 0,
+        )
         .map((t) => ({ id: t.id, label: tileLabel(ctx, t) }));
     },
+    optionsFor(ctx, tileId) {
+      const picks = B.ruleChanger.picks[stepLevelOf(ctx.self, RULE_CHANGER) - 1] ?? 1;
+      if (picks <= 1) return [];
+      return ctx.switchOptions(tileId, picks).map((id) => ({ id, label: CARDS[id]?.name ?? id }));
+    },
     apply(ctx, choice) {
-      if (!choice) return;
-      if (tier === 3) ctx.removeChallenge(choice, label);
-      else ctx.swapChallenge(choice, label);
+      const [tileId, to] = (choice ?? '').split('|');
+      if (tileId) ctx.switchChallenge(tileId, to || undefined, label);
     },
   };
 }
+
+/** Rule Changer II: the first Prepare slot (two at level 2) costs nothing. */
+const freeSlots: Hooks['freePrepareSlots'] = (ctx) =>
+  B.ruleChanger.freeSlots[stepLevelOf(ctx.self, RULE_CHANGER_II) - 1] ?? 0;
+
+/**
+ * Minigame Master, when on: the next minigame challenge the hiker lands on
+ * passes for everyone without playing, for Energy. Then it turns off. If the
+ * hiker hasn't the Energy (or its uses this biome are spent), it waits, on.
+ */
+const minigameMaster: Hooks['onMinigameOpen'] = (_e, ctx) => {
+  const at = Math.max(1, stepLevelOf(ctx.self, MINIGAME_MASTER)) - 1;
+  const energy = B.minigameMaster.energy[at] ?? B.minigameMaster.energy[0]!;
+  const uses = B.minigameMaster.uses[at] ?? 1;
+  if (ctx.used(ctx.self, 'minigameMaster', 'biome') >= uses) return false;
+  if (ctx.self.stats.energy < energy) return false;
+  ctx.changeStat(ctx.self, 'energy', -energy, 'Minigame Master');
+  ctx.tally(ctx.self, 'minigameMaster', 1, 'biome');
+  ctx.switchOff(MINIGAME_MASTER);
+  ctx.note(ctx.self, 'Minigame Master', 'Passed the minigame challenge without playing.');
+  return true;
+};
+
+/** Can Game Sight show this tile's card: a minigame challenge, then (III) cost cards and opportunities. */
+function sightFinds(tile: Tile, third: number): boolean {
+  const card = tile.revealedCard;
+  if (card && !card.hidden) return false;
+  const def = card ? CARDS[card.cardId] : undefined;
+  if (def?.kind === 'challenge') return !!def.minigame || third >= 1;
+  if (def?.kind === 'opportunity') return third >= 2;
+  return !card && third >= 2 && (!!tile.opportunity || tile.special === 'opportunity');
+}
+
+/**
+ * Game Sight (II, III): at the start of each phase, each card it can see
+ * within reach is revealed at Game Sight's chance. Its chance is Game
+ * Sight's level; its reach, Game Sight II's; what it sees, Game Sight III's.
+ */
+const gameSight: Hooks['onPhaseStart'] = (_e, ctx) => {
+  const chance = B.gameSight.chance[stepLevelOf(ctx.self, GAME_SIGHT) - 1] ?? 0;
+  const reach = B.gameSight.reach[stepLevelOf(ctx.self, GAME_SIGHT_II)] ?? 1;
+  const third = stepLevelOf(ctx.self, GAME_SIGHT_III);
+  for (const tile of Object.values(ctx.state.section.tiles)) {
+    if (tile.visited || !sightFinds(tile, third)) continue;
+    const d = ctx.distance(ctx.self.tileId, tile.id);
+    if (d < 1 || d > reach) continue;
+    if (chance >= 1 || ctx.roll(chance)) ctx.showCard(tile.id, 'Game Sight');
+  }
+};
 
 const rainLover = (name: string, tier: 1 | 2 | 3): Hooks => ({
   modifyScavenge: (_q, ctx) =>
@@ -506,10 +561,13 @@ export const STEP_EFFECTS: Readonly<Record<string, StepEffect>> = {
   'wyatt-naturalist-t1': { hooks: rainLover('Rain Lover', 1) },
   'wyatt-naturalist-t2': { hooks: rainLover('Rain Lover II', 2) },
   'wyatt-naturalist-t3': { hooks: rainLover('Rain Lover III', 3) },
-  'wyatt-daredevil-t1': { ability: ruleChanger('Rule Changer', 1) },
-  'wyatt-daredevil-t2': { ability: ruleChanger('Rule Changer II', 2) },
-  'wyatt-daredevil-t3': { ability: ruleChanger('Rule Changer III', 3) },
-  'wyatt-smith-t1': { hooks: learnsRecipes('Toy Chest', 'tool') },
-  'wyatt-smith-t2': { hooks: craftsTier('Artisan Smith', 'tool', 2) },
-  'wyatt-smith-t3': { hooks: craftsTier('Master Smith', 'tool', 3) },
+  [RULE_CHANGER]: { ability: ruleChanger('Rule Changer') },
+  [RULE_CHANGER_II]: {
+    ability: ruleChanger('Rule Changer II'),
+    hooks: { freePrepareSlots: freeSlots },
+  },
+  [MINIGAME_MASTER]: { toggle: { on: { onMinigameOpen: minigameMaster }, off: {} } },
+  [GAME_SIGHT]: { hooks: { onPhaseStart: gameSight } },
+  [GAME_SIGHT_II]: { hooks: { onPhaseStart: gameSight } },
+  [GAME_SIGHT_III]: { hooks: { onPhaseStart: gameSight } },
 };
