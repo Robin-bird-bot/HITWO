@@ -370,6 +370,42 @@
   filter: drop-shadow(0 0 0.6px #1d2918);
 }
 
+/* Which way a sweeping attack will go (26-fixes-and-wyatt-trees.md, section 3.1). */
+.moveArrows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.moveArrow {
+  position: absolute;
+  width: 13px;
+  height: 7.8px;
+  overflow: visible;
+  fill: #c8423a;
+  stroke: #1d2918;
+  stroke-width: 0.8px;
+  stroke-linejoin: round;
+  animation: moveBlink var(--blink, 0.25s) linear infinite;
+}
+
+@keyframes moveBlink {
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moveArrow {
+    animation: none;
+  }
+}
+
 /* A glow: the bear's mouth before a shout, a candle before a wisp. */
 .glow {
   position: absolute;

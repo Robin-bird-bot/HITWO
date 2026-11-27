@@ -22,6 +22,7 @@ import {
 import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
 import { useTinted } from '../dodge/tint';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -248,9 +249,7 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
         <div className={`${ui.box} ${hud.name}`}>TRAIN!</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>SURVIVE</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(left / game.lengthSec) * 100}%` }} />
-          </span>
+          <Bar value={left / game.lengthSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

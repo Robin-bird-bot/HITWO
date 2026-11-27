@@ -7,6 +7,7 @@
  */
 import { BALANCE } from '../../../../config/balance';
 import {
+  avalancheColumns,
   avalancheY,
   chargeAt,
   flakesNow,
@@ -207,43 +208,39 @@ export const SNOW_DRAW: DrawTable<
   avalanche: {
     under(p, c) {
       if (c.time >= p.activeAt) return null;
-      const cw = (c.right - c.left) / p.cols;
+      // The columns that will fall are hatched; the gap stays clear.
       return (
         <>
-          {Array.from({ length: p.cols }, (_, k) =>
-            k === p.gap ? null : (
-              <span
-                key={k}
-                className={styles.hatch}
-                style={{ left: c.left + k * cw, top: c.top, width: cw, height: c.bottom - c.top }}
-              />
-            ),
-          )}
+          {avalancheColumns(p, c.box).map((col, k) => (
+            <span
+              key={k}
+              className={styles.hatch}
+              style={{ left: col.x, top: c.top, width: col.w, height: c.bottom - c.top }}
+            />
+          ))}
         </>
       );
     },
     over(p, c) {
       if (c.time < p.activeAt) return null;
-      const cw = (c.right - c.left) / p.cols;
       const y = avalancheY(p, c.box, c.time);
       return (
         <>
-          {Array.from({ length: p.cols }, (_, k) =>
-            k === p.gap ? null : (
-              <span
-                key={k}
-                className={styles.part}
-                style={{
-                  left: c.left + k * cw,
-                  top: y,
-                  width: cw,
-                  height: S.avalanche.band,
-                  background: WHITE,
-                  opacity: 0.9,
-                }}
-              />
-            ),
-          )}
+          {avalancheColumns(p, c.box).map((col, k) => (
+            <span
+              key={k}
+              className={styles.part}
+              style={{
+                left: col.x + 0.25,
+                top: y,
+                width: col.w - 0.5,
+                height: S.avalanche.band,
+                borderRadius: 1,
+                background: WHITE,
+                opacity: 0.9,
+              }}
+            />
+          ))}
         </>
       );
     },

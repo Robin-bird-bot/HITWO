@@ -24,6 +24,7 @@ import {
 import { TIER_LABELS, type MinigameSettings } from '../../../minigames/types';
 import { useTinted } from '../dodge/tint';
 import { useLaneInput } from '../lanes/useLaneInput';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -67,9 +68,14 @@ function campOptions(settings: MinigameSettings): CampCleanupOptions {
   };
 }
 
-/** Where a cell's top-left is in scene units. */
-const cellX = (x: number) => C.at.x + x * C.cell;
-const cellY = (y: number) => C.at.y + y * C.cell;
+/**
+ * The grid's top-left in scene units: smaller grids (higher tiers) sit in
+ * the middle of the biggest one's space (26-fixes-and-wyatt-trees.md, section 2).
+ */
+const gridAt = (s: Pick<CampCleanupState, 'cols' | 'rows'>) => ({
+  x: C.at.x + ((C.cols - s.cols) * C.cell) / 2,
+  y: C.at.y + ((C.rows - s.rows) * C.cell) / 2,
+});
 
 /** The little triangle pointing a way out of the head. */
 const ARROW: Readonly<Record<Dir, string>> = {
@@ -87,6 +93,10 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
       seed,
     ),
   );
+  // Where a cell's top-left is in scene units.
+  const at = gridAt(game);
+  const cellX = (x: number) => at.x + x * C.cell;
+  const cellY = (y: number) => at.y + y * C.cell;
   const sceneRef = useRef<HTMLDivElement>(null);
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const colors = hikers.map((h) => h.color);
@@ -158,7 +168,7 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
           src={asset(file('ground.png'))}
           alt=""
           draggable={false}
-          style={{ left: C.at.x, top: C.at.y }}
+          style={{ left: at.x, top: at.y, width: game.cols * C.cell, height: game.rows * C.cell }}
         />
 
         {game.obstacles.map((o, k) => (
@@ -306,19 +316,28 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
           </span>
         )}
 
+        {/* Everyone has enough: the countdown to passing (mockup 58). */}
+        {game.countdown !== null && !game.over && (
+          <div className={`${ui.box} ${styles.countdown}`} role="status">
+            <span>EVERYONE HAS ENOUGH</span>
+            <span className={styles.countdownNumber}>{Math.ceil(game.countdown)}</span>
+            <span className={styles.countdownWarn}>DON’T CRASH…</span>
+          </div>
+        )}
+
         <p className={`${ui.muted} ${q.hint} ${styles.hint}`}>
           {game.phase === 'crash' || game.phase === 'wait'
             ? 'CRASH! BAGS FELL OFF THE END. PICK A WAY.'
-            : 'STEER THE LINE. GRAB TRASH IN YOUR COLOR: EACH ONE ADDS A BAG BEHIND.'}
+            : game.countdown !== null
+              ? 'EVERYONE HAS ENOUGH. KEEP IT UP UNTIL THE COUNTDOWN ENDS.'
+              : 'STEER THE LINE. GRAB TRASH IN YOUR COLOR: EACH ONE ADDS A BAG BEHIND.'}
         </p>
 
         {/* The top HUD: the time left. */}
         <div className={`${ui.box} ${hud.name}`}>CAMP CLEANUP</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>{game.over ? 'DONE' : `TIME ${Math.ceil(game.timeLeft)}S`}</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(Math.max(0, game.timeLeft) / game.timeSec) * 100}%` }} />
-          </span>
+          <Bar value={game.timeLeft / game.timeSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[game.tier]}</div>
 

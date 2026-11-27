@@ -19,6 +19,7 @@ import {
 } from '../../../minigames/flySwatter/logic';
 import { current, playing, turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -242,9 +243,7 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
           <span>
             SWATS {game.swats}/{game.flies}
           </span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(game.swats / game.flies) * 100}%` }} />
-          </span>
+          <Bar value={game.swats / game.flies} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

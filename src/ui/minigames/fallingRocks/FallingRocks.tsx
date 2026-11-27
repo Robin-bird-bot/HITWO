@@ -29,6 +29,7 @@ import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -249,9 +250,7 @@ export function FallingRocks({ settings, hikers, seed, onDone, still = false }: 
           <span>
             ACROSS {across} OF {game.turns.order.length}
           </span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(game.x / F.length) * 100}%` }} />
-          </span>
+          <Bar value={game.x / F.length} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar

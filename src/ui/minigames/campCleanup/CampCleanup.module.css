@@ -4,13 +4,42 @@
   background: #b9c793;
 }
 
-/* The campsite floor, with a dark edge. */
+/* The campsite floor, with a dark edge (cropped to the tier's grid). */
 .ground {
   position: absolute;
   width: 300px;
   height: 168px;
+  object-fit: none;
+  object-position: 0 0;
   outline: 1px solid #1d2918;
   image-rendering: pixelated;
+}
+
+/* Everyone has enough: the countdown box over the field's lower right (mockup 58). */
+.countdown {
+  position: absolute;
+  left: 180px;
+  top: 112px;
+  width: 88px;
+  height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
+  padding: 3px 0;
+  box-sizing: border-box;
+  font-size: 4px;
+  z-index: 3;
+}
+
+.countdownNumber {
+  font-family: var(--font-pixel-dot, var(--font-pixel));
+  font-size: 12px;
+  line-height: 1;
+}
+
+.countdownWarn {
+  opacity: 0.8;
 }
 
 .thing {

@@ -176,6 +176,7 @@ describe('the minigame list', () => {
           ['Fake Trail Signs', 'ready'],
           ['Trail Map', 'ready'],
           ['Picture Puzzle', 'ready'],
+          ['Cracked Pots', 'ready'],
           ['Minefield', 'ready'],
           ['Thin Ice', 'ready'],
           ['Pack It Up', 'ready'],
@@ -191,7 +192,13 @@ describe('the minigame list', () => {
           ['Birdsong', 'ready'],
         ],
       ],
-      ['Search', [['Find the Object', 'ready']]],
+      [
+        'Search',
+        [
+          ['Find the Object', 'ready'],
+          ['Spooky Ghost!', 'ready'],
+        ],
+      ],
       [
         'Reaction and timing',
         [

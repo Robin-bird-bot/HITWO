@@ -43,6 +43,7 @@ import {
   whistlePose,
   type Version,
 } from '../../../minigames/trailBlocks/logic';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -511,9 +512,7 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
         <div className={`${ui.box} ${hud.name}`}>{info.hud}</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>{info.work.toUpperCase()}</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(1 - game.work / game.total) * 100}%` }} />
-          </span>
+          <Bar value={1 - game.work / game.total} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

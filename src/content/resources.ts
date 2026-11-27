@@ -31,3 +31,32 @@ export const RESOURCES: readonly ResourceDef[] = [
 export const RESOURCE_BY_ID: ReadonlyMap<ResourceId, ResourceDef> = new Map(
   RESOURCES.map((r) => [r.id, r]),
 );
+
+/**
+ * Resource categories (docs/design/24-challenges-reset.md, section 1): five
+ * groups that pay for challenge costs and Prepare. A resource in two groups
+ * (Wood, Metal) can pay for either, but one resource only pays one cost.
+ */
+export type CategoryId = 'food' | 'building' | 'fiber' | 'fire' | 'trinkets';
+
+export interface CategoryDef {
+  id: CategoryId;
+  name: string;
+  resources: readonly ResourceId[];
+}
+
+export const CATEGORIES: readonly CategoryDef[] = [
+  { id: 'food', name: 'Food', resources: ['meat', 'fish', 'mushroom', 'salt'] },
+  { id: 'building', name: 'Building', resources: ['wood', 'stone', 'metal', 'clay'] },
+  { id: 'fiber', name: 'Fiber', resources: ['grass', 'moss', 'fur', 'seaweed'] },
+  { id: 'fire', name: 'Fire', resources: ['wood', 'oil', 'flint'] },
+  { id: 'trinkets', name: 'Trinkets', resources: ['shell', 'bones', 'metal'] },
+];
+
+export const CATEGORY_BY_ID: ReadonlyMap<CategoryId, CategoryDef> = new Map(
+  CATEGORIES.map((c) => [c.id, c]),
+);
+
+/** The categories a resource is in (Wood: Building and Fire). */
+export const categoriesOf = (id: ResourceId): CategoryId[] =>
+  CATEGORIES.filter((c) => c.resources.includes(id)).map((c) => c.id);

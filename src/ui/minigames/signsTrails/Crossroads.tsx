@@ -27,6 +27,7 @@ import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
 import { useTinted } from '../dodge/tint';
 import { useLaneInput } from '../lanes/useLaneInput';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -250,21 +251,18 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
           <span>
             {studying ? 'STUDY' : `STEP ${Math.min(game.count, game.step + 1)}/${game.count}`}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${
-                  studying
-                    ? game.studySec
-                      ? Math.max(0, 1 - since / game.studySec) * 100
-                      : 100
-                    : game.turnSec && game.phase === 'walk'
-                      ? Math.max(0, 1 - since / game.turnSec) * 100
-                      : (game.step / game.count) * 100
-                }%`,
-              }}
-            />
-          </span>
+          <Bar
+            value={
+              studying
+                ? game.studySec
+                  ? 1 - since / game.studySec
+                  : 1
+                : game.turnSec && game.phase === 'walk'
+                  ? 1 - since / game.turnSec
+                  : game.step / game.count
+            }
+            live={(studying && !!game.studySec) || (!!game.turnSec && game.phase === 'walk')}
+          />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

@@ -28,6 +28,7 @@ import { prepNumber } from '../../../minigames/prepare';
 import { turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -259,9 +260,7 @@ export function PackItUp({ settings, hikers, seed, onDone, still = false }: Puzz
         <div className={`${ui.box} ${hud.name}`}>PACK IT UP</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>TIME {clock(Math.ceil(game.timeLeft))}</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(game.timeLeft / game.timeSec) * 100}%` }} />
-          </span>
+          <Bar value={game.timeLeft / game.timeSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar hikers={hikers} word={word} active={game.over ? undefined : who} />

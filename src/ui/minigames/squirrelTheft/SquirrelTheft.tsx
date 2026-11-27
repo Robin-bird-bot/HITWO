@@ -31,6 +31,7 @@ import {
 } from '../../../minigames/squirrelTheft/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -215,12 +216,9 @@ export function SquirrelTheft({ settings, hikers, seed, onDone, still = false }:
         <div className={`${ui.box} ${hud.name}`}>SQUIRREL THEFT</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>HAPPY</span>
-          <span className={hud.bar}>
-            <span
-              style={{ width: `${Math.min(1, game.happy / Math.max(1, game.nutsAll)) * 100}%` }}
-            />
+          <Bar value={game.happy / Math.max(1, game.nutsAll)}>
             <i className={styles.line} style={{ left: `${lineShare * 100}%` }} />
-          </span>
+          </Bar>
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar

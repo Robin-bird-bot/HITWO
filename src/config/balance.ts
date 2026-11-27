@@ -1065,6 +1065,12 @@ export const BALANCE = {
    * every game. TODO(wyatt): every number here is a first guess.
    */
   minigames: {
+    /**
+     * A bar that changes all at once (a hit, a plank falling) slides to its
+     * new value over this long; one that changes every frame (a timer) has
+     * no slide (26-fixes-and-wyatt-trees.md, section 1). TODO(wyatt): [0.25 s].
+     */
+    barEaseSec: 0.25,
     gps: {
       /**
        * On Start the GPS turns 90° clockwise and zooms in over this long; on
@@ -2436,27 +2442,87 @@ export const BALANCE = {
      * snake on a grid, picking up trash in their colors. By tier: the time,
      * the bags each hiker needs, the speed (cells a second), the bags lost in
      * a crash (from–to), and obstacles. TODO(wyatt): every number is a first guess.
+     *
+     * Nov 26 evening (26-fixes-and-wyatt-trees.md, section 2): smaller grids
+     * (cells across × down) and more obstacles at higher tiers, a much
+     * shorter time, and the countdown: once every hiker has their quota, the
+     * game ends this many seconds later with everyone passing, unless
+     * someone crashes below it first. TODO(wyatt): grids [25 × 14, 23 × 13,
+     * 21 × 12, 19 × 11, 17 × 10], obstacles [0, 2, 5, 8, 11], time [30, 30,
+     * 35, 40, 45 s], countdown [5, 5, 6, 7, 8 s].
      */
     campCleanup: {
       tiers: {
-        1: { timeSec: 60, quota: 3, speed: 5, crash: [2, 3], obstacles: 0 },
-        2: { timeSec: 60, quota: 4, speed: 6, crash: [2, 4], obstacles: 0 },
-        3: { timeSec: 70, quota: 4, speed: 7, crash: [3, 5], obstacles: 3 },
-        4: { timeSec: 75, quota: 5, speed: 8, crash: [3, 6], obstacles: 5 },
-        5: { timeSec: 80, quota: 5, speed: 9, crash: [4, 7], obstacles: 7 },
+        1: {
+          cols: 25,
+          rows: 14,
+          timeSec: 30,
+          quota: 3,
+          speed: 5,
+          crash: [2, 3],
+          obstacles: 0,
+          countdownSec: 5,
+        },
+        2: {
+          cols: 23,
+          rows: 13,
+          timeSec: 30,
+          quota: 4,
+          speed: 6,
+          crash: [2, 4],
+          obstacles: 2,
+          countdownSec: 5,
+        },
+        3: {
+          cols: 21,
+          rows: 12,
+          timeSec: 35,
+          quota: 4,
+          speed: 7,
+          crash: [3, 5],
+          obstacles: 5,
+          countdownSec: 6,
+        },
+        4: {
+          cols: 19,
+          rows: 11,
+          timeSec: 40,
+          quota: 5,
+          speed: 8,
+          crash: [3, 6],
+          obstacles: 8,
+          countdownSec: 7,
+        },
+        5: {
+          cols: 17,
+          rows: 10,
+          timeSec: 45,
+          quota: 5,
+          speed: 9,
+          crash: [4, 7],
+          obstacles: 11,
+          countdownSec: 8,
+        },
       } as Readonly<
         Record<
           MgTier,
           {
+            cols: number;
+            rows: number;
             timeSec: number;
             quota: number;
             speed: number;
             crash: readonly [number, number];
             obstacles: number;
+            countdownSec: number;
           }
         >
       >,
-      /** The grid (cells across and down), a cell's size (units), and its top-left corner on the screen. */
+      /**
+       * The space the grid sits in (the biggest grid, cells across and down;
+       * smaller grids are centered in it), a cell's size (units), and the
+       * space's top-left corner on the screen.
+       */
       cols: 25,
       rows: 14,
       cell: 12,
@@ -2716,6 +2782,43 @@ export const BALANCE = {
       swapsOnTier1: 2,
     },
 
+    /**
+     * Cracked Pots (24-challenges-reset.md, section 7): Picture Puzzle with
+     * shards of pot. By tier: shards per pot, seconds per shard, and what a
+     * shard snapping in adds to the clock (as in Picture Puzzle).
+     * - A shard snaps in when dropped this close to its spot (units).
+     * - The two pots' top-left corners on the screen (one hiker: the first),
+     *   and the blanket the shards lie on.
+     * - Shards are cut from random points at least this share of the even
+     *   spacing apart. Up to this tier, faint crack lines show where the
+     *   shards go (Claude's idea, like Picture Puzzle's Tier I locks).
+     * - Prepare: FOOD adds this many seconds; GLUE puts one shard of each
+     *   pot in place before you start.
+     * - Between pairs the screen holds this long. The demo bot drops a shard
+     *   every so often, the wrong spot first this often, this far off.
+     * TODO(wyatt): [6, 8, 10, 12, 14] shards, [6] snap, +10 s; the seconds and bonuses are my guesses.
+     */
+    crackedPots: {
+      tiers: {
+        1: { shards: 6, secPerShard: 6, snapSec: 3 },
+        2: { shards: 8, secPerShard: 5, snapSec: 2 },
+        3: { shards: 10, secPerShard: 4.5, snapSec: 2 },
+        4: { shards: 12, secPerShard: 4, snapSec: 1.5 },
+        5: { shards: 14, secPerShard: 3.5, snapSec: 1 },
+      } as Readonly<Record<MgTier, { shards: number; secPerShard: number; snapSec: number }>>,
+      snap: 6,
+      pots: [
+        { x: 22, y: 42 },
+        { x: 222, y: 42 },
+      ] as const,
+      blanket: { left: 106, top: 34, right: 214, bottom: 190 },
+      apart: 0.55,
+      cracksUpTo: 1,
+      extraSec: 10,
+      breakSec: 1.5,
+      bot: { everySec: 0.9, wrongChance: 0.25, wrongBy: 18 },
+    },
+
     /** Picture Puzzle: rebuild pictures from stacked piles; two hikers share one tray. */
     picturePuzzle: {
       /**
@@ -2902,6 +3005,56 @@ export const BALANCE = {
     },
 
     /**
+     * Spooky Ghost! (24-challenges-reset.md, section 6): a haunted Find the
+     * Object, always in the dark. By tier: each hiker's finds, the sanity
+     * bar's seconds, the ghosts at a time, and the flashlight's radius (the
+     * doc's [30] and [26] read as the radius, as mockup 54 draws it, so a
+     * ghost that drains you is always in the light).
+     * - The field (scene units); a new mitten lands at least this far from
+     *   the light; a tap this close to a lit mitten finds it.
+     * - Ghosts: while the light is this close to one, sanity drains this many
+     *   times as fast. Each fades in over this long, stays this long
+     *   (from–to), fades out, and comes back somewhere else: never this
+     *   close to the pointer, or this close to a mitten. From this tier they
+     *   drift this fast; from this tier this share of them drift toward the
+     *   light (my guess). "BOO" shows this long when the light finds one.
+     * - Prepare: FOOD makes sanity drain this share slower, LANTERN makes the
+     *   light this much bigger, LUCKY CHARM makes ghosts drain this share as much.
+     * - The demo bot's light moves this fast, and turns away from a ghost this late.
+     * TODO(wyatt): [3, 4, 4, 5, 5], [45, 45, 40, 40, 35 s], [4–8], [30], [26], [80], [20],
+     * [4×], [0.8 s], [3–6 s], [50], [20], [10], [15%], [+6], half; the rest are my guesses.
+     */
+    spookyGhost: {
+      tiers: {
+        1: { finds: 3, sanitySec: 45, ghosts: 4, light: 30 },
+        2: { finds: 4, sanitySec: 45, ghosts: 5, light: 30 },
+        3: { finds: 4, sanitySec: 40, ghosts: 6, light: 26 },
+        4: { finds: 5, sanitySec: 40, ghosts: 7, light: 26 },
+        5: { finds: 5, sanitySec: 35, ghosts: 8, light: 26 },
+      } as Readonly<
+        Record<MgTier, { finds: number; sanitySec: number; ghosts: number; light: number }>
+      >,
+      field: { left: 8, right: 312, top: 28, bottom: 190 },
+      newAway: 80,
+      tapReach: 9,
+      ghostNear: 20,
+      ghostDrain: 4,
+      fadeSec: 0.8,
+      staySec: [3, 6] as const,
+      clearOfLight: 50,
+      clearOfMitten: 20,
+      driftFrom: 3,
+      drift: 10,
+      chaseFrom: 4,
+      chaseShare: 0.5,
+      booSec: 0.8,
+      foodSlower: 0.15,
+      lanternBigger: 6,
+      charmDrain: 0.5,
+      bot: { speed: 110, lateSec: 0.35 },
+    },
+
+    /**
      * Fly Block (23-minigames-final.md, section 3), Tempest-style. By tier:
      * panels around the pie, the flies' speed (units/s), flies a round, and
      * a fly every so often (seconds). A lane runs this far out from the ring
@@ -2998,17 +3151,25 @@ export const BALANCE = {
      * icon this long at this speed, every so often (speed and how often: my
      * guesses). The hiker who breaks the bridge gets this (the challenge's
      * stake, until challenges are hooked up).
-     * TODO(wyatt): every number here; [600], [400], [0.3], [44–24], [50–96], [8–12 s], [14–22], [100], [4].
+     *
+     * Nov 26 evening (26-fixes-and-wyatt-trees.md, section 4: "too jumpy"):
+     * a bigger zone at low tiers, a gentler zone (it rises at [360], falls at
+     * [260] and never goes faster than [140] units a second: that cap is
+     * Claude's idea), and an icon that moves in smaller steps (a new target
+     * at most [24–40] from where it is, darts of [16–28], gusts at [50]).
+     * TODO(wyatt): every number here; [360], [260], [140], [0.3], [52, 46, 36, 28, 24],
+     * [50–96], [8–12 s], [14–22], [100], [4], [24–40], [16–28], [50].
      */
     sketchyBridge: {
       barH: 150,
-      rise: 600,
-      fall: 400,
+      rise: 360,
+      fall: 260,
+      maxSpeed: 140,
       bounce: 0.3,
       tiers: {
-        1: { zone: 44, sway: 50, crossSec: 8, drain: 14, gusts: false },
-        2: { zone: 38, sway: 60, crossSec: 9, drain: 16, gusts: false },
-        3: { zone: 32, sway: 72, crossSec: 10, drain: 18, gusts: false },
+        1: { zone: 52, sway: 50, crossSec: 8, drain: 14, gusts: false },
+        2: { zone: 46, sway: 60, crossSec: 9, drain: 16, gusts: false },
+        3: { zone: 36, sway: 72, crossSec: 10, drain: 18, gusts: false },
         4: { zone: 28, sway: 84, crossSec: 11, drain: 20, gusts: true },
         5: { zone: 24, sway: 96, crossSec: 12, drain: 22, gusts: true },
       } as Readonly<
@@ -3020,11 +3181,13 @@ export const BALANCE = {
       integrity: 100,
       plankEvery: 4,
       retargetSec: [0.6, 1.4] as const,
+      /** A new target is this far from the icon (from–to), up or down. */
+      targetStep: [24, 40] as const,
       iconMargin: 8,
       dartFrom: 3,
       dartChance: 0.25,
-      dart: [30, 50] as const,
-      gust: { flapSec: 0.5, pushSec: 0.6, speed: 70, everySec: [3, 6] as const },
+      dart: [16, 28] as const,
+      gust: { flapSec: 0.5, pushSec: 0.6, speed: 50, everySec: [3, 6] as const },
       fallCondition: 'injury',
       /** Prepare (section 10): PATCH THE PLANKS adds this much; FOOD makes the zone this much bigger; the Hiking Stick cuts the sway by this share. */
       patch: 20,
@@ -3725,6 +3888,14 @@ export const BALANCE = {
        */
       ice: { accel: 240, friction: 1.2, grip: 2 },
       /**
+       * Arrows on attacks that move across the box (26-fixes-and-wyatt-trees.md,
+       * section 3.1): they blink this many times a second during the warning
+       * and fade over this long once the attack starts moving. Comb-Over shows
+       * this many in front of its wall; the others this many along their path.
+       * TODO(wyatt): [4] a second, [4] arrows; the fade and the others' count are my guesses.
+       */
+      arrows: { blinkPerSec: 4, fadeSec: 0.2, comb: 4, along: 3 },
+      /**
        * The Eagle (section 9.1): his version by level (Easy: Eagle; Level 1:
        * Toupeeagle; Levels 2 and 3: Freeagle). At Easy he only swoops and
        * drops feathers. Swoop: "!" and the dotted path this long, then he
@@ -3803,8 +3974,11 @@ export const BALANCE = {
        * long, then she charges through it this fast (my guesses). Shake Off:
        * a ring of this many flakes from the middle, then a second turned half
        * a gap this long after, this fast (my guesses). Avalanche (Level 3):
-       * snow falls in columns this wide, with one gap, after this warning,
-       * this fast, in a band this tall (my guesses).
+       * snow falls in columns about this wide, with one gap this wide whose
+       * middle is at most this far from the sprite (never over it), after
+       * this warning, this fast, in a band this tall (Nov 26 evening,
+       * 26-fixes-and-wyatt-trees.md section 3.2: [38], [60] and [1.1 s]; the
+       * near gap and the longer warning are Claude's ideas).
        * TODO(wyatt): every number from the design's [brackets]; the rest are my guesses.
        */
       snow: {
@@ -3833,7 +4007,7 @@ export const BALANCE = {
         },
         charge: { band: 18, warnSec: 1, speed: 200, radius: 12 },
         shake: { flakes: 16, apartSec: 0.4, speed: 70, radius: 2, warnSec: 0.6 },
-        avalanche: { column: 16, warnSec: 0.8, speed: 120, band: 20 },
+        avalanche: { column: 16, gap: 38, near: 60, warnSec: 1.1, speed: 120, band: 20 },
       },
       /** Darkness (Level 3, second half): the box goes dark for this long, but for a light this big around the sprite (my guess). */
       darkness: { sec: 4, light: 24 },

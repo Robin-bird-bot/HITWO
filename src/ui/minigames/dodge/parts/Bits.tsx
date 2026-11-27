@@ -6,6 +6,7 @@
  * off the screen, it moves just inside the box edge on a light background.
  */
 import { BALANCE } from '../../../../config/balance';
+import type { MoveArrow } from '../../../../minigames/dodge/arrows';
 import { markSpot, type Box } from '../../../../minigames/dodge/logic';
 import ui from '../../gpsUi.module.css';
 import styles from '../Dodge.module.css';
@@ -100,6 +101,49 @@ export function Arrow({
         transform: `rotate(${angle.toFixed(1)}deg)`,
       }}
     />
+  );
+}
+
+/**
+ * Red arrows showing which way an attack will move across the box
+ * (26-fixes-and-wyatt-trees.md, section 3.1): the warning red with a dark
+ * outline, blinking [4] times a second, fading as the attack starts.
+ */
+export function MoveArrows({
+  arrows,
+  box,
+  opacity,
+}: {
+  arrows: readonly MoveArrow[];
+  box: Box;
+  opacity: number;
+}) {
+  return (
+    <span
+      className={styles.moveArrows}
+      style={{
+        opacity,
+        ['--blink' as string]: `${1 / BALANCE.minigames.dodge.arrows.blinkPerSec}s`,
+      }}
+    >
+      {arrows.map((a, k) => {
+        const at = markSpot({ x: a.x, y: a.y }, box, 6.5);
+        return (
+          <svg
+            key={k}
+            className={styles.moveArrow}
+            viewBox="0 0 10 6"
+            style={{
+              left: at.x - 6.5,
+              top: at.y - 3.9,
+              transform: `rotate(${a.angle.toFixed(1)}deg)`,
+            }}
+          >
+            <path d="M0.6 2.2H5.4V0.6L9.4 3L5.4 5.4V3.8H0.6Z" />
+          </svg>
+        );
+      })}
+    </span>
   );
 }
 

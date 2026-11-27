@@ -24,12 +24,16 @@
  */
 import { BALANCE } from '../config/balance';
 import { ITEMS } from '../content/items';
-import { RESOURCES } from '../content/resources';
+import { CATEGORY_BY_ID, RESOURCES, type CategoryId } from '../content/resources';
 import type { MinigameSettings } from './types';
 
-/** A resource, an item, or a group: any resource of one node ("forest"). */
+/**
+ * A resource, an item, a group (any resource of one node: "forest"), or a
+ * category (any Food, Building, Fiber, Fire or Trinkets resource;
+ * 24-challenges-reset.md, sections 1 and 5).
+ */
 export interface Thing {
-  kind: 'resource' | 'item' | 'group';
+  kind: 'resource' | 'item' | 'group' | 'category';
   id: string;
 }
 
@@ -40,20 +44,34 @@ const things =
 export const res = things('resource');
 export const item = things('item');
 export const group = things('group');
+export const category = (...ids: CategoryId[]): Thing[] => things('category')(...ids);
 
 /** Food: Meat, Fish or Mushroom ×1, the general stamina help (section 7). */
 export const FOOD: readonly Thing[] = res('meat', 'fish', 'mushroom');
 
-/** What a slot really takes: a group stands for every resource of its node. */
+/** What a slot really takes: a group or a category stands for every resource in it. */
 export function expand(accepts: readonly Thing[]): Thing[] {
-  return accepts.flatMap((t) =>
-    t.kind === 'group'
-      ? RESOURCES.filter((r) => r.node === t.id).map((r) => ({
+  const seen = new Set<string>();
+  return accepts
+    .flatMap((t): Thing[] => {
+      if (t.kind === 'group')
+        return RESOURCES.filter((r) => r.node === t.id).map((r) => ({
           kind: 'resource' as const,
           id: r.id,
-        }))
-      : [t],
-  );
+        }));
+      if (t.kind === 'category')
+        return (CATEGORY_BY_ID.get(t.id as CategoryId)?.resources ?? []).map((id) => ({
+          kind: 'resource' as const,
+          id,
+        }));
+      return [t];
+    })
+    .filter((t) => {
+      const key = `${t.kind}:${t.id}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 export type CardColor = 'green' | 'blue' | 'red';
@@ -131,7 +149,11 @@ export type Fills = Readonly<Record<string, Fill>>;
 const same = (a: Thing, b: Thing) => a.kind === b.kind && a.id === b.id;
 const costKey = (o: Pick<Option, 'accepts' | 'need'>) =>
   `${o.need}|${o.accepts.map((t) => `${t.kind}:${t.id}`).join(',')}`;
-const FOOD_KEY = costKey({ accepts: FOOD, need: 1 });
+/** ×1 Food, the old way (Meat, Fish or Mushroom) or the category (24-challenges-reset.md, section 5). */
+const FOOD_KEYS = new Set([
+  costKey({ accepts: FOOD, need: 1 }),
+  costKey({ accepts: [{ kind: 'category', id: 'food' }], need: 1 }),
+]);
 
 /** An option's most uses in all: per-hiker effects once (or `max`) for each hiker. */
 const limitOf = (o: Option, hikers: number) =>
@@ -157,7 +179,7 @@ export function cardsFor(
     const first = effects[0]!;
     return {
       id: effects.map((e) => e.id).join('+'),
-      title: key === FOOD_KEY ? 'FOOD' : first.title,
+      title: FOOD_KEYS.has(key) ? 'FOOD' : first.title,
       color: first.color,
       accepts: first.accepts,
       need: first.need,
@@ -183,6 +205,7 @@ export const slotsFor = (cards: readonly Card[]): Slot[] =>
 export function thingName(t: Thing): string {
   if (t.kind === 'resource') return RESOURCES.find((r) => r.id === t.id)?.name ?? t.id;
   if (t.kind === 'group') return `${t.id[0]!.toUpperCase()}${t.id.slice(1)} resources`;
+  if (t.kind === 'category') return CATEGORY_BY_ID.get(t.id as CategoryId)?.name ?? t.id;
   return ITEMS[t.id]?.name ?? t.id.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
 }
 

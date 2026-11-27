@@ -18,6 +18,7 @@ import {
   tick,
   type HikerStatus,
 } from '../../../minigames/sleepingBear/logic';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -240,9 +241,7 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
         <div className={`${ui.box} ${hud.name}`}>SLEEPING BEAR</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>TIME</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(game.clock / game.total) * 100}%` }} />
-          </span>
+          <Bar value={game.clock / game.total} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

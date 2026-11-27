@@ -1,0 +1,126 @@
+/* Spooky Ghost! (24-challenges-reset.md, section 6; mockup 54). */
+
+.play {
+  background: #060a05;
+  cursor: none;
+}
+
+.play[data-demo] {
+  cursor: default;
+}
+
+/* Everything that only shows in the light (masked to the flashlight's circle). */
+.lit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* The ground in the light: dark grass with a few specks. */
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22px;
+  bottom: 44px;
+  background-color: #4f6a3a;
+  background-image:
+    radial-gradient(circle, rgba(185, 199, 147, 0.35) 0.5px, transparent 0.6px),
+    radial-gradient(circle, rgba(29, 41, 24, 0.35) 0.6px, transparent 0.7px);
+  background-size:
+    23px 17px,
+    31px 29px;
+  background-position:
+    3px 5px,
+    11px 2px;
+}
+
+/* A mitten's ring, in its hiker's color. */
+.ring {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 0.75px solid;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.ghost {
+  image-rendering: pixelated;
+}
+
+/* The light found it: BOO, and a little wobble. */
+.ghost[data-boo] {
+  animation: wobble 0.4s ease-in-out 2;
+}
+
+@keyframes wobble {
+  25% {
+    transform: rotate(-8deg) translateY(-1px);
+  }
+  75% {
+    transform: rotate(8deg) translateY(-1px);
+  }
+}
+
+.boo {
+  position: absolute;
+  color: #f4f8dc;
+  font-family: var(--font-pixel);
+  font-size: 4.5px;
+  pointer-events: none;
+}
+
+/* The flashlight's edge. */
+.beam {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0.6px solid rgba(211, 223, 175, 0.75);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Sanity draining fast: the screen's edges pulse red. */
+.pulse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 18px 4px rgba(200, 66, 58, 0.75);
+  animation: pulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The sanity bar fills red, as in the mockup. */
+.sanity > span {
+  background: #c8423a !important;
+}
+
+/* Each hiker's finds, in their color. */
+.finds {
+  display: flex;
+  gap: 1.5px;
+  align-items: center;
+}
+
+.finds > span {
+  width: 4.5px;
+  height: 4.5px;
+  border-radius: 0.75px;
+  background: #3c4e2f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost[data-boo],
+  .pulse {
+    animation: none;
+  }
+}

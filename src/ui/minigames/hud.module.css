@@ -48,7 +48,12 @@
   top: 0;
   bottom: 0;
   background: #bac995;
-  transition: width 0.25s ease-out;
+  transition: width var(--bar-ease, 0.25s) ease-out;
+}
+
+/* A bar that changes every frame: exactly the value, every frame. */
+.bar[data-live] > span {
+  transition: none;
 }
 
 /* The dark panel along the bottom. */

@@ -39,6 +39,9 @@ Passing challenges follow `14-minigames-trail-blocks.md`, section 1. The others 
 ---
 
 ## 1. Sketchy Bridge (Wyatt; a passing challenge)
+
+**November 26 (evening): a bigger zone at low tiers, a gentler zone and icon, and a steady integrity bar. See `26-fixes-and-wyatt-trees.md`, sections 1 and 4, which win.**
+
 Wyatt: "Stardew fishing minigame. Hikers cross one at a time. Keep the area around the player icon, which sways up and down. When the player is in the area, they slowly move across the bridge. When outside, bridge integrity goes down. If it runs out, the hiker fails, along with all hikers behind. If a hiker crosses, they pass, but the integrity doesn't reset. Easier with fewer hikers." See `40-sketchy-bridge.png`.
 
 - **The screen:**
@@ -265,6 +268,9 @@ Portraits (`art/dodge/portraits/solid-red/`, see `53-dodge-portraits.png`), each
 - `snowgirl.png`: **Ellie with antlers** (Wyatt's art): a white fluffy dog with branching antlers, growling.
 
 ### 9.1 The Eagle (Wyatt: "each tier he goes up is a different version")
+
+**November 26 (evening): Comb-Over and the other attacks that move across the box get red arrows during the warning. See `26-fixes-and-wyatt-trees.md`, section 3.1.**
+
 - **Versions by level:**
   - **Eagle** at Easy (Tier I);
   - **Toupeeagle** at Level 1 (Tier II);
@@ -299,6 +305,9 @@ Portraits (`art/dodge/portraits/solid-red/`, see `53-dodge-portraits.png`), each
   - **Snow Kick:** a cone of [8–12] snow pellets from one side.
 
 ### 9.3 The Abominable Snowgirl (snow; Tier III and up)
+
+**November 26 (evening): Avalanche's gap is [38] units, starts near the sprite, and warns for [1.1 s]; arrows show where things move. See `26-fixes-and-wyatt-trees.md`, section 3.**
+
 - **Where she shows up, and her levels:** the same as the Snow Leopard. The box is ice too.
 - **Attacks** *(Claude's ideas)*:
   - **Snowballs:** [3, 5] snowballs lobbed in arcs, each landing on a shadow that grows for [0.8 s]. Each bursts into [4] chunks that slide outward across the ice.
@@ -317,6 +326,9 @@ Portraits (`art/dodge/portraits/solid-red/`, see `53-dodge-portraits.png`), each
 ---
 
 ## 10. The pop-up for each game (`20-challenge-popup.md`, version 3)
+
+**November 26 (evening): the Prepare cards' costs move to resource categories. See `24-challenges-reset.md`, section 5, which wins where they differ.**
+
 Same format as `20`, section 7. Cards: **TITLE** (color), cost, slots: effects. *(pick a hiker)* marks a per-hiker effect.
 
 **Sketchy Bridge**

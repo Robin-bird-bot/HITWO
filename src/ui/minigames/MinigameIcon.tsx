@@ -62,6 +62,21 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M14 16l2 2-1 2" />
     </>
   ),
+  // A pot with a crack.
+  crackedPots: (
+    <>
+      <path d="M9 3h6M10 3v3c-3 1-5 4-5 8 0 4 3 7 7 7s7-3 7-7c0-4-2-7-5-8V3" />
+      <path d="M12 8l-2 4 3 2-2 4" />
+    </>
+  ),
+  // A little ghost.
+  spookyGhost: (
+    <>
+      <path d="M6 20V10a6 6 0 0 1 12 0v10l-2-2-2 2-2-2-2 2-2-2z" />
+      <circle cx="10" cy="10.5" r="1" />
+      <circle cx="14" cy="10.5" r="1" />
+    </>
+  ),
   // A music note and a little bird.
   birdsong: (
     <>

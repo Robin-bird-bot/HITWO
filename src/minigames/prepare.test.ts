@@ -8,7 +8,10 @@
  * Start, and Start takes exactly what's in the slots, from the right hikers.
  */
 import { describe, expect, it } from 'vitest';
+import { CATEGORIES, categoriesOf } from '../content/resources';
 import {
+  category,
+  expand,
   applyPrepare,
   cardsFor,
   costText,
@@ -106,6 +109,24 @@ function fill(
   )!;
   return fillSlot(fills, s, tile, effect, ORDER, target);
 }
+
+describe('resource categories (24-challenges-reset.md, section 1)', () => {
+  it('five groups cover all 16 resources; Wood and Metal are in two', () => {
+    const all = new Set(CATEGORIES.flatMap((c) => c.resources));
+    expect(all.size).toBe(16);
+    expect(categoriesOf('wood').sort()).toEqual(['building', 'fire']);
+    expect(categoriesOf('metal').sort()).toEqual(['building', 'trinkets']);
+    expect(categoriesOf('salt')).toEqual(['food']);
+  });
+
+  it('a category cost takes any of its resources, and reads ×1 FOOD', () => {
+    expect(expand(category('food')).map((t) => t.id)).toEqual(['meat', 'fish', 'mushroom', 'salt']);
+    // Wood once, when two categories that share it are both accepted.
+    expect(expand(category('building', 'fire')).filter((t) => t.id === 'wood')).toHaveLength(1);
+    expect(costText({ accepts: category('food'), need: 1 })).toBe('×1 FOOD');
+    expect(costText({ accepts: category('fiber'), need: 2 })).toBe('×2 FIBER');
+  });
+});
 
 describe('cost cards', () => {
   it('options with the same cost share one card; Food is FOOD, the rest take the first title and color', () => {

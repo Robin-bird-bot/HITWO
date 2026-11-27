@@ -347,8 +347,11 @@ export const CAMP_CLEANUP_POPUP: GamePopup = {
   },
   rules: (s) =>
     rulesOf(
+      line(
+        `Once everyone has enough, a ${CC.tiers[tierIn(s)].countdownSec}-second countdown starts. Don’t crash, and you all pass.`,
+      ),
       line('You can’t turn straight back, but quick turns queue up.'),
-      campObstacles(s) && line('Rocks, stumps, logs and tents are in the way.', fromTier(3)),
+      campObstacles(s) && line('Rocks, stumps, logs and tents are in the way.', fromTier(2)),
     ),
   controls: [
     {

@@ -47,6 +47,7 @@ import {
 } from '../../../minigames/rockClimb/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -597,13 +598,7 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
         <div className={`${ui.box} ${hud.name}`}>ROCK CLIMB</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>HEIGHT</span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${(game.phase === 'top' ? 1 : (game.pathAt + 1) / (game.path.length + 1)) * 100}%`,
-              }}
-            />
-          </span>
+          <Bar value={game.phase === 'top' ? 1 : (game.pathAt + 1) / (game.path.length + 1)} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

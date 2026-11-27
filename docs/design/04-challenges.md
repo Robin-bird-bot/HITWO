@@ -1,5 +1,7 @@
 # Challenges
 
+**November 26 (evening): the challenge list moved to `24-challenges-reset.md` (the reset list of 45 minigame challenges and 22 cost cards), and how challenges are placed on the map is in `25-challenges-on-the-map.md`. Opportunities, Trials and Wonders still live here.**
+
 Work in progress. The challenge list by tier with nodes, then ideas still being decided, other kinds of costs, and Trials. Challenges are red, opportunities blue, Trials orange.
 
 ## How to read a challenge
@@ -29,6 +31,8 @@ Work in progress. The challenge list by tier with nodes, then ideas still being 
 **Art** is the number of Wyatt's file in the challenge art folder (1920×1080). A dash means no art yet; use a placeholder.
 
 ## Challenge list
+
+**Retired (November 26, evening): this list is replaced by `24-challenges-reset.md`, section 4. Six of these cards stay there: Fox with a Specific Taste, Tummy Rumbling, Tourist Trap, Black Cat, Crow Collector and Leeches. Rocky Path's carry limit comes back as Heavy Pack.**
 
 Nodes and tiers are proposed; change anything that's off. **Description** is the flavor line under the title (Wyatt is writing these).
 

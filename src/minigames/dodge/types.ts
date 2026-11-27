@@ -444,6 +444,11 @@ export interface AttackDef {
   secondHalf?: true;
   /** Only from this tier (Bullet Ring: Tier IV), whatever the level. */
   fromTier?: Tier;
+  /**
+   * It sweeps or charges across the box, so red arrows show which way during
+   * its warning (26-fixes-and-wyatt-trees.md, section 3.1).
+   */
+  movesAcross?: true;
   start(ctx: AttackCtx): AttackStart;
 }
 

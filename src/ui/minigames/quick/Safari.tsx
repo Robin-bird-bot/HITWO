@@ -29,6 +29,7 @@ import {
 } from '../../../minigames/safari/logic';
 import { BIGFOOT, kindInfo, positionAt, type Kind } from '../../../minigames/safari/run';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -381,13 +382,7 @@ export function Safari({ settings, hikers, seed, onDone, still = false }: Puzzle
         <div className={`${ui.box} ${hud.name}`}>SAFARI</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>{watching ? 'WATCH' : 'GUESS'}</span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${watching ? Math.max(0, 1 - game.time / run.watchSec) * 100 : 100}%`,
-              }}
-            />
-          </span>
+          <Bar value={watching ? 1 - game.time / run.watchSec : 1} live={watching} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

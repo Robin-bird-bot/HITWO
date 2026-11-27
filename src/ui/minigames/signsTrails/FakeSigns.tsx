@@ -21,6 +21,7 @@ import {
 import { signText } from '../../../minigames/fakeSigns/rules';
 import { g, RED } from '../../../minigames/greens';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -223,19 +224,16 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
               ? `RULE ${game.rules.length}`
               : `SIGN ${Math.min(game.signs.length, game.index + 1)}/${game.signs.length}`}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${
-                  game.phase === 'rules'
-                    ? (game.rules.length / game.cap) * 100
-                    : game.timePerSign
-                      ? Math.max(0, 1 - game.signTime / game.timePerSign) * 100
-                      : ((game.index + 1) / Math.max(1, game.signs.length)) * 100
-                }%`,
-              }}
-            />
-          </span>
+          <Bar
+            value={
+              game.phase === 'rules'
+                ? game.rules.length / game.cap
+                : game.timePerSign
+                  ? 1 - game.signTime / game.timePerSign
+                  : (game.index + 1) / Math.max(1, game.signs.length)
+            }
+            live={game.phase !== 'rules' && !!game.timePerSign}
+          />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

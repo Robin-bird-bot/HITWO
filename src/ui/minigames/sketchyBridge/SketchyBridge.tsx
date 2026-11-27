@@ -28,6 +28,7 @@ import {
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
 import { HikerToken } from '../HikerToken';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { tintKey, useTintedArt } from '../tintArt';
@@ -302,9 +303,7 @@ export function SketchyBridge({ settings, hikers, seed, onDone, still = false }:
         <div className={`${ui.box} ${hud.name}`}>SKETCHY BRIDGE</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>BRIDGE</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(game.integrity / game.full) * 100}%` }} />
-          </span>
+          <Bar value={game.integrity / game.full} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar hikers={hikers} word={word} active={game.over ? undefined : who} />

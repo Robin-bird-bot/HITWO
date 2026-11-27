@@ -17,6 +17,7 @@ import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { isDone, newWhackoon, result, tick, whack } from '../../../minigames/whackoon/logic';
 import { HikerToken } from '../HikerToken';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -270,9 +271,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
         <div className={`${ui.box} ${hud.name}`}>WHACKOON</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>TIME</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(Math.max(0, game.timeLeft) / game.clockSec) * 100}%` }} />
-          </span>
+          <Bar value={game.timeLeft / game.clockSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 
