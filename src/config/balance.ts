@@ -649,6 +649,64 @@ export const BALANCE = {
     startingResources: 4,
   },
 
+  /**
+   * The packing screen (docs/design/27-packing-screen.md, Phase 10.9): a slot
+   * machine for the starting items, then each hiker's resource bundles. It
+   * replaces `inventory.startingResources` in real runs.
+   */
+  packing: {
+    /** The party takes this many items: `base` plus `perHiker` for each hiker (Wyatt). */
+    picks: { base: 2, perHiker: 1 },
+    /** The item reels: five side by side. */
+    itemReels: 5,
+    /** The item type each reel lands on, by weight (Wyatt). */
+    itemTypeOdds: { tool: 40, food: 30, clothes: 20, shelter: 10 },
+    /** Each item reel's chance to land on a Tier II item of its type instead. TODO(wyatt): [2%]. */
+    tier2Chance: 0.02,
+    /** Respins the party has for the items. TODO(wyatt): [3]. */
+    itemRespins: 3,
+    /** The resource reels: three side by side (Wyatt). */
+    bundleReels: 3,
+    /** A bundle's size, by weight: ×5 is rare (Wyatt). TODO(wyatt): [35/40/22/3]. */
+    bundleOdds: { 1: 35, 2: 40, 3: 22, 5: 3 } as Readonly<Record<number, number>>,
+    /** Bundles each hiker takes (Wyatt). */
+    bundlesEach: 2,
+    /** Each hiker's own respins on their turn (leftovers don't carry over). TODO(wyatt): [2]. */
+    bundleRespins: 2,
+    /**
+     * What a row pays (Wyatt): the same type (or bundle size) on lit reels
+     * side by side. Only the longest row pays. Every row also gives
+     * `respins` (Wyatt's "bonus spin" and "free respin" read as the same:
+     * +1 respin). TODO(wyatt): +1 respin is my reading.
+     */
+    bonuses: {
+      respins: 1,
+      /** Items: 3 in a row pays respins only; 4 turns this many Tier II; all 5 turn every one. */
+      fourUpgrades: 1,
+      /** Bundles (all 3 reels lit): ×2 ×2 ×2 grows one to ×3; ×3 ×3 ×3 grows one to ×5. */
+      grow: { 2: 3, 3: 5 } as Readonly<Record<number, number>>,
+    },
+    /** Animation timings (ms), kept close to the prototypes. TODO(wyatt): every one is a first guess. */
+    anim: {
+      /** The first reel's spin; each next reel stops this much later (items, then bundles). */
+      firstStopMs: 650,
+      itemStopGapMs: 300,
+      bundleStopGapMs: 420,
+      /** A tease (two in a row so far) spins that reel this much longer: the cabinet, TrailMate. */
+      teaseMs: 1000,
+      teaseTrailMateMs: 1100,
+      /** The squirrel's two leg frames swap this often. */
+      squirrelLegMs: 75,
+      /** The wheel speeds up to full in this long, and slows over this long. */
+      wheelUpMs: 350,
+      wheelDownMs: 700,
+      /** The squirrel pants this long after the reels stop. */
+      pantMs: 1300,
+      /** TrailMate boots in about this long; a new party skips most of it. */
+      bootMs: 2500,
+    },
+  },
+
   /** XP and levels (01-design-doc.md, "XP"; Wyatt, Nov 20). Hikers start at level 0. */
   xp: {
     /** Total XP to reach levels 1–6: each level needs 10 more than the last. */
@@ -4411,6 +4469,12 @@ export const BALANCE = {
       driftRadius: 0.25,
       /** How quickly the bend follows the pointer (higher is snappier). */
       pointerEase: 2.5,
+      /**
+       * The packing screen's TrailMate look uses the same paint in a dark
+       * preset, every color times this (28-packing-screen-trailmate.md,
+       * section 1). TODO(wyatt): [0.8].
+       */
+      darkDim: 0.8,
     },
   },
 };
