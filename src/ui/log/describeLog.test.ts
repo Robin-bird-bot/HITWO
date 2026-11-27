@@ -6,6 +6,10 @@ import { applyAction, createGame, type Action, type GameState } from '../../engi
 import { fixtureGame, place, run, toNight } from '../../engine/test/fixtures';
 import { gainResources } from '../../engine/effects';
 import { describeLog, signed } from './describeLog';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const texts = (s: GameState) => describeLog(s, 50).map((l) => l.text);
 
@@ -190,7 +194,7 @@ describe('trail log sentences', () => {
     place(s, 'ash', 'L');
     const g = run(
       s,
-      { type: 'debug', op: { kind: 'openChallenge', cardId: 'train', tileId: 'L' } },
+      { type: 'debug', op: { kind: 'openChallenge', cardId: 'train-trial', tileId: 'L' } },
       { type: 'acceptTrial' },
       { type: 'endPhase' },
       { type: 'endPhase' },

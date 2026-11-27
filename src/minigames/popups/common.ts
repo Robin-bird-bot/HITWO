@@ -4,7 +4,7 @@
  * you fail lines, and reading settings.
  */
 import { BALANCE } from '../../config/balance';
-import { FOOD, prepNumber, type CardColor, type Option, type Thing } from '../prepare';
+import { FOOD, prepNumber, type CardColor, type Option, type Thing, category } from '../prepare';
 import { isTier, TIER_LABELS, TIERS, type MinigameSettings, type Tier } from '../types';
 import type { Bar, ControlRow, IfFail, Input, Phrase, RuleLine } from './types';
 
@@ -115,6 +115,22 @@ export const plusFor = (
     note,
     { param: P_(param), step: 1 },
     { perHiker: true },
+  );
+
+/**
+ * BANDAGES: +1 heart or life for a hiker you pick, for ×2 Fiber
+ * (24-challenges-reset.md, section 5: Fiber is padding and rope).
+ */
+export const bandages = (word: string, short = '+1', param = 'lives'): Option =>
+  opt(
+    param,
+    'green',
+    category('fiber'),
+    `+1 ${word}`,
+    short,
+    'pick a hiker',
+    { param: P_(param), step: 1 },
+    { perHiker: true, need: 2, title: 'BANDAGES' },
   );
 
 /** Slower: Food, [2] at most. */

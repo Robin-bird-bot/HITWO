@@ -18,6 +18,9 @@ import {
   type TileLookName,
 } from './looks';
 
+/** A ring on a tile: a Trial, Rocco's target, one just made easier, or one the Infoboard found. */
+export type TileMark = 'trial' | 'target' | 'easier' | 'found';
+
 interface MapTileProps {
   tile: Tile;
   at: Point;
@@ -33,12 +36,19 @@ interface MapTileProps {
   onClick?(): void;
   /** Simple mode: the checkpoint's label shows only on hover. */
   checkpointLabelOnHover?: boolean;
-  /** A Trial's tile (orange ring), Rocco's red tile, or a tile that just got easier (blue). */
-  mark?: 'trial' | 'target' | 'easier' | undefined;
+  /**
+   * A Trial's tile (orange ring), Rocco's red tile, a tile that just got
+   * easier (blue), or one the Trail Infoboard just found (a pin drops on it).
+   */
+  mark?: TileMark | undefined;
   /** A card revealed early here: its icon opens the card. */
   onRevealed?(): void;
   /** A Wonder found here: its icon opens the Wonder. */
   onWonder?(): void;
+  /** The trailhead's kiosk: opens the Trail Infoboard. */
+  onInfoboard?(): void;
+  /** Settings → Testing → Show placed cards: show the card placed here, still hidden. */
+  showPlaced?: boolean;
   /** The checkpoint: its number (1, 2…), whether it's the summit, and who has checked in. */
   checkpoint?: CheckpointInfo;
   /** A drop spot for a dragged hiker (see ui/drag): marks whether it would take them. */
@@ -71,6 +81,8 @@ export function MapTile({
   mark,
   onRevealed,
   onWonder,
+  onInfoboard,
+  showPlaced,
   checkpoint = { number: 1, summit: false, checkedIn: 0, total: 4 },
   drop,
   illustrated,
@@ -126,6 +138,7 @@ export function MapTile({
       {...clickable(onClick, reach === 'ok' ? `${reachLabel}: ${describe}` : describe)}
     >
       {mark && <div className={`${styles.hex} ${styles.markRing}`} data-mark={mark} />}
+      {mark === 'found' && <div className={styles.foundPin} aria-hidden />}
       {reach === 'ok' && <div className={`${styles.hex} ${styles.reachRing}`} />}
       {illustrated ? (
         <GlassHex
@@ -235,6 +248,26 @@ export function MapTile({
 
       {tile.revealedCard && !tile.revealedCard.hidden && !tile.visited && (
         <RevealedIcon cardId={tile.revealedCard.cardId} onOpen={onRevealed} />
+      )}
+      {showPlaced && tile.revealedCard?.hidden && !tile.visited && (
+        <PlacedName cardId={tile.revealedCard.cardId} alternative={tile.revealedCard.alternative} />
+      )}
+
+      {onInfoboard && (
+        <button
+          type="button"
+          className={styles.revealed}
+          data-kind="kiosk"
+          title="Trail Infoboard"
+          aria-label="Open the Trail Infoboard"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onInfoboard();
+          }}
+        >
+          <Icon name="sign" size={18} strokeWidth={2.5} />
+        </button>
       )}
 
       {wonderName && (
@@ -447,6 +480,18 @@ function describeTile(tile: Tile, label: string | null): string {
 }
 
 /** A card revealed early on this tile (Old Firewatch Tower): tap it to read the card. */
+/** Settings → Testing → Show placed cards: the hidden card's name on its tile. */
+function PlacedName({ cardId, alternative }: { cardId: string; alternative?: string | undefined }) {
+  const names = [cardId, alternative]
+    .filter((id): id is string => !!id)
+    .map((id) => CARDS[id]?.name ?? id);
+  return (
+    <span className={styles.placedName} title={`Placed here: ${names.join(' or ')}`}>
+      {names.join(' / ')}
+    </span>
+  );
+}
+
 function RevealedIcon({ cardId, onOpen }: { cardId: string; onOpen: (() => void) | undefined }) {
   const card = CARDS[cardId];
   const kind = card?.kind ?? 'challenge';

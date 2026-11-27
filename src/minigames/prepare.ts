@@ -46,8 +46,11 @@ export const item = things('item');
 export const group = things('group');
 export const category = (...ids: CategoryId[]): Thing[] => things('category')(...ids);
 
-/** Food: Meat, Fish or Mushroom ×1, the general stamina help (section 7). */
-export const FOOD: readonly Thing[] = res('meat', 'fish', 'mushroom');
+/**
+ * Food: ×1 of the Food category (Meat, Fish, Mushroom or Salt), the general
+ * help that slows things down or adds time (24-challenges-reset.md, section 5).
+ */
+export const FOOD: readonly Thing[] = [{ kind: 'category', id: 'food' }];
 
 /** What a slot really takes: a group or a category stands for every resource in it. */
 export function expand(accepts: readonly Thing[]): Thing[] {
@@ -152,7 +155,7 @@ const costKey = (o: Pick<Option, 'accepts' | 'need'>) =>
 /** ×1 Food, the old way (Meat, Fish or Mushroom) or the category (24-challenges-reset.md, section 5). */
 const FOOD_KEYS = new Set([
   costKey({ accepts: FOOD, need: 1 }),
-  costKey({ accepts: [{ kind: 'category', id: 'food' }], need: 1 }),
+  costKey({ accepts: res('meat', 'fish', 'mushroom'), need: 1 }),
 ]);
 
 /** An option's most uses in all: per-hiker effects once (or `max`) for each hiker. */

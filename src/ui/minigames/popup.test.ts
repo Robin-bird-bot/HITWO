@@ -9,7 +9,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { BEAR_COUNTRY, testChallenge } from '../../content/minigameChallenges';
+import { GUN_BEAR_ATTACK, testChallenge } from '../../content/minigameChallenges';
 import { DODGE } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
 import { POPUPS } from '../../minigames/popups';
@@ -32,7 +32,7 @@ const PACKS: Packs = {
 };
 
 function popupHtml(
-  challenge: typeof BEAR_COUNTRY,
+  challenge: typeof GUN_BEAR_ATTACK,
   settings: Record<string, string | number>,
   fills: Fills,
 ) {
@@ -73,24 +73,27 @@ describe('the pop-up', () => {
     expect(html).toContain('CONTROLS');
     expect(html).toContain('ATTACK SPEED');
     expect(html).toContain('BEES PER WAVE');
+    // The cards and their costs (24-challenges-reset.md, section 5).
+    expect(html).toContain('BANDAGES');
+    expect(html).toContain('×2 FIBER');
     expect(html).toContain('FOOD');
-    expect(html).toContain('×1 MEAT, FISH OR MUSHROOM');
-    expect(html).toContain('SMOKY FIRE');
-    expect(html).toContain('×2 FOREST RESOURCES');
+    expect(html).toContain('×1 FOOD');
+    expect(html).toContain('SMOKE');
+    expect(html).toContain('×2 FIRE');
     expect(html).toContain('>START<');
     expect(html).not.toContain('SKIP IT');
   });
 
   it('a Prepare change shows on its bar as a share of the most, a badge says what each slot does, and a new heart pops in', () => {
     const fills: Fills = {
-      'lives+slower:0': {
+      'slower:0': {
         hiker: 'finn',
         thing: { kind: 'resource', id: 'meat' },
         effect: 'slower',
       },
-      'lives+slower:1': {
+      'lives:0': {
         hiker: 'finn',
-        thing: { kind: 'resource', id: 'meat' },
+        thing: { kind: 'resource', id: 'moss' },
         effect: 'lives',
         target: 'mom',
       },
@@ -106,13 +109,13 @@ describe('the pop-up', () => {
   });
 
   it('Bear Country: filling SKIP IT turns Start into SKIP IT', () => {
-    const before = popupHtml(BEAR_COUNTRY, {}, {});
+    const before = popupHtml(GUN_BEAR_ATTACK, {}, {});
     expect(before).toContain('SKIP IT');
     expect(before).toContain('>START<');
     const fills: Fills = {
       'skip:0': { hiker: 'mom', thing: { kind: 'item', id: 'bearSpray' }, effect: 'skip' },
     };
-    const after = popupHtml(BEAR_COUNTRY, {}, fills);
+    const after = popupHtml(GUN_BEAR_ATTACK, {}, fills);
     expect(after).not.toContain('>START<');
     expect(after).toContain('>SKIP IT<');
   });

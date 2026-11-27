@@ -4,6 +4,10 @@ import { validateAction } from '../applyAction';
 import { addInjury } from '../stats';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action } from '../types';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const injure = (hikerId: string): Action => ({ type: 'submitToInjury', hikerId });
 const LINE = BALANCE.injuries.raiseStatsBelowTo;

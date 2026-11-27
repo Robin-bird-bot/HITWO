@@ -9,17 +9,19 @@
  *   waits in a queue and opens next.
  */
 import { BALANCE } from '../../config/balance';
+import { ITEMS } from '../../content';
 import { CARDS, CHALLENGES } from '../../content/challenges';
 import { ENABLE_WONDERS } from '../../content/wonders';
 import { hikerHas, skipsChallenges } from '../effects';
 import { pushEvent } from '../log';
 import { pick } from '../rng';
-import type { GameState, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
-import { notPlayableYet, pickChallengeAt, pickForTile, type Picked } from './pick';
+import type { GameState, Hiker, HikerId, OpenChallenge, QueuedReveal, TileId } from '../types';
+import { gatePasses, notPlayableYet, pickChallengeAt, pickForTile, type Picked } from './pick';
+import { fitsTile, poolCards } from './pool';
 import { rollCard } from './rolls';
 import { revealWonder } from '../wonders/wonders';
 import { pickTrialTargets } from './trials';
-import type { CardDef } from './types';
+import type { CardDef, ChallengeDef } from './types';
 
 /** Hikers on a tile who can be affected (not abandoned). */
 function hikersHere(state: GameState, tileId: TileId, only?: readonly HikerId[]) {
@@ -91,7 +93,9 @@ export function revealTile(
   );
   if (!tile || !here.length) return;
 
-  // A card revealed early (Old Firewatch Tower): it opens now, with its numbers rolled now.
+  // A card placed with the pool, or revealed early (Old Firewatch Tower): it
+  // opens now, with its numbers rolled now.
+  if (tile.revealedCard && CARDS[tile.revealedCard.cardId]) swapIfGateFails(state, tileId, here);
   const early = tile.revealedCard;
   const stored = early && CARDS[early.cardId];
   if (early && stored) {
@@ -106,6 +110,7 @@ export function revealTile(
         scale: early.scale,
         ...(early.shownTier ? { shownTier: early.shownTier } : {}),
         ...(early.alternative ? { alternative: early.alternative } : {}),
+        ...(early.version !== undefined ? { version: early.version } : {}),
       },
     );
     markLeader(state, tileId, leaderId);
@@ -137,6 +142,37 @@ export function revealTile(
   markLeader(state, tileId, leaderId);
 }
 
+/**
+ * A placed card whose gate nobody could know ahead fails when the hikers
+ * land (no Dog here for the Dog Waste Zone, nobody without clothing for
+ * Sunburn): another pool card that fits the tile plays instead, and the
+ * tile's placement moves to it (25-challenges-on-the-map.md, section 1).
+ */
+function swapIfGateFails(state: GameState, tileId: TileId, here: readonly Hiker[]): void {
+  const tile = state.section.tiles[tileId];
+  const placed = tile?.revealedCard;
+  const card = placed && CARDS[placed.cardId];
+  if (!tile || !placed || !card || card.kind !== 'challenge') return;
+  if (playsHere(state, card, here)) return;
+  const tier = placed.shownTier ?? placed.tier;
+  const other = poolCards(state).find(
+    (c) => c.id !== card.id && fitsTile(c, state, tile, tier) && playsHere(state, c, here),
+  );
+  if (!other) return;
+  tile.revealedCard = { ...placed, cardId: other.id };
+  delete tile.revealedCard.version;
+}
+
+/** Do this card's gates pass now, and does it judge anyone here? */
+function playsHere(state: GameState, card: ChallengeDef, here: readonly Hiker[]): boolean {
+  if (!(card.gates ?? []).every((g) => gatePasses(g, state, here))) return false;
+  if (card.who === 'noClothing') return here.some((h) => !wearsAnything(h));
+  return true;
+}
+
+const wearsAnything = (h: Hiker) =>
+  Object.values(h.inventory.equipped).some((i) => i && ITEMS[i.itemId]?.type === 'clothes');
+
 /** The challenge just opened on this tile was led onto by this hiker's Move All (Alpha Dog). */
 function markLeader(state: GameState, tileId: TileId, leaderId: HikerId | undefined): void {
   const open = state.challenge;
@@ -152,11 +188,14 @@ export function openCard(
   picked: Pick<Picked, 'tier' | 'scale' | 'alternative'> & {
     shownTier?: number;
     challengeSpace?: boolean;
+    version?: number;
   },
 ): void {
   const here = hikersHere(state, tileId, hikerIds);
   const tile = state.section.tiles[tileId];
-  const rolls = rollCard(state.rng, card, here, picked.scale);
+  // A challenge's numbers follow the tile's tier (24-challenges-reset.md, sections 2 and 4).
+  const at = picked.shownTier ?? picked.tier;
+  const rolls = rollCard(state.rng, card, here, picked.scale, undefined, at);
   // A Choice space rolls both, so each shows its real numbers before the pick.
   const other = picked.alternative ? CARDS[picked.alternative] : undefined;
   const open: OpenChallenge = {
@@ -171,8 +210,14 @@ export function openCard(
       ? { special: 'challenge' as const }
       : {}),
     ...(other
-      ? { alternative: { cardId: other.id, rolls: rollCard(state.rng, other, here, picked.scale) } }
+      ? {
+          alternative: {
+            cardId: other.id,
+            rolls: rollCard(state.rng, other, here, picked.scale, undefined, at),
+          },
+        }
       : {}),
+    ...(picked.version !== undefined ? { version: picked.version } : {}),
   };
   const targets = card.kind === 'trial' ? pickTrialTargets(state, card, tileId) : undefined;
   if (targets) open.trial = targets;

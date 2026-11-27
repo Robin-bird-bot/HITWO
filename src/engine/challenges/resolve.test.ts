@@ -6,6 +6,10 @@ import { deserialize, serialize } from '../save';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
 import type { Action, ChallengeSection, GameState, Gift } from '../types';
 import { revealTile } from './reveal';
+import { withRetiredCards } from '../test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 /** Ash and Birch on L, with a challenge of our choosing open there. */
 function opened(cardId: string, setup: (s: GameState) => void = () => {}): GameState {

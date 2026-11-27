@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { BEAR_COUNTRY } from '../../content/minigameChallenges';
+import { GUN_BEAR_ATTACK } from '../../content/minigameChallenges';
 import {
   CAMP_CLEANUP,
   cleanSettings,
@@ -680,7 +680,7 @@ describe('the minigame list', () => {
     expect(MINIGAMES_BY_CATEGORY.flatMap((c) => c.games).some((m) => m.name === 'Bearrels')).toBe(
       false,
     );
-    expect(BEAR_COUNTRY).toMatchObject({
+    expect(GUN_BEAR_ATTACK).toMatchObject({
       minigame: 'dodge',
       tier: 3,
       settings: { animal: 'gunBear' },

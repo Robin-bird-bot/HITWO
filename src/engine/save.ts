@@ -26,9 +26,11 @@ import {
   type WeatherState,
 } from './types';
 import { freshWeather } from './weather';
+import { CARDS } from '../content/challenges';
+import { placePool } from './challenges/pool';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -90,6 +92,9 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 10.8 step 7: challenges can show Tiers IV and V (`shownTier` on open and revealed
   // cards). The field is optional and old cards read as their own tier, so nothing changes.
   21: (save) => save,
+  // Nov 26 evening: the challenge reset (24-challenges-reset.md) and the pool
+  // on the tiles (25-challenges-on-the-map.md, section 1).
+  22: (save) => challengeReset(save),
 };
 
 function skillTrails(save: SaveData): SaveData {
@@ -442,6 +447,26 @@ function addWonder(save: SaveData): SaveData {
   if (!tile || !wonder) return save;
   tile.wonder = { id: wonder.id, decoys: Math.max(1, tile.nodes.length) };
   tile.nodes = [];
+  return save;
+}
+
+/**
+ * The challenge reset: retired cards leave the tiles and the open challenge
+ * (a tile drops back to drawing on landing), then the current section's
+ * unvisited challenge tiles get the new pool.
+ */
+function challengeReset(save: SaveData): SaveData {
+  const state = save as unknown as GameState;
+  const known = (id: string | undefined) => !!id && !!CARDS[id];
+  for (const tile of Object.values(state.section?.tiles ?? {})) {
+    const card = tile.revealedCard;
+    if (card && !known(card.cardId)) delete tile.revealedCard;
+    else if (card?.alternative && !known(card.alternative)) delete card.alternative;
+  }
+  if (state.challenge && !known(state.challenge.cardId)) delete state.challenge;
+  if (state.challenge?.alternative && !known(state.challenge.alternative.cardId))
+    delete state.challenge.alternative;
+  if (state.section && !state.section.pool) placePool(state);
   return save;
 }
 

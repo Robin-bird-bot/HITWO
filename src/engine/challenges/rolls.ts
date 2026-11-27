@@ -34,9 +34,29 @@ export function scaledRange(def: RollDef, scale: number): [number, number] {
   return [Math.min(a, b), Math.max(a, b)];
 }
 
+/**
+ * A roll's range at a tile's tier (24-challenges-reset.md, sections 2 and 4):
+ * a punishment's from its table (above Tier III, Tier III's scaled up); any
+ * other number from the card's "From" tier, scaled up for each tier above it.
+ */
+export function rangeAt(def: RollDef, fromTier: number, at: number): [number, number] {
+  const T = BALANCE.challenges.tierScale;
+  if (def.byTier) {
+    const base = def.byTier[Math.max(1, Math.min(3, at)) as 1 | 2 | 3];
+    return scaledRange({ ...def, range: base }, T ** Math.max(0, at - 3));
+  }
+  return scaledRange(def, T ** Math.max(0, at - fromTier));
+}
+
 /** One roll in a range, skewed toward the good end by Luck. */
-export function rollValue(rng: RngState, def: RollDef, luck: number, scale = 1): number {
-  const [lo, hi] = scaledRange(def, scale);
+export function rollValue(
+  rng: RngState,
+  def: RollDef,
+  luck: number,
+  scale = 1,
+  range?: readonly [number, number],
+): number {
+  const [lo, hi] = range ?? scaledRange(def, scale);
   const exponent = 2 ** (luck * BALANCE.challenges.luckSkew);
   const u = nextFloat(rng) ** exponent;
   const steps = hi - lo + 1;
@@ -64,7 +84,11 @@ export function rollCard(
   hikers: readonly Hiker[],
   scale = 1,
   fixedLuck?: number,
+  at?: number,
 ): CardRolls {
+  // With the tile's tier, a challenge's numbers follow rangeAt (Nov 26 evening).
+  const rangeOf = (def: RollDef) =>
+    at !== undefined && card.kind === 'challenge' ? rangeAt(def, card.tier, at) : undefined;
   const luckOf = (h: Hiker) => fixedLuck ?? challengeLuck(h);
   const luck =
     fixedLuck ??
@@ -72,12 +96,12 @@ export function rollCard(
   const rolls: CardRolls = { x: {}, y: {}, includes: {}, luck };
   const defs = Object.entries(card.rolls ?? {});
   for (const [name, def] of defs) {
-    if (def.roll === 'x') rolls.x[name] = rollValue(rng, def, luck, scale);
+    if (def.roll === 'x') rolls.x[name] = rollValue(rng, def, luck, scale, rangeOf(def));
   }
   for (const h of hikers) {
     const own: Record<string, number> = {};
     for (const [name, def] of defs) {
-      if (def.roll === 'y') own[name] = rollValue(rng, def, luckOf(h), scale);
+      if (def.roll === 'y') own[name] = rollValue(rng, def, luckOf(h), scale, rangeOf(def));
     }
     rolls.y[h.id] = own;
   }
@@ -87,10 +111,14 @@ export function rollCard(
   const optionsName = randomOfName(card);
   if (optionsName) {
     const n = rolls.x[optionsName] ?? 0;
-    rolls.options = shuffle(
-      rng,
-      RESOURCES.map((r) => r.id),
-    ).slice(0, Math.max(1, n));
+    // Picked from what the hikers here carry (Nov 26 evening); all 16 if they carry nothing.
+    const carried = RESOURCES.map((r) => r.id).filter((id) =>
+      hikers.some((h) => (h.inventory.resources[id] ?? 0) > 0),
+    );
+    rolls.options = shuffle(rng, carried.length ? carried : RESOURCES.map((r) => r.id)).slice(
+      0,
+      Math.max(1, n),
+    );
   }
   return rolls;
 }

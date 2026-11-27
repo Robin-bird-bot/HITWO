@@ -54,6 +54,52 @@
   animation: markPulse 0.9s ease-in-out infinite;
 }
 
+.markRing[data-mark='found'] {
+  background: #e9b44c;
+  animation: markPulse 1.2s ease-in-out infinite;
+}
+
+/* The Trail Infoboard found this tile: a pin drops on it. */
+.foundPin {
+  position: absolute;
+  left: 50%;
+  top: -34px;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  border: 2px solid #7a1d17;
+  background: radial-gradient(circle at 35% 35%, #ff8a7a, #c8423a 55%, #7a1d17);
+  box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  animation: pinDrop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) both 0.3s;
+}
+
+.foundPin::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 3px;
+  height: 18px;
+  margin-left: -1.5px;
+  background: #4a2c17;
+}
+
+@keyframes pinDrop {
+  0% {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
 .markRing[data-mark='target'] {
   background: #e5624a;
   animation: markPulse 1.6s ease-in-out infinite;
@@ -67,7 +113,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .markRing[data-mark='target'],
-  .markRing[data-mark='easier'] {
+  .markRing[data-mark='easier'],
+  .markRing[data-mark='found'],
+  .foundPin {
     animation: none;
   }
 }
@@ -640,6 +688,32 @@
 
 .revealed[data-kind='wonder'] {
   background: linear-gradient(155deg, #e2a9f1, #d675ef, #9a3f64, #cd1f66);
+}
+
+/* Settings → Testing → Show placed cards: the hidden card's name, on a dashed tag. */
+.placedName {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  translate: -50% 0;
+  z-index: 2;
+  max-width: 150px;
+  padding: 2px 6px;
+  border: 1px dashed #f7f1e4;
+  border-radius: 4px;
+  background: rgba(29, 34, 32, 0.85);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+}
+
+.revealed[data-kind='kiosk'] {
+  background: linear-gradient(#7a4c2a, #5e3820);
+  border-color: #e9b44c;
+  color: #f4cf72;
 }
 
 .revealed[data-kind='wonderDone'] {

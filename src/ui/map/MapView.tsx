@@ -16,7 +16,7 @@ import { useStage } from '../stage/StageContext';
 import { useDragPointer, useDragState, useDrop, type DropTarget } from '../drag/drag';
 import { NO_DROP } from '../drag/itemDrops';
 import { HikerTokens } from './HikerTokens';
-import { MapTile } from './MapTile';
+import { MapTile, type TileMark } from './MapTile';
 import {
   HEX,
   panBy,
@@ -49,11 +49,15 @@ interface MapViewProps {
   /** Simple mode shows the checkpoint's label only on hover. */
   checkpointLabelOnHover?: boolean;
   /** Trial tiles: orange where one was revealed, red for Rocco's tile, blue for one just made easier. */
-  marks?: Partial<Record<string, 'trial' | 'target' | 'easier'>>;
+  marks?: Partial<Record<string, TileMark>>;
   /** A card revealed early: its tile's icon was tapped. */
   onRevealedClick?(tileId: string): void;
   /** A found Wonder: its tile's icon was tapped. */
   onWonderClick?(tileId: string): void;
+  /** The trailhead's kiosk was tapped (only when the biome has a Trail Infoboard). */
+  onInfoboardClick?(): void;
+  /** Settings → Testing → Show placed cards: every tile shows its placed card. */
+  showPlaced?: boolean;
   /** Scouting just happened: tiles swept, and maybe counts to show where. */
   fx?: ScoutFx[];
   /** Extra things in map space, over the tokens (Preview Next Trail's line picks). */
@@ -139,6 +143,8 @@ export function MapView({
   marks,
   onRevealedClick,
   onWonderClick,
+  onInfoboardClick,
+  showPlaced,
   fx = [],
   overlay,
   selectedId,
@@ -295,6 +301,10 @@ export function MapView({
               mark={marks?.[t.id]}
               onRevealed={onRevealedClick ? () => onRevealedClick(t.id) : undefined}
               onWonder={onWonderClick ? () => onWonderClick(t.id) : undefined}
+              {...(t.kind === 'trailhead' && onInfoboardClick
+                ? { onInfoboard: onInfoboardClick }
+                : {})}
+              {...(showPlaced ? { showPlaced } : {})}
               checkpointLabelOnHover={checkpointLabelOnHover}
               onClick={reachOf(t.id) ? () => onTileClick(t.id) : undefined}
               {...(hikerDrag || itemDrag ? { drop: tileDrop.props(t.id) } : {})}

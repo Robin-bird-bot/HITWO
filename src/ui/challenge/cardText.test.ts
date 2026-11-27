@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CARDS } from '../../content';
+import { COST_CARDS } from '../../content/costCards';
 import type { CardDef, CardRolls } from '../../engine';
 import { cardText, rangeText } from './cardText';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const card = (id: string): CardDef => {
   const c = CARDS[id];
@@ -48,6 +53,15 @@ describe('card text', () => {
     const days = steep.rolls?.days?.range ?? [0, 0];
     const up = rangeText([Math.round(days[0] * 1.5), Math.round(days[1] * 1.5)]);
     expect(cardText(steep, steep.penaltyText, { scale: 1.5 })).toContain(up);
+  });
+
+  it('a rolled 1 reads singular: "1 random resource"', () => {
+    // The new Black Cat (the retired one shares its id in this file).
+    const cat = COST_CARDS.find((c) => c.id === 'black-cat')!;
+    const rolls: CardRolls = { x: { x: 1, backup: 1 }, y: {}, includes: {}, luck: 0 };
+    const text = cardText(cat, cat.penaltyText, { rolls });
+    expect(text).toContain('1 random resource');
+    expect(text).not.toContain('1 random resources');
   });
 
   it('never shows [brackets] or a {name} left unfilled, on any card', () => {

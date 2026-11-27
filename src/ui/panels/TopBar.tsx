@@ -11,6 +11,13 @@ import { AbundanceBar } from './AbundanceBar';
 import type { IconName } from '../icons/paths';
 import { setUiMode, useUiMode, type UiMode } from '../app/uiMode';
 import { resetWindowLayout } from '../windows/windowLayout';
+import { debugEnabled } from '../debug/debugEnabled';
+import {
+  AUTO_PASS_SETTING,
+  SHOW_PLACED_SETTING,
+  useAutoPass,
+  useShowPlaced,
+} from '../debug/testingSettings';
 import {
   MAP_STYLE_SETTING,
   MAP_STYLES,
@@ -189,12 +196,21 @@ const WARNINGS: { id: TraitWarnings; label: string; text: string }[] = [
 ];
 
 /** The ☰ menu: settings and the way back to the title screen. Closes on click-away or Esc. */
-export function MenuButton({ onTitle }: { onTitle(): void }) {
+export function MenuButton({
+  onTitle,
+  testing,
+}: {
+  onTitle(): void;
+  /** Settings → Testing's Minigames only (it's in the run), with the debug tools on. */
+  testing?: { minigamesOnly: boolean; onMinigamesOnly(on: boolean): void };
+}) {
   const [open, setOpen] = useState(false);
   const mode = useUiMode();
   const warnings = useTraitWarnings();
   const mapStyle = useMapStyle();
   const wholeMap = useWholeMap();
+  const autoPass = useAutoPass();
+  const showPlaced = useShowPlaced();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -286,6 +302,46 @@ export function MenuButton({ onTitle }: { onTitle(): void }) {
               </label>
             )}
           </div>
+          {debugEnabled() && (
+            <div className={styles.setting}>
+              <span className={panel.label}>TESTING</span>
+              {testing && (
+                <label className={styles.switchRow}>
+                  <input
+                    type="checkbox"
+                    checked={testing.minigamesOnly}
+                    onChange={(e) => testing.onMinigamesOnly(e.target.checked)}
+                  />
+                  <span>
+                    Minigames only
+                    <span className={styles.small}> · No cost cards. Tiles ahead change now.</span>
+                  </span>
+                </label>
+              )}
+              <label className={styles.switchRow}>
+                <input
+                  type="checkbox"
+                  checked={autoPass}
+                  onChange={(e) => AUTO_PASS_SETTING.set(e.target.checked ? 'on' : 'off')}
+                />
+                <span>
+                  Auto-pass minigames
+                  <span className={styles.small}> · Everyone passes without playing.</span>
+                </span>
+              </label>
+              <label className={styles.switchRow}>
+                <input
+                  type="checkbox"
+                  checked={showPlaced}
+                  onChange={(e) => SHOW_PLACED_SETTING.set(e.target.checked ? 'on' : 'off')}
+                />
+                <span>
+                  Show placed cards
+                  <span className={styles.small}> · Every tile shows its card on the map.</span>
+                </span>
+              </label>
+            </div>
+          )}
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
             Reset window layout
           </button>

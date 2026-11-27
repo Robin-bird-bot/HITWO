@@ -191,24 +191,29 @@ describe('Dodge’s cards', () => {
   const titles = (animal: string) =>
     cardsOf(POPUPS.dodge!, { animal, tier: 2 }).map((c) => `${c.title}:${c.color}:${c.slots}`);
 
-  it('match section 7 by animal; the Woods Monster allows +1 heart only', () => {
-    expect(titles('bees')).toEqual(['FOOD:green:3', 'SMOKY FIRE:red:1']);
-    expect(titles('gunBear')).toEqual(['FOOD:green:3', 'BEAR SPRAY:red:1', 'SANDBAGS:red:1']);
-    expect(titles('ants')).toEqual(['FOOD:green:3', 'SALT LINE:red:2']);
+  it('match 24-challenges-reset.md, section 5, by animal; the Woods Monster allows +1 heart only', () => {
+    expect(titles('bees')).toEqual(['BANDAGES:green:3', 'FOOD:green:2', 'SMOKE:red:1']);
+    expect(titles('gunBear')).toEqual([
+      'BANDAGES:green:3',
+      'FOOD:green:2',
+      'BEAR SPRAY:red:1',
+      'SANDBAGS:red:1',
+    ]);
+    expect(titles('ants')).toEqual(['BANDAGES:green:3', 'FOOD:green:2', 'SALT LINE:red:2']);
     const monster = cardsOf(POPUPS.dodge!, { animal: 'monster', tier: 5 });
     expect(monster.map((c) => c.effects.map((e) => e.id))).toEqual([['lives']]);
   });
 
-  it('SLOWER takes a level off ATTACK SPEED; SMOKY FIRE takes a bee off each wave', () => {
+  it('SLOWER takes a level off ATTACK SPEED; SMOKE takes a bee off each wave', () => {
     const s = { animal: 'bees', tier: 2, hikers: HIKERS };
     const slots = slotsFor(cardsOf(POPUPS.dodge!, s));
     const fills: Fills = {
-      'lives+slower:0': {
+      'slower:0': {
         hiker: 'mom',
         thing: { kind: 'resource', id: 'fish' },
         effect: 'slower',
       },
-      'smoke:0': { hiker: 'mom', thing: { kind: 'resource', id: 'grass' }, effect: 'smoke' },
+      'smoke:0': { hiker: 'mom', thing: { kind: 'resource', id: 'oil' }, effect: 'smoke' },
     };
     const bars = POPUPS.dodge!.bars(applyPrepare(s, slots, fills));
     expect(bars.find((b) => b.id === 'speed')).toMatchObject({ base: 5, value: 4, max: 10 });

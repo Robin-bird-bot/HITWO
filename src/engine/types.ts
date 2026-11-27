@@ -112,8 +112,10 @@ export interface Tile {
     /** The tier it shows (I to V; above III, a Tier III card scaled up). Older saves: `tier`. */
     shownTier?: number;
     alternative?: string;
-    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera). */
+    /** Picked early by a scouting tool to know its kind, but not shown (Security Camera); placed with the pool. */
     hidden?: true;
+    /** A minigame challenge's version, picked by the tile (24-challenges-reset.md, section 4). */
+    version?: number;
   };
   /** No card here: a quiet tile (Phase 10.6 difficulty), or a Fire Flower burned it away. */
   quiet?: true;
@@ -154,6 +156,13 @@ export interface Section {
   lines: Line[];
   trailheadId: TileId;
   checkpointId: TileId;
+  /**
+   * The biome's challenge pool, placed on its tiles when the section is made
+   * (25-challenges-on-the-map.md, section 1). Missing on sections made before.
+   */
+  pool?: string[];
+  /** The Trail Infoboard: posters pinned face up, and tiles found with WHERE IS IT? (section 2). */
+  infoboard?: { faceUp: string[]; found: TileId[] };
 }
 
 // ── Night events ───────────────────────────────────────────────────────────
@@ -750,6 +759,8 @@ export interface OpenChallenge {
   trial?: { targetTile?: TileId; resource?: ResourceId; itemType?: ItemTypeName };
   /** Button opportunities: presses so far, by button (and hiker, for per-hiker buttons). */
   presses?: Record<string, number>;
+  /** A minigame challenge's version, picked by the tile (24-challenges-reset.md, section 4). */
+  version?: number;
 }
 
 /**
@@ -1019,6 +1030,10 @@ export type Action =
   | { type: 'endPhase' }
   /** Finishes the open challenge: every section's pay-or-penalty, and what was handed in. */
   | { type: 'resolveChallenge'; sections: ChallengeSection[] }
+  /** Finishes a minigame challenge (25-challenges-on-the-map.md, section 3): how it went, and what Prepare spent. */
+  | import('./challenges/minigame').ResolveMinigameAction
+  /** The Trail Infoboard's tip boxes (25-challenges-on-the-map.md, section 2). */
+  | import('./challenges/infoboard').InfoboardAction
   /** On a Choice space: which of the two challenges the party takes on. */
   | { type: 'chooseChallenge'; cardId: string }
   /** "Got it": the open Trial starts its countdown. */
@@ -1088,7 +1103,12 @@ export type DebugOp =
   /** Takes every condition off a hiker. */
   | { kind: 'clearConditions'; hikerId: HikerId }
   /** Opens a challenge on a tile, for the hikers there (replacing any open one). */
-  | { kind: 'openChallenge'; cardId: string; tileId: TileId }
+  | {
+      kind: 'openChallenge';
+      cardId: string;
+      tileId: TileId;
+      /** The tile's tier (I to V); the card's own when left out. */ tier?: number;
+    }
   /** Reveals a tile's card early, as Old Firewatch Tower does. */
   | { kind: 'revealCard'; tileId: TileId }
   /** Reveals this section's Wonder where it stands. */
@@ -1121,6 +1141,8 @@ export type DebugOp =
   | { kind: 'setTier'; tier: 1 | 2 | 3 }
   /** Counts the section as snowy (Phase 11 makes this real). */
   | { kind: 'setSnowy'; on: boolean }
+  /** Settings → Testing: pools with no cost cards; the unreached tiles are placed again. */
+  | { kind: 'setMinigamesOnly'; on: boolean }
   /** The weather challenge gates check (Phase 6 makes this real). */
   /** Sets today's weather (it starts today), and whether it holds instead of changing. */
   | { kind: 'setWeather'; weather: WeatherId; hold?: boolean }
@@ -1469,6 +1491,8 @@ export type GameEventBody =
     }
   /** A tile's card was revealed early, and shows on the map. */
   | { kind: 'revealedCard'; tileId: TileId; cardId: string; cause: string }
+  /** The Trail Infoboard: a poster pinned face up for caps (25-challenges-on-the-map.md, section 2). */
+  | { kind: 'infoboardPin'; cardId: string; caps: number }
   /** A Wonder was found: its 3 goals are picked. `cause` is how, if nobody landed there. */
   | { kind: 'wonderRevealed'; tileId: TileId; wonderId: string; cause?: string }
   /** A Wonder was accomplished, and who took which reward. */
@@ -1698,6 +1722,11 @@ export interface GameState {
   trials?: ActiveTrial[];
   /** The snowy, high part of the trail (Phase 11). Until then, a debug toggle. */
   snowy?: true;
+  /**
+   * Testing tools (Settings → Testing; 25-challenges-on-the-map.md, section
+   * 3.2): pools with no cost cards. (Auto-pass and showing placed cards are the UI's.)
+   */
+  testing?: { minigamesOnly?: true };
   /** Today's weather, since when, and the days ahead (the forecast). */
   weather: WeatherState;
   nextEventId: number;

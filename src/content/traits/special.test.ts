@@ -35,6 +35,10 @@ import type {
 import type { Requirement } from '../../engine/challenges/types';
 import type { Quality } from '../../engine/items/quality';
 import { tagTeamSide } from './special';
+import { withRetiredCards } from '../../engine/test/retiredChallenges';
+
+// The engine's mechanics are tested on the cards they were written for (retired Nov 26).
+withRetiredCards();
 
 const N = BALANCE.traits;
 type Who = 'ash' | 'birch' | 'cedar' | 'dot';

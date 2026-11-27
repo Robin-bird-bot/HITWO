@@ -28,6 +28,7 @@ import { buyPrice, marketMult, resourceSellPrice, saleCaps, sellPrice } from '..
 import type { Action, GameState, Hiker, StationVisit, StatName } from '../types';
 import { findHiker, mustFindHiker } from './common';
 import { fireBiomeStart } from '../effects';
+import { placePool } from '../challenges/pool';
 
 type BuyAction = Extract<Action, { type: 'buy' }>;
 type SellAction = Extract<Action, { type: 'sell' }>;
@@ -294,6 +295,8 @@ export function applyRestAndGo(state: GameState): void {
     biome: state.section.biome,
     section: state.sectionIndex,
   });
+  // The biome's challenge pool goes on its tiles (25-challenges-on-the-map.md, section 1).
+  placePool(state);
   // A Scout Report shows its cards now that the section is here.
   for (const id of station.scout ?? []) revealCardOn(state, id, 'the Scout Report');
   // A new biome: Prepared and Tactical show a tile ahead.

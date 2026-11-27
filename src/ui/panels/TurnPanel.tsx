@@ -65,6 +65,8 @@ interface TurnPanelProps {
   onBlueprints?(): void;
   /** Opens the Merchant or Traveling Trader on the hiker's tile. */
   onFeature?(): void;
+  /** Opens the Trail Infoboard (on the trailhead tile, when the biome has one). */
+  onInfoboard?(): void;
   /** The hikers picked together (multi-select), in turn order. */
   group?: readonly HikerId[];
   /** A tapped usable badge: the Abilities panel opens at it. */
@@ -84,6 +86,7 @@ export function TurnPanel({
   onAbandon,
   onBlueprints,
   onFeature,
+  onInfoboard,
   group,
   focusAbility,
 }: TurnPanelProps) {
@@ -124,6 +127,7 @@ export function TurnPanel({
           state={state}
           hiker={hiker}
           {...(onFeature ? { onFeature } : {})}
+          {...(onInfoboard ? { onInfoboard } : {})}
           {...(onFree ? { onFree } : {})}
         />
         <Equipped hiker={hiker} {...(onPick ? { onPick } : {})} />
@@ -570,12 +574,15 @@ export function TileCard({
   state,
   hiker,
   onFeature,
+  onInfoboard,
   onFree,
 }: {
   state: GameState;
   hiker: Hiker;
   /** Opens the tile's Merchant or Traveling Trader. */
   onFeature?(): void;
+  /** Opens the Trail Infoboard (the trailhead tile, when the biome has one). */
+  onInfoboard?(): void;
   /** Free actions here: a bite of someone's camp meal, packing up a shelter. */
   onFree?(action: Action): void;
 }) {
@@ -639,6 +646,19 @@ export function TileCard({
             {tile.feature === 'merchant' ? 'Merchant' : 'Trader'}
           </button>
         )}
+        {tile.id === state.section.trailheadId &&
+          onInfoboard &&
+          (state.section.pool ?? []).length > 0 && (
+            <button
+              type="button"
+              className={styles.feature}
+              title="Read the Trail Infoboard"
+              onClick={onInfoboard}
+            >
+              <Icon name="sign" size={14} strokeWidth={2.25} />
+              Infoboard
+            </button>
+          )}
       </div>
       <BoostChips state={state} hiker={hiker} />
       {onFree && <PackUp state={state} hiker={hiker} onFree={onFree} />}

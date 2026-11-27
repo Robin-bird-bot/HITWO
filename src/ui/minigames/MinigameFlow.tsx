@@ -9,8 +9,10 @@
  *   version (night, fog) is known and pinned: the pop-up, the demo and the
  *   game all show the same one.
  * - **Prepare:** the fills live here. The demo and the game get the
- *   settings with Prepare on top. Start spends what's in the slots (never
- *   in test mode); a filled SKIP IT passes everyone without playing.
+ *   settings with Prepare on top. In a real challenge, Start notes what's
+ *   in the slots, and Continue hands it to the game with the result: the
+ *   engine spends it, all or nothing (25-challenges-on-the-map.md, section
+ *   3). A filled SKIP IT passes everyone without playing.
  *
  * In test mode (the Minigame testing tab) the pop-up then offers Back to
  * testing and Play again, and nothing is saved anywhere but the tab's own
@@ -70,7 +72,6 @@ export function MinigameFlow({
   testMode = false,
   onBack,
   onFinish,
-  onSpend,
 }: {
   challenge: MinigameChallenge;
   hikers: readonly MinigameHiker[];
@@ -78,10 +79,8 @@ export function MinigameFlow({
   testMode?: boolean;
   /** Test mode: Back to testing. */
   onBack?(): void;
-  /** A real challenge: Continue with the result (a later step). */
-  onFinish?(result: MinigameResult): void;
-  /** A real challenge: what Start took from whom, and the packs after (a later step applies them). */
-  onSpend?(spent: readonly Spent[], packs: Packs): void;
+  /** A real challenge: Continue with the result, what Prepare spent, and whether SKIP IT skipped it. */
+  onFinish?(result: MinigameResult, spent: readonly Spent[], skipped: boolean): void;
 }) {
   const fit = useStage();
   const layout = gpsTurned(fit.scale < G.phoneBelowScale);
@@ -92,6 +91,7 @@ export function MinigameFlow({
   const [slot, setSlot] = useState<Rect | null>(null);
   const [fills, setFills] = useState<Fills>({});
   const timers = useRef<number[]>([]);
+  const spentRef = useRef<readonly Spent[]>([]);
   useEffect(() => () => timers.current.forEach((t) => clearTimeout(t)), []);
   const later = (ms: number, fn: () => void) => {
     timers.current.push(window.setTimeout(fn, ms));
@@ -137,10 +137,7 @@ export function MinigameFlow({
 
   const start = () => {
     if (stage !== 'popup') return;
-    if (!testMode) {
-      const out = spend(packs, slots, fills);
-      onSpend?.(out.spent, out.packs);
-    }
+    if (!testMode) spentRef.current = spend(packs, slots, fills).spent;
     if (skip) {
       // SKIP IT: everyone passes without playing.
       setResult(passFailResult(ids, () => true));
@@ -193,7 +190,7 @@ export function MinigameFlow({
         onStart={start}
         {...(onBack ? { onBack } : {})}
         onPlayAgain={playAgain}
-        onContinue={() => result && onFinish?.(result)}
+        onContinue={() => result && onFinish?.(result, spentRef.current, skip)}
       />
       {slot && (
         <PartyGps
