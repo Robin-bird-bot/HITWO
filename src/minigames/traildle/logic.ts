@@ -30,6 +30,8 @@ export interface TraildleOptions {
   timer: 'auto' | 'on' | 'off';
   /** Prepare's +1 GUESS: guesses more for each pair. */
   extraGuesses?: number;
+  /** Prepare's KNOCK ONE DOWN: a board passes with all but one sign right (24-challenges-reset.md, section 5). */
+  knockOne?: boolean;
 }
 
 export interface Board {
@@ -188,7 +190,7 @@ export function submit(s: TraildleState, guess: readonly (number | null)[]): Tra
     return {
       ...b,
       rows: [...b.rows, { guess: [...digits], marks: m }],
-      solved: m.every((x) => x === 'right'),
+      solved: m.filter((x) => x !== 'right').length <= (s.options.knockOne ? 1 : 0),
     };
   });
   const next = { ...s, boards, guessCount: s.guessCount + 1 };

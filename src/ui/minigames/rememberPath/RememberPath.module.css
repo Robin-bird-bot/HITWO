@@ -120,6 +120,22 @@
   transition: opacity 0.3s ease;
 }
 
+/* BREADCRUMBS: a step of the path that stays marked (24-challenges-reset.md, section 5). */
+.crumb {
+  position: absolute;
+  left: 9px;
+  top: 10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e9b44c;
+  box-shadow:
+    6px 3px 0 #e9b44c,
+    2px 8px 0 #e9b44c,
+    9px 10px 0 #e9b44c;
+  pointer-events: none;
+}
+
 .startMark {
   position: absolute;
   width: 26px;

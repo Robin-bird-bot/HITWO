@@ -371,10 +371,12 @@ export function ChallengePopup({
         </div>
 
         {/* Right: what failing costs, the bars, the hikers, the cost cards. */}
-        {/* Four cards or more (Bear Country): a little tighter, so the column still fits. */}
+        {/* Four cards or more: a little tighter, so the column still fits; six or more
+            (Gun Bear Attack!, with SKIP IT): tighter still. */}
         <div
           className={`${styles.col} ${styles.right}`}
           data-dense={cards.length >= 4 || undefined}
+          data-crowded={cards.length >= 6 || undefined}
         >
           {ifFail.length > 0 && (
             <div className={styles.sec}>

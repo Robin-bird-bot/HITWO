@@ -76,6 +76,7 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
         rightSpotSec: typeof settings.rightSpot === 'number' ? settings.rightSpot : 'auto',
         picture: isPictureName(picturePick) ? picturePick : 'random',
         extraSec: prepNumber(settings, 'prep.extraSec'),
+        corners: prepNumber(settings, 'prep.corners') > 0,
       },
       hikers.map((h) => h.id),
       seed,

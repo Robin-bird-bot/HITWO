@@ -257,19 +257,18 @@ export const DODGE_POPUP: GamePopup = {
     return [
       heart,
       slowerOpt('SLOWER ATTACKS', 'green'),
+      // SMOKE for every animal (24-challenges-reset.md, section 5): longer warnings; bees, −1 a wave.
       opt(
         'smoke',
         'red',
         category('fire'),
-        '−1 BEE PER WAVE',
-        '−1 BEE',
-        'smoke calms them',
+        animal === 'bees' ? '−1 BEE, LONGER WARNINGS' : 'LONGER WARNINGS',
+        'SMOKE',
+        animal === 'bees'
+          ? `−1 bee per wave, warnings +${D.smokeWarnSec} s`
+          : `every warning +${D.smokeWarnSec} s`,
         { param: P_('smoke'), step: 1 },
-        {
-          title: 'SMOKE',
-          need: 2,
-          onlyIf: (x) => animalOf(x) === 'bees',
-        },
+        { title: 'SMOKE', need: 2 },
       ),
       opt(
         'bearSpray',
@@ -631,6 +630,16 @@ export const TRAILS_POPUP: GamePopup = {
       param: P_('width'),
       step: 4,
     }),
+    opt(
+      'windbreak',
+      'red',
+      category('fiber'),
+      'WINDBREAK',
+      'WIND',
+      'gusts push half as hard',
+      { param: P_('windbreak'), step: 1 },
+      { need: 2, onlyIf: (s) => trailType(s).id === 'ridgeline' },
+    ),
   ],
 };
 
@@ -683,7 +692,7 @@ export const ROCK_CLIMB_POPUP: GamePopup = {
         (t.reach + prepNumber(s, P_('chalk'))) / 2,
         mostOver((x) => RC.tiers[x].reach) / 2 + 2,
       ),
-      levelBar('arrow', 'ARROW SPEED', s, 0),
+      levelBar('arrow', 'ARROW SPEED', s, -prepNumber(s, P_('slower'))),
     ];
   },
   perHiker: (s) => ({
@@ -714,6 +723,7 @@ export const ROCK_CLIMB_POPUP: GamePopup = {
       { param: P_('tries'), step: 1 },
       { perHiker: true, need: 2, title: 'ROPE' },
     ),
+    slowerOpt('SLOWER ARROW', 'red', `${Math.round(RC.foodSwing * 100)}% slower swing`),
     opt('harness', 'green', item('harness'), 'HARNESS', 'HARNESS', 'the first fall costs nothing', {
       param: P_('harness'),
       step: 1,
@@ -772,7 +782,7 @@ export const SKETCHY_BRIDGE_POPUP: GamePopup = {
         'sway',
         'SWAY SPEED',
         sway,
-        Math.round(sway * (prepNumber(s, P_('stick')) > 0 ? 1 - SB.lessSway : 1)),
+        Math.round(sway * (1 - prepNumber(s, P_('slower')) * SB.foodSway)),
         mostOver((x) => SB.tiers[x].sway),
       ),
     ];
@@ -798,18 +808,7 @@ export const SKETCHY_BRIDGE_POPUP: GamePopup = {
       { param: P_('zone'), step: SB.extraZone },
       { max: 2, need: 2, title: 'ROPE' },
     ),
-    opt(
-      'stick',
-      'red',
-      item('hikingStick'),
-      'HIKING STICK',
-      'STICK',
-      `${Math.round(SB.lessSway * 100)}% less sway`,
-      {
-        param: P_('stick'),
-        step: 1,
-      },
-    ),
+    slowerOpt('SLOWER SWAY', 'red', `${Math.round(SB.foodSway * 100)}% less sway`),
     opt(
       'harness',
       'green',

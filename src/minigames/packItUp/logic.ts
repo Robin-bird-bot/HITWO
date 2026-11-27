@@ -60,6 +60,8 @@ export interface PackItUpOptions {
   extraSec?: number;
   extraSpare?: number;
   sack?: boolean;
+  /** Prepare MEND A TEAR: this many torn cells are mended into spare cells (24-challenges-reset.md, section 5). */
+  mended?: number;
 }
 
 export interface PackItUpState {
@@ -153,8 +155,10 @@ function packFor(s: Pick<PackItUpState, 'tier' | 'options' | 'seed'>, k: number)
   const tornN = Math.min(t.torn, cols * rows - 2);
   const spare =
     (typeof s.options.spare === 'number' ? s.options.spare : t.spare) + (s.options.extraSpare ?? 0);
-  const torn = new Set(mixed.slice(0, tornN).map(key));
-  const spares = new Set(mixed.slice(tornN, tornN + Math.max(0, spare)).map(key));
+  // A mended tear can hold gear, like a spare cell.
+  const mendN = Math.min(tornN, Math.max(0, s.options.mended ?? 0));
+  const torn = new Set(mixed.slice(0, tornN - mendN).map(key));
+  const spares = new Set(mixed.slice(tornN - mendN, tornN + Math.max(0, spare)).map(key));
   const most = s.tier >= PU.fiveFrom ? 5 : 4;
   const cut = cutPieces(rng, cols, rows, new Set([...torn, ...spares]), most);
   const pieces: Piece[] = shuffle(

@@ -59,6 +59,7 @@ export function TrailMap({ settings, hikers, seed, onDone, still = false }: Puzz
         size: numberOr(settings.grid, 'auto'),
         time,
         signs: numberOr(settings.signs, 'auto'),
+        placed: prepNumber(settings, 'prep.place'),
       },
       hikers.map((h) => h.id),
       seed,

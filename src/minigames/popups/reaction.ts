@@ -218,21 +218,39 @@ export const TRAIL_BLOCKS_POPUP: GamePopup = {
     ];
   },
   options(s) {
+    // SNACK, every version (24-challenges-reset.md, section 5): a bigger energy chunk each.
+    const snack = opt(
+      'snack',
+      'green',
+      FOOD,
+      'SNACK',
+      'SNACK',
+      `each energy chunk ${Math.round(TB.snack * 100)}% bigger`,
+      { param: P_('snack'), step: 1 },
+      { max: 2 },
+    );
     switch (blockVersion(s).id) {
       case 'chop':
         return [
+          snack,
           biggerZones('sharpen', 'SHARPEN'),
           halfWork('axe', 'BRING AN AXE', 'woodcuttingAxe'),
         ];
       case 'rockslide':
-        return [halfWork('pickaxe', 'BRING A PICKAXE', 'pickaxe'), biggerZones('wedges', 'WEDGES')];
+        return [
+          snack,
+          halfWork('pickaxe', 'BRING A PICKAXE', 'pickaxe'),
+          biggerZones('wedges', 'WEDGES'),
+        ];
       case 'river':
         return [
+          snack,
           halfWork('ditch', 'DIG A DITCH', 'shovel', 'half the water'),
           biggerZones('patch', 'PATCH THE BUCKET'),
         ];
       case 'animals':
         return [
+          snack,
           opt(
             'bait',
             'red',
@@ -344,13 +362,23 @@ export const WHACKOON_POPUP: GamePopup = {
         'whacks',
         'WHACKS EACH',
         whacksEach(s),
-        whacksEach(s),
+        Math.max(1, whacksEach(s) - prepNumber(s, P_('bait'))),
         mostOver((x) => WH.tiers[x].target),
       ),
     ];
   },
   options: () => [
     slowerOpt('SLOWER RACCOONS'),
+    opt(
+      'bait',
+      'red',
+      category('trinkets'),
+      '−1 WHACK EACH',
+      '−1',
+      'one whack fewer each',
+      { param: P_('bait'), step: 1 },
+      { title: 'SHINY BAIT' },
+    ),
     opt(
       'noSkunks',
       'red',
@@ -408,8 +436,28 @@ export const TRAIL_BLAZES_POPUP: GamePopup = {
       ),
     ];
   },
+  perHiker: (s) =>
+    s.mode === 'clock'
+      ? null
+      : {
+          label: 'TRIES',
+          kind: 'pips',
+          base: numOr(s, 'tries', TBZ.tiers[tierIn(s)].tries),
+          param: P_('tries'),
+          step: 1,
+        },
   options: () => [
     slowerOpt('SLOWER TRUNKS'),
+    opt(
+      'tries',
+      'green',
+      category('trinkets'),
+      '+1 TRY',
+      '+1',
+      'pick a hiker',
+      { param: P_('tries'), step: 1 },
+      { perHiker: true, title: 'LUCKY CHARM', onlyIf: (s) => s.mode !== 'clock' },
+    ),
     opt(
       'brighter',
       'green',
@@ -543,6 +591,10 @@ export const SIZE_UP_POPUP: GamePopup = {
 
 const FSW = MG.flySwatter;
 
+/** Bee circles in this run (from Tier III, or the Bees setting). */
+const swatterBees = (s: MinigameSettings): boolean =>
+  s.bees === 'on' || (s.bees !== 'off' && FSW.tiers[tierIn(s)].bees > 0);
+
 export const FLY_SWATTER_POPUP: GamePopup = {
   howToPlay: (s) => {
     const strikes = numOr(s, 'strikes', FSW.tiers[tierIn(s)].strikes);
@@ -551,7 +603,7 @@ export const FLY_SWATTER_POPUP: GamePopup = {
     );
   },
   rules(s) {
-    const bees = s.bees === 'on' || (s.bees !== 'off' && FSW.tiers[tierIn(s)].bees > 0);
+    const bees = swatterBees(s) && prepNumber(s, P_('smoke')) === 0;
     return rulesOf(
       tierIn(s) >= 3 && line('Tapping where there’s no circle is a strike.', fromTier(3)),
       bees && line('Leave the bee circles alone: tapping one is a strike.', fromTier(3)),
@@ -596,6 +648,17 @@ export const FLY_SWATTER_POPUP: GamePopup = {
       {
         max: 2,
       },
+    ),
+    // SMOKE (24-challenges-reset.md, section 5): no bee circles.
+    opt(
+      'smoke',
+      'red',
+      category('fire'),
+      'NO BEES',
+      'NO BEES',
+      'smoke keeps the bees away',
+      { param: P_('smoke'), step: 1 },
+      { need: 2, title: 'SMOKE', onlyIf: swatterBees },
     ),
   ],
 };

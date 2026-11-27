@@ -101,7 +101,12 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
   const showQuality = pickOf(settings, 'quality') === 'on';
   const [game, setGame] = useState(() =>
     newTrailBlocks(
-      { version, tier, lessWork: prepNumber(settings, 'prep.lessWork') },
+      {
+        version,
+        tier,
+        lessWork: prepNumber(settings, 'prep.lessWork'),
+        snacks: prepNumber(settings, 'prep.snack'),
+      },
       hikers.map((h) => h.id),
       seed,
     ),
@@ -531,7 +536,10 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
                 >
                   <span
                     className={styles.chunkFill}
-                    style={{ width: `${(left / B.chunk) * 100}%`, background: byId(id).color }}
+                    style={{
+                      width: `${(left / game.chunkSize) * 100}%`,
+                      background: byId(id).color,
+                    }}
                   />
                   <span className={styles.chunkName} data-out={out || undefined}>
                     {byId(id).name.toUpperCase()}

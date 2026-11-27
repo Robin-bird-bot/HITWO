@@ -72,6 +72,8 @@ export interface RockClimbOptions {
   extraReach?: number;
   harness?: boolean;
   extraTries?: Readonly<Record<string, number>>;
+  /** Prepare FOOD: each makes the arrow swing a share slower (24-challenges-reset.md, section 5). */
+  slower?: number;
 }
 
 /** `fall`: dropping off the screen, then the box, then the camera back to the last hold. */
@@ -287,7 +289,7 @@ export function newRockClimb(
     reach: t.reach + (options.extraReach ?? 0),
     harness: options.harness ?? false,
     oneTry: options.tries === 'one' ? true : options.tries === 'any' ? false : t.oneTry,
-    swingSec: t.swingSec,
+    swingSec: t.swingSec * (1 + (options.slower ?? 0) * R.foodSwing),
     powerSec: t.powerSec,
     timeSec,
     timeLeft: timeSec,

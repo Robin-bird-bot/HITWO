@@ -50,6 +50,8 @@ export interface TrailBlocksState {
   order: string[];
   /** Each hiker's energy left in the bar, in line order, and whose is being spent. */
   chunks: number[];
+  /** How big each hiker's chunk is (bigger with SNACK). */
+  chunkSize: number;
   active: number;
   ranOut: string[];
   work: number;
@@ -126,17 +128,21 @@ export function newTrailBlocks(
     tier: Tier;
     /** Prepare: the share of the work a tool takes off (an axe, a pickaxe, a ditch: half). */
     lessWork?: number;
+    /** Prepare SNACK: each makes every hiker's energy chunk bigger. */
+    snacks?: number;
   },
   order: readonly string[],
   seed: number,
 ): TrailBlocksState {
   const rng = seedRng(seed);
   const w = B.work[options.tier];
+  const chunkSize = B.chunk * (1 + Math.max(0, options.snacks ?? 0) * B.snack);
   return {
     version: options.version,
     tier: options.tier,
     order: [...order],
-    chunks: order.map(() => B.chunk),
+    chunks: order.map(() => chunkSize),
+    chunkSize,
     active: 0,
     ranOut: [],
     work: 0,
@@ -334,7 +340,7 @@ function land(
   const i = s0.active;
   chunks[i] = Math.max(0, chunks[i]! - cost);
   if (quality === 'perfect' && chunks[i]! > 0)
-    chunks[i] = Math.min(B.chunk, chunks[i]! + B.perfectRefund);
+    chunks[i] = Math.min(s0.chunkSize, chunks[i]! + B.perfectRefund);
   let active = i;
   const ranOut = [...s0.ranOut];
   if (chunks[i]! <= 0) {

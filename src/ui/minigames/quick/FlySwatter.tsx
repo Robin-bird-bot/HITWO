@@ -46,7 +46,13 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
     newFlySwatter(
       {
         tier,
-        bees: beesPick === 'on' || beesPick === 'off' ? beesPick : 'auto',
+        // SMOKE: no bees (24-challenges-reset.md, section 5).
+        bees:
+          prepNumber(settings, 'prep.smoke') > 0
+            ? 'off'
+            : beesPick === 'on' || beesPick === 'off'
+              ? beesPick
+              : 'auto',
         strikes: typeof settings.strikes === 'number' ? settings.strikes : 'auto',
         bigger: prepNumber(settings, 'prep.bigger'),
         slowerShrink: prepNumber(settings, 'prep.slowerShrink'),

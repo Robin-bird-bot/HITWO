@@ -536,6 +536,8 @@ export interface DodgeState {
    */
   pace: number;
   fewerBees: number;
+  /** Prepare SMOKE: every warning lasts this much longer (seconds). */
+  warnExtra: number;
   antSlow: number;
   sandbags: boolean;
   /**

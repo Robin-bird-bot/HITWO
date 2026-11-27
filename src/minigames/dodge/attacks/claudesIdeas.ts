@@ -222,14 +222,14 @@ export const SHOUT: AttackDef = {
         maxR,
         ...(k === 0 ? { lead: true as const } : {}),
       }));
-    const first = burst(aim, ctx.time, ctx.time + warnFor());
+    const first = burst(aim, ctx.time, ctx.time + warnFor(ctx));
     if (!from(ctx, SH.twoFrom) || !coin(ctx.rng, SH.twoChance)) {
       return { parts: first, endsAt: 'parts' };
     }
     // A second shout right after, a little to one side, with its own warning.
     const at = first.at(-1)!.activeAt + SH.everySec;
     const turn = (coin(ctx.rng) ? 1 : -1) * SH.twoAngleDeg * DEG;
-    const second = burst(aim + turn, Math.max(ctx.time, at - warnFor()), at);
+    const second = burst(aim + turn, Math.max(ctx.time, at - warnFor(ctx)), at);
     return { parts: [...first, ...second], endsAt: 'parts' };
   },
 };
@@ -274,7 +274,7 @@ export const HUG: AttackDef = {
     // A changer: other attacks keep coming while the walls are in.
     const hug: HugPart = {
       kind: 'hug',
-      ...base(ctx, ctx.time, ctx.time + warnFor()),
+      ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
       squeezeSec: H.squeezeSec,
       holdSec: H.holdSec,
       width: H.width,
@@ -323,7 +323,7 @@ export const HONEY: AttackDef = {
       const warnAt = ctx.time + k * HO.staggerSec;
       return {
         kind: 'drop',
-        ...base(ctx, warnAt, warnAt + warnFor()),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx)),
         x,
         y0: e.top - 4,
         speed: HO.speed * ctx.speed,
@@ -384,7 +384,7 @@ export const X_SLASH: AttackDef = {
   claudesIdea: true,
   start(ctx) {
     const e = edges(ctx.box);
-    const first = ctx.time + warnFor();
+    const first = ctx.time + warnFor(ctx);
     const down = coin(ctx.rng);
     const lines = [
       [e.left, e.top, e.right, e.bottom],
@@ -445,7 +445,7 @@ export const THROWN: AttackDef = {
       parts: [
         {
           kind: 'thrown',
-          ...base(ctx, ctx.time, ctx.time + warnFor()),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
           path: [
             { x: x0, y: y1 },
             { x: x1, y: y1 },
@@ -567,12 +567,12 @@ export const DASH: AttackDef = {
       parts: [
         {
           kind: 'dash',
-          ...base(ctx, ctx.time, ctx.time + warnFor(DA.warnSec)),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx, DA.warnSec)),
           path,
           speed: DA.speed * ctx.speed,
           passes,
           bounces,
-          nextWarnSec: warnFor(DA.nextWarnSec),
+          nextWarnSec: warnFor(ctx, DA.nextWarnSec),
         },
       ],
       endsAt: 'parts',
@@ -597,7 +597,7 @@ export const LANDING_SWIPE: AttackDef = {
   kind: 'missile',
   claudesIdea: true,
   start(ctx) {
-    const land = pounce(ctx, { ...ctx.pos }, ctx.time, ctx.time + warnFor(D.pounce.growSec));
+    const land = pounce(ctx, { ...ctx.pos }, ctx.time, ctx.time + warnFor(ctx, D.pounce.growSec));
     // A curved row of claws bursts out from the landing spot, warned during the shadow.
     const dir = rotate({ x: 1, y: 0 }, between(ctx.rng, 0, Math.PI * 2));
     const speed = D.claws.speed * ctx.speed * (ctx.tweak.speed ?? 1);
@@ -605,7 +605,7 @@ export const LANDING_SWIPE: AttackDef = {
       ctx,
       { x: land.cx, y: land.cy },
       dir,
-      Math.max(ctx.time, land.activeAt - warnFor()),
+      Math.max(ctx.time, land.activeAt - warnFor(ctx)),
       land.activeAt,
       speed,
     );
@@ -630,7 +630,7 @@ export const PINECONES: AttackDef = {
       const warnAt = ctx.time + k * PC.staggerSec;
       return {
         kind: 'pinecone',
-        ...base(ctx, warnAt, warnAt + warnFor()),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx)),
         x,
         y: e.top - PC.radius,
         vx: 0,
@@ -744,7 +744,7 @@ export const SCURRY: AttackDef = {
       parts: [
         {
           kind: 'scurry',
-          ...base(ctx, ctx.time, ctx.time + warnFor()),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
           start,
           dir: coin(ctx.rng) ? 1 : -1,
           speed: SC.speed * ctx.speed,
@@ -844,7 +844,7 @@ export const HERD: AttackDef = {
       parts: [
         {
           kind: 'herd',
-          ...base(ctx, ctx.time, ctx.time + warnFor()),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
           from: side,
           lanes: all.filter((_, k) => !open.has(k)),
           x0: side === 'left' ? e.left - out : e.right + out,

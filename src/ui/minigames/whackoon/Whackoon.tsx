@@ -54,6 +54,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
         skunks: skunks === 'on' || skunks === 'off' ? skunks : 'auto',
         slower: slowerShare(prepNumber(settings, 'prep.slower')),
         noSkunks: prepNumber(settings, 'prep.noSkunks') > 0,
+        fewerWhacks: prepNumber(settings, 'prep.bait'),
       },
       hikers.map((h) => h.id),
       seed,

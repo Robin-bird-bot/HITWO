@@ -510,6 +510,34 @@
   gap: 4px;
 }
 
+/* Six cards or more: the tightest, so SKIP IT still shows without scrolling. */
+.right[data-crowded] .sec {
+  margin-bottom: 9px;
+}
+
+.right[data-crowded] .fail {
+  padding: 6px 12px;
+}
+
+.right[data-crowded] .cards {
+  gap: 5px;
+}
+
+.right[data-crowded] .card {
+  padding: 4px 12px 5px;
+  gap: 8px;
+}
+
+.right[data-crowded] .cost,
+.right[data-crowded] .does {
+  margin-top: 1px;
+}
+
+.right[data-crowded] .does {
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+
 .card[data-color='green'] {
   border-color: #b4be8c;
   background: #e3e6c6;

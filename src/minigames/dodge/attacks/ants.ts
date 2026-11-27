@@ -292,7 +292,7 @@ function line(
 ): MarchPart {
   return {
     kind: 'march',
-    ...base(ctx, warnAt, warnAt + warnFor()),
+    ...base(ctx, warnAt, warnAt + warnFor(ctx)),
     path,
     ants,
     spacing: M.grid,
@@ -367,7 +367,7 @@ export const ANT_MILL: AttackDef = {
   name: 'Ant Mill',
   kind: 'missile',
   start(ctx) {
-    const activeAt = ctx.time + warnFor();
+    const activeAt = ctx.time + warnFor(ctx);
     const rank = antRank(ctx);
     // Two rings only at Level 3; Easy never drifts (section 4).
     const two = rank >= MI.twoFrom;
@@ -570,7 +570,7 @@ export const ANT_HILL: AttackDef = {
       const c = spotIn(ctx.rng, ctx.box, H.radius + 4);
       if (dist(c, ctx.pos) > dist(spot, ctx.pos)) spot = c;
     }
-    const activeAt = ctx.time + warnFor(H.crackSec);
+    const activeAt = ctx.time + warnFor(ctx, H.crackSec);
     const up = ctx.state.hudTier === 5 ? H.tierFiveSec : H.upSec[ctx.level];
     return {
       parts: [
@@ -693,7 +693,7 @@ export const LEAFCUTTER: AttackDef = {
       parts: [
         {
           kind: 'parade',
-          ...base(ctx, ctx.time, ctx.time + warnFor()),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
           side,
           spots,
           start,
@@ -747,7 +747,7 @@ export const CRUMB_RUSH: AttackDef = {
       crumbs.push(c);
     }
     if (!crumbs.length) crumbs.push(spotIn(ctx.rng, ctx.box, 15));
-    const activeAt = ctx.time + warnFor();
+    const activeAt = ctx.time + warnFor(ctx);
     const sides = shuffle(ctx.rng, [...SIDES]);
     const ants = Array.from({ length: CR.ants }, (_, k) => {
       const from = onSide(ctx.box, sides[k % 4]!, between(ctx.rng, 0.05, 0.95), 4);

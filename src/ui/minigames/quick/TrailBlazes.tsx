@@ -9,7 +9,14 @@ import { useState } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { current, playing, turnWord } from '../../../minigames/quick/turns';
-import { blazeY, newTrailBlazes, result, tap, tick } from '../../../minigames/trailBlazes/logic';
+import {
+  blazeY,
+  newTrailBlazes,
+  result,
+  tap,
+  tick,
+  triesOf,
+} from '../../../minigames/trailBlazes/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
@@ -22,7 +29,7 @@ import styles from './TrailBlazes.module.css';
 import { Squares, TurnBar } from './TurnBar';
 import { useFixedLoop, useKeys, useReportOnce } from './useQuick';
 import { slowerShare } from '../../../minigames/popups/common';
-import { prepNumber } from '../../../minigames/prepare';
+import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { trailBlazesBot } from '../../../minigames/trailBlazes/bot';
 import { useDemoBot, useDemoMode } from '../demo';
 
@@ -41,6 +48,7 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
         tries: typeof settings.tries === 'number' ? settings.tries : 'auto',
         slower: slowerShare(prepNumber(settings, 'prep.slower')),
         brighter: prepNumber(settings, 'prep.brighter'),
+        extraTries: perHikerCounts(settings, 'prep.tries'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -232,8 +240,9 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
               return <Squares total={game.pairsNeeded} lit={got} label={`${got} pairs`} />;
             }
             const used = now ? game.misses : (rec?.misses ?? 0);
-            const left = Math.max(0, game.tries - used);
-            return <Squares total={game.tries} lit={left} label={`${left} tries left`} />;
+            const tries = triesOf(game, id);
+            const left = Math.max(0, tries - used);
+            return <Squares total={tries} lit={left} label={`${left} tries left`} />;
           }}
         />
       </div>

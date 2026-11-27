@@ -69,12 +69,16 @@ export interface FindObjectOptions {
   extraSecPerRound?: 'auto' | number;
   /** Prepare's −1 TO FIND. */
   fewer?: number;
+  /** Prepare's FLASHLIGHT (dark): a bigger light. */
+  flashlight?: boolean;
 }
 
 export interface FindObjectState {
   tier: Tier;
   /** Prepare's −1 TO FIND: targets fewer each round. */
   fewer: number;
+  /** Prepare's FLASHLIGHT: the light's extra width. */
+  lightBonus: number;
   mode: Mode;
   order: string[];
   rounds: number;
@@ -194,6 +198,7 @@ export function newFindObject(
     {
       tier: options.tier,
       fewer: options.fewer ?? 0,
+      lightBonus: options.flashlight ? F.flashlight : 0,
       mode: modeFor(options),
       order: [...order],
       rounds: Math.max(1, Math.round(orAuto(options.rounds, F.rounds))),
@@ -257,18 +262,19 @@ export function positionAt(s: FindObjectState, item: Item, t: number): { x: numb
   return { x, y };
 }
 
-/** Dark: the flashlight's size at a tier. */
-export const lightDiameter = (tier: Tier): number => F.tiers[tier].light;
+/** Dark: the flashlight's size at the game's tier, with FLASHLIGHT's extra. */
+export const lightDiameter = (s: Pick<FindObjectState, 'tier' | 'lightBonus'>): number =>
+  F.tiers[s.tier].light + s.lightBonus;
 
 /** Dark: whether a snack's middle is inside the flashlight's circle. */
 export function inLight(
   at: { x: number; y: number },
   light: { x: number; y: number },
-  tier: Tier = 1,
+  s: Pick<FindObjectState, 'tier' | 'lightBonus'>,
 ): boolean {
   const cx = at.x + SNACK_SIZE / 2;
   const cy = at.y + SNACK_SIZE / 2;
-  return Math.hypot(cx - light.x, cy - light.y) <= lightDiameter(tier) / 2;
+  return Math.hypot(cx - light.x, cy - light.y) <= lightDiameter(s) / 2;
 }
 
 /**
@@ -291,7 +297,7 @@ export function itemAt(
       point.y >= at.y &&
       point.y < at.y + SNACK_SIZE;
     if (!hit) continue;
-    if (isDark(s.mode) && (!light || !inLight(at, light, s.tier))) return null;
+    if (isDark(s.mode) && (!light || !inLight(at, light, s))) return null;
     return i;
   }
   return null;

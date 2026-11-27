@@ -130,7 +130,7 @@ export const ACORNS: AttackDef = {
       const at = onSide(ctx.box, side, along, -A.radius);
       parts.push({
         kind: 'acorn',
-        ...base(ctx, ctx.time, ctx.time + warnFor()),
+        ...base(ctx, ctx.time, ctx.time + warnFor(ctx)),
         squirrel: onSide(ctx.box, side, along, 7),
         side,
         x: at.x,
@@ -215,7 +215,7 @@ export const BOMBS: AttackDef = {
       spots.push(spot);
     }
     const rolls = !ctx.easy && from(ctx, B.rollFrom);
-    const landAt = ctx.time + warnFor(B.markSec);
+    const landAt = ctx.time + warnFor(ctx, B.markSec);
     const parts = spots.map((spot): BombPart => {
       const angle = nextFloat(ctx.rng) * Math.PI * 2;
       return {

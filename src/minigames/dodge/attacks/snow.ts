@@ -187,7 +187,7 @@ function pounceFrom(ctx: AttackCtx, warnAt: number, target: Point): LeapPart {
   const from = onSide(ctx.box, side, Math.max(0.1, Math.min(0.9, along)), 10);
   return {
     kind: 'leap',
-    ...base(ctx, warnAt, warnAt + warnFor(S.pounce.warnSec)),
+    ...base(ctx, warnAt, warnAt + warnFor(ctx, S.pounce.warnSec)),
     ...leapPath(ctx.box, from, target),
     speed: S.pounce.speed * ctx.speed,
   };
@@ -226,7 +226,7 @@ export const PROWL: AttackDef = {
     const from = onSide(ctx.box, side, b, 10);
     const part: LeapPart = {
       kind: 'leap',
-      ...base(ctx, ctx.time, aimAt + warnFor(S.prowl.warnSec)),
+      ...base(ctx, ctx.time, aimAt + warnFor(ctx, S.prowl.warnSec)),
       from,
       to: from,
       speed: S.pounce.speed * ctx.speed,
@@ -273,7 +273,7 @@ export const TAIL_SWEEP: AttackDef = {
   start(ctx) {
     const part: TailPart = {
       kind: 'tail',
-      ...base(ctx, ctx.time, ctx.time + warnFor(S.tail.warnSec)),
+      ...base(ctx, ctx.time, ctx.time + warnFor(ctx, S.tail.warnSec)),
       side: oneOf(ctx.rng, ['bottom', 'left', 'right'] as const),
     };
     return { parts: [part], endsAt: 'parts' };
@@ -310,7 +310,7 @@ export const SNOW_KICK: AttackDef = {
     const from = onSide(ctx.box, side, between(ctx.rng, 0.25, 0.75), 6);
     const mid = Math.atan2(INWARD[side].y, INWARD[side].x);
     const n = Math.round(between(ctx.rng, S.kick.count[0], S.kick.count[1] + 0.99) - 0.49);
-    const activeAt = ctx.time + warnFor(S.kick.warnSec);
+    const activeAt = ctx.time + warnFor(ctx, S.kick.warnSec);
     const parts: PelletPart[] = Array.from({ length: n }, (_, k) => {
       const a = mid + (nextFloat(ctx.rng) * 2 - 1) * S.kick.spreadDeg * DEG;
       const speed = S.kick.speed * ctx.speed * between(ctx.rng, 0.8, 1.2);
@@ -362,7 +362,7 @@ export const SNOWBALLS: AttackDef = {
       const warnAt = ctx.time + k * S.snowballs.apartSec;
       return {
         kind: 'snowball',
-        ...base(ctx, warnAt, warnAt + warnFor(S.snowballs.lobSec)),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx, S.snowballs.lobSec)),
         x: at.x,
         y: at.y,
         from,
@@ -420,7 +420,7 @@ export const ICICLES: AttackDef = {
     const n = Math.round(between(ctx.rng, S.icicles.count[0], S.icicles.count[1] + 0.99) - 0.49);
     const xs = Array.from({ length: n }, (_, k) => e.left + ((k + 0.5) * ctx.box.w) / n);
     const order = xs.map((x) => x).sort(() => nextFloat(ctx.rng) - 0.5);
-    const dropFrom = ctx.time + warnFor(S.icicles.glintSec);
+    const dropFrom = ctx.time + warnFor(ctx, S.icicles.glintSec);
     const parts: IciclePart[] = order.map((x, k) => ({
       kind: 'icicle',
       ...base(ctx, ctx.time, dropFrom + k * S.icicles.apartSec),
@@ -466,7 +466,7 @@ export const ANTLER_CHARGE: AttackDef = {
   movesAcross: true,
   start(ctx) {
     const e = edges(ctx.box);
-    const activeAt = ctx.time + warnFor(S.charge.warnSec);
+    const activeAt = ctx.time + warnFor(ctx, S.charge.warnSec);
     const across = (horizontal: boolean, at: number, forward: boolean): ChargePart => {
       const pad = 20;
       const from = horizontal
@@ -527,7 +527,7 @@ export const SHAKE_OFF: AttackDef = {
   start(ctx) {
     const from = { x: ctx.box.cx, y: ctx.box.cy };
     const a0 = nextFloat(ctx.rng) * 2 * Math.PI;
-    const activeAt = ctx.time + warnFor(S.shake.warnSec);
+    const activeAt = ctx.time + warnFor(ctx, S.shake.warnSec);
     const ring = (k: number): FlakesPart => ({
       kind: 'flakes',
       ...base(ctx, ctx.time, activeAt + k * S.shake.apartSec),
@@ -605,7 +605,7 @@ export const AVALANCHE: AttackDef = {
   start(ctx) {
     const part: AvalanchePart = {
       kind: 'avalanche',
-      ...base(ctx, ctx.time, ctx.time + warnFor(S.avalanche.warnSec)),
+      ...base(ctx, ctx.time, ctx.time + warnFor(ctx, S.avalanche.warnSec)),
       gapAt: avalancheGap(ctx),
       gapW: Math.min(S.avalanche.gap, ctx.box.w),
       speed: S.avalanche.speed * ctx.speed,

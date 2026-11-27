@@ -77,6 +77,8 @@ export interface MemoryOptions {
   time?: 'auto' | number;
   matchBonus?: 'auto' | number;
   missCost?: 'auto' | number;
+  /** Prepare's LUCKY PAIR: this many sets start matched (24-challenges-reset.md, section 5). */
+  lucky?: number;
 }
 
 const orAuto = (v: 'auto' | number | undefined, fallback: number) =>
@@ -114,6 +116,16 @@ export function newMemory(
   const swaps =
     options.swaps === 'off' ? 0 : options.swaps === 'on' ? t.swaps || M.swapsOnTier1 : t.swaps;
   const timeSec = orAuto(options.time, t.timeSec);
+  // LUCKY PAIR: random sets start matched, face up (the run's draws only change when it's used).
+  const luckyN = Math.max(0, Math.min(sets.length - 1, options.lucky ?? 0));
+  const lucky = new Set(
+    luckyN
+      ? shuffle(
+          rng,
+          sets.map((_, i) => i),
+        ).slice(0, luckyN)
+      : [],
+  );
   return {
     tier: options.tier,
     cols: t.cols,
@@ -123,7 +135,7 @@ export function newMemory(
     cardSet,
     cards,
     up: [],
-    matched: cardSet.map(() => false),
+    matched: cardSet.map((set) => lucky.has(set)),
     phase: order.length ? 'preview' : 'over',
     swapsLeft: swaps,
     swapsPerMiss: options.swaps === 'off' ? 0 : t.swapsPerMiss,

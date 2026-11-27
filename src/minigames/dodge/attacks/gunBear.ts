@@ -407,7 +407,7 @@ export const BEAR_TRAPS: AttackDef = {
       if (!spot) continue;
       taken.push(spot);
       const warnAt = ctx.time + k * T.tossGapSec;
-      const activeAt = warnAt + warnFor(T.shadowSec);
+      const activeAt = warnAt + warnFor(ctx, T.shadowSec);
       // It lands gray and harmless, then turns red; its open time starts then.
       const armAt = activeAt + T.armSec;
       parts.push({
@@ -468,7 +468,7 @@ export const RAPID_FIRE: AttackDef = {
     const half = R.spreadDeg * DEG;
     const n = R.bullets[ctx.level];
     const speed = R.speed[ctx.level] * ctx.state.pace;
-    const fireAt = ctx.time + warnFor(R.warnSec);
+    const fireAt = ctx.time + warnFor(ctx, R.warnSec);
     const parts: BulletPart[] = Array.from({ length: n }, (_, k) => {
       const a = mid + (nextFloat(ctx.rng) * 2 - 1) * half;
       return {
@@ -546,7 +546,7 @@ export const RICOCHET: AttackDef = {
   claudesIdea: true,
   start(ctx) {
     // Every path shows at once; then the shots fire a moment apart, each from its own spot.
-    const fireAt = ctx.time + warnFor(RI.warnSec);
+    const fireAt = ctx.time + warnFor(ctx, RI.warnSec);
     const parts: RicochetPart[] = Array.from({ length: ricochetShots(ctx) }, (_, k) => ({
       kind: 'ricochet',
       ...base(ctx, ctx.time, fireAt + k * RI.gapSec),
@@ -595,7 +595,7 @@ export const BULLET_RING: AttackDef = {
   fromTier: BR.fromTier as 4,
   start(ctx) {
     const from = ringFrom(ctx.box);
-    const fireAt = ctx.time + warnFor(BR.warnSec);
+    const fireAt = ctx.time + warnFor(ctx, BR.warnSec);
     const turn = BR.turnDeg * DEG;
     const a0 = nextFloat(ctx.rng) * ((2 * Math.PI) / BR.bullets);
     const parts: BulletRingPart[] = Array.from({ length: BR.rings[ctx.state.hudTier] }, (_, k) => ({
@@ -661,7 +661,7 @@ export const QUICK_DRAW: AttackDef = {
   kind: 'area',
   claudesIdea: true,
   start(ctx) {
-    const activeAt = ctx.time + warnFor(Q.warnSec);
+    const activeAt = ctx.time + warnFor(ctx, Q.warnSec);
     return {
       parts: [
         {

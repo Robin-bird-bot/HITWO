@@ -61,6 +61,7 @@ export function PackItUp({ settings, hikers, seed, onDone, still = false }: Puzz
         // Prepare (23-minigames-final.md, section 10).
         extraSec: prepNumber(settings, 'prep.extraSec'),
         extraSpare: prepNumber(settings, 'prep.backpack'),
+        mended: prepNumber(settings, 'prep.mend'),
         sack: prepNumber(settings, 'prep.sack') > 0,
       },
       hikers.map((h) => h.id),

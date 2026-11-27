@@ -7,8 +7,12 @@ import type { AttackCtx, PartBase } from '../types';
 
 const D = BALANCE.minigames.dodge;
 
-/** A warning: the attack's own time or the default, never under the minimum. */
-export const warnFor = (sec: number = D.warnSec): number => Math.max(D.warnMinSec, sec);
+/**
+ * A warning: the attack's own time or the default, never under the minimum,
+ * plus the run's extra (SMOKE: every warning lasts longer; 24-challenges-reset.md, section 5).
+ */
+export const warnFor = (ctx: Pick<AttackCtx, 'state'>, sec: number = D.warnSec): number =>
+  Math.max(D.warnMinSec, sec) + ctx.state.warnExtra;
 
 /** A part's common fields: a new id, this round, and its warning and start. */
 export const base = (ctx: AttackCtx, warnAt: number, activeAt: number): PartBase => ({

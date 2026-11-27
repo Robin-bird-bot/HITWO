@@ -145,7 +145,7 @@ export function oneClawRow(ctx: AttackCtx, warnAt: number): ClawsPart {
     oneOf(ctx.rng, CORNERS),
     coin(ctx.rng) ? 1 : -1,
     warnAt,
-    warnAt + warnFor(),
+    warnAt + warnFor(ctx),
     speed,
   );
 }
@@ -186,7 +186,7 @@ export const CLAWS: AttackDef = {
   kind: 'missile',
   start(ctx) {
     const speed = C.speed * ctx.speed * (ctx.tweak.speed ?? 1);
-    const warn = warnFor(ctx.tweak.warnSec);
+    const warn = warnFor(ctx, ctx.tweak.warnSec);
     // Rows from different corners, a moment apart.
     const corners = shuffle(ctx.rng, CORNERS);
     const parts = Array.from({ length: C.rows[ctx.level] }, (_, k) => {
@@ -257,7 +257,7 @@ export const BITE: AttackDef = {
     const at = zoneAround(ctx.box, ctx.pos, w, h);
     const first: BitePart = {
       kind: 'bite',
-      ...base(ctx, ctx.time, ctx.time + warnFor(B.openSec) + B.snapSec),
+      ...base(ctx, ctx.time, ctx.time + warnFor(ctx, B.openSec) + B.snapSec),
       cx: at.x,
       cy: at.y,
       w,
@@ -269,7 +269,7 @@ export const BITE: AttackDef = {
     // The second aims where the sprite is when the first snaps.
     const second: BitePart = {
       ...first,
-      ...base(ctx, first.activeAt, first.activeAt + warnFor(B.openSec) + B.snapSec),
+      ...base(ctx, first.activeAt, first.activeAt + warnFor(ctx, B.openSec) + B.snapSec),
       aimPending: true,
     };
     return { parts: [first, second], endsAt: 'parts' };

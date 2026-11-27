@@ -43,6 +43,8 @@ export interface PicturePuzzleState {
   secPerPiece: number;
   /** Prepare's +10 S: seconds more each round. */
   extraSec: number;
+  /** Prepare's CORNERS: each picture's four corners start in place (24-challenges-reset.md, section 5). */
+  corners: boolean;
   /** What a piece's first landing in its own spot adds to the clock. */
   rightSpotSec: number;
   order: string[];
@@ -80,6 +82,8 @@ export interface PicturePuzzleOptions {
   picture?: 'random' | PictureName;
   /** Prepare's +10 S: seconds more each round. */
   extraSec?: number;
+  /** Prepare's CORNERS: each picture's four corners start in place. */
+  corners?: boolean;
 }
 
 export const isPictureName = (v: unknown): v is PictureName =>
@@ -103,23 +107,31 @@ function startRound(s: PicturePuzzleState, round: number): PicturePuzzleState {
   );
   const pileCount = P.tiers[s.tier].piles;
   const piles: number[][] = Array.from({ length: pileCount }, () => []);
+  // CORNERS: each picture's four corner pieces start in their spots, locked.
+  const g = s.grid;
+  const cornerCells = new Set([0, g - 1, g * (g - 1), g * g - 1]);
+  const placed = (id: number) => s.corners && cornerCells.has(pieces[id]!.cell);
   shuffle(
     rng,
-    pieces.map((_, id) => id),
+    pieces.map((_, id) => id).filter((id) => !placed(id)),
   ).forEach((id, k) => piles[k % pileCount]!.push(id));
+  const grids: (number | null)[][] = who.map(() => Array.from({ length: cells }, () => null));
+  pieces.forEach((p, id) => {
+    if (placed(id)) grids[p.picture]![p.cell] = id;
+  });
   return {
     ...s,
     rng,
     round,
     pieces,
     piles,
-    grids: who.map(() => Array.from({ length: cells }, () => null)),
-    locked: pieces.map(() => false),
+    grids,
+    locked: pieces.map((_, id) => placed(id)),
     done: who.map(() => false),
     timeSec: s.secPerPiece * pieces.length + s.extraSec,
     timeLeft: s.secPerPiece * pieces.length + s.extraSec,
     elapsed: 0,
-    bonused: pieces.map(() => false),
+    bonused: pieces.map((_, id) => placed(id)),
     bonusNote: undefined,
     phase: 'play',
   };
@@ -141,6 +153,7 @@ export function newPicturePuzzle(
     grid: options.grid === 4 || options.grid === 5 || options.grid === 6 ? options.grid : t.grid,
     secPerPiece: typeof options.secPerPiece === 'number' ? options.secPerPiece : t.secPerPiece,
     extraSec: options.extraSec ?? 0,
+    corners: !!options.corners,
     rightSpotSec: typeof options.rightSpotSec === 'number' ? options.rightSpotSec : t.rightSpotSec,
     order: [...order],
     rounds: pairsOf(order),

@@ -76,6 +76,8 @@ export function newWhackoon(
     /** Prepare: the share slower, and no skunks. */
     slower?: number;
     noSkunks?: boolean;
+    /** Prepare SHINY BAIT: whacks fewer each (24-challenges-reset.md, section 5). */
+    fewerWhacks?: number;
   },
   order: readonly string[],
   seed: number,
@@ -97,7 +99,7 @@ export function newWhackoon(
     timeLeft: clockSec,
     deck: [],
     malletUntil: 0,
-    target: t.target,
+    target: Math.max(1, t.target - Math.max(0, options.fewerWhacks ?? 0)),
     cols: t.cols,
     rows: 3,
     cans: Array.from({ length: t.cols * 3 }, () => null),
