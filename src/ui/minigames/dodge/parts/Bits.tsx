@@ -127,13 +127,17 @@ export function MoveArrows({
       }}
     >
       {arrows.map((a, k) => {
-        const at = markSpot({ x: a.x, y: a.y }, box, 4);
+        const at = markSpot({ x: a.x, y: a.y }, box, 6.5);
         return (
           <svg
             key={k}
             className={styles.moveArrow}
             viewBox="0 0 10 6"
-            style={{ left: at.x - 5, top: at.y - 3, transform: `rotate(${a.angle.toFixed(1)}deg)` }}
+            style={{
+              left: at.x - 6.5,
+              top: at.y - 3.9,
+              transform: `rotate(${a.angle.toFixed(1)}deg)`,
+            }}
           >
             <path d="M0.6 2.2H5.4V0.6L9.4 3L5.4 5.4V3.8H0.6Z" />
           </svg>

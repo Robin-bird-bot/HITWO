@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { seedRng } from '../../engine/rng';
 import { TIERS } from '../types';
+import { campCleanupBot } from './bot';
 import {
   bagsOf,
   everyoneHasEnough,
@@ -246,5 +247,23 @@ describe('Camp Cleanup', () => {
     expect(p.quota).toBe(C.tiers[4].quota - 1);
     expect(p.obstacles).toHaveLength(C.tiers[4].obstacles - 2);
     expect(p.stepSec).toBeCloseTo(1 / (C.tiers[4].speed * 0.8));
+  });
+
+  it('the demo bot gets everyone to the quota most of the time, even at Tier V', () => {
+    for (const tier of [1, 5] as const) {
+      let made = 0;
+      for (let seed = 1; seed <= 10; seed++) {
+        let s = newCampCleanup({ tier }, THREE, seed);
+        const mem: Record<string, unknown> = {};
+        const rng = seedRng(seed);
+        for (let k = 0; k < 60 * 60 && !s.over; k++) {
+          const d = campCleanupBot(s, mem, rng);
+          if (d) s = turn(s, d);
+          s = tick(s, 1 / 60);
+        }
+        if (THREE.every((id) => bagsOf(s, id) >= s.quota)) made++;
+      }
+      expect(made, `Tier ${tier}`).toBeGreaterThanOrEqual(6);
+    }
   });
 });
