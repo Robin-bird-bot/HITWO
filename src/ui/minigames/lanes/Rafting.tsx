@@ -21,6 +21,7 @@ import {
 } from '../../../minigames/rafting/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { HikerToken } from '../HikerToken';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -225,9 +226,7 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
         <div className={`${ui.box} ${hud.name}`}>RAFTING</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>DOCK</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${Math.min(1, game.traveled / game.distance) * 100}%` }} />
-          </span>
+          <Bar value={game.traveled / game.distance} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

@@ -115,6 +115,13 @@ export interface CampCleanupState {
   phaseLeft: number;
   stepLeft: number;
   timeLeft: number;
+  /**
+   * The countdown (26-fixes-and-wyatt-trees.md, section 2): seconds left once
+   * every hiker has their quota, or null while someone is short. At 0 the
+   * game ends and everyone passes.
+   */
+  countdown: number | null;
+  countdownSec: number;
   /** The last crash: when, where the head hit, and the bags that fell off (for the screen). */
   lastCrash?: { at: number; lost: Segment[] };
   /** The last pickup (for a pop). */
@@ -260,7 +267,7 @@ export function newCampCleanup(
         );
   const timeSec =
     (typeof options.timeSec === 'number' ? options.timeSec : t.timeSec) + (options.extraSec ?? 0);
-  const base = { cols: C.cols, rows: C.rows };
+  const base = { cols: t.cols, rows: t.rows };
   let s: CampCleanupState = {
     tier: options.tier,
     ...base,
@@ -268,7 +275,7 @@ export function newCampCleanup(
     timeSec,
     quota,
     order,
-    snake: startSnake(order, C.rows),
+    snake: startSnake(order, t.rows),
     dir: 'right',
     queue: [],
     pending: [],
@@ -278,6 +285,8 @@ export function newCampCleanup(
     phaseLeft: 0,
     stepLeft: 1 / Math.max(0.5, speed),
     timeLeft: timeSec,
+    countdown: null,
+    countdownSec: t.countdownSec,
     time: 0,
     over: order.length === 0,
     rng,
@@ -379,9 +388,36 @@ function bestWay(s: CampCleanupState): Dir {
   return best;
 }
 
+/** Does every hiker have their quota (or more) right now? */
+export const everyoneHasEnough = (s: Pick<CampCleanupState, 'order' | 'snake' | 'quota'>) =>
+  s.order.length > 0 && s.order.every((id) => bagsOf(s, id) >= s.quota);
+
 export function tick(s0: CampCleanupState, dt: number): CampCleanupState {
   if (s0.over) return s0;
-  let s: CampCleanupState = { ...s0, time: s0.time + dt, timeLeft: s0.timeLeft - dt };
+  const s = moveOn({ ...s0, time: s0.time + dt, timeLeft: s0.timeLeft - dt }, dt);
+  // Time ran out first: the usual end.
+  if (s.over) return s;
+  return countDown(s, dt);
+}
+
+/**
+ * The countdown: it starts when everyone has their quota, is cancelled when
+ * a crash drops someone below it (and starts over from the full time when
+ * they're back), and at 0 the game ends with everyone passing. The game's
+ * own timer keeps running under it.
+ */
+function countDown(s: CampCleanupState, dt: number): CampCleanupState {
+  if (!everyoneHasEnough(s)) return s.countdown === null ? s : { ...s, countdown: null };
+  // The step it starts on doesn't count down yet.
+  if (s.countdown === null) return { ...s, countdown: s.countdownSec };
+  const countdown = s.countdown - dt;
+  if (countdown > 0) return { ...s, countdown };
+  return { ...s, countdown: 0, phase: 'done', over: true };
+}
+
+/** The line moves (or waits out a crash), and the time runs. */
+function moveOn(s0: CampCleanupState, dt: number): CampCleanupState {
+  let s = s0;
   if (s.timeLeft <= 0 || s.phase === 'done')
     return { ...s, timeLeft: Math.max(0, s.timeLeft), phase: 'done', over: true };
   const rng: RngState = [...s.rng];

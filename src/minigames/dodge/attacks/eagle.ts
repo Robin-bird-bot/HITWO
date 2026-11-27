@@ -152,6 +152,7 @@ export const SWOOP: AttackDef = {
   id: 'swoop',
   name: 'Swoop',
   kind: 'missile',
+  movesAcross: true,
   start(ctx) {
     const n = E.swoop.count[rankOf(ctx)];
     const parts: SwoopPart[] = Array.from({ length: n }, (_, k) => {
@@ -258,6 +259,7 @@ export const WING_GUST: AttackDef = {
   name: 'Wing Gust',
   kind: 'changer',
   claudesIdea: true,
+  movesAcross: true,
   start(ctx) {
     const activeAt = ctx.time + warnFor(E.gust.warnSec);
     const part: GustPart = {
@@ -365,6 +367,7 @@ export const COMB_OVER: AttackDef = {
   name: 'Comb-Over',
   kind: 'area',
   claudesIdea: true,
+  movesAcross: true,
   start(ctx) {
     const e = edges(ctx.box);
     const part: CombPart = {

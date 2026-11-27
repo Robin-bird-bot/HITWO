@@ -13,6 +13,7 @@ import {
   fallenPlanks,
   inZone,
   newSketchyBridge,
+  nextTarget,
   onBridge,
   result,
   setHolding,
@@ -113,6 +114,51 @@ describe('Prepare and the settings', () => {
     expect(s.zoneH).toBe(B.tiers[3].zone + 4);
     expect(s.sway).toBeCloseTo(B.tiers[3].sway * 0.75);
     expect(newSketchyBridge({ tier: 1, integrity: 60 }, THREE, 1).full).toBe(60);
+  });
+});
+
+describe('calmer (Nov 26 evening)', () => {
+  it('the zone is bigger on lower tiers: [52, 46, 36, 28, 24]', () => {
+    expect(TIERS.map((t) => newSketchyBridge({ tier: t }, THREE, 1).zoneH)).toEqual([
+      52, 46, 36, 28, 24,
+    ]);
+  });
+
+  it('the zone rises at [360] and falls at [260], and never moves faster than [140]', () => {
+    let s = ready(newSketchyBridge({ tier: 3 }, THREE, 2));
+    s = { ...s, zoneY: 0, zoneV: 0 };
+    let fastest = 0;
+    for (let k = 0; k < 240; k++) {
+      s = tick(setHolding(s, k < 120), DT);
+      fastest = Math.max(fastest, Math.abs(s.zoneV));
+    }
+    expect(fastest).toBeLessThanOrEqual(B.maxSpeed + 1e-9);
+    expect(fastest).toBeGreaterThan(B.maxSpeed * 0.9);
+    // One step held from rest gains [360] × dt.
+    const one = tick(setHolding({ ...s, zoneY: 40, zoneV: 0 }, true), DT);
+    expect(one.zoneV).toBeCloseTo(B.rise * DT, 6);
+    const drop = tick(setHolding({ ...s, zoneY: 40, zoneV: 0 }, false), DT);
+    expect(drop.zoneV).toBeCloseTo(-B.fall * DT, 6);
+  });
+
+  it('a new target is [24–40] from the icon, inside the bar', () => {
+    const rng = seedRng(9);
+    for (let k = 0; k < 500; k++) {
+      const icon = B.iconMargin + ((k * 7.3) % (B.barH - 2 * B.iconMargin));
+      const t = nextTarget(icon, rng);
+      expect(t).toBeGreaterThanOrEqual(B.iconMargin);
+      expect(t).toBeLessThanOrEqual(B.barH - B.iconMargin);
+      // Near an end it may be clamped, but never more than [40] away.
+      expect(Math.abs(t - icon)).toBeLessThanOrEqual(B.targetStep[1] + 1e-9);
+      if (icon > 50 && icon < B.barH - 50) {
+        expect(Math.abs(t - icon)).toBeGreaterThanOrEqual(B.targetStep[0] - 1e-9);
+      }
+    }
+  });
+
+  it('darts are [16–28] and gusts push at [50]', () => {
+    expect(B.dart).toEqual([16, 28]);
+    expect(B.gust.speed).toBe(50);
   });
 });
 

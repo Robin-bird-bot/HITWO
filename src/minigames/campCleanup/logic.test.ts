@@ -12,6 +12,7 @@ import { seedRng } from '../../engine/rng';
 import { TIERS } from '../types';
 import {
   bagsOf,
+  everyoneHasEnough,
   cellsOf,
   newCampCleanup,
   placeObstacles,
@@ -121,23 +122,39 @@ describe('Camp Cleanup', () => {
     expect(chosen.dir).toBe('up');
   });
 
-  it.each([3, 4, 5] as const)(
+  it.each([2, 3, 4, 5] as const)(
     'Tier %i: obstacles never close off part of the board, and keep off the start',
     (tier) => {
+      const { cols, rows, obstacles } = C.tiers[tier];
       for (let seed = 1; seed <= 30; seed++) {
-        const board = { cols: C.cols, rows: C.rows };
-        const obs = placeObstacles(seedRng(seed), board, C.tiers[tier].obstacles);
-        expect(obs.length).toBe(C.tiers[tier].obstacles);
+        const board = { cols, rows };
+        const obs = placeObstacles(seedRng(seed), board, obstacles);
+        expect(obs.length).toBe(obstacles);
         const blocked = new Set(obs.flatMap((o) => cellsOf(o).map((c) => `${c.x},${c.y}`)));
-        expect(room(board, { x: 1, y: Math.floor(C.rows / 2) }, blocked)).toBe(
-          C.cols * C.rows - blocked.size,
+        expect(room(board, { x: 1, y: Math.floor(rows / 2) }, blocked)).toBe(
+          cols * rows - blocked.size,
         );
-        for (const o of obs)
-          for (const c of cellsOf(o)) expect(c.y).not.toBe(Math.floor(C.rows / 2));
+        for (const o of obs) for (const c of cellsOf(o)) expect(c.y).not.toBe(Math.floor(rows / 2));
       }
-      expect(newCampCleanup({ tier: 2 }, THREE, 1).obstacles).toHaveLength(0);
+      // Nov 26 evening: Tier I has none, and Tier II now has a couple.
+      expect(newCampCleanup({ tier: 1 }, THREE, 1).obstacles).toHaveLength(0);
+      expect(newCampCleanup({ tier: 2 }, THREE, 1).obstacles).toHaveLength(C.tiers[2].obstacles);
     },
   );
+
+  it('the grid shrinks with the tier, and the time is much shorter (Nov 26 evening)', () => {
+    for (const tier of [1, 2, 3, 4, 5] as const) {
+      const s = newCampCleanup({ tier }, THREE, 1);
+      expect([s.cols, s.rows]).toEqual([C.tiers[tier].cols, C.tiers[tier].rows]);
+      expect(s.cols).toBeLessThanOrEqual(C.cols);
+      expect(s.rows).toBeLessThanOrEqual(C.rows);
+      expect(s.timeSec).toBe(C.tiers[tier].timeSec);
+      expect(s.snake.every((g) => g.y === Math.floor(s.rows / 2))).toBe(true);
+    }
+    expect(newCampCleanup({ tier: 5 }, THREE, 1).cols).toBeLessThan(
+      newCampCleanup({ tier: 1 }, THREE, 1).cols,
+    );
+  });
 
   it('when time runs out, each hiker passes with their quota of bags; those short lose 1 energy', () => {
     let s = newCampCleanup({ tier: 1, obstacles: 'off', timeSec: 1 }, ['finn', 'mom'], 6);
@@ -163,6 +180,58 @@ describe('Camp Cleanup', () => {
     for (let k = 0; k < 200 && !s.over; k++) s = tick(s, 0.01);
     expect(s.over).toBe(true);
     expect(result(s)).toMatchObject({ safe: ['finn'], pays: { mom: { energy: Q.failEnergy } } });
+  });
+
+  /** Everyone given their quota of bags, the line laid down the left, heading down a long empty column. */
+  const stocked = (tier: 1 | 3 = 1, timeSec = 60): CampCleanupState => {
+    const s0 = newCampCleanup({ tier, obstacles: 'off', timeSec }, ['finn', 'mom'], 6);
+    const bags = ['finn', 'mom'].flatMap((owner) =>
+      Array.from({ length: s0.quota }, () => ({ x: 0, y: 0, kind: 'bag' as const, owner })),
+    );
+    const snake = [...s0.snake, ...bags].map((g, k, all) => ({ ...g, x: 1, y: all.length - k }));
+    return { ...s0, snake, trash: [], dir: 'down', queue: [], stepSec: 100, stepLeft: 100 };
+  };
+
+  describe('the countdown (Nov 26 evening)', () => {
+    it('starts the moment everyone has their quota, and at 0 everyone passes before time runs out', () => {
+      let s = tick(stocked(), 0.01);
+      expect(everyoneHasEnough(s)).toBe(true);
+      expect(s.countdown).toBe(C.tiers[1].countdownSec);
+      for (let k = 0; k < 1000 && !s.over; k++) s = tick(s, 0.05);
+      expect(s.over).toBe(true);
+      expect(s.timeLeft).toBeGreaterThan(0);
+      expect(s.time).toBeCloseTo(C.tiers[1].countdownSec + 0.01, 1);
+      expect(result(s)).toMatchObject({ safe: ['finn', 'mom'] });
+    });
+
+    it('is longer at higher tiers', () => {
+      expect(tick(stocked(3), 0.01).countdown).toBe(C.tiers[3].countdownSec);
+      expect(C.tiers[5].countdownSec).toBeGreaterThan(C.tiers[1].countdownSec);
+    });
+
+    it('a crash below the quota cancels it; back at the quota, it starts over from the full time', () => {
+      let s = tick(stocked(), 0.01);
+      s = tick(s, 2);
+      expect(s.countdown).toBeCloseTo(C.tiers[1].countdownSec - 2, 5);
+      // Mom loses a bag: cancelled.
+      const lost = s.snake.findLastIndex((g) => g.owner === 'mom' && g.kind === 'bag');
+      const dropped = s.snake[lost]!;
+      s = tick({ ...s, snake: s.snake.filter((_, k) => k !== lost) }, 0.5);
+      expect(s.countdown).toBeNull();
+      expect(s.over).toBe(false);
+      // Back at the quota: the full countdown again.
+      s = tick({ ...s, snake: [...s.snake, { ...dropped, y: 0 }] }, 0.5);
+      expect(s.countdown).toBe(C.tiers[1].countdownSec);
+    });
+
+    it('the game timer keeps running under it; if time runs out first, the usual end applies', () => {
+      let s = tick(stocked(1, 2), 0.01);
+      expect(s.countdown).not.toBeNull();
+      for (let k = 0; k < 1000 && !s.over; k++) s = tick(s, 0.05);
+      expect(s.over).toBe(true);
+      expect(s.timeLeft).toBe(0);
+      expect(s.countdown).toBeGreaterThan(0);
+    });
   });
 
   it('5 or 6 hikers need one bag fewer; Prepare: more time, fewer bags, fewer obstacles, slower', () => {

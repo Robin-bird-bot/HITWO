@@ -24,6 +24,7 @@ import {
   tick,
 } from '../../../minigames/sizeUp/logic';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -262,9 +263,7 @@ export function SizeUp({ settings, hikers, seed, onDone, still = false }: Puzzle
         <div className={`${ui.box} ${hud.name}`}>SIZE UP</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>TIME</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(Math.max(0, game.timeLeft) / game.timeSec) * 100}%` }} />
-          </span>
+          <Bar value={game.timeLeft / game.timeSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

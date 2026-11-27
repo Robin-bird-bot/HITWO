@@ -11,6 +11,7 @@ import { BALANCE } from '../../../config/balance';
 import { current, playing, turnWord } from '../../../minigames/quick/turns';
 import { blazeY, newTrailBlazes, result, tap, tick } from '../../../minigames/trailBlazes/logic';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -212,13 +213,10 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
             PAIRS {game.matched}/{game.pairsNeeded}
             {clock ? ` · ${Math.ceil(Math.max(0, game.clockLeft))} S` : ''}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${clock ? (Math.max(0, game.clockLeft) / game.clockSec) * 100 : (game.matched / game.pairsNeeded) * 100}%`,
-              }}
-            />
-          </span>
+          <Bar
+            value={clock ? game.clockLeft / game.clockSec : game.matched / game.pairsNeeded}
+            live={!!clock}
+          />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

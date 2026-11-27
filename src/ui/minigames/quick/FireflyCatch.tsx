@@ -11,6 +11,7 @@ import { BALANCE } from '../../../config/balance';
 import { isDark, newFireflyCatch, result, tap, tick } from '../../../minigames/fireflyCatch/logic';
 import { current, playing, turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -159,9 +160,7 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
               ? `${byId(who).name.toUpperCase()} ${Math.ceil(game.timeLeft)}S`
               : 'DONE'}
           </span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(Math.max(0, game.timeLeft) / game.timeSec) * 100}%` }} />
-          </span>
+          <Bar value={game.timeLeft / game.timeSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

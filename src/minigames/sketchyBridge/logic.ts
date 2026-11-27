@@ -132,9 +132,13 @@ export const setHolding = (s: SketchyBridgeState, holding: boolean): SketchyBrid
 
 const between = (rng: RngState, [a, b]: readonly [number, number]) => a + nextFloat(rng) * (b - a);
 
-/** The zone moves: up while held, down when not, bouncing softly off the bottom, stopping at the top. */
+/**
+ * The zone moves: up while held, down when not, never faster than [140]
+ * units a second, bouncing softly off the bottom, stopping at the top.
+ */
 function moveZone(s: SketchyBridgeState, dt: number): SketchyBridgeState {
   let v = s.zoneV + (s.holding ? B.rise : -B.fall) * dt;
+  v = Math.max(-B.maxSpeed, Math.min(B.maxSpeed, v));
   let y = s.zoneY + v * dt;
   if (y < 0) {
     y = 0;
@@ -148,6 +152,20 @@ function moveZone(s: SketchyBridgeState, dt: number): SketchyBridgeState {
   return { ...s, zoneY: y, zoneV: v };
 }
 
+/**
+ * The icon's next target (Nov 26 evening): a small step from where it is,
+ * [24–40] up or down, turned around when that would leave the bar.
+ */
+export function nextTarget(iconY: number, rng: RngState): number {
+  const lo = B.iconMargin;
+  const hi = B.barH - B.iconMargin;
+  const step = between(rng, B.targetStep);
+  const up = nextFloat(rng) < 0.5;
+  let t = iconY + (up ? step : -step);
+  if (t < lo || t > hi) t = iconY + (up ? -step : step);
+  return Math.max(lo, Math.min(hi, t));
+}
+
 /** The icon eases toward its target, darts now and then (Tier III and up), and is pushed by gusts (Tier IV and up). */
 function moveIcon(s0: SketchyBridgeState, dt: number, rng: RngState): SketchyBridgeState {
   const t = B.tiers[s0.tier];
@@ -155,7 +173,7 @@ function moveIcon(s0: SketchyBridgeState, dt: number, rng: RngState): SketchyBri
   if (s.time >= s.retargetAt) {
     s = {
       ...s,
-      target: between(rng, [B.iconMargin, B.barH - B.iconMargin]),
+      target: nextTarget(s.iconY, rng),
       retargetAt: s.time + between(rng, B.retargetSec),
     };
     // A dart: a sudden jump.

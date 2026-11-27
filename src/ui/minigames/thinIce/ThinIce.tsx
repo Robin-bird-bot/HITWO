@@ -36,6 +36,7 @@ import { turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
 import { HikerToken } from '../HikerToken';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -339,11 +340,7 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
           <span>
             ACROSS {across.length} OF {game.turns.order.length}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{ width: `${(across.length / Math.max(1, game.turns.order.length)) * 100}%` }}
-            />
-          </span>
+          <Bar value={across.length / Math.max(1, game.turns.order.length)} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar hikers={hikers} word={word} active={game.over ? undefined : who} />

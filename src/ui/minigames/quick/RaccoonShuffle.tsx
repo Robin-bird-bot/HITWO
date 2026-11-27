@@ -36,6 +36,7 @@ import {
 import { raccoonShuffleBot } from '../../../minigames/raccoonShuffle/bot';
 import { useDemoBot, useDemoMode } from '../demo';
 import { TIER_LABELS } from '../../../minigames/types';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -390,9 +391,7 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
         <div className={`${ui.box} ${hud.name}`}>RACCOON SHUFFLE</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>{word}</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${Math.min(1, bar) * 100}%` }} />
-          </span>
+          <Bar value={bar} live={game.phase === 'show' || game.phase === 'shuffle'} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

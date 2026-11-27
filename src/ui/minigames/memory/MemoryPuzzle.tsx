@@ -25,6 +25,7 @@ import {
   tick,
 } from '../../../minigames/memory/logic';
 import { HikerToken } from '../HikerToken';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import ui from '../gpsUi.module.css';
@@ -196,9 +197,7 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
       <p className={`${ui.muted} ${panel.label}`} style={{ top: 78 }}>
         TIME
       </p>
-      <span className={panel.timeBar} style={{ top: 84 }}>
-        <span style={{ width: `${Math.min(1, left / game.timeSec) * 100}%` }} />
-      </span>
+      <Bar className={panel.timeBar} style={{ top: 84 }} value={left / game.timeSec} live />
       <p
         className={`${ui.text} ${panel.timeText}`}
         style={{ top: 97 }}

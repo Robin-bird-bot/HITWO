@@ -28,6 +28,7 @@ import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { turnWord } from '../../../minigames/quick/turns';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -291,9 +292,7 @@ export function FlyBlock({ settings, hikers, seed, onDone, still = false }: Puzz
         <div className={`${ui.box} ${hud.name}`}>FLY BLOCK</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>FLIES LEFT</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${(flyLeft / game.total) * 100}%` }} />
-          </span>
+          <Bar value={flyLeft / game.total} />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar

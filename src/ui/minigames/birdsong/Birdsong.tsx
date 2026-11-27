@@ -27,6 +27,7 @@ import { slowerShare } from '../../../minigames/popups/common';
 import { perHikerCounts, prepNumber } from '../../../minigames/prepare';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -229,17 +230,11 @@ export function Birdsong({ settings, hikers, seed, onDone, still = false }: Puzz
               ? `NOTE ${Math.min(game.song.length, game.answer.length + 1)} OF ${game.song.length}`
               : `ROUND ${game.round} · ${game.song.length} NOTES`}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{
-                width: `${
-                  answering
-                    ? (game.answer.length / game.song.length) * 100
-                    : (game.song.length / game.longest) * 100
-                }%`,
-              }}
-            />
-          </span>
+          <Bar
+            value={
+              answering ? game.answer.length / game.song.length : game.song.length / game.longest
+            }
+          />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
         <TurnBar

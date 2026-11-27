@@ -25,6 +25,7 @@ import {
 import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
 import { useTinted } from '../dodge/tint';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { playSound } from '../sound';
@@ -273,11 +274,7 @@ export function Crossing({ settings, hikers, seed, onDone, still = false }: Puzz
           <span>
             {who ? `${byId(who).name.toUpperCase()} ${Math.ceil(game.attemptLeft)}S` : 'DONE'}
           </span>
-          <span className={hud.bar}>
-            <span
-              style={{ width: `${(Math.max(0, game.attemptLeft) / game.attemptSec) * 100}%` }}
-            />
-          </span>
+          <Bar value={game.attemptLeft / game.attemptSec} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

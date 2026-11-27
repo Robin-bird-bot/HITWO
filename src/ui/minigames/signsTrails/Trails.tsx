@@ -18,6 +18,7 @@ import { aim, checkpoints, newTrails, result, steer, tick } from '../../../minig
 import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
 import { useTinted } from '../dodge/tint';
+import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
@@ -386,9 +387,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
         <div className={`${ui.box} ${hud.name}`}>TRAILS · {info.name.toUpperCase()}</div>
         <div className={`${ui.box} ${hud.meter}`}>
           <span>{game.goal >= c.length ? 'TO THE END' : 'TO CHECKPOINT'}</span>
-          <span className={hud.bar}>
-            <span style={{ width: `${progress * 100}%` }} />
-          </span>
+          <Bar value={progress} live />
         </div>
         <div className={`${ui.box} ${hud.tier}`}>TIER {TIER_LABELS[tier]}</div>
 

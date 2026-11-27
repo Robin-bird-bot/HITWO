@@ -118,10 +118,15 @@ export interface FlakesPart extends PartBase {
 }
 
 /** Avalanche: snow down the box in columns, with one gap column. */
+/**
+ * Avalanche: snow falls down the box in columns, with one gap (Nov 26
+ * evening: [38] units wide, starting near the sprite). `gapAt` is the gap's
+ * left edge, measured from the box's left wall.
+ */
 export interface AvalanchePart extends PartBase {
   kind: 'avalanche';
-  cols: number;
-  gap: number;
+  gapAt: number;
+  gapW: number;
   speed: number;
 }
 
@@ -264,6 +269,7 @@ export const TAIL_SWEEP: AttackDef = {
   name: 'Tail Sweep',
   kind: 'area',
   claudesIdea: true,
+  movesAcross: true,
   start(ctx) {
     const part: TailPart = {
       kind: 'tail',
@@ -457,6 +463,7 @@ export const ANTLER_CHARGE: AttackDef = {
   name: 'Antler Charge',
   kind: 'area',
   claudesIdea: true,
+  movesAcross: true,
   start(ctx) {
     const e = edges(ctx.box);
     const activeAt = ctx.time + warnFor(S.charge.warnSec);
@@ -548,22 +555,59 @@ export function avalancheY(p: AvalanchePart, box: Box, time: number): number {
   return edges(box).top - S.avalanche.band + Math.max(0, time - p.activeAt) * p.speed;
 }
 
+/**
+ * The falling columns (their left edge and width): the space on each side
+ * of the gap split evenly into columns about [16] wide.
+ */
+export function avalancheColumns(p: AvalanchePart, box: Box): { x: number; w: number }[] {
+  const e = edges(box);
+  const split = (from: number, width: number) => {
+    if (width < 0.5) return [];
+    const n = Math.max(1, Math.round(width / S.avalanche.column));
+    return Array.from({ length: n }, (_, k) => ({ x: from + (k * width) / n, w: width / n }));
+  };
+  const gapL = e.left + p.gapAt;
+  return [...split(e.left, p.gapAt), ...split(gapL + p.gapW, e.right - gapL - p.gapW)];
+}
+
+/**
+ * Where the gap goes: its middle within [60] units of the sprite, left or
+ * right, but never over the sprite itself (with the ice, a far gap can't
+ * be reached in time). In a box too small for that, anywhere off the sprite.
+ */
+export function avalancheGap(ctx: Pick<AttackCtx, 'box' | 'pos' | 'rng'>): number {
+  const e = edges(ctx.box);
+  const w = Math.min(S.avalanche.gap, ctx.box.w);
+  const half = w / 2;
+  const clear = half + D.hitRadius + 1;
+  const spots: number[] = [];
+  for (let c = Math.ceil(e.left + half); c <= e.right - half; c++) {
+    const away = Math.abs(c - ctx.pos.x);
+    if (away >= clear && away <= S.avalanche.near) spots.push(c);
+  }
+  if (!spots.length) {
+    for (let c = Math.ceil(e.left + half); c <= e.right - half; c++) {
+      if (Math.abs(c - ctx.pos.x) >= clear) spots.push(c);
+    }
+  }
+  const middle = spots.length
+    ? spots[Math.floor(nextFloat(ctx.rng) * spots.length)]!
+    : e.left + between(ctx.rng, half, Math.max(half, ctx.box.w - half));
+  return middle - half - e.left;
+}
+
 export const AVALANCHE: AttackDef = {
   id: 'avalanche',
   name: 'Avalanche',
   kind: 'area',
   claudesIdea: true,
+  movesAcross: true,
   start(ctx) {
-    const cols = Math.max(3, Math.floor(ctx.box.w / S.avalanche.column));
-    // The gap: never right where the sprite is standing.
-    const here = Math.floor((ctx.pos.x - edges(ctx.box).left) / (ctx.box.w / cols));
-    let gap = Math.floor(nextFloat(ctx.rng) * cols);
-    if (gap === here) gap = (gap + 1 + Math.floor(nextFloat(ctx.rng) * (cols - 1))) % cols;
     const part: AvalanchePart = {
       kind: 'avalanche',
       ...base(ctx, ctx.time, ctx.time + warnFor(S.avalanche.warnSec)),
-      cols,
-      gap,
+      gapAt: avalancheGap(ctx),
+      gapW: Math.min(S.avalanche.gap, ctx.box.w),
       speed: S.avalanche.speed * ctx.speed,
     };
     return { parts: [part], endsAt: 'parts' };
@@ -573,12 +617,14 @@ export const AVALANCHE: AttackDef = {
 const AVALANCHE_RULES: PartRules<AvalanchePart> = {
   shapes(p, w) {
     if (w.time < p.activeAt) return [];
-    const e = edges(w.box);
     const y = avalancheY(p, w.box, w.time);
-    const cw = w.box.w / p.cols;
-    return Array.from({ length: p.cols }, (_, k) => k)
-      .filter((k) => k !== p.gap)
-      .map((k) => ({ kind: 'rect' as const, x: e.left + k * cw, y, w: cw, h: S.avalanche.band }));
+    return avalancheColumns(p, w.box).map((c) => ({
+      kind: 'rect' as const,
+      x: c.x,
+      y,
+      w: c.w,
+      h: S.avalanche.band,
+    }));
   },
   done: (p, w) => avalancheY(p, w.box, w.time) > edges(w.box).bottom,
 };
