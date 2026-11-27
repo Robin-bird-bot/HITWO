@@ -148,6 +148,7 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
         extraReach: prepNumber(settings, 'prep.chalk'),
         harness: prepNumber(settings, 'prep.harness') > 0,
         extraTries: perHikerCounts(settings, 'prep.tries'),
+        slower: prepNumber(settings, 'prep.slower'),
       },
       hikers.map((h) => h.id),
       seed,

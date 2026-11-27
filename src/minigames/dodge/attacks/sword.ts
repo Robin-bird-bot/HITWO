@@ -92,7 +92,7 @@ export const VOLLEY: AttackDef = {
     const spots = volleySpots(ctx.rng, ctx.box, V.swords[ctx.level]);
     // They appear one by one, warn after the last, then fly in number order.
     const lastAppears = ctx.time + (spots.length - 1) * V.appearSec;
-    const firstFlies = lastAppears + warnFor(V.warnSec);
+    const firstFlies = lastAppears + warnFor(ctx, V.warnSec);
     const parts: VolleyPart[] = spots.map(({ side, at }, k) => {
       const dir = INWARD[side];
       return {
@@ -151,7 +151,7 @@ export function jabBlade(p: JabPart, time: number): [Point, Point] | null {
 function jab(ctx: AttackCtx, origin: Point, dir: Point, warnAt: number): JabPart {
   return {
     kind: 'jab',
-    ...base(ctx, warnAt, warnAt + warnFor(J.warnSec)),
+    ...base(ctx, warnAt, warnAt + warnFor(ctx, J.warnSec)),
     from: origin,
     dir,
     reach: rayToWall(ctx.box, origin, dir),
@@ -262,7 +262,7 @@ function slide(
   }
   const spots = forward ? xs : xs.reverse();
   const speed = P.slideSpeed * ctx.speed;
-  const first = ctx.time + warnFor(Math.max(D.warnSec, P.markSec));
+  const first = ctx.time + warnFor(ctx, Math.max(D.warnSec, P.markSec));
   const stabAt = spots.map((_, k) => first + k * (P.spacing / speed + P.stabSec));
   return {
     kind: 'poke',
@@ -352,7 +352,7 @@ export function wavePath(p: WavePart, box: Box, time: number): Point[] {
 function wave(ctx: AttackCtx, side: 'top' | 'bottom', dir: 1 | -1, phase: number): WavePart {
   return {
     kind: 'wave',
-    ...base(ctx, ctx.time, ctx.time + warnFor(W.aheadSec)),
+    ...base(ctx, ctx.time, ctx.time + warnFor(ctx, W.aheadSec)),
     side,
     dir,
     speed: W.speed * ctx.speed,

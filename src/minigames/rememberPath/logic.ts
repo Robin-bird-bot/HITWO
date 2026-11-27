@@ -89,6 +89,10 @@ export interface RememberPathState {
   tier: Tier;
   /** Prepare's −1 STEP: steps off every path. */
   fewerSteps: number;
+  /** Prepare's BREADCRUMBS: steps of each path that stay marked (24-challenges-reset.md, section 5). */
+  crumbCount: number;
+  /** This path's marked steps (never the first or the last). */
+  crumbs: Tile[];
   cols: number;
   rows: number;
   order: string[];
@@ -108,14 +112,16 @@ function forHiker(s: RememberPathState, index: number): RememberPathState {
   if (index >= s.order.length) return { ...s, current: index, phase: 'over' };
   const rng = [...s.rng] as RngState;
   const tier = R.tiers[s.tier];
+  const path = makePath(rng, s.cols, s.rows, [
+    Math.max(2, tier.length[0] - s.fewerSteps),
+    Math.max(2, tier.length[1] - s.fewerSteps),
+  ]);
   return {
     ...s,
     rng,
     current: index,
-    path: makePath(rng, s.cols, s.rows, [
-      Math.max(2, tier.length[0] - s.fewerSteps),
-      Math.max(2, tier.length[1] - s.fewerSteps),
-    ]),
+    path,
+    crumbs: s.crumbCount ? shuffle(rng, path.slice(1, -1)).slice(0, s.crumbCount) : [],
     pos: BELOW,
     strikesLeft: tier.strikes,
     phase: 'watch',
@@ -128,12 +134,16 @@ export function newRememberPath(
   seed: number,
   /** Prepare's −1 STEP. */
   fewerSteps = 0,
+  /** Prepare's BREADCRUMBS. */
+  crumbCount = 0,
 ): RememberPathState {
   const t = R.tiers[tier];
   return forHiker(
     {
       tier,
       fewerSteps,
+      crumbCount,
+      crumbs: [],
       cols: t.cols,
       rows: t.rows,
       order: [...order],

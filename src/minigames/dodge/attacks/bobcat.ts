@@ -52,7 +52,7 @@ export const POUNCE: AttackDef = {
   name: 'Pounce',
   kind: 'missile',
   start(ctx) {
-    const grow = warnFor(P.growSec);
+    const grow = warnFor(ctx, P.growSec);
     const t = ctx.time;
     if (!from(ctx, P.aimedFrom)) {
       // A random third of the box.
@@ -68,7 +68,7 @@ export const POUNCE: AttackDef = {
     if (from(ctx, P.feintFrom) && coin(ctx.rng)) {
       // The first shadow fades; the real one shows just before landing, where the sprite is then.
       const decoy = { ...pounce(ctx, { ...ctx.pos }, t, t + grow), feint: true as const };
-      const real = pounce(ctx, null, decoy.activeAt - warnFor(P.feintRealSec), decoy.activeAt);
+      const real = pounce(ctx, null, decoy.activeAt - warnFor(ctx, P.feintRealSec), decoy.activeAt);
       return { parts: [decoy, real], endsAt: 'parts' };
     }
     const first = pounce(ctx, { ...ctx.pos }, t, t + grow);
@@ -139,7 +139,7 @@ export const STALK: AttackDef = {
   kind: 'missile',
   start(ctx) {
     // The aim shows a little shorter on faster tiers, never under the minimum.
-    const aim = warnFor(K.aimSec / ctx.speed);
+    const aim = warnFor(ctx, K.aimSec / ctx.speed);
     const side = oneOf(ctx.rng, SIDES);
     const start = landing(ctx.box, onSide(ctx.box, side, between(ctx.rng, 0.2, 0.8)));
     const hops = Array.from({ length: K.hops[ctx.level] }, (_, k) => {

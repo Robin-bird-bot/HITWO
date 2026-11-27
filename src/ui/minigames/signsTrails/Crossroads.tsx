@@ -68,6 +68,7 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
         studySec: typeof settings.study === 'number' ? settings.study : null,
         newPerHiker: pickOf(settings, 'newArrows') === 'on',
         turnSec: typeof settings.turn === 'number' ? settings.turn : null,
+        markers: prepNumber(settings, 'prep.marker'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -169,6 +170,20 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
                   }}
                 />
               ))}
+            {/* TRAIL MARKER: this crossing shows its arrow. */}
+            {game.phase === 'walk' && game.marked.includes(game.step) && (
+              <img
+                className={`${ui.sprite} ${styles.marker}`}
+                src={art('arrow.png')}
+                alt={`Trail marker: ${game.arrows[game.step]}`}
+                draggable={false}
+                style={{
+                  left: MID.x + 14,
+                  top: MID.y - 30,
+                  transform: `rotate(${TURN[game.arrows[game.step]!]}deg)`,
+                }}
+              />
+            )}
             <img
               className={`${ui.sprite} ${styles.hiker}`}
               src={tints[color] ?? dodgeArt('person.png')}

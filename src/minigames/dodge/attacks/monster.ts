@@ -198,7 +198,7 @@ export const FIRE: AttackDef = {
         flickerSec: F.flickerSec,
         sinkSec: F.sinkSec,
       }));
-    const warn = warnFor();
+    const warn = warnFor(ctx);
     const first = ctx.time + warn;
     const parity = coin(ctx.rng) ? 0 : 1;
     const parts = [...set(parity, ctx.time, first, false)];
@@ -265,7 +265,7 @@ export const HANDS: AttackDef = {
       const warnAt = ctx.time + k * HA.everySec;
       return {
         kind: 'hand',
-        ...base(ctx, warnAt, warnAt + warnFor(HA.crackSec)),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx, HA.crackSec)),
         x: ctx.pos.x,
         y: ctx.pos.y,
         aimPending: true,
@@ -308,7 +308,7 @@ export const WISPS: AttackDef = {
     const first = coin(ctx.rng) ? 0 : 1;
     const parts = Array.from({ length: n }, (_, k): WispPart => {
       const warnAt = ctx.time + k * WI.everySec;
-      const activeAt = warnAt + warnFor();
+      const activeAt = warnAt + warnFor(ctx);
       const candle = (first + k) % CANDLES.length;
       return {
         kind: 'wisp',
@@ -408,7 +408,7 @@ export const RUNES: AttackDef = {
         ];
       });
     }
-    const activeAt = ctx.time + warnFor();
+    const activeAt = ctx.time + warnFor(ctx);
     const parts = lines.map(([a, b]): BeamPart => ({
       kind: 'beam',
       ...base(ctx, ctx.time, activeAt),
@@ -451,7 +451,7 @@ export const RITUAL: AttackDef = {
       parts: [
         {
           kind: 'ritual',
-          ...base(ctx, ctx.time, ctx.time + warnFor(RI.drawSec)),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx, RI.drawSec)),
           cx: Math.min(e.right - m, Math.max(e.left + m, ctx.pos.x)),
           cy: Math.min(e.bottom - m, Math.max(e.top + m, ctx.pos.y)),
           r: RI.radius,
@@ -519,7 +519,7 @@ export const GLARE: AttackDef = {
       parts: [
         {
           kind: 'glare',
-          ...base(ctx, ctx.time, ctx.time + warnFor(GL.warnSec)),
+          ...base(ctx, ctx.time, ctx.time + warnFor(ctx, GL.warnSec)),
           eyes: monsterEyes(),
           from: leftFirst ? [lo, hi] : [hi, lo],
           to: leftFirst ? [hi, lo] : [lo, hi],
@@ -630,7 +630,7 @@ export const ARMS: AttackDef = {
       const side = (k % 2 === 0 ? first : -first) as -1 | 1;
       const sh = SHOULDERS[side < 0 ? 0 : 1];
       const warnAt = ctx.time + k * every;
-      const activeAt = warnAt + warnFor(AR.windSec);
+      const activeAt = warnAt + warnFor(ctx, AR.windSec);
       return {
         kind: 'arm',
         ...base(ctx, warnAt, activeAt),
@@ -682,7 +682,7 @@ export const DARKNESS: AttackDef = {
   claudesIdea: true,
   secondHalf: true,
   start(ctx: AttackCtx) {
-    const activeAt = ctx.time + warnFor();
+    const activeAt = ctx.time + warnFor(ctx);
     return {
       parts: [
         {

@@ -60,6 +60,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
         signs: signsSetting === 'auto' ? 'auto' : Number(signsSetting),
         timer: timer === 'on' || timer === 'off' ? timer : 'auto',
         extraGuesses: prepNumber(settings, 'prep.guesses'),
+        knockOne: prepNumber(settings, 'prep.knock') > 0,
       },
       hikers.map((h) => h.id),
       seed,

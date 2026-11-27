@@ -96,6 +96,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
         extraLives: perHikerCounts(settings, 'prep.lives'),
         slower: slowerShare(prepNumber(settings, 'prep.slower')),
         fewerBees: prepNumber(settings, 'prep.smoke'),
+        warnExtra: prepNumber(settings, 'prep.smoke') * D.smokeWarnSec,
         shorter: prepNumber(settings, 'prep.bearSpray'),
         sandbags: prepNumber(settings, 'prep.sandbags') > 0,
         antSlow: prepNumber(settings, 'prep.salt'),

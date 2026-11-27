@@ -99,6 +99,16 @@ export const TRAILDLE_POPUP: GamePopup = {
       { max: 2 },
     ),
     opt(
+      'knock',
+      'red',
+      category('building'),
+      'KNOCK ONE DOWN',
+      '−1 SIGN',
+      'pass with all but one sign right',
+      { param: P_('knock'), step: 1 },
+      { need: 2 },
+    ),
+    opt(
       'showDigit',
       'blue',
       item('thinkingCap', 'glasses'),
@@ -234,6 +244,16 @@ export const TRAIL_MAP_POPUP: GamePopup = {
   },
   options: () => [
     plusSecOpt(10),
+    opt(
+      'place',
+      'red',
+      category('building'),
+      'PLACE A PIECE',
+      'PIECE',
+      'one trail tile starts turned right and locked',
+      { param: P_('place'), step: 1 },
+      { max: 2 },
+    ),
     opt('route', 'blue', MAPS, 'ONE ROUTE SOLVED', 'ROUTE', 'one trailhead starts connected', {
       param: P_('route'),
       step: 1,
@@ -274,6 +294,15 @@ export const PICTURE_PUZZLE_POPUP: GamePopup = {
   },
   options: () => [
     plusSecOpt(10),
+    opt(
+      'corners',
+      'red',
+      category('building'),
+      'CORNERS',
+      'CORNERS',
+      'the four corners start in place',
+      { param: P_('corners'), step: 1 },
+    ),
     opt(
       'ghost',
       'blue',
@@ -572,6 +601,16 @@ export const FAKE_SIGNS_POPUP: GamePopup = {
     ];
   },
   options: () => [
+    opt(
+      'fix',
+      'red',
+      category('building'),
+      'FIX A SIGN',
+      'FIX',
+      'one wrong answer is forgiven',
+      { param: P_('fix'), step: 1 },
+      { need: 2 },
+    ),
     opt('fewerRules', 'red', item('thinkingCap'), '−1 RULE', '−1 RULE', 'one rule fewer', {
       param: P_('fewerRules'),
       step: 1,
@@ -636,6 +675,16 @@ export const REMEMBER_PATH_POPUP: GamePopup = {
   },
   options: () => [
     slowerOpt('SLOWER RANGER', 'red'),
+    opt(
+      'crumbs',
+      'blue',
+      category('trinkets'),
+      'BREADCRUMBS',
+      'CRUMBS',
+      'one step stays marked',
+      { param: P_('crumbs'), step: 1 },
+      { max: 2 },
+    ),
     opt('fewerSteps', 'red', item('supplyMap'), '−1 STEP', '−1 STEP', 'one step shorter', {
       param: P_('fewerSteps'),
       step: 1,
@@ -689,6 +738,16 @@ export const MEMORY_POPUP: GamePopup = {
   },
   options: () => [
     plusSecOpt(5),
+    opt(
+      'lucky',
+      'red',
+      category('trinkets'),
+      'LUCKY PAIR',
+      'LUCKY',
+      'one set starts matched',
+      { param: P_('lucky'), step: 1 },
+      { max: 2 },
+    ),
     opt('peek', 'blue', item('camera'), 'PEEK', 'PEEK', 'every card flips up once for 1.5 s', {
       param: P_('peek'),
       step: 1,
@@ -810,6 +869,16 @@ export const CROSSROADS_POPUP: GamePopup = {
       { max: 2 },
     ),
     opt(
+      'marker',
+      'blue',
+      category('trinkets'),
+      'TRAIL MARKER',
+      'MARKER',
+      'one crossing shows its arrow when you get there',
+      { param: P_('marker'), step: 1 },
+      { max: 2 },
+    ),
+    opt(
       'peek',
       'blue',
       item('treasureMap', 'camera'),
@@ -867,6 +936,16 @@ export const FIND_OBJECT_POPUP: GamePopup = {
   },
   options: () => [
     plusSecOpt(5),
+    opt(
+      'flashlight',
+      'blue',
+      category('fire'),
+      'FLASHLIGHT',
+      'LIGHT',
+      'a bigger light',
+      { param: P_('flashlight'), step: 1 },
+      { onlyIf: (x) => findMode(x) === 'dark' || findMode(x) === 'darkWindy' },
+    ),
     opt(
       'fewer',
       'red',
@@ -1124,6 +1203,16 @@ export const PACK_IT_UP_POPUP: GamePopup = {
   },
   options: () => [
     plusSecOpt(PKU.foodSec),
+    opt(
+      'mend',
+      'red',
+      category('fiber'),
+      'MEND A TEAR',
+      'MEND',
+      'one torn cell can hold gear',
+      { param: P_('mend'), step: 1 },
+      { need: 2 },
+    ),
     opt(
       'backpack',
       'green',

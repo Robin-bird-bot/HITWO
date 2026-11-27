@@ -60,6 +60,7 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
             : num(settings.time),
         matchBonus: num(settings.matchBonus),
         missCost: num(settings.missCost),
+        lucky: prepNumber(settings, 'prep.lucky'),
       },
       hikers.map((h) => h.id),
       seed,

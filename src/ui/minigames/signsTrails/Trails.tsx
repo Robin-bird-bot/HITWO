@@ -63,6 +63,7 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
           Object.entries(perHikerCounts(settings, 'prep.bar')).map(([h, n]) => [h, n * 0.5]),
         ),
         extraWidth: prepNumber(settings, 'prep.width'),
+        windbreak: prepNumber(settings, 'prep.windbreak') > 0,
       },
       hikers.map((h) => h.id),
       seed,

@@ -50,7 +50,7 @@ function laneBee(
     vx: across[0]! * speed,
     vy: across[1]! * speed,
     warnAt,
-    activeAt: warnAt + warnFor(),
+    activeAt: warnAt + warnFor(ctx),
     mark,
   };
 }
@@ -201,7 +201,7 @@ export const DIAGONAL: AttackDef = {
           vx: dir.x * speed,
           vy: dir.y * speed,
           warnAt,
-          activeAt: warnAt + warnFor(),
+          activeAt: warnAt + warnFor(ctx),
           // Where this bee's own path comes into the box (the line is wide, so not all at the corner).
           mark: entryMark(b, { x, y }, dir),
         };

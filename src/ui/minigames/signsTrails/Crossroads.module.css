@@ -7,6 +7,17 @@
   pointer-events: none;
 }
 
+/* TRAIL MARKER: the arrow on a post at this crossing (24-challenges-reset.md, section 5). */
+.marker {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  border-radius: 3px;
+  background: rgba(233, 180, 76, 0.9);
+  pointer-events: none;
+}
+
 /* Faint footprints on the trail the hiker came in on. */
 .print {
   position: absolute;

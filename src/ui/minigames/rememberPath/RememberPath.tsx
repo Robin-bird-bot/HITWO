@@ -91,6 +91,7 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
       hikers.map((h) => h.id),
       seed,
       prepNumber(settings, 'prep.fewerSteps'),
+      prepNumber(settings, 'prep.crumbs'),
     ),
   );
   /** Prepare's SLOWER RANGER: each step takes this many times as long. */
@@ -294,6 +295,11 @@ export function RememberPath({ settings, hikers, seed, onDone, still = false }: 
                   alt=""
                   draggable={false}
                 />
+                {game.phase === 'repeat' &&
+                  !isLit &&
+                  game.crumbs.some((t) => sameTile(t, tile)) && (
+                    <span className={styles.crumb} aria-label="Breadcrumbs" />
+                  )}
                 {isLit && !sameTile(tile, at ?? tile) && (
                   <img
                     className={`${ui.sprite} ${styles.print}`}

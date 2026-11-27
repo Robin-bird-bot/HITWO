@@ -113,6 +113,8 @@ export interface DodgeOptions {
   extraLives?: Readonly<Record<string, number>>;
   slower?: number;
   fewerBees?: number;
+  /** SMOKE: every warning lasts this much longer (seconds). */
+  warnExtra?: number;
   shorter?: number;
   sandbags?: boolean;
   antSlow?: number;
@@ -222,6 +224,7 @@ export function newDodge(
     speed: D.levels[rank].speed * (boost ? B.speed : 1) * (1 - (options.slower ?? 0)),
     pace: 1 - (options.slower ?? 0),
     fewerBees: Math.max(0, Math.round(options.fewerBees ?? 0)),
+    warnExtra: Math.max(0, options.warnExtra ?? 0),
     antSlow: Math.max(0, Math.min(0.8, options.antSlow ?? 0)),
     sandbags: options.sandbags ?? false,
     vel: { x: 0, y: 0 },

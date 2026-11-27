@@ -192,14 +192,21 @@ describe('Dodge’s cards', () => {
     cardsOf(POPUPS.dodge!, { animal, tier: 2 }).map((c) => `${c.title}:${c.color}:${c.slots}`);
 
   it('match 24-challenges-reset.md, section 5, by animal; the Woods Monster allows +1 heart only', () => {
+    // SMOKE for every animal (Nov 26 evening): longer warnings; bees also lose 1 a wave.
     expect(titles('bees')).toEqual(['BANDAGES:green:3', 'FOOD:green:2', 'SMOKE:red:1']);
     expect(titles('gunBear')).toEqual([
       'BANDAGES:green:3',
       'FOOD:green:2',
+      'SMOKE:red:1',
       'BEAR SPRAY:red:1',
       'SANDBAGS:red:1',
     ]);
-    expect(titles('ants')).toEqual(['BANDAGES:green:3', 'FOOD:green:2', 'SALT LINE:red:2']);
+    expect(titles('ants')).toEqual([
+      'BANDAGES:green:3',
+      'FOOD:green:2',
+      'SMOKE:red:1',
+      'SALT LINE:red:2',
+    ]);
     const monster = cardsOf(POPUPS.dodge!, { animal: 'monster', tier: 5 });
     expect(monster.map((c) => c.effects.map((e) => e.id))).toEqual([['lives']]);
   });

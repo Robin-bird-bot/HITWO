@@ -241,6 +241,8 @@ export interface TrailMapOptions {
   size?: 'auto' | number;
   time?: 'auto' | 'off' | number;
   signs?: 'auto' | number;
+  /** Prepare PLACE A PIECE: this many more trail tiles start turned right and locked (24, section 5). */
+  placed?: number;
 }
 
 export function newTrailMap(
@@ -265,7 +267,7 @@ export function newTrailMap(
   // If the signs can't all fit on one trail, try again with one fewer.
   for (let signs = wanted; signs >= 0; signs--) {
     for (let attempt = 0; attempt < 200; attempt++) {
-      const board = makeBoard(rng, size, order, tier.locked, signs);
+      const board = makeBoard(rng, size, order, tier.locked + (options.placed ?? 0), signs);
       if (board) {
         return {
           tier: options.tier,

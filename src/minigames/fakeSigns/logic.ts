@@ -47,6 +47,8 @@ export interface FakeSignsOptions {
   showOld?: 'auto' | 'always' | 'never';
   /** The Time per sign setting (seconds; null: none). */
   timePerSign?: number | null;
+  /** Prepare's FIX A SIGN: wrong answers forgiven in the whole game (24-challenges-reset.md, section 5). */
+  fixes?: number;
 }
 
 export type Phase = 'rules' | 'signs' | 'wrong' | 'done';
@@ -74,6 +76,9 @@ export interface FakeSignsState {
   signTime: number;
   /** The last right answer (a short tick) and the last wrong one (the box saying why). */
   lastRight?: { at: number };
+  /** FIX A SIGN: wrong answers still forgiven, and the last one forgiven (a short FIXED). */
+  fixesLeft: number;
+  fixed?: { at: number };
   wrong?: { at: number; said: 'real' | 'fake'; sign: PlannedSign; text: string };
   time: number;
   over: boolean;
@@ -166,6 +171,7 @@ export function newFakeSigns(
     signs: [],
     index: 0,
     signTime: 0,
+    fixesLeft: Math.max(0, options.fixes ?? 0),
     time: 0,
     over: order.length === 0 || !first,
     rng,
@@ -222,7 +228,13 @@ export function answer(s: FakeSignsState, said: 'real' | 'fake' | null): FakeSig
   if (s.over || s.phase !== 'signs' || !s.current) return s;
   const p = s.signs[s.index];
   if (!p) return s;
-  const right = said !== null && (said === 'fake') === p.fake;
+  const correct = said !== null && (said === 'fake') === p.fake;
+  // FIX A SIGN: a wrong answer is forgiven while there's a fix left, and play goes on.
+  const fix = !correct && s.fixesLeft > 0;
+  const marked = fix
+    ? { fixesLeft: s.fixesLeft - 1, fixed: { at: s.time } }
+    : { lastRight: { at: s.time } };
+  const right = correct || fix;
   const played = { ...s.played, [s.current]: (s.played[s.current] ?? 0) + 1 };
   if (!right) {
     const text = said === null ? `OUT OF TIME. ${whyText(p, s.rules)}` : whyText(p, s.rules);
@@ -234,8 +246,7 @@ export function answer(s: FakeSignsState, said: 'real' | 'fake' | null): FakeSig
       wrong: { at: s.time, said: said ?? (p.fake ? 'real' : 'fake'), sign: p, text },
     };
   }
-  if (s.index + 1 < s.signs.length)
-    return { ...s, index: s.index + 1, signTime: 0, lastRight: { at: s.time } };
+  if (s.index + 1 < s.signs.length) return { ...s, ...marked, index: s.index + 1, signTime: 0 };
   // Every sign right: the hiker passes, and a rule is added (up to the cap).
   const rng: RngState = [...s.rng];
   let rules = s.rules;
@@ -248,7 +259,7 @@ export function answer(s: FakeSignsState, said: 'real' | 'fake' | null): FakeSig
     played,
     rules,
     status: { ...s.status, [s.current]: 'passed' },
-    lastRight: { at: s.time },
+    ...marked,
     rng,
   };
   return nextRound(done, rng);

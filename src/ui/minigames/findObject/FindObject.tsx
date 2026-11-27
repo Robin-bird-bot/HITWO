@@ -78,6 +78,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
             ? settings.extraSec
             : F.tiers[tierOf(settings)].extraSecPerRound) + prepNumber(settings, 'prep.extraSec'),
         fewer: prepNumber(settings, 'prep.fewer'),
+        flashlight: prepNumber(settings, 'prep.flashlight') > 0,
       },
       hikers.map((h) => h.id),
       seed,
@@ -168,7 +169,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
   };
 
   const dark = isDark(game.mode);
-  const radius = lightDiameter(game.tier) / 2;
+  const radius = lightDiameter(game) / 2;
   const left = leftToFind(game);
   const risk = game.phase === 'playing' ? atRisk(game) : [];
   const inGame = game.line.length;

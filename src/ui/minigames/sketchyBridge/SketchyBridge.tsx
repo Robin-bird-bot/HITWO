@@ -69,7 +69,8 @@ export function SketchyBridge({ settings, hikers, seed, onDone, still = false }:
         // Prepare (23-minigames-final.md, section 10).
         patch: prepNumber(settings, 'prep.patch'),
         extraZone: prepNumber(settings, 'prep.zone'),
-        lessSway: prepNumber(settings, 'prep.stick') > 0 ? B.lessSway : 0,
+        // FOOD: slower sway (24-challenges-reset.md, section 5).
+        lessSway: prepNumber(settings, 'prep.slower') * B.foodSway,
         harness: prepNumber(settings, 'prep.harness') > 0,
       },
       hikers.map((h) => h.id),

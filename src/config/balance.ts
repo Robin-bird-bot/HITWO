@@ -1324,6 +1324,11 @@ export const BALANCE = {
       /** Rounds in a game (testing tab: 1 to 5); each later round asks for this many more targets. */
       rounds: 3,
       extraTargetsPerRound: 1,
+      /**
+       * Prepare FLASHLIGHT (24-challenges-reset.md, section 5; dark): the
+       * light is this much wider. TODO(wyatt): [+12].
+       */
+      flashlight: 12,
       /** More distractors for each hiker after the first, and for each round after the first. */
       extraDistractorsPerHiker: 3,
       extraDistractorsPerRound: 4,
@@ -1464,6 +1469,8 @@ export const BALANCE = {
     trailBlocks: {
       /** Each hiker's chunk of the energy bar. Running out costs a hiker this much real energy. */
       chunk: 24,
+      /** Prepare SNACK (24-challenges-reset.md, section 5): each makes every chunk this share bigger. TODO(wyatt): [20%]. */
+      snack: 0.2,
       ranOutEnergy: 1,
       /** A swing costs this; a miss costs this (in all); a perfect swing gives this back. */
       swingCost: 2,
@@ -2310,6 +2317,8 @@ export const BALANCE = {
         screeSteer: 0.5,
         screeSlide: 3,
         gustWarnSec: 0.8,
+        /** Prepare WINDBREAK (24-challenges-reset.md, section 5): gusts push this share as hard. TODO(wyatt): [half]. */
+        windbreak: 0.5,
         gustSec: [1.0, 1.5] as const,
         tiers: {
           1: { gustEvery: [6, 8], push: 35, scree: [0, 0] },
@@ -2431,6 +2440,11 @@ export const BALANCE = {
       fallEnergy: 1,
       outSec: 1.2,
       blinkSec: 0.6,
+      /**
+       * Prepare FOOD (24-challenges-reset.md, section 5): each makes the
+       * arrow's swing this share slower. TODO(wyatt): [20%].
+       */
+      foodSwing: 0.2,
       /** The Time setting's first value when it's turned on (testing only; Auto is no timer). */
       testTimeSec: 60,
       /** The top line sits this far above the last path hold (section 2.2). TODO(wyatt): [40–70]. */
@@ -3247,10 +3261,14 @@ export const BALANCE = {
       dart: [16, 28] as const,
       gust: { flapSec: 0.5, pushSec: 0.6, speed: 50, everySec: [3, 6] as const },
       fallCondition: 'injury',
-      /** Prepare (section 10): PATCH THE PLANKS adds this much; FOOD makes the zone this much bigger; the Hiking Stick cuts the sway by this share. */
+      /** Prepare (24-challenges-reset.md, section 5): PATCH THE PLANKS adds this much; ROPE makes the zone this much bigger. */
       patch: 20,
       extraZone: 4,
-      lessSway: 0.25,
+      /**
+       * Prepare FOOD (24-challenges-reset.md, section 5): each cuts the sway
+       * by this share, as the Hiking Stick did (25%) before. TODO(wyatt): [15%].
+       */
+      foodSway: 0.15,
     },
 
     /**
@@ -3411,6 +3429,11 @@ export const BALANCE = {
       /** Every attack is warned this long before it can hit (unless it says otherwise), never less than the minimum. */
       warnSec: 0.6,
       warnMinSec: 0.35,
+      /**
+       * Prepare SMOKE (24-challenges-reset.md, section 5): every warning
+       * lasts this much longer (bees also lose 1 a wave). TODO(wyatt): [0.15 s].
+       */
+      smokeWarnSec: 0.15,
       /** The first attack comes this soon. */
       firstAttackSec: 0.8,
       /** The sprite's speed and its forgiving hitbox (radius). */

@@ -61,6 +61,7 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
               ? showOld
               : 'auto',
         timePerSign: typeof settings.time === 'number' ? settings.time : null,
+        fixes: prepNumber(settings, 'prep.fix'),
       },
       hikers.map((h) => h.id),
       seed,
@@ -91,6 +92,8 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
   const wrong = game.phase === 'wrong' ? game.wrong : undefined;
   const p = wrong ? wrong.sign : game.signs[game.index];
   const ticked = game.lastRight && game.time - game.lastRight.at < F.rightSec;
+  // FIX A SIGN forgave a wrong answer: a short FIXED where the tick goes.
+  const fixedNow = game.fixed && game.time - game.fixed.at < F.wrongSec;
   const answers = pickOf(settings, 'answers') === 'on';
   const word = (id: string) =>
     game.status[id] === 'passed'
@@ -145,6 +148,11 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
             {ticked && !wrong && (
               <span className={q.word} style={{ left: 160, top: 60 }}>
                 ✓
+              </span>
+            )}
+            {fixedNow && !wrong && (
+              <span className={q.word} style={{ left: 140, top: 60 }}>
+                FIXED
               </span>
             )}
             <p className={`${ui.text} ${styles.ask}`}>IS THIS SIGN REAL OR FAKE?</p>

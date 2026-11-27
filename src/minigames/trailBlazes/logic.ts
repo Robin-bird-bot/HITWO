@@ -43,6 +43,8 @@ export interface TrailBlazesOptions {
   /** Prepare: the share slower the trunks scroll, and units more that count as level. */
   slower?: number;
   brighter?: number;
+  /** Prepare LUCKY CHARM: tries more for some hikers (24-challenges-reset.md, section 5). */
+  extraTries?: Readonly<Record<string, number>>;
 }
 
 /** A lit pair: a blaze on each trunk, by index (blaze i sits at the trunk's offset + i × gap). */
@@ -61,6 +63,8 @@ export interface TrailBlazesState {
   pairsNeeded: number;
   level: number;
   tries: number;
+  /** LUCKY CHARM: each hiker's tries more. */
+  extraTries: Readonly<Record<string, number>>;
   clockSec: number;
   turns: Turns;
   /** This hiker's turn. */
@@ -167,6 +171,7 @@ export function newTrailBlazes(
     pace: 1 - Math.max(0, Math.min(0.6, options.slower ?? 0)),
     level: t.level + (options.brighter ?? 0),
     tries: typeof options.tries === 'number' ? options.tries : t.tries,
+    extraTries: options.extraTries ?? {},
     clockSec: t.clockSec,
     turns: newTurns(order),
     matched: 0,
@@ -198,12 +203,17 @@ function finish(s: TrailBlazesState, passed: boolean, rng: RngState): TrailBlaze
   return startTurn(next, rng);
 }
 
+/** A hiker's tries: the game's, and LUCKY CHARM's for them. */
+export const triesOf = (s: Pick<TrailBlazesState, 'tries' | 'extraTries'>, id: string): number =>
+  s.tries + (s.extraTries[id] ?? 0);
+
 /** A miss: a try used (or time off the clock), and a new pair, unless the turn is over. */
 function miss(s: TrailBlazesState, why: 'early' | 'passed', rng: RngState): TrailBlazesState {
   const misses = s.misses + 1;
   const clockLeft = s.mode === 'clock' ? s.clockLeft - TB.missCostSec : s.clockLeft;
   const out = { ...s, misses, clockLeft, lastMiss: { at: s.time, why } };
-  if (s.mode === 'tries' ? misses >= s.tries : clockLeft <= 0) return finish(out, false, rng);
+  const tries = triesOf(s, current(s.turns) ?? '');
+  if (s.mode === 'tries' ? misses >= tries : clockLeft <= 0) return finish(out, false, rng);
   return lightPair(out, rng);
 }
 

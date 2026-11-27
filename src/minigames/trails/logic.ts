@@ -48,6 +48,8 @@ export interface TrailsOptions {
   slower?: number;
   extraBar?: Readonly<Record<string, number>>;
   extraWidth?: number;
+  /** Prepare WINDBREAK (Ridgeline): gusts push half as hard (24-challenges-reset.md, section 5). */
+  windbreak?: boolean;
 }
 
 /** A wind gust on Ridgeline: which way it pushes, when it warns, starts pushing and ends. */
@@ -91,6 +93,8 @@ export interface TrailsState {
   /** Ridgeline: gusts on, the gust under way, and when the next one comes. */
   gusts: boolean;
   gust: Gust | null;
+  /** Prepare WINDBREAK: the gusts push less. */
+  windbreak: boolean;
   nextGustAt: number;
   /** The last one to make it (for "<NAME> MADE IT") and the last one to run out. */
   made?: string;
@@ -162,6 +166,7 @@ export function newTrails(
     phase: 'run',
     phaseLeft: 0,
     gusts: ridge && options.gusts !== false,
+    windbreak: !!options.windbreak,
     gust: null,
     nextGustAt: span(rng, RG.tiers[options.tier].gustEvery),
     time: 0,
@@ -247,7 +252,7 @@ export function tick(s0: TrailsState, dt: number): TrailsState {
       };
     }
     if (gust && s.time >= gust.pushAt && s.time < gust.endAt)
-      push = gust.dir * RG.tiers[s.tier].push;
+      push = gust.dir * RG.tiers[s.tier].push * (s.windbreak ? RG.windbreak : 1);
     if (gust && s.time >= gust.endAt) {
       gust = null;
       nextGustAt = s.time + span(rng, RG.tiers[s.tier].gustEvery);

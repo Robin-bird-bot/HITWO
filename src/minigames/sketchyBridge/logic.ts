@@ -41,7 +41,7 @@ export interface SketchyBridgeOptions {
   tier: Tier;
   /** The bridge's integrity at the start ("auto": [100]). */
   integrity?: number | 'auto';
-  /** Prepare: more integrity (patched planks), a bigger zone, less sway (the Hiking Stick), the Harness. */
+  /** Prepare: more integrity (patched planks), a bigger zone, less sway (FOOD; a share), the Harness. */
   patch?: number;
   extraZone?: number;
   lessSway?: number;
@@ -104,7 +104,7 @@ export function newSketchyBridge(
     retargetAt: 0,
     gust: null,
     nextGustAt: B.gust.everySec[0],
-    sway: t.sway * (1 - (options.lessSway ?? 0)),
+    sway: t.sway * Math.max(0, 1 - (options.lessSway ?? 0)),
     walked: 0,
     crossSec: t.crossSec,
     brokeOn: null,

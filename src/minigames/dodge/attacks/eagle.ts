@@ -161,7 +161,7 @@ export const SWOOP: AttackDef = {
       const warnAt = ctx.time + k * E.swoop.apartSec;
       return {
         kind: 'swoop',
-        ...base(ctx, warnAt, warnAt + warnFor(E.swoop.warnSec)),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx, E.swoop.warnSec)),
         ...path,
         speed: E.swoop.speed * ctx.speed,
       };
@@ -202,7 +202,7 @@ export const FEATHER_FALL: AttackDef = {
       const warnAt = ctx.time + (k * E.feather.spreadSec) / n;
       return {
         kind: 'feather',
-        ...base(ctx, warnAt, warnAt + warnFor()),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx)),
         x: between(ctx.rng, e.left + 8, e.right - 8),
         y0: e.top - 6,
         phase: nextFloat(ctx.rng) * 2 * Math.PI,
@@ -233,7 +233,7 @@ export const TALON_DROP: AttackDef = {
     const stopAt = ctx.time + E.talon.followSec;
     const part: TalonPart = {
       kind: 'talon',
-      ...base(ctx, ctx.time, stopAt + warnFor(E.talon.strikeSec)),
+      ...base(ctx, ctx.time, stopAt + warnFor(ctx, E.talon.strikeSec)),
       x: ctx.pos.x,
       y: ctx.pos.y,
       stopAt,
@@ -261,7 +261,7 @@ export const WING_GUST: AttackDef = {
   claudesIdea: true,
   movesAcross: true,
   start(ctx) {
-    const activeAt = ctx.time + warnFor(E.gust.warnSec);
+    const activeAt = ctx.time + warnFor(ctx, E.gust.warnSec);
     const part: GustPart = {
       kind: 'gust',
       ...base(ctx, ctx.time, activeAt),
@@ -333,7 +333,7 @@ export const HAIR_TOSS: AttackDef = {
       const warnAt = ctx.time + k * E.hair.apartSec;
       return {
         kind: 'hair',
-        ...base(ctx, warnAt, warnAt + warnFor()),
+        ...base(ctx, warnAt, warnAt + warnFor(ctx)),
         from,
         bend,
         to,
@@ -372,7 +372,7 @@ export const COMB_OVER: AttackDef = {
     const e = edges(ctx.box);
     const part: CombPart = {
       kind: 'comb',
-      ...base(ctx, ctx.time, ctx.time + warnFor(E.comb.warnSec)),
+      ...base(ctx, ctx.time, ctx.time + warnFor(ctx, E.comb.warnSec)),
       side: coin(ctx.rng) ? 'left' : 'right',
       gapAt: between(ctx.rng, e.top + E.comb.gap, e.bottom - E.comb.gap),
       speed: E.comb.speed * ctx.speed,
@@ -420,7 +420,7 @@ export const OIL_BARRELS: AttackDef = {
         spot = spotIn(ctx.rng, ctx.box, 14);
       taken.push(spot);
       const warnAt = ctx.time + k * 0.2;
-      const activeAt = warnAt + warnFor(E.oil.landSec);
+      const activeAt = warnAt + warnFor(ctx, E.oil.landSec);
       parts.push({
         kind: 'barrel',
         ...base(ctx, warnAt, activeAt),

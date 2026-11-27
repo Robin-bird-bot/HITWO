@@ -21,7 +21,7 @@
  * Pure and seeded.
  */
 import { BALANCE } from '../../config/balance';
-import { pick, seedRng } from '../../engine/rng';
+import { pick, seedRng, shuffle } from '../../engine/rng';
 import type { RngState } from '../../engine/types';
 import { quickResult } from '../quick/turns';
 import type { MinigameResult, Tier } from '../types';
@@ -62,6 +62,8 @@ export interface CrossroadsOptions {
   newPerHiker?: boolean;
   /** Time per turn (seconds; null: none). */
   turnSec?: number | null;
+  /** Prepare's TRAIL MARKER: this many crossings show their arrow when you get there (24, section 5). */
+  markers?: number;
 }
 
 export type CrossroadsPhase = 'study' | 'walk' | 'step' | 'made' | 'done';
@@ -88,6 +90,8 @@ export interface CrossroadsState {
   bump?: { dir: Dir; at: number };
   /** After a wrong turn: who, how many steps they got right, and where they went. */
   missed?: { by: string; right: number; went: Dir | null; way: Dir };
+  /** TRAIL MARKER: the steps whose crossing shows its arrow (never the first). */
+  marked: number[];
   time: number;
   over: boolean;
   rng: RngState;
@@ -102,9 +106,14 @@ export function newCrossroads(
 ): CrossroadsState {
   const rng = seedRng(seed);
   const count = typeof options.arrows === 'number' ? options.arrows : C.arrows[options.tier];
+  const arrows = makeArrows(rng, count);
+  // TRAIL MARKER: crossings after the first, picked by the run (no draw when there are none).
+  const markers = Math.max(0, Math.min(count - 1, options.markers ?? 0));
+  const marked = markers ? shuffle(rng, arrows.map((_, k) => k).slice(1)).slice(0, markers) : [];
   return {
     tier: options.tier,
-    arrows: makeArrows(rng, count),
+    arrows,
+    marked,
     count,
     newPerHiker: options.newPerHiker ?? false,
     studySec: options.studySec ?? null,
