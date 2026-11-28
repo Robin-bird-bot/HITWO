@@ -1,165 +1,337 @@
-/* An item card's front (docs/mockups/ItemCard.dc.html). Sizes are set inline from the card's width. */
+/*
+ * The TrailMate item card (docs/design/31-trailmate-item-cards.md; mock
+ * docs/mockups/item-cards/cards.html). Sizes are set inline from the card's
+ * width; --k is the card's scale (width / 220), for the trims and shadows.
+ * --l, --d and --a are the type's shell light, dark and bright colors.
+ */
 
-.card {
+.card,
+.mini {
   position: relative;
   flex: none;
-  overflow: hidden;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.32);
-  font-family: var(--font-body);
-  color: #f1eadb;
-  background: #2b1d12;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, var(--l), var(--d));
+  color: #1d2918;
+  user-select: none;
 }
 
-.front {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  -webkit-user-drag: none;
+.card {
+  --k: 1;
+  box-shadow:
+    inset 0 calc(-6px * var(--k)) 0 rgba(0, 0, 0, 0.2),
+    inset 0 calc(3px * var(--k)) 0 rgba(255, 255, 255, 0.35),
+    0 calc(14px * var(--k)) calc(26px * var(--k)) rgba(0, 0, 0, 0.55);
 }
 
-/* The cloud window: the type's rays, faded out at the edges. */
-.window {
-  position: absolute;
-  overflow: hidden;
-  -webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%);
-  mask-image: radial-gradient(ellipse at center, #000 35%, transparent 72%);
+.mini {
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2);
 }
 
-.rays {
-  position: absolute;
-  opacity: 0.4;
-  display: block;
-  animation: spin 90s linear infinite;
+/* Tier II silver, III gold, IV a slowly shifting rainbow (section 5). */
+.card[data-tier='2'],
+.card[data-tier='3'],
+.card[data-tier='4'] {
+  box-shadow:
+    inset 0 calc(-6px * var(--k)) 0 rgba(0, 0, 0, 0.2),
+    inset 0 calc(3px * var(--k)) 0 rgba(255, 255, 255, 0.35),
+    0 0 0 calc(3px * var(--k)) var(--trim-light),
+    0 0 0 calc(5px * var(--k)) var(--trim-dark),
+    0 0 calc(22px * var(--k)) calc(4px * var(--k)) var(--trim-glow),
+    0 calc(14px * var(--k)) calc(26px * var(--k)) rgba(0, 0, 0, 0.55);
 }
 
-@keyframes spin {
+.mini[data-tier='2'],
+.mini[data-tier='3'],
+.mini[data-tier='4'] {
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.2),
+    0 0 0 1.5px var(--trim-light),
+    0 0 0 2.5px var(--trim-dark);
+}
+
+[data-tier='2'] {
+  --trim-light: #d9e2ea;
+  --trim-dark: #6e7a84;
+  --trim-glow: rgba(220, 230, 240, 0.35);
+  --bracket: #f1f5f8;
+}
+
+[data-tier='3'] {
+  --trim-light: #ffe08a;
+  --trim-dark: #a8741a;
+  --trim-glow: rgba(255, 214, 120, 0.4);
+  --bracket: #ffe08a;
+}
+
+/* Tier IV: the trim's hue turns slowly (only the trim: the screen keeps its greens). */
+@property --trim-hue {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+[data-tier='4'] {
+  --trim-light: hsl(var(--trim-hue) 75% 78%);
+  --trim-dark: hsl(calc(var(--trim-hue) + 120deg) 45% 40%);
+  --trim-glow: hsl(var(--trim-hue) 80% 70% / 0.45);
+  --bracket: hsl(var(--trim-hue) 75% 78%);
+  animation: rainbow 8s linear infinite;
+}
+
+@keyframes rainbow {
   to {
-    transform: rotate(360deg);
+    --trim-hue: 360deg;
   }
 }
 
-.art {
+/* The buttons on its sides and the speaker slot. */
+.nub {
   position: absolute;
-  object-fit: contain;
+  background: #1c201e;
+}
+
+.speaker {
+  position: absolute;
+  left: 50%;
+  border-radius: 3px;
+  background: #1c201e;
+  opacity: 0.85;
+}
+
+/* The dark bezel, and the LCD screen in it. */
+.face {
+  position: absolute;
+  background: #1c201e;
+  box-shadow: inset 0 0 0 2px #0e120e;
+}
+
+.screen,
+.miniScreen {
+  position: absolute;
+  overflow: hidden;
+  background-color: #bac995;
+}
+
+.screen {
+  background-image:
+    linear-gradient(rgba(82, 101, 63, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82, 101, 63, 0.14) 1px, transparent 1px);
+}
+
+/* Scanlines, a soft vignette and a glare from the top left. */
+.screen::after,
+.miniScreen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 45%, transparent 60%, rgba(0, 0, 0, 0.22) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 40%);
+}
+
+.miniScreen::after {
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
+}
+
+/* The top strip: the type's icon and name, the slot, the tier chip. */
+.strip {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  background: #1d2918;
+  box-shadow: 0 1.5px 0 #111a10;
+  color: var(--a);
+  font-family: var(--font-pixel);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.stripIcon {
+  flex: none;
+  background: var(--a);
+}
+
+.slot {
+  color: #a0b37d;
+}
+
+.chip {
+  margin-left: auto;
+  border-radius: 3px;
+  background: linear-gradient(160deg, #f1f5f8, #9aa8b4);
+  color: #1d2918;
+  letter-spacing: 0.08em;
+}
+
+.chip + .chip {
+  margin-left: 0;
+}
+
+/* Corner brackets around the art, in the type's bright color (the tier's from Tier II). */
+.brackets {
+  position: absolute;
+  pointer-events: none;
+}
+
+.brackets i {
+  position: absolute;
+  box-sizing: border-box;
+  border: 0 solid var(--bracket, var(--a));
+  filter: drop-shadow(0 0 1px #111a10) drop-shadow(0 0 1px #111a10);
+}
+
+.brackets i:nth-child(1) {
+  left: 0;
+  top: 0;
+  border-right-width: 0 !important;
+  border-bottom-width: 0 !important;
+}
+
+.brackets i:nth-child(2) {
+  right: 0;
+  top: 0;
+  border-left-width: 0 !important;
+  border-bottom-width: 0 !important;
+}
+
+.brackets i:nth-child(3) {
+  left: 0;
+  bottom: 0;
+  border-right-width: 0 !important;
+  border-top-width: 0 !important;
+}
+
+.brackets i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-left-width: 0 !important;
+  border-top-width: 0 !important;
+}
+
+/* The art: green pixels drawn crisp; a Present's wrapping in color; the type's icon until then. */
+.art,
+.present,
+.fallback {
+  position: absolute;
   display: block;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
   -webkit-user-drag: none;
 }
 
-.tier {
-  position: absolute;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-family: var(--font-pixel);
-  line-height: 1;
-  letter-spacing: 0.08em;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 0 rgba(20, 16, 12, 0.85)) drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
-  pointer-events: none;
+.art {
+  image-rendering: pixelated;
 }
 
-/* A Tier 2+ or Tier 3 Present's tag, where the tier numeral usually sits. */
-.gradeTag {
+.present {
+  object-fit: contain;
+  filter: drop-shadow(0 3px 2px rgba(17, 26, 16, 0.4));
+}
+
+.fallback {
+  background: #52653f;
+  opacity: 0.7;
+}
+
+.name {
   position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  text-align: center;
   font-family: var(--font-pixel);
-  line-height: 1.1;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
+  color: #1d2918;
   white-space: nowrap;
-  color: #2b1d12;
-  background: linear-gradient(160deg, #ffe08a, #d79a1e);
-  box-shadow: 0 2px 0 rgba(20, 16, 12, 0.6);
-  pointer-events: none;
 }
 
 .text {
   position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   text-align: center;
+  font-family: var(--font-lcd);
+  line-height: 1.18;
+  color: #2b3a23;
 }
 
-.name {
-  font-family: var(--font-pixel);
-  line-height: 1.05;
-  letter-spacing: 0.04em;
-  color: #fff3e3;
-}
-
-.type {
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.effect {
-  line-height: 1.35;
-  color: #e9dfcc;
-}
-
-.spacer {
-  flex: 1;
-}
-
+/* The bottom row: Quality and its diamonds, and the counter. */
 .bottom {
-  align-self: stretch;
+  position: absolute;
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
-  gap: 6px;
-}
-
-.meter {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.right {
   align-items: flex-end;
-}
-
-.tiny {
-  letter-spacing: 0.08em;
-  color: #c9b9a0;
-}
-
-.diamonds,
-.pips {
-  display: flex;
-  align-items: center;
-}
-
-.diamond {
-  transform: rotate(45deg);
-}
-
-.pip {
-  flex: none;
-}
-
-.noQuality {
-  color: #a8977d;
-}
-
-.meta {
   font-family: var(--font-pixel);
-  color: #f1eadb;
+  letter-spacing: 0.12em;
+  color: #3c4e2f;
+  line-height: 1.2;
 }
 
-.compactPips {
+.diamonds {
+  display: flex;
+}
+
+.diamonds i {
+  transform: rotate(45deg);
+  box-shadow: inset 0 0 0 1.5px #52653f;
+}
+
+.diamonds i[data-on] {
+  background: #1d2918;
+  box-shadow: none;
+}
+
+.count {
+  text-align: right;
+}
+
+/* The LEDs under the screen: lit for what's left, rings for what might be. */
+.leds {
   position: absolute;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.leds i {
+  flex: none;
+  border-radius: 50%;
+  background: #1c201e;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+.leds i[data-on] {
+  background: #b8ffc8;
+  box-shadow:
+    0 0 0 1.5px #2a7a3e,
+    0 0 7px 2px rgba(107, 255, 138, 0.85);
+}
+
+.leds i[data-may] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgba(28, 32, 30, 0.8);
+}
+
+/* A use spent: the LED flickers twice and goes dark. */
+.leds i[data-spent] {
+  animation: spent 0.5s steps(1) 1;
+}
+
+@keyframes spent {
+  0%,
+  50% {
+    background: #b8ffc8;
+    box-shadow: 0 0 7px 2px rgba(107, 255, 138, 0.85);
+  }
+
+  25%,
+  75% {
+    background: #1c201e;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-tier='4'],
+  .leds i[data-spent] {
+    animation: none;
+  }
 }

@@ -1,0 +1,139 @@
+/*
+ * The TrailMate card back, a walkie-talkie's (31-trailmate-item-cards.md,
+ * section 3; mock: cards.html, .gb). Sizes are inline from the width; --k is
+ * width / 220; --l and --d are the type's shell colors.
+ */
+
+.back {
+  --k: 1;
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, var(--l), var(--d));
+  box-shadow:
+    inset 0 calc(-6px * var(--k)) 0 rgba(0, 0, 0, 0.2),
+    inset 0 calc(3px * var(--k)) 0 rgba(255, 255, 255, 0.35),
+    0 calc(14px * var(--k)) calc(26px * var(--k)) rgba(0, 0, 0, 0.55);
+}
+
+/* The rubber rim, all the way round inside the edge. */
+.back::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 calc(6px * var(--k)) rgba(28, 32, 30, 0.92);
+  pointer-events: none;
+}
+
+.nub,
+.speaker {
+  position: absolute;
+  background: #1c201e;
+}
+
+.speaker {
+  left: 50%;
+  border-radius: 3px;
+  opacity: 0.85;
+}
+
+/* Grip ridges down both sides. */
+.grip {
+  position: absolute;
+  border-radius: 5px;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.35) 0 calc(3px * var(--k)),
+    transparent calc(3px * var(--k)) calc(7px * var(--k))
+  );
+}
+
+.screw {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #f5f5f5, #8a8f8c 60%, #3a3d3b);
+}
+
+.screw::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 44%;
+  height: 16%;
+  background: #3a3d3b;
+  transform: rotate(40deg);
+}
+
+/* The logo: the type's icon embossed into the shell, three layers of the same shape. */
+.logo {
+  position: absolute;
+  left: 50%;
+}
+
+.logo i {
+  position: absolute;
+  inset: 0;
+}
+
+.hi {
+  background: rgba(255, 255, 255, 0.45);
+  transform: translate(calc(1.5px * var(--k)), calc(1.5px * var(--k)));
+}
+
+.lo {
+  background: rgba(0, 0, 0, 0.42);
+  transform: translate(calc(-1px * var(--k)), calc(-1px * var(--k)));
+}
+
+.mid {
+  background: var(--d);
+  filter: brightness(0.92);
+}
+
+.word,
+.kind {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  line-height: 1;
+}
+
+.word {
+  letter-spacing: 0.33em;
+  color: var(--d);
+  text-shadow:
+    1px 1px 0 rgba(255, 255, 255, 0.4),
+    -1px -1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.kind {
+  letter-spacing: 0.37em;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* The speaker grille: a recessed panel with five dark slots. */
+.grille {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow:
+    inset 0 3px 4px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.grille i {
+  display: block;
+  width: 78%;
+  background: #1c201e;
+  box-shadow:
+    inset 0 2px 2px #000,
+    0 1px 0 rgba(255, 255, 255, 0.35);
+}

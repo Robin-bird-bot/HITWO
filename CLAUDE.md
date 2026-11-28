@@ -109,6 +109,7 @@ Fonts (in `assets/fonts/`):
 - **Edit Undo Dot:** big stat readouts.
 - **Game Quotes:** the `?` and `!` glyphs on Wild and Choice cards, ×2/×3/+N badges, and other punchy callouts. Wyatt's license covers web use.
 - **DM Sans** (Google Fonts): body text.
+- **Pixelify Sans** (`@fontsource/pixelify-sans`): the text on the TrailMate item cards only (`31-trailmate-item-cards.md`).
 
 Which font for what:
 - **Edit Undo** for short text people read at a glance: names (including item card names), labels, buttons, numbers, and all shopkeeper or ranger dialogue.

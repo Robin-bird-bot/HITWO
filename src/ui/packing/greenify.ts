@@ -103,33 +103,35 @@ export function greenify(img: HTMLImageElement, px = GREEN_PX): string {
 
 const made = new Map<string, Promise<string>>();
 
-/** The greens version of a picture by URL, made once. */
-export function greenArt(src: string): Promise<string> {
-  let p = made.get(src);
+/** The greens version of a picture by URL at a size (the packing machine's by default), made once. */
+export function greenArt(src: string, px = GREEN_PX): Promise<string> {
+  const key = `${px}:${src}`;
+  let p = made.get(key);
   if (!p) {
     p = new Promise((resolve) => {
       const img = new Image();
-      img.onload = () => resolve(greenify(img));
+      img.onload = () => resolve(greenify(img, px));
       img.onerror = () => resolve('');
       img.src = src;
     });
-    made.set(src, p);
+    made.set(key, p);
   }
   return p;
 }
 
 /** The greens version of a picture, once it's made (null until then). */
-export function useGreenArt(src: string | undefined): string | null {
-  const [url, setUrl] = useState<{ src: string; url: string } | null>(null);
+export function useGreenArt(src: string | undefined, px = GREEN_PX): string | null {
+  const [url, setUrl] = useState<{ key: string; url: string } | null>(null);
+  const key = src ? `${px}:${src}` : '';
   useEffect(() => {
     if (!src) return;
     let live = true;
-    void greenArt(src).then((u) => {
-      if (live) setUrl({ src, url: u });
+    void greenArt(src, px).then((u) => {
+      if (live) setUrl({ key: `${px}:${src}`, url: u });
     });
     return () => {
       live = false;
     };
-  }, [src]);
-  return url && url.src === src && url.url ? url.url : null;
+  }, [src, px]);
+  return url && url.key === key && url.url ? url.url : null;
 }

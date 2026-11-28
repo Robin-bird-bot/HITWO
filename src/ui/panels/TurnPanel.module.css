@@ -398,9 +398,21 @@ button.itemCard:focus-visible > * {
   color: #6f6a60;
 }
 
+/* An empty bag slot: a dark recess for a TrailMate card (31-trailmate-item-cards.md, section 6). */
+.bagRow .empty {
+  border: none;
+  background: #0d130c;
+  box-shadow: inset 0 0 0 2px #2a302c;
+  border-radius: 10px;
+}
+
 /* Slots an item adds: a gold dashed outline and the item's badge. */
 .empty[data-from-item='true'] {
   border-color: rgba(233, 180, 76, 0.7);
+}
+
+.bagRow .empty[data-from-item='true'] {
+  box-shadow: inset 0 0 0 2px rgba(233, 180, 76, 0.7);
 }
 
 .slotBadge {
