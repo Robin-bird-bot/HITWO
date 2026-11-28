@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { sfx } from './audio/engine';
 import { useAmbience } from './audio/useAmbience';
+import { useMusic } from './audio/useMusic';
+import { usePackingLook } from './ui/packing/packingSettings';
 import { DEFAULT_PARTY } from './content/roster';
 import { TEST_HIKERS } from './content/testHikers';
 import {
@@ -84,6 +86,7 @@ function Screens() {
     null,
   );
   const skipPacking = useSkipPacking();
+  const packingLook = usePackingLook();
   // The title's evening forest; the game screen sets its own; loading plays
   // where the party is going (at half, 35-ui-overhaul.md, section 9).
   useAmbience(
@@ -94,6 +97,19 @@ function Screens() {
         : screen === 'game' && game
           ? null
           : { place: 'none' },
+  );
+
+  // The screen's music (32-audio-system.md, section 5); the hike and minigames set their own.
+  useMusic(
+    screen === 'title'
+      ? { place: 'title' }
+      : screen === 'select'
+        ? { place: 'select' }
+        : screen === 'pack'
+          ? { place: 'packing', look: packingLook }
+          : screen === 'loading'
+            ? { place: 'loading' }
+            : null,
   );
 
   if (hash.startsWith('#debug-map')) return <DebugMap hash={hash} />;

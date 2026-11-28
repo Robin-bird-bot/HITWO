@@ -9,9 +9,12 @@ import { ActionWheel, WheelCard } from './ActionWheel';
 import wheelStyles from './ActionWheel.module.css';
 import { wheelActions } from './wheel';
 import { useActionsLook } from '../app/lookSettings';
-import { sfx } from '../../audio/engine';
+import { audio, sfx } from '../../audio/engine';
 import { useGameSounds } from '../../audio/useGameSounds';
 import { useAmbience } from '../../audio/useAmbience';
+import { MUSIC_LAYER, useMusic } from '../../audio/useMusic';
+import { dbToGain } from '../../audio/music';
+import { NIGHT_GROUP } from '../../audio/gameSounds';
 import { MAP_STYLE, u } from '../../config/mapStyle';
 import { landRect } from '../map/illustrated/land/model';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -1248,6 +1251,38 @@ export function GameScreen({
     }
   }, [target, view, state.sectionIndex, shownSection, state.section.biome, state.station]);
   const stationShown = view === 'station' ? (state.station ? state : stationState) : null;
+
+  // The music (32-audio-system.md, section 5): the biome's piece on the map (its
+  // day, night or rain version), the station's, or the hike's end; a Wonder, a
+  // night event or a loading screen over it; quieter under a window.
+  useMusic(
+    view === 'over'
+      ? { place: state.summit ? 'summit' : 'over' }
+      : view === 'station'
+        ? { place: 'station' }
+        : {
+            place: 'trail',
+            biome: section.biome,
+            night: state.phase === 'night',
+            weather: state.weather.today,
+          },
+    MUSIC_LAYER.hike,
+  );
+  useMusic(
+    loadingBiome
+      ? { place: 'loading' }
+      : wonderOpen && !state.challenge
+        ? { place: 'wonder' }
+        : nightShown
+          ? { place: 'nightEvent', group: NIGHT_GROUP[nightShown.creatureId] ?? 'nuisance' }
+          : null,
+    MUSIC_LAYER.window,
+  );
+  const musicUnder = windowOpen && view === 'map';
+  useEffect(() => {
+    audio.duck('music', 'window', musicUnder ? dbToGain(BALANCE.audio.music.duckDb.window) : 1);
+  }, [musicUnder]);
+  useEffect(() => () => audio.duck('music', 'window', 1), []);
 
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
