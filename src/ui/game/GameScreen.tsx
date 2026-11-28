@@ -739,12 +739,18 @@ export function GameScreen({
    * Takes a scavenge card. No result window (Nov 14 update): the card slides
    * from where it lay into the hiker's pack, and a small label floats up there.
    */
+  const [scavLeaving, setScavLeaving] = useState<GameState['scavenge'] | null>(null);
   const takeCard = (action: Extract<Action, { type: 'scavengeTake' }>) => {
     const open = state.scavenge;
     const card = open?.cards[action.card];
     // Where the card lies now, before the window closes.
     const at = document.querySelector(`[data-scav-card="${action.card}"]`)?.getBoundingClientRect();
     if (!dispatch(action) || !card || !open) return;
+    // The window stays a moment as the cards left over fall away (35-ui-overhaul.md, section 5).
+    if (!gameStore.getState()?.scavenge) {
+      setScavLeaving(open);
+      window.setTimeout(() => setScavLeaving(null), BALANCE.ui.overhaul.deal.leaveMs);
+    }
     const event = gameStore.getState()?.log.findLast((e) => e.kind === 'scavenge');
     if (event?.kind !== 'scavenge') return;
     setFlies((f) => [
@@ -1648,9 +1654,12 @@ export function GameScreen({
                   onDone={() => setFlies((all) => all.filter((x) => x.key !== f.key))}
                 />
               ))}
-              {state.scavenge && (
+              {(state.scavenge || scavLeaving) && (
                 <ScavengeWindow
-                  state={state}
+                  state={
+                    state.scavenge || !scavLeaving ? state : { ...state, scavenge: scavLeaving }
+                  }
+                  leaving={!state.scavenge}
                   simple={simple}
                   onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
                   onCancel={() => dispatch({ type: 'scavengeCancel' })}

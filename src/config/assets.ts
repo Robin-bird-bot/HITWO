@@ -94,6 +94,15 @@ export const ASSETS = {
     /** The drink's cup (31-trailmate-item-cards.md, section 4), white, 40 × 56. */
     drinkIcon: asset('item-cards/drink-cup.svg'),
   },
+  /** The UI overhaul's art (Phase 12, public/assets/ui/). */
+  ui: {
+    logo: asset('ui/logo-4-mint-grown-over.png'),
+    workbench: asset('ui/workbench.svg'),
+    doorLeft: asset('ui/station-door-left.svg'),
+    doorRight: asset('ui/station-door-right.svg'),
+    /** The deer on the Wildlife poster (from the prototype). */
+    deer: asset('ui/deer.png'),
+  },
   /** Item art (Nov 7), 384 px copies of assets/items, by the item's `art` name. */
   itemArt: (art: string) => asset(`items/${art}.png`),
   /** A ranger station shopkeeper (465×800, anchored at the bottom). */

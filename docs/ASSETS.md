@@ -152,7 +152,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 - **Sounds** (`public/assets/audio/`): `manifest.json` lists every sound id (342) with its files, bus and status; `sfx/` has each file as `.ogg` and `.mp3` (410 files). They were made in code by `tools/audio/` (Python), some cut from Pixabay recordings (credits in `tools/audio/rec/CREDITS.md`; the recordings themselves aren't in the repo). The sound list is `docs/design/33-sound-list.md`.
 - **Music** (`public/assets/audio/music/`): none yet. Wyatt is making the 30 songs in Suno (`docs/design/34-music.md`); each piece drops into the music manifest.
-- **UI art** (`public/assets/ui/`): the title logo (`logo-4-mint-grown-over.png`, 2200 × 940, Wyatt's mint lettering grown over, for now), the workbench top (`workbench.svg`) and the station's front doors (`station-door-left.svg`, `station-door-right.svg`). Wyatt's stone square, the reference for the Mountain brush cover, is with the mockups (`docs/mockups/ui-overhaul/stone-square-wyatt.png`). The poster scenes, brush covers and loading-screen sprites are drawn in code, ported from the prototype.
+- **UI art** (`public/assets/ui/`): the title logo (`logo-4-mint-grown-over.png`, 2200 × 940, Wyatt's mint lettering grown over, for now), the workbench top (`workbench.svg`) and the station's front doors (`station-door-left.svg`, `station-door-right.svg`). Wyatt's stone square, the reference for the Mountain brush cover, is with the mockups (`docs/mockups/ui-overhaul/stone-square-wyatt.png`). The deer on the Wildlife scavenge poster (`deer.png`) is the prototype's. The poster scenes, brush covers and loading-screen sprites are drawn in code, ported from the prototype.
 
 ## Still missing
 

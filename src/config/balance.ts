@@ -4866,6 +4866,22 @@ export const BALANCE = {
        * [28 ms] apart; the rest are first guesses.
        */
       wheel: { radius: 136, button: 60, staggerMs: 28, lift: 7, bubbleRoom: 96 },
+      /**
+       * Scavenging (section 5): each card lands with a random tilt (± degrees)
+       * and height (± px); a flip pops over this long (ms); the NEEDED ribbon
+       * shows this long after the flip (ms); after a take, the window stays
+       * this long (ms) while the rest fall away. TODO(wyatt): [±4°], [±8 px]
+       * (9 stage px), [0.38 s]; the ribbon's 0.26 s and the 0.8 s are from
+       * the prototype.
+       */
+      deal: { tiltDeg: 4, heightPx: 9, popMs: 380, ribbonMs: 260, leaveMs: 800 },
+      /**
+       * The brush reveal: the cover's canvas size, the brush's width on it
+       * (the prototype's 64 px on its 316 px canvas), a brushing sound every
+       * so many ms of movement, and the share that has to be clear before the
+       * rest blows away. TODO(wyatt): [64 px], [110 ms], [50%].
+       */
+      brush: { canvasPx: 316, brushPx: 64, soundMs: 110, clearShare: 0.5 },
     },
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

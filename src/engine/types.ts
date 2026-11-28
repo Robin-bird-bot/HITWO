@@ -1004,6 +1004,12 @@ export type Action =
    */
   | { type: 'foundPlace'; name: string }
   /**
+   * A favorite starred or unstarred (35-ui-overhaul.md, section 6): a recipe
+   * (`bp:<item>` or `basic:<type>:<tier>`) or a resource. The party's, saved
+   * with the hike; it changes no rules.
+   */
+  | { type: 'star'; what: 'recipe' | 'resource'; id: string; on: boolean }
+  /**
    * Takes one option of the open trait pick (a level-up or an Old Photo). A
    * trait with no empty slot that fits replaces the trait in `replaceSlot`.
    */
@@ -1718,6 +1724,8 @@ export interface GameState {
   usedCards: string[];
   /** The challenge waiting on the party, if any. Nothing else can happen until it's done. */
   challenge?: OpenChallenge;
+  /** The party's starred recipes and resources (35-ui-overhaul.md, section 6). UI only. */
+  starred?: { recipes: string[]; resources: string[] };
   /** Tiles landed on while a challenge was open (a hiker swept onto one): they open next. */
   challengeQueue?: QueuedReveal[];
   /** Debug only: show the rolled numbers in the challenge pop-up. */

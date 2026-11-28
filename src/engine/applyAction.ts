@@ -126,6 +126,8 @@ export class InvalidActionError extends Error {
 export function validateAction(state: GameState, action: Action): string | null {
   // The illustrated map finding a place is only a look: nothing waits on it, and it waits on nothing.
   if (action.type === 'foundPlace') return validateFound(state, action) ?? null;
+  // Stars are favorites, any time: they change no rules.
+  if (action.type === 'star') return null;
   // Nobody can act any more (the debug panel still works).
   if (action.type !== 'debug' && isHikeOver(state)) return 'The hike is over.';
   // An open scavenge waits for a card before anything else happens.
@@ -343,6 +345,14 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'foundPlace':
       applyFound(draft, action);
       break;
+    case 'star': {
+      const starred = (draft.starred ??= { recipes: [], resources: [] });
+      const list = action.what === 'recipe' ? starred.recipes : starred.resources;
+      const at = list.indexOf(action.id);
+      if (action.on && at < 0) list.push(action.id);
+      if (!action.on && at >= 0) list.splice(at, 1);
+      break;
+    }
     case 'buy':
       applyBuy(draft, action);
       break;
