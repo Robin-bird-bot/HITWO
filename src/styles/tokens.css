@@ -37,6 +37,10 @@
   --text: #f1eadb;
   --text-muted: #c9c2b2;
   --text-faint: #9c9585;
+  /* A faint fill and line on a panel, and red words; paper tags switch them. */
+  --fill: rgba(255, 255, 255, 0.07);
+  --line: rgba(255, 255, 255, 0.16);
+  --warn-text: #f39a86;
 
   /* Accents */
   --gold: #e9b44c;

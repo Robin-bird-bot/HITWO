@@ -18,6 +18,9 @@
   --text: var(--ink);
   --text-muted: var(--ink-2);
   --text-faint: var(--ink-3);
+  --fill: rgba(43, 37, 32, 0.07);
+  --line: rgba(43, 37, 32, 0.32);
+  --warn-text: #a8401f;
   --track: var(--paper-2);
   --track-border: 1.5px solid var(--ink);
   background: var(--paper);

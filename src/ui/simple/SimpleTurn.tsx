@@ -51,6 +51,8 @@ interface SimpleTurnProps {
   group?: readonly HikerId[];
   /** A tapped usable badge: the Abilities panel opens at it. */
   focusAbility?: AbilityFocus | undefined;
+  /** The action wheel is on: the actions and abilities are on the wheel (35, section 4). */
+  wheel?: boolean;
 }
 
 export function SimpleTurn({
@@ -70,6 +72,7 @@ export function SimpleTurn({
   onInfoboard,
   group,
   focusAbility,
+  wheel = false,
 }: SimpleTurnProps) {
   const actions = simpleActions(state, hiker, group);
   // Why a red action is stopped, after tapping it.
@@ -87,6 +90,7 @@ export function SimpleTurn({
         id="turn"
         movable
         as="aside"
+        paper
         label="selected hiker's turn"
         style={{ left: 1240, top: 72, width: 344, maxHeight: 832 }}
         title={<span className={styles.heading}>{hiker.name.toUpperCase()}’S TURN</span>}
@@ -95,7 +99,7 @@ export function SimpleTurn({
         <div className={styles.scroll}>
           {hiker.status !== 'active' ? (
             <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
-          ) : (
+          ) : wheel ? null : (
             (slot ??
             (actions.length ? (
               <div className={styles.actions}>
@@ -124,9 +128,9 @@ export function SimpleTurn({
               <p className={styles.nothing}>{nothingToDoReason(state, hiker)}</p>
             )))
           )}
-          {!slot && whyText && <p className={styles.why}>{whyText}</p>}
-          {note && <p className={styles.note}>{note}</p>}
-          {hiker.status === 'active' && hasAbilities && (
+          {!wheel && !slot && whyText && <p className={styles.why}>{whyText}</p>}
+          {!wheel && note && <p className={styles.note}>{note}</p>}
+          {!wheel && hiker.status === 'active' && hasAbilities && (
             <Abilities
               key={focusAbility?.at ?? 0}
               state={state}

@@ -1,0 +1,224 @@
+/*
+ * The action wheel (35-ui-overhaul.md, section 4; the prototype's `#wheel`,
+ * `.wb` and `#bubble`). Stage pixels.
+ */
+.wheel {
+  position: absolute;
+  z-index: 20;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.button {
+  position: absolute;
+  left: -30px;
+  top: -30px;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-3);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0.62;
+  transition:
+    transform 0.42s cubic-bezier(0.3, 1.6, 0.5, 1),
+    opacity 0.2s,
+    background 0.15s;
+}
+
+.button[data-ready] {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.button[data-ready]:hover,
+.button[data-ready]:focus-visible {
+  background: #fff6dc;
+}
+
+/* Blocked: hatched and faded. */
+.button:not([data-ready]) {
+  background: var(--paper-3);
+}
+
+.button:not([data-ready])::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: repeating-linear-gradient(135deg, transparent 0 5px, rgba(43, 37, 32, 0.12) 5px 7px);
+  pointer-events: none;
+}
+
+.button[data-shake='0'] {
+  animation: shakeA 0.35s ease;
+}
+
+.button[data-shake='1'] {
+  animation: shakeB 0.35s ease;
+}
+
+@keyframes shakeA {
+  25% {
+    translate: -4px 0;
+  }
+  60% {
+    translate: 4px 0;
+  }
+}
+
+@keyframes shakeB {
+  25% {
+    translate: -4px 0;
+  }
+  60% {
+    translate: 4px 0;
+  }
+}
+
+.cost {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 11px/16px var(--font-body);
+  white-space: nowrap;
+}
+
+/* The paper bubble: the hiker's turn, or the action under the pointer. */
+.bubble {
+  position: absolute;
+  left: 0;
+  top: -184px;
+  transform: translate(-50%, -100%);
+  min-width: 190px;
+  max-width: 300px;
+  padding: 9px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+  text-align: center;
+  pointer-events: none;
+}
+
+.bubble[data-below] {
+  top: 184px;
+  transform: translate(-50%, 0);
+}
+
+.bubble b {
+  display: block;
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.bubble span {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* A paper card by the token: who comes along, Sleep's check, the abilities. */
+.card {
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-faint: var(--ink-3);
+  position: absolute;
+  z-index: 21;
+  width: 340px;
+  max-height: 420px;
+  overflow-y: auto;
+  transform: translate(64px, -50%);
+  padding: 12px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+  animation: cardIn 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.card[data-left] {
+  transform: translate(calc(-100% - 64px), -50%);
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
+/* A note while an action waits for a tile ("Click a glowing tile…"): a paper toast. */
+.toast {
+  position: absolute;
+  left: 800px;
+  bottom: 28px;
+  z-index: 22;
+  margin: 0;
+  max-width: 520px;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+  font-size: 15px;
+  text-align: center;
+  animation: cardIn 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.close {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper-2);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: opacity 0.2s;
+  }
+  .button[data-shake],
+  .card,
+  .toast {
+    animation: none;
+  }
+}
