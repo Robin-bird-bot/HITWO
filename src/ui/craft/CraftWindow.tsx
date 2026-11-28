@@ -11,6 +11,9 @@
  * basic craft waits for its pick, the window stays open on the pick step.
  */
 import { useOpenSound } from '../../audio/uiSounds';
+import { sfx } from '../../audio/engine';
+import { useCraftingLook } from '../app/lookSettings';
+import { CraftBench } from './CraftBench';
 import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
@@ -18,14 +21,11 @@ import { ITEMS } from '../../content';
 import {
   autoPay,
   craftPool,
-  craftRecipe,
-  craftSetup,
   craftTier,
   paymentReason,
   spaceParts,
   teachCost,
   validateAction,
-  CRAFT_TYPES,
   type Action,
   type GameState,
   type Hiker,
@@ -47,7 +47,7 @@ import { ItemBack } from '../scavenge/ItemBack';
 import { useDraggable } from '../windows/useDraggable';
 import { fitCardRow, rowWidth } from '../layout/fitCardRow';
 import styles from './CraftWindow.module.css';
-import { partLabel, payWords, recipeWords, resName } from './craftWords';
+import { recipeWords, resName } from './craftWords';
 import { keyEnough, swapInto, swapOptions } from './craftSwap';
 import type { DropProps } from '../drag/drag';
 import { HikerPortrait } from '../hikers/HikerPortrait';
@@ -86,7 +86,9 @@ export function CraftWindow(props: CraftWindowProps) {
   const { state, hikerId, tab, simple, onTab, onClose } = props;
   const hiker = state.hikers.find((h) => h.id === hikerId);
   const pending = state.crafting?.hikerId === hikerId ? state.crafting : undefined;
-  const [type, setType] = useState<ItemTypeName>(pending?.type ?? 'tool');
+  const type: ItemTypeName = pending?.type ?? 'tool';
+  // The Crafting look (35-ui-overhaul.md, section 1): Paper, or the TrailMate handheld.
+  const look = useCraftingLook();
   // After a craft: the log events from here on say what was made.
   const [madeFrom, setMadeFrom] = useState<number | null>(null);
   const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('craft');
@@ -123,6 +125,7 @@ export function CraftWindow(props: CraftWindowProps) {
         className={styles.window}
         data-edge-window="Craft"
         style={{ '--accent': TYPE_LOOK[type].accent, translate } as CSSProperties}
+        data-look={look}
         role="dialog"
         aria-modal="true"
         aria-label={teaching ? 'Teach a blueprint' : 'Craft'}
@@ -163,16 +166,18 @@ export function CraftWindow(props: CraftWindowProps) {
             </button>
           )}
         </header>
-        <div className={styles.kindBar}>
-          <span>
-            {teaching
-              ? 'BLUEPRINTS · A FREE ACTION, PAID IN MORALE'
-              : `CRAFTING · USES ${hiker.name.toUpperCase()}’S ACTION`}
-          </span>
-          <span className={styles.kindRight}>
-            <Icon name="users" size={15} /> {craftPool(state, hiker).length} ON THIS TILE
-          </span>
-        </div>
+        {(teaching || pending || made) && (
+          <div className={styles.kindBar}>
+            <span>
+              {teaching
+                ? 'BLUEPRINTS · A FREE ACTION, PAID IN MORALE'
+                : `CRAFTING · USES ${hiker.name.toUpperCase()}’S ACTION`}
+            </span>
+            <span className={styles.kindRight}>
+              <Icon name="users" size={15} /> {craftPool(state, hiker).length} ON THIS TILE
+            </span>
+          </div>
+        )}
 
         {made && made.kind === 'crafted' ? (
           <Made
@@ -181,6 +186,7 @@ export function CraftWindow(props: CraftWindowProps) {
             learned={!!made.learned}
             hiker={hiker}
             onDone={onClose}
+            fresh
           />
         ) : pending ? (
           <PickBody
@@ -195,13 +201,11 @@ export function CraftWindow(props: CraftWindowProps) {
         ) : teaching ? (
           <TeachBody state={state} hiker={hiker} simple={simple} onTeach={props.onDispatch} />
         ) : (
-          <CraftBody
+          <CraftBench
             state={state}
             hiker={hiker}
-            simple={simple}
-            type={type}
-            onType={setType}
             onCraft={dispatch}
+            onDispatch={props.onDispatch}
           />
         )}
       </section>
@@ -220,266 +224,6 @@ export function Face({ id, size }: { id: string; size: number }) {
 }
 
 // ── Craft ───────────────────────────────────────────────────────────────────
-
-function CraftBody({
-  state,
-  hiker,
-  simple,
-  type,
-  onType,
-  onCraft,
-}: {
-  state: GameState;
-  hiker: Hiker;
-  simple: boolean;
-  type: ItemTypeName;
-  onType(t: ItemTypeName): void;
-  onCraft(action: Action): void;
-}) {
-  const [blueprint, setBlueprint] = useState<ItemId | null>(null);
-  const [custom, setCustom] = useState<(PaidSlot | null)[] | null>(null);
-  const [swapAt, setSwapAt] = useState<number | null>(null);
-  const [node, setNode] = useState<NodeType | null>(null);
-  const reset = () => {
-    setCustom(null);
-    setSwapAt(null);
-    setNode(null);
-  };
-
-  const bp = blueprint ? ITEMS[blueprint] : undefined;
-  const recipe = craftRecipe(state, hiker, type, blueprint ?? undefined) ?? [];
-  const slots = custom ?? autoPay(state, hiker, recipe);
-  const parts = spaceParts(recipe);
-  const complete = slots.every((s): s is PaidSlot => !!s);
-  const action: Action = {
-    type: 'craft',
-    hikerId: hiker.id,
-    itemType: type,
-    ...(bp ? { blueprint: bp.id } : {}),
-    ...(complete && custom ? { slots } : {}),
-    ...(node ? { node } : {}),
-  };
-  const reason = validateAction(state, action);
-  const setup = craftSetup(state, hiker, type);
-  const tier = craftTier(state, hiker, type);
-  const known = (hiker.blueprints ?? []).filter((id) => ITEMS[id]?.type === type);
-  const needsNode = !!bp?.madeWithNode;
-
-  return (
-    <>
-      <div className={styles.body}>
-        <nav className={styles.types} aria-label="Item types">
-          {CRAFT_TYPES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={styles.type}
-              aria-pressed={t === type}
-              style={{ '--type': TYPE_LOOK[t].accent } as CSSProperties}
-              onClick={() => {
-                onType(t);
-                setBlueprint(null);
-                reset();
-              }}
-            >
-              <Icon name={TYPE_ICON[t]} size={20} />
-              <span className={styles.typeName}>{TYPE_LOOK[t].label.toUpperCase()}</span>
-              <span className={styles.typeTier}>TIER {NUMERAL[craftTier(state, hiker, t)]}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className={styles.main}>
-          <div className={styles.recipeHead}>
-            <span className={styles.label}>
-              {bp
-                ? `BLUEPRINT · EXACTLY A ${bp.name.toUpperCase()}`
-                : `BASIC RECIPE · PICK 1 OF ${setup.cards} ${plural(type).toUpperCase()}`}
-            </span>
-            <TierChips tier={tier} />
-          </div>
-          {!simple && (
-            <p className={styles.words}>
-              {bp
-                ? `Costs more than the basic recipe, and makes exactly this item: ${recipeWords(recipe)}.`
-                : basicWords(type, recipe)}
-            </p>
-          )}
-
-          <div className={styles.spaces}>
-            {recipe.map((part, i) => (
-              <div key={i} className={styles.part}>
-                {i > 0 && <span className={styles.plus}>+</span>}
-                <div className={styles.partBox}>
-                  <div className={styles.partSlots}>
-                    {slots.map((s, k) =>
-                      parts[k] === i ? (
-                        <Slot
-                          key={k}
-                          filled={s}
-                          open={swapAt === k}
-                          onClick={() => setSwapAt(swapAt === k ? null : k)}
-                        />
-                      ) : null,
-                    )}
-                  </div>
-                  <span className={styles.partLabel}>
-                    <PartIcons part={part} />
-                    {partLabel(part)}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {bp && (
-              <div className={styles.makes}>
-                <Icon name="chevronDown" size={20} />
-                <Previewable content={{ kind: 'item', itemId: bp.id, unrolled: true }}>
-                  <ItemCard itemId={bp.id} width={96} unrolled />
-                </Previewable>
-              </div>
-            )}
-          </div>
-
-          {swapAt !== null && (
-            <Swap
-              state={state}
-              hiker={hiker}
-              recipe={recipe}
-              slots={slots}
-              at={swapAt}
-              onSlots={(next) => {
-                setCustom(next);
-                setSwapAt(null);
-              }}
-            />
-          )}
-          {!simple && swapAt === null && (
-            <p className={styles.hint}>
-              Filled from {hiker.name}’s resources first, then the others here. Tap a space to swap
-              what goes in.
-            </p>
-          )}
-          {needsNode && (
-            <div className={styles.nodePick}>
-              <span className={styles.label}>MADE FOR WHICH NODE?</span>
-              {NODES.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={styles.chip}
-                  aria-pressed={node === n}
-                  onClick={() => setNode(n)}
-                >
-                  <img src={NODE_IMAGE[n]} alt="" width={22} height={25} />
-                  {NODE_NAME[n]}
-                </button>
-              ))}
-            </div>
-          )}
-          {setup.mods.length > 0 && (
-            <div className={styles.mods}>
-              {setup.mods.map((m, i) => (
-                <span key={i} className={styles.mod} data-tone={m.tone}>
-                  {m.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <div className={styles.recipeHead} style={{ marginTop: 20 }}>
-            <span className={styles.label}>
-              {hiker.name.toUpperCase()}’S {TYPE_LOOK[type].label.toUpperCase()} BLUEPRINTS ·{' '}
-              {known.length}
-            </span>
-            {bp && (
-              <button
-                type="button"
-                className={styles.linkish}
-                onClick={() => {
-                  setBlueprint(null);
-                  reset();
-                }}
-              >
-                Back to the basic recipe
-              </button>
-            )}
-          </div>
-          <div className={styles.blueprints}>
-            {known.length === 0 && (
-              <p className={styles.none}>
-                {simple
-                  ? 'None yet.'
-                  : `None yet. Crafting ${type === 'trinket' ? 'a trinket teaches nothing' : `an item teaches its blueprint`}.`}
-              </p>
-            )}
-            {known.map((id) => (
-              <Blueprint
-                key={id}
-                state={state}
-                hiker={hiker}
-                itemId={id}
-                selected={id === blueprint}
-                simple={simple}
-                onPick={() => {
-                  setBlueprint(id === blueprint ? null : id);
-                  reset();
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        <Pool state={state} hiker={hiker} slots={slots} simple={simple} />
-      </div>
-
-      <footer className={styles.foot}>
-        <span className={`${styles.summary} ${reason ? styles.reason : ''}`}>
-          {reason ?? (simple ? `−${slots.length} resources` : payWords(state, slots))}
-        </span>
-        <button
-          type="button"
-          className={styles.go}
-          disabled={!!reason}
-          data-sound={`act.craft.${type}`}
-          onClick={() => onCraft(action)}
-        >
-          {bp ? `CRAFT A ${bp.name.toUpperCase()}` : `CRAFT · PICK 1 OF ${setup.cards}`}
-        </button>
-      </footer>
-    </>
-  );
-}
-
-function basicWords(type: ItemTypeName, recipe: Recipe): string {
-  if (type === 'trinket') {
-    return `${recipe.length} different resources, picked at random: ${recipeWords(recipe)}. A new set after every trinket.`;
-  }
-  return `${recipeWords(recipe)}. The key resource is ${recipe[0]?.n ?? 2} of the same one.`;
-}
-
-function TierChips({ tier }: { tier: number }) {
-  return (
-    <span className={styles.tiers}>
-      {[1, 2, 3].map((t) => (
-        <span
-          key={t}
-          className={styles.tierChip}
-          data-on={t === tier}
-          title={
-            t === tier
-              ? `Crafting at Tier ${NUMERAL[t]}`
-              : t > tier
-                ? `Tier ${NUMERAL[t]}: a ranger station’s workbench raises it (Phase 9)`
-                : `Tier ${NUMERAL[t]}`
-          }
-        >
-          {t > tier && <Icon name="x" size={11} strokeWidth={3} />}
-          TIER {NUMERAL[t]}
-        </span>
-      ))}
-    </span>
-  );
-}
 
 export function PartIcons({ part }: { part: RecipePart }) {
   if (part.ids) {
@@ -667,61 +411,6 @@ function Blueprint({
   );
 }
 
-/** Everyone's resources on the tile, with what the spaces take marked. */
-function Pool({
-  state,
-  hiker,
-  slots,
-  simple,
-}: {
-  state: GameState;
-  hiker: Hiker;
-  slots: readonly (PaidSlot | null)[];
-  simple: boolean;
-}) {
-  return (
-    <aside className={styles.pool} aria-label="Resources on this tile">
-      <span className={styles.label}>ON THIS TILE · POOLED</span>
-      {craftPool(state, hiker).map((h, i) => {
-        const res = Object.entries(h.inventory.resources) as [ResourceId, number][];
-        return (
-          <div key={h.id} className={styles.pack}>
-            <span className={styles.packWho}>
-              <Face id={h.id} size={26} />
-              {h.name.toUpperCase()}
-              {i === 0 && <span className={styles.crafts}>CRAFTS</span>}
-            </span>
-            <div className={styles.res}>
-              {res.length === 0 && <span className={styles.none}>No resources</span>}
-              {res.map(([id, n]) => {
-                const used = slots.filter((s) => s?.from === h.id && s.resource === id).length;
-                return (
-                  <span
-                    key={id}
-                    className={styles.resTile}
-                    data-used={used > 0}
-                    title={resName(id)}
-                  >
-                    <img src={ASSETS.resources[id]} alt={resName(id)} width={34} height={34} />
-                    <span className={styles.resCount}>{n}</span>
-                    {used > 0 && <span className={styles.resUsed}>−{used}</span>}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-      {!simple && (
-        <p className={styles.poolNote}>
-          Gold outlines are what the recipe takes. The little colored dot on each space says whose
-          it is.
-        </p>
-      )}
-    </aside>
-  );
-}
-
 // ── Pick ────────────────────────────────────────────────────────────────────
 
 /** The gap between the dealt cards. */
@@ -789,6 +478,7 @@ export function PickBody({
                 type="button"
                 className={styles.card}
                 data-edge-card=""
+                data-sound="none"
                 style={{ width: cardWidth, height: Math.round((cardWidth * 7) / 5) }}
                 data-up={up}
                 aria-pressed={chosen === i}
@@ -798,8 +488,12 @@ export function PickBody({
                     : 'Face down: turn it over'
                 }
                 onClick={() => {
-                  if (!up) setFlipped((f) => f.map((x, j) => (j === i ? true : x)));
-                  else {
+                  if (!up) {
+                    setFlipped((f) => f.map((x, j) => (j === i ? true : x)));
+                    // A card flips; Quality 4 and 5 shimmer (Claude's idea).
+                    sfx('card.flip');
+                    if ((c.quality ?? 0) >= 4) sfx('card.rare', { delay: 0.12 });
+                  } else {
                     setChosen(i);
                     setNode(null);
                   }
@@ -890,6 +584,7 @@ export function Made({
   hiker,
   onDone,
   cardWidth = 240,
+  fresh = false,
 }: {
   itemId: ItemId;
   quality?: number;
@@ -897,6 +592,8 @@ export function Made({
   hiker: Hiker;
   onDone(): void;
   cardWidth?: number;
+  /** Just made from a blueprint on the bench: it flips in with a NEW stamp. */
+  fresh?: boolean;
 }) {
   const def = ITEMS[itemId];
   const done = useRef<HTMLButtonElement>(null);
@@ -905,12 +602,15 @@ export function Made({
   }, []);
   return (
     <>
-      <div className={styles.made}>
-        <ItemCard
-          itemId={itemId}
-          {...(quality ? { item: { quality: quality as 1 | 2 | 3 | 4 | 5 } } : {})}
-          width={cardWidth}
-        />
+      <div className={styles.made} data-fresh={fresh || undefined}>
+        <div>
+          <ItemCard
+            itemId={itemId}
+            {...(quality ? { item: { quality: quality as 1 | 2 | 3 | 4 | 5 } } : {})}
+            width={cardWidth}
+          />
+          {fresh && <span className={styles.newStamp}>NEW</span>}
+        </div>
         <p className={styles.madeWords}>
           {hiker.name} crafted a {def?.name ?? 'thing'}
           {quality ? ` (Quality ${quality})` : ''}. It’s in their bag.

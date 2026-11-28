@@ -619,3 +619,43 @@
     transition: opacity 0.2s;
   }
 }
+
+.bookButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+}
+
+/* The recipe book over the table, read only. */
+.bookOverlay {
+  position: absolute;
+  inset: 16px 20px 20px;
+  z-index: 20;
+  animation: appear 0.35s cubic-bezier(0.25, 1.3, 0.5, 1);
+}
+
+.bookClose {
+  position: absolute;
+  right: 6px;
+  top: -2px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+}

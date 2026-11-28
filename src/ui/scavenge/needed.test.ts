@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fixtureGame, hiker, run } from '../../engine/test/fixtures';
-import { basicKey, blueprintKey, starredRecipes, wantedRibbon } from './needed';
+import { basicKey, blueprintKey } from '../../engine';
+import { starredRecipes, wantedRibbon } from './needed';
 
 describe('needed (35-ui-overhaul.md, section 5)', () => {
   it('marks a card NEEDED only while a starred recipe still lacks it', () => {

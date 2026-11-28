@@ -1,0 +1,276 @@
+/*
+ * The recipe book (35-ui-overhaul.md, section 6; the prototype's `.book`,
+ * `.pages` and `.rr`). Stage pixels. The TrailMate look restyles it from
+ * CraftWindow.module.css.
+ */
+.book {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  padding-top: 34px;
+  box-sizing: border-box;
+}
+
+.tabs {
+  position: absolute;
+  left: 30px;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  background: var(--tc);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(6px);
+  transition: transform 0.15s;
+}
+
+.tab[aria-selected='true'] {
+  transform: translateY(-1px);
+}
+
+.tiers {
+  position: absolute;
+  right: 26px;
+  top: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.tiers span {
+  padding: 3px 10px;
+  border: 1.5px solid var(--ink);
+  border-radius: 11px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  opacity: 0.45;
+}
+
+.tiers span[data-on] {
+  opacity: 1;
+}
+
+.pages {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #efe5cc 0,
+    #f7f0de 6%,
+    #f7f0de 46%,
+    #d9cba8 49.6%,
+    #c7b791 50%,
+    #d9cba8 50.4%,
+    #f7f0de 54%,
+    #f7f0de 94%,
+    #efe5cc 100%
+  );
+  box-shadow:
+    0 4px 0 #cdbd98,
+    0 6px 0 var(--ink);
+}
+
+.page {
+  min-height: 0;
+  padding: 16px 26px 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.page h5 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 6px;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1.5px dotted #b9a982;
+}
+
+.row[data-state='locked'],
+.row[data-state='past'] {
+  opacity: 0.45;
+}
+
+.row[data-picked] {
+  background: rgba(233, 180, 76, 0.28);
+  border-radius: 5px;
+}
+
+.star {
+  width: 30px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.star[aria-pressed='true'] {
+  color: #c98d16;
+}
+
+.pick {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 6px 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.pick:hover:not(:disabled) {
+  background: rgba(233, 180, 76, 0.22);
+}
+
+.pick:disabled {
+  cursor: default;
+}
+
+.icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 6px;
+  background: #fffaf0;
+}
+
+.icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.icon[data-basic] {
+  background: var(--tc);
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.words small {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  line-height: 1.25;
+}
+
+.status {
+  font-family: var(--font-pixel);
+  font-size: 11.5px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--rust);
+}
+
+.status[data-ok] {
+  color: var(--ok);
+}
+
+.node {
+  width: 26px;
+  height: 30px;
+}
+
+.empty {
+  margin: 0;
+  padding: 10px 4px;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.readOnly {
+  position: absolute;
+  right: 24px;
+  bottom: 10px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.token {
+  width: 26px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: #fffaf0;
+  font-family: var(--font-callout);
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.token img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.token[data-missing] {
+  border-style: dashed;
+  border-color: var(--rust);
+  background: #f7dccf;
+}
+
+.token[data-missing] img {
+  opacity: 0.35;
+  filter: grayscale(1);
+}

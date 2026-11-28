@@ -25,9 +25,6 @@ import type { RecipePart } from '../../engine/items/recipe';
 
 export type RecipeKey = string;
 
-export const blueprintKey = (itemId: string): RecipeKey => `bp:${itemId}`;
-export const basicKey = (type: ItemTypeName, tier: number): RecipeKey => `basic:${type}:${tier}`;
-
 const TYPE_WORD: Record<ItemTypeName, string> = {
   tool: 'Tools',
   clothes: 'Clothes',
