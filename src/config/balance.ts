@@ -4428,6 +4428,291 @@ export const BALANCE = {
         },
       },
     },
+
+    /**
+     * Incoming Bike! (30-quick-minigames.md, section 1): bikes come down the
+     * trail at the hiker; press the key on each before its ring closes.
+     * - By tier: bikes per hiker, the ring's seconds, the gap after one bike
+     *   is past before the next shows (seconds, from–to), and the chance a
+     *   bike comes with a second one, shows two keys, or shows a crossed-out
+     *   key (don't press it).
+     * - Hearts per hiker (a testing-tab setting). A hit stumbles the hiker
+     *   this long. A second bike shows this long after the first, the first
+     *   bike this long into a turn, and a bike rides past for this long once
+     *   it's dodged or hit (my guesses).
+     * - Prepare: each FOOD slows the rings this share; BINOCULARS show each
+     *   key this long before its ring starts.
+     * - The demo bot presses this long after a key shows (from–to), and the
+     *   wrong key this often.
+     * TODO(wyatt): [6–10] bikes, [1.6–1.0 s] rings, the gaps, [25–45%] two at once, [30–35%] two keys,
+     * [20%] don't-press, [3] hearts, [0.3 s] stumble, [15%] FOOD, [0.3 s] BINOCULARS, the bot's [0.25–0.6 s]
+     * and [8%].
+     */
+    incomingBike: {
+      tiers: {
+        1: { bikes: 6, ringSec: 1.6, gapSec: [1.2, 1.8], two: 0, twoKeys: 0, dontPress: 0 },
+        2: { bikes: 7, ringSec: 1.4, gapSec: [1.0, 1.6], two: 0, twoKeys: 0, dontPress: 0 },
+        3: { bikes: 8, ringSec: 1.2, gapSec: [0.8, 1.4], two: 0.25, twoKeys: 0, dontPress: 0 },
+        4: { bikes: 9, ringSec: 1.1, gapSec: [0.7, 1.2], two: 0.35, twoKeys: 0.3, dontPress: 0 },
+        5: {
+          bikes: 10,
+          ringSec: 1.0,
+          gapSec: [0.6, 1.0],
+          two: 0.45,
+          twoKeys: 0.35,
+          dontPress: 0.2,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            bikes: number;
+            ringSec: number;
+            gapSec: readonly [number, number];
+            two: number;
+            twoKeys: number;
+            dontPress: number;
+          }
+        >
+      >,
+      hearts: 3,
+      stumbleSec: 0.3,
+      pairSec: 0.4,
+      firstSec: 0.8,
+      pastSec: 0.45,
+      foodSlower: 0.15,
+      binocularsSec: 0.3,
+      /**
+       * Drawing on a phone (Claude's idea): a stroke shorter than this
+       * (scene units) is a tap. Its corners are where it strays more than
+       * this share of its size (at least this many units) from a straight
+       * line. A run of one direction shorter than this share of the stroke
+       * is a wiggle, and the runs left must make up this share of it (else
+       * it's a scribble). A stroke whose ends are this share of its length
+       * apart is a straight swipe; one that turns this many degrees in all is
+       * a loop.
+       */
+      swipe: {
+        shortest: 14,
+        corner: 0.12,
+        cornerMin: 3,
+        wiggle: 0.18,
+        cover: 0.6,
+        straight: 0.8,
+        loopDeg: 290,
+      },
+      bot: { reactSec: [0.25, 0.6] as const, wrongChance: 0.08 },
+    },
+
+    /**
+     * Wrong Turn (30-quick-minigames.md, section 2): swing a compass needle
+     * onto each hiker's bearing and hold it in the notch.
+     * - By tier: the notch (± degrees), the seconds to hold, the needle's
+     *   damping (low overshoot 0.8, medium 0.55, high 0.35: my numbers), its
+     *   wobble (± degrees, and how fast: my guesses), when the notch hides
+     *   (seconds into a bearing; null: never), and the clock per bearing.
+     * - At least this many bearings, each at least this far from the last,
+     *   on a multiple of this many degrees. Leaving the notch drains the
+     *   hold this many times as fast. A lock flashes this long, with the
+     *   clock stopped (my guess).
+     * - The needle: turning speeds up this fast (degrees/s²) to at most
+     *   this speed, coasts for about this long after a key is let go, and
+     *   springs after it this fast (Hz). My guesses.
+     * - Prepare: FOOD adds this many seconds; a CAIRN widens the notch
+     *   this many degrees; a LUCKY CHARM locks in this share of the time.
+     * - The demo bot reads each bearing for this long (from–to), looks
+     *   again this often, lets go when it thinks the needle will stop this
+     *   far inside the notch's edge, misjudges the coast by up to this
+     *   share, and overshoots this often (30: [30%]) by this much. Once the
+     *   notch hides it aims up to this far off, and tries elsewhere after
+     *   this long with nothing filling. My guesses.
+     * TODO(wyatt): [8–3°] notch, [0.5–0.9 s] hold, the wobble, [1.5 s, 1.0 s] hiding, [8–9 s] per bearing,
+     * [3] bearings, [60°] apart, [2×] drain, [+3 s], [2°], half the time.
+     */
+    wrongTurn: {
+      tiers: {
+        1: {
+          notchDeg: 8,
+          holdSec: 0.5,
+          damping: 0.8,
+          wobbleDeg: 0,
+          wobbleHz: 0,
+          hideSec: null,
+          clockSec: 8,
+        },
+        2: {
+          notchDeg: 6,
+          holdSec: 0.6,
+          damping: 0.8,
+          wobbleDeg: 0,
+          wobbleHz: 0,
+          hideSec: null,
+          clockSec: 8,
+        },
+        3: {
+          notchDeg: 5,
+          holdSec: 0.7,
+          damping: 0.55,
+          wobbleDeg: 6,
+          wobbleHz: 0.2,
+          hideSec: null,
+          clockSec: 8,
+        },
+        4: {
+          notchDeg: 4,
+          holdSec: 0.8,
+          damping: 0.55,
+          wobbleDeg: 8,
+          wobbleHz: 0.25,
+          hideSec: 1.5,
+          clockSec: 9,
+        },
+        5: {
+          notchDeg: 3,
+          holdSec: 0.9,
+          damping: 0.35,
+          wobbleDeg: 10,
+          wobbleHz: 0.35,
+          hideSec: 1.0,
+          clockSec: 9,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            notchDeg: number;
+            holdSec: number;
+            damping: number;
+            wobbleDeg: number;
+            wobbleHz: number;
+            hideSec: number | null;
+            clockSec: number;
+          }
+        >
+      >,
+      minBearings: 3,
+      apartDeg: 60,
+      roundDeg: 5,
+      drainTimes: 2,
+      lockPauseSec: 0.6,
+      needle: { accel: 420, maxSpeed: 120, coastSec: 0.12, springHz: 2 },
+      foodSec: 3,
+      cairnDeg: 2,
+      charmHold: 0.5,
+      bot: {
+        readSec: [0.8, 2] as const,
+        everySec: 0.15,
+        inside: 0.5,
+        misjudge: 0.5,
+        overshootChance: 0.3,
+        overshootDeg: [8, 16] as const,
+        hiddenOffDeg: 4,
+        retrySec: 1,
+      },
+    },
+
+    /**
+     * Fallen Branch (30-quick-minigames.md, section 3): saw through a branch
+     * in shifts, keeping the tempo in the zone.
+     * - By tier: the right tempo (seconds between strokes, from–to), the cut
+     *   a good stroke makes (a share of the branch), knots (from–to), the
+     *   zone's drift (± seconds, and how fast: my guesses), and the clock.
+     * - Each hiker saws this long a shift. The tempo is smoothed over this
+     *   many strokes; a pause longer than this starts the rhythm again (my
+     *   guess). Binding stops the saw this long.
+     * - A knot moves the zone this much slower while the cut is in it (this
+     *   share of the branch); knots sit between these shares (my guesses).
+     * - The TEMPO bar runs from this slow to this fast (seconds).
+     * - Prepare: FOOD adds this many seconds; SHARPEN THE SAW cuts this
+     *   share more; WAX THE BLADE binds for this share of the time; a SWISS
+     *   ARMY KNIFE starts the cut this far through.
+     * - The demo bot strokes at the zone's middle, give or take this share,
+     *   slips (the same key twice) this often (my guess), and slows for a
+     *   knot this late.
+     * TODO(wyatt): the zones, [3–1.8%] a stroke, [0–3] knots, [25–28 s] clock, [5 s] shifts, [3] strokes,
+     * [0.6 s] bind, [+4 s], [25%], half, [20%], the bot's [±15%] and [0.5 s].
+     */
+    fallenBranch: {
+      tiers: {
+        1: { zone: [0.3, 0.45], cut: 0.03, knots: [0, 0], driftSec: 0, driftHz: 0, clockSec: 25 },
+        2: { zone: [0.3, 0.42], cut: 0.025, knots: [1, 1], driftSec: 0, driftHz: 0, clockSec: 25 },
+        3: {
+          zone: [0.3, 0.4],
+          cut: 0.022,
+          knots: [1, 2],
+          driftSec: 0.025,
+          driftHz: 0.08,
+          clockSec: 26,
+        },
+        4: {
+          zone: [0.31, 0.39],
+          cut: 0.02,
+          knots: [2, 2],
+          driftSec: 0.03,
+          driftHz: 0.12,
+          clockSec: 27,
+        },
+        5: {
+          zone: [0.32, 0.38],
+          cut: 0.018,
+          knots: [2, 3],
+          driftSec: 0.03,
+          driftHz: 0.2,
+          clockSec: 28,
+        },
+      } as Readonly<
+        Record<
+          MgTier,
+          {
+            zone: readonly [number, number];
+            cut: number;
+            knots: readonly [number, number];
+            driftSec: number;
+            driftHz: number;
+            clockSec: number;
+          }
+        >
+      >,
+      shiftSec: 5,
+      smoothOver: 3,
+      restartSec: 0.9,
+      bindSec: 0.6,
+      knot: { slowerSec: 0.08, span: 0.08, between: [0.25, 0.85] as const },
+      tempoBar: { slowest: 0.7, fastest: 0.15 },
+      foodSec: 4,
+      sharpen: 0.25,
+      wax: 0.5,
+      knifeStart: 0.2,
+      bot: { jitter: 0.15, slipChance: 0.03, knotLateSec: 0.5 },
+    },
+
+    /**
+     * Snagged Pack (30-quick-minigames.md, section 4): drag each rope to the
+     * socket of its color; ropes can't cross.
+     * - By tier: the grid (cells a side), the pairs, and each hiker's clock.
+     * - Every rope in a made board is at least this many cells long. A board
+     *   is a random path through every cell, reshaped this many times a cell
+     *   (my guess), and cut into pieces.
+     * - Prepare: FOOD adds this many seconds to each hiker's clock; a LUCKY
+     *   CHARM's hint shows a rope's path this long.
+     * - The demo bot thinks this long before each rope (from–to), draws a
+     *   cell this fast, and starts the wrong way this often.
+     * TODO(wyatt): [5×5–8×8], [4–8] pairs, [35–55 s], [3] cells, [+8 s], [1.5 s].
+     */
+    snaggedPack: {
+      tiers: {
+        1: { size: 5, pairs: 4, clockSec: 35 },
+        2: { size: 6, pairs: 5, clockSec: 40 },
+        3: { size: 7, pairs: 6, clockSec: 45 },
+        4: { size: 7, pairs: 7, clockSec: 50 },
+        5: { size: 8, pairs: 8, clockSec: 55 },
+      } as Readonly<Record<MgTier, { size: number; pairs: number; clockSec: number }>>,
+      shortest: 3,
+      reshapes: 12,
+      foodSec: 8,
+      hintSec: 1.5,
+      bot: { thinkSec: [1.2, 2.6] as const, cellSec: 0.22, wrongChance: 0.2 },
+    },
   },
 
   /** Screen timings (Nov 14 update). */

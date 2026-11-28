@@ -71,11 +71,12 @@ function listRows() {
 describe('the challenge list matches docs/design/24-challenges-reset.md (Nov 26 evening)', () => {
   const rows = listRows();
 
-  it('has 45 minigame challenges and 22 cost cards, and nothing else', () => {
-    expect(rows.filter((r) => !r.cost)).toHaveLength(45);
-    expect(rows.filter((r) => r.cost)).toHaveLength(22);
+  // 45 and 22 until Nov 27, when four cost cards became quick minigames (30-quick-minigames.md).
+  it('has 49 minigame challenges and 18 cost cards, and nothing else', () => {
+    expect(rows.filter((r) => !r.cost)).toHaveLength(49);
+    expect(rows.filter((r) => r.cost)).toHaveLength(18);
     expect(CHALLENGES).toHaveLength(67);
-    expect(MINIGAME_CHALLENGES).toHaveLength(45);
+    expect(MINIGAME_CHALLENGES).toHaveLength(49);
     expect(CHALLENGES.map((c) => c.id).sort()).toEqual(rows.map((r) => slug(r.name)).sort());
     // No risk cards for now (Wyatt).
     expect(CHALLENGES.some((c) => c.risk)).toBe(false);

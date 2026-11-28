@@ -1,0 +1,128 @@
+/* Incoming Bike! (59-incoming-bike-keys.png, 60-incoming-bike-swipe.png), in scene units (320 × 240). */
+
+/* The trail and the trees, from the top down to the hint line. */
+.scene {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 320px;
+  height: 200px;
+  pointer-events: none;
+}
+
+.bike {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.hiker {
+  position: absolute;
+}
+
+/* The ring that closes in, in the hiker's color (dashed while the key shows early). */
+.ring {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1.5px solid;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px #d3dfaf;
+  pointer-events: none;
+}
+
+.ring[data-waiting] {
+  border-style: dashed;
+}
+
+/* The keys (or shapes) on a bike, centered on the ring. */
+.signs {
+  position: absolute;
+  display: flex;
+  gap: 2px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.key {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  border: 0.75px solid #1d2918;
+  border-radius: 2px;
+  background: #d3dfaf;
+  box-shadow: 0 1px 0 #1d2918;
+  color: #1d2918;
+  font-family: var(--font-pixel);
+  font-size: 6px;
+  line-height: 1;
+}
+
+.key[data-done] {
+  opacity: 0.35;
+}
+
+.shape {
+  width: 9px;
+  height: 9px;
+  fill: none;
+  stroke: #1d2918;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A crossed-out key: don't press it. */
+.cross {
+  position: absolute;
+  left: 50%;
+  top: -15%;
+  width: 1.5px;
+  height: 130%;
+  margin-left: -0.75px;
+  background: #c8423a;
+  transform: rotate(45deg);
+}
+
+/* The stroke being drawn (swipes), in the hiker's color. */
+.stroke {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.stroke polyline {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The hiker up now's hearts, top right. */
+.hearts {
+  position: absolute;
+  right: 8px;
+  top: 25px;
+  display: flex;
+  gap: 2.5px;
+  pointer-events: none;
+}
+
+.hearts > span {
+  width: 6px;
+  height: 6px;
+  border: 0.75px solid #1d2918;
+  border-radius: 50%;
+  background: #3c4e2f;
+}
+
+.hearts > span[data-on] {
+  background: #c8423a;
+}

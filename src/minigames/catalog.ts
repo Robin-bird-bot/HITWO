@@ -1603,6 +1603,117 @@ export const CAMP_CLEANUP: MinigameInfo = {
   ],
 };
 
+// ── The quick games of Nov 27 (docs/design/30-quick-minigames.md) ──
+
+const IB = BALANCE.minigames.incomingBike;
+const WT = BALANCE.minigames.wrongTurn;
+const FB = BALANCE.minigames.fallenBranch;
+const SNP = BALANCE.minigames.snaggedPack;
+
+export const INCOMING_BIKE: MinigameInfo = {
+  id: 'incomingBike',
+  name: 'Incoming Bike!',
+  baseGame: 'Quick-time',
+  category: 'reaction',
+  description:
+    'Press the key on each bike before its ring closes, and hop aside. On a phone, draw its shape. One hiker at a time.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    {
+      kind: 'pick',
+      id: 'input',
+      label: 'Keys or swipes',
+      options: [
+        { id: 'auto', label: 'Auto' },
+        { id: 'keys', label: 'Keys' },
+        { id: 'swipe', label: 'Swipe' },
+      ],
+      default: 'auto',
+      hint: 'Auto: swipes on a touch screen, keys everywhere else',
+    },
+    autoRange('hearts', 'Hearts', 1, 5, IB.hearts, ''),
+  ],
+};
+
+export const WRONG_TURN: MinigameInfo = {
+  id: 'wrongTurn',
+  name: 'Wrong Turn',
+  baseGame: 'Compass',
+  category: 'reaction',
+  description:
+    'Swing the compass needle into the notch and hold it there until it locks. A bearing for each hiker.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'clock',
+      'Clock per bearing',
+      4,
+      20,
+      WT.tiers[1].clockSec,
+      ' s',
+      1,
+      `${byTier((t) => WT.tiers[t].clockSec)} s`,
+    ),
+  ],
+};
+
+export const FALLEN_BRANCH: MinigameInfo = {
+  id: 'fallenBranch',
+  name: 'Fallen Branch',
+  baseGame: 'Saw it',
+  category: 'rhythm',
+  description:
+    'Saw through the branch in shifts. Press A and D in turn, keeping the tempo in the zone.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'clock',
+      'Clock',
+      10,
+      60,
+      FB.tiers[1].clockSec,
+      ' s',
+      1,
+      `${byTier((t) => FB.tiers[t].clockSec)} s`,
+    ),
+    autoRange('shift', 'Shift length', 2, 10, FB.shiftSec, ' s'),
+  ],
+};
+
+export const SNAGGED_PACK: MinigameInfo = {
+  id: 'snaggedPack',
+  name: 'Snagged Pack',
+  baseGame: 'Flow',
+  category: 'puzzle',
+  description:
+    'Drag each rope to the socket of its color. Ropes can’t cross. Each hiker untangles their own pack.',
+  status: 'ready',
+  lineUp: true,
+  settings: [
+    TIER,
+    HIKERS,
+    autoRange(
+      'clock',
+      'Clock',
+      15,
+      90,
+      SNP.tiers[1].clockSec,
+      ' s',
+      5,
+      `${byTier((t) => SNP.tiers[t].clockSec)} s`,
+    ),
+  ],
+};
+
 export const MINIGAMES: readonly MinigameInfo[] = [
   DODGE,
   CROSSING,
@@ -1622,6 +1733,7 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   MINEFIELD,
   THIN_ICE,
   PACK_IT_UP,
+  SNAGGED_PACK,
   REMEMBER_PATH,
   MEMORY,
   SAFARI,
@@ -1638,6 +1750,9 @@ export const MINIGAMES: readonly MinigameInfo[] = [
   FLY_SWATTER,
   FLY_BLOCK,
   SQUIRREL_THEFT,
+  INCOMING_BIKE,
+  WRONG_TURN,
+  FALLEN_BRANCH,
   RACCOON_SHUFFLE,
 ];
 

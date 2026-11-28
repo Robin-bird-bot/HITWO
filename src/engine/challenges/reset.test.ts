@@ -6,7 +6,7 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
-import { P, PX, listed, opt, res } from '../../content/cardBuilders';
+import { P, PX, X, listed, opt, res } from '../../content/cardBuilders';
 import { CARDS } from '../../content/challenges';
 import { validateAction } from '../applyAction';
 import { fixtureGame, hiker, place, run } from '../test/fixtures';
@@ -15,8 +15,23 @@ import { applyEffects } from './applyEffects';
 import { rangeAt } from './rolls';
 import type { CardDef, ChallengeDef, Effect } from './types';
 
-/** Test-only cards for costs no card in the list uses (Big stacks, Mixed bag). */
+/**
+ * Test-only cards for costs no card in the list uses (Big stacks, Mixed bag,
+ * and Variety: Snagged Pack's old cost, from before it became a minigame).
+ */
 const EXTRA: ChallengeDef[] = [
+  listed({
+    name: 'Test Variety',
+    art: false,
+    tier: 1,
+    nodes: 'any',
+    scope: 'each',
+    rolls: { n: X(2, 2) },
+    cost: [opt(res('n', undefined, { distinct: true }))],
+    costText: ['Spend 1 each of {n} different resources (patch it).'],
+    penalty: [P.random],
+    penaltyText: ['If failed: lose {x} random resources (they fall out).'],
+  }),
   listed({
     name: 'Test Big Stacks',
     art: false,
@@ -123,7 +138,7 @@ describe('the new costs (24-challenges-reset.md, section 3)', () => {
   });
 
   it('a matching set, and variety: 1 each of X different resources', () => {
-    const s = opened('snagged-pack', { ash: { wood: 3, clay: 1 } });
+    const s = opened('test-variety', { ash: { wood: 3, clay: 1 } });
     const n = s.challenge!.rolls.x.n!;
     expect(n).toBe(2);
     expect(why(s, gift('ash', 'wood', 2))).toMatch(/different/);
@@ -243,8 +258,8 @@ describe('the punishments and the backup rule (24-challenges-reset.md, section 2
   });
 
   it('a cost card’s punishment uses the backup rule when it’s resolved', () => {
-    // Snagged Pack: lose X random resources; Ash has none.
-    const s = opened('snagged-pack', { birch: { wood: 1, clay: 1 } });
+    // Variety (Snagged Pack's old card): lose X random resources; Ash has none.
+    const s = opened('test-variety', { birch: { wood: 1, clay: 1 } });
     const x = s.challenge!.rolls.x.x!;
     const before = hiker(s, 'ash').stats.energy;
     const after = run(

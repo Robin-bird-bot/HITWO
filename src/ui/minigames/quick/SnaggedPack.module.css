@@ -1,0 +1,51 @@
+/* Snagged Pack (63-snagged-pack-ropes.png), in scene units (320 × 240). */
+
+.board {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+.rope {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A LUCKY CHARM's hint: the rope's path, dashed, for a moment. */
+.hint {
+  fill: none;
+  stroke-dasharray: 2 2;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.pairs {
+  position: absolute;
+  left: 249px;
+  top: 27px;
+  width: 66px;
+  height: 22px;
+  font-size: 5px;
+}
+
+.hintButton {
+  position: absolute;
+  left: 249px;
+  top: 56px;
+  width: 66px;
+  height: 14px;
+  font-size: 4.2px;
+}
+
+/* "DRAGGING YELLOW: NO CROSSING OTHER ROPES", under the board. */
+.note {
+  position: absolute;
+  left: 160px;
+  top: 184px;
+  transform: translateX(-50%);
+  font-size: 3.6px;
+  pointer-events: none;
+}

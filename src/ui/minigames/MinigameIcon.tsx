@@ -255,6 +255,36 @@ const PATHS: Readonly<Record<string, ReactNode>> = {
       <path d="M6 21l3-8 4-3M13 10l2-2" />
     </>
   ),
+  // A bike wheel and its handlebar.
+  incomingBike: (
+    <>
+      <circle cx="12" cy="15" r="6" />
+      <path d="M12 15V9M7 6h10M12 6v3" />
+    </>
+  ),
+  // A compass: the dial and its needle.
+  wrongTurn: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15 9l-5 1.5L9 15l5-1.5z" />
+    </>
+  ),
+  // A log end-on, and the saw across it.
+  fallenBranch: (
+    <>
+      <circle cx="12" cy="14" r="7" />
+      <circle cx="12" cy="14" r="3" />
+      <path d="M2 8h20" />
+    </>
+  ),
+  // Two sockets and the rope between them.
+  snaggedPack: (
+    <>
+      <circle cx="5" cy="6" r="2.5" />
+      <circle cx="19" cy="18" r="2.5" />
+      <path d="M7.5 6H14v12h2.5" />
+    </>
+  ),
   // A pine and a winding trail.
   findPath: (
     <>

@@ -37,6 +37,10 @@ import {
   TRAILS,
   CROSSROADS,
   ROCK_CLIMB,
+  INCOMING_BIKE,
+  WRONG_TURN,
+  FALLEN_BRANCH,
+  SNAGGED_PACK,
   endInfo,
 } from '../../minigames/catalog';
 import { minigameHiker } from '../../minigames/hikers';
@@ -180,6 +184,7 @@ describe('the minigame list', () => {
           ['Minefield', 'ready'],
           ['Thin Ice', 'ready'],
           ['Pack It Up', 'ready'],
+          ['Snagged Pack', 'ready'],
         ],
       ],
       [
@@ -211,8 +216,11 @@ describe('the minigame list', () => {
           ['Fly Swatter', 'ready'],
           ['Fly Block', 'ready'],
           ['Squirrel Theft', 'ready'],
+          ['Incoming Bike!', 'ready'],
+          ['Wrong Turn', 'ready'],
         ],
       ],
+      ['Rhythm', [['Fallen Branch', 'ready']]],
       ['Guess and luck', [['Raccoon Shuffle', 'ready']]],
     ]);
     const listed = MINIGAMES_BY_CATEGORY.flatMap((c) => c.games);
@@ -643,6 +651,24 @@ describe('the minigame list', () => {
     expect(range('time')).toMatchObject({ min: 30, max: 120 });
     expect(range('bags')).toMatchObject({ min: 1, max: 8 });
     expect(range('speed')).toMatchObject({ min: 3, max: 12 });
+  });
+
+  it('Nov 27’s quick games (30-quick-minigames.md): their categories and testing-tab settings', () => {
+    const ids = (info: (typeof MINIGAMES)[number]) => info.settings.map((x) => x.id);
+    expect([INCOMING_BIKE, WRONG_TURN].map((m) => m.category)).toEqual(['reaction', 'reaction']);
+    expect(FALLEN_BRANCH.category).toBe('rhythm');
+    expect(SNAGGED_PACK.category).toBe('puzzle');
+    expect(ids(INCOMING_BIKE)).toEqual(['tier', 'hikers', 'input', 'hearts']);
+    expect(ids(WRONG_TURN)).toEqual(['tier', 'hikers', 'clock']);
+    expect(ids(FALLEN_BRANCH)).toEqual(['tier', 'hikers', 'clock', 'shift']);
+    expect(ids(SNAGGED_PACK)).toEqual(['tier', 'hikers', 'clock']);
+    const input = INCOMING_BIKE.settings.find((x) => x.id === 'input');
+    if (input?.kind !== 'pick') throw new Error('Keys or swipes is a pick');
+    expect(input.options.map((o) => o.label)).toEqual(['Auto', 'Keys', 'Swipe']);
+    expect(defaultSettings(INCOMING_BIKE)).toMatchObject({ input: 'auto', hearts: 'auto' });
+    expect([INCOMING_BIKE, WRONG_TURN, FALLEN_BRANCH, SNAGGED_PACK].every((m) => m.lineUp)).toBe(
+      true,
+    );
   });
 
   it('remembered settings out of range are put back in range', () => {

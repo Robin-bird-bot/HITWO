@@ -143,10 +143,12 @@ export type MinigameSettingValue = number | string | readonly string[];
 export type MinigameSettings = Record<string, MinigameSettingValue>;
 
 /**
- * The kinds of minigame (docs/design/13-minigames-puzzles-2.md, section 5):
- * the testing tab lists the games under these, in this order.
+ * The kinds of minigame (docs/design/13-minigames-puzzles-2.md, section 5;
+ * Rhythm since 30-quick-minigames.md, for Fallen Branch): the testing tab
+ * lists the games under these, in this order.
  */
-export type MinigameCategory = 'move' | 'puzzle' | 'memory' | 'search' | 'reaction' | 'luck';
+export type MinigameCategory =
+  'move' | 'puzzle' | 'memory' | 'search' | 'reaction' | 'rhythm' | 'luck';
 
 export const CATEGORIES: readonly { id: MinigameCategory; name: string }[] = [
   { id: 'move', name: 'Movement and dodging' },
@@ -154,6 +156,7 @@ export const CATEGORIES: readonly { id: MinigameCategory; name: string }[] = [
   { id: 'memory', name: 'Memory' },
   { id: 'search', name: 'Search' },
   { id: 'reaction', name: 'Reaction and timing' },
+  { id: 'rhythm', name: 'Rhythm' },
   { id: 'luck', name: 'Guess and luck' },
 ];
 
