@@ -91,7 +91,7 @@ Wyatt: "I don't want to use all of the old ones." The old list of 71 is retired.
 **The new rules:**
 - **A minigame challenge is named after its game,** or has a name of its own: Broken Trail Signs (Traildle), False Trail Signs, and **"___ Attack!"** for every Dodge animal (Bear Attack!).
 - **One challenge per game.** When a game has versions, the tile decides which one plays (Wyatt). For example, Trail Blocked! is a fallen tree on a Forest tile and a rockslide on a Mountain tile.
-- **Repeats are fine now**, so there are fewer challenges: 45 minigames and 22 cost cards. Each biome's pool (`25-challenges-on-the-map.md`, section 1) picks 3 to 7 of them.
+- **Repeats are fine now**, so there are fewer challenges: 45 minigames and 22 cost cards (49 and 18 since Nov 27, when four cost cards became quick minigames). Each biome's pool (`25-challenges-on-the-map.md`, section 1) picks 3 to 7 of them.
 - **Tiers:** a minigame challenge can show up at any tier from its "From" tier on, and plays at the tile's tier. Dodge animals play at the level the tier gives them.
 - **Art for now:** reuse Wyatt's old challenge art where it fits (the file in `assets/challenges/`), until posters are painted.
 - **Punishments** come from section 2. "Passing" challenges send failed hikers back first.
@@ -131,6 +131,7 @@ Wyatt: "I don't want to use all of the old ones." The old list of 71 is retired.
 | Cracked Pots | **Cracked Pots** (new, section 7) | River | I | Lose X Food | cracked-pots |
 | Dog Waste Zone | Minefield (only with a Dog on the tile) | Forest, Wildlife | I | Lose X Appetite, and Nauseous for 1 day | dog-waste-zone |
 | Torn Pack | Pack It Up | Forest, Wildlife | II | Lose X random resources | torn-pack |
+| Snagged Pack | **Snagged Pack** (was a cost card; `30-quick-minigames.md`, section 4) | Forest, Wildlife | I | Lose X random resources (they fall out) | torn-pack |
 | Thin Ice | Thin Ice (crossing). Passing | River (snow only) | III | Soaked for Y[2–3] phases, and lose X Energy | thin-ice |
 
 ### Memory
@@ -161,10 +162,17 @@ Wyatt: "I don't want to use all of the old ones." The old list of 71 is retired.
 | Trail Blazes | Trail Blazes | Forest | I | Lose X Energy, and Bored for 1 day | straight-path |
 | Firefly Catch | Firefly Catch | Forest, River | I | Lose X Energy, and Sleepy for 1 day | long-night-ahead |
 | Size Up | Size Up | Any | I | Lose X random resources | none yet |
+| Incoming Bike! | **Incoming Bike!** (was a cost card; `30-quick-minigames.md`, section 1) | Forest, River | I | Go back, and lose X random resources (knocked loose) | incoming-bike |
+| Wrong Turn | **Wrong Turn** (was a cost card; `30`, section 2). Passing, the whole party | Forest, Mountain | I | Everyone goes back, and loses X Appetite | split-path |
 
-### Cost cards (22)
+### Rhythm
+| Challenge | Plays | Nodes | From | If failed | Art for now |
+| --- | --- | --- | --- | --- | --- |
+| Fallen Branch | **Fallen Branch** (was a cost card; `30`, section 3). Passing, the whole party | Forest | II | Everyone goes back, and loses X Energy | withered-forest |
 
-**Switched off Nov 27 (`29-core-loop.md`, section 6):** every challenge is a minigame for now. Incoming Bike!, Wrong Turn, Fallen Branch and Snagged Pack come back as quick minigames with the same names (`30-quick-minigames.md`); the other 18 keep their data, switched off.
+### Cost cards (18)
+
+**Switched off Nov 27 (`29-core-loop.md`, section 6):** every challenge is a minigame for now. Incoming Bike!, Wrong Turn, Fallen Branch and Snagged Pack came back as quick minigames with the same names (`30-quick-minigames.md`), so they're in the tables above now (their old costs are in git history); the other 18 keep their data, switched off.
 Wyatt: "Make the cost ones basic problems you might experience. About 20 in total." No risk cards for now: the weather ones (Blazing Sun, Storm, Lightning, Hypothermia) are out.
 
 - **How a cost card works:**
@@ -177,11 +185,8 @@ Wyatt: "Make the cost ones basic problems you might experience. About 20 in tota
 | Challenge | Who | Nodes | From | Cost | If failed | Art for now |
 | --- | --- | --- | --- | --- | --- | --- |
 | Blisters | Each hiker | Any | I | 1 of the resource you have the most of, or 2 Appetite | Lose X Energy, and Sluggish for 1 phase | none yet |
-| Wrong Turn | Party | Forest, Mountain | I | X[3–5] Energy across the party | Everyone goes back, and loses X Appetite | split-path |
 | Thirsty Trail | Party | Any | I | 1 of the party's most per hiker (traded for water) | Every hiker loses X Appetite | thirsty-trail |
-| Snagged Pack | Each hiker | Forest, Wildlife | I | Variety: 1 each of X[2] different resources (patch it) | Lose X random resources (they fall out) | torn-pack |
 | Heavy Pack | Each hiker | Mountain | I | Carry no more than [6] resources; spend the extras to pass (Rocky Path's old rule) | Lose X Energy, and Sluggish for Y[2] phases | rocky-path |
-| Incoming Bike! | Each hiker | Forest, River | I | X[1–2] Energy (jump out of the way) | Go back, and lose X random resources (knocked loose) | incoming-bike |
 | Sunburn | Each hiker with no clothing on | Mountain, River | I | 2 of the same resource, or 1 food card | Lose X Energy | blazing-sun |
 | Upset Stomach | Each hiker | Any | I | 1 food card, or 2 of the same resource | Lose X Appetite, and Nauseous for 1 day | none yet |
 | Splinter | Each hiker | Forest | I | 1 tool use, or 1 of the resource you have the most of | Bleeding for Y[2] phases | none yet |
@@ -190,7 +195,6 @@ Wyatt: "Make the cost ones basic problems you might experience. About 20 in tota
 | Tourist Trap | Each hiker | Any | I | X[1–2] caps | Go back, and lose 1 Energy | tourist-trap |
 | Black Cat | Each hiker | Forest, Wildlife | I | **Singles** (Wyatt): every resource you only have 1 of | Lose X random resources, and Unlucky for 1 day. If passed: a 50% chance to be Lucky for 1 day | black-cat |
 | Rolled Ankle | Each hiker | Mountain, Forest | II | X[2] Fiber (a wrap), or 3 Energy | 1 injury | steep-trail |
-| Fallen Branch | Party | Forest | II | X[2–3] Building (clear it), or X[4] Energy across the party | Go back, and lose X Energy | withered-forest |
 | Cold Snap | Each hiker | Mountain, River | II | X[2] Fire, or 2 durability from one clothing item | Lose X Energy, and Frozen for 1 phase | cold-snap |
 | Allergy Season | Each hiker | Forest, Wildlife | II | X[2] Fiber, or 1 food card | Lose X Energy, and Allergies (this tile's node) for 1 day | allergy-season |
 | Bug Bites | Each hiker | River, Forest | II | X[2] Fire (smoke them off), or 2 of the same resource | Lose X Appetite, and Clumsy for 1 day | mosquito-swarm |

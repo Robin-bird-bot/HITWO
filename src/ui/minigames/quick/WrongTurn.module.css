@@ -1,0 +1,142 @@
+/* Wrong Turn (61-wrong-turn-compass.png), in scene units (320 × 240). */
+
+.compass {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* N, E, S and W. */
+.point {
+  fill: #1d2918;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* A locked notch blinks. */
+.notch[data-flash] {
+  animation: blink 0.2s steps(1) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* A and D, with "OR TAP LEFT" and "OR TAP RIGHT" under them. */
+.keyA,
+.keyD {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.keyA {
+  left: 36px;
+  top: 101px;
+}
+
+.keyD {
+  left: 262px;
+  top: 143px;
+}
+
+.cap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 17px;
+  height: 17px;
+  border: 0.75px solid #1d2918;
+  border-radius: 2px;
+  background: #a0b37d;
+  box-shadow: 0 1.25px 0 #1d2918;
+  color: #1d2918;
+  font-family: var(--font-pixel);
+  font-size: 8px;
+}
+
+.cap[data-on] {
+  background: #d3dfaf;
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+.or {
+  font-size: 3.6px;
+}
+
+/* BEARINGS: the list for the party; the current one has a marker. */
+.list {
+  position: absolute;
+  left: 249px;
+  top: 27px;
+  width: 66px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 5px 8px;
+}
+
+.title {
+  font-size: 4px;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  font-size: 5px;
+}
+
+.row[data-later] {
+  color: #6a7e51;
+}
+
+.mark {
+  min-width: 10px;
+}
+
+/* HOLD TO LOCK. */
+.lock {
+  position: absolute;
+  left: 249px;
+  top: 101px;
+  width: 66px;
+  height: 28px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.lockBar {
+  position: relative;
+  width: 54px;
+  height: 5px;
+  border-radius: 1px;
+  background: #3c4e2f;
+  overflow: hidden;
+}
+
+.lockBar > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #d3dfaf;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notch[data-flash] {
+    animation: none;
+  }
+}

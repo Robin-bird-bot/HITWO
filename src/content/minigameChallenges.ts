@@ -1,8 +1,8 @@
 /**
  * Challenges played as minigames.
  *
- * - **The 45 minigame challenges** (docs/design/24-challenges-reset.md,
- *   section 4): one per game, named after it or with a name of its own
+ * - **The 49 minigame challenges** (docs/design/24-challenges-reset.md,
+ *   section 4, and the four quick games of 30-quick-minigames.md): one per game, named after it or with a name of its own
  *   ("___ Attack!" for each Dodge animal). When a game has versions, the
  *   tile decides which one plays (Trail Blocked! is a fallen tree on a
  *   Forest tile, a rockslide on a Mountain one). Each plays at the tile's
@@ -71,7 +71,7 @@ export function testChallenge(
   };
 }
 
-// ── The 45 minigame challenges ──────────────────────────────────────────────
+// ── The 49 minigame challenges ──────────────────────────────────────────────
 
 /** SKIP IT: two cans of Bear Spray get the party past the bear without playing. */
 const SKIP_IT: Option = {
@@ -598,6 +598,46 @@ export const MINIGAME_CHALLENGES: readonly ChallengeDef[] = [
     game: { game: 'sizeUp' },
     penalty: [P.random],
     penaltyText: 'If failed: lose {x} random resources.',
+  }),
+
+  // The four quick games of Nov 27 (30-quick-minigames.md): the cost cards
+  // with these names became these games, with the cards' art, nodes, "From"
+  // tiers and punishments.
+  mg({
+    name: 'Incoming Bike!',
+    artFile: 'incoming-bike',
+    from: 1,
+    nodes: [F, R],
+    game: { game: 'incomingBike' },
+    penalty: [P.back, P.random],
+    penaltyText: 'If failed: go back, and lose {x} random resources (knocked loose).',
+  }),
+  mg({
+    name: 'Wrong Turn',
+    artFile: 'split-path',
+    from: 1,
+    nodes: [F, M],
+    game: { game: 'wrongTurn', passing: true },
+    penalty: [P.back, P.appetite],
+    penaltyText: 'If failed: everyone goes back, and loses {x} Appetite.',
+  }),
+  mg({
+    name: 'Fallen Branch',
+    artFile: 'withered-forest',
+    from: 2,
+    nodes: [F],
+    game: { game: 'fallenBranch', passing: true },
+    penalty: [P.back, P.energy],
+    penaltyText: 'If failed: everyone goes back, and loses {x} Energy.',
+  }),
+  mg({
+    name: 'Snagged Pack',
+    artFile: 'torn-pack',
+    from: 1,
+    nodes: [F, W],
+    game: { game: 'snaggedPack' },
+    penalty: [P.random],
+    penaltyText: 'If failed: lose {x} random resources (they fall out).',
   }),
 ];
 

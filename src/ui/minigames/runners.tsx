@@ -4,7 +4,7 @@
  * - **The puzzle games** (Traildle, Find the Object, Remember the Path, Find
  *   the Path, Dodge, Trail Map, Memory Puzzle, Picture Puzzle, Minefield,
  *   Trail Blocks, Sleeping Bear, Whackoon, Crossing, Train!, Rafting, Camp Cleanup and
- *   the quick games)
+ *   the quick games, Nov 27's four among them)
  *   report how they ended; the play stage shows the shared results card.
  *   Their preview is a still frame for now.
  */
@@ -21,12 +21,16 @@ import { TrailBlocks } from './trailBlocks/TrailBlocks';
 import { Crossing } from './lanes/Crossing';
 import { Rafting } from './lanes/Rafting';
 import { Train } from './lanes/Train';
+import { FallenBranch } from './quick/FallenBranch';
 import { FireflyCatch } from './quick/FireflyCatch';
 import { FlySwatter } from './quick/FlySwatter';
+import { IncomingBike } from './quick/IncomingBike';
 import { RaccoonShuffle } from './quick/RaccoonShuffle';
 import { Safari } from './quick/Safari';
 import { SizeUp } from './quick/SizeUp';
+import { SnaggedPack } from './quick/SnaggedPack';
 import { TrailBlazes } from './quick/TrailBlazes';
+import { WrongTurn } from './quick/WrongTurn';
 import { Crossroads } from './signsTrails/Crossroads';
 import { FakeSigns } from './signsTrails/FakeSigns';
 import { RockClimb } from './signsTrails/RockClimb';
@@ -89,6 +93,10 @@ export const PUZZLES: Readonly<Record<string, ComponentType<PuzzleRunProps>>> = 
   packItUp: PackItUp,
   spookyGhost: SpookyGhost,
   crackedPots: CrackedPots,
+  incomingBike: IncomingBike,
+  wrongTurn: WrongTurn,
+  fallenBranch: FallenBranch,
+  snaggedPack: SnaggedPack,
 };
 
 /** Still frames of the puzzle games (the pop-up's GPS and the testing tab). */
@@ -198,6 +206,18 @@ function SpookyGhostStill({ settings, hikers }: MinigamePreviewProps) {
 function CrackedPotsStill({ settings, hikers }: MinigamePreviewProps) {
   return <CrackedPots settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
+function IncomingBikeStill({ settings, hikers }: MinigamePreviewProps) {
+  return <IncomingBike settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function WrongTurnStill({ settings, hikers }: MinigamePreviewProps) {
+  return <WrongTurn settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function FallenBranchStill({ settings, hikers }: MinigamePreviewProps) {
+  return <FallenBranch settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
+function SnaggedPackStill({ settings, hikers }: MinigamePreviewProps) {
+  return <SnaggedPack settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
+}
 function PackItUpStill({ settings, hikers }: MinigamePreviewProps) {
   return <PackItUp settings={settings} hikers={hikers} seed={1} onDone={noop} still />;
 }
@@ -238,4 +258,8 @@ export const PREVIEWS: Readonly<Record<string, ComponentType<MinigamePreviewProp
   packItUp: PackItUpStill,
   spookyGhost: SpookyGhostStill,
   crackedPots: CrackedPotsStill,
+  incomingBike: IncomingBikeStill,
+  wrongTurn: WrongTurnStill,
+  fallenBranch: FallenBranchStill,
+  snaggedPack: SnaggedPackStill,
 };

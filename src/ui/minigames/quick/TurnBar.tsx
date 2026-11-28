@@ -59,12 +59,29 @@ export function TurnBar({
   );
 }
 
-/** A row of squares: `lit` of `total` light (tries left, strikes left, a try used). */
-export function Squares({ total, lit, label }: { total: number; lit: number; label: string }) {
+/**
+ * A row of squares: `lit` of `total` light (tries left, strikes left, a try
+ * used), in the hiker's `color` when given (Incoming Bike!'s bikes dodged).
+ */
+export function Squares({
+  total,
+  lit,
+  label,
+  color,
+}: {
+  total: number;
+  lit: number;
+  label: string;
+  color?: string;
+}) {
   return (
     <span className={styles.squares} aria-label={label}>
       {Array.from({ length: total }, (_, k) => (
-        <span key={k} data-on={k < lit || undefined} />
+        <span
+          key={k}
+          data-on={k < lit || undefined}
+          style={k < lit && color ? { background: color } : undefined}
+        />
       ))}
     </span>
   );

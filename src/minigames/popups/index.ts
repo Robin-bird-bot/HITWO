@@ -44,6 +44,12 @@ import {
   TRAIL_BLOCKS_POPUP,
   WHACKOON_POPUP,
 } from './reaction';
+import {
+  FALLEN_BRANCH_POPUP,
+  INCOMING_BIKE_POPUP,
+  SNAGGED_PACK_POPUP,
+  WRONG_TURN_POPUP,
+} from './quick';
 
 export type { Bar, ControlRow, GamePopup, IfFail, Input, PerHiker, Phrase } from './types';
 
@@ -83,6 +89,10 @@ export const POPUPS: Readonly<Record<string, GamePopup>> = {
   sizeUp: SIZE_UP_POPUP,
   flySwatter: FLY_SWATTER_POPUP,
   raccoonShuffle: RACCOON_SHUFFLE_POPUP,
+  incomingBike: INCOMING_BIKE_POPUP,
+  wrongTurn: WRONG_TURN_POPUP,
+  fallenBranch: FALLEN_BRANCH_POPUP,
+  snaggedPack: SNAGGED_PACK_POPUP,
 };
 
 /**

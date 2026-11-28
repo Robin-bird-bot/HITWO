@@ -1,0 +1,176 @@
+/* Fallen Branch (62-fallen-branch-saw.png), in scene units (320 × 240). */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+
+/* The saw: a handle at each end of a toothed blade. */
+.saw {
+  position: absolute;
+  left: 36px;
+  display: flex;
+  align-items: center;
+  width: 248px;
+  height: 12px;
+  transition: transform 0.12s ease-out;
+  pointer-events: none;
+}
+
+.saw[data-bound] {
+  animation: clunk 0.12s steps(2) 3;
+}
+
+@keyframes clunk {
+  50% {
+    margin-left: 1.5px;
+  }
+}
+
+.handle {
+  flex: none;
+  width: 13px;
+  height: 23px;
+  border: 0.75px solid #111a10;
+  border-radius: 3px;
+  background: #3c4e2f;
+}
+
+.blade {
+  position: relative;
+  flex: 1;
+  height: 5px;
+  border: 0.75px solid #111a10;
+  background: #d3dfaf;
+}
+
+/* Its teeth, along the bottom. */
+.blade::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(135deg, #d3dfaf 0 2px, transparent 2px 6px);
+}
+
+/* TEMPO: the bar, its lit zone and the marker. */
+.tempo {
+  position: absolute;
+  left: 90px;
+  top: 28px;
+  width: 140px;
+  height: 32px;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font-size: 4px;
+}
+
+.track {
+  position: relative;
+  width: 124px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: #3c4e2f;
+}
+
+.zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 1.5px;
+  background: #a0b37d;
+}
+
+.marker {
+  position: absolute;
+  top: -2px;
+  width: 3px;
+  height: 12px;
+  margin-left: -1.5px;
+  background: #d3dfaf;
+  box-shadow: 0 0 0 0.5px #111a10;
+}
+
+.ends {
+  display: flex;
+  justify-content: space-between;
+  width: 112px;
+  color: #a0b37d;
+  font-size: 2.8px;
+}
+
+/* A and D; the next one to press is lit. */
+.keyA,
+.keyD {
+  position: absolute;
+  top: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  border: 0.75px solid #1d2918;
+  border-radius: 2px;
+  background: #1d2918;
+  box-shadow: 0 1.25px 0 #111a10;
+  color: #d3dfaf;
+  font-family: var(--font-pixel);
+  font-size: 7px;
+  pointer-events: none;
+}
+
+.keyA {
+  left: 28px;
+}
+
+.keyD {
+  left: 276px;
+}
+
+.keyA[data-next],
+.keyD[data-next] {
+  background: #d3dfaf;
+  color: #1d2918;
+}
+
+.note {
+  position: absolute;
+  left: 206px;
+  top: 176px;
+  font-size: 3.6px;
+  pointer-events: none;
+}
+
+/* "SWAP!" in the next hiker's color. */
+.swap {
+  position: absolute;
+  left: 160px;
+  top: 74px;
+  transform: translateX(-50%);
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  text-shadow:
+    0 0 1px #111a10,
+    0.75px 0.75px 0 #111a10;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saw {
+    transition: none;
+  }
+
+  .saw[data-bound] {
+    animation: none;
+  }
+}

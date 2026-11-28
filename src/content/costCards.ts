@@ -1,7 +1,8 @@
 /**
- * The 22 cost cards (docs/design/24-challenges-reset.md, section 4, "Cost
- * cards"): basic problems on the trail. When one is revealed, the hikers it
- * judges pay its cost or take its punishment.
+ * The 18 cost cards (docs/design/24-challenges-reset.md, section 4, "Cost
+ * cards"): basic problems on the trail. (There were 22: Incoming Bike!,
+ * Wrong Turn, Fallen Branch and Snagged Pack are minigames now.) When one
+ * is revealed, the hikers it judges pay its cost or take its punishment.
  *
  * - **Party** cards are paid once, by anyone on the tile; **each-hiker**
  *   cards judge every hiker on their own (others can chip in).
@@ -40,8 +41,9 @@ import {
  * "Honestly the minigames are much more fun… every challenge is a
  * minigame"): the cost cards are switched off, their data kept so they can
  * come back as minigames or opportunities. Incoming Bike!, Wrong Turn, Fallen
- * Branch and Snagged Pack return as quick minigames
- * (30-quick-minigames.md) in src/content/minigameChallenges.ts.
+ * Branch and Snagged Pack came back as quick minigames
+ * (30-quick-minigames.md) in src/content/minigameChallenges.ts, so their
+ * cards are gone from here.
  */
 const off = (card: ChallengeDef): ChallengeDef => ({ ...card, enabled: false });
 
@@ -59,19 +61,6 @@ export const COST_CARDS: readonly ChallengeDef[] = [
     penaltyText: ['If failed: lose {x} Energy, and Sluggish for 1 phase.'],
   }),
   listed({
-    name: 'Wrong Turn',
-    art: true,
-    artFile: 'split-path',
-    tier: 1,
-    nodes: [F, M],
-    scope: 'party',
-    rolls: { n: X(3, 5) },
-    cost: [opt(stat('n', 'energy'))],
-    costText: ['Spend {n} Energy across the party.'],
-    penalty: [P.back, P.appetite],
-    penaltyText: ['If not: everyone goes back, and loses {x} Appetite.'],
-  }),
-  listed({
     name: 'Thirsty Trail',
     art: true,
     tier: 1,
@@ -81,19 +70,6 @@ export const COST_CARDS: readonly ChallengeDef[] = [
     costText: ['Spend 1 of the party’s most for each hiker here (traded for water).'],
     penalty: [P.appetite],
     penaltyText: ['If not: every hiker loses {x} Appetite.'],
-  }),
-  listed({
-    name: 'Snagged Pack',
-    art: true,
-    artFile: 'torn-pack',
-    tier: 1,
-    nodes: [F, W],
-    scope: 'each',
-    rolls: { n: X(2, 2) },
-    cost: [opt(res('n', undefined, { distinct: true }))],
-    costText: ['Spend 1 each of {n} different resources (patch it).'],
-    penalty: [P.random],
-    penaltyText: ['If failed: lose {x} random resources (they fall out).'],
   }),
   listed({
     name: 'Heavy Pack',
@@ -108,19 +84,6 @@ export const COST_CARDS: readonly ChallengeDef[] = [
     costText: ['Carry no more than 6 resources. Spend the extras to pass.'],
     penalty: [P.energy, cond('sluggish', 'phases', 'phases')],
     penaltyText: ['If failed: lose {x} Energy, and Sluggish for {phases} phases.'],
-  }),
-  listed({
-    name: 'Incoming Bike!',
-    art: true,
-    artFile: 'incoming-bike',
-    tier: 1,
-    nodes: [F, R],
-    scope: 'each',
-    rolls: { n: X(1, 2) },
-    cost: [opt(stat('n', 'energy'))],
-    costText: ['Spend {n} Energy (jump out of the way).'],
-    penalty: [P.back, P.random],
-    penaltyText: ['If failed: go back, and lose {x} random resources (knocked loose).'],
   }),
   listed({
     name: 'Sunburn',
@@ -227,19 +190,6 @@ export const COST_CARDS: readonly ChallengeDef[] = [
     costText: ['Spend {n} Fiber (a wrap), or 3 Energy.'],
     penalty: [P.injury],
     penaltyText: ['If failed: 1 injury.'],
-  }),
-  listed({
-    name: 'Fallen Branch',
-    art: true,
-    artFile: 'withered-forest',
-    tier: 2,
-    nodes: [F],
-    scope: 'party',
-    rolls: { n: X(2, 3), energy: X(4, 4) },
-    cost: [opt(res('n', { categories: ['building'] })), opt(stat('energy', 'energy'))],
-    costText: ['Spend {n} Building (clear it), or {energy} Energy across the party.'],
-    penalty: [P.back, P.energy],
-    penaltyText: ['If not: everyone goes back, and loses {x} Energy.'],
   }),
   listed({
     name: 'Cold Snap',

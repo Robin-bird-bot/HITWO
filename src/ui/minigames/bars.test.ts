@@ -80,6 +80,8 @@ describe('each game’s bar', () => {
     ['trails'],
     ['fallingRocks'],
     ['memory'],
+    ['wrongTurn'],
+    ['snaggedPack'],
   ])('%s: live', (id) => {
     expect(hudBar(id)).toContain('data-live="true"');
   });
@@ -92,6 +94,8 @@ describe('each game’s bar', () => {
     ['rockClimb'],
     ['birdsong'],
     ['trailBlocks'],
+    ['incomingBike'],
+    ['fallenBranch'],
   ])('%s: eased', (id) => {
     expect(hudBar(id)).not.toContain('data-live');
   });
