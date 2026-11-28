@@ -3,9 +3,9 @@
  * backtick key. Always available with the dev server; on the live site only
  * when the address has ?debug.
  *
- * Tools: a new game from a seed, phases, revealing the map, stats, resources,
- * traits, the next scavenge, Abundance, conditions, challenges, weather and
- * tonight's night event.
+ * Tools: a new game from a seed, the run clock, phases, revealing the map,
+ * stats, resources, traits, the next scavenge, Abundance, conditions,
+ * challenges, weather and tonight's night event.
  */
 import { useState } from 'react';
 import { CARDS, CONDITIONS, ITEMS, SCAVENGE_CARDS, SCAVENGE_CARD_ORDER } from '../../content';
@@ -39,6 +39,7 @@ import { OPEN_WONDER_EVENT } from '../wonder/WonderWindow';
 import { TestHikerPicker, TraitTools } from './DebugTraits';
 import { MapLookTools } from './MapLookTools';
 import { EdgeTest } from './EdgeTest';
+import { DebugRunClock } from './DebugRunClock';
 import { SimplifyTools } from './DebugSimplify';
 import { TrailsTools } from './DebugTrails';
 import styles from './DebugPanel.module.css';
@@ -103,6 +104,11 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
             New game with this seed
           </button>
         </div>
+      </section>
+
+      <section className={styles.group}>
+        <h3 className={styles.heading}>Run clock</h3>
+        <DebugRunClock state={state} />
       </section>
 
       <section className={styles.group}>
