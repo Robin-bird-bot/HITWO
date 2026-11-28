@@ -1,190 +1,243 @@
-/* Sizes are in stage pixels (1600×1000); the Stage scales them to the window. */
-
+/*
+ * The title screen (35-ui-overhaul.md, section 8; the prototype's `#title`).
+ * Sizes are in stage pixels (1600×1000); the Stage scales them to the window.
+ */
 .scene {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: var(--sky-morning);
+  background: linear-gradient(180deg, #f3cf96 0%, #f2b47c 38%, #e88f6a 62%, #7b6f9a 100%);
 }
 
-.sun,
-.land,
-.texture {
+/* The slowly turning sunburst behind the sun. */
+.rays {
   position: absolute;
+  left: 1244px;
+  top: 300px;
+  width: 2900px;
+  height: 2900px;
+  margin: -1450px;
+  background: repeating-conic-gradient(rgba(255, 245, 215, 0.18) 0 6deg, transparent 6deg 14deg);
+  animation: spin 90s linear infinite;
   pointer-events: none;
-  user-select: none;
+}
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
 }
 
 .sun {
-  width: 760px;
-  height: 760px;
-  left: 940px;
-  top: -230px;
+  position: absolute;
+  left: 1110px;
+  top: 166px;
+  width: 268px;
+  height: 268px;
+  border-radius: 50%;
+  background: #fff2cf;
+  box-shadow: 0 0 130px 44px rgba(255, 236, 190, 0.55);
+  pointer-events: none;
 }
 
-.land {
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center bottom;
+/* A backdrop layer, wider than the stage so it can drift with the pointer. */
+.layer {
+  position: absolute;
+  left: -44px;
+  width: 1688px;
+  height: 1056px;
+  background-size: 100% 100%;
+  transition: transform 0.25s ease-out;
+  pointer-events: none;
 }
 
-/* Wyatt's pixel halftone at about 10% on large backgrounds. */
+/* Wyatt's pixel halftone, faint. */
 .texture {
+  position: absolute;
   inset: 0;
   background-repeat: repeat;
-  opacity: 0.1;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
-.panel {
+.leaf {
+  position: absolute;
+  top: -30px;
+  z-index: 3;
+  width: 18px;
+  height: 11px;
+  border-radius: 0 80% 0 80%;
+  animation: fall linear infinite;
+  pointer-events: none;
+}
+
+@keyframes fall {
+  0% {
+    transform: translate(0, 0) rotate(0);
+  }
+  25% {
+    transform: translate(44px, 278px) rotate(140deg);
+  }
+  50% {
+    transform: translate(-22px, 556px) rotate(260deg);
+  }
+  75% {
+    transform: translate(56px, 834px) rotate(380deg);
+  }
+  100% {
+    transform: translate(0, 1110px) rotate(520deg);
+  }
+}
+
+/* Logo 4: Wyatt's mint lettering, grown over (2200 × 940). */
+.logoWrap {
+  position: absolute;
+  left: 189px;
+  top: 12px;
+  z-index: 4;
+  width: 1222px;
+  height: 522px;
+  margin: 0;
+}
+
+.logo {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  filter: drop-shadow(0 14px 18px rgba(40, 20, 10, 0.35));
+  user-select: none;
+}
+
+.logo[data-dropped] {
+  opacity: 1;
+  animation: drop 1s cubic-bezier(0.3, 1.35, 0.5, 1) both;
+}
+
+@keyframes drop {
+  from {
+    transform: translateY(-620px) rotate(-3deg);
+  }
+}
+
+/* The puff of leaves as it lands. */
+.puff {
   position: absolute;
   left: 50%;
-  top: 190px;
+  top: 74%;
+  pointer-events: none;
+}
+
+.puff i {
+  position: absolute;
+  width: 14px;
+  height: 9px;
+  border-radius: 0 80% 0 80%;
+  opacity: 0;
+  animation: puff 1.2s cubic-bezier(0.15, 0.7, 0.4, 1) 0.35s;
+}
+
+@keyframes puff {
+  from {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + 90px)) rotate(var(--spin));
+  }
+}
+
+.buttons {
+  position: absolute;
+  left: 50%;
+  top: 600px;
+  z-index: 5;
+  width: 378px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   transform: translateX(-50%);
-  width: 720px;
-  padding: 56px 64px 32px;
-  border-radius: 24px;
-  background: var(--panel);
-  box-shadow: 0 24px 60px rgba(13, 18, 16, 0.45);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 28px;
-  text-align: center;
+  animation: fadeIn 0.6s 0.8s both;
 }
 
-.title {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.button {
+  height: 70px;
+  border: 3px solid var(--ink);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-pixel);
-  font-weight: normal;
-  font-size: 96px;
-  line-height: 1;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-
-/* The section-progress dashes from the game screen's biome card. */
-.trail {
-  display: flex;
-  gap: 10px;
-}
-
-.trail span {
-  width: 56px;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.trail span:first-child {
-  background: var(--gold);
-}
-
-.newHike {
-  width: 360px;
-  height: 120px;
+  font-size: 22px;
+  box-shadow: 4px 4px 0 var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  border: none;
-  border-radius: 18px;
-  background: var(--gold);
-  color: var(--page);
-  font-family: var(--font-pixel);
-  font-size: 44px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  box-shadow: 0 10px 28px rgba(13, 18, 16, 0.35);
-  transition:
-    transform 150ms ease,
-    filter 150ms ease;
+  gap: 2px;
+  transition: transform 0.1s;
 }
 
-.newHike:hover {
-  filter: brightness(1.07);
+.button small {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.go {
+  height: 82px;
+  background: var(--gold);
+  font-size: 27px;
+}
+
+.button:hover {
   transform: translateY(-2px);
 }
 
-.newHike:active {
-  transform: translateY(2px);
+.button:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 
-.newHike:focus-visible {
-  outline: 4px solid var(--text);
-  outline-offset: 5px;
-}
-
-.saved {
-  font-family: var(--font-body);
-  font-size: 20px;
-  letter-spacing: 0;
-  text-transform: none;
-  font-weight: 600;
-}
-
-.secondary {
-  width: 360px;
-  height: 84px;
-  margin-top: -8px;
-  border-radius: 18px;
-  border: 2px solid rgba(241, 234, 219, 0.35);
-  background: rgba(255, 255, 255, 0.04);
-  font-family: var(--font-pixel);
-  font-size: 30px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+.button:focus-visible {
+  outline: 4px solid #fff3df;
+  outline-offset: 4px;
 }
 
 .notice {
-  max-width: 520px;
-  font-size: 20px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 9px;
+  background: rgba(29, 34, 32, 0.85);
+  font-size: 16px;
   line-height: 1.4;
-  color: var(--text-muted);
+  color: var(--text);
 }
 
-.build {
+/* Dev only: Minigame testing and a hike with test hikers. */
+.dev {
   position: absolute;
-  right: 24px;
+  left: 24px;
   bottom: 20px;
+  z-index: 5;
+  max-width: 560px;
   padding: 8px 12px;
   border-radius: 10px;
-  background: var(--panel);
-  font-family: var(--font-pixel-dot);
-  font-size: 16px;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
+  background: rgba(29, 34, 32, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 
-/* Dev only: start a hike with test hikers (Phase 10a). */
-.testPicker {
-  margin-top: 12px;
-  max-width: 520px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-.testPicker summary {
-  cursor: pointer;
-  font-family: var(--font-pixel);
-  letter-spacing: 0.05em;
-}
-
-/* A plain link-like button: the Minigame testing tab (Phase 10.8). */
 .plain {
-  margin-top: 4px;
-  padding: 8px 14px;
+  padding: 6px 4px;
   border: none;
-  border-radius: 8px;
   background: none;
   color: #c9c2b2;
   font-family: var(--font-body);
@@ -198,7 +251,42 @@
   color: #f1eadb;
 }
 
-.plain:focus-visible {
-  outline: 2px solid #e9b44c;
-  outline-offset: 2px;
+.testPicker {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.testPicker summary {
+  cursor: pointer;
+  font-family: var(--font-pixel);
+  letter-spacing: 0.05em;
+}
+
+.build {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  z-index: 5;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--panel);
+  font-family: var(--font-pixel-dot);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rays,
+  .buttons {
+    animation: none;
+  }
+
+  .logo[data-dropped] {
+    animation: none;
+  }
+
+  .layer {
+    transition: none;
+  }
 }

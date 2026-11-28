@@ -18,6 +18,9 @@ export const ASSETS = {
     blueMountains: asset('backgrounds/241-mountains-blue.webp'),
     greenRidge: asset('backgrounds/240-ridge-green-with-trees.webp'),
     grassHills: asset('backgrounds/247-grass-hills-foreground.webp'),
+    /** The title screen's nearer rows (35-ui-overhaul.md, section 8). */
+    pineForest: asset('backgrounds/266-pine-forest-dense.webp'),
+    pineRow: asset('backgrounds/265-pine-row-bright.webp'),
   },
   sky: {
     sun: asset('sky/sun.png'),

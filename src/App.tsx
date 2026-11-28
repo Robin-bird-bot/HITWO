@@ -36,6 +36,9 @@ import { Stage } from './ui/stage/Stage';
 import { describeSave } from './ui/title/describeSave';
 import { TitleScreen } from './ui/title/TitleScreen';
 import { MinigameTesting } from './ui/minigames/MinigameTesting';
+import { LoadingScreen } from './ui/loading/LoadingScreen';
+import { Spotlight } from './ui/transition/Spotlight';
+import { spotlight } from './ui/transition/transition';
 
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
@@ -46,10 +49,26 @@ const NOTICES: Record<LoadFailure, string | null> = {
   unsupported: 'This run is from an older version and can’t continue. Start a new hike below.',
 };
 
+/** Every full-screen change goes through the spotlight (35-ui-overhaul.md, section 10). */
+const go = (change: () => void) => {
+  spotlight({ change });
+};
+
 export function App() {
+  return (
+    <>
+      <Screens />
+      <Spotlight />
+    </>
+  );
+}
+
+function Screens() {
   const hash = useHash();
   const game = useGame();
-  const [screen, setScreen] = useState<'title' | 'select' | 'pack' | 'game' | 'minigames'>('title');
+  const [screen, setScreen] = useState<
+    'title' | 'select' | 'pack' | 'loading' | 'game' | 'minigames'
+  >('title');
   /**
    * The party a new hike will start with, waiting for "replace my saved
    * hike?": packing first (hiker select), or straight in (the test hikers).
@@ -65,9 +84,16 @@ export function App() {
     null,
   );
   const skipPacking = useSkipPacking();
-  // The title's evening forest; the game screen sets its own.
+  // The title's evening forest; the game screen sets its own; loading plays
+  // where the party is going (at half, 35-ui-overhaul.md, section 9).
   useAmbience(
-    screen === 'title' ? { place: 'title' } : screen === 'game' && game ? null : { place: 'none' },
+    screen === 'title'
+      ? { place: 'title' }
+      : screen === 'loading' && game
+        ? { place: 'trail', biome: game.section.biome, night: game.phase === 'night' }
+        : screen === 'game' && game
+          ? null
+          : { place: 'none' },
   );
 
   if (hash.startsWith('#debug-map')) return <DebugMap hash={hash} />;
@@ -87,9 +113,12 @@ export function App() {
     gameStore.newGame(createGame({ seed, hikers, ...(packed ? { packed } : {}) }));
     sfx('hike.start');
     setPending(null);
-    setPacking(null);
-    setSelection(null);
-    setScreen('game');
+    // Packing → loading → the map.
+    go(() => {
+      setPacking(null);
+      setSelection(null);
+      setScreen('loading');
+    });
   };
   /** Hiker select's Start: the party packs for the hike (Testing → Skip packing: at random). */
   const pack = (hikers: readonly HikerSetup[]) => {
@@ -97,8 +126,10 @@ export function App() {
     setPending(null);
     if (skipPacking) startNew(seed, hikers, autoPack({ seed, seats: seatsFor(seed, hikers) }));
     else {
-      setPacking({ seed, hikers });
-      setScreen('pack');
+      go(() => {
+        setPacking({ seed, hikers });
+        setScreen('pack');
+      });
     }
   };
   /** First asks when it would replace a saved hike that isn't over. */
@@ -107,10 +138,12 @@ export function App() {
     else if (then === 'pack') pack(hikers);
     else startNew(randomSeed(), hikers);
   };
-  const newHike = () => {
-    setSelection(null);
-    setScreen('select');
-  };
+  const newHike = () =>
+    go(() => {
+      setSelection(null);
+      setScreen('select');
+    });
+  const toTitle = () => go(() => setScreen('title'));
   /** Dev only: a hike with test hikers (Phase 10a). */
   const testHikers = (ids: string[]) =>
     ids.flatMap((id) => TEST_HIKERS.find((h) => h.id === id) ?? []);
@@ -118,16 +151,11 @@ export function App() {
   if (screen === 'game' && game) {
     return (
       <>
-        <GameScreen
-          key={game.seed}
-          state={game}
-          onQuit={() => setScreen('title')}
-          onNewHike={newHike}
-        />
+        <GameScreen key={game.seed} state={game} onQuit={toTitle} onNewHike={newHike} />
         {debugEnabled() && (
           <DebugPanel
             state={game}
-            onQuit={() => setScreen('title')}
+            onQuit={toTitle}
             onNewGame={startNew}
             onNewTestHike={(ids) => startNew(randomSeed(), testHikers(ids))}
           />
@@ -159,7 +187,7 @@ export function App() {
               setSelection(picked);
               startAsking(hikers, 'pack');
             }}
-            onBack={() => setScreen('title')}
+            onBack={toTitle}
           />
           {replaceDialog}
         </Stage>
@@ -176,15 +204,19 @@ export function App() {
           key={packing.seed}
           seed={packing.seed}
           hikers={packing.hikers}
-          onBack={() => {
-            setPacking(null);
-            setScreen('select');
-          }}
-          onTitle={() => {
-            setPacking(null);
-            setSelection(null);
-            setScreen('title');
-          }}
+          onBack={() =>
+            go(() => {
+              setPacking(null);
+              setScreen('select');
+            })
+          }
+          onTitle={() =>
+            go(() => {
+              setPacking(null);
+              setSelection(null);
+              setScreen('title');
+            })
+          }
           onDone={(packed) => startNew(packing.seed, packing.hikers, packed)}
         />
       </Stage>
@@ -195,7 +227,16 @@ export function App() {
   if (screen === 'minigames') {
     return (
       <Stage>
-        <MinigameTesting onBack={() => setScreen('title')} />
+        <MinigameTesting onBack={toTitle} />
+      </Stage>
+    );
+  }
+
+  // Loading the biome before the map (Continue, or a new hike after packing).
+  if (screen === 'loading' && game) {
+    return (
+      <Stage>
+        <LoadingScreen biome={game.section.biome} onDone={() => go(() => setScreen('game'))} />
       </Stage>
     );
   }
@@ -204,11 +245,14 @@ export function App() {
   return (
     <Stage>
       <TitleScreen
-        saved={game ? describeSave(game) : null}
+        saved={game ? `${describeSave(game)} · ${partyWords(game)}` : null}
         notice={!game && problem ? NOTICES[problem] : null}
-        onContinue={() => setScreen('game')}
+        onContinue={() => {
+          // A finished hike opens straight onto its end; one still going loads first.
+          if (game) go(() => setScreen(isHikeOver(game) ? 'game' : 'loading'));
+        }}
         onNewHike={newHike}
-        onMinigames={() => setScreen('minigames')}
+        onMinigames={() => go(() => setScreen('minigames'))}
         {...(debugEnabled()
           ? {
               testPicker: (
@@ -220,4 +264,10 @@ export function App() {
       {replaceDialog}
     </Stage>
   );
+}
+
+/** "4 hikers", for the title's Continue. */
+function partyWords(game: { hikers: readonly { status: string }[] }): string {
+  const n = game.hikers.filter((h) => h.status !== 'abandoned').length;
+  return `${n} hiker${n === 1 ? '' : 's'}`;
 }
