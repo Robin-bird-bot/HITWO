@@ -477,6 +477,44 @@
     inset 0 -3px 0 #7a5418,
     0 5px 0 #2a170c;
 }
+/* The blinking sign over the empty reels while a free spin waits for a press. */
+.pressme {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  pointer-events: none;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 26px;
+  letter-spacing: 0.1em;
+  color: #ffe08a;
+  padding: 14px 22px 12px;
+  background: rgba(40, 20, 8, 0.82);
+  border: 3px solid #e8b04a;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 3px rgba(40, 20, 8, 0.6),
+    0 0 26px rgba(255, 190, 80, 0.55);
+  text-shadow: 0 2px 0 #5a2e0c;
+  animation: pressme 1.1s ease-in-out infinite;
+}
+.pressme small {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: #f1d7a0;
+}
+@keyframes pressme {
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(40, 20, 8, 0.6),
+      0 0 6px rgba(255, 190, 80, 0.2);
+    color: #fff4cf;
+  }
+}
 .reels {
   position: relative;
   width: 630px;
@@ -1342,6 +1380,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pressme,
   .sq.run .body,
   .tail {
     animation: none !important;

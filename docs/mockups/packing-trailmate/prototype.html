@@ -505,8 +505,10 @@ async function boot(full) {
   await typeStat('SUPPLY SCAN', 26);
   for (const r of S.reels) { r.el.classList.remove('dark', 'noanim'); r.el.classList.add('on'); SND.crton(); await wait(full ? 130 : 70); }
   setTimeout(() => S.reels.forEach(r => r.el.classList.remove('on')), 600);
-  S.busy = false; await wait(250); spin(true);
+  S.busy = false; armFree();
 }
+// Wyatt: the slots don't start by themselves. The first scan (and each turn's, and REBOOT's) is free, but the player starts it.
+function armFree() { S.free = true; setStat('PRESS SCAN', 'FREE SCAN READY'); renderAll(); }
 function newItem(type, tier = 1) { const it = rnd(DATA.items[type][tier]); return { type, tier, ...it }; }
 function rollItem() { const type = weighted(TYPES.map(t => [t, TYPE[t].odds])); return newItem(type, Math.random() < B.tier2Chance && DATA.items[type][2] ? 2 : 1); }
 function newBundle(size) { const res = []; for (let i = 0; i < size; i++) res.push(rnd(DATA.resIds)); return { size, res }; }
@@ -544,7 +546,7 @@ function symHTML(v) {
 }
 function labelFor(r) {
   const s = $('labels').children[r.i]; if (!s) return;
-  if (!r.lit || !r.val || r.spinning) { s.className = 'off'; s.style.setProperty('--tc', '#5e7a52'); s.innerHTML = `<i></i>${r.lit && r.spinning ? 'SCANNING' : 'OFFLINE'}`; return; }
+  if (!r.lit || !r.val || r.spinning) { s.className = 'off'; s.style.setProperty('--tc', '#5e7a52'); s.innerHTML = `<i></i>${r.lit && r.spinning ? 'SCANNING' : r.lit ? 'READY' : 'OFFLINE'}`; return; }
   s.className = '';
   if (r.val.size) { s.style.setProperty('--tc', SIZEC[Math.min(5, r.val.size)]); s.innerHTML = `<i></i>×${r.val.size} BUNDLE`; }
   else { s.style.setProperty('--tc', r.val.tier === 2 ? '#FFD23F' : TYPE[r.val.type].tc); s.innerHTML = `<i></i>${TYPE[r.val.type].label}${r.val.tier === 2 ? ' · II' : ''}`; }
@@ -582,6 +584,7 @@ async function spin(free = false) {
   if (S.busy || S.phase === 'done') return;
   const lit = S.reels.filter(r => r.lit);
   if (!lit.length) return;
+  if (S.free) { free = true; S.free = false; }
   if (!free) { if (S.respins <= 0) { $('lever').animate([{ transform: 'rotate(-12deg)' }, { transform: 'rotate(-4deg)' }, { transform: 'rotate(-12deg)' }], { duration: 250 }); SND.sad(); setStat('NO SCANS LEFT'); $('bat').animate([{ boxShadow: 'inset 0 0 0 2px #d8283e, 0 0 18px rgba(216,40,62,.7)' }, { boxShadow: 'inset 0 0 0 2px #2a302c' }], { duration: 500 }); return; } }
   S.busy = true; S.sel = null; hideTip(); S.reels.forEach(r => { r.el.classList.remove('sel', 'win'); r.lock = false; r.el.classList.remove('lock'); }); S.jackpot = false;
   pullLever();
@@ -750,7 +753,7 @@ async function take(r, h, gh) {
 async function after() {
   if (S.phase === 'items') {
     if (S.picks <= 0) { renderAll(); await stampIt('ALL PACKED!', `${S.party.length} HIKERS · ${2 + S.party.length} ITEMS`, true); $('next').textContent = 'NEXT: RESOURCES ▸'; $('next').classList.add('on'); return; }
-    if (!S.reels.some(r => r.lit)) { await wait(350); setStat('REBOOT...'); await stampIt('REBOOT!', 'EVERY SCREEN BACK ONLINE · FREE SCAN'); await relight(); await wait(250); spin(true); }
+    if (!S.reels.some(r => r.lit)) { await wait(350); setStat('REBOOT...'); await stampIt('REBOOT!', 'EVERY SCREEN BACK ONLINE · FREE SCAN'); await relight(); armFree(); }
   } else {
     const h = S.party[S.turn];
     if (h.bundles.length >= B.bundlesEach) {
@@ -761,7 +764,7 @@ async function after() {
   }
   renderAll();
 }
-async function relight() { for (const r of S.reels) { r.lit = true; r.lock = false; r.who = null; r.el.classList.remove('dark', 'lock'); r.el.classList.add('on'); SND.crton(); await wait(90); } setTimeout(() => S.reels.forEach(r => r.el.classList.remove('on')), 600); }
+async function relight() { for (const r of S.reels) { r.lit = true; r.lock = false; r.who = null; r.el.classList.remove('dark', 'lock'); const st = r.el.querySelector('.strip'); st.getAnimations().forEach(a => a.cancel()); st.innerHTML = ''; r.val = null; r.prev2 = r.next2 = null; labelFor(r); r.el.classList.add('on'); SND.crton(); await wait(90); } setTimeout(() => S.reels.forEach(r => r.el.classList.remove('on')), 600); }
 async function toResources() {
   $('next').classList.remove('on'); S.reels.forEach(r => { r.lit = false; r.el.classList.add('dark'); }); SND.clack(); await wait(500);
   S.phase = 'res'; S.turn = 0; $('s1').className = 'done'; $('s2').className = 'on';
@@ -771,9 +774,9 @@ async function toResources() {
 async function startTurn() {
   const h = S.party[S.turn]; S.respins = B.resRespins;
   $('turnpic').src = h.src; $('turnbox').style.setProperty('--tc', h.color); $('turnbox').classList.add('on');
-  S.reels.forEach(r => { r.lit = true; r.val = null; r.who = null; r.el.classList.remove('dark', 'lock', 'noanim'); r.el.classList.add('on'); });
+  S.reels.forEach(r => { r.lit = true; r.who = null; r.el.classList.remove('dark', 'lock', 'noanim'); const st = r.el.querySelector('.strip'); st.getAnimations().forEach(a => a.cancel()); st.innerHTML = ''; r.val = null; r.prev2 = r.next2 = null; r.el.classList.add('on'); });
   setTimeout(() => S.reels.forEach(r => r.el.classList.remove('on')), 600); SND.crton();
-  renderAll(); await typeStat(`${h.name.toUpperCase()}'S PICK`, 30); await wait(250); spin(true);
+  renderAll(); await typeStat(`${h.name.toUpperCase()}'S PICK`, 30); armFree();
 }
 async function startHike() {
   S.sel = null; S.reels.forEach(r => r.el.classList.remove('sel')); markTargets(false);
@@ -859,10 +862,10 @@ function renderAll() {
   const items = S.phase === 'items';
   $('pbig').textContent = items ? (S.picks > 0 ? `TAKE ${S.picks} MORE` : 'ALL PACKED') : S.phase === 'res' ? (S.party.every(h => h.bundles.length >= B.bundlesEach) ? 'ALL SET' : `TAKE ${Math.max(0, B.bundlesEach - (S.party[S.turn]?.bundles.length || 0))} MORE`) : 'READY';
   $('psm').textContent = items ? `2 + 1 PER HIKER = ${2 + S.party.length} ITEMS` : S.phase === 'res' ? `${S.party[S.turn]?.name.toUpperCase() || ''} · BUNDLES GO HERE` : 'HAPPY TRAILS';
-  const off = S.respins <= 0 || S.phase === 'done' || !S.reels.some(r => r.lit);
+  const off = (!S.free && S.respins <= 0) || S.phase === 'done' || !S.reels.some(r => r.lit);
   $('lever').classList.toggle('off', off); $('scanbtn').classList.toggle('off', off); $('scanbtn').classList.toggle('ready', !off && !S.busy);
   const need = items ? S.picks > 0 : S.phase === 'res' && (S.party[S.turn]?.bundles.length || 0) < B.bundlesEach;
-  $('lvtag').innerHTML = !need ? '' : off ? 'NO SCANS LEFT:<br>TAKE ONE' : 'PULL THE ANTENNA,<br>PRESS SCAN,<br>OR PRESS SPACE';
+  $('lvtag').innerHTML = !need ? '' : S.free ? 'FREE SCAN!<br>PRESS SCAN, PULL<br>THE ANTENNA,<br>OR PRESS SPACE' : off ? 'NO SCANS LEFT:<br>TAKE ONE' : 'PULL THE ANTENNA,<br>PRESS SCAN,<br>OR PRESS SPACE';
   $('help').innerHTML = items
     ? `<b>Press SCAN</b> (or pull the antenna) to spin. <b>Drag an item onto a hiker</b> to pack it: its screen goes offline. A rescan spins <b>every screen still on</b>, so anything you leave is gone. Each rescan uses a battery cell.`
     : S.phase === 'res' ? `<b>Each hiker takes 2 bundles.</b> A bundle holds 1 to 3 random resources (rarely 5). Hover one to see what's inside. Bundles open into resources when the hike starts.`

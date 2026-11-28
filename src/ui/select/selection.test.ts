@@ -59,7 +59,7 @@ describe('starting a hike', () => {
     }
   });
 
-  it('the run gets the hikers in spot order, each in their spot color, with their bags', () => {
+  it('the run gets the hikers in spot order, each in their spot color, with their blueprints', () => {
     const hikers = startingParty(party(null, 'mom', null, 'finn'));
     expect(hikers.map((h) => [h.id, h.color])).toEqual([
       ['mom', PARTY_COLORS[1]],
@@ -70,7 +70,9 @@ describe('starting a hike', () => {
       ['mom', PARTY_COLORS[1]],
       ['finn', PARTY_COLORS[3]],
     ]);
-    expect(game.hikers[1]?.inventory.bag.some((i) => i.itemId === 'leash')).toBe(true);
+    // No starting items (29-core-loop.md, section 7); Mom's blueprint still comes along.
+    expect(game.hikers.every((h) => h.inventory.bag.length === 0)).toBe(true);
+    expect(game.hikers[0]?.blueprints).toHaveLength(1);
   });
 
   it('the button says how many', () => {

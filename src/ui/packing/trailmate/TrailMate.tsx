@@ -450,6 +450,9 @@ export function TrailMateMachine({
         }
         await typeStat('SUPPLY SCAN', 26);
       },
+      armed() {
+        say('PRESS SCAN', 'FREE SCAN READY');
+      },
       lever() {
         TRAILMATE_SOUNDS.ratchet();
         lever.current?.animate(
@@ -846,7 +849,9 @@ export function TrailMateMachine({
               const label = off
                 ? rv.lit && rv.spin
                   ? 'SCANNING'
-                  : 'OFFLINE'
+                  : rv.lit
+                    ? 'READY'
+                    : 'OFFLINE'
                 : v.kind === 'bundle'
                   ? `×${v.resources.length} BUNDLE`
                   : `${TYPE_LABEL[v.type]}${v.tier === 2 ? ' · II' : ''}`;
@@ -930,7 +935,17 @@ export function TrailMateMachine({
       </button>
       {need && (
         <p className={styles.lvtag}>
-          {leverOff ? (
+          {state.freeSpin ? (
+            <>
+              FREE SCAN!
+              <br />
+              PRESS SCAN, PULL
+              <br />
+              THE ANTENNA,
+              <br />
+              OR PRESS SPACE
+            </>
+          ) : leverOff ? (
             <>
               NO SCANS LEFT:
               <br />

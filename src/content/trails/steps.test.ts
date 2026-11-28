@@ -10,7 +10,7 @@ import { CARDS, CHALLENGES } from '../challenges';
 import { ITEMS } from '../items';
 import { validateAction } from '../../engine/applyAction';
 import { abilitiesFor, freePrepareSlots, queryContext, watchReach } from '../../engine/effects';
-import { bagSlots } from '../../engine/inventory';
+import { bagSlots, packingPicks } from '../../engine/inventory';
 import { craftSetup, ownCraftTier } from '../../engine/items/craft';
 import { makeItem } from '../../engine/items/make';
 import { syncExtraUses } from '../../engine/items/properWay';
@@ -595,8 +595,19 @@ describe('Wink: Leader Trail', () => {
 });
 
 describe('Wink: Packer Path', () => {
-  it('Packed Toolbox: start with 2 random Tier 1 tools', () => {
+  it('Packed Toolbox: picked at the start, 2 more item picks and no tools (29, section 7)', () => {
     const s = trailGame([['grandpaWink', 'wink-packer']]);
+    const wink = hiker(s, 'grandpaWink');
+    expect(wink.inventory.bag).toEqual([]);
+    expect(packingPicks(s, wink)).toBe(B.packedToolbox.picks);
+  });
+
+  it('Packed Toolbox: learned on the trail, 2 random Tier 1 tools', () => {
+    const s = learn(
+      trailGame([['grandpaWink', 'wink-architect']]),
+      'grandpaWink',
+      'wink-packer-t1',
+    );
     const tools = hiker(s, 'grandpaWink').inventory.bag.map((i) => ITEMS[i.itemId]);
     expect(tools).toHaveLength(B.packedToolbox.tools);
     expect(tools.every((d) => d?.type === 'tool' && d.tier === 1)).toBe(true);
@@ -609,6 +620,8 @@ describe('Wink: Packer Path', () => {
       'wink-packer-t2',
     );
     const wink = hiker(s, 'grandpaWink');
+    // No starting tools any more (29, section 7): one from the packing machine.
+    wink.inventory.bag.push(makeItem(s, 'trowel', { prefix: 'test' }));
     const tool = wink.inventory.bag[0]!;
     const full = tool.usesLeft!;
     syncExtraUses(s);

@@ -12,7 +12,6 @@
  * and nothing else.
  */
 import { CLASS_COLORS, CLASS_NAMES } from '../../content/classes';
-import { ITEMS } from '../../content/items';
 import { ROSTER_BY_ID, type RosterHiker } from '../../content/roster';
 import { TRAITS } from '../../content/traits';
 import type { StartingBag } from '../../engine/newGame';
@@ -77,14 +76,9 @@ const OPEN = { name: 'Open slot', text: 'Filled on a level-up.' } as const;
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-/** A starting bag in words: "Leash", "2 Dog Food", "Dog Food + 1 random Tier 1 blueprint". */
+/** A starting bag in words: "1 random Tier 1 blueprint", "2 Presents", or "" for none. */
 export function bagWords(bag: StartingBag): string {
-  const counts = new Map<string, number>();
-  for (const id of bag.items ?? []) counts.set(id, (counts.get(id) ?? 0) + 1);
-  const parts = [...counts].map(([id, n]) => {
-    const name = ITEMS[id]?.name ?? id;
-    return n === 1 ? name : `${n} ${name}`;
-  });
+  const parts: string[] = [];
   // The holiday hikers' Presents.
   if (bag.presents) parts.push(bag.presents === 1 ? 'Present' : `${bag.presents} Presents`);
   const bp = bag.blueprints;

@@ -502,7 +502,7 @@ export const HIKER_TREES: readonly HikerTrees[] = [
           step: 'new',
           kind: 'grant',
           text: `Gain ${B.packedToolbox.tools} random Tier 1 tools.`,
-          startText: `Start with ${B.packedToolbox.tools} random Tier 1 tools.`,
+          startText: `Start with ${B.packedToolbox.picks} more item picks when packing.`,
         }),
         winkPacker(2, 'The Proper Way', {
           step: 'new',

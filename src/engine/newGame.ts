@@ -35,12 +35,12 @@ import { placePool } from './challenges/pool';
 import { pushEvent } from './log';
 
 /**
- * What a character brings (07-characters.md, "Starting bags"): items, which
- * roll Quality like any other, and random blueprints they already know (no
- * item slot), Tier 1 and maybe of one type.
+ * What a character brings (07-characters.md, "Starting bags"): random
+ * blueprints they already know (no item slot), Tier 1 and maybe of one type,
+ * and the holiday hikers' Presents. No items: the packing machine is the
+ * whole start (29-core-loop.md, section 7).
  */
 export interface StartingBag {
-  items?: readonly ItemId[];
   blueprints?: { count: number; tier: 1; type?: ItemTypeName };
   /** Plain Presents (Grammy Clause, the Grinch), each with a random wrapping. */
   presents?: number;
@@ -198,13 +198,10 @@ export function createGame({
 }
 
 /**
- * A character's starting bag: its items in the bag (rolling Quality), and its
- * random Tier 1 blueprints learned, each one they don't know yet.
+ * A character's starting bag: its Presents, and its random Tier 1 blueprints
+ * learned, each one they don't know yet.
  */
 function giveStartingBag(state: GameState, h: Hiker, bag: StartingBag): void {
-  for (const itemId of bag.items ?? []) {
-    if (ITEMS[itemId]) h.inventory.bag.push(makeItem(state, itemId, { prefix: 'start' }));
-  }
   // Starting Presents: a wrapper's own count as hers (Season of Giving); anyone else's
   // were wrapped by nobody in the party. TODO(wyatt): first guess.
   const own = wrapsPresents(state, h);

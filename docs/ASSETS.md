@@ -137,6 +137,10 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Posters** (`public/assets/posters/`, 1200 × 1800): `bear-country.png`. Wyatt is painting the rest; a challenge without one shows a plain cream panel.
 - **The party GPS** is drawn in CSS and SVG: no image files.
 
+## Item cards (Phase 11)
+
+- **The drink's cup** (`assets/item-cards/drink-cup.svg`, 40 × 56, white): the drink type's icon on the TrailMate item cards (`31-trailmate-item-cards.md`): the top strip and the back's embossed logo. The other types use the type icons the game already has. The rest of the device cards (shells, bezels, LCD screens, LEDs, walkie-talkie backs) are drawn in CSS.
+
 ## Packing screen (Phase 10.9)
 
 - **The cabinet's squirrel in its wheel** (`assets/packing/squirrel-wheel.svg`): an inline SVG with named parts (`.legs-a`, `.legs-b`, `.legs-sit`, `.tongue`, `.sweat`, `.eye-shut`; `#wheel` rotates), so it animates in code. The rest of the Lucky Trail Outfitters cabinet (the sign, the bulbs, the hiking-pole lever, the log reels and the drawers) is drawn in code. Wyatt may want to redraw any of it.

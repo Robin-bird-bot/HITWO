@@ -260,6 +260,11 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #140d08; use
 #test button { font-family: var(--pix); font-size: 10px; letter-spacing: 1px; padding: 6px 8px; border-radius: 6px; border: 1px solid #6e4a2a; background: #2a1a10; color: #e9d6ab; cursor: pointer; }
 #test button.on { background: var(--gold); color: #3a2410; }
 @media (prefers-reduced-motion: reduce) { #sq.run .sq-body, .sq-tail { animation: none !important; } }
+#pressme { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 6; pointer-events: none; display: none; text-align: center; font-family: var(--pix); font-size: 26px; letter-spacing: .1em; color: #ffe08a;
+  padding: 14px 22px 12px; background: rgba(40, 20, 8, .82); border: 3px solid #e8b04a; border-radius: 10px; box-shadow: 0 0 0 3px rgba(40,20,8,.6), 0 0 26px rgba(255,190,80,.55); text-shadow: 0 2px 0 #5a2e0c; animation: pm 1.1s ease-in-out infinite; }
+#pressme small { display: block; margin-top: 6px; font-size: 11px; letter-spacing: .14em; color: #f1d7a0; }
+#pressme.on { display: block; }
+@keyframes pm { 50% { box-shadow: 0 0 0 3px rgba(40,20,8,.6), 0 0 6px rgba(255,190,80,.2); color: #fff4cf; } }
 </style>
 </head>
 <body>
@@ -335,7 +340,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #140d08; use
   <div id="cab" class="wood">
     <div id="sign" class="wood"><div><span class="txt">LUCKY TRAIL OUTFITTERS</span><span class="sub" id="signsub">EST. AT THE TRAILHEAD</span></div></div>
     <div id="turn"><div class="card"><img id="turnpic" alt=""><div class="t" id="turnt"></div></div></div>
-    <div id="window"><div id="reels"></div></div>
+    <div id="window"><div id="reels"></div><div id="pressme">PULL THE POLE<small>FREE SPIN · OR PRESS SPACE</small></div></div>
     <div id="labels"></div>
     <div id="tray"><div class="lbl">RESPINS</div><div id="acorns"></div></div>
     <div id="plate" class="brass"><div><div class="big" id="pbig"></div><div class="sm" id="psm"></div></div></div>
@@ -487,8 +492,10 @@ function reset(n = 3) {
   $('turn').className = ''; $('next').classList.remove('on'); $('signsub').textContent = 'EST. AT THE TRAILHEAD';
   buildReels(5); renderAll();
   document.querySelectorAll('#test [data-n]').forEach(b => b.classList.toggle('on', +b.dataset.n === n));
-  setTimeout(() => spin(true), 450);
+  armFree();
 }
+// Wyatt: the slots don't start by themselves. The first spin (and each turn's, and Second Wind's) is free, but the player starts it.
+function armFree() { S.free = true; renderAll(); }
 function newItem(type, tier = 1) { const it = rnd(DATA.items[type][tier]); return { type, tier, ...it }; }
 function rollItem() { const type = weighted(TYPES.map(t => [t, TYPE[t].odds])); return newItem(type, Math.random() < B.tier2Chance && DATA.items[type][2] ? 2 : 1); }
 function newBundle(size) { const res = []; for (let i = 0; i < size; i++) res.push(rnd(DATA.resIds)); return { size, res }; }
@@ -569,6 +576,7 @@ async function spin(free = false) {
   if (S.busy || S.phase === 'done') return;
   const lit = S.reels.filter(r => r.lit);
   if (!lit.length) return;
+  if (S.free) { free = true; S.free = false; $('pressme')?.classList.remove('on'); }
   if (!free) { if (S.respins <= 0) { $('lever').animate([{ transform: 'rotate(-14deg)' }, { transform: 'rotate(-6deg)' }, { transform: 'rotate(-14deg)' }], { duration: 250 }); SND.sad(); return; } }
   S.busy = true; S.sel = null; hideTip(); S.reels.forEach(r => { r.el.classList.remove('sel', 'win'); r.lock = false; r.el.classList.remove('lock'); }); S.jackpot = false;
   pullLever();
@@ -731,7 +739,7 @@ async function take(r, h, gh) {
 async function after() {
   if (S.phase === 'items') {
     if (S.picks <= 0) { renderAll(); await stampIt('ALL PACKED!', `${S.party.length} HIKERS · ${2 + S.party.length} ITEMS`, true); $('next').textContent = 'NEXT: RESOURCES ▸'; $('next').classList.add('on'); return; }
-    if (!S.reels.some(r => r.lit)) { await wait(350); await stampIt('SECOND WIND!', 'EVERY REEL LIGHTS UP · FREE SPIN'); relight(); await wait(450); spin(true); }
+    if (!S.reels.some(r => r.lit)) { await wait(350); await stampIt('SECOND WIND!', 'EVERY REEL LIGHTS UP · FREE SPIN'); relight(); await wait(400); armFree(); }
   } else {
     const h = S.party[S.turn];
     if (h.bundles.length >= B.bundlesEach) {
@@ -742,7 +750,8 @@ async function after() {
   }
   renderAll();
 }
-function relight() { S.reels.forEach(r => { r.lit = true; r.lock = false; r.el.classList.remove('dark', 'lock'); }); SND.whoosh(); }
+// The reels come back empty: nothing old can be taken without the free spin.
+function relight() { S.reels.forEach(r => { r.lit = true; r.lock = false; r.who = null; r.el.classList.remove('dark', 'lock'); const st = r.el.querySelector('.strip'); st.getAnimations().forEach(a => a.cancel()); st.innerHTML = ''; r.val = null; r.prev2 = r.next2 = null; }); SND.whoosh(); }
 async function toResources() {
   $('next').classList.remove('on'); S.reels.forEach(r => { r.lit = false; r.el.classList.add('dark'); }); SND.clack(); await wait(500);
   S.phase = 'res'; S.turn = 0; $('s1').className = 'done'; $('s2').className = 'on'; $('signsub').textContent = '';
@@ -754,8 +763,8 @@ async function startTurn() {
   const h = S.party[S.turn]; S.respins = B.resRespins;
   $('turnpic').src = h.src; $('turnt').innerHTML = `${h.name.toUpperCase()}'S PICK<small>TAKE 2 BUNDLES</small>`; $('turn').querySelector('.card').style.borderColor = h.color;
   $('turn').className = ''; void $('turn').offsetWidth; $('turn').className = 'on'; SND.whoosh();
-  S.reels.forEach(r => { r.lit = true; r.val = null; r.el.classList.remove('dark', 'lock'); });
-  renderAll(); await wait(700); spin(true);
+  S.reels.forEach(r => { r.lit = true; r.who = null; r.el.classList.remove('dark', 'lock'); const st = r.el.querySelector('.strip'); st.getAnimations().forEach(a => a.cancel()); st.innerHTML = ''; r.val = null; r.prev2 = r.next2 = null; });
+  armFree();
 }
 async function startHike() {
   S.sel = null; S.reels.forEach(r => r.el.classList.remove('sel')); markTargets(false);
@@ -840,10 +849,11 @@ function renderAll() {
   const items = S.phase === 'items';
   $('pbig').textContent = items ? (S.picks > 0 ? `TAKE ${S.picks} MORE` : 'ALL PACKED') : S.phase === 'res' ? (S.party.every(h => h.bundles.length >= B.bundlesEach) ? 'ALL SET' : `TAKE ${Math.max(0, B.bundlesEach - (S.party[S.turn]?.bundles.length || 0))} MORE`) : 'READY';
   $('psm').textContent = items ? `2 + 1 PER HIKER = ${2 + S.party.length} ITEMS` : S.phase === 'res' ? `${S.party[S.turn]?.name.toUpperCase() || ''} · BUNDLES GO TO THIS HIKER` : 'HAPPY TRAILS';
-  const off = S.respins <= 0 || S.phase === 'done' || !S.reels.some(r => r.lit);
-  $('lever').classList.toggle('off', off); $('lever').classList.toggle('glow', !off && S.reels.some(r => r.lock));
+  const off = (!S.free && S.respins <= 0) || S.phase === 'done' || !S.reels.some(r => r.lit);
+  $('lever').classList.toggle('off', off); $('lever').classList.toggle('glow', !off && (S.free || S.reels.some(r => r.lock)));
   const need = items ? S.picks > 0 : S.phase === 'res' && (S.party[S.turn]?.bundles.length || 0) < B.bundlesEach;
-  $('lvtag').innerHTML = !need ? '' : off ? 'NO RESPINS LEFT:<br>TAKE ONE' : 'PULL THE POLE<br>OR PRESS SPACE';
+  $('pressme').classList.toggle('on', !!S.free && need && !S.busy);
+  $('lvtag').innerHTML = !need ? '' : S.free ? 'FREE SPIN!<br>PULL THE POLE<br>OR PRESS SPACE' : off ? 'NO RESPINS LEFT:<br>TAKE ONE' : 'PULL THE POLE<br>OR PRESS SPACE';
   $('help').innerHTML = items
     ? `<b>Pull the hiking pole</b> to spin. <b>Drag an item onto a hiker</b> to pack it: its reel goes dark. A respin spins <b>every lit reel</b>, so anything you leave is gone. Each respin feeds the squirrel an acorn.`
     : S.phase === 'res' ? `<b>Each hiker takes 2 bundles.</b> A bundle holds 1 to 3 random resources (rarely 5). Hover one to see what's inside. Bundles open into resources when the hike starts.`

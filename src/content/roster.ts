@@ -66,7 +66,12 @@ function hiker(
   return { id, characterId: id, name, family, classes, households: [], ...rest } as RosterHiker;
 }
 
-const items = (...ids: string[]): StartingBag => ({ items: ids });
+/**
+ * No starting kit (29-core-loop.md, section 7, Nov 27): hikers start with
+ * nothing, and the packing machine is the whole start. Blueprints and the
+ * holiday hikers' Presents stay.
+ */
+const NO_KIT: StartingBag = {};
 
 /** In the roster's order: the 10 starters first, then families, then the variants. */
 const ENTRIES: RosterHiker[] = [
@@ -79,7 +84,7 @@ const ENTRIES: RosterHiker[] = [
     slots: [],
     difficulty: 7,
     portrait: 'wyatt',
-    startingBag: items('rainJacket'),
+    startingBag: NO_KIT,
   }),
   hiker('mom', 'Mom', 'human', ['support', 'merchant', 'trekker'], {
     title: 'Doesn’t Like Photos',
@@ -88,7 +93,7 @@ const ENTRIES: RosterHiker[] = [
     slots: [],
     difficulty: 3,
     portrait: 'mom',
-    startingBag: { items: ['dogFood'], blueprints: { count: 1, tier: 1 } },
+    startingBag: { blueprints: { count: 1, tier: 1 } },
   }),
   hiker('ellie', 'Ellie', 'dog', ['chef', 'scavenger', 'entertainer'], {
     title: 'Fluffy Not Fat',
@@ -97,7 +102,7 @@ const ENTRIES: RosterHiker[] = [
     slots: [],
     difficulty: 5,
     portrait: 'ellie',
-    startingBag: items('mysteryMeat'),
+    startingBag: NO_KIT,
   }),
   hiker('finn', 'Finn', 'dog', ['leader', 'follower', 'scavenger'], {
     title: 'The Follower',
@@ -106,7 +111,7 @@ const ENTRIES: RosterHiker[] = [
     slots: [],
     difficulty: 2,
     portrait: 'finn',
-    startingBag: items('leash'),
+    startingBag: NO_KIT,
   }),
   hiker('gdog', 'Gdog', 'human', ['chef', 'tailor', 'trekker'], {
     title: 'The Tiny',
@@ -124,7 +129,7 @@ const ENTRIES: RosterHiker[] = [
     slots: [],
     difficulty: 5,
     portrait: 'wink',
-    startingBag: items('hikingStick'),
+    startingBag: NO_KIT,
   }),
   hiker('cody', 'Cody', 'dog', ['leader'], {
     title: 'The King Red',
@@ -133,7 +138,7 @@ const ENTRIES: RosterHiker[] = [
     difficulty: 4,
     portrait: 'cody',
     // Phase 10.6: dillRolls is switched off, so Trail Mix (Quality rolls as before).
-    startingBag: items('trailMix'),
+    startingBag: NO_KIT,
   }),
   hiker('grandpaSherman', 'Grandpa Sherman', 'human', ['leader', 'jack'], {
     title: 'Probably Trespassing',
@@ -142,7 +147,7 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T tankButt', 'T trespasser', 'U zany', 'M location:river/mountain'),
     difficulty: 7,
     portrait: 'sherman',
-    startingBag: items('hardhat'),
+    startingBag: NO_KIT,
   }),
   hiker('pearl', 'Pearl', 'dog', ['scout', 'scavenger'], {
     title: 'The Pirate',
@@ -150,7 +155,7 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T wanderer', 'U pirate', 'M wanderlust'),
     difficulty: 4,
     portrait: 'pearl',
-    startingBag: items('binoculars'),
+    startingBag: NO_KIT,
   }),
   hiker('brutus', 'Brutus', 'dog', ['hardy'], {
     title: 'Doesn’t Know Where He Is',
@@ -158,7 +163,7 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T forgetful', 'U snores', 'T/U -', 'M simplePleasures'),
     difficulty: 3,
     portrait: 'brutus',
-    startingBag: items('pajamas'),
+    startingBag: NO_KIT,
   }),
 
   // ── Dogs ──
@@ -167,28 +172,28 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T lanky', 'U goodBoy', 'M closeCompany'),
     difficulty: 5,
     portrait: 'duke',
-    startingBag: items('stuffedAnimal'),
+    startingBag: NO_KIT,
   }),
   hiker('scarlet', 'Scarlet', 'dog', ['hardy'], {
     title: 'The Bossy Red',
     slots: slots('T strong', 'U spoiled', 'M centerOfAttention'),
     difficulty: 3,
     portrait: 'scarlet',
-    startingBag: items('snackPack'),
+    startingBag: NO_KIT,
   }),
   hiker('hershal', 'Hershal', 'dog', ['support'], {
     title: 'The Wise Old Man',
     slots: slots('U mentor', 'U storyteller', 'M proudMentor'),
     difficulty: 3,
     portrait: 'hershal',
-    startingBag: items('postcard'),
+    startingBag: NO_KIT,
   }),
   hiker('sinjon', 'Sinjon', 'dog', ['leader'], {
     title: 'Tough and Fluff',
     slots: slots('T fluffArmor', 'U wise', 'M alpha'),
     difficulty: 2,
     portrait: 'sinjon',
-    startingBag: items('heavyJacket'),
+    startingBag: NO_KIT,
   }),
   hiker('kai', 'Kai', 'dog', ['support'], {
     title: 'Crazy Like His Dad',
@@ -196,7 +201,7 @@ const ENTRIES: RosterHiker[] = [
     difficulty: 4,
     portrait: 'kai',
     // Phase 10.6: citroDrink is switched off, so Trail Mix (Quality rolls as before).
-    startingBag: items('trailMix'),
+    startingBag: NO_KIT,
   }),
   hiker('bossGracie', 'Boss & Gracie', 'dog', ['support', 'scavenger'], {
     title: 'Danger Duo',
@@ -204,7 +209,7 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T herder', 'U fetch', 'tag bossGracie', 'M loyal'),
     difficulty: 8,
     portrait: 'boss-and-gracie',
-    startingBag: items('fannyPack'),
+    startingBag: NO_KIT,
   }),
 
   // ── Plush ──
@@ -213,14 +218,14 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T shifty', 'T nightShifty', 'M intrinsic'),
     difficulty: 9,
     portrait: 'pepper',
-    startingBag: items('lightUpSkechers'),
+    startingBag: NO_KIT,
   }),
   hiker('goldie', 'Goldie', 'plush', ['support'], {
     title: 'The Good One',
     slots: slots('U luckyCharm', 'U cuddleBuddy', 'M extrinsic'),
     difficulty: 6,
     portrait: 'goldie',
-    startingBag: items('cozySweater'),
+    startingBag: NO_KIT,
   }),
 
   // ── Cats ──
@@ -229,14 +234,14 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T leader', 'T stoic', 'M bossy'),
     difficulty: 5,
     portrait: 'loki',
-    startingBag: items('backpack'),
+    startingBag: NO_KIT,
   }),
   hiker('coco', 'Coco', 'cat', ['scout'], {
     title: 'The Cat',
     slots: slots('U nocturnal', 'U mouser', 'M aloof'),
     difficulty: 4,
     portrait: 'coco',
-    startingBag: items('campingLamp'),
+    startingBag: NO_KIT,
   }),
   hiker('muffin', 'Muffin', 'cat', ['crafter'], {
     title: 'The Cat',
@@ -260,14 +265,14 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T coach', 'T fast', 'M soccerMom', 'M bossy'),
     difficulty: 6,
     portrait: 'melissa',
-    startingBag: items('trailShoes'),
+    startingBag: NO_KIT,
   }),
   hiker('leah', 'Leah', 'human', ['support'], {
     title: 'The Short One',
     slots: slots('T rabbitDiet', 'T short', 'T/U supportive', 'M chatty'),
     difficulty: 6,
     portrait: 'leah',
-    startingBag: items('bandaid'),
+    startingBag: NO_KIT,
   }),
   hiker('erin', 'Erin', 'human', ['crafter', 'support'], {
     title: 'Modern Art',
@@ -281,38 +286,38 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('U archaeologist', 'U thumb:forest', 'M conservationist:forest'),
     difficulty: 3,
     portrait: 'jackson',
-    startingBag: items('trowel'),
+    startingBag: NO_KIT,
   }),
   hiker('anni', 'Anni', 'human', ['scout'], {
     title: 'The Traveler',
     slots: slots('T independent', 'T scout', 'M traveler:tend'),
     difficulty: 2,
     portrait: 'anni',
-    startingBag: items('supplyMap'),
+    startingBag: NO_KIT,
   }),
   hiker('mitchell', 'Mitchell', 'human', ['crafter'], {
     title: 'Cat Lover',
     slots: slots('U stylish', 'U carefulHands', 'M extrinsic', 'M catPerson'),
     difficulty: 5,
     portrait: 'mitchell',
-    startingBag: items('flannel'),
+    startingBag: NO_KIT,
   }),
   hiker('nathan', 'Nathan', 'human', ['entertainer'], {
     title: 'The Singer',
     slots: slots('U singer', 'U liberal', 'M dressed'),
     difficulty: 4,
     portrait: 'nathan',
-    startingBag: items('ukulele'),
+    startingBag: NO_KIT,
   }),
   hiker('ben', 'Ben', 'human', ['hardy'], {
     slots: slots('T thrillSeeker', 'T shrugOff', 'M thrillSeekerMorale'),
     difficulty: 3,
-    startingBag: items('survivalKit'),
+    startingBag: NO_KIT,
   }),
   hiker('mindy', 'Mindy', 'human', ['support', 'entertainer'], {
     slots: slots('T transparent', 'U therapist', 'M chatty'),
     difficulty: 5,
-    startingBag: items('helloKittyBandaid'),
+    startingBag: NO_KIT,
   }),
   hiker('madeline', 'Madeline', 'human', ['support', 'entertainer'], {
     title: 'The Crazy Therapist',
@@ -320,7 +325,7 @@ const ENTRIES: RosterHiker[] = [
     difficulty: 4,
     portrait: 'madeline',
     // Phase 10.6: wine is switched off, so Trail Mix (Quality rolls as before).
-    startingBag: items('trailMix'),
+    startingBag: NO_KIT,
   }),
 
   // ── Variants (07-characters.md, "Variants") ──
@@ -331,14 +336,14 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T follower', 'U copydog', 'U forager', 'M extrinsic'),
     difficulty: 3,
     portrait: 'follower-finn',
-    startingBag: items('sack'),
+    startingBag: NO_KIT,
   }),
   hiker('agilityFinn', 'Agility Finn', 'dog', ['scout'], {
     variantOf: 'finn',
     slots: slots('T fast', 'T scout', 'T backtracker', 'M extrovert'),
     difficulty: 4,
     portrait: 'agility-finn',
-    startingBag: items('joggingShoes'),
+    startingBag: NO_KIT,
   }),
   hiker('ellieDevourer', 'Ellie the Devourer', 'dog', ['hardy'], {
     variantOf: 'ellie',
@@ -346,14 +351,14 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T humanFood', 'U leadStomach', 'U garbageGut', 'M foody'),
     difficulty: 4,
     portrait: 'devourer-ellie',
-    startingBag: items('dogFood', 'dogFood'),
+    startingBag: NO_KIT,
   }),
   hiker('noseworkEllie', 'Nosework Ellie', 'dog', ['scavenger'], {
     variantOf: 'ellie',
     slots: slots('U nosework', 'U fetch', 'M bossy'),
     difficulty: 6,
     portrait: 'nosework-ellie',
-    startingBag: items('treasureMap'),
+    startingBag: NO_KIT,
   }),
   hiker('preparedWink', 'Prepared Wink', 'human', ['scout'], {
     variantOf: 'grandpaWink',
@@ -361,28 +366,28 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T prepared', 'T scout', 'M traveler:tend'),
     difficulty: 3,
     portrait: 'prepared-wink',
-    startingBag: items('tent', 'binoculars', 'scanner'),
+    startingBag: NO_KIT,
   }),
   hiker('graduateMom', 'Graduate Mom', 'human', ['merchant'], {
     variantOf: 'mom',
     slots: slots('U mba', 'U nonNonProfit', 'U frugal', 'M wanderlust'),
     difficulty: 5,
     portrait: 'graduate-mom',
-    startingBag: items('diploma', 'wallet'),
+    startingBag: NO_KIT,
   }),
   hiker('showqueenGdog', 'Showqueen Gdog', 'human', ['entertainer'], {
     variantOf: 'gdog',
     slots: slots('U singer', 'U liberal', 'M showGirl', 'M caring'),
     difficulty: 7,
     portrait: 'showqueen-gdog',
-    startingBag: items('fancyAttire'),
+    startingBag: NO_KIT,
   }),
   hiker('wywee', 'Wywee', 'human', ['leader', 'support'], {
     variantOf: 'wyatt',
     slots: slots('T easyMode', 'T supportive', 'M rainLover'),
     difficulty: 2,
     portrait: 'wywee',
-    startingBag: items('trooperMask'),
+    startingBag: NO_KIT,
   }),
 
   // ── Holiday hikers (07-characters.md, "Holiday hikers"): variants in their own Holiday group ──
@@ -420,7 +425,7 @@ const ENTRIES: RosterHiker[] = [
     slots: slots('T rednose', 'U treatSniffer', 'U presentMuncher', 'M holidaySpirit'),
     difficulty: 4,
     portrait: 'redolf',
-    startingBag: items('campingLamp'),
+    startingBag: NO_KIT,
   }),
 ];
 

@@ -259,13 +259,16 @@ function Front({ data }: { data: HikerCardData }) {
           </span>
         ))}
       </div>
-      <span className={styles.bagTab} style={{ background: data.mainColor }}>
-        STARTING BAG
-        <span className={styles.bagTip}>
-          <span className={styles.bagTipHead}>STARTING BAG</span>
-          <span className={styles.bagTipText}>{data.bag.toUpperCase()}</span>
+      {/* Only blueprints and Presents now (29-core-loop.md, section 7): most bags are empty. */}
+      {data.bag && (
+        <span className={styles.bagTab} style={{ background: data.mainColor }}>
+          STARTING BAG
+          <span className={styles.bagTip}>
+            <span className={styles.bagTipHead}>STARTING BAG</span>
+            <span className={styles.bagTipText}>{data.bag.toUpperCase()}</span>
+          </span>
         </span>
-      </span>
+      )}
     </>
   );
 }
@@ -322,7 +325,7 @@ function TreesBack({ data, trees }: { data: HikerCardData; trees: readonly CardT
             </div>
           ))}
         </div>
-        <div className={styles.bagBar}>{data.bag.toUpperCase()}</div>
+        {data.bag && <div className={styles.bagBar}>{data.bag.toUpperCase()}</div>}
       </div>
     </>
   );
@@ -351,7 +354,7 @@ function Back({ data }: { data: HikerCardData }) {
             <Row key={i} row={row} />
           ))}
         </div>
-        <div className={styles.bagBar}>{data.bag.toUpperCase()}</div>
+        {data.bag && <div className={styles.bagBar}>{data.bag.toUpperCase()}</div>}
       </div>
     </>
   );

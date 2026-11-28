@@ -23,9 +23,10 @@ Numbers in [brackets] are first guesses: put them in `balance.ts` with `TODO(wya
 - **It replaces the placeholder starting resources:**
   - drop `giveStartingResources` for real runs (`inventory.startingResources: 4`);
   - keep it for tests and the test-hike picker.
-- **Starting traits and kits still apply** (Packed Toolbox, Toy Chest, `startingBag`).
-  - Items a hiker starts with anyway show in their bag on this screen first, marked START, and take up room *(Claude's idea: so nothing overflows later)*.
-  - A dry run of `createGame` without packing can tell you what those are.
+- **Changed Nov 27 (`29-core-loop.md`, section 7): no starting kits.** Hikers start with nothing; the packing machine is the whole start. Starting blueprints still apply.
+  - The holiday hikers' Presents still start in their bags: they show on this screen first, marked START, and take up room *(Claude's idea: so nothing overflows later)*.
+  - Packed Toolbox picked at the start gives the party +[2] item picks here, instead of 2 tools *(Claude's idea)*.
+  - A dry run of `createGame` without packing tells what those are.
 - **Back:** a Back button returns to hiker select and throws the packing away.
 - **Saving:** nothing is saved mid-pack. A reload starts the packing over.
 - **Seeded** from the run's seed (its own stream), so tests can predict every spin.
@@ -61,8 +62,8 @@ Numbers in [brackets] are first guesses: put them in `balance.ts` with `TODO(wya
 ---
 
 ## 3. Step 1: items (5 reels)
-- **How many:** the party takes **2 items, plus 1 per hiker** (Wyatt), from 3 items for 1 hiker to 8 for 6.
-- **The first spin is free** and starts by itself.
+- **How many:** the party takes **2 items, plus 1 per hiker** (Wyatt), from 3 items for 1 hiker to 8 for 6 (+2 with Packed Toolbox picked at the start).
+- **The first spin is free**, and **waits for the player to press** (changed Nov 27, `29-core-loop.md`, section 8: "don't have the slots automatically start, have the player press them first"). The reels show empty until then.
 - **What lands on a reel:**
   - **the type:** Tools [40%], Food [30%], Clothes [20%] and Shelter [10%] (Wyatt);
   - **the item:** a random Tier I item of that type, from the item tables (`TABLE_ITEMS`) that are switched on (`isOffered`). Items only a trait makes (Puked Nuggets) are left out;
@@ -81,7 +82,7 @@ Numbers in [brackets] are first guesses: put them in `balance.ts` with `TODO(wya
   - a respin spins **every lit reel**, so anything not taken is gone (Wyatt's "risk to respin");
   - dark reels stay dark.
 - **No respins left:** the lever greys out, and "NO RESPINS LEFT: TAKE ONE" shows. The player must take from the lit reels.
-- **Second Wind:** if every reel is dark and items are still owed, all 5 light up and spin for free *(Claude's idea: with 5 reels and up to 8 picks, the reels have to come back)*.
+- **Second Wind:** if every reel is dark and items are still owed, all 5 light up, empty, with a free spin that waits for the player's press *(Claude's idea: with 5 reels and up to 8 picks, the reels have to come back; the press is from Nov 27, `29`, section 8)*.
 - **The step ends** when every item is taken: "ALL PACKED!", then a "NEXT: RESOURCES" button.
 
 ### 3.1 Bonuses (Wyatt)
@@ -114,7 +115,7 @@ Wyatt: "a quick turn per hiker, but this machine only has 3 reels instead of 5."
   - **On screen:** a tag swings down from the sign ("FINN'S PICK · TAKE 2 BUNDLES"). Their card lifts, and the others dim.
   - **Respins:** each turn starts with a free spin and [2] respins of the hiker's own. Leftover respins don't carry over.
   - **Taking:** same as items: drag or click, and the reel goes dark. Bundles only go to the hiker whose turn it is.
-  - **The next turn** starts by itself after the second bundle: all 3 reels light up and spin.
+  - **The next turn** starts by itself after the second bundle: all 3 reels light up, empty, and wait for the hiker's free spin (changed Nov 27, `29`, section 8).
 - **Bonuses:** only while all 3 reels are lit, so taking a bundle breaks the row *(Claude's reading of "a certain amount of ×1, ×2 or ×3 in a row")*.
 
 | Row | What you get |
@@ -167,7 +168,7 @@ All of these are in the prototype. Keep the timing close to it.
   - the item arcs into the hiker's next slot and pops in;
   - the card bounces, and sparks in the hiker's color fly;
   - the reel's wooden shutter drops with a clack, showing the hiker's name and color.
-- **Second Wind:** the stamp, then every shutter rolls up, and the reels spin.
+- **Second Wind:** the stamp, then every shutter rolls up over empty reels, waiting for a press.
 - **Changing steps:** the shutters drop, the window rebuilds with 3 reels, and the turn tag swings in.
 - **Starting the hike:** the bundle chips pop and spray resources into the cards, then leaves rain.
 - **Sound:** the prototype makes its sounds in code (Web Audio): tick, thunk, ratchet, clink, pop, clack, chime, win, fanfare, drumroll, whoosh. Use those or real sounds, with a mute button.

@@ -1823,7 +1823,29 @@ Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ide
 
 ---
 
-## Phase 11: Biomes, tiers and weather
+## Phase 11: The core loop
+
+(New in the Nov 27 update: `docs/UPDATE-2026-11-27-phase-11-core-loop.md`. The designs are the new `docs/design/29-core-loop.md`, `30-quick-minigames.md` and `31-trailmate-item-cards.md`. Mockups: `docs/mockups/minigames/quick-games-2/` (the four games), `docs/mockups/item-cards/` (the card mock, `cards.html`) and the re-taken packing prototypes and screenshots in `docs/mockups/packing/` and `packing-trailmate/`. Art: `assets/item-cards/drink-cup.svg`. Built on top of Phase 10.9.)
+
+**Goal:** Wyatt wants "a more polished gameplay loop first", before the UI overhaul (Phase 12).
+
+Numbers in [brackets] are first guesses: in `balance.ts` with `TODO(wyatt)`. Ideas marked *(Claude's idea)* are the design assistant's. Each spec's "Things to flag to Wyatt" goes in its PR. One PR per step is fine.
+
+**Build, in this order**
+1. **The packing changes** (`29`, sections 7 and 8): no starting items (the packing machine is the whole start; Packed Toolbox at the start gives +2 picks), and the slots wait for a press before each free spin.
+2. **Costs, sleep and drinks** (`29`, sections 1 to 3): scavenging, tending and crafting cost Energy; sleep gives +2 (+4 in a shelter); six drinks restore Energy.
+3. **The map and the challenge pool** (`29`, sections 5 and 6): half the tiles hold a challenge, every challenge is a minigame, no opportunities for now. Then **the four quick games** (`30`): Incoming Bike!, Wrong Turn, Fallen Branch and Snagged Pack.
+4. **Free crafting levels** (`29`, section 4): the crafting trees' Tier 1 steps get a leveled chance to craft for no Energy.
+5. **The run clock** (`29`, section 9): in the debug panel, with a summary when a run ends.
+6. **The item cards** (`31`): the TrailMate device cards everywhere, with LEDs for what's left. Its own PR.
+
+**Tests:** as in `29`, section 10, `30`, section 6, and `31`, section 8.
+
+---
+
+## Phase 11b: Biomes, tiers and weather
+
+(This was Phase 11 until the Nov 27 update made the core loop Phase 11. Older docs and code comments that say "Phase 11" about biomes or weather mean this phase.)
 
 Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is redesigning the trail map's look, so the biome art waits for the UI overhaul (Phase 12).
 
