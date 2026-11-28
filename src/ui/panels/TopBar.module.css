@@ -308,3 +308,44 @@
   height: 20px;
   accent-color: #e9b44c;
 }
+
+/* The title screen's Settings window (35-ui-overhaul.md, section 8). */
+.settingsWindow {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  z-index: 20;
+  width: 440px;
+  max-height: 860px;
+  overflow-y: auto;
+  padding: 14px 16px 18px;
+  transform: translateX(-50%);
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(15, 22, 19, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settingsHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settingsClose {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  font-size: 22px;
+}
+
+.settingsClose:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}

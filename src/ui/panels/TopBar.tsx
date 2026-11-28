@@ -230,6 +230,192 @@ function LookRow<T extends string>({ look }: { look: LookSetting<T> }) {
   );
 }
 
+/**
+ * Every setting: the sound, the screen and the looks, and the testing
+ * switches with the debug tools on. In the ☰ menu and the title's Settings.
+ */
+export function SettingsBody({
+  testing,
+  moreTesting,
+}: {
+  /** Settings → Testing's Minigames only (it's in the run), with the debug tools on. */
+  testing?: { minigamesOnly: boolean; onMinigamesOnly(on: boolean): void };
+  /** More testing switches for the screen it's on. */
+  moreTesting?: ReactNode;
+}) {
+  const mode = useUiMode();
+  const warnings = useTraitWarnings();
+  const mapStyle = useMapStyle();
+  const wholeMap = useWholeMap();
+  const autoPass = useAutoPass();
+  const showPlaced = useShowPlaced();
+  const skipPacking = useSkipPacking();
+  const packingLook = usePackingLook();
+  return (
+    <>
+      <SoundSettings />
+      <div className={styles.setting}>
+        <span className={styles.settingName}>Screen</span>
+        <div className={styles.segmented} role="radiogroup" aria-label="Screen">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              role="radio"
+              aria-checked={mode === m.id}
+              className={styles.segment}
+              onClick={() => setUiMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.small}>{MODES.find((m) => m.id === mode)?.text}</span>
+      </div>
+      <div className={styles.setting}>
+        <span className={styles.settingName}>Trait warnings</span>
+        <div className={styles.segmented} role="radiogroup" aria-label="Trait warnings">
+          {WARNINGS.map((w) => (
+            <button
+              key={w.id}
+              type="button"
+              role="radio"
+              aria-checked={warnings === w.id}
+              className={styles.segment}
+              onClick={() => setTraitWarnings(w.id)}
+            >
+              {w.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.small}>{WARNINGS.find((w) => w.id === warnings)?.text}</span>
+      </div>
+      <div className={styles.setting}>
+        <span className={styles.settingName}>Map style</span>
+        <div className={styles.segmented} role="radiogroup" aria-label="Map style">
+          {MAP_STYLES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              role="radio"
+              aria-checked={mapStyle === m.id}
+              className={styles.segment}
+              onClick={() => MAP_STYLE_SETTING.set(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.small}>{MAP_STYLES.find((m) => m.id === mapStyle)?.text}</span>
+        {mapStyle === 'illustrated' && (
+          <label className={styles.switchRow}>
+            <input
+              type="checkbox"
+              checked={wholeMap}
+              onChange={(e) => WHOLE_MAP_SETTING.set(e.target.checked ? 'on' : 'off')}
+            />
+            <span>
+              Show whole map
+              <span className={styles.small}> · Paints all the land. Tiles stay hidden.</span>
+            </span>
+          </label>
+        )}
+      </div>
+      <LookRow look={LOOK_SETTINGS[0]} />
+      <LookRow look={LOOK_SETTINGS[1]} />
+      <LookRow look={LOOK_SETTINGS[2]} />
+      <LookRow look={LOOK_SETTINGS[3]} />
+      <div className={styles.setting}>
+        <span className={styles.settingName}>Packing machine</span>
+        <div className={styles.segmented} role="radiogroup" aria-label="Packing machine">
+          {PACKING_LOOKS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              role="radio"
+              aria-checked={packingLook === m.id}
+              className={styles.segment}
+              onClick={() => PACKING_LOOK_SETTING.set(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.small}>
+          {PACKING_LOOKS.find((m) => m.id === packingLook)?.text}
+        </span>
+      </div>
+      {debugEnabled() && (
+        <div className={styles.setting}>
+          <span className={panel.label}>TESTING</span>
+          {testing && (
+            <label className={styles.switchRow}>
+              <input
+                type="checkbox"
+                checked={testing.minigamesOnly}
+                onChange={(e) => testing.onMinigamesOnly(e.target.checked)}
+              />
+              <span>
+                Minigames only
+                <span className={styles.small}> · No cost cards. Tiles ahead change now.</span>
+              </span>
+            </label>
+          )}
+          <label className={styles.switchRow}>
+            <input
+              type="checkbox"
+              checked={autoPass}
+              onChange={(e) => AUTO_PASS_SETTING.set(e.target.checked ? 'on' : 'off')}
+            />
+            <span>
+              Auto-pass minigames
+              <span className={styles.small}> · Everyone passes without playing.</span>
+            </span>
+          </label>
+          <label className={styles.switchRow}>
+            <input
+              type="checkbox"
+              checked={showPlaced}
+              onChange={(e) => SHOW_PLACED_SETTING.set(e.target.checked ? 'on' : 'off')}
+            />
+            <span>
+              Show placed cards
+              <span className={styles.small}> · Every tile shows its card on the map.</span>
+            </span>
+          </label>
+          <label className={styles.switchRow}>
+            <input
+              type="checkbox"
+              checked={skipPacking}
+              onChange={(e) => SKIP_PACKING_SETTING.set(e.target.checked ? 'on' : 'off')}
+            />
+            <span>
+              Skip packing
+              <span className={styles.small}> · Random picks, straight to the hike.</span>
+            </span>
+          </label>
+          {moreTesting}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** The title screen's Settings (35-ui-overhaul.md, section 8): every setting, in a window. */
+export function SettingsWindow({ onClose }: { onClose(): void }) {
+  return (
+    <Popout className={styles.settingsWindow} onClose={onClose} label="Settings" focusFirst>
+      <div className={styles.settingsHead}>
+        <span className={panel.label}>SETTINGS</span>
+        <button type="button" className={styles.settingsClose} aria-label="Close" onClick={onClose}>
+          ×
+        </button>
+      </div>
+      <SettingsBody />
+    </Popout>
+  );
+}
+
 /** The ☰ menu: settings and the way back to the title screen. Closes on click-away or Esc. */
 export function MenuButton({
   onTitle,
@@ -246,14 +432,6 @@ export function MenuButton({
   note?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const mode = useUiMode();
-  const warnings = useTraitWarnings();
-  const mapStyle = useMapStyle();
-  const wholeMap = useWholeMap();
-  const autoPass = useAutoPass();
-  const showPlaced = useShowPlaced();
-  const skipPacking = useSkipPacking();
-  const packingLook = usePackingLook();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -279,150 +457,7 @@ export function MenuButton({
           <span className={panel.label} data-drag-handle>
             SETTINGS
           </span>
-          <SoundSettings />
-          <div className={styles.setting}>
-            <span className={styles.settingName}>Screen</span>
-            <div className={styles.segmented} role="radiogroup" aria-label="Screen">
-              {MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={mode === m.id}
-                  className={styles.segment}
-                  onClick={() => setUiMode(m.id)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <span className={styles.small}>{MODES.find((m) => m.id === mode)?.text}</span>
-          </div>
-          <div className={styles.setting}>
-            <span className={styles.settingName}>Trait warnings</span>
-            <div className={styles.segmented} role="radiogroup" aria-label="Trait warnings">
-              {WARNINGS.map((w) => (
-                <button
-                  key={w.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={warnings === w.id}
-                  className={styles.segment}
-                  onClick={() => setTraitWarnings(w.id)}
-                >
-                  {w.label}
-                </button>
-              ))}
-            </div>
-            <span className={styles.small}>{WARNINGS.find((w) => w.id === warnings)?.text}</span>
-          </div>
-          <div className={styles.setting}>
-            <span className={styles.settingName}>Map style</span>
-            <div className={styles.segmented} role="radiogroup" aria-label="Map style">
-              {MAP_STYLES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={mapStyle === m.id}
-                  className={styles.segment}
-                  onClick={() => MAP_STYLE_SETTING.set(m.id)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <span className={styles.small}>{MAP_STYLES.find((m) => m.id === mapStyle)?.text}</span>
-            {mapStyle === 'illustrated' && (
-              <label className={styles.switchRow}>
-                <input
-                  type="checkbox"
-                  checked={wholeMap}
-                  onChange={(e) => WHOLE_MAP_SETTING.set(e.target.checked ? 'on' : 'off')}
-                />
-                <span>
-                  Show whole map
-                  <span className={styles.small}> · Paints all the land. Tiles stay hidden.</span>
-                </span>
-              </label>
-            )}
-          </div>
-          <LookRow look={LOOK_SETTINGS[0]} />
-          <LookRow look={LOOK_SETTINGS[1]} />
-          <LookRow look={LOOK_SETTINGS[2]} />
-          <LookRow look={LOOK_SETTINGS[3]} />
-          <div className={styles.setting}>
-            <span className={styles.settingName}>Packing machine</span>
-            <div className={styles.segmented} role="radiogroup" aria-label="Packing machine">
-              {PACKING_LOOKS.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={packingLook === m.id}
-                  className={styles.segment}
-                  onClick={() => PACKING_LOOK_SETTING.set(m.id)}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <span className={styles.small}>
-              {PACKING_LOOKS.find((m) => m.id === packingLook)?.text}
-            </span>
-          </div>
-          {debugEnabled() && (
-            <div className={styles.setting}>
-              <span className={panel.label}>TESTING</span>
-              {testing && (
-                <label className={styles.switchRow}>
-                  <input
-                    type="checkbox"
-                    checked={testing.minigamesOnly}
-                    onChange={(e) => testing.onMinigamesOnly(e.target.checked)}
-                  />
-                  <span>
-                    Minigames only
-                    <span className={styles.small}> · No cost cards. Tiles ahead change now.</span>
-                  </span>
-                </label>
-              )}
-              <label className={styles.switchRow}>
-                <input
-                  type="checkbox"
-                  checked={autoPass}
-                  onChange={(e) => AUTO_PASS_SETTING.set(e.target.checked ? 'on' : 'off')}
-                />
-                <span>
-                  Auto-pass minigames
-                  <span className={styles.small}> · Everyone passes without playing.</span>
-                </span>
-              </label>
-              <label className={styles.switchRow}>
-                <input
-                  type="checkbox"
-                  checked={showPlaced}
-                  onChange={(e) => SHOW_PLACED_SETTING.set(e.target.checked ? 'on' : 'off')}
-                />
-                <span>
-                  Show placed cards
-                  <span className={styles.small}> · Every tile shows its card on the map.</span>
-                </span>
-              </label>
-              <label className={styles.switchRow}>
-                <input
-                  type="checkbox"
-                  checked={skipPacking}
-                  onChange={(e) => SKIP_PACKING_SETTING.set(e.target.checked ? 'on' : 'off')}
-                />
-                <span>
-                  Skip packing
-                  <span className={styles.small}> · Random picks, straight to the hike.</span>
-                </span>
-              </label>
-              {moreTesting}
-            </div>
-          )}
+          <SettingsBody {...(testing ? { testing } : {})} moreTesting={moreTesting} />
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
             Reset window layout
           </button>

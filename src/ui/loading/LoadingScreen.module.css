@@ -1,0 +1,223 @@
+/*
+ * The loading screens (35-ui-overhaul.md, section 9; the prototype's `#load`).
+ * Stage pixels (1600 × 1000), in the TrailMate's GPS greens.
+ */
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  overflow: hidden;
+  background: #c3d49a;
+  color: #1d2918;
+}
+
+.screen[data-look='nodeWheel'] {
+  background: #efe6cf;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 1600px;
+  height: 1000px;
+  image-rendering: pixelated;
+}
+
+/* Faint scanlines and a soft vignette, like the device's screen, under the words. */
+.scan {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, rgba(20, 30, 10, 0.09) 0 2px, transparent 2px 4px),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(20, 30, 10, 0.35));
+}
+
+.tip {
+  position: absolute;
+  left: 120px;
+  right: 120px;
+  top: 132px;
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  animation: tipIn 0.4s both;
+}
+
+@keyframes tipIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.bar {
+  position: absolute;
+  left: 245px;
+  right: 245px;
+  top: 872px;
+  z-index: 2;
+  height: 34px;
+  padding: 3px;
+  display: flex;
+  gap: 3px;
+  border: 4px solid #111a10;
+  background: #3c4e2f;
+}
+
+.bar i {
+  flex: 1;
+}
+
+.bar i[data-on] {
+  background: #bac995;
+}
+
+.label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 928px;
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  letter-spacing: 0.3em;
+  color: #bac995;
+}
+
+/* The Node wheel: paper, with fainter lines and no vignette; its tip, bar
+   and label sit lower, in ink. */
+.screen[data-look='nodeWheel'] .scan {
+  background: repeating-linear-gradient(0deg, rgba(43, 37, 32, 0.05) 0 2px, transparent 2px 4px);
+}
+
+/* The Node wheel: its tip, bar and label sit lower, in ink on paper. */
+.screen[data-look='nodeWheel'] .tip {
+  top: 776px;
+  color: #2b2520;
+}
+
+.screen[data-look='nodeWheel'] .bar {
+  top: 842px;
+  border-color: #2b2520;
+  background: #e2d6b8;
+}
+
+.screen[data-look='nodeWheel'] .bar i[data-on] {
+  background: #2b2520;
+}
+
+.screen[data-look='nodeWheel'] .label {
+  top: 908px;
+  color: #3c4e2f;
+}
+
+.wheel {
+  position: absolute;
+  inset: 0;
+  background-color: #efe6cf;
+  background-size: 800px 500px;
+}
+
+.orbit {
+  position: absolute;
+  left: 800px;
+  top: 440px;
+  z-index: 2;
+  width: 0;
+  height: 0;
+}
+
+/* Each badge a quarter turn on from the last, circling and staying upright. */
+.orbit img {
+  position: absolute;
+  width: 82px;
+  height: 94px;
+  margin: -47px 0 0 -41px;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.3));
+  transform: rotate(calc(var(--i) * 90deg)) translateX(100px) rotate(calc(var(--i) * -90deg));
+  animation: circle 3.9s linear infinite;
+}
+
+.orbit[data-still] img {
+  animation: none;
+}
+
+@keyframes circle {
+  to {
+    transform: rotate(calc(var(--i) * 90deg + 360deg)) translateX(100px)
+      rotate(calc(var(--i) * -90deg - 360deg));
+  }
+}
+
+.photo {
+  position: absolute;
+  z-index: 1;
+  width: 278px;
+  height: 322px;
+  margin: 0;
+  padding: 16px 16px 56px;
+  background: #fffdf6;
+  box-shadow: 0 12px 26px rgba(40, 25, 10, 0.35);
+  opacity: 0;
+  transform: rotate(var(--tilt)) scale(0.94);
+  transition:
+    opacity 0.8s,
+    transform 0.8s;
+}
+
+.photo[data-side='left'] {
+  left: 178px;
+  --tilt: -3deg;
+}
+
+.photo[data-side='right'] {
+  left: 1144px;
+  --tilt: 10deg;
+}
+
+.photo[data-row='high'] {
+  top: 190px;
+}
+
+.photo[data-row='low'] {
+  top: 278px;
+}
+
+.photo[data-on] {
+  opacity: 1;
+  transform: rotate(calc(var(--tilt) - 4deg)) scale(1);
+}
+
+.photo span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.photo figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tip,
+  .photo {
+    animation: none;
+    transition: none;
+  }
+}

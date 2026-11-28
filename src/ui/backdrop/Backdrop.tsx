@@ -9,6 +9,7 @@ import { ASSETS } from '../../config/assets';
 import { PHASES, type BiomeId, type Phase } from '../../engine';
 import { useReducedMotion } from '../app/useReducedMotion';
 import styles from './Backdrop.module.css';
+import { BIOME_LAND } from './land';
 import { makeStars } from './stars';
 
 interface PhaseLook {
@@ -41,17 +42,6 @@ const PHASE_LOOK: Record<Phase, PhaseLook> = {
   },
 };
 
-/** Land layers back to front, with how fast each moves when the map scrolls (docs/ASSETS.md). */
-const LAND: Record<BiomeId, { src: string; parallax: number }[]> = {
-  meadow: [
-    { src: ASSETS.land.blueMountains, parallax: 0.15 },
-    { src: ASSETS.land.greenRidge, parallax: 0.3 },
-    { src: ASSETS.land.grassHills, parallax: 0.5 },
-  ],
-  // The UI overhaul (Phase 12) adds the Rainforest and Alpine art.
-  temperateRainforest: [],
-  alpine: [],
-};
 const SKY_PARALLAX = 0.05;
 
 const WASH_DAY =
@@ -132,7 +122,7 @@ export function Backdrop({ phase, biome, scrollY = 0, faded = false }: BackdropP
         />
       </div>
 
-      {LAND[biome].map((layer) => (
+      {BIOME_LAND[biome].map((layer) => (
         <img
           key={layer.src}
           className={styles.land}

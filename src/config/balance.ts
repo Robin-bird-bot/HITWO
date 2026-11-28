@@ -4920,6 +4920,50 @@ export const BALANCE = {
         fireflies: 26,
         dealGapMs: 110,
       },
+      /**
+       * The title screen (section 8): each backdrop layer drifts with the
+       * pointer, from `drift[0]` px for the farthest to the last for the
+       * nearest; `leaves` fall; the logo drops in `logoMs` after it opens.
+       * TODO(wyatt): [±6 px] to [±30 px], [16] leaves, [0.5 s].
+       */
+      title: { drift: [6, 12, 20, 30], leaves: 16, logoMs: 500 },
+      /**
+       * Loading screens (section 9): shown at least `minMs`; a tip every
+       * `tipMs`; a bar of `segments`; the Node wheel's photos `photoMs` each;
+       * the Runner's sprites at `pixel`× and its speed in stage px a second.
+       * TODO(wyatt): [1.5 s], [3.4 s], [24], [2.4 s], [5×]; the speed and
+       * the jump are the prototype's.
+       */
+      loading: {
+        minMs: 1500,
+        tipMs: 3400,
+        segments: 24,
+        photoMs: 2400,
+        pixel: 5,
+        runSpeed: 300,
+        jumpMs: 600,
+        jumpPx: 150,
+        ambience: 0.5,
+      },
+      /**
+       * The spotlight (section 10): closes to `minR` px around the click in
+       * `closeMs`, holds `holdMs`, closes to black in `blackMs`, then opens
+       * in `openMs`. Checking in: the doors swing `doorMs` after `doorWaitMs`.
+       * Reduced motion: a `fadeMs` fade. TODO(wyatt): [0.52 s] to [90 px],
+       * [0.2 s], [0.2 s], [0.7 s]; doors [0.35 s] then [1.3 s]; fade
+       * [0.2 s]. The 0.12 s before opening is the prototype's.
+       */
+      spotlight: {
+        closeMs: 520,
+        minR: 90,
+        holdMs: 200,
+        blackMs: 200,
+        gapMs: 120,
+        openMs: 700,
+        doorWaitMs: 350,
+        doorMs: 1300,
+        fadeMs: 200,
+      },
     },
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

@@ -1,0 +1,103 @@
+/*
+ * The spotlight overlay (35-ui-overhaul.md, section 10; the prototype's
+ * `#iris` and `#doors`). Window pixels: it covers the letterbox too.
+ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  /* Nothing is clicked while the screen changes. */
+  pointer-events: auto;
+}
+
+.iris {
+  position: absolute;
+  inset: 0;
+  background: #0b0906;
+  mask: radial-gradient(
+    circle at var(--ix) var(--iy),
+    transparent var(--ir),
+    #000 calc(var(--ir) + 1.5px)
+  );
+}
+
+.fade {
+  position: absolute;
+  inset: 0;
+  background: #0b0906;
+}
+
+/* Checking in: the station's front doors, filling the stage. */
+.doorway {
+  position: absolute;
+  inset: 0;
+}
+
+.doors {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  perspective: 1600px;
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 55%, rgba(255, 200, 120, 0.55), transparent 60%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  transition: opacity 0.9s;
+}
+
+.doors[data-open] .glow {
+  opacity: 1;
+}
+
+.door {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  background-size: 100% 100%;
+  transition: transform 1.15s cubic-bezier(0.55, 0, 0.3, 1);
+}
+
+.left {
+  left: 0;
+  transform-origin: 0 50%;
+}
+
+.right {
+  right: 0;
+  transform-origin: 100% 50%;
+}
+
+.doors[data-open] .left {
+  transform: rotateY(-104deg);
+}
+
+.doors[data-open] .right {
+  transform: rotateY(104deg);
+}
+
+.sign {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  z-index: 3;
+  padding: 0.5em 1.4em;
+  border: 6px solid #1e1008;
+  border-radius: 12px;
+  background: #5a3a1d;
+  color: #f1e6c8;
+  font-family: var(--font-pixel);
+  font-size: clamp(18px, 3.4vh, 40px);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  transition: opacity 0.4s;
+}
+
+.doors[data-open] .sign {
+  opacity: 0;
+}

@@ -43,6 +43,7 @@ import {
   tendCost,
   wrapsPresents,
   type Action,
+  type BiomeId,
   type GameState,
   type Hiker,
   type HikerId,
@@ -167,6 +168,9 @@ import {
 } from './groupTurn';
 import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
 import { NightCamp } from '../night/NightCamp';
+import { LoadingScreen } from '../loading/LoadingScreen';
+import { spotlight, stageToClient, type Point } from '../transition/transition';
+import { STATION_THEME_BY_ID } from '../../content/stations';
 import { HikerPicker } from '../night/HikerPicker';
 import { SkillTrails } from '../trails/SkillTrails';
 import { PartyLevel } from '../trails/PartyLevel';
@@ -190,6 +194,9 @@ interface CampOpen {
   hikerId?: string;
   ending: boolean;
 }
+
+/** What fills the screen: the map, the ranger station, or the hike's end. */
+type ScreenView = 'map' | 'station' | 'over';
 
 /** How long scouting effects stay on the map. */
 const FX_MS = 5500;
@@ -478,6 +485,8 @@ export function GameScreen({
   const [nightShown, setNightShown] = useNightEvent(state);
   // The night camp recap and the hiker picker (35-ui-overhaul.md, section 7).
   const [camp, setCamp] = useState<CampOpen | null>(null);
+  // A new biome's loading screen (35-ui-overhaul.md, section 9).
+  const [loadingBiome, setLoadingBiome] = useState<BiomeId | null>(null);
   // Sound (Phase 12): what each action did, and the ambience of where the party is.
   useGameSounds(state);
   const selectedTile = selected ? section.tiles[selected.tileId] : undefined;
@@ -1180,12 +1189,65 @@ export function GameScreen({
     !!state.traitPick ||
     !!trailsOpen ||
     !!camp ||
+    !!loadingBiome ||
     !!state.station ||
     groupBusy;
   const wheelAt = selected ? worldToStage(camera, centerOf(selected.tileId)) : null;
   // The campfire glows on the tile with the most of the party.
   const campTile = camp ? busiestTile(hikers) : undefined;
   const campGlow = campTile ? worldToStage(camera, centerOf(campTile)) : null;
+
+  // Full-screen changes in the hike go through the spotlight (35-ui-overhaul.md,
+  // section 10): the map to the ranger station (onto its doors) and back, a new
+  // biome's loading screen, and the hike's end. What's shown waits for it.
+  const target: ScreenView = isHikeOver(state) ? 'over' : state.station ? 'station' : 'map';
+  const [view, setView] = useState<ScreenView>(target);
+  const [shownSection, setShownSection] = useState(state.sectionIndex);
+  // The station as it was, so the spotlight can close on it after Rest & Go.
+  const [stationState, setStationState] = useState<GameState | null>(state.station ? state : null);
+  if (state.station && stationState !== state) setStationState(state);
+  const partyPoint = useRef<() => Point | null>(() => null);
+  useEffect(() => {
+    partyPoint.current = () => {
+      const tile = busiestTile(gameStore.getState()?.hikers ?? hikers);
+      return tile ? stageToClient(worldToStage(camera, centerOf(tile))) : null;
+    };
+  });
+  const changing = useRef(false);
+  useEffect(() => {
+    const newSection = state.sectionIndex !== shownSection;
+    if (changing.current || (target === view && !newSection)) return;
+    changing.current = true;
+    const done = () => {
+      changing.current = false;
+    };
+    if (newSection) {
+      // Rest & Go: the station closes, the next biome loads, then its map opens.
+      const biome = state.section.biome;
+      spotlight({
+        from: null,
+        change: () => {
+          setView(target);
+          setShownSection(state.sectionIndex);
+          setLoadingBiome(biome);
+        },
+      }).finally(done);
+    } else if (target === 'station') {
+      const theme = state.station ? STATION_THEME_BY_ID[state.station.themeId] : undefined;
+      spotlight({
+        from: partyPoint.current(),
+        change: () => setView('station'),
+        doors: { sign: (theme?.name ?? 'Ranger Station').toUpperCase() },
+      }).finally(done);
+    } else {
+      spotlight({
+        from: view === 'map' ? partyPoint.current() : null,
+        change: () => setView(target),
+        ...(target === 'map' ? { to: () => partyPoint.current() } : {}),
+      }).finally(done);
+    }
+  }, [target, view, state.sectionIndex, shownSection, state.section.biome, state.station]);
+  const stationShown = view === 'station' ? (state.station ? state : stationState) : null;
 
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
@@ -1811,7 +1873,8 @@ export function GameScreen({
                   onAction={dispatch}
                 />
               )}
-              {trailsOpen && !nightShown && !weatherShown && (
+              {/* At a station it waits for the spotlight to open onto the station. */}
+              {trailsOpen && !nightShown && !weatherShown && view === target && (
                 <SkillTrails
                   state={state}
                   hikerId={trailsOpen.hikerId}
@@ -1859,15 +1922,26 @@ export function GameScreen({
                 />
               )}
 
-              {state.station && !isHikeOver(state) && (
-                <StationScreen state={state} simple={simple} onDispatch={dispatch} />
+              {stationShown?.station && (
+                <StationScreen state={stationShown} simple={simple} onDispatch={dispatch} />
               )}
 
-              {isHikeOver(state) && (
+              {view === 'over' && isHikeOver(state) && (
                 <HikeOverScreen
                   state={state}
                   onTitle={onQuit}
                   {...(onNewHike ? { onNewHike } : {})}
+                />
+              )}
+              {loadingBiome && (
+                <LoadingScreen
+                  biome={loadingBiome}
+                  onDone={() => {
+                    spotlight({
+                      change: () => setLoadingBiome(null),
+                      to: () => partyPoint.current(),
+                    });
+                  }}
                 />
               )}
 
