@@ -90,9 +90,26 @@ function craftsTier(name: string, type: keyof typeof WORD, tier: 2 | 3): Hooks {
   };
 }
 
-/** Learns random Tier 1 recipes of a type (Family Cookbook and the rest). */
-const learnsRecipes = (name: string, type: ItemTypeName): Hooks => ({
+// ── Free crafting (29-core-loop.md, section 4) ─────────────────────────────
+
+/**
+ * A crafter's Tier 1 step: crafting its type has a chance to cost no Energy,
+ * by the step's level (`stepId`: the Tier 1 step, so Garbage Connoisseur II
+ * and III keep the level reached).
+ */
+const freeCraft =
+  (stepId: string, type: ItemTypeName): Hooks['freeCraftChance'] =>
+  (q, ctx) =>
+    q.type === type ? (B.freeCraft.chance[stepLevelOf(ctx.self, stepId) - 1] ?? 0) : undefined;
+
+/**
+ * Family Cookbook, Clothing Catalogue and Floor Plans: learning the step
+ * gives random Tier 1 recipes of its type (still, as a passive step), and
+ * crafting that type has a chance to cost no Energy.
+ */
+const recipeBook = (stepId: string, name: string, type: ItemTypeName): Hooks => ({
   onLearn: (ctx) => ctx.learnBlueprints(ctx.self, type, 1, B.recipes, name),
+  freeCraftChance: freeCraft(stepId, type),
 });
 
 // ── Leash Puller ───────────────────────────────────────────────────────────
@@ -153,6 +170,7 @@ function copydog(name: string, tier: 1 | 2 | 3): Hooks {
 // ── Garbage Connoisseur ────────────────────────────────────────────────────
 
 const garbage = (tier: 1 | 2 | 3): Hooks => ({
+  freeCraftChance: freeCraft('ellie-chef-t1', 'food'),
   recipeSubs: (type: ItemType) =>
     type === 'food'
       ? {
@@ -519,10 +537,10 @@ export const STEP_EFFECTS: Readonly<Record<string, StepEffect>> = {
   'mom-trekker-t3': { hooks: traveler('Experienced Traveler III', 3) },
 
   // Gdog
-  'gdog-chef-t1': { hooks: learnsRecipes('Family Cookbook', 'food') },
+  'gdog-chef-t1': { hooks: recipeBook('gdog-chef-t1', 'Family Cookbook', 'food') },
   'gdog-chef-t2': { hooks: craftsTier('Artisan Chef', 'food', 2) },
   'gdog-chef-t3': { hooks: craftsTier('Master Chef', 'food', 3) },
-  'gdog-tailor-t1': { hooks: learnsRecipes('Clothing Catalogue', 'clothes') },
+  'gdog-tailor-t1': { hooks: recipeBook('gdog-tailor-t1', 'Clothing Catalogue', 'clothes') },
   'gdog-tailor-t2': { hooks: craftsTier('Artisan Seamstress', 'clothes', 2) },
   'gdog-tailor-t3': { hooks: craftsTier('Master Seamstress', 'clothes', 3) },
   'gdog-trekker-t1': {
@@ -557,7 +575,7 @@ export const STEP_EFFECTS: Readonly<Record<string, StepEffect>> = {
     },
   },
   'wink-leader-t3': { hooks: JUST_AROUND },
-  'wink-architect-t1': { hooks: learnsRecipes('Floor Plans', 'shelter') },
+  'wink-architect-t1': { hooks: recipeBook('wink-architect-t1', 'Floor Plans', 'shelter') },
   'wink-architect-t2': { hooks: craftsTier('Artisan Architect', 'shelter', 2) },
   'wink-architect-t3': { hooks: craftsTier('Master Architect', 'shelter', 3) },
   'wink-packer-t1': { hooks: PACKED_TOOLBOX },

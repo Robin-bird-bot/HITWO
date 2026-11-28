@@ -836,6 +836,16 @@ export const BALANCE = {
       chance: [0.25, 0.5, 0.75, 1] as readonly number[],
       reach: [1, 2, 3] as readonly number[],
     },
+    /**
+     * Free crafting (29-core-loop.md, section 4): the chance that crafting a
+     * crafter's type costs no Energy, at the Tier 1 step's levels 1–4
+     * (Garbage Connoisseur, Family Cookbook, Clothing Catalogue, Floor
+     * Plans). Levels 2–4 cost `cost.level` each, like Game Sight.
+     * TODO(wyatt): [25%], [50%], [75%], [100%].
+     */
+    freeCraft: {
+      chance: [0.25, 0.5, 0.75, 1] as readonly number[],
+    },
     garbageConnoisseur: {
       /** Appetite per bite for each resource swapped in (I, II, III). */
       perSwap: { 1: -1, 2: 0, 3: 1 },

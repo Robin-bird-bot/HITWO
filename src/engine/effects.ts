@@ -488,6 +488,11 @@ export interface Hooks {
   /** A cost about to be paid: true waives its Appetite (Never Hungry's chance). */
   waiveAppetite?(e: { cause: string }, ctx: EffectContext): boolean;
   /**
+   * The chance that crafting this type costs no Energy (the crafters' Tier 1
+   * steps: 29-core-loop.md, section 4), or undefined for none.
+   */
+  freeCraftChance?(q: { type: ItemType }, ctx: QueryContext): number | undefined;
+  /**
    * How many tiles away this hiker can hand things over (Manager: items, 1
    * tile; Carrier Pigeon: sending anything, anywhere).
    */
@@ -1789,6 +1794,19 @@ export function traitFreeMoves(
     }
   }
   return out;
+}
+
+/**
+ * Does something make this craft cost no Energy (Family Cookbook's chance)?
+ * Rolls now, and names the step that did.
+ */
+export function freeCraftBy(state: GameState, hiker: Hiker, type: ItemType): string | undefined {
+  const ctx = effectContext(state, hiker);
+  for (const s of effectSourcesFor(state, hiker)) {
+    const chance = s.hooks.freeCraftChance?.({ type }, ctx) ?? 0;
+    if (chance >= 1 || (chance > 0 && ctx.roll(chance))) return s.name;
+  }
+  return undefined;
 }
 
 /** Does something waive the Appetite of this cost (Never Hungry's chance)? Rolls now. */

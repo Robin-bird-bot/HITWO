@@ -147,11 +147,42 @@ const LEASH_ON = `Finn’s Move All costs him ${LP.energy} Energy instead of any
 const copyBase =
   'Finn gets 1 more of the resource he keeps for each hiker who scavenged his tile earlier this phase.';
 
-/** "Learn 3 random food recipes." and its start-of-run wording. */
-const recipes = (what: string) => ({
-  text: `Learn ${B.recipes} random ${what} recipes.`,
-  startText: `Start with ${B.recipes} random ${what} recipes.`,
-});
+const FREE = B.freeCraft.chance;
+
+/** "Crafting food has a 25% chance to cost no Energy." at a level (29-core-loop.md, section 4). */
+function freeWords(what: string, level: number): string {
+  const chance = FREE[level - 1] ?? 0;
+  return chance >= 1
+    ? `Crafting ${what} costs no Energy.`
+    : `Crafting ${what} has a ${pct(chance)} chance to cost no Energy.`;
+}
+
+/** A crafter's Tier 1 step's levels 2–4: `before` and its chance, the chance in yellow. */
+const freeLevels = (before: string, what: string): StepLevel[] =>
+  [2, 3, 4].map((level) => {
+    const words = freeWords(what, level);
+    const chance = FREE[level - 1] ?? 0;
+    return { text: `${before} ${words}`, changed: [chance >= 1 ? words : pct(chance)] };
+  });
+
+/**
+ * Family Cookbook, Clothing Catalogue and Floor Plans: "Learn 3 random food
+ * recipes." with its chance to craft for no Energy, its start-of-run
+ * wording, and its levels. A passive step now, which gives its recipes when
+ * learned.
+ */
+const recipes = (what: string, plural = what) => {
+  const learn = `Learn ${B.recipes} random ${what} recipes.`;
+  return {
+    kind: 'passive' as const,
+    text: `${learn} ${freeWords(plural, 1)}`,
+    startText: `Start with ${B.recipes} random ${what} recipes. ${freeWords(plural, 1)}`,
+    levels: freeLevels(learn, plural),
+  };
+};
+
+const GARBAGE =
+  'When crafting food, Ellie can use Metal, Stone or Flint in place of Meat, Fish or Mushroom. Each one swapped in makes every bite give 1 less Appetite.';
 
 /** Artisan (Tier 2) and Master (Tier 3) for one item type. */
 function craftTiers(
@@ -292,21 +323,23 @@ export const HIKER_TREES: readonly HikerTrees[] = [
         ellieChef(1, 'Garbage Connoisseur', {
           step: 'new',
           kind: 'passive',
-          text: 'When crafting food, Ellie can use Metal, Stone or Flint in place of Meat, Fish or Mushroom. Each one swapped in makes every bite give 1 less Appetite.',
+          text: `${GARBAGE} ${freeWords('food', 1)}`,
+          levels: freeLevels(GARBAGE, 'food'),
         }),
+        // II and III keep Garbage Connoisseur's level (its chance to craft for no Energy).
         ellieChef(2, 'Garbage Connoisseur II', {
           step: 'upgrade',
           kind: 'passive',
           upgrades: 'ellie-chef-t1',
-          text: 'When crafting food, Ellie can use Metal, Stone or Flint in place of Meat, Fish or Mushroom. Swapped-in resources no longer lower the Appetite.',
-          changed: ['Swapped-in resources no longer lower the Appetite.'],
+          text: 'As Garbage Connoisseur, but swapped-in resources no longer lower the Appetite.',
+          changed: ['swapped-in resources no longer lower the Appetite'],
         }),
         ellieChef(3, 'Garbage Connoisseur III', {
           step: 'upgrade',
           kind: 'passive',
           upgrades: 'ellie-chef-t2',
-          text: 'When crafting food, Ellie can use Metal, Stone or Flint in place of Meat, Fish or Mushroom. Each one swapped in adds 1 Appetite to every bite.',
-          changed: ['Each one swapped in adds 1 Appetite to every bite.'],
+          text: 'As Garbage Connoisseur, but each one swapped in adds 1 Appetite to every bite.',
+          changed: ['each one swapped in adds 1 Appetite to every bite'],
         }),
       ]),
       tree('ellie-scavenger', 'scavenger', [
@@ -437,12 +470,12 @@ export const HIKER_TREES: readonly HikerTrees[] = [
     moraleType: 'ambivert',
     trees: [
       tree('gdog-chef', 'chef', [
-        gdogChef(1, 'Family Cookbook', { step: 'new', kind: 'grant', ...recipes('food') }),
+        gdogChef(1, 'Family Cookbook', { step: 'new', ...recipes('food') }),
         artisanChef,
         masterChef,
       ]),
       tree('gdog-tailor', 'tailor', [
-        gdogTailor(1, 'Clothing Catalogue', { step: 'new', kind: 'grant', ...recipes('clothes') }),
+        gdogTailor(1, 'Clothing Catalogue', { step: 'new', ...recipes('clothes') }),
         artisanSeam,
         masterSeam,
       ]),
@@ -493,7 +526,7 @@ export const HIKER_TREES: readonly HikerTrees[] = [
         }),
       ]),
       tree('wink-architect', 'architect', [
-        winkArchitect(1, 'Floor Plans', { step: 'new', kind: 'grant', ...recipes('shelter') }),
+        winkArchitect(1, 'Floor Plans', { step: 'new', ...recipes('shelter', 'shelters') }),
         artisanArch,
         masterArch,
       ]),
