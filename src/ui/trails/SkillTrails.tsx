@@ -42,6 +42,7 @@ export function SkillTrails({
   onPickHiker,
   onAction,
   onClose,
+  onBack,
 }: {
   state: GameState;
   hikerId: string;
@@ -50,6 +51,8 @@ export function SkillTrails({
   onPickHiker(id: string): void;
   onAction(action: Action): boolean;
   onClose(): void;
+  /** Opened from the hiker picker (35-ui-overhaul.md, section 7): PICK SOMEONE ELSE goes back to it. */
+  onBack?: () => void;
 }) {
   useOpenSound('trails.open');
   const hikers = state.hikers.filter((h) => h.status !== 'abandoned' && !!treesOf(h));
@@ -131,6 +134,11 @@ export function SkillTrails({
               )}
             </span>
           </div>
+          {onBack && (
+            <button type="button" className={styles.back} data-sound="cancel" onClick={onBack}>
+              ← PICK SOMEONE ELSE
+            </button>
+          )}
           <button type="button" className={styles.close} aria-label="Close" onClick={onClose}>
             ×
           </button>

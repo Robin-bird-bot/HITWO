@@ -1,0 +1,211 @@
+/*
+ * The hiker picker (35-ui-overhaul.md, section 7; the prototype's `#picker`
+ * and `.pc`). Stage pixels (1600 × 1000).
+ */
+.picker {
+  position: absolute;
+  inset: 0;
+  z-index: 62;
+  background: rgba(10, 14, 30, 0.62);
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.3s;
+}
+
+.title {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 104px;
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  font-size: 38px;
+  color: var(--paper);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+.sub {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 158px;
+  margin: 0;
+  text-align: center;
+  font-size: 18px;
+  color: #e8dcc4;
+}
+
+.cards {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 222px;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+}
+
+.card {
+  position: relative;
+  width: 262px;
+  padding: 0 0 18px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.4);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1),
+    box-shadow 0.2s;
+  animation: dealUp 0.6s cubic-bezier(0.25, 1.2, 0.5, 1) both;
+}
+
+.card:hover,
+.card:focus-visible {
+  transform: translateY(-14px) rotate(-1deg);
+}
+
+@keyframes dealUp {
+  from {
+    opacity: 0;
+    transform: translateY(220px) rotate(8deg);
+  }
+}
+
+/* The portrait on the hiker's color with a sunburst. */
+.portrait {
+  position: relative;
+  height: 232px;
+  overflow: hidden;
+  border-bottom: 3px solid var(--ink);
+  border-radius: 3px 3px 0 0;
+  background: var(--c);
+}
+
+/* Behind the portrait: it shows where the art is cut out. */
+.portrait::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 80%,
+    rgba(255, 255, 255, 0.18) 0 7deg,
+    transparent 7deg 14deg
+  );
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
+.banner {
+  position: relative;
+  z-index: 2;
+  align-self: flex-start;
+  margin: -16px 0 12px -8px;
+  height: 32px;
+  padding: 0 28px 0 16px;
+  display: flex;
+  align-items: center;
+  background: var(--c);
+  color: #fff;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
+  font-family: var(--font-pixel);
+  font-size: 18px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.trees {
+  display: grid;
+  gap: 8px;
+  padding: 0 18px;
+}
+
+.tree {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.pips {
+  display: flex;
+  gap: 3px;
+}
+
+.pips i {
+  width: 13px;
+  height: 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+  background: var(--paper-2);
+}
+
+.pips i[data-on] {
+  background: var(--c);
+}
+
+.can {
+  margin: 14px 18px 0;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  color: var(--ok);
+}
+
+.can[data-none] {
+  color: var(--ink-3);
+}
+
+.done {
+  position: absolute;
+  left: 50%;
+  bottom: 96px;
+  height: 52px;
+  padding: 0 34px;
+  transform: translateX(-50%);
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 16px;
+}
+
+.done:active {
+  transform: translate(calc(-50% + 3px), 3px);
+  box-shadow: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .picker,
+  .card {
+    animation: none;
+  }
+
+  .card {
+    transition: none;
+  }
+}

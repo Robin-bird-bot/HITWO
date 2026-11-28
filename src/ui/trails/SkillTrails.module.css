@@ -162,6 +162,26 @@
   color: #f1eadb;
 }
 
+/* From the hiker picker: back to it. */
+.back {
+  height: 44px;
+  margin-left: 14px;
+  padding: 0 16px;
+  border: 1.5px solid rgba(241, 234, 219, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1eadb;
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+
+.back:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 /* ── The map ── */
 
 .body {

@@ -99,7 +99,7 @@ export function onXpRow(state: GameState, h: Hiker): boolean {
 export interface XpOptions {
   /** A second card in the same scavenge (Gambler): "every scavenge" bonuses count once. */
   repeat?: boolean;
-  /** The caller's own log line already says the XP: only log it when a bonus changed it. */
+  /** The caller's own log line already says the XP: the trail log shows it only when a bonus changed it. */
   quiet?: boolean;
 }
 
@@ -160,13 +160,24 @@ export function gainXp(
   if (hiker.status === 'abandoned') return 0;
   noteXpRow(state, hiker);
   if (ACTION_XP.includes(source) && !onXpRow(state, hiker)) {
-    if (base > 0) pushEvent(state, { kind: 'xp', hikerId: hiker.id, xp: 0, cause, none: 'row' });
+    if (base > 0) {
+      pushEvent(state, { kind: 'xp', hikerId: hiker.id, xp: 0, cause, source, none: 'row' });
+    }
     return 0;
   }
   const xp = withBonuses(state, hiker, base, source, repeat);
   if (xp <= 0) return 0;
   hiker.xp += xp;
-  if (!quiet || xp !== base) pushEvent(state, { kind: 'xp', hikerId: hiker.id, xp, cause });
+  // Every gain is logged with its source (the night camp recap reads them); a
+  // quiet one the caller's line already says stays out of the trail log.
+  pushEvent(state, {
+    kind: 'xp',
+    hikerId: hiker.id,
+    xp,
+    cause,
+    source,
+    ...(quiet && xp === base ? { quiet: true as const } : {}),
+  });
   // It all goes into the party bar.
   addPartyXp(state, xp);
 
