@@ -5,6 +5,7 @@ import { BALANCE } from '../../../config/balance';
 import FRAGMENT_BODY from '../../../shaders/hiker-select-bg.frag?raw';
 import {
   BG_COLORS,
+  BG_PRESETS,
   BG_FALLBACK,
   FRAGMENT_SOURCE,
   hexToRgb,
@@ -139,6 +140,23 @@ describe('the shader', () => {
     expect(gl.uniforms.get('uPixels')).toBe(BALANCE.ui.selectBackground.pixels);
     expect(gl.uniforms.get('uPull')).toBe(BALANCE.ui.selectBackground.pull);
     expect(BALANCE.ui.selectBackground).toMatchObject({ swirl: 1.2, pixels: 150, pull: 0.5 });
+    expect(gl.uniforms.get('uDim')).toBe(1);
+  });
+
+  it('draws the packing screen’s dark preset with the same paint, darker and dimmed', () => {
+    const gl = fakeGl();
+    const canvas = fakeCanvas(gl);
+    startBackground(
+      canvas as unknown as HTMLCanvasElement,
+      fakeEnv({ reducedMotion: true }),
+      BG_PRESETS.dark,
+    );
+    expect(gl.uniforms.get('uDeep')).toEqual(hexToRgb('#060B08'));
+    expect(gl.uniforms.get('uMoss')).toEqual(hexToRgb('#112019'));
+    expect(gl.uniforms.get('uMist')).toEqual(hexToRgb('#2C4237'));
+    expect(gl.uniforms.get('uGlow')).toEqual(hexToRgb('#9A7A34'));
+    expect(gl.uniforms.get('uDim')).toBe(BALANCE.ui.selectBackground.darkDim);
+    expect(gl.uniforms.get('uSwirl')).toBe(BALANCE.ui.selectBackground.swirl);
   });
 
   it('turns colors into 0–1 values', () => {

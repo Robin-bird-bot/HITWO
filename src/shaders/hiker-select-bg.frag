@@ -10,6 +10,8 @@ uniform vec3 uGlow;
 uniform float uSwirl;
 uniform float uPixels;
 uniform float uPull;
+// Every color times this: 1 on hiker select, darker on the packing screen.
+uniform float uDim;
 float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p), u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
@@ -51,5 +53,6 @@ void main() {
   // dark edges keep the cards readable
   col *= 1.0 - 0.5 * smoothstep(0.3, 1.1, length((fc - 0.5 * uResolution) / uResolution.y));
   col += (hash(fc) - 0.5) * 0.015;
+  col *= uDim;
   outColor = vec4(col, 1.0);
 }

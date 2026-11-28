@@ -23,6 +23,34 @@ export const BG_COLORS = {
   glow: '#E9B44C',
 } as const;
 
+export interface BackgroundPreset {
+  deep: string;
+  moss: string;
+  mist: string;
+  glow: string;
+  /** Every color times this. */
+  dim: number;
+}
+
+/**
+ * Hiker select's paint, and the packing screen's TrailMate look's darker,
+ * quieter version of it, for continuity between the screens
+ * (28-packing-screen-trailmate.md, section 1). TODO(wyatt): the dark colors
+ * are first guesses, like the dimmer in balance.ts.
+ */
+export const BG_PRESETS = {
+  select: { ...BG_COLORS, dim: 1 },
+  dark: {
+    deep: '#060B08',
+    moss: '#112019',
+    mist: '#2C4237',
+    glow: '#9A7A34',
+    dim: BALANCE.ui.selectBackground.darkDim,
+  },
+} as const satisfies Record<string, BackgroundPreset>;
+
+export type BackgroundPresetId = keyof typeof BG_PRESETS;
+
 /** What shows without WebGL2. */
 export const BG_FALLBACK = BG_COLORS.deep;
 
@@ -49,6 +77,7 @@ export const UNIFORMS = [
   'uSwirl',
   'uPixels',
   'uPull',
+  'uDim',
 ] as const;
 type Uniform = (typeof UNIFORMS)[number];
 
@@ -99,7 +128,7 @@ interface Graphics {
 }
 
 /** Compiles and links the shader and sets the uniforms that never change. */
-function setUp(gl: WebGL2RenderingContext): Graphics | null {
+function setUp(gl: WebGL2RenderingContext, preset: BackgroundPreset): Graphics | null {
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SOURCE);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SOURCE);
   const program = vertex && fragment ? gl.createProgram() : null;
@@ -123,10 +152,11 @@ function setUp(gl: WebGL2RenderingContext): Graphics | null {
     UNIFORMS.map((u) => [u, gl.getUniformLocation(program, u)]),
   ) as Graphics['at'];
   const tune = BALANCE.ui.selectBackground;
-  gl.uniform3fv(at.uDeep, hexToRgb(BG_COLORS.deep));
-  gl.uniform3fv(at.uMoss, hexToRgb(BG_COLORS.moss));
-  gl.uniform3fv(at.uMist, hexToRgb(BG_COLORS.mist));
-  gl.uniform3fv(at.uGlow, hexToRgb(BG_COLORS.glow));
+  gl.uniform3fv(at.uDeep, hexToRgb(preset.deep));
+  gl.uniform3fv(at.uMoss, hexToRgb(preset.moss));
+  gl.uniform3fv(at.uMist, hexToRgb(preset.mist));
+  gl.uniform3fv(at.uGlow, hexToRgb(preset.glow));
+  gl.uniform1f(at.uDim, preset.dim);
   gl.uniform1f(at.uSwirl, tune.swirl);
   gl.uniform1f(at.uPixels, tune.pixels);
   gl.uniform1f(at.uPull, tune.pull);
@@ -137,7 +167,11 @@ function setUp(gl: WebGL2RenderingContext): Graphics | null {
  * Starts drawing on `canvas` (sized by CSS). Returns null when there's no
  * WebGL2 or the shader won't build: the fallback color shows instead.
  */
-export function startBackground(canvas: HTMLCanvasElement, env: BackgroundEnv): Background | null {
+export function startBackground(
+  canvas: HTMLCanvasElement,
+  env: BackgroundEnv,
+  preset: BackgroundPreset = BG_PRESETS.select,
+): Background | null {
   const gl = canvas.getContext('webgl2', {
     alpha: false,
     antialias: false,
@@ -146,7 +180,7 @@ export function startBackground(canvas: HTMLCanvasElement, env: BackgroundEnv): 
     powerPreference: 'low-power',
   });
   if (!gl) return null;
-  let gfx = setUp(gl);
+  let gfx = setUp(gl, preset);
   if (!gfx) return null;
 
   const tune = BALANCE.ui.selectBackground;
@@ -222,7 +256,7 @@ export function startBackground(canvas: HTMLCanvasElement, env: BackgroundEnv): 
     gfx = null;
   };
   const onRestored = () => {
-    gfx = setUp(gl);
+    gfx = setUp(gl, preset);
     if (gfx) {
       draw();
       refresh();

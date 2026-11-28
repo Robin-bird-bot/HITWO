@@ -3,7 +3,7 @@
  * biome, day and phase with weather, the objective, and Abundance with caps.
  */
 import { setTraitWarnings, useTraitWarnings, type TraitWarnings } from '../app/traitWarnings';
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { WEATHERS } from '../../content/weather';
 import { PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
@@ -15,8 +15,10 @@ import { debugEnabled } from '../debug/debugEnabled';
 import {
   AUTO_PASS_SETTING,
   SHOW_PLACED_SETTING,
+  SKIP_PACKING_SETTING,
   useAutoPass,
   useShowPlaced,
+  useSkipPacking,
 } from '../debug/testingSettings';
 import {
   MAP_STYLE_SETTING,
@@ -26,6 +28,7 @@ import {
   useWholeMap,
 } from '../map/mapStyleSetting';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weather/weatherLook';
+import { PACKING_LOOKS, PACKING_LOOK_SETTING, usePackingLook } from '../packing/packingSettings';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
 import { usePanelCollapsed } from './panelState';
@@ -199,10 +202,16 @@ const WARNINGS: { id: TraitWarnings; label: string; text: string }[] = [
 export function MenuButton({
   onTitle,
   testing,
+  moreTesting,
+  note = 'Your hike is saved after every action.',
 }: {
   onTitle(): void;
   /** Settings → Testing's Minigames only (it's in the run), with the debug tools on. */
   testing?: { minigamesOnly: boolean; onMinigamesOnly(on: boolean): void };
+  /** More testing switches for the screen it's on (the packing screen's Force next spin). */
+  moreTesting?: ReactNode;
+  /** The line under the buttons. */
+  note?: string;
 }) {
   const [open, setOpen] = useState(false);
   const mode = useUiMode();
@@ -211,6 +220,8 @@ export function MenuButton({
   const wholeMap = useWholeMap();
   const autoPass = useAutoPass();
   const showPlaced = useShowPlaced();
+  const skipPacking = useSkipPacking();
+  const packingLook = usePackingLook();
   const buttonRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={styles.menuWrap}>
@@ -302,6 +313,26 @@ export function MenuButton({
               </label>
             )}
           </div>
+          <div className={styles.setting}>
+            <span className={styles.settingName}>Packing machine</span>
+            <div className={styles.segmented} role="radiogroup" aria-label="Packing machine">
+              {PACKING_LOOKS.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={packingLook === m.id}
+                  className={styles.segment}
+                  onClick={() => PACKING_LOOK_SETTING.set(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <span className={styles.small}>
+              {PACKING_LOOKS.find((m) => m.id === packingLook)?.text}
+            </span>
+          </div>
           {debugEnabled() && (
             <div className={styles.setting}>
               <span className={panel.label}>TESTING</span>
@@ -340,6 +371,18 @@ export function MenuButton({
                   <span className={styles.small}> · Every tile shows its card on the map.</span>
                 </span>
               </label>
+              <label className={styles.switchRow}>
+                <input
+                  type="checkbox"
+                  checked={skipPacking}
+                  onChange={(e) => SKIP_PACKING_SETTING.set(e.target.checked ? 'on' : 'off')}
+                />
+                <span>
+                  Skip packing
+                  <span className={styles.small}> · Random picks, straight to the hike.</span>
+                </span>
+              </label>
+              {moreTesting}
             </div>
           )}
           <button type="button" className={styles.menuItem} onClick={resetWindowLayout}>
@@ -348,7 +391,7 @@ export function MenuButton({
           <button type="button" className={styles.menuItem} onClick={onTitle}>
             Title screen
           </button>
-          <span className={styles.small}>Your hike is saved after every action.</span>
+          <span className={styles.small}>{note}</span>
         </Popout>
       )}
     </div>

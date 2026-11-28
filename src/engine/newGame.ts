@@ -26,11 +26,13 @@ import type {
   Inventory,
   ItemId,
   ItemTypeName,
+  ResourceId,
   Section,
   Stats,
   TraitSlot,
 } from './types';
 import { placePool } from './challenges/pool';
+import { pushEvent } from './log';
 
 /**
  * What a character brings (07-characters.md, "Starting bags"): items, which
@@ -82,6 +84,17 @@ export interface NewGameOptions {
   tier?: number;
   /** Each hiker starts with a few random resources (on unless a test turns it off). */
   startingResources?: boolean;
+  /**
+   * What each hiker packed on the packing screen (27-packing-screen.md), in
+   * party order. It replaces the random starting resources.
+   */
+  packed?: readonly PackedHiker[];
+}
+
+/** One hiker's packing: item ids for the bag, and the resources their bundles opened into. */
+export interface PackedHiker {
+  items: readonly ItemId[];
+  resources: readonly ResourceId[];
 }
 
 /** A new hike: Day 1 Morning, every hiker on the trailhead. The seed decides the trail. */
@@ -92,6 +105,7 @@ export function createGame({
   biome = 'meadow',
   tier = 1,
   startingResources = true,
+  packed,
 }: NewGameOptions): GameState {
   const rng = seedRng(seed);
   const section = structuredClone(given ?? generateSection(rng, { biome, tier }));
@@ -167,7 +181,8 @@ export function createGame({
     const h = state.hikers[i];
     if (h && setup.startingBag) giveStartingBag(state, h, setup.startingBag);
   });
-  if (startingResources) giveStartingResources(state);
+  if (packed) givePacked(state, packed);
+  else if (startingResources) giveStartingResources(state);
   // The biome's challenge pool goes on its tiles (25-challenges-on-the-map.md,
   // section 1). A ready-made section (tests) draws its cards on landing, as before.
   if (!given) placePool(state);
@@ -213,6 +228,36 @@ function giveStartingBag(state: GameState, h: Hiker, bag: StartingBag): void {
     .map((d) => d.id);
   const picked = shuffle(state.rng, pool).slice(0, want.count);
   if (picked.length) h.blueprints = [...known, ...picked];
+}
+
+/**
+ * The packing screen's picks, after starting kits and gifts: items in the bag
+ * (rolling Quality), and resources up to the hiker's limit. Anything over
+ * the limit is dropped, with a note in the log.
+ */
+function givePacked(state: GameState, packed: readonly PackedHiker[]): void {
+  state.hikers.forEach((h, i) => {
+    const p = packed[i];
+    if (!p) return;
+    for (const itemId of p.items) {
+      if (ITEMS[itemId]) h.inventory.bag.push(makeItem(state, itemId, { prefix: 'pack' }));
+    }
+    const dropped: ResourceId[] = [];
+    for (const id of p.resources) {
+      if (resourceCount(h) < resourceLimit(state, h)) {
+        h.inventory.resources[id] = (h.inventory.resources[id] ?? 0) + 1;
+      } else dropped.push(id);
+    }
+    if (dropped.length) {
+      pushEvent(state, {
+        kind: 'lost',
+        hikerId: h.id,
+        resources: dropped,
+        items: [],
+        cause: 'no room in the pack',
+      });
+    }
+  });
 }
 
 /**

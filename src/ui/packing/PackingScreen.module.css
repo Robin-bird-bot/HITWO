@@ -1,0 +1,102 @@
+/* The packing screen's frame, shared by both looks (each look styles the rest). */
+.screen {
+  position: absolute;
+  inset: 0;
+  /* Clip, not hidden: the drawers wait off screen, and focus must never scroll to them. */
+  overflow: clip;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Particles over everything but the dragged symbol and the previews. */
+.fx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 1000px;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.ghost {
+  position: absolute;
+  z-index: 40;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 50%;
+}
+
+/* The real item card beside the reel (Wyatt: "so a player knows what they're getting"). */
+.card {
+  position: absolute;
+  z-index: 46;
+  pointer-events: none;
+  animation: cardIn 0.16s ease-out;
+}
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+.hint {
+  margin-top: 8px;
+  text-align: center;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+
+.corner {
+  position: absolute;
+  right: 84px;
+  top: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 50;
+}
+.cornerButton {
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel);
+  color: var(--text);
+  font-family: var(--font-pixel);
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+.cornerButton:hover {
+  border-color: rgba(233, 180, 76, 0.6);
+}
+
+/* Settings → Testing → Force next spin. */
+.force {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.forceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.forceRow button {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  cursor: pointer;
+}
+.forceRow button[aria-pressed='true'] {
+  background: var(--gold);
+  color: var(--page);
+}

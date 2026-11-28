@@ -3,10 +3,18 @@
  * (backgroundGl.ts). The bend follows the pointer and drifts when it's away.
  * `data-state` on the canvas says what it's doing: running, still (reduced
  * motion) or fallback (no WebGL2).
+ *
+ * The packing screen's TrailMate look uses the `dark` preset: the same paint,
+ * darker and quieter, under a soft vignette.
  */
 import { useEffect, useRef } from 'react';
 import { useReducedMotion } from '../../app/useReducedMotion';
-import { BG_FALLBACK, startBackground, type BackgroundEnv } from './backgroundGl';
+import {
+  BG_PRESETS,
+  startBackground,
+  type BackgroundEnv,
+  type BackgroundPresetId,
+} from './backgroundGl';
 import styles from './SelectBackground.module.css';
 
 const browserEnv = (reducedMotion: boolean): BackgroundEnv => ({
@@ -17,14 +25,15 @@ const browserEnv = (reducedMotion: boolean): BackgroundEnv => ({
   hidden: () => document.visibilityState === 'hidden',
 });
 
-export function SelectBackground() {
+export function SelectBackground({ preset = 'select' }: { preset?: BackgroundPresetId }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const reducedMotion = useReducedMotion();
+  const colors = BG_PRESETS[preset];
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const bg = startBackground(canvas, browserEnv(reducedMotion));
+    const bg = startBackground(canvas, browserEnv(reducedMotion), colors);
     canvas.dataset.state = !bg ? 'fallback' : reducedMotion ? 'still' : 'running';
     if (!bg) return;
 
@@ -55,11 +64,12 @@ export function SelectBackground() {
       document.removeEventListener('visibilitychange', bg.refresh);
       resize.disconnect();
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, colors]);
 
   return (
-    <div className={styles.backdrop} style={{ background: BG_FALLBACK }} aria-hidden="true">
+    <div className={styles.backdrop} style={{ background: colors.deep }} aria-hidden="true">
       <canvas ref={ref} className={styles.canvas} />
+      {preset === 'dark' && <div className={styles.vignette} />}
     </div>
   );
 }
