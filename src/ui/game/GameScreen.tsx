@@ -166,9 +166,11 @@ import {
   groupMoveTargets,
 } from './groupTurn';
 import { NightEventWindow, type NightEventShown } from '../night/NightEventWindow';
+import { NightCamp } from '../night/NightCamp';
+import { HikerPicker } from '../night/HikerPicker';
 import { SkillTrails } from '../trails/SkillTrails';
-import { PartyLevel, PartyToast } from '../trails/PartyLevel';
-import { usePartyToast, useSkillTrails } from '../trails/useSkillTrails';
+import { PartyLevel } from '../trails/PartyLevel';
+import { useSkillTrails } from '../trails/useSkillTrails';
 import { MinigameFlow } from '../minigames/MinigameFlow';
 import { minigameHikersFor, outcomeOf, popupFor, spendsOf } from '../challenge/minigameOnTile';
 import { atTrailhead } from '../../engine/challenges/infoboard';
@@ -177,6 +179,17 @@ import { useAutoPass, useShowPlaced } from '../debug/testingSettings';
 import { InfoboardWindow } from '../infoboard/InfoboardWindow';
 
 const PHASE_WORD = { morning: 'morning', afternoon: 'afternoon', night: 'night' } as const;
+
+/**
+ * The night camp recap, the hiker picker and Skill Trails from it
+ * (35-ui-overhaul.md, section 7). `ending`: opened by ending the night, which
+ * ends once they close; otherwise from the Party LV pill.
+ */
+interface CampOpen {
+  step: 'recap' | 'picker' | 'trails';
+  hikerId?: string;
+  ending: boolean;
+}
 
 /** How long scouting effects stay on the map. */
 const FX_MS = 5500;
@@ -463,6 +476,8 @@ export function GameScreen({
   const [weatherShown, setWeatherShown] = useWeatherChange(state);
   // The night event window, when something hit the party at camp.
   const [nightShown, setNightShown] = useNightEvent(state);
+  // The night camp recap and the hiker picker (35-ui-overhaul.md, section 7).
+  const [camp, setCamp] = useState<CampOpen | null>(null);
   // Sound (Phase 12): what each action did, and the ambience of where the party is.
   useGameSounds(state);
   const selectedTile = selected ? section.tiles[selected.tileId] : undefined;
@@ -472,13 +487,12 @@ export function GameScreen({
     night: state.phase === 'night',
     weather: state.weather.today,
     river: !!selectedTile?.nodes.some((n) => n.type === 'river' && n.revealed),
-    fire: hikers.some(
-      (h) => h.status === 'active' && section.tiles[h.tileId]?.special === 'campsite',
-    ),
+    fire:
+      !!camp?.ending ||
+      hikers.some((h) => h.status === 'active' && section.tiles[h.tileId]?.special === 'campsite'),
   });
   // Skill Trails (Phase 10.7): a window from a hiker frame, full screen at night with points.
   const [trailsOpen, setTrailsOpen] = useSkillTrails(state);
-  const partyToast = usePartyToast(state);
   const openTrails = (hikerId?: HikerId) =>
     setTrailsOpen({ hikerId: hikerId ?? selected?.id ?? hikers[0]?.id ?? '', full: false });
   const toggleTrait = (hikerId: HikerId, traitId: string) =>
@@ -1129,9 +1143,19 @@ export function GameScreen({
     warnings === 'informative' && state.phase === 'night' && !checksQuiet(state.seed)
       ? lossesIn(forecastStartOfDay(state), 'tomorrow')
       : [];
+  // Ending the night plays the camp recap first; the night ends when it closes.
+  const endThePhase = () => {
+    if (state.phase === 'night' && !state.station) setCamp({ step: 'recap', ending: true });
+    else dispatch({ type: 'endPhase' });
+  };
+  const endNight = () => {
+    setCamp(null);
+    dispatch({ type: 'endPhase' });
+  };
+  const closeCamp = () => (camp?.ending ? endNight() : setCamp(null));
   const endPhase = () => {
     if (!waiting.length && !overnight.length) {
-      dispatch({ type: 'endPhase' });
+      endThePhase();
       return;
     }
     setDontAsk(false);
@@ -1155,9 +1179,13 @@ export function GameScreen({
     !!craftOpen ||
     !!state.traitPick ||
     !!trailsOpen ||
+    !!camp ||
     !!state.station ||
     groupBusy;
   const wheelAt = selected ? worldToStage(camera, centerOf(selected.tileId)) : null;
+  // The campfire glows on the tile with the most of the party.
+  const campTile = camp ? busiestTile(hikers) : undefined;
+  const campGlow = campTile ? worldToStage(camera, centerOf(campTile)) : null;
 
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
@@ -1476,7 +1504,7 @@ export function GameScreen({
                   <CapsPill state={state} />
                   <PartyLevel
                     state={state}
-                    onOpen={() => openTrails()}
+                    onOpen={() => setCamp({ step: 'picker', ending: false })}
                     style={{ left: 16, top: 16 }}
                   />
                   <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
@@ -1534,7 +1562,7 @@ export function GameScreen({
                   <AbundanceCard state={state} />
                   <PartyLevel
                     state={state}
-                    onOpen={() => openTrails()}
+                    onOpen={() => setCamp({ step: 'picker', ending: false })}
                     style={{ left: 470, top: 86 }}
                   />
                   <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
@@ -1793,7 +1821,33 @@ export function GameScreen({
                   onClose={() => setTrailsOpen(null)}
                 />
               )}
-              {partyToast && <PartyToast text={partyToast} />}
+              {camp?.step === 'recap' && (
+                <NightCamp
+                  state={state}
+                  glow={campGlow}
+                  onSeen={() => dispatch({ type: 'campRecap' })}
+                  onSpend={() => setCamp({ ...camp, step: 'picker' })}
+                  onDone={endNight}
+                />
+              )}
+              {camp?.step === 'picker' && (
+                <HikerPicker
+                  state={state}
+                  onPick={(id) => setCamp({ ...camp, step: 'trails', hikerId: id })}
+                  onClose={closeCamp}
+                />
+              )}
+              {camp?.step === 'trails' && camp.hikerId && (
+                <SkillTrails
+                  state={state}
+                  hikerId={camp.hikerId}
+                  full={camp.ending}
+                  onPickHiker={(id) => setCamp({ ...camp, hikerId: id })}
+                  onAction={dispatch}
+                  onBack={() => setCamp({ ...camp, step: 'picker' })}
+                  onClose={() => setCamp({ ...camp, step: 'picker' })}
+                />
+              )}
               {/* Opening a Present (and Choosy's pick), or smashing one. */}
               {!state.station && <PresentFx state={state} onAction={dispatch} />}
               {wonderOpen && !state.challenge && !state.scavenge && !result && (
@@ -1917,7 +1971,7 @@ export function GameScreen({
                   onConfirm={() => {
                     if (dontAsk) quietChecks(state.seed);
                     setConfirmEnd(false);
-                    dispatch({ type: 'endPhase' });
+                    endThePhase();
                   }}
                 />
               )}
@@ -2047,4 +2101,18 @@ function useEasierTiles(state: GameState, busy: boolean): TileId[] {
     return () => clearTimeout(timer);
   }, [busy, any]);
   return tiles;
+}
+
+/** The tile with the most active hikers (the first such, on a tie). */
+function busiestTile(hikers: readonly Hiker[]): TileId | undefined {
+  const counts = new Map<TileId, number>();
+  for (const h of hikers) {
+    if (h.status === 'active') counts.set(h.tileId, (counts.get(h.tileId) ?? 0) + 1);
+  }
+  let best: TileId | undefined;
+  let most = 0;
+  for (const [tile, n] of counts) {
+    if (n > most) [best, most] = [tile, n];
+  }
+  return best;
 }

@@ -1,12 +1,13 @@
 /**
  * The party's level in the top bar (Phase 10.7): "PARTY LV 3", a small bar
- * to the next level, and "2 points to spend" when there are any. A click
- * opens Skill Trails.
+ * to the next level, and a "2 POINTS" badge while there are points to spend.
+ * It shows the bar as of the last night camp recap, so a level-up is the
+ * night's surprise (35-ui-overhaul.md, section 7). A click opens the hiker
+ * picker.
  */
-import { sfx } from '../../audio/engine';
-import { useEffect, type CSSProperties } from 'react';
+import type { CSSProperties } from 'react';
 import type { GameState } from '../../engine';
-import { partyProgress, pointsWords } from './partyProgress';
+import { pointsWords, shownProgress } from './partyProgress';
 import styles from './Trails.module.css';
 
 export function PartyLevel({
@@ -18,32 +19,24 @@ export function PartyLevel({
   onOpen(): void;
   style: CSSProperties;
 }) {
-  const { level, points, fill } = partyProgress(state);
+  const { level, points, fill } = shownProgress(state);
   return (
     <button
       type="button"
       className={styles.partyPill}
       style={style}
       onClick={onOpen}
-      aria-label={`Party level ${level}.${points ? ` ${pointsWords(points)}.` : ''} Open Skill Trails.`}
+      aria-label={`Party level ${level}.${points ? ` ${pointsWords(points)}.` : ''} Open the skill trails.`}
     >
       <span className={styles.partyWord}>PARTY LV {level}</span>
       <span className={styles.partyTrack}>
         <span style={{ width: `${fill * 100}%` }} />
       </span>
-      {points > 0 && <span className={styles.partyPoints}>{pointsWords(points)}</span>}
+      {points > 0 && (
+        <span className={styles.partyPoints}>
+          {points} POINT{points === 1 ? '' : 'S'}
+        </span>
+      )}
     </button>
-  );
-}
-
-/** "Party level 3! +1 point", for a moment after the party levels up. */
-export function PartyToast({ text }: { text: string }) {
-  useEffect(() => {
-    sfx('ui.toast');
-  }, [text]);
-  return (
-    <div className={styles.toast} role="status">
-      {text}
-    </div>
   );
 }

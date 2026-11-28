@@ -4899,6 +4899,27 @@ export const BALANCE = {
         hammerGapMs: 250,
         newMs: 1500,
       },
+      /**
+       * The night camp recap (section 7): the lines come in `lineGapMs`
+       * apart after `startMs`; the party bar fills one XP every `tickMs`,
+       * several per tick when that would take longer than `maxFillMs`
+       * (Claude's idea), with `xp.gain` rising by `xpRate` over a level; a
+       * level-up holds `levelMs` before the bar starts over. TODO(wyatt):
+       * lines [0.42 s] apart, [70 ms] an XP, [3 s] at most, [1.1 s] after a
+       * level-up; the rest are the prototype's.
+       */
+      camp: {
+        startMs: 900,
+        lineGapMs: 420,
+        totalMs: 500,
+        tickMs: 70,
+        maxFillMs: 3000,
+        xpRate: 0.35,
+        levelMs: 1100,
+        buttonsMs: 400,
+        fireflies: 26,
+        dealGapMs: 110,
+      },
     },
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

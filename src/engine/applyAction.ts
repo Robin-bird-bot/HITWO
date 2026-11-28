@@ -128,6 +128,8 @@ export function validateAction(state: GameState, action: Action): string | null 
   if (action.type === 'foundPlace') return validateFound(state, action) ?? null;
   // Stars are favorites, any time: they change no rules.
   if (action.type === 'star') return null;
+  // The camp recap only marks what the party bar showed.
+  if (action.type === 'campRecap') return null;
   // Nobody can act any more (the debug panel still works).
   if (action.type !== 'debug' && isHikeOver(state)) return 'The hike is over.';
   // An open scavenge waits for a card before anything else happens.
@@ -351,6 +353,11 @@ export function applyAction(state: GameState, action: Action): GameState {
       const at = list.indexOf(action.id);
       if (action.on && at < 0) list.push(action.id);
       if (!action.on && at >= 0) list.splice(at, 1);
+      break;
+    }
+    case 'campRecap': {
+      const party = (draft.party ??= { xp: 0, level: 0, points: 0 });
+      party.recap = { xp: party.xp, level: party.level, eventId: draft.nextEventId };
       break;
     }
     case 'buy':

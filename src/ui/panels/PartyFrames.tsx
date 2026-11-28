@@ -42,7 +42,7 @@ import { traitBadges } from '../traits/badges';
 import { useTraitView } from '../traits/forecastView';
 import { MoraleTypeMark } from '../trails/MoraleTypeMark';
 import { TrailsButton } from '../trails/TrailsButton';
-import { partyProgress } from '../trails/partyProgress';
+import { shownProgress } from '../trails/partyProgress';
 import { SelectToggle } from './GroupBits';
 import { BAR_LEVELS, STAT_META, carryNote, hikerBars, statNote, type BarStat } from './hikerInfo';
 import styles from './PartyFrames.module.css';
@@ -393,7 +393,7 @@ function More({
   looks: readonly ConditionLook[];
   traitView: Parameters<typeof traitBadges>[2];
 }) {
-  const party = partyProgress(state);
+  const party = shownProgress(state);
   return (
     <div className={styles.more}>
       <div className={styles.stats}>

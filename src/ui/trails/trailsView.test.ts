@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../../config/balance';
 import { givePoints, hiker, toNight, trailGame } from '../../engine/test/fixtures';
 import { trailMap } from './trailMap';
-import { firstStep, marked, trailsView } from './trailsView';
+import { firstStep, marked, stepsToLearn, trailsView } from './trailsView';
 
 describe('the Skill Trails view', () => {
   it('learned, can learn now, and not yet (with the level it needs)', () => {
@@ -23,6 +23,23 @@ describe('the Skill Trails view', () => {
     const night = trailsView(s, hiker(s, 'finn'))[0]!.steps[1]!;
     expect(night.reason).toBeUndefined();
     expect(firstStep(trailsView(s, hiker(s, 'finn')))).toBe('finn-leader-t2');
+  });
+
+  it('counts the steps a hiker could learn now, for the picker (35, section 7)', () => {
+    let s = givePoints(trailGame(['finn']), 2, 3);
+    const finn = () => hiker(s, 'finn');
+    // By day nothing can be learned, but the picker's planning count says what could.
+    expect(stepsToLearn(s, finn())).toBe(0);
+    const planned = stepsToLearn(s, finn(), true);
+    s = givePoints(toNight(s), 2, 3);
+    const ready = trailsView(s, finn())
+      .flatMap((t) => t.steps)
+      .filter((x) => !x.reason && (x.state === 'open' || x.next));
+    expect(stepsToLearn(s, finn())).toBe(ready.length);
+    expect(planned).toBe(ready.length);
+    expect(ready.length).toBeGreaterThan(0);
+    s = givePoints(s, 2, 0);
+    expect(stepsToLearn(s, finn())).toBe(0);
   });
 
   it('a step with levels: its level, the next one and what it costs (26, section 5.1)', () => {

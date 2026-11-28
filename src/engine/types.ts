@@ -1010,6 +1010,11 @@ export type Action =
    */
   | { type: 'star'; what: 'recipe' | 'resource'; id: string; on: boolean }
   /**
+   * The night camp recap was shown (35-ui-overhaul.md, section 7): the party
+   * bar as it is now becomes the one the Party LV pill shows. Only a look.
+   */
+  | { type: 'campRecap' }
+  /**
    * Takes one option of the open trait pick (a level-up or an Old Photo). A
    * trait with no empty slot that fits replaces the trait in `replaceSlot`.
    */
@@ -1441,7 +1446,17 @@ export type GameEventBody =
   /** A trait did something worth a line of its own ("Never Hungry: the move cost no Appetite"). */
   | { kind: 'trait'; hikerId: HikerId; trait: string; text: string }
   /** XP gained (after every bonus), and from what. `none` says why action XP didn't count. */
-  | { kind: 'xp'; hikerId: HikerId; xp: number; cause: string; none?: 'row' }
+  | {
+      kind: 'xp';
+      hikerId: HikerId;
+      xp: number;
+      cause: string;
+      /** What kind of gain (the night camp recap groups by it). Older saves' events have none. */
+      source?: XpSource;
+      /** The caller's own line already says it: the trail log leaves it out. */
+      quiet?: true;
+      none?: 'row';
+    }
   /** A hiker reached a level: it waits for the camp step. */
   | { kind: 'levelReached'; hikerId: HikerId; level: number }
   /** The party reached a level (Phase 10.7): "Party level 3! +1 point". */
@@ -1653,6 +1668,12 @@ export interface PartyXp {
   level: number;
   /** Points not spent yet. */
   points: number;
+  /**
+   * The bar as the last night camp recap showed it (35-ui-overhaul.md,
+   * section 7): the Party LV pill shows this until the next recap, and the
+   * recap lists the XP since `eventId`. None before the first recap.
+   */
+  recap?: { xp: number; level: number; eventId: number };
 }
 
 export interface GameState {

@@ -31,7 +31,7 @@ import { CARDS } from '../content/challenges';
 import { placePool } from './challenges/pool';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -102,7 +102,18 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Phase 12: the party's starred recipes and resources (35-ui-overhaul.md, section 6).
   // The field is optional, so an older save has none.
   24: (save) => save,
+  // Phase 12: the night camp recap's mark on the party bar (35-ui-overhaul.md,
+  // section 7). An older save starts it where the bar is now, so its first
+  // recap lists the XP from here on.
+  25: (save) => campRecapMark(save),
 };
+
+function campRecapMark(save: SaveData): SaveData {
+  const party = save.party as { xp?: number; level?: number } | undefined;
+  if (!party || typeof party.xp !== 'number' || typeof party.level !== 'number') return save;
+  const eventId = typeof save.nextEventId === 'number' ? save.nextEventId : 0;
+  return { ...save, party: { ...party, recap: { xp: party.xp, level: party.level, eventId } } };
+}
 
 function skillTrails(save: SaveData): SaveData {
   const hikers = Array.isArray(save.hikers) ? (save.hikers as SaveData[]) : [];

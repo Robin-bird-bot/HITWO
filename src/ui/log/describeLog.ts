@@ -328,6 +328,7 @@ export function describeLog(state: GameState, limit = 10): LogLine[] {
         lines.push({ id: e.id, text: `${e.trait}: ${e.text}`, tone: 'rest' });
         break;
       case 'xp':
+        if (e.quiet) break;
         lines.push({
           id: e.id,
           text:

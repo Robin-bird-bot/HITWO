@@ -173,7 +173,13 @@ describe('saves', () => {
     });
     expect(finn?.pendingLevels).toBeUndefined();
     expect(mom?.trails?.learned).toEqual(['mom-support-t1']);
-    expect(loaded.state.party).toEqual({ xp: 55, level: 2, points: 2 * B.pointsPerLevel });
+    expect(loaded.state.party).toEqual({
+      xp: 55,
+      level: 2,
+      points: 2 * B.pointsPerLevel,
+      // Phase 12: the camp recap starts where the bar is.
+      recap: { xp: 55, level: 2, eventId: loaded.state.nextEventId },
+    });
   });
 
   it('a v20 save with a locked hiker carries on: they keep their old traits', () => {

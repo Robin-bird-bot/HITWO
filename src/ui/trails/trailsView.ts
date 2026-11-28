@@ -104,6 +104,18 @@ export function trailsView(state: GameState, hiker: Hiker): TreeView[] {
   }));
 }
 
+/**
+ * How many steps (or next levels) this hiker could learn with the party's
+ * points: the picker's "2 STEPS TO LEARN". `anyTime` counts by day too.
+ */
+export function stepsToLearn(state: GameState, hiker: Hiker, anyTime = false): number {
+  const trees = treesOf(hiker);
+  if (!trees) return 0;
+  return trees.trees
+    .flatMap((t) => t.steps)
+    .filter((step) => !learnReason(state, hiker, step.id, { anyTime })).length;
+}
+
 /** The step to show first: the first one that can be learned now, else the first learned. */
 export function firstStep(view: readonly TreeView[]): string | undefined {
   const all = view.flatMap((t) => t.steps);
