@@ -4846,6 +4846,19 @@ export const BALANCE = {
   },
   ui: {
     /**
+     * The UI overhaul (35-ui-overhaul.md). Sizes are stage pixels (the
+     * prototype's 1440 × 900 numbers times 10/9).
+     */
+    overhaul: {
+      /**
+       * A stat change floats up for this long (ms); the bar's ghost drains
+       * over 0.35 s after it (in CSS). TODO(wyatt): [1.1 s] and [0.35 s].
+       */
+      floatMs: 1100,
+      /** The selected tag slides out this far (stage px). TODO(wyatt): [8 px]. */
+      selectedSlide: 9,
+    },
+    /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the
      * item's art is turned into LCD greens at this size (art pixels), drawn
      * at 2× on a full-size card. TODO(wyatt): [58 px].

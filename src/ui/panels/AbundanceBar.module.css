@@ -18,7 +18,8 @@
   flex: 1;
   height: 10px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.13);
+  background: var(--track, rgba(255, 255, 255, 0.13));
+  border: var(--track-border, none);
   overflow: hidden;
 }
 

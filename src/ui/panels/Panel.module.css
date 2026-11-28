@@ -13,6 +13,28 @@
   overflow: hidden;
 }
 
+/* Paper tags pinned on the map (35-ui-overhaul.md, section 2): text reads in ink. */
+.panel[data-paper] {
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --track: var(--paper-2);
+  --track-border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+}
+
+.panel[data-paper] .toggle {
+  border-color: var(--ink-3);
+  background: var(--paper-2);
+}
+
 .panel[data-collapsed='true'] {
   gap: 0;
 }

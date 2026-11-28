@@ -32,6 +32,8 @@ import { PACKING_LOOKS, PACKING_LOOK_SETTING, usePackingLook } from '../packing/
 import { Panel } from './Panel';
 import { Popout } from './Popout';
 import { SoundSettings } from './SoundSettings';
+import { LOOK_SETTINGS, type LookSetting } from '../app/lookSettings';
+import { useDeviceSetting } from '../app/deviceSetting';
 import { usePanelCollapsed } from './panelState';
 import panel from './Panel.module.css';
 import styles from './TopBar.module.css';
@@ -49,6 +51,7 @@ export function BiomeCard({ state }: { state: GameState }) {
   return (
     <Panel
       id="biome"
+      paper
       label="biome card"
       className={styles.biomeCard}
       style={{ left: 16, top: 16, width: 288 }}
@@ -82,6 +85,7 @@ export function DayBar({ state }: { state: GameState }) {
   return (
     <Panel
       id="day"
+      paper
       label="day and weather"
       style={{ left: 470, top: 16, width: collapsed ? 'auto' : 580 }}
       className={styles.dayBar}
@@ -140,6 +144,7 @@ export function ObjectiveCard() {
   return (
     <Panel
       id="objective"
+      paper
       label="objective"
       style={{ left: 1004, top: 84, width: 220 }}
       title={<span className={panel.label}>OBJECTIVE</span>}
@@ -158,6 +163,7 @@ export function AbundanceCard({ state }: { state: GameState }) {
   return (
     <Panel
       id="abundance"
+      paper
       label="Abundance and caps"
       style={{ left: 1240, top: 16, width: 280 }}
       title={<span className={panel.label}>ABUNDANCE</span>}
@@ -198,6 +204,31 @@ const WARNINGS: { id: TraitWarnings; label: string; text: string }[] = [
     text: 'Also a tag on the portrait, and a check before anything that costs someone Morale.',
   },
 ];
+
+/** One of the UI overhaul's look settings (35-ui-overhaul.md, section 1): two choices. */
+function LookRow<T extends string>({ look }: { look: LookSetting<T> }) {
+  const value = useDeviceSetting(look.setting);
+  return (
+    <div className={styles.setting}>
+      <span className={styles.settingName}>{look.name}</span>
+      <div className={styles.segmented} role="radiogroup" aria-label={look.name}>
+        {look.choices.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            role="radio"
+            aria-checked={value === c.id}
+            className={styles.segment}
+            onClick={() => look.setting.set(c.id)}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <span className={styles.small}>{look.choices.find((c) => c.id === value)?.text}</span>
+    </div>
+  );
+}
 
 /** The ☰ menu: settings and the way back to the title screen. Closes on click-away or Esc. */
 export function MenuButton({
@@ -316,6 +347,10 @@ export function MenuButton({
               </label>
             )}
           </div>
+          <LookRow look={LOOK_SETTINGS[0]} />
+          <LookRow look={LOOK_SETTINGS[1]} />
+          <LookRow look={LOOK_SETTINGS[2]} />
+          <LookRow look={LOOK_SETTINGS[3]} />
           <div className={styles.setting}>
             <span className={styles.settingName}>Packing machine</span>
             <div className={styles.segmented} role="radiogroup" aria-label="Packing machine">

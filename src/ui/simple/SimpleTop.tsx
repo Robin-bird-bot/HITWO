@@ -1,9 +1,11 @@
 /**
- * Simple mode's top of the screen: small pills instead of cards. Details
- * (weather, the goal) open when clicked and close on click-away.
+ * Simple mode's top of the screen: small paper pills instead of cards.
+ * Details (weather, the goal) open when clicked and close on click-away.
+ * The biome pill went in the UI overhaul (35, section 2): the map's plaque
+ * already says it.
  */
 import { useRef, useState } from 'react';
-import { PHASES, type BiomeId, type GameState, type Phase } from '../../engine';
+import { PHASES, type GameState, type Phase } from '../../engine';
 import { Icon } from '../icons/Icon';
 import { AbundanceBar } from '../panels/AbundanceBar';
 import type { IconName } from '../icons/paths';
@@ -11,26 +13,6 @@ import { Popout } from '../panels/Popout';
 import { WEATHER_COLOR, WEATHER_ICON, weatherNote } from '../weather/weatherLook';
 import { WEATHERS } from '../../content/weather';
 import styles from './Simple.module.css';
-
-const BIOME: Record<BiomeId, string> = {
-  meadow: 'MEADOW',
-  temperateRainforest: 'RAINFOREST',
-  alpine: 'ALPINE',
-};
-const SECTIONS = 3;
-
-/** "MEADOW · 1/3" */
-export function BiomePill({ state }: { state: GameState }) {
-  return (
-    <div
-      className={styles.pill}
-      style={{ left: 16, top: 16 }}
-      title={`Section ${state.sectionIndex + 1} of ${SECTIONS} · Tier ${state.section.tier}`}
-    >
-      {BIOME[state.section.biome]} · {state.sectionIndex + 1}/{SECTIONS}
-    </div>
-  );
-}
 
 const PHASE_ICON: Record<Phase, { icon: IconName; name: string }> = {
   morning: { icon: 'sunrise', name: 'Morning' },

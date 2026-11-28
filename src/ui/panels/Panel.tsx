@@ -18,10 +18,12 @@ interface PanelProps {
   as?: 'section' | 'aside';
   /** Can be dragged by its header (party, turn panel, trail log). */
   movable?: boolean;
+  /** A paper tag pinned on the map (35-ui-overhaul.md, section 2), not dark glass. */
+  paper?: boolean;
   children?: ReactNode;
 }
 
-/** A floating dark panel with a − button that shrinks it to its header (+ to restore). */
+/** A floating panel (dark glass, or paper) with a − button that shrinks it to its header (+ to restore). */
 export function Panel({
   id,
   title,
@@ -31,6 +33,7 @@ export function Panel({
   className,
   as: Tag = 'section',
   movable,
+  paper,
   children,
 }: PanelProps) {
   const [collapsed, toggle] = usePanelCollapsed(id);
@@ -44,6 +47,7 @@ export function Panel({
       className={`${styles.panel} ${className ?? ''}`}
       style={{ ...rest, height: collapsed ? 'auto' : height, translate }}
       data-collapsed={collapsed}
+      data-paper={paper || undefined}
       aria-label={label}
       {...windowProps}
     >
