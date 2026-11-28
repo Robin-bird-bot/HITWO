@@ -16,6 +16,7 @@ import type {
   StatName,
   WeatherId,
 } from '../engine/types';
+import type { DifficultyId } from './difficulty';
 
 type PartialStats = Partial<Record<StatName, number>>;
 
@@ -225,6 +226,21 @@ export const BALANCE = {
   /** The run: one section per biome, in this order. The last checkpoint is the summit. */
   run: {
     biomes: ['meadow', 'temperateRainforest', 'alpine'] as BiomeId[],
+    /**
+     * How long a run should take, in minutes of play (29-core-loop.md,
+     * section 9; Wyatt: "Easy about 30–45 minutes, Medium about an hour").
+     * The debug panel shows it next to the run clock. Hard and Nightmare
+     * have none yet. TODO(wyatt): [30–45], [55–65].
+     */
+    targetMinutes: { easy: [30, 45], medium: [55, 65] } as Partial<
+      Record<DifficultyId, readonly [number, number]>
+    >,
+    /**
+     * The run clock counts time while the page is in view, in steps of this
+     * many seconds; a longer gap (the computer asleep) counts as this much at
+     * most. My guesses.
+     */
+    clock: { tickSec: 1, gapSec: 2 },
   },
   /**
    * Checkpoints and ranger stations (Phase 9; docs/design/06-ranger-stations.md).

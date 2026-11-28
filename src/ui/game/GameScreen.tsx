@@ -100,6 +100,7 @@ import { WrapWindow } from '../presents/WrapWindow';
 import { OPEN_WONDER_EVENT, WonderWindow } from '../wonder/WonderWindow';
 import { WeatherScreen } from '../weather/WeatherScreen';
 import { HikeOverScreen } from '../hike/HikeOverScreen';
+import { useRunClock } from '../runClock/useRunClock';
 import { StationScreen } from '../station/StationScreen';
 import { ScavengeWindow } from '../scavenge/ScavengeWindow';
 import { TakeFly, type Fly } from '../scavenge/TakeFly';
@@ -667,6 +668,18 @@ export function GameScreen({
     // Only a new minigame challenge (or switching it on) passes it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minigame, autoPass]);
+
+  // The run clock (29-core-loop.md, section 9): played time, and each minigame's.
+  useRunClock(
+    state,
+    openChallenge && minigame && !autoPass
+      ? {
+          key: `${openChallenge.tileId}:${openChallenge.cardId}`,
+          name: minigame.challenge.name,
+          tier: minigame.challenge.tier,
+        }
+      : null,
+  );
 
   /** Finishes a challenge; a random outcome then shows what happened. */
   const resolveChallenge = (action: Extract<Action, { type: 'resolveChallenge' }>) => {
