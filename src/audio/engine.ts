@@ -277,6 +277,8 @@ class AudioEngine {
     for (const v of admission.stop) v.stop();
     this.lastStart.set(id, startsAt);
     this.lastVersion.set(id, version);
+    // The music dips under a stinger (section 5).
+    if (A.music.stingers.includes(id)) this.duckForStinger(length ?? A.music.stingerSec);
 
     let source: AudioBufferSourceNode | null = null;
     let cancelled = false;
@@ -352,6 +354,17 @@ class AudioEngine {
         onProgress?.(done, files.length);
       }),
     );
+  }
+
+  private stingerTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private duckForStinger(seconds: number): void {
+    this.duck('music', 'stinger', Math.pow(10, A.music.duckDb.stinger / 20), 0.15);
+    if (this.stingerTimer) clearTimeout(this.stingerTimer);
+    this.stingerTimer = setTimeout(() => {
+      this.stingerTimer = null;
+      this.duck('music', 'stinger', 1, 1);
+    }, seconds * 1000);
   }
 
   /** How many one-shots and loops are playing (the debug panel). */

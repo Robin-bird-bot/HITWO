@@ -4755,6 +4755,34 @@ export const BALANCE = {
      */
     defaults: { master: 0.8, music: 0.6, ambience: 0.7, effects: 0.8 },
     /**
+     * The music player (section 5). Crossfades in seconds: a piece's
+     * versions at dusk and dawn, and for weather; a new piece, starting on
+     * the next bar line. Wind sweeps a low-pass between two frequencies;
+     * heat wobbles the pitch; a minigame's last seconds play faster.
+     * Ducking under a window over the map and under stingers (a stinger
+     * whose length isn't known yet ducks `stingerSec`). TODO(wyatt): [8 s],
+     * [4 s], [2 s]; [1200–4000 Hz] over [6 s]; [±8 cents] at [0.2 Hz]; the
+     * last [10 s] at [1.06]; [−3 dB] and [−6 dB].
+     */
+    music: {
+      fade: { dayNight: 8, weather: 4, piece: 2 },
+      wind: { lowHz: 1200, highHz: 4000, sweepSec: 6 },
+      heat: { cents: 8, hz: 0.2 },
+      hurry: { lastSec: 10, rate: 1.06 },
+      duckDb: { window: -3, stinger: -6 },
+      stingerSec: 3,
+      stingers: [
+        'levelUp',
+        'mg.passed',
+        'mg.failed',
+        'map.checkpoint',
+        'day.morning',
+        'day.night',
+        'hike.start',
+        'wonder.open',
+      ],
+    },
+    /**
      * A random change of pitch (± this fraction) and volume (± dB) on sounds
      * with versions and on footsteps, so repeats don't sound copied. Never on
      * a sound that sets its own rate. TODO(wyatt): [±3%] and [±1 dB].

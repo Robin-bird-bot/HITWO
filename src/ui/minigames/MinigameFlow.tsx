@@ -19,6 +19,7 @@
  * settings: the flow never touches the game store.
  */
 import { audio, sfx } from '../../audio/engine';
+import { MUSIC_LAYER, useMusic } from '../../audio/useMusic';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { BALANCE } from '../../config/balance';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
@@ -178,6 +179,18 @@ export function MinigameFlow({
   }, [stage]);
 
   const turned = stage === 'turning' || stage === 'playing';
+  // The music (32-audio-system.md, section 5): the briefing under the pop-up,
+  // the game's piece while it plays (Big Trouble for the Woods Monster).
+  useMusic(
+    turned
+      ? {
+          place: 'minigame',
+          game: challenge.minigame,
+          ...(base.animal === 'monster' ? { boss: true } : {}),
+        }
+      : { place: 'briefing' },
+    MUSIC_LAYER.window,
+  );
   return (
     <div className={styles.flow} data-flow-root="" style={{ '--dim': G.dim } as CSSProperties}>
       <ChallengePopup

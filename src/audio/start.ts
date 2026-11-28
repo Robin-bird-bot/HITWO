@@ -6,6 +6,7 @@
 import { audio } from './engine';
 import { idsStartingWith } from './manifest';
 import { followSoundSettings } from './settings';
+import { music } from './musicPlayer';
 import { installUiSounds } from './uiSounds';
 
 /** The sounds fetched at the title screen. */
@@ -34,6 +35,7 @@ const COMMON = [
 export function startAudio(): void {
   followSoundSettings();
   installUiSounds();
+  music.start(import.meta.env.BASE_URL);
   void audio.start(import.meta.env.BASE_URL).then((manifest) => {
     if (manifest) void audio.preload(idsStartingWith(manifest, COMMON));
   });

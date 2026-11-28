@@ -13,6 +13,8 @@
  */
 import { useEffect, useRef } from 'react';
 import { loop, sfx, type LoopHandle, type SfxOptions, type SoundHandle } from '../../audio/engine';
+import { hurryRate } from '../../audio/music';
+import { music } from '../../audio/musicPlayer';
 
 /** `note`: a Birdsong note (one per color). */
 export type MinigameSound = 'place' | 'ready' | 'bearUp' | 'tick' | 'pop' | 'hit' | 'miss' | 'note';
@@ -108,6 +110,11 @@ export function useMgLoop(id: string, on: boolean, volume = 1): void {
  */
 export function useClockTicks(left: number | null, running = true): void {
   const was = useRef<number | null>(null);
+  // The music hurries in the clock's last seconds (32-audio-system.md, section 5).
+  useEffect(() => {
+    music.hurry(running ? hurryRate(left) : 1);
+  }, [left, running]);
+  useEffect(() => () => music.hurry(1), []);
   useEffect(() => {
     const before = was.current;
     was.current = left;
