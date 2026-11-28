@@ -148,6 +148,12 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Reused art:** the acorn cap (`icons/acorn-caps.png`) in the cabinet's respin tray; Squirrel Theft's pixel squirrel (`minigames/squirrel-theft/squirrel.png` and `squirrel-happy.png`) as TrailMate's mascot; Dodge's pixel acorn (`minigames/dodge/acorn-0.png`) for TrailMate's jackpot rain; the green resource icons (`resources-green/`) on TrailMate's reels; and the item type icons (`item-cards/type-icons/`) on its badges.
 - **The device itself** (the TrailMate shell, antenna, SCAN button, battery and screens) is drawn in CSS, like the party GPS.
 
+## Phase 12: sound and the UI overhaul
+
+- **Sounds** (`public/assets/audio/`): `manifest.json` lists every sound id (342) with its files, bus and status; `sfx/` has each file as `.ogg` and `.mp3` (410 files). They were made in code by `tools/audio/` (Python), some cut from Pixabay recordings (credits in `tools/audio/rec/CREDITS.md`; the recordings themselves aren't in the repo). The sound list is `docs/design/33-sound-list.md`.
+- **Music** (`public/assets/audio/music/`): none yet. Wyatt is making the 30 songs in Suno (`docs/design/34-music.md`); each piece drops into the music manifest.
+- **UI art** (`public/assets/ui/`): the title logo (`logo-4-mint-grown-over.png`, 2200 × 940, Wyatt's mint lettering grown over, for now), the workbench top (`workbench.svg`) and the station's front doors (`station-door-left.svg`, `station-door-right.svg`). Wyatt's stone square, the reference for the Mountain brush cover, is with the mockups (`docs/mockups/ui-overhaul/stone-square-wyatt.png`). The poster scenes, brush covers and loading-screen sprites are drawn in code, ported from the prototype.
+
 ## Still missing
 
 - **Bigger icon:** a hi-res mushroom.
@@ -172,6 +178,9 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 - **Merchant and Traveling Trader:** no art yet. Their window and the map use the bag and backpack icons.
 - **Empty scavenge card (Phase 9.5):** a placeholder face, drawn in code. It shows the node's backdrop, faded, with "EMPTY" in Edit Undo (`src/ui/scavenge/ScavCard.tsx`). Wyatt may want to paint one.
 - **Test hikers (Phase 10a):** no art, on purpose. They're drawn as a colored circle with their initials (`src/ui/hikers/portraitArt.ts`) and never appear in the real roster.
+
+- **Sounds that need recordings (Phase 12):** 17 sounds have no file yet and stay silent until they arrive: the night animals (raccoons, foxes, coyotes, hyenas, the Raccoon Gang) and the man, woman, dog and cat voices (a cheer, an "oof", a yawn). 11 more are placeholders a real recording would improve (birds, an owl, a frog, a far wolf, the wolves, opossums, the station room, raccoon and squirrel chitters, the Woods Monster). The list is in `docs/design/33-sound-list.md` and the debug panel's Sound tab. Pixabay or Freesound (CC0) is fine.
+- **Music (Phase 12):** all 30 songs (`docs/design/34-music.md`).
 
 Until real art arrives, use clearly marked placeholders.
 

@@ -40,8 +40,13 @@ A browser game version of a co-op card game Wyatt made for his mom. The player g
 | `docs/design/29-core-loop.md` | Phase 11, the core loop: work costs Energy and moving costs Appetite, more Energy from sleep, drinks, crafters' leveled free crafting, half the map as challenges, every challenge a minigame, no starting kits (the packing machine is the whole start), the slots waiting for a press, and a run clock. **Wins over 01, 07, 24, 25 and 27 where they disagree.** |
 | `docs/design/30-quick-minigames.md` | Four quick minigames that take over four cost cards: Incoming Bike!, Wrong Turn, Fallen Branch and Snagged Pack, with their tiers, pop-ups, bots and tests. |
 | `docs/design/31-trailmate-item-cards.md` | The item cards in the TrailMate style: device fronts with LCD screens, walkie-talkie backs, LEDs that count uses, and the bag's small screens. Card mock in `docs/mockups/item-cards/cards.html`. **Source of truth for the item card's look.** |
+| `docs/design/32-audio-system.md` | Phase 12, the sound: files and the manifest, the audio engine and its buses, the Sound settings, ambience, the music player, the wiring rules and the debug Sound tab. **Source of truth for how the game plays sound.** |
+| `docs/design/33-sound-list.md` | Every sound (342): when it plays, what it is, and whether it's made. Its "When it plays" column is where to hook each one up. |
+| `docs/design/34-music.md` | The music plan: 30 songs with their Suno prompts, the priority list and how the game plays them. No music files yet. |
+| `docs/design/35-ui-overhaul.md` | Phase 12, the UI overhaul: four new settings, paper tags, party frames, the action wheel, using items from the pack, poster scavenging and the brush reveal, the workbench and recipe book, the night camp recap, the title, loading screens and the spotlight. Prototype in `docs/mockups/ui-overhaul/prototype/`. **Source of truth for the Phase 12 UI.** |
 | `docs/mockups/*.dc.html` | UI mockups (layout, sizes, colors). Reference only; see `docs/mockups/README.md`. |
 | `docs/ASSETS.md` | What every art file is, and what art is still missing. |
+| `tools/audio/` | The Python that made the sounds (optional, not part of the build). Python 3, numpy, scipy, ffmpeg; `python3 render.py` remakes the sounds. |
 | `assets/` | Original art and fonts. Copy what the game uses into `public/assets/`. All hikers use the placeholder portrait for now. |
 
 When the design docs and this file disagree, the design docs win. When the docs are silent or ambiguous, **ask Wyatt. Don't invent rules.** Put a temporary rule in `src/config/balance.ts` with a `// TODO(wyatt):` comment and list it in your summary.

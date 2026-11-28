@@ -1,0 +1,2467 @@
+{
+ "version": 1,
+ "formats": [
+  "ogg",
+  "mp3"
+ ],
+ "base": "assets/audio/sfx/",
+ "sounds": {
+  "ui.hover": {
+   "files": [
+    "ui-hover-1",
+    "ui-hover-2"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.click": {
+   "files": [
+    "ui-click-1",
+    "ui-click-2",
+    "ui-click-3"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.confirm": {
+   "files": [
+    "ui-confirm"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.cancel": {
+   "files": [
+    "ui-cancel"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.error": {
+   "files": [
+    "ui-error"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.windowOpen": {
+   "files": [
+    "ui-windowOpen"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.windowClose": {
+   "files": [
+    "ui-windowClose"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.tab": {
+   "files": [
+    "ui-tab-1",
+    "ui-tab-2"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.toggleOn": {
+   "files": [
+    "ui-toggleOn"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.toggleOff": {
+   "files": [
+    "ui-toggleOff"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.slider": {
+   "files": [
+    "ui-slider"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.toast": {
+   "files": [
+    "ui-toast"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.dragPick": {
+   "files": [
+    "ui-dragPick"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.dragDrop": {
+   "files": [
+    "ui-dragDrop"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.dragNo": {
+   "files": [
+    "ui-dragNo"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.endPhase": {
+   "files": [
+    "ui-endPhase"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.settings": {
+   "files": [
+    "ui-settings"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "title.start": {
+   "files": [
+    "title-start"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "select.add": {
+   "files": [
+    "select-add"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "select.remove": {
+   "files": [
+    "select-remove"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "select.flip": {
+   "files": [
+    "select-flip"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "select.sort": {
+   "files": [
+    "select-sort"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "select.go": {
+   "files": [
+    "select-go"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "card.deal": {
+   "files": [
+    "card-deal-1",
+    "card-deal-2",
+    "card-deal-3",
+    "card-deal-4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.flip": {
+   "files": [
+    "card-flip-1",
+    "card-flip-2",
+    "card-flip-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.hover": {
+   "files": [
+    "card-hover"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.take": {
+   "files": [
+    "card-take-1",
+    "card-take-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.discard": {
+   "files": [
+    "card-discard"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.shuffle": {
+   "files": [
+    "card-shuffle"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.rare": {
+   "files": [
+    "card-rare"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.challenge": {
+   "files": [
+    "card-challenge"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "ui.frameOpen": {
+   "files": [
+    "ui-frameOpen"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.frameClose": {
+   "files": [
+    "ui-frameClose"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.wheelOpen": {
+   "files": [
+    "ui-wheelOpen"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.wheelClose": {
+   "files": [
+    "ui-wheelClose"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.star": {
+   "files": [
+    "ui-star"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "ui.unstar": {
+   "files": [
+    "ui-unstar"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "book.page": {
+   "files": [
+    "book-page-1",
+    "book-page-2"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "craft.slot": {
+   "files": [
+    "craft-slot-1",
+    "craft-slot-2"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "craft.ghost": {
+   "files": [
+    "craft-ghost"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "craft.clear": {
+   "files": [
+    "craft-clear"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "craft.ready": {
+   "files": [
+    "craft-ready"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "scav.brush.forest": {
+   "files": [
+    "scav-brush-forest-1",
+    "scav-brush-forest-2",
+    "scav-brush-forest-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "scav.brush.river": {
+   "files": [
+    "scav-brush-river-1",
+    "scav-brush-river-2",
+    "scav-brush-river-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "scav.brush.wildlife": {
+   "files": [
+    "scav-brush-wildlife-1",
+    "scav-brush-wildlife-2",
+    "scav-brush-wildlife-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "scav.brush.mountain": {
+   "files": [
+    "scav-brush-mountain-1",
+    "scav-brush-mountain-2",
+    "scav-brush-mountain-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "scav.uncover": {
+   "files": [
+    "scav-uncover"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trans.irisIn": {
+   "files": [
+    "trans-irisIn"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trans.irisOut": {
+   "files": [
+    "trans-irisOut"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trans.door": {
+   "files": [
+    "trans-door"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "load.jump": {
+   "files": [
+    "load-jump"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "title.logo": {
+   "files": [
+    "title-logo"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.reveal.uncommon": {
+   "files": [
+    "card-reveal-uncommon"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.reveal.rare": {
+   "files": [
+    "card-reveal-rare"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.reveal.veryRare": {
+   "files": [
+    "card-reveal-veryRare"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.reveal.legendary": {
+   "files": [
+    "card-reveal-legendary"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.reveal.mythic": {
+   "files": [
+    "card-reveal-mythic"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "card.wanted": {
+   "files": [
+    "card-wanted"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.food": {
+   "files": [
+    "res-food-1",
+    "res-food-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.building": {
+   "files": [
+    "res-building-1",
+    "res-building-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.fiber": {
+   "files": [
+    "res-fiber-1",
+    "res-fiber-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.fire": {
+   "files": [
+    "res-fire"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.trinket": {
+   "files": [
+    "res-trinket-1",
+    "res-trinket-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.caps": {
+   "files": [
+    "res-caps-1",
+    "res-caps-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.capsSpend": {
+   "files": [
+    "res-capsSpend"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.lose": {
+   "files": [
+    "res-lose"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "res.bundleBurst": {
+   "files": [
+    "res-bundleBurst"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.new": {
+   "files": [
+    "item-new"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.equip": {
+   "files": [
+    "item-equip-1",
+    "item-equip-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.unequip": {
+   "files": [
+    "item-unequip"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.use": {
+   "files": [
+    "item-use-1",
+    "item-use-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.ledDown": {
+   "files": [
+    "item-ledDown"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.break": {
+   "files": [
+    "item-break"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.eat": {
+   "files": [
+    "item-eat-1",
+    "item-eat-2",
+    "item-eat-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.drink": {
+   "files": [
+    "item-drink-1",
+    "item-drink-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.drop": {
+   "files": [
+    "item-drop"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "item.give": {
+   "files": [
+    "item-give"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "present.wrap": {
+   "files": [
+    "present-wrap"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "present.open": {
+   "files": [
+    "present-open"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "stat.energyUp": {
+   "files": [
+    "stat-energyUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "stat.appetiteUp": {
+   "files": [
+    "stat-appetiteUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "stat.moraleUp": {
+   "files": [
+    "stat-moraleUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "stat.down": {
+   "files": [
+    "stat-down"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "stat.low": {
+   "files": [
+    "stat-low"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "cond.good": {
+   "files": [
+    "cond-good"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "cond.bad": {
+   "files": [
+    "cond-bad"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "cond.cured": {
+   "files": [
+    "cond-cured"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "injury": {
+   "files": [
+    "injury"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "healed": {
+   "files": [
+    "healed"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "passedOut": {
+   "files": [
+    "passedOut"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "xp.gain": {
+   "files": [
+    "xp-gain"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "levelUp": {
+   "files": [
+    "levelUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trait.learn": {
+   "files": [
+    "trait-learn"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trait.levelStep": {
+   "files": [
+    "trait-levelStep-1",
+    "trait-levelStep-2",
+    "trait-levelStep-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trait.proc": {
+   "files": [
+    "trait-proc"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.dirt": {
+   "files": [
+    "foot-dirt-1",
+    "foot-dirt-2",
+    "foot-dirt-3",
+    "foot-dirt-4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.gravel": {
+   "files": [
+    "foot-gravel-1",
+    "foot-gravel-2",
+    "foot-gravel-3",
+    "foot-gravel-4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.paved": {
+   "files": [
+    "foot-paved-1",
+    "foot-paved-2",
+    "foot-paved-3",
+    "foot-paved-4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.steep": {
+   "files": [
+    "foot-steep-1",
+    "foot-steep-2",
+    "foot-steep-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.mud": {
+   "files": [
+    "foot-mud-1",
+    "foot-mud-2",
+    "foot-mud-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.snow": {
+   "files": [
+    "foot-snow-1",
+    "foot-snow-2",
+    "foot-snow-3",
+    "foot-snow-4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.paw": {
+   "files": [
+    "foot-paw-1",
+    "foot-paw-2",
+    "foot-paw-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.pawHard": {
+   "files": [
+    "foot-pawHard-1",
+    "foot-pawHard-2",
+    "foot-pawHard-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "foot.plush": {
+   "files": [
+    "foot-plush-1",
+    "foot-plush-2",
+    "foot-plush-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.select": {
+   "files": [
+    "map-select"
+   ],
+   "bus": "ui",
+   "status": "made"
+  },
+  "map.arrive": {
+   "files": [
+    "map-arrive"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.reveal": {
+   "files": [
+    "map-reveal"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.challengeLand": {
+   "files": [
+    "map-challengeLand"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.checkpoint": {
+   "files": [
+    "map-checkpoint"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.pan": {
+   "files": [
+    "map-pan"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "map.pin": {
+   "files": [
+    "map-pin"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.trailSign": {
+   "files": [
+    "space-trailSign"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.geoCache": {
+   "files": [
+    "space-geoCache"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.campsite": {
+   "files": [
+    "space-campsite"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.overlook": {
+   "files": [
+    "space-overlook"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.narrowPath": {
+   "files": [
+    "space-narrowPath"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.mystery": {
+   "files": [
+    "space-mystery"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.choice": {
+   "files": [
+    "space-choice"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "space.opportunity": {
+   "files": [
+    "space-opportunity"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.scavenge.forest": {
+   "files": [
+    "act-scavenge-forest"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.scavenge.river": {
+   "files": [
+    "act-scavenge-river"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.scavenge.wildlife": {
+   "files": [
+    "act-scavenge-wildlife"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.scavenge.mountain": {
+   "files": [
+    "act-scavenge-mountain"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.tend": {
+   "files": [
+    "act-tend"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craft.tool": {
+   "files": [
+    "act-craft-tool"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craft.clothes": {
+   "files": [
+    "act-craft-clothes"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craft.food": {
+   "files": [
+    "act-craft-food"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craft.shelter": {
+   "files": [
+    "act-craft-shelter"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craft.trinket": {
+   "files": [
+    "act-craft-trinket"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.craftDone": {
+   "files": [
+    "act-craftDone"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.sleep": {
+   "files": [
+    "act-sleep"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.keepWatch": {
+   "files": [
+    "act-keepWatch"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.sitByFire": {
+   "files": [
+    "act-sitByFire"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.shelterUp": {
+   "files": [
+    "act-shelterUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.shelterDown": {
+   "files": [
+    "act-shelterDown"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.teach": {
+   "files": [
+    "act-teach"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.returnToNature": {
+   "files": [
+    "act-returnToNature"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.carry": {
+   "files": [
+    "act-carry"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "act.abandon": {
+   "files": [
+    "act-abandon"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "day.morning": {
+   "files": [
+    "day-morning"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "day.afternoon": {
+   "files": [
+    "day-afternoon"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "day.night": {
+   "files": [
+    "day-night"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.rain": {
+   "files": [
+    "weather-rain"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.thunder": {
+   "files": [
+    "weather-thunder-1",
+    "weather-thunder-2",
+    "weather-thunder-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.snow": {
+   "files": [
+    "weather-snow"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.wind": {
+   "files": [
+    "weather-wind"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.heatwave": {
+   "files": [
+    "weather-heatwave"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "weather.clear": {
+   "files": [
+    "weather-clear"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.enter": {
+   "files": [
+    "station-enter"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.leave": {
+   "files": [
+    "station-leave"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.buy": {
+   "files": [
+    "station-buy"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.sell": {
+   "files": [
+    "station-sell"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.trade": {
+   "files": [
+    "station-trade"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.ask": {
+   "files": [
+    "station-ask"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.rest": {
+   "files": [
+    "station-rest"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "station.workbench": {
+   "files": [
+    "station-workbench"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "wonder.open": {
+   "files": [
+    "wonder-open"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "wonder.done": {
+   "files": [
+    "wonder-done"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "trails.open": {
+   "files": [
+    "trails-open"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "infoboard.open": {
+   "files": [
+    "infoboard-open"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "infoboard.clink": {
+   "files": [
+    "infoboard-clink"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "infoboard.shake": {
+   "files": [
+    "infoboard-shake"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "chal.prepareSlot": {
+   "files": [
+    "chal-prepareSlot"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "chal.prepareRemove": {
+   "files": [
+    "chal-prepareRemove"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "chal.start": {
+   "files": [
+    "chal-start"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.count": {
+   "files": [
+    "mg-count"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.go": {
+   "files": [
+    "mg-go"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.turn": {
+   "files": [
+    "mg-turn"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.point": {
+   "files": [
+    "mg-point-1",
+    "mg-point-2",
+    "mg-point-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.wrong": {
+   "files": [
+    "mg-wrong"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.heartLost": {
+   "files": [
+    "mg-heartLost"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.heartGained": {
+   "files": [
+    "mg-heartGained"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.tick": {
+   "files": [
+    "mg-tick-1",
+    "mg-tick-2",
+    "mg-tick-3",
+    "mg-tick-4",
+    "mg-tick-5"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.timeUp": {
+   "files": [
+    "mg-timeUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.hikerPassed": {
+   "files": [
+    "mg-hikerPassed"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.hikerFailed": {
+   "files": [
+    "mg-hikerFailed"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.passed": {
+   "files": [
+    "mg-passed"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.failed": {
+   "files": [
+    "mg-failed"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.stamp": {
+   "files": [
+    "mg-stamp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.punish": {
+   "files": [
+    "mg-punish"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.place": {
+   "files": [
+    "mg-place"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.ready": {
+   "files": [
+    "mg-ready"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.pop": {
+   "files": [
+    "mg-pop-1",
+    "mg-pop-2",
+    "mg-pop-3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.hit": {
+   "files": [
+    "mg-hit-1",
+    "mg-hit-2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.miss": {
+   "files": [
+    "mg-miss"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.bearUp": {
+   "files": [
+    "mg-bearUp"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note1": {
+   "files": [
+    "mg-note1"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note2": {
+   "files": [
+    "mg-note2"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note3": {
+   "files": [
+    "mg-note3"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note4": {
+   "files": [
+    "mg-note4"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note5": {
+   "files": [
+    "mg-note5"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "mg.note6": {
+   "files": [
+    "mg-note6"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "bike.bell": {
+   "files": [
+    "bike-bell"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bike.whoosh": {
+   "files": [
+    "bike-whoosh-1",
+    "bike-whoosh-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bike.hop": {
+   "files": [
+    "bike-hop"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bike.clip": {
+   "files": [
+    "bike-clip"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "compass.ratchet": {
+   "files": [
+    "compass-ratchet"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "compass.hold": {
+   "files": [
+    "compass-hold"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "compass.lock": {
+   "files": [
+    "compass-lock"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "saw.stroke": {
+   "files": [
+    "saw-stroke-1",
+    "saw-stroke-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "saw.bind": {
+   "files": [
+    "saw-bind"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "saw.knot": {
+   "files": [
+    "saw-knot"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "saw.through": {
+   "files": [
+    "saw-through"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "rope.drag": {
+   "files": [
+    "rope-drag"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "rope.join": {
+   "files": [
+    "rope-join"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "whackoon.bonk": {
+   "files": [
+    "whackoon-bonk"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "raccoon.chitter": {
+   "files": [
+    "raccoon-chitter"
+   ],
+   "bus": "minigame",
+   "status": "placeholder"
+  },
+  "fly.buzz": {
+   "files": [
+    "fly-buzz"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "fly.splat": {
+   "files": [
+    "fly-splat"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "firefly.catch": {
+   "files": [
+    "firefly-catch-1",
+    "firefly-catch-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "sizeup.stretch": {
+   "files": [
+    "sizeup-stretch-1",
+    "sizeup-stretch-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "safari.shutter": {
+   "files": [
+    "safari-shutter"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "safari.bigfoot": {
+   "files": [
+    "safari-bigfoot"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "shuffle.slide": {
+   "files": [
+    "shuffle-slide-1",
+    "shuffle-slide-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "shuffle.lift": {
+   "files": [
+    "shuffle-lift"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "train.horn": {
+   "files": [
+    "train-horn"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "train.pass": {
+   "files": [
+    "train-pass"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "train.crossing": {
+   "files": [
+    "train-crossing"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "crossing.car": {
+   "files": [
+    "crossing-car-1",
+    "crossing-car-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "crossing.horn": {
+   "files": [
+    "crossing-horn"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "crossing.hop": {
+   "files": [
+    "crossing-hop"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "crossing.splash": {
+   "files": [
+    "crossing-splash"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "raft.paddle": {
+   "files": [
+    "raft-paddle-1",
+    "raft-paddle-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "raft.bump": {
+   "files": [
+    "raft-bump"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bear.snore": {
+   "files": [
+    "bear-snore"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bear.tiptoe": {
+   "files": [
+    "bear-tiptoe-1",
+    "bear-tiptoe-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bear.roar": {
+   "files": [
+    "bear-roar"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ghost.wail": {
+   "files": [
+    "ghost-wail"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ghost.flashlight": {
+   "files": [
+    "ghost-flashlight"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ghost.heartbeat": {
+   "files": [
+    "ghost-heartbeat"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ghost.mitten": {
+   "files": [
+    "ghost-mitten"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "pots.shard": {
+   "files": [
+    "pots-shard-1",
+    "pots-shard-2",
+    "pots-shard-3"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "pots.whole": {
+   "files": [
+    "pots-whole"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ice.crack": {
+   "files": [
+    "ice-crack-1",
+    "ice-crack-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "ice.fall": {
+   "files": [
+    "ice-fall"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "minefield.squish": {
+   "files": [
+    "minefield-squish"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "minefield.sniff": {
+   "files": [
+    "minefield-sniff"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "blocks.land": {
+   "files": [
+    "blocks-land-1",
+    "blocks-land-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "blocks.clear": {
+   "files": [
+    "blocks-clear"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bridge.creak": {
+   "files": [
+    "bridge-creak-1",
+    "bridge-creak-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "bridge.break": {
+   "files": [
+    "bridge-break"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "rocks.fall": {
+   "files": [
+    "rocks-fall-1",
+    "rocks-fall-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "rocks.impact": {
+   "files": [
+    "rocks-impact-1",
+    "rocks-impact-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "rocks.rumble": {
+   "files": [
+    "rocks-rumble"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "climb.grab": {
+   "files": [
+    "climb-grab-1",
+    "climb-grab-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "climb.power": {
+   "files": [
+    "climb-power"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "climb.fall": {
+   "files": [
+    "climb-fall"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.bees": {
+   "files": [
+    "dodge-bees"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.swordSwing": {
+   "files": [
+    "dodge-swordSwing-1",
+    "dodge-swordSwing-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.swordPoke": {
+   "files": [
+    "dodge-swordPoke"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.shot": {
+   "files": [
+    "dodge-shot"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.aim": {
+   "files": [
+    "dodge-aim"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.ricochet": {
+   "files": [
+    "dodge-ricochet"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.trap": {
+   "files": [
+    "dodge-trap"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.ants": {
+   "files": [
+    "dodge-ants"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.antPop": {
+   "files": [
+    "dodge-antPop"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.arrow": {
+   "files": [
+    "dodge-arrow"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.hurt": {
+   "files": [
+    "dodge-hurt"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.eagle": {
+   "files": [
+    "dodge-eagle"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.snowLeopard": {
+   "files": [
+    "dodge-snowLeopard"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.snowgirl": {
+   "files": [
+    "dodge-snowgirl"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.bearRoar": {
+   "files": [
+    "dodge-bearRoar"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "dodge.monster": {
+   "files": [
+    "dodge-monster"
+   ],
+   "bus": "minigame",
+   "status": "placeholder"
+  },
+  "squirrel.scurry": {
+   "files": [
+    "squirrel-scurry"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "squirrel.chitter": {
+   "files": [
+    "squirrel-chitter"
+   ],
+   "bus": "minigame",
+   "status": "placeholder"
+  },
+  "pack.drop": {
+   "files": [
+    "pack-drop-1",
+    "pack-drop-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "pack.rotate": {
+   "files": [
+    "pack-rotate"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "cleanup.pick": {
+   "files": [
+    "cleanup-pick-1",
+    "cleanup-pick-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "cleanup.crash": {
+   "files": [
+    "cleanup-crash"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "signs.stamp": {
+   "files": [
+    "signs-stamp-1",
+    "signs-stamp-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "trails.offTrail": {
+   "files": [
+    "trails-offTrail"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "trails.gust": {
+   "files": [
+    "trails-gust"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "trails.scree": {
+   "files": [
+    "trails-scree"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "crossroads.arrow": {
+   "files": [
+    "crossroads-arrow-1",
+    "crossroads-arrow-2",
+    "crossroads-arrow-3",
+    "crossroads-arrow-4"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "traildle.key": {
+   "files": [
+    "traildle-key-1",
+    "traildle-key-2"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "memory.match": {
+   "files": [
+    "memory-match"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "puzzle.snap": {
+   "files": [
+    "puzzle-snap"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "birdsong.phrase": {
+   "files": [
+    "birdsong-phrase"
+   ],
+   "bus": "minigame",
+   "status": "made"
+  },
+  "night.nuisance": {
+   "files": [
+    "night-nuisance"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.danger": {
+   "files": [
+    "night-danger"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.eerie": {
+   "files": [
+    "night-eerie"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.good": {
+   "files": [
+    "night-good"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.bad": {
+   "files": [
+    "night-bad"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.bats": {
+   "files": [
+    "night-bats"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.robbers": {
+   "files": [
+    "night-robbers"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.opossums": {
+   "files": [
+    "night-opossums"
+   ],
+   "bus": "sfx",
+   "status": "placeholder"
+  },
+  "night.wolves": {
+   "files": [
+    "night-wolves"
+   ],
+   "bus": "sfx",
+   "status": "placeholder"
+  },
+  "night.monster": {
+   "files": [
+    "dodge-monster"
+   ],
+   "bus": "sfx",
+   "status": "placeholder"
+  },
+  "night.bears": {
+   "files": [
+    "night-bears"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.leopards": {
+   "files": [
+    "night-leopards"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.bobcats": {
+   "files": [
+    "night-bobcats"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.cultists": {
+   "files": [
+    "night-cultists"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.drunkHiker": {
+   "files": [
+    "night-drunkHiker"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "night.raccoons": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "night.foxes": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "night.coyotes": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "night.hyenas": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "night.raccoonGang": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.man.cheer": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.man.oof": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.man.yawn": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.woman.cheer": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.woman.oof": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.woman.yawn": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.dog.cheer": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.dog.oof": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.dog.yawn": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.cat.cheer": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.cat.oof": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.cat.yawn": {
+   "files": [],
+   "bus": "sfx",
+   "status": "need"
+  },
+  "voice.plush.cheer": {
+   "files": [
+    "voice-plush-cheer"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "voice.plush.oof": {
+   "files": [
+    "voice-plush-oof"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "voice.plush.yawn": {
+   "files": [
+    "voice-plush-yawn"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "amb.meadow.day": {
+   "files": [
+    "amb-meadow-day"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.meadow.night": {
+   "files": [
+    "amb-meadow-night"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.rainforest.day": {
+   "files": [
+    "amb-rainforest-day"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.rainforest.night": {
+   "files": [
+    "amb-rainforest-night"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.alpine.day": {
+   "files": [
+    "amb-alpine-day"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.alpine.night": {
+   "files": [
+    "amb-alpine-night"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.river": {
+   "files": [
+    "amb-river"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.fire": {
+   "files": [
+    "amb-fire"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.rain": {
+   "files": [
+    "amb-rain"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.wind": {
+   "files": [
+    "amb-wind"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.snow": {
+   "files": [
+    "amb-snow"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.heat": {
+   "files": [
+    "amb-heat"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.station": {
+   "files": [
+    "amb-station"
+   ],
+   "bus": "ambience",
+   "status": "placeholder",
+   "loop": true
+  },
+  "amb.title": {
+   "files": [
+    "amb-title"
+   ],
+   "bus": "ambience",
+   "status": "made",
+   "loop": true
+  },
+  "amb.bird": {
+   "files": [
+    "amb-bird-1",
+    "amb-bird-2",
+    "amb-bird-3",
+    "amb-bird-4"
+   ],
+   "bus": "ambience",
+   "status": "placeholder"
+  },
+  "amb.woodpecker": {
+   "files": [
+    "amb-woodpecker"
+   ],
+   "bus": "ambience",
+   "status": "made"
+  },
+  "amb.owl": {
+   "files": [
+    "amb-owl"
+   ],
+   "bus": "ambience",
+   "status": "placeholder"
+  },
+  "amb.twig": {
+   "files": [
+    "amb-twig"
+   ],
+   "bus": "ambience",
+   "status": "made"
+  },
+  "amb.frog": {
+   "files": [
+    "amb-frog"
+   ],
+   "bus": "ambience",
+   "status": "placeholder"
+  },
+  "amb.wolfFar": {
+   "files": [
+    "night-wolves"
+   ],
+   "bus": "ambience",
+   "status": "placeholder",
+   "volume": 0.35
+  },
+  "hike.start": {
+   "files": [
+    "hike-start"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "hike.summit": {
+   "files": [
+    "hike-summit"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "hike.over": {
+   "files": [
+    "hike-over"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "hike.tally": {
+   "files": [
+    "hike-tally"
+   ],
+   "bus": "sfx",
+   "status": "made"
+  },
+  "packing.reels": {
+   "files": [],
+   "bus": "sfx",
+   "status": "code"
+  },
+  "packing.taking": {
+   "files": [],
+   "bus": "sfx",
+   "status": "code"
+  },
+  "packing.rows": {
+   "files": [],
+   "bus": "sfx",
+   "status": "code"
+  },
+  "packing.second": {
+   "files": [],
+   "bus": "sfx",
+   "status": "code"
+  },
+  "packing.trailmate": {
+   "files": [],
+   "bus": "sfx",
+   "status": "code"
+  }
+ }
+}
