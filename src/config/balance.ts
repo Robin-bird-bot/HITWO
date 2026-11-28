@@ -4744,6 +4744,12 @@ export const BALANCE = {
   /** Screen timings (Nov 14 update). */
   ui: {
     /**
+     * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the
+     * item's art is turned into LCD greens at this size (art pixels), drawn
+     * at 2× on a full-size card. TODO(wyatt): [58 px].
+     */
+    itemCards: { greenPx: 58 },
+    /**
      * Nothing cut off (Phase 10.6): a card row that doesn't fit shrinks evenly
      * down to this scale, then wraps onto another row. TODO(wyatt): [80%].
      */

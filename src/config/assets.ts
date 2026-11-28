@@ -91,6 +91,8 @@ export const ASSETS = {
     rays: byItemType((t) => asset(`item-cards/rays/${t}.png`)),
     /** The card front (Nov 7): the cloud window for the art above, the text below. Opaque. */
     front: asset('item-cards/front.jpg'),
+    /** The drink's cup (31-trailmate-item-cards.md, section 4), white, 40 × 56. */
+    drinkIcon: asset('item-cards/drink-cup.svg'),
   },
   /** Item art (Nov 7), 384 px copies of assets/items, by the item's `art` name. */
   itemArt: (art: string) => asset(`items/${art}.png`),

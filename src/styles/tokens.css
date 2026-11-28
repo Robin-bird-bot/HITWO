@@ -24,6 +24,7 @@
 :root {
   /* Fonts */
   --font-pixel: 'EditUndo', monospace; /* headings, labels, numbers */
+  --font-lcd: 'Pixelify Sans', monospace; /* the TrailMate item cards' text (31) */
   --font-pixel-dot: 'EditUndoDot', monospace; /* big stat readouts */
   --font-callout: 'GameQuotes', 'EditUndo', monospace; /* ? and ! glyphs, x2/x3/+N badges */
   --font-body: 'DM Sans Variable', 'DM Sans', system-ui, sans-serif;

@@ -139,7 +139,7 @@ The sky is a CSS gradient that changes with the phase (see "UI patterns" in the 
 
 ## Item cards (Phase 11)
 
-- **The drink's cup** (`assets/item-cards/drink-cup.svg`, 40 × 56, white): the drink type's icon on the TrailMate item cards (`31-trailmate-item-cards.md`): the top strip and the back's embossed logo. The other types use the type icons the game already has. The rest of the device cards (shells, bezels, LCD screens, LEDs, walkie-talkie backs) are drawn in CSS.
+- **The drink's cup** (`assets/item-cards/drink-cup.svg`, 40 × 56, white; copied to `public/assets/item-cards/drink-cup.svg`): the drink type's icon on the TrailMate item cards (`31-trailmate-item-cards.md`): the top strip and the back's embossed logo. The other types use the type icons the game already has. The rest of the device cards (shells, bezels, LCD screens, LEDs, walkie-talkie backs) are drawn in CSS.
 
 ## Packing screen (Phase 10.9)
 
