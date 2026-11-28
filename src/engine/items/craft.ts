@@ -170,15 +170,20 @@ export function autoPay(state: GameState, crafter: Hiker, recipe: Recipe): (Paid
   }));
   const total = (id: ResourceId) => pool.reduce((n, h) => n + (h.left[id] ?? 0), 0);
   const own = (id: ResourceId) => pool[0]?.left[id] ?? 0;
+  const keep = keepRank(state);
+  // Spare resources go first, then ones a starred recipe needs, then starred ones;
+  // inside each, the crafter's own first, then the others here (35-ui-overhaul.md, section 6).
   const take = (ok: (id: ResourceId) => boolean): PaidSlot | null => {
-    for (const h of pool) {
-      const ids = (Object.keys(h.left) as ResourceId[])
-        .filter((id) => ok(id) && (h.left[id] ?? 0) > 0)
-        .sort((a, b) => (h.left[b] ?? 0) - (h.left[a] ?? 0) || a.localeCompare(b));
-      const id = ids[0];
-      if (id) {
-        h.left[id] = (h.left[id] ?? 0) - 1;
-        return { from: h.id, resource: id };
+    for (const level of [0, 1, 2]) {
+      for (const h of pool) {
+        const ids = (Object.keys(h.left) as ResourceId[])
+          .filter((id) => ok(id) && (h.left[id] ?? 0) > 0 && keep(id) === level)
+          .sort((a, b) => (h.left[b] ?? 0) - (h.left[a] ?? 0) || a.localeCompare(b));
+        const id = ids[0];
+        if (id) {
+          h.left[id] = (h.left[id] ?? 0) - 1;
+          return { from: h.id, resource: id };
+        }
       }
     }
     return null;
@@ -190,7 +195,10 @@ export function autoPay(state: GameState, crafter: Hiker, recipe: Recipe): (Paid
     if (part.ids) {
       const enough = part.ids.filter((id) => total(id) >= part.n);
       const best = [...(enough.length ? enough : part.ids)].sort(
-        (a, b) => Math.min(own(b), part.n) - Math.min(own(a), part.n) || total(b) - total(a),
+        (a, b) =>
+          keep(a) - keep(b) ||
+          Math.min(own(b), part.n) - Math.min(own(a), part.n) ||
+          total(b) - total(a),
       )[0];
       // Stand-ins (Garbage Connoisseur) only fill what the named resource can't.
       filled[i] = Array.from(
@@ -203,6 +211,40 @@ export function autoPay(state: GameState, crafter: Hiker, recipe: Recipe): (Paid
     }
   }
   return filled.flat();
+}
+
+/**
+ * A starred recipe's key (35-ui-overhaul.md, section 6): `bp:<item>` for a
+ * blueprint, `basic:<type>:<tier>` for a type's basic recipe at a tier.
+ */
+export const blueprintKey = (itemId: ItemId): string => `bp:${itemId}`;
+export const basicKey = (type: ItemTypeName, tier: number): string => `basic:${type}:${tier}`;
+
+/** The recipe a star key names, or undefined. */
+export function starredRecipe(state: GameState, key: string): Recipe | undefined {
+  const [kind, a, b] = key.split(':');
+  if (kind === 'bp' && a) return ITEMS[a]?.recipe;
+  const tier = Number(b);
+  if (kind === 'basic' && a && (CRAFT_TYPES as readonly string[]).includes(a) && tier >= 1) {
+    return basicRecipe(state, a as ItemTypeName, tier);
+  }
+  return undefined;
+}
+
+/**
+ * How much the party wants to keep a resource, for auto-fill: 0 spare, 1 a
+ * starred recipe names it, 2 it's starred itself. Stars are favorites: they
+ * only change which resources auto-fill reaches for first.
+ */
+function keepRank(state: GameState): (id: ResourceId) => number {
+  const starred = new Set(state.starred?.resources ?? []);
+  const named = new Set<string>();
+  for (const key of state.starred?.recipes ?? []) {
+    for (const part of starredRecipe(state, key) ?? []) {
+      for (const id of part.ids ?? []) named.add(id);
+    }
+  }
+  return (id) => (starred.has(id) ? 2 : named.has(id) ? 1 : 0);
 }
 
 /** Named resources first, then node groups, then "any". */

@@ -4882,6 +4882,23 @@ export const BALANCE = {
        * rest blows away. TODO(wyatt): [64 px], [110 ms], [50%].
        */
       brush: { canvasPx: 316, brushPx: 64, soundMs: 110, clearShare: 0.5 },
+      /**
+       * Crafting (section 6): the bench shows at least this many slots and
+       * holds up to `maxSlots`; a recipe fills itself one resource every
+       * `fillGapMs`, each flying `flyMs`; crafting hops the resources in
+       * (`hopMs`), then three hammer hits `hammerGapMs` apart. TODO(wyatt):
+       * [10] slots, [0.08 s] apart, hits [0.25 s] apart; the rest are the
+       * prototype's.
+       */
+      craft: {
+        slotsShown: 6,
+        maxSlots: 10,
+        fillGapMs: 80,
+        flyMs: 240,
+        hopMs: 300,
+        hammerGapMs: 250,
+        newMs: 1500,
+      },
     },
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

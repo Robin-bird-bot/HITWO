@@ -27,6 +27,7 @@ import { useReducedMotion } from '../app/useReducedMotion';
 import { PosterScene } from './PosterScene';
 import { brushBits, burst, clearedShare, paintCover, seedOf, uncovers } from './brush';
 import { starredRecipes, wantedRibbon } from './needed';
+import { RecipeBook } from '../craft/RecipeBook';
 import type { RecipePart } from '../../engine/items/recipe';
 import { sfx } from '../../audio/engine';
 import { revealCues } from '../../audio/reveal';
@@ -75,6 +76,8 @@ interface ScavengeWindowProps {
   onTake(action: TakeAction): void;
   /** The scavenge just ended with a take: the cards left over fall away as the window goes. */
   leaving?: boolean;
+  /** Stars from the read-only recipe book (saved with the hike). */
+  onDispatch?(action: Action): void;
 }
 
 export function ScavengeWindow({
@@ -85,6 +88,7 @@ export function ScavengeWindow({
   onReroll,
   onTake,
   leaving = false,
+  onDispatch,
 }: ScavengeWindowProps) {
   const open = state.scavenge;
   const [picked, setSelected] = useState<number | null>(null);
@@ -104,6 +108,8 @@ export function ScavengeWindow({
   const reduced = useReducedMotion();
   const groundRef = useRef<HTMLDivElement>(null);
   const covers = useRef(new Map<number, CoverHandle>());
+  // Looking for's recipe book, read only (35-ui-overhaul.md, section 5).
+  const [bookOpen, setBookOpen] = useState(false);
 
   const card = open && selected !== null ? open.cards[selected] : undefined;
   const offers = open?.bonusOffers ?? [];
@@ -353,7 +359,35 @@ export function ScavengeWindow({
               )}
             </div>
 
-            {hiker && <LookingFor state={state} hiker={hiker} />}
+            {hiker && (
+              <LookingFor
+                state={state}
+                hiker={hiker}
+                onBook={() => {
+                  sfx('book.page');
+                  setBookOpen(true);
+                }}
+              />
+            )}
+            {hiker && bookOpen && (
+              <div className={styles.bookOverlay}>
+                <RecipeBook
+                  state={state}
+                  hiker={hiker}
+                  readOnly
+                  onDispatch={(a) => onDispatch?.(a)}
+                />
+                <button
+                  type="button"
+                  className={styles.bookClose}
+                  aria-label="Close the recipe book"
+                  data-sound="ui.cancel"
+                  onClick={() => setBookOpen(false)}
+                >
+                  <Icon name="x" size={18} />
+                </button>
+              </div>
+            )}
 
             <footer className={styles.footer}>
               <span className={styles.message} role="status">
@@ -969,7 +1003,7 @@ const COVER_DUST: Record<NodeType | 'any', readonly string[]> & { any: readonly 
  * with what each still needs (filled: have it; dashed red: missing), and the
  * starred resources.
  */
-function LookingFor({ state, hiker }: { state: GameState; hiker: Hiker }) {
+function LookingFor({ state, hiker, onBook }: { state: GameState; hiker: Hiker; onBook(): void }) {
   const recipes = starredRecipes(state, hiker);
   const resources = (state.starred?.resources ?? []).filter((id): id is ResourceId =>
     RESOURCES.some((r) => r.id === id),
@@ -1024,6 +1058,9 @@ function LookingFor({ state, hiker }: { state: GameState; hiker: Hiker }) {
           </span>
         </div>
       )}
+      <button type="button" className={styles.bookButton} onClick={onBook}>
+        <Icon name="book" size={16} /> RECIPE BOOK
+      </button>
     </aside>
   );
 }

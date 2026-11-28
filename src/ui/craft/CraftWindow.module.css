@@ -4,34 +4,53 @@
   position: absolute;
   inset: 0;
   z-index: 30;
-  background: rgba(16, 20, 18, 0.55);
-  backdrop-filter: blur(3px);
+  background: rgba(20, 14, 8, 0.4);
+  backdrop-filter: blur(2px);
 }
 
-/* ── The window ── */
+/* ── The window (35-ui-overhaul.md, section 6): paper with a double ink border ── */
 
 .window {
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --fill: rgba(43, 37, 32, 0.07);
+  --line: rgba(43, 37, 32, 0.32);
+  --warn-text: #a8401f;
   position: absolute;
-  left: 270px;
-  top: 52px;
-  width: 960px;
-  height: 896px;
-  border-radius: 18px;
+  left: 142px;
+  top: 34px;
+  width: 1316px;
+  height: 930px;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
   overflow: hidden;
-  background: rgba(29, 34, 32, 0.97);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 24px 60px rgba(8, 10, 9, 0.55);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow:
+    0 0 0 8px var(--paper),
+    0 0 0 10px var(--ink),
+    0 30px 60px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
+  animation: winIn 0.35s cubic-bezier(0.25, 1.3, 0.5, 1);
+}
+
+@keyframes winIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
 }
 
 .head {
-  height: 64px;
+  height: 68px;
   flex: none;
-  padding: 0 20px 0 24px;
+  padding: 0 20px 0 26px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  border-bottom: 2px solid var(--ink);
 }
 
 .windowTitle {
@@ -47,11 +66,11 @@
 }
 
 .tab {
-  height: 40px;
+  height: 44px;
   padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -62,9 +81,8 @@
 }
 
 .tab[aria-selected='true'] {
-  background: rgba(233, 180, 76, 0.16);
-  border-color: var(--gold);
-  color: var(--gold);
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .crafter {
@@ -89,9 +107,10 @@
 .close {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
   display: grid;
   place-items: center;
 }
@@ -164,8 +183,8 @@
   height: 64px;
   padding: 0 12px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  background: var(--fill);
   display: grid;
   grid-template-columns: 24px 1fr;
   grid-template-rows: auto auto;
@@ -234,7 +253,7 @@
   font-family: var(--font-pixel);
   font-size: 11px;
   letter-spacing: 0.04em;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill);
   color: var(--text-faint);
 }
 
@@ -292,13 +311,13 @@
   height: 56px;
   border-radius: 12px;
   border: 2px solid var(--accent);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill);
   display: grid;
   place-items: center;
 }
 
 .slot[data-empty] {
-  border: 2px dashed rgba(255, 255, 255, 0.28);
+  border: 2px dashed var(--line);
   background: transparent;
 }
 
@@ -439,7 +458,7 @@
 .pack {
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--fill);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -474,7 +493,7 @@
   width: 46px;
   height: 46px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill);
   display: grid;
   place-items: center;
 }
@@ -527,7 +546,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--line);
 }
 
 .summary {
@@ -558,8 +577,8 @@
   height: 52px;
   padding: 0 20px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  background: var(--fill);
   font-family: var(--font-pixel);
   font-size: 14px;
 }
@@ -707,8 +726,8 @@
   min-height: 64px;
   padding: 0 14px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  background: var(--fill);
   display: grid;
   grid-template-columns: 40px 1fr;
   grid-template-rows: auto auto;
@@ -777,8 +796,8 @@
   margin-top: 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--fill);
+  border: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -797,8 +816,8 @@
   height: 44px;
   padding: 0 12px 0 6px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  background: var(--fill);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -826,7 +845,7 @@
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 13px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--fill);
 }
 
 .mod[data-tone='luck'] {
@@ -883,4 +902,237 @@
 
 .slotButton[data-drop='no'] {
   opacity: 0.55;
+}
+
+/* A blueprint's card coming out of the bench: it flips in with a NEW stamp. */
+.made[data-fresh] > :first-child {
+  position: relative;
+  animation: madeIn 0.62s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.newStamp {
+  position: absolute;
+  right: -10px;
+  top: 30px;
+  z-index: 2;
+  padding: 3px 9px;
+  border: 1.5px solid var(--ink);
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  transform: rotate(12deg);
+}
+
+@keyframes madeIn {
+  from {
+    transform: rotateY(90deg) scale(0.6);
+  }
+  60% {
+    transform: rotateY(0) scale(1.15);
+  }
+}
+
+/*
+ * The TrailMate look (Settings → Crafting look; the prototype's `#cw.tm`):
+ * the yellow handheld, its bench and book as LCD screens with scanlines,
+ * green-screen icons, LED tabs and a big round yellow Craft button. Same
+ * layout and controls.
+ */
+.window[data-look='trailmate'] {
+  --scr: #c3d49a;
+  --scr2: #b1c487;
+  --scri: #1d2918;
+  --scrm: #52653f;
+  --text: #cfe0a8;
+  --text-muted: #a0b37d;
+  --text-faint: #a0b37d;
+  --ink-2: #a0b37d;
+  --ink-3: #8ea06c;
+  background: #232a20;
+  color: #cfe0a8;
+  border: 3px solid #0e120b;
+  border-radius: 30px;
+  box-shadow:
+    0 0 0 16px #e9b44c,
+    0 0 0 19px #8a6a1c,
+    0 30px 60px rgba(0, 0, 0, 0.55);
+}
+
+.window[data-look='trailmate'] .head {
+  border-bottom: 0;
+}
+
+.window[data-look='trailmate'] .windowTitle {
+  color: #e9b44c;
+  letter-spacing: 0.14em;
+}
+
+.window[data-look='trailmate'] .windowTitle::after {
+  content: 'TRAILMATE WORKSHOP';
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: #a0b37d;
+}
+
+.window[data-look='trailmate'] .tab,
+.window[data-look='trailmate'] .close {
+  background: #2f3829;
+  color: #cfe0a8;
+  border-color: #0d110a;
+}
+
+.window[data-look='trailmate'] .tab[aria-selected='true'] {
+  background: var(--scr);
+  color: var(--scri);
+}
+
+.window[data-look='trailmate'] [class*='bench'] {
+  background: var(--scr) !important;
+  border: 5px solid #0d110a;
+  border-radius: 16px;
+  box-shadow:
+    inset 0 0 0 2px #9fb27a,
+    inset 0 0 50px rgba(40, 60, 20, 0.35);
+}
+
+.window[data-look='trailmate'] [class*='bench']::after,
+.window[data-look='trailmate'] [class*='pages']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: repeating-linear-gradient(0deg, rgba(20, 30, 10, 0.08) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+
+.window[data-look='trailmate'] [class*='slot_'] {
+  background: var(--scr2);
+  box-shadow: inset 0 0 0 2px var(--scrm);
+  border-radius: 3px;
+}
+
+.window[data-look='trailmate'] [class*='slot_'][data-ghost] {
+  background: var(--scr);
+  outline: 2px dashed var(--scrm);
+  box-shadow: none;
+}
+
+.window[data-look='trailmate'] [class*='slot_'] img,
+.window[data-look='trailmate'] [class*='chip_'] img,
+.window[data-look='trailmate'] [class*='token'] img,
+.window[data-look='trailmate'] [class*='icon_'] img,
+.window[data-look='trailmate'] [class*='result'] img {
+  filter: grayscale(1) contrast(1.6) brightness(0.72);
+  mix-blend-mode: multiply;
+}
+
+.window[data-look='trailmate'] [class*='info'],
+.window[data-look='trailmate'] [class*='cost_'] {
+  color: var(--scri);
+  text-shadow: none;
+  font-family: var(--font-lcd);
+}
+
+.window[data-look='trailmate'] [class*='info'] b {
+  color: #111a10;
+}
+
+.window[data-look='trailmate'] [class*='arrow'],
+.window[data-look='trailmate'] [class*='slot_'] [class*='q_'],
+.window[data-look='trailmate'] [class*='result'] [class*='q_'] {
+  color: var(--scrm);
+}
+
+.window[data-look='trailmate'] [class*='result'] {
+  background: var(--scr2);
+  box-shadow: inset 0 0 0 2px var(--scrm);
+}
+
+.window[data-look='trailmate'] [class*='clear_'] {
+  background: #2f3829;
+  color: #cfe0a8;
+  border-color: #0d110a;
+  box-shadow: 0 4px 0 #0d110a;
+}
+
+/* Craft: the big round yellow button, with Clear and the cost under it. */
+.window[data-look='trailmate'] [class*='bench'] [class*='buttons_'] {
+  top: 14px;
+  gap: 8px;
+}
+
+.window[data-look='trailmate'] [class*='go_'] {
+  width: 92px;
+  height: 92px;
+  min-height: 0;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 32%, #ffe08a, #e9b44c 55%, #b9861b);
+  color: #2b2520;
+  box-shadow:
+    0 0 0 7px #0d110a,
+    0 0 0 9px #3c4e2f,
+    0 7px 0 7px #0d110a;
+  font-size: 15px;
+}
+
+.window[data-look='trailmate'] [class*='chip_'] {
+  background: var(--scr);
+  border-color: #0d110a;
+  box-shadow: 0 3px 0 #0d110a;
+}
+
+.window[data-look='trailmate'] [class*='chip_'] b {
+  background: var(--scri);
+  color: var(--scr);
+}
+
+.window[data-look='trailmate'] [class*='pages'] {
+  background: var(--scr);
+  border: 5px solid #0d110a;
+  border-radius: 16px;
+  box-shadow: inset 0 0 50px rgba(40, 60, 20, 0.3);
+}
+
+.window[data-look='trailmate'] [class*='page_'] {
+  --ink: var(--scri);
+  --ink-2: var(--scrm);
+  --ink-3: var(--scrm);
+  font-family: var(--font-lcd);
+  color: var(--scri);
+}
+
+.window[data-look='trailmate'] [class*='page_']:first-child {
+  border-right: 2px dashed var(--scrm);
+}
+
+.window[data-look='trailmate'] [class*='pick_'] {
+  color: var(--scri);
+}
+
+.window[data-look='trailmate'] [class*='token'] {
+  background: var(--scr2);
+  border-color: var(--scri);
+  color: var(--scri);
+}
+
+/* The book's tabs get colored LEDs. */
+.window[data-look='trailmate'] [role='tab'][class*='tab_'] {
+  background: #2f3829;
+  color: #cfe0a8;
+  border-color: #0d110a;
+  text-shadow: none;
+}
+
+.window[data-look='trailmate'] [role='tab'][class*='tab_']::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tc);
+  box-shadow: 0 0 6px var(--tc);
 }

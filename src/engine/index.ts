@@ -197,7 +197,9 @@ export { bringReach } from './effects';
 export { tileDistance } from './map';
 export {
   autoPay,
+  basicKey,
   basicRecipe,
+  blueprintKey,
   craftPool,
   craftRecipe,
   craftSetup,
@@ -209,6 +211,7 @@ export {
   ownCraftTier,
   paymentReason,
   spaceParts,
+  starredRecipe,
   CRAFT_TYPES,
   type CraftSetup,
 } from './items/craft';

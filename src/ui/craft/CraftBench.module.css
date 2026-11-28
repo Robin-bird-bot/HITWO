@@ -1,0 +1,449 @@
+/*
+ * The craft tab (35-ui-overhaul.md, section 6; the prototype's `.bench`,
+ * `.bs`, `.tray` and `.rch`). Stage pixels. The TrailMate look restyles it
+ * from CraftWindow.module.css.
+ */
+.craft {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 22px 20px;
+}
+
+/* The workbench: wood grain, knots, nails and a ruler (workbench.svg). */
+.bench {
+  position: relative;
+  flex: none;
+  height: 222px;
+  margin-top: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: #a46f39 center / 100% 100% no-repeat;
+  box-shadow:
+    0 6px 0 #4a2a12,
+    0 8px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 236, 205, 0.25);
+}
+
+.bench[data-hammering][data-hit='0'] {
+  animation: shakeA 0.22s;
+}
+
+.bench[data-hammering][data-hit='1'] {
+  animation: shakeB 0.22s;
+}
+
+@keyframes shakeA {
+  25% {
+    translate: -4px 1px;
+  }
+  60% {
+    translate: 4px -1px;
+  }
+}
+
+@keyframes shakeB {
+  25% {
+    translate: -4px 1px;
+  }
+  60% {
+    translate: 4px -1px;
+  }
+}
+
+.slots {
+  position: absolute;
+  left: 24px;
+  top: 30px;
+  width: 770px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* A slot sunk into the wood. */
+.slot {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(38, 20, 6, 0.62), rgba(60, 32, 12, 0.45));
+  box-shadow:
+    inset 0 5px 8px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 222, 175, 0.18),
+    0 1px 0 rgba(255, 236, 205, 0.4),
+    0 -1px 0 rgba(30, 14, 4, 0.5);
+  display: grid;
+  place-items: center;
+  cursor: default;
+}
+
+.slot[data-full] {
+  cursor: pointer;
+  animation: land 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.slot img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.4));
+}
+
+/* Missing: a ghost of what goes there. */
+.slot[data-ghost] {
+  background: rgba(196, 86, 46, 0.25);
+  outline: 2px dashed #f3b39a;
+  outline-offset: -5px;
+  animation: land 0.35s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.slot[data-ghost] img {
+  opacity: 0.4;
+  filter: grayscale(1) brightness(1.4);
+}
+
+.slot[data-ghost]::after {
+  content: '!';
+  position: absolute;
+  right: 5px;
+  top: 2px;
+  font-family: var(--font-callout);
+  font-size: 14px;
+  color: #ffd0bd;
+}
+
+/* Crafting: the resources hop into the middle. */
+.slots[data-crafting] .slot img {
+  animation: hop 0.42s cubic-bezier(0.5, 0, 0.7, 1) forwards;
+}
+
+@keyframes hop {
+  30% {
+    transform: translateY(-16px);
+  }
+  100% {
+    transform: translateY(6px) scale(0.3);
+    opacity: 0;
+  }
+}
+
+@keyframes land {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+}
+
+.q {
+  font-family: var(--font-callout);
+  font-size: 24px;
+  color: rgba(255, 240, 215, 0.55);
+}
+
+.arrow {
+  position: absolute;
+  left: 820px;
+  top: 78px;
+  width: 50px;
+  height: 44px;
+  color: #fbe2b8;
+}
+
+.result {
+  position: absolute;
+  left: 886px;
+  top: 18px;
+  width: 132px;
+  height: 184px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(40, 22, 8, 0.42);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.result img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  opacity: 0.55;
+  filter: grayscale(0.3);
+}
+
+.result .q {
+  font-size: 44px;
+}
+
+.typeCard {
+  width: 118px;
+  height: 164px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: var(--tc);
+  color: #fff;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  opacity: 0.85;
+}
+
+.buttons {
+  position: absolute;
+  right: 22px;
+  top: 30px;
+  width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.go,
+.clear {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+}
+
+.go {
+  min-height: 70px;
+  background: var(--gold);
+  font-size: 18px;
+}
+
+.go:disabled,
+.clear:disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  cursor: default;
+}
+
+.go[data-ready] {
+  animation: ready 1.2s ease-in-out infinite;
+}
+
+@keyframes ready {
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      3px 3px 0 var(--ink),
+      0 0 0 6px rgba(233, 180, 76, 0.45);
+  }
+}
+
+.cost {
+  font-size: 13px;
+  text-align: center;
+  color: #fff3df;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.info {
+  position: absolute;
+  left: 26px;
+  bottom: 22px;
+  margin: 0;
+  max-width: 780px;
+  font-size: 14.5px;
+  color: #fbecd2;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.info b {
+  font-family: var(--font-pixel);
+  font-weight: normal;
+  color: #fff;
+}
+
+.nodes {
+  position: absolute;
+  left: 26px;
+  bottom: 52px;
+  display: flex;
+  gap: 8px;
+}
+
+.node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.node[aria-checked='true'] {
+  background: var(--gold);
+}
+
+/* The tray: the crafter's pack, then what's pooled on the tile. */
+.tray {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 22px;
+  margin-top: 18px;
+  min-height: 84px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.group[data-tip] {
+  margin-left: auto;
+  max-width: 260px;
+}
+
+.label {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chipWrap {
+  position: relative;
+}
+
+.chip {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  border-radius: 7px;
+  background: #fffaf0;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.chip:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.chip img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.chip b {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  min-width: 21px;
+  height: 21px;
+  border-radius: 11px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 12px/21px var(--font-body);
+  text-align: center;
+}
+
+.chip[data-zero] {
+  opacity: 0.35;
+}
+
+/* Whose it is (a pooled resource). */
+.own {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+
+.chipStar {
+  position: absolute;
+  left: -8px;
+  top: -9px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-2);
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.chipWrap:hover .chipStar,
+.chipStar:focus-visible,
+.chipStar[aria-pressed='true'] {
+  opacity: 1;
+}
+
+.chipStar[aria-pressed='true'] {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.bookWrap {
+  flex: 1;
+  min-height: 0;
+  margin-top: 14px;
+}
+
+.fly {
+  position: absolute;
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bench,
+  .slot,
+  .slots[data-crafting] .slot img,
+  .go[data-ready] {
+    animation: none !important;
+  }
+}

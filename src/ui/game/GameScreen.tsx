@@ -1660,6 +1660,7 @@ export function GameScreen({
                     state.scavenge || !scavLeaving ? state : { ...state, scavenge: scavLeaving }
                   }
                   leaving={!state.scavenge}
+                  onDispatch={(a) => dispatch(a)}
                   simple={simple}
                   onFlip={(cards) => dispatch({ type: 'scavengeFlip', cards })}
                   onCancel={() => dispatch({ type: 'scavengeCancel' })}
