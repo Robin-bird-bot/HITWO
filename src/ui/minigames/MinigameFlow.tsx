@@ -18,6 +18,7 @@
  * testing and Play again, and nothing is saved anywhere but the tab's own
  * settings: the flow never touches the game store.
  */
+import { audio, sfx } from '../../audio/engine';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { BALANCE } from '../../config/balance';
 import type { MinigameChallenge } from '../../content/minigameChallenges';
@@ -150,6 +151,8 @@ export function MinigameFlow({
     setResult(undefined);
     setMoved(true);
     setStage('turning');
+    // The party GPS powers on (the game counts itself in as it starts: PlayStage).
+    sfx('chal.start');
     later(G.turnMs, () => setStage('playing'));
   };
   const done = (r: MinigameResult) => {
@@ -167,6 +170,13 @@ export function MinigameFlow({
     start();
   };
 
+  // Minigames duck the ambience while they play (32-audio-system.md, section 4).
+  useEffect(() => {
+    if (stage !== 'playing') return;
+    audio.duck('ambience', 'minigame', BALANCE.audio.ambience.minigameDuck, 0.5);
+    return () => audio.duck('ambience', 'minigame', 1, 1);
+  }, [stage]);
+
   const turned = stage === 'turning' || stage === 'playing';
   return (
     <div className={styles.flow} data-flow-root="" style={{ '--dim': G.dim } as CSSProperties}>
@@ -183,9 +193,14 @@ export function MinigameFlow({
         packs={packs}
         onFill={(key, tile, effect, target) => {
           const s = slots.find((x) => x.key === key);
-          if (s) setFills((f) => fillSlot(f, s, tile, effect, ids, target));
+          if (!s) return;
+          sfx('chal.prepareSlot');
+          setFills((f) => fillSlot(f, s, tile, effect, ids, target));
         }}
-        onEmpty={(key) => setFills((f) => emptySlot(f, key))}
+        onEmpty={(key) => {
+          sfx('chal.prepareRemove');
+          setFills((f) => emptySlot(f, key));
+        }}
         skip={skip}
         testMode={testMode}
         result={stage === 'popup' ? result : undefined}

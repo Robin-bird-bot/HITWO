@@ -11,9 +11,11 @@
  *   the purse only when a poster is picked, so CANCEL loses nothing.
  * - **Not enough caps:** the box shakes and its price turns red.
  *
- * The clink waits for the game's audio (Phase 16).
+ * The clink plays as the acorn lands (`infoboard.clink`); the shake rattles.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useOpenSound } from '../../audio/uiSounds';
+import { sfx } from '../../audio/engine';
+import { useEffect, useRef, useState, type SetStateAction } from 'react';
 import { BALANCE } from '../../config/balance';
 import type { Action, BiomeId, GameState, TileId } from '../../engine';
 import { boardOf, tilesLeft } from '../../engine/challenges/infoboard';
@@ -72,6 +74,7 @@ interface Props {
 }
 
 export function InfoboardWindow({ state, dispatch, onClose, onShow }: Props) {
+  useOpenSound('infoboard.open');
   const reduced = useReducedMotion();
   const board = boardOf(state);
   const pool = state.section.pool ?? [];
@@ -85,7 +88,12 @@ export function InfoboardWindow({ state, dispatch, onClose, onShow }: Props) {
   const [shownUp, setShownUp] = useState<string[] | null>(null);
   const [popped, setPopped] = useState<string[]>([]);
   const [jiggle, setJiggle] = useState<BoxId | null>(null);
-  const [no, setNo] = useState<BoxId | null>(null);
+  const [no, setNoBox] = useState<BoxId | null>(null);
+  // Not enough caps: the box shakes, with a rattle.
+  const setNo = (box: SetStateAction<BoxId | null>) => {
+    if (typeof box === 'string') sfx('infoboard.shake');
+    setNoBox(box);
+  };
   const [nope, setNope] = useState<string | null>(null);
   const [bump, setBump] = useState(0);
   /** WHERE IS IT? paid for in the purse but not spent yet (spent when a poster is picked). */
@@ -103,6 +111,7 @@ export function InfoboardWindow({ state, dispatch, onClose, onShow }: Props) {
   useEffect(() => {
     if (!flight) return;
     const land = () => {
+      sfx('infoboard.clink');
       setFlight(null);
       setJiggle(flight.box);
       window.setTimeout(flight.then, reduced ? 0 : 380);

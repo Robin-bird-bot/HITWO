@@ -15,6 +15,7 @@
  * As a window over the map for planning; full screen after a level-up.
  * Reduced motion: no moving dashes or pulses.
  */
+import { useOpenSound } from '../../audio/uiSounds';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { stepText } from '../../content/trails/traits';
 import { treesOf, type Action, type GameState, type Hiker } from '../../engine';
@@ -50,6 +51,7 @@ export function SkillTrails({
   onAction(action: Action): boolean;
   onClose(): void;
 }) {
+  useOpenSound('trails.open');
   const hikers = state.hikers.filter((h) => h.status !== 'abandoned' && !!treesOf(h));
   const hiker = hikers.find((h) => h.id === hikerId) ?? hikers[0];
   const view = hiker ? trailsView(state, hiker) : [];

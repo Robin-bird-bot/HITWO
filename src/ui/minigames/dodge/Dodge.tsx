@@ -21,6 +21,7 @@
  * the mouse) goes down.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useFrameSounds, useMgLoop, type FrameSound } from '../sound';
 import { BALANCE } from '../../../config/balance';
 import { ANIMALS, EAGLE_NAMES, EAGLE_VERSIONS, isAnimal } from '../../../minigames/dodge/animals';
 import { darkness } from '../../../minigames/dodge/attacks/monster';
@@ -37,7 +38,9 @@ import {
   step,
   switches,
   type AnimalId,
+  type Attacker,
   type AttackId,
+  type DodgeState,
   type EagleVersion,
   type Point,
 } from '../../../minigames/dodge/logic';
@@ -157,6 +160,7 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
 
   // The game loop: fixed steps, as fast as the screen draws.
   const running = !game.over && !still;
+  useDodgeSounds(game, running);
   useEffect(() => {
     if (!running) return;
     let last = performance.now();
@@ -433,4 +437,53 @@ export function Dodge({ settings, hikers, seed, onDone, still = false }: PuzzleR
       </div>
     </PixelScreen>
   );
+}
+
+const EAGLES: readonly Attacker[] = ['eagle', 'toupeeEagle', 'freeagle'];
+const ANT_SWARMS = new Set(['march', 'mill', 'antHill', 'walker', 'parade', 'crumbRush']);
+const SHOTS = new Set(['shot', 'bullet', 'quickDraw', 'bulletRing']);
+
+/** The sound an attack opens with (33-sound-list.md, "Minigame signatures"). */
+function roundSound(attacker: Attacker, attack: AttackId): string | null {
+  if (EAGLES.includes(attacker)) return 'dodge.eagle';
+  if (attacker === 'snowLeopard') return 'dodge.snowLeopard';
+  if (attacker === 'snowgirl') return 'dodge.snowgirl';
+  if (attacker === 'monster') return 'dodge.monster';
+  if (attack === 'volley') return 'dodge.swordPoke';
+  if (attacker === 'swordBear') return 'dodge.swordSwing';
+  if (attack === 'combOver') return 'dodge.arrow';
+  if (attacker === 'gunBear' && attack !== 'traps' && attack !== 'ricochet') return 'dodge.aim';
+  return null;
+}
+
+/**
+ * Dodge's sounds: a bear with a sword or a gun roars as it arrives; each
+ * attack opens with its animal's sound; shots, traps, ricochets and fire ants
+ * go off as they hit; bees and ants buzz and skitter while they're out; and
+ * the party icon's bump when it's hit.
+ */
+function useDodgeSounds(game: DodgeState, running: boolean) {
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    const crossed = (t: number) => a.time < t && b.time >= t;
+    if (a.time === 0 && b.time > 0 && (b.animal === 'swordBear' || b.animal === 'gunBear')) {
+      out.push('dodge.bearRoar');
+    }
+    for (const st of b.starts.slice(a.starts.length)) {
+      const attacker = b.rounds.find((r) => r.attack === st.attack)?.attacker ?? b.animal;
+      const id = attacker === 'stampede' ? null : roundSound(attacker, st.attack);
+      if (id) out.push(id);
+    }
+    for (const p of b.parts) {
+      if (p.child || !crossed(p.activeAt)) continue;
+      if (SHOTS.has(p.kind)) out.push('dodge.shot');
+      else if (p.kind === 'trap') out.push('dodge.trap');
+      else if (p.kind === 'ricochet') out.push('dodge.ricochet');
+      else if (p.kind === 'fireAnts') out.push('dodge.antPop');
+    }
+    if (b.lastHit && b.lastHit !== a.lastHit) out.push('dodge.hurt');
+    return out;
+  });
+  useMgLoop('dodge.bees', running && game.parts.some((p) => p.kind === 'bee'));
+  useMgLoop('dodge.ants', running && game.parts.some((p) => ANT_SWARMS.has(p.kind)));
 }

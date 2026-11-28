@@ -9,6 +9,7 @@
  * It's a small store the screen subscribes to, so long sequences can await
  * each effect without React state going stale between steps.
  */
+import { sfx } from '../../audio/engine';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { BALANCE } from '../../config/balance';
 import { seedRng } from '../../engine/rng';
@@ -471,6 +472,7 @@ export class PackingDirector {
       v.opening = h;
       this.render();
       for (let k = 0; k < pack.bundles.length; k++) {
+        sfx('res.bundleBurst');
         await f.openBundle(h);
         v.opened[h] = k + 1;
         this.render();

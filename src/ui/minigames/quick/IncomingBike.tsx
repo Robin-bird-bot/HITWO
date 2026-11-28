@@ -20,6 +20,7 @@ import {
   tick,
   type Bike,
   type BikeInput,
+  type BikeState,
 } from '../../../minigames/incomingBike/logic';
 import {
   matchShape,
@@ -37,7 +38,7 @@ import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './IncomingBike.module.css';
@@ -163,6 +164,16 @@ export function IncomingBike({ settings, hikers, seed, onDone, still = false }: 
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
+  // A bike rings up the trail and flies past; the hiker hops aside or gets clipped.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.spawned > a.spawned) out.push('bike.bell');
+    const passed = (s: BikeState) => s.bikes.filter((k) => k.outcome === 'dodged').length;
+    if (b.bikes.length < a.bikes.length || passed(b) > passed(a)) out.push('bike.whoosh');
+    if (b.lastHop && b.lastHop !== a.lastHop) out.push('bike.hop');
+    if (b.lastHit && b.lastHit !== a.lastHit) out.push('bike.clip');
+    return out;
+  });
   const who = current(game.turns);
   const onTurn = playing(game.turns);
   const color = who ? byId(who).color : g(9);
@@ -170,7 +181,6 @@ export function IncomingBike({ settings, hikers, seed, onDone, still = false }: 
   const send = (sign: string) => {
     const out = press(game, sign);
     if (out === game) return;
-    playSound(out.lastHit !== game.lastHit ? 'hit' : 'pop');
     setGame(out);
   };
   useKeys(running && !demo && input === 'keys', (key) => {

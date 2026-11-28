@@ -33,7 +33,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useFrameSounds } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from './Quick.module.css';
@@ -87,9 +87,15 @@ export function Safari({ settings, hikers, seed, onDone, still = false }: Puzzle
   const pick = (k: number) => {
     const out = guess(game, k);
     if (out === game) return;
+    mgSfx('safari.shutter');
     playSound(out.lastGuess?.right ? 'pop' : 'miss');
     setGame(out);
   };
+  // The rare Bigfoot's far roar as it comes into view.
+  useFrameSounds(game, (a, b) => {
+    const at = b.run.bigfoot?.at;
+    return at !== undefined && a.time < at && b.time >= at ? ['safari.bigfoot'] : [];
+  });
   useKeys(
     running,
     (key) => {

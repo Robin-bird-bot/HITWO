@@ -51,20 +51,23 @@ export function jitterFor(
   return { rate: pitch, gain: Math.pow(10, db / 20) };
 }
 
-/** A sound that's playing (or loading to play). */
+/** A sound that's playing (or loading, or waiting for its delay). */
 export interface Voice {
   readonly id: string;
-  /** When it started, in milliseconds. */
+  /** When it starts, in milliseconds. */
   readonly started: number;
+  /** When it ends, when its length is known. */
+  readonly ends?: number;
   stop(): void;
 }
 
 export type Admission = { play: false } | { play: true; stop: Voice[] };
 
 /**
- * Whether a new sound may start now, and which playing ones stop first to
- * make room: the oldest of the same sound, then the oldest of all.
- * `lastStart` is when this id last started.
+ * Whether a new sound may start at `now`, and which ones stop first to make
+ * room: the oldest of the same sound, then the oldest of all. Only sounds
+ * still playing then count (a quick run of card deals all play).
+ * `lastStart` is when this id last started (or is due to).
  */
 export function admit(
   active: readonly Voice[],
@@ -72,8 +75,12 @@ export function admit(
   now: number,
   lastStart: number | undefined,
 ): Admission {
-  if (lastStart !== undefined && now - lastStart < A.limits.retriggerMs) return { play: false };
-  const byAge = [...active].sort((a, b) => a.started - b.started);
+  if (lastStart !== undefined && Math.abs(now - lastStart) < A.limits.retriggerMs) {
+    return { play: false };
+  }
+  const byAge = active
+    .filter((v) => v.started <= now && (v.ends === undefined || v.ends > now))
+    .sort((a, b) => a.started - b.started);
   const stop: Voice[] = [];
   const same = byAge.filter((v) => v.id === id);
   const limit = perSoundLimit(id);

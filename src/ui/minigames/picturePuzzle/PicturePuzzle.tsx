@@ -33,7 +33,7 @@ import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx } from '../sound';
 import ui from '../gpsUi.module.css';
 import styles from './PicturePuzzle.module.css';
 import { prepNumber } from '../../../minigames/prepare';
@@ -169,7 +169,7 @@ export function PicturePuzzle({ settings, hikers, seed, onDone, still = false }:
     const next = move(game, from, to);
     if (next === game) return;
     const id = pieceAt(game, from);
-    if (id !== null && next.locked[id] && !game.locked[id]) playSound('place');
+    if (id !== null && next.locked[id] && !game.locked[id]) mgSfx('puzzle.snap');
     setGame(next);
   };
 

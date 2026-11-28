@@ -21,7 +21,7 @@ import {
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, useFrameSounds, useMgLoop } from '../sound';
 import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -101,8 +101,16 @@ export function SleepingBear({ settings, hikers, seed, onDone, still = false }: 
   // The bear roars.
   const roaring = game.bear === 'roar';
   useEffect(() => {
-    if (roaring && !still) playSound('hit');
+    if (roaring && !still) mgSfx('bear.roar');
   }, [roaring, still]);
+  // Snoring while the bear sleeps; tiny, careful steps as a hiker sneaks.
+  useMgLoop('bear.snore', running && (game.bear === 'asleep' || game.bear === 'stir'));
+  useFrameSounds(game, (a, b) => {
+    const every = BALANCE.audio.tiptoeSec;
+    return b.moving && Math.floor(b.time / every) !== Math.floor(a.time / every)
+      ? ['bear.tiptoe']
+      : [];
+  });
 
   useEffect(() => {
     if (!game.over || still || reported.current) return;

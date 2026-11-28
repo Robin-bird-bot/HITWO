@@ -4,6 +4,8 @@
  * Quotes glyph, the caps or an item back. Face down, it shows where it came
  * from: its node, or the caps or item back, with the pixel texture.
  */
+import type { PointerEvent as ReactPointerEvent } from 'react';
+import { sfx } from '../../audio/engine';
 import { SCAVENGE_CARDS } from '../../content';
 import { ASSETS } from '../../config/assets';
 import type { ScavengeCard } from '../../engine';
@@ -89,10 +91,21 @@ export function ScavCard({
       <Tag
         {...(onClick ? { type: 'button' as const } : {})}
         {...(index !== undefined ? { 'data-scav-card': index } : {})}
-        {...withPreview(onClick ? { onClick } : {}, preview ?? {})}
+        {...withPreview(
+          {
+            ...(onClick ? { onClick } : {}),
+            // A face-down card a soft brush on hover.
+            onPointerEnter: (e: ReactPointerEvent) => {
+              if (e.pointerType === 'mouse' && onClick && !faceUp) sfx('card.hover');
+            },
+          },
+          preview ?? {},
+        )}
         className={styles.card}
         style={{ width: S, height: S }}
         data-selected={selected ? 'true' : undefined}
+        // Cards make their own sounds (a flip, a take), not a click.
+        data-sound="none"
         aria-label={label}
         aria-pressed={onClick && faceUp ? !!selected : undefined}
       >

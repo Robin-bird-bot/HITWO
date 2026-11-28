@@ -4769,6 +4769,78 @@ export const BALANCE = {
     limits: { perSound: 3, footsteps: 2, ticks: 4, total: 24, retriggerMs: 30 },
     /** A sound still loading after this long (ms) is dropped rather than played late. */
     lateMs: 250,
+    /** A sound for each resource gained, at most this many per action, this far apart. TODO(wyatt): [3] and [70 ms]. */
+    resources: { max: 3, gapMs: 70 },
+    /**
+     * The night event: its creature's own sound comes this long (s) after the
+     * group's sting; when nobody is hit, `night.good` ends it after this long.
+     * TODO(wyatt): [0.6 s]; the end is a first guess.
+     */
+    night: { creatureDelaySec: 0.6, endDelaySec: 1.8 },
+    /**
+     * Play on a challenge: `chal.start`, then as the game comes up, three
+     * `mg.count` beeps and `mg.go` this far apart (s). A first guess.
+     */
+    countGapSec: 0.3,
+    /** Wrong Turn: the needle's ratchet ticks every this many degrees ("every few degrees"). A first guess. */
+    compassTickDeg: 10,
+    /** Spooky Ghost!: the heartbeat plays while sanity is under this share. A first guess. */
+    lowSanity: 0.35,
+    /** Sketchy Bridge: it creaks this many times on the way from whole to broken. A first guess. */
+    bridgeCreaks: 8,
+    /** Crossroads: each arrow of the row blips this far apart (s) as the row shows. A first guess. */
+    arrowGapSec: 0.12,
+    /** Sleeping Bear: a tiptoe every this many seconds while a hiker sneaks. A first guess. */
+    tiptoeSec: 0.45,
+    /** A card's reveal chimes come this far apart (ms) after its flip. TODO(wyatt): [90 ms]. */
+    revealGapMs: 90,
+    /**
+     * Scavenging: each card's deal sound this far apart (s), and several
+     * flips (Flip all) this far apart (s). TODO(wyatt): [0.16 s] and [0.3 s].
+     */
+    dealGapSec: 0.16,
+    flipGapSec: 0.3,
+    /** The challenge card slides in this long (s) after `map.challengeLand`. A first guess. */
+    challengeCardDelaySec: 0.35,
+    /**
+     * Footsteps while a token walks along a line: a step every this many ms
+     * (people, dogs and cats, plush), cats at this level, panned from −pan at
+     * the screen's left edge to +pan at its right. TODO(wyatt): [300], [200]
+     * and [340 ms], [60%], [0.6].
+     */
+    footsteps: { stepMs: { people: 300, paws: 200, plush: 340 }, catVolume: 0.6, pan: 0.6 },
+    /**
+     * A moving token walks along its line for this long (s) (Wyatt: about a
+     * second); reduced motion jumps, and the steps still play. TODO(wyatt): [1 s].
+     */
+    walkSec: 1,
+    /**
+     * Ambience (section 4). The bed crossfades over `bedFadeSec` at dusk and
+     * dawn (`placeFadeSec` when the place changes: title, trail, station);
+     * layers fade over `layerFadeSec`. One-shots come every so many seconds
+     * ([min, max]), panned ±pan, at a random level. Minigames duck it to
+     * `minigameDuck`, loading screens to `loadingDuck`. TODO(wyatt): [6 s],
+     * [3 s], Meadow [6–14 s], Rainforest [5–12 s], Alpine [12–25 s], night
+     * [10–25 s], the far wolf about every [4 min], thunder [40–120 s], pan
+     * [0.8], level [0.4–1.0], [30%] and [50%]; the place fade is a first guess.
+     */
+    ambience: {
+      bedFadeSec: 6,
+      placeFadeSec: 1.5,
+      layerFadeSec: 3,
+      dayEvery: {
+        meadow: [6, 14] as [number, number],
+        rainforest: [5, 12] as [number, number],
+        alpine: [12, 25] as [number, number],
+      },
+      nightEvery: [10, 25] as [number, number],
+      wolfEvery: [180, 300] as [number, number],
+      thunderEvery: [40, 120] as [number, number],
+      pan: 0.8,
+      volume: [0.4, 1] as [number, number],
+      minigameDuck: 0.3,
+      loadingDuck: 0.5,
+    },
     /** Settings → Sound: how quickly (s) a new level or the mute takes effect. */
     levelRampSeconds: 0.05,
   },

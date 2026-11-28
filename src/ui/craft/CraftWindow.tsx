@@ -10,6 +10,7 @@
  * Opened from the Craft action (or the Blueprints button, on Teach). While a
  * basic craft waits for its pick, the window stays open on the pick step.
  */
+import { useOpenSound } from '../../audio/uiSounds';
 import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
@@ -81,6 +82,7 @@ const plural = (type: ItemTypeName) =>
       : `${TYPE_LOOK[type].label.toLowerCase()}s`;
 
 export function CraftWindow(props: CraftWindowProps) {
+  useOpenSound();
   const { state, hikerId, tab, simple, onTab, onClose } = props;
   const hiker = state.hikers.find((h) => h.id === hikerId);
   const pending = state.crafting?.hikerId === hikerId ? state.crafting : undefined;
@@ -438,6 +440,7 @@ function CraftBody({
           type="button"
           className={styles.go}
           disabled={!!reason}
+          data-sound={`act.craft.${type}`}
           onClick={() => onCraft(action)}
         >
           {bp ? `CRAFT A ${bp.name.toUpperCase()}` : `CRAFT · PICK 1 OF ${setup.cards}`}

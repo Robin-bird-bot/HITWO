@@ -51,7 +51,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import { litKey, useLitArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -162,6 +162,15 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
   const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
+  // A hand slaps the rock, the power meter's tone, and a fall.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.lastGrab && b.lastGrab !== a.lastGrab) out.push('climb.grab');
+    if (b.phase === 'power' && a.phase !== 'power') out.push('climb.power');
+    if (b.lastFall && b.lastFall !== a.lastFall) out.push('climb.fall');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
   const lit = useLitArt([HOLD, GRIP, OPEN], [...hikers.map((h) => h.color), NOBODY]);
   const litArt = (f: string, c: string) => lit[litKey(f, c)] ?? asset(f);
 
@@ -184,7 +193,6 @@ export function RockClimb({ settings, hikers, seed, onDone, still = false }: Puz
   /** A grab queued (or taken at once): a sound when the hand takes hold. */
   const queue = (out: RockClimbState) => {
     if (out === game) return;
-    if (out.phase === 'aim') playSound('pop');
     setGame(out);
   };
   const onDown = (e: ReactPointerEvent) => {

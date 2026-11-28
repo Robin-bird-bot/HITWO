@@ -35,7 +35,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useFrameSounds, useMgLoop, type FrameSound } from '../sound';
 import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -84,9 +84,18 @@ export function SpookyGhost({ settings, hikers, seed, onDone, still = false }: P
   const doTap = (at: { x: number; y: number }) =>
     setGame((s) => {
       const out = tap(s, at);
-      if (out.lastFind !== s.lastFind) playSound('pop');
       return out;
     });
+  // The flashlight clicks on, ghosts wail as they float in, a mitten's chime, and a
+  // heartbeat while sanity is low.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (a.time === 0 && b.time > 0) out.push('ghost.flashlight');
+    if (b.nextGhostId > a.nextGhostId) out.push('ghost.wail');
+    if (b.lastFind && b.lastFind !== a.lastFind) out.push('ghost.mitten');
+    return out;
+  });
+  useMgLoop('ghost.heartbeat', running && game.sanity < game.sanitySec * BALANCE.audio.lowSanity);
   const act = (a: SpookyAction) =>
     a.kind === 'tap' ? doTap(a.at) : setGame((s) => moveLight(s, a.to));
   useDemoBot(demo && running, game, spookyGhostBot, act);

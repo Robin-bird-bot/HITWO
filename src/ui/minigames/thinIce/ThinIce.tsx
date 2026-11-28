@@ -39,7 +39,7 @@ import { HikerToken } from '../HikerToken';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useClockTicks } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
@@ -102,12 +102,15 @@ export function ThinIce({ settings, hikers, seed, onDone, still = false }: Puzzl
             ? pick(before, a.cell)
             : cross(before);
     if (out === before) return;
-    if (out.fell.length > before.fell.length) playSound('miss');
+    if (out.fell.length > before.fell.length) mgSfx('ice.fall');
     else if (out.last && out.last !== before.last && out.last.kind === 'across') playSound('ready');
-    else playSound('pop');
+    else if (out.cracked.filter(Boolean).length > before.cracked.filter(Boolean).length) {
+      mgSfx('ice.crack');
+    } else playSound('pop');
     setGame(out);
   };
   useDemoBot(demo && running, game, thinIceBot, act);
+  useClockTicks(game.timeLeft, running);
 
   const tapCell = (c: number) => {
     if (canStep(game, c)) act({ kind: 'step', cell: c });

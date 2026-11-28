@@ -33,7 +33,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
@@ -202,10 +202,21 @@ export function CrackedPots({ settings, hikers, seed, onDone, still = false }: P
   const act = (a: CrackedDrop) =>
     setGame((s) => {
       const out = drop(s, a.id, a.at);
-      if (out.lastDrop && out.lastDrop !== s.lastDrop)
-        playSound(out.lastDrop.snapped ? 'place' : 'miss');
       return out;
     });
+  // A ceramic clink for each shard set down, and a ring when a pot is whole again.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.lastDrop && b.lastDrop !== a.lastDrop) {
+      out.push('pots.shard');
+      if (!b.lastDrop.snapped) out.push('mg.miss');
+    }
+    const whole = (s: CrackedPotsState) =>
+      Object.values(s.results).filter((r) => r === 'passed').length;
+    if (whole(b) > whole(a)) out.push('pots.whole');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
   useDemoBot(demo && running, game, crackedPotsBot, act);
 
   const scene = (e: ReactPointerEvent) => toScene(sceneRef.current, e.clientX, e.clientY);

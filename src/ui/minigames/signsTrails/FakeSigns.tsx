@@ -24,7 +24,7 @@ import { TIER_LABELS } from '../../../minigames/types';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
@@ -75,6 +75,7 @@ export function FakeSigns({ settings, hikers, seed, onDone, still = false }: Puz
   const say = (said: 'real' | 'fake') => {
     const out = answer(game, said);
     if (out === game) return;
+    mgSfx('signs.stamp');
     playSound(out.phase === 'wrong' ? 'miss' : 'pop');
     setGame(out);
   };

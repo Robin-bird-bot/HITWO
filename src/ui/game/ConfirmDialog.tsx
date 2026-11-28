@@ -89,6 +89,7 @@ export function ConfirmDialog({
                 key={o.id}
                 type="button"
                 className={styles.confirm}
+                data-sound="ui.confirm"
                 onClick={() => onOption?.(o.id)}
               >
                 {o.label}
@@ -97,11 +98,23 @@ export function ConfirmDialog({
           </div>
         )}
         <div className={styles.buttons}>
-          <button ref={cancelRef} type="button" className={styles.cancel} onClick={onCancel}>
+          <button
+            ref={cancelRef}
+            type="button"
+            className={styles.cancel}
+            onClick={onCancel}
+            data-sound="ui.cancel"
+          >
             {cancelLabel}
           </button>
           {!options?.length && (
-            <button ref={confirmRef} type="button" className={styles.confirm} onClick={onConfirm}>
+            <button
+              ref={confirmRef}
+              type="button"
+              className={styles.confirm}
+              onClick={onConfirm}
+              data-sound="ui.confirm"
+            >
               {confirmLabel}
             </button>
           )}

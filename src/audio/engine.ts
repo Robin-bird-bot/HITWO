@@ -155,6 +155,8 @@ class AudioEngine {
   private ducks = new Map<Bus, Map<string, number>>();
   private bytes = new Map<string, Promise<ArrayBuffer | null>>();
   private buffers = new Map<string, Promise<AudioBuffer | null>>();
+  /** Decoded files, for their lengths. */
+  private decoded = new Map<string, AudioBuffer>();
   private voices: Voice[] = [];
   private lastStart = new Map<string, number>();
   private lastVersion = new Map<string, number>();
@@ -188,6 +190,11 @@ class AudioEngine {
       .then((r) => (r.ok ? r.json() : null))
       .then((raw: unknown) => {
         this.manifest = parseManifest(raw);
+        // Loops asked for while it loaded: the ones with files start (once there's a context).
+        for (const l of [...this.loops]) {
+          if (!this.playable(l.id)) this.loops.delete(l);
+          else if (this.context) void this.beginLoop(l);
+        }
         this.changed();
         return this.manifest;
       })
@@ -215,6 +222,8 @@ class AudioEngine {
       }
       this.applyLevels(0);
       for (const bus of BUSES) this.applyDuck(bus, 0);
+      // What was fetched at the title decodes now, so its lengths are known.
+      for (const file of [...this.bytes.keys()]) void this.buffer(file);
       for (const l of this.loops) void this.beginLoop(l);
       this.changed();
     }
@@ -254,24 +263,27 @@ class AudioEngine {
     const context = this.context;
     if (!entry || !context || context.state !== 'running') return NONE;
     const at = now();
-    const admission = admit(this.voices, id, at, this.lastStart.get(id));
-    if (!admission.play) return NONE;
-    for (const v of admission.stop) v.stop();
-    this.lastStart.set(id, at);
-
+    // When it starts: the limits look at that, so a run of delayed beeps all play.
+    const startsAt = at + Math.max(0, options.delay ?? 0) * 1000;
     const version =
       options.version !== undefined
         ? clamp(Math.floor(options.version), 0, entry.files.length - 1)
         : pickVersion(entry.files.length, this.lastVersion.get(id), Math.random);
-    this.lastVersion.set(id, version);
     const file = entry.files[version] ?? entry.files[0] ?? '';
     const { rate, gain } = jitterFor(id, entry.files.length, options.rate, Math.random);
+    const length = this.decoded.get(file)?.duration;
+    const admission = admit(this.voices, id, startsAt, this.lastStart.get(id));
+    if (!admission.play) return NONE;
+    for (const v of admission.stop) v.stop();
+    this.lastStart.set(id, startsAt);
+    this.lastVersion.set(id, version);
 
     let source: AudioBufferSourceNode | null = null;
     let cancelled = false;
     const voice: Voice = {
       id,
-      started: at,
+      started: startsAt,
+      ...(length !== undefined ? { ends: startsAt + (length / rate) * 1000 } : {}),
       stop: () => {
         cancelled = true;
         this.forgetVoice(voice);
@@ -315,7 +327,8 @@ class AudioEngine {
   loop(id: string, options: LoopOptions = {}): LoopHandle {
     if (this.logCalls) console.log('[loop]', id, options);
     const l = new Loop(this, id, options);
-    if (!this.playable(id)) return l;
+    // Before the manifest is in (the title's ambience), the loop waits for it.
+    if (this.manifest && !this.playable(id)) return l;
     this.loops.add(l);
     this.changed();
     if (this.context) void this.beginLoop(l);
@@ -417,7 +430,9 @@ class AudioEngine {
         this.bytes.delete(file);
         if (!bytes) return null;
         try {
-          return await context.decodeAudioData(bytes);
+          const buffer = await context.decodeAudioData(bytes);
+          this.decoded.set(file, buffer);
+          return buffer;
         } catch {
           return null;
         }

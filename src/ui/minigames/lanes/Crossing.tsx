@@ -28,7 +28,7 @@ import { useTinted } from '../dodge/tint';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { playSound, useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
@@ -114,6 +114,30 @@ export function Crossing({ settings, hikers, seed, onDone, still = false }: Puzz
   useEffect(() => {
     if (hitAt !== undefined && !still) playSound('hit');
   }, [hitAt, still]);
+  // Each hop, cars whooshing past the hiker's row, a honk at a slow hiker who gets hit,
+  // and a splash in the river.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.hop && b.hop !== a.hop) out.push('crossing.hop');
+    if (b.lastHit && b.lastHit !== a.lastHit) {
+      if (b.lastHit.why === 'water') out.push('crossing.splash');
+      if (b.lastHit.why === 'hit' && b.lanes[b.row - 1]?.kind === 'road') out.push('crossing.horn');
+    }
+    for (const r of [b.row - 1, b.row, b.row + 1]) {
+      const was = a.lanes[r - 1];
+      const now = b.lanes[r - 1];
+      if (!was || !now || now.kind !== 'road') continue;
+      now.things.forEach((t, k) => {
+        const before = was.things[k];
+        if (!before) return;
+        const side = (x: number) => Math.sign(x + t.w / 2 - b.x);
+        if (side(before.x) !== side(t.x) && Math.abs(t.x - before.x) < t.w) {
+          out.push(['crossing.car', { pan: Math.max(-0.6, Math.min(0.6, (b.x - 160) / 260)) }]);
+        }
+      });
+    }
+    return out;
+  });
 
   useEffect(() => {
     if (!game.over || still || reported.current) return;

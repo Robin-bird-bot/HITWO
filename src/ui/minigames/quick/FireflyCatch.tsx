@@ -14,7 +14,7 @@ import { TIER_LABELS } from '../../../minigames/types';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useClockTicks } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './FireflyCatch.module.css';
@@ -58,9 +58,11 @@ export function FireflyCatch({ settings, hikers, seed, onDone, still = false }: 
   const press = () => {
     const out = tap(game);
     if (out === game) return;
-    playSound(out.lastCatch !== game.lastCatch ? 'pop' : 'miss');
+    if (out.lastCatch !== game.lastCatch) mgSfx('firefly.catch');
+    else playSound('miss');
     setGame(out);
   };
+  useClockTicks(game.timeLeft, running);
   useKeys(running && !demo, (key) => {
     if (key !== ' ' && key !== 'Enter') return false;
     press();

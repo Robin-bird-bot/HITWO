@@ -46,7 +46,7 @@ import {
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useFrameSounds } from '../sound';
 import { useWashedArt, washKey } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -160,7 +160,12 @@ export function TrailBlocks({ settings, hikers, seed, onDone, still = false }: P
   useEffect(() => {
     if (!swings || still) return;
     playSound(lastQuality === 'miss' ? 'miss' : 'hit');
+    if (lastQuality !== 'miss') mgSfx('blocks.land');
   }, [swings, lastQuality, still]);
+  // A sweep and a chime when the way is clear.
+  useFrameSounds(game, (a, b) =>
+    b.phase === 'cleared' && a.phase !== 'cleared' ? ['blocks.clear'] : [],
+  );
 
   const down = () => {
     if (!running) return;

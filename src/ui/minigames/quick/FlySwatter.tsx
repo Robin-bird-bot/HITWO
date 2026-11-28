@@ -23,7 +23,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useMgLoop } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './FlySwatter.module.css';
@@ -79,9 +79,12 @@ export function FlySwatter({ settings, hikers, seed, onDone, still = false }: Pu
     const out = tapAt(game, x, y);
     if (out === game) return;
     const last = out.events.at(-1);
-    playSound(last?.kind === 'swat' ? 'pop' : 'hit');
+    if (last?.kind === 'swat') mgSfx('fly.splat');
+    else playSound('hit');
     setGame(out);
   };
+  // Flies buzz while any are up.
+  useMgLoop('fly.buzz', running && game.circles.length > 0);
   const onDown = (e: ReactPointerEvent) => {
     if (!running) return;
     e.preventDefault();

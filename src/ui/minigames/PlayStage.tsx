@@ -5,7 +5,8 @@
  * screen (Challenge Passed or Challenge Failed). A tap there turns the GPS
  * back, and the pop-up shows how it went (with Play again in test mode).
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { BALANCE } from '../../config/balance';
 import { endInfo } from '../../minigames/catalog';
 import { needsLineUp } from '../../minigames/lineup';
 import type {
@@ -17,6 +18,7 @@ import type {
 import { EndScreen } from './EndScreen';
 import { LineUp } from './LineUp';
 import { PUZZLES } from './runners';
+import { mgSfx } from './sound';
 
 export function PlayStage({
   info,
@@ -36,6 +38,14 @@ export function PlayStage({
   const [order, setOrder] = useState<string[]>(() => hikers.map((h) => h.id));
   const [result, setResult] = useState<MinigameResult | null>(null);
   const end = endInfo(info, settings);
+
+  // The game counts itself in as it comes up (after Line up): 3, 2, 1, GO.
+  useEffect(() => {
+    if (step !== 'game') return;
+    const gap = BALANCE.audio.countGapSec;
+    for (let k = 0; k < 3; k++) mgSfx('mg.count', k ? { delay: k * gap } : {});
+    mgSfx('mg.go', { delay: 3 * gap });
+  }, [step]);
 
   const Game = PUZZLES[info.id];
   if (!Game) return null;

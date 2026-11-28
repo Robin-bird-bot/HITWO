@@ -10,11 +10,20 @@
  * it's down): the icon heads toward the pointer's x.
  */
 import { useId, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useFrameSounds, useMgLoop, type FrameSound } from '../sound';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { g, RED } from '../../../minigames/greens';
 import { middleAt, TRAIL_TYPES, widthAt, type TrailType } from '../../../minigames/trails/course';
-import { aim, checkpoints, newTrails, result, steer, tick } from '../../../minigames/trails/logic';
+import {
+  aim,
+  checkpoints,
+  newTrails,
+  onScree,
+  result,
+  steer,
+  tick,
+} from '../../../minigames/trails/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { art as dodgeArt } from '../dodge/parts/drawTypes';
 import { useTinted } from '../dodge/tint';
@@ -76,6 +85,14 @@ export function Trails({ settings, hikers, seed, onDone, still = false }: Puzzle
   const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
+  // Brushing through undergrowth while off the trail; Ridgeline's gusts and scree.
+  useMgLoop('trails.offTrail', running && game.phase === 'run' && game.off);
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.gust && b.gust !== a.gust) out.push('trails.gust');
+    if (b.phase === 'run' && onScree(b) && !onScree(a)) out.push('trails.scree');
+    return out;
+  });
   const tints = useTinted(hikers.map((h) => h.color));
   const flags = useLitArt(
     [FLAG],

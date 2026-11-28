@@ -32,7 +32,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, useClockTicks } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
@@ -91,16 +91,23 @@ export function PackItUp({ settings, hikers, seed, onDone, still = false }: Puzz
   const gridY = 30 + Math.floor((150 - gridH) / 2);
 
   const act = (a: PackAction) => {
-    if (a.kind === 'turn') setGame((s) => turn(s, a.id));
-    else
+    if (a.kind === 'turn') {
+      mgSfx('pack.rotate');
+      setGame((s) => turn(s, a.id));
+    } else
       setGame((s) => {
         const out = place(s, a.id, a.at);
-        if (out !== s) playSound('place');
+        if (out !== s) mgSfx('pack.drop');
         return out;
       });
   };
   useDemoBot(demo && running, game, packItUpBot, act);
-  const turnPiece = (id: number | null) => id !== null && running && setGame((s) => turn(s, id));
+  const turnPiece = (id: number | null) => {
+    if (id === null || !running) return;
+    mgSfx('pack.rotate');
+    setGame((s) => turn(s, id));
+  };
+  useClockTicks(game.timeLeft, running);
   useKeys(running, (key) => {
     if (key !== 'r') return false;
     turnPiece(drag?.id ?? picked);
@@ -144,7 +151,7 @@ export function PackItUp({ settings, hikers, seed, onDone, still = false }: Puzz
       d.y <= gridY + gridH + cell;
     setGame((s) => {
       if (overPack && fits(s, d.id, at)) {
-        playSound('place');
+        mgSfx('pack.drop');
         return place(s, d.id, at);
       }
       return overPack ? s : takeOut(s, d.id);

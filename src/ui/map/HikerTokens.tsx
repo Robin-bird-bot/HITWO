@@ -18,6 +18,7 @@ import { TONE_LOOK } from '../conditions/conditionLook';
 import { Icon } from '../icons/Icon';
 import { useDrag } from '../drag/drag';
 import { usePlacer } from './illustrated/geometryContext';
+import { useWalks } from './useWalks';
 import styles from './MapView.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 
@@ -60,6 +61,8 @@ interface HikerTokensProps {
   pickTile?: { tileIds: ReadonlySet<string>; onPick(tileId: string): void };
   /** Which hikers can be picked up and dragged to another tile. */
   canDrag?(hiker: Hiker): boolean;
+  /** It's snowing: people's footsteps crunch. */
+  snowing?: boolean;
 }
 
 export function HikerTokens({
@@ -70,9 +73,11 @@ export function HikerTokens({
   pickTile,
   canDrag,
   order = {},
+  snowing = false,
 }: HikerTokensProps) {
   const place = usePlacer(section);
   const onMap = hikers.filter((h) => h.status !== 'abandoned');
+  const walkRef = useWalks(section, onMap, place, snowing);
   // A carried hiker rides on their carrier's token instead of taking a spot.
   const carrierOf = new Map<HikerId, Hiker>();
   for (const h of onMap) {
@@ -111,6 +116,7 @@ export function HikerTokens({
       <Fragment key={h.id}>
         <TokenButton
           hiker={h}
+          buttonRef={walkRef(h.id)}
           draggable={!riding && !!canDrag?.(h)}
           className={styles.token}
           aria-label={`${h.name}${selected ? ' (selected)' : ''}${marks.length ? `: ${marks.join(', ')}` : ''}`}
@@ -234,16 +240,22 @@ export function HikerTokens({
 function TokenButton({
   hiker,
   draggable,
+  buttonRef,
   children,
   ...rest
-}: { hiker: Hiker; draggable: boolean; children: ReactNode } & ComponentProps<'button'>) {
+}: {
+  hiker: Hiker;
+  draggable: boolean;
+  buttonRef: (el: HTMLButtonElement | null) => void;
+  children: ReactNode;
+} & ComponentProps<'button'>) {
   const drag = useDrag(
     draggable ? { kind: 'hiker', hikerId: hiker.id } : null,
     <TokenGhost hiker={hiker} />,
     { stop: true },
   );
   return (
-    <button type="button" {...rest} {...drag}>
+    <button type="button" ref={buttonRef} {...rest} {...drag}>
       {children}
     </button>
   );

@@ -40,7 +40,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useFrameSounds } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from './Quick.module.css';
@@ -100,9 +100,14 @@ export function RaccoonShuffle({ settings, hikers, seed, onDone, still = false }
   const choose = (slot: number) => {
     const out = pickBin(game, slot);
     if (out === game) return;
+    mgSfx('shuffle.lift');
     playSound(binAt(out, slot).card ? 'hit' : 'pop');
     setGame(out);
   };
+  // The cups scrape round the table on each swap.
+  useFrameSounds(game, (a, b) =>
+    b.phase === 'shuffle' && b.swapsDone > a.swapsDone ? ['shuffle.slide'] : [],
+  );
   /** The slot under a scene point (the can, or what's up in it). */
   const slotAt = (p: { x: number; y: number }) => {
     for (let k = 0; k < n; k++) {

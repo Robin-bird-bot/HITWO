@@ -5,7 +5,7 @@
  * and the ropes drawn thick in their colors. PAIRS on the right ("PAIRS
  * 2/5"); the hiker's clock in the top bar.
  */
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { g } from '../../../minigames/greens';
 import { prepNumber } from '../../../minigames/prepare';
 import { current, playing, turnWord } from '../../../minigames/quick/turns';
@@ -32,7 +32,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from './Quick.module.css';
@@ -115,11 +115,15 @@ export function SnaggedPack({ settings, hikers, seed, onDone, still = false }: P
     );
   useDemoBot(demo && running, game, snaggedPackBot, act);
 
-  // A rope joins: a click.
-  const joinAt = game.lastJoin?.at;
-  useEffect(() => {
-    if (joinAt !== undefined && !still) playSound('pop');
-  }, [joinAt, still]);
+  // A soft rub for each cell a rope is dragged through, and a snug click when it joins.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    const len = (s: SnaggedState) => (s.drag === null ? 0 : (s.ropes[s.drag]?.length ?? 0));
+    if (b.drag !== null && b.drag === a.drag && len(b) > len(a)) out.push('rope.drag');
+    if (b.lastJoin && b.lastJoin !== a.lastJoin) out.push('rope.join');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
 
   // A LUCKY CHARM's hint waits for a socket to be tapped.
   const [hintArmed, setHintArmed] = useState(false);

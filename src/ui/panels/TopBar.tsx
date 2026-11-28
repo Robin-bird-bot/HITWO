@@ -232,6 +232,7 @@ export function MenuButton({
         className={styles.menu}
         aria-label="Menu"
         aria-expanded={open}
+        data-sound={open ? 'ui.click' : 'ui.settings'}
         onClick={() => setOpen((o) => !o)}
       >
         <Icon name="menu" size={22} />
