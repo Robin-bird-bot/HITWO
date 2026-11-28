@@ -150,6 +150,8 @@ function WornMenu({
 function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashMenuProps) {
   const [confirmDrop, setConfirmDrop] = useState(false);
   const [useStep, setUseStep] = useState<UseStep | null>(null);
+  // Give (35-ui-overhaul.md, section 4): one button that opens who to give it to.
+  const [giving, setGiving] = useState(false);
   // A passed-out hiker can't act: others here can only take things from them.
   const out = hiker.status !== 'active';
   // A Walkie-Talkie (either hiker's) reaches anyone on the trail; Manager and
@@ -217,6 +219,19 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
         </>
       )}
 
+      {item && usable && (
+        <UseSection
+          state={state}
+          hiker={hiker}
+          itemUid={item.uid}
+          name={name}
+          step={useStep}
+          setStep={setUseStep}
+          onUse={act}
+          {...(onMapTool ? { onMapTool } : {})}
+        />
+      )}
+
       {item && hiker.inventory.bag.length > bagSlots(state, hiker).total && (
         <span className={styles.over}>
           {hiker.name} has more items than fit (Weak). Give one away or drop one.
@@ -229,28 +244,41 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
       )}
       {/* Two Sizes Too Small: her items stay with her. */}
       {item && !out && keeps && <span className={styles.none}>{keeps}</span>}
-      {others.map((h) => {
-        const room = roomFor(h);
-        const give: Action = resource
-          ? { type: 'give', fromId: hiker.id, toId: h.id, resource: resource.id }
-          : { type: 'give', fromId: hiker.id, toId: h.id, itemUid: item?.uid ?? '' };
-        const why = validateAction(state, give);
-        return (
-          <button
-            key={h.id}
-            type="button"
-            className={styles.option}
-            disabled={!room || !!why}
-            title={why ?? undefined}
-            onClick={() => act(give)}
-          >
-            <Icon name="user" size={16} />
-            {out ? `${h.name} takes it` : `Give to ${h.name}`}
-            {h.tileId !== hiker.tileId && <span className={styles.gain}>by Walkie-Talkie</span>}
-            {!room && <span className={styles.full}>{resource ? 'Full' : 'Bag full'}</span>}
-          </button>
-        );
-      })}
+      {others.length > 1 && !useStep && (
+        <button
+          type="button"
+          className={styles.option}
+          aria-expanded={giving}
+          onClick={() => setGiving((g) => !g)}
+        >
+          <Icon name="user" size={16} />
+          {out ? 'Take it' : 'Give'}
+        </button>
+      )}
+      {(others.length === 1 || giving) &&
+        !useStep &&
+        others.map((h) => {
+          const room = roomFor(h);
+          const give: Action = resource
+            ? { type: 'give', fromId: hiker.id, toId: h.id, resource: resource.id }
+            : { type: 'give', fromId: hiker.id, toId: h.id, itemUid: item?.uid ?? '' };
+          const why = validateAction(state, give);
+          return (
+            <button
+              key={h.id}
+              type="button"
+              className={styles.option}
+              disabled={!room || !!why}
+              title={why ?? undefined}
+              onClick={() => act(give)}
+            >
+              <Icon name="user" size={16} />
+              {out ? `${h.name} takes it` : `Give to ${h.name}`}
+              {h.tileId !== hiker.tileId && <span className={styles.gain}>by Walkie-Talkie</span>}
+              {!room && <span className={styles.full}>{resource ? 'Full' : 'Bag full'}</span>}
+            </button>
+          );
+        })}
 
       {resource && !out && (
         <button
@@ -270,19 +298,6 @@ function PackMenu({ state, hiker, pick, onDispatch, onClose, onMapTool }: StashM
             />
           </span>
         </button>
-      )}
-
-      {item && usable && (
-        <UseSection
-          state={state}
-          hiker={hiker}
-          itemUid={item.uid}
-          name={name}
-          step={useStep}
-          setStep={setUseStep}
-          onUse={act}
-          {...(onMapTool ? { onMapTool } : {})}
-        />
       )}
 
       {item &&

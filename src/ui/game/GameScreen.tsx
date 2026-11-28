@@ -5,6 +5,10 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
+import { ActionWheel, WheelCard } from './ActionWheel';
+import wheelStyles from './ActionWheel.module.css';
+import { wheelActions } from './wheel';
+import { useActionsLook } from '../app/lookSettings';
 import { sfx } from '../../audio/engine';
 import { useGameSounds } from '../../audio/useGameSounds';
 import { useAmbience } from '../../audio/useAmbience';
@@ -90,7 +94,7 @@ import type { ActionId } from '../panels/hikerInfo';
 import { PartyFrames } from '../panels/PartyFrames';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
-import { TurnPanel, type AbilityFocus, type StashPick } from '../panels/TurnPanel';
+import { Abilities, TurnPanel, type AbilityFocus, type StashPick } from '../panels/TurnPanel';
 import { ChallengeResult } from '../challenge/ChallengeResult';
 import { RevealedCard } from '../challenge/RevealedCard';
 import { TrialChips } from '../challenge/TrialChips';
@@ -180,6 +184,8 @@ const FX_MS = 5500;
 /** What the player is in the middle of doing. */
 type Mode =
   | { kind: 'idle' }
+  /** The wheel's Move (35-ui-overhaul.md, section 4): a click on a glowing tile walks there. */
+  | { kind: 'walk' }
   | { kind: 'moveAll'; bring: HikerId[] }
   | { kind: 'sleep' }
   | { kind: 'watch' }
@@ -366,8 +372,21 @@ export function GameScreen({
       )?.id ?? null,
   );
   const selected = hikers.find((h) => h.id === selectedId) ?? hikers[0];
+  const [wheelOpen, setWheelOpen] = useState(true);
+  const [abilitiesOpen, setAbilitiesOpen] = useState(false);
+  // A new hiker up (picked, or the next one after an action): the wheel pops over them
+  // if they can still act.
+  const [wheelSeen, setWheelSeen] = useState(selected?.id);
+  if (selected?.id !== wheelSeen) {
+    setWheelSeen(selected?.id);
+    setWheelOpen(!!selected && selected.status === 'active' && !selected.acted);
+  }
   const [note, setNote] = useState<string | undefined>();
   const [mode, setMode] = useState<Mode>({ kind: 'idle' });
+  // The action wheel (35-ui-overhaul.md, section 4): open over the selected hiker, or the side grid.
+  const actionsLook = useActionsLook();
+  const wheelLook = actionsLook === 'wheel';
+
   const [pendingTile, setPendingTile] = useState<TileId | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
   // A hiker the player asked to abandon the hike, waiting on the confirm.
@@ -553,6 +572,10 @@ export function GameScreen({
   const useTrait = (id: HikerId, abilityId: string) => {
     pickHiker(id);
     setPanelCollapsed('turn', false);
+    if (wheelLook) {
+      setWheelOpen(false);
+      setAbilitiesOpen(true);
+    }
     setAbilityFocus((f) => ({ hikerId: id, abilityId, at: (f?.at ?? 0) + 1 }));
   };
   const focusAbility =
@@ -565,6 +588,9 @@ export function GameScreen({
     if (!add) {
       if (group.length) setGroup([]);
       setGroupAsk(null);
+      // Picking the selected hiker again opens or closes their wheel (a new one opens by itself).
+      if (id === selected?.id) setWheelOpen((o) => !o);
+      setAbilitiesOpen(false);
       select(id);
       return;
     }
@@ -793,6 +819,17 @@ export function GameScreen({
     return () => window.removeEventListener('keydown', onKey);
   }, [group.length, picking, pendingTile, groupAsk]);
 
+  useEffect(() => {
+    if (mode.kind !== 'walk') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMode({ kind: 'idle' });
+      setNote(undefined);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode.kind]);
+
   const moveMode: MoveMode =
     mode.kind === 'moveAll' ? { kind: 'moveAll', bring: mode.bring } : { kind: 'move' };
   useEffect(() => {
@@ -1018,8 +1055,12 @@ export function GameScreen({
       return;
     }
     if (id === 'move') {
-      setMode({ kind: 'idle' });
-      setNote('Click a tile with a gold ring to move there.');
+      setMode({ kind: wheelLook ? 'walk' : 'idle' });
+      setNote(
+        wheelLook
+          ? 'Click a glowing tile to walk there. Esc cancels.'
+          : 'Click a tile with a gold ring to move there.',
+      );
     } else if (id === 'moveAll') {
       const ready = bringOptions(state, selected).filter((o) => o.reason === null);
       setMode({ kind: 'moveAll', bring: ready.map((o) => o.hiker.id) });
@@ -1040,6 +1081,12 @@ export function GameScreen({
       setMode({ kind: 'idle' });
       setCraftOpen({ hikerId: selected.id, tab: 'craft' });
     }
+  };
+  /** The wheel's Move: one click on a glowing tile, and they walk. */
+  const walkTo = (h: Hiker, tileId: TileId) => {
+    setMode({ kind: 'idle' });
+    setNote(undefined);
+    dispatch({ type: 'move', hikerId: h.id, toTileId: tileId });
   };
   const openBlueprints = () => selected && setCraftOpen({ hikerId: selected.id, tab: 'teach' });
   // A basic craft waiting for its pick keeps the window open on its crafter.
@@ -1094,6 +1141,17 @@ export function GameScreen({
 
   // Who a group action skipped stays up beside any newer message.
   const turnNote = [skipNote, note].filter(Boolean).join(' ') || undefined;
+  // A window over the map hides the wheel and its card.
+  const windowOpen =
+    !!state.scavenge ||
+    !!state.challenge ||
+    !!state.crafting ||
+    !!craftOpen ||
+    !!state.traitPick ||
+    !!trailsOpen ||
+    !!state.station ||
+    groupBusy;
+  const wheelAt = selected ? worldToStage(camera, centerOf(selected.tileId)) : null;
 
   // The box under the action grid, when Move All or Sleep is in progress.
   let slot = null;
@@ -1180,6 +1238,37 @@ export function GameScreen({
       />
     );
   }
+
+  // The wheel (35-ui-overhaul.md, section 4): open over a hiker who can act, while nothing
+  // else needs them; what an action needs next (a check, who comes along, the
+  // abilities, a note) shows on a paper card by the token instead.
+  const showWheel =
+    wheelLook &&
+    wheelOpen &&
+    !!selected &&
+    selected.status === 'active' &&
+    mode.kind === 'idle' &&
+    !slot &&
+    !pendingTile &&
+    !stash &&
+    !abilitiesOpen &&
+    !windowOpen;
+  const wheelCard = !selected ? null : slot ? (
+    slot
+  ) : abilitiesOpen ? (
+    <>
+      <Abilities
+        key={focusAbility?.at ?? 0}
+        state={state}
+        hiker={selected}
+        onAbility={onAbility}
+        focus={focusAbility}
+      />
+      <button type="button" className={wheelStyles.close} onClick={() => setAbilitiesOpen(false)}>
+        Close
+      </button>
+    </>
+  ) : null;
 
   // ── The trait warnings' forecast, live: a hiker dragged over a tile, the move pop-up's
   // move, or a Sleep, Keep Watch or Tend waiting for its yes. Otherwise tomorrow morning.
@@ -1290,6 +1379,15 @@ export function GameScreen({
                       ? `Use the ${ITEMS[toolItem.itemId]?.name ?? 'tool'} here`
                       : undefined
                 }
+                {...(selected && (mode.kind === 'walk' || mode.kind === 'moveAll')
+                  ? {
+                      costs: Object.fromEntries(
+                        targets
+                          .filter((t) => t.reason === null)
+                          .map((t) => [t.tileId, hikerDrag.costOn(selected.id, t.tileId)]),
+                      ),
+                    }
+                  : {})}
                 onTileClick={(tileId) =>
                   tactical
                     ? dispatch({ type: 'tactical', hikerId: tactical.id, tileId })
@@ -1299,9 +1397,15 @@ export function GameScreen({
                         ? setToolTile(tileId)
                         : group.length > 1 && groupAsk?.kind === 'move'
                           ? setGroupAsk({ kind: 'move', tileId })
-                          : setPendingTile(tileId)
+                          : mode.kind === 'walk' && selected
+                            ? walkTo(selected, tileId)
+                            : setPendingTile(tileId)
                 }
-                onEmptyClick={() => group.length && clearGroup()}
+                onEmptyClick={() => {
+                  setWheelOpen(false);
+                  setAbilitiesOpen(false);
+                  if (group.length) clearGroup();
+                }}
                 order={orderNumbers(group)}
                 fx={fx}
                 checkpointLabelOnHover={simple}
@@ -1389,6 +1493,7 @@ export function GameScreen({
                   />
                   {selected && (
                     <SimpleTurn
+                      wheel={wheelLook}
                       focusAbility={focusAbility}
                       state={state}
                       hiker={selected}
@@ -1446,6 +1551,7 @@ export function GameScreen({
                   />
                   {selected && (
                     <TurnPanel
+                      wheel={wheelLook}
                       focusAbility={focusAbility}
                       state={state}
                       hiker={selected}
@@ -1467,6 +1573,31 @@ export function GameScreen({
               )}
               <TrailLog state={state} />
 
+              {wheelLook && selected && wheelAt && showWheel && (
+                <ActionWheel
+                  key={`${selected.id}-${state.phase}`}
+                  actions={wheelActions(state, selected, group)}
+                  at={wheelAt}
+                  title={`${selected.name.toUpperCase()}’S TURN`}
+                  onClose={() => setWheelOpen(false)}
+                  onPick={(a) => {
+                    setWheelOpen(false);
+                    if (a.id === 'abilities') setAbilitiesOpen(true);
+                    else onAction(a.id);
+                  }}
+                />
+              )}
+              {wheelLook && selected && wheelAt && !showWheel && !windowOpen && wheelCard && (
+                <WheelCard at={wheelAt} label={`${selected.name}’s turn`}>
+                  {wheelCard}
+                </WheelCard>
+              )}
+              {/* With the wheel, notes ("Click a glowing tile…") are a toast at the bottom. */}
+              {wheelLook && turnNote && !wheelCard && !windowOpen && (
+                <p className={wheelStyles.toast} role="status">
+                  {turnNote}
+                </p>
+              )}
               {selected && pendingTile && pendingCenter && (
                 <MovePopover
                   key={`${selected.id}-${pendingTile}-${mode.kind}`}

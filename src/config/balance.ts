@@ -4857,6 +4857,15 @@ export const BALANCE = {
       floatMs: 1100,
       /** The selected tag slides out this far (stage px). TODO(wyatt): [8 px]. */
       selectedSlide: 9,
+      /**
+       * The action wheel (section 4): the arc's radius and the buttons' size
+       * (stage px), the delay between buttons popping out (ms), how far the
+       * arc sits off the token's middle, and the room the bubble needs above
+       * it (near the top edge it opens below). TODO(wyatt): radius [122 px]
+       * and buttons [54 px] at the prototype's size (136 and 60 here), and
+       * [28 ms] apart; the rest are first guesses.
+       */
+      wheel: { radius: 136, button: 60, staggerMs: 28, lift: 7, bubbleRoom: 96 },
     },
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

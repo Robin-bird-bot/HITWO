@@ -100,6 +100,8 @@ interface MapViewProps {
   table?: boolean;
   /** It's snowing: people's footsteps crunch. */
   snowing?: boolean;
+  /** Each glowing tile's cost while a hiker picks where to walk (the wheel's Move). */
+  costs?: Readonly<Record<string, string>>;
   /** The Illustrated map's bridges, where paths cross water. */
   bridges?: readonly Bridge[];
   /** Over the tiles, under the tokens: the Illustrated map's place names. */
@@ -164,6 +166,7 @@ export function MapView({
   underlay,
   table = false,
   snowing = false,
+  costs,
   bridges,
   labels,
 }: MapViewProps) {
@@ -346,6 +349,10 @@ export function MapView({
               text={hikerDrag.costOn(dragged, drag.hover.arg)}
             />
           )}
+          {costs &&
+            Object.entries(costs).map(([tileId, text]) => (
+              <CostChip key={tileId} at={tileOf(section, tileId)} place={place} text={text} />
+            ))}
           {/* Over the tokens, so the numbers are never hidden behind a hiker. */}
           {fx.map((f) => (
             <ScoutLayer key={f.key} fx={f} section={section} place={place} />

@@ -71,6 +71,12 @@ interface TurnPanelProps {
   group?: readonly HikerId[];
   /** A tapped usable badge: the Abilities panel opens at it. */
   focusAbility?: AbilityFocus | undefined;
+  /**
+   * The action wheel is on (35-ui-overhaul.md, section 4): the actions and
+   * abilities are on the wheel, so this side keeps the tile, the pack and
+   * End phase.
+   */
+  wheel?: boolean;
 }
 
 export function TurnPanel({
@@ -89,12 +95,14 @@ export function TurnPanel({
   onInfoboard,
   group,
   focusAbility,
+  wheel = false,
 }: TurnPanelProps) {
   return (
     <Panel
       id="turn"
       movable
       as="aside"
+      paper
       label="selected hiker's turn"
       style={{ left: 1240, top: 120, width: 344, height: 864 }}
       title={<span className={styles.heading}>{hiker.name.toUpperCase()}’S TURN</span>}
@@ -102,23 +110,25 @@ export function TurnPanel({
     >
       <div className={styles.scroll}>
         {hiker.status === 'active' ? (
-          <>
-            <ActionGrid
-              state={state}
-              hiker={hiker}
-              onAction={onAction}
-              note={note}
-              slot={slot}
-              {...(group ? { group } : {})}
-            />
-            <Abilities
-              key={focusAbility?.at ?? 0}
-              state={state}
-              hiker={hiker}
-              onAbility={onAbility}
-              focus={focusAbility}
-            />
-          </>
+          !wheel && (
+            <>
+              <ActionGrid
+                state={state}
+                hiker={hiker}
+                onAction={onAction}
+                note={note}
+                slot={slot}
+                {...(group ? { group } : {})}
+              />
+              <Abilities
+                key={focusAbility?.at ?? 0}
+                state={state}
+                hiker={hiker}
+                onAbility={onAbility}
+                focus={focusAbility}
+              />
+            </>
+          )
         ) : (
           <OutCard state={state} hiker={hiker} {...(onAbandon ? { onAbandon } : {})} />
         )}
