@@ -1858,26 +1858,38 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 
 ---
 
-## Phase 12: UI overhaul
+## Phase 12: The UI and sound
 
-(New in the Nov 14 update.) Wyatt sends mockups first.
+(New in the Nov 28 update: `docs/UPDATE-2026-11-28-phase-12.md`, which replaces the Nov 27 sound-only draft. The designs are the new `docs/design/35-ui-overhaul.md` (the UI), `32-audio-system.md` (the sound), `33-sound-list.md` (every sound and when it plays) and `34-music.md` (the music plan). Prototype to match: `docs/mockups/ui-overhaul/prototype/` (serve the folder and open `index.html`), with 27 screenshots. Art: `public/assets/ui/` (the title logo, the workbench top, the station doors). Sounds: `public/assets/audio/` (342 ids, 410 files) and `tools/audio/` (the Python that made them). Built on top of Phase 11. This phase takes in the old Phase 16, Audio.)
 
-**Build**
-- The trail map's look: Classic look stays; the Illustrated look is done in 10.5. Left for later: Wyatt's painted stamps, tuning the Rainforest and Alpine palettes, and maybe a tilted intro shot when a section starts.
-- The hiker portrait panel.
-- **The crafting window:**
-  - switch between hikers without closing it;
-  - every blueprint shown, with the unlearned ones grayed out;
-  - favorite recipes, and their resources shown at the bottom of the scavenge window.
-- Scavenging windows for several hikers on screen at once, side by side, so they can plan together.
-- **From the overhaul plan** (`docs/design/08-overhaul-plan.md`, "UI"):
-  - **small hiker frames:** a banner with the name, the portrait beside it, stat bars below and a marker for conditions; click to expand with traits and conditions;
-  - **a crafting book** in the style of Catan's recipe cards and Minecraft's crafting grid: every cost up front, slots at the top that fill when you click a recipe, favorites first, missing resources shown;
-  - **a 3×3 crafting deal:** face-down cards, reveal 3 and pick one (crafter traits can change it);
-  - **poster-style windows** like the new map (WPA-era National Park posters, Olly Moss);
-  - **dealt-card animations** (challenge cards slide in and flip, scavenge cards with small offsets and tilts) and a **rarity glow** on rare face-down cards.
+**Goal:** make the main screen, scavenging and crafting feel like the slots while taking up less of the map, and give the whole game sound. Paper tags pinned on the trail map, an action wheel over the hiker, poster windows for scavenging, a workbench over a recipe book, a nightly camp recap with the party level-up, a new title screen, loading screens and spotlight transitions; an audio engine, every sound wired in, ambience, and a music player ready for Wyatt's Suno songs.
 
-**Ask Wyatt first:** the mockups.
+**Wyatt's decisions (Nov 27 and 28):**
+- Four new settings, with these defaults: Actions (the wheel; side grid as a setting), Scavenge reveal (deal and flip; brush as a setting), Crafting look (Paper; TrailMate as a setting), Loading screen (the Runner; Node wheel as a setting).
+- The title uses logo 4, his mint lettering grown over, for now.
+- No Eat and use action: items are used by clicking them in the pack. Auto-fill spends spare resources first. Several party frames can be open at once. No level-up star and no hiker motifs.
+- Every night shows the XP since the last night, the level-up when the bar fills, then a hiker picker into the skill trails.
+- The spotlight is the main transition.
+- Music is made in Suno, inspired by Stardew Valley (its winter songs and the Secret Woods) and Undertale, with the Ranger Station, packing and hiker select wacky like Balatro.
+- Both screen modes (Simple and Informative) get the new party frames and the wheel or side grid; Informative keeps its big top cards.
+- Tokens slide along the trail line when they move, with footsteps as they go.
+
+Numbers in [brackets] are first guesses: in `balance.ts` (`audio` and `ui.overhaul` blocks) with `TODO(wyatt)`. Ideas marked *(Claude's idea)* are the design assistant's. Each spec's "Things to flag to Wyatt" goes in its PR. The prototype is for the look and the feel: rebuild it in the game's React and engine, porting the drawing code (posters, brush covers, sprites) where `35` says so. Sounds with no files (`status: "need"`) stay silent until Wyatt's recordings arrive, but are wired anyway. Section 11 of `35` lists screens left as they are this phase (apart from their sounds): the Ranger Station restyle, the challenge pop-up restyle, night on the main screen beyond the camp recap, hiker select, the packing screen's frame and the settings window's look.
+
+**Build, in this order (one PR each)**
+1. **The audio engine, settings and debug tab** (`32`, sections 1 to 3 and 7), so everything can be heard.
+2. **The sounds wired in** (`32`, section 6) and **ambience** (section 4).
+3. **The four settings, the look and the party frames** (`35`, sections 1 to 3).
+4. **The wheel and items from the pack** (`35`, section 4).
+5. **Scavenging** (`35`, section 5).
+6. **Crafting** (`35`, section 6).
+7. **The night camp and level-ups** (`35`, section 7).
+8. **The title, loading screens and transitions** (`35`, sections 8 to 10).
+9. **The music player** (`32`, section 5), tested with a fake piece.
+
+**Tests:** as in `32`, section 8, and `35`, section 12.
+
+**Still to come:** Wyatt's music (`34`), the 17 recordings and better versions of the 11 placeholders (`33`), and his reworked logo.
 
 ---
 
@@ -1906,24 +1918,16 @@ Rules only (Nov 14 update): no biome-specific background or trail art. Wyatt is 
 - Bring in Wyatt's full content.
 - Rewrite all player-facing text to the writing style in `CLAUDE.md`, including the Wonder cards, and add the challenge descriptions.
 - A balancing pass using the debug panel and seeded replays.
-- Sound is its own phase now (Phase 16).
+- Sound is part of Phase 12 now (it was Phase 16).
 - Animation polish.
 - Animated gradients on item cards (see "Cards are built in-game" above), once Wyatt's frame and icon layers arrive.
 - Accessibility: text size option, colorblind-safe icons alongside colors.
 
 ---
 
-## Phase 16: Audio
+## Phase 16: Audio (moved into Phase 12)
 
-Start this once the game is fully playable.
-
-- **Music:** Wyatt makes a day track and a matching night track for each biome. They loop, with a slow crossfade at nightfall and in the morning.
-- **Ambience:** weather and setting loops (rain, wind, birds, crickets at night) that fade in and out with the weather and the phase.
-- **Sound effects:**
-  - First, list every moment that could have a sound: hikers moving, flipping or drawing a card, picking a card, using or eating an item, buying, selling, crafting, a challenge pop-up, passing or failing, a level-up, button clicks, a phase change, checking in, and so on.
-  - Save the list as `docs/audio-list.md` so Wyatt can make or choose a sound for each.
-- **Settings:** separate volume sliders for music, ambience and effects, plus mute. Start quiet.
-- **Formats:** compressed loops (OGG with an MP3 fallback), loaded per biome so the download stays small.
+The Nov 28 update made sound part of Phase 12 (`32-audio-system.md`, `33-sound-list.md`, `34-music.md`). What's left is Wyatt's music and recordings, which drop into the manifests as they arrive.
 
 ---
 

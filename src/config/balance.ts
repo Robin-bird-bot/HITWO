@@ -4742,6 +4742,36 @@ export const BALANCE = {
   },
 
   /** Screen timings (Nov 14 update). */
+  /**
+   * Sound (32-audio-system.md, Phase 12). The files are mastered at their
+   * levels already, so a sound plays at 1.0 unless the manifest says
+   * otherwise.
+   */
+  audio: {
+    /**
+     * Settings → Sound: the starting levels, 0 to 1 (the Sound effects slider
+     * sets the ui, sfx and minigame buses). TODO(wyatt): Master [0.8], Music
+     * [0.6], Ambience [0.7], Sound effects [0.8].
+     */
+    defaults: { master: 0.8, music: 0.6, ambience: 0.7, effects: 0.8 },
+    /**
+     * A random change of pitch (± this fraction) and volume (± dB) on sounds
+     * with versions and on footsteps, so repeats don't sound copied. Never on
+     * a sound that sets its own rate. TODO(wyatt): [±3%] and [±1 dB].
+     */
+    jitter: { pitch: 0.03, volumeDb: 1 },
+    /**
+     * How many sounds play at once. Over a limit, the oldest stops.
+     * TODO(wyatt): [3] of the same sound ([2] footsteps, [4] ticks and
+     * brushing), [24] in all, and the same sound can't start twice within
+     * [30 ms].
+     */
+    limits: { perSound: 3, footsteps: 2, ticks: 4, total: 24, retriggerMs: 30 },
+    /** A sound still loading after this long (ms) is dropped rather than played late. */
+    lateMs: 250,
+    /** Settings → Sound: how quickly (s) a new level or the mute takes effect. */
+    levelRampSeconds: 0.05,
+  },
   ui: {
     /**
      * The TrailMate item cards (31-trailmate-item-cards.md, section 1): the

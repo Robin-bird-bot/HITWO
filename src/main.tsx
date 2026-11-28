@@ -8,6 +8,9 @@ import '@fontsource/pixelify-sans/latin-400.css';
 import './styles/tokens.css';
 import './styles/global.css';
 import { App } from './App';
+import { startAudio } from './audio/start';
+
+startAudio();
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element');

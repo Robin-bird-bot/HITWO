@@ -3,7 +3,7 @@
  * backtick key. Always available with the dev server; on the live site only
  * when the address has ?debug.
  *
- * Tools: a new game from a seed, the run clock, phases, revealing the map,
+ * Tools: a new game from a seed, the run clock, sound, phases, revealing the map,
  * stats, resources, traits, the next scavenge, Abundance, conditions,
  * challenges, weather and tonight's night event.
  */
@@ -40,6 +40,7 @@ import { TestHikerPicker, TraitTools } from './DebugTraits';
 import { MapLookTools } from './MapLookTools';
 import { EdgeTest } from './EdgeTest';
 import { DebugRunClock } from './DebugRunClock';
+import { DebugSound } from './DebugSound';
 import { SimplifyTools } from './DebugSimplify';
 import { TrailsTools } from './DebugTrails';
 import styles from './DebugPanel.module.css';
@@ -110,6 +111,11 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
         <h3 className={styles.heading}>Run clock</h3>
         <DebugRunClock state={state} />
       </section>
+
+      <details className={styles.group}>
+        <summary className={styles.heading}>Sound</summary>
+        <DebugSound />
+      </details>
 
       <section className={styles.group}>
         <h3 className={styles.heading}>Phase</h3>

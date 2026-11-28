@@ -31,6 +31,7 @@ import { WEATHER_COLOR, WEATHER_ICON, weatherNote, weatherTitle } from '../weath
 import { PACKING_LOOKS, PACKING_LOOK_SETTING, usePackingLook } from '../packing/packingSettings';
 import { Panel } from './Panel';
 import { Popout } from './Popout';
+import { SoundSettings } from './SoundSettings';
 import { usePanelCollapsed } from './panelState';
 import panel from './Panel.module.css';
 import styles from './TopBar.module.css';
@@ -246,6 +247,7 @@ export function MenuButton({
           <span className={panel.label} data-drag-handle>
             SETTINGS
           </span>
+          <SoundSettings />
           <div className={styles.setting}>
             <span className={styles.settingName}>Screen</span>
             <div className={styles.segmented} role="radiogroup" aria-label="Screen">

@@ -4,7 +4,9 @@
  *
  * - **Packing machine:** TrailMate (the default, Wyatt) or the Lucky Trail
  *   Outfitters cabinet. Both draw the same rules.
- * - **Sound:** the machine's sounds, on or off.
+ *
+ * The screen's sound button is Settings → Sound's Mute (32-audio-system.md,
+ * section 3).
  *
  * Skip packing (testing) is with the other testing switches in
  * `debug/testingSettings.ts`.
@@ -26,9 +28,3 @@ export const PACKING_LOOK_SETTING = deviceSetting<PackingLook>(
 
 /** The packing machine picked on this device, re-rendering when it changes. */
 export const usePackingLook = (): PackingLook => useDeviceSetting(PACKING_LOOK_SETTING);
-
-export const PACKING_SOUND_SETTING = deviceSetting<'on' | 'off'>(
-  'hike-in-the-woods/packing-sound',
-  ['on', 'off'],
-  'on',
-);

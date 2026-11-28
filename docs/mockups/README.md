@@ -56,6 +56,7 @@ These files are the source of the design canvas Wyatt and Claude made ("Hike in 
 | `item-cards/` (Phase 11) | **The TrailMate item cards: `cards.html`, a mock to match** (open it in a browser): fronts, walkie-talkie backs, LEDs, an unrolled card and the bag's small screens. `board.png` is a picture of it; `board-fronts-2x.png` is the fronts, bigger |
 | `minigames/revisions-nov-26/` (Phase 10.8 step 10) | Raccoon Shuffle's wide cards and take-away (`33`, `34`), Rock Climb's aim, fall and top (`35a` to `35c`), Bear with a Gun's arming traps, Ricochet and Bullet Ring (`36` to `38`), and Sword Volley (`39-sword-volley.png`) |
 | `minigames/dodge-new/` (Phase 10.8 step 9) | Bear with a Gun (`22-gun-aimed-shot.png` to `25-gun-rapid-fire.png`), Ants (`26-ants-lines.png` to `29-ants-hill.png`), Camp Cleanup (`30-camp-cleanup.png`, `30b-camp-cleanup-crash.png`), the new Ridgeline (`31-ridgeline.png`) and the Rock Climb grab (`32-rock-climb-grab.png`) |
+| `ui-overhaul/` (Phase 12) | **The UI overhaul: `prototype/index.html`, a working prototype to match** (serve the folder and open it; hash links such as `#main`, `#scav`, `#craft-tm`, `#night`, `#title`, `#load` and `#trans` jump to a screen), and its 27 screenshots `01-main-wheel.png` to `27-doors-open.png` (the table at the end of `35-ui-overhaul.md` says what each is). `stone-square-wyatt.png` is Wyatt's stone square, the reference for the Mountain brush cover |
 
 **Geometry from `Main.dc.html`**
 - Hexes are 112×128.

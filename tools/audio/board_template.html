@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hike in the Woods sound board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Pixelify+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a field kit, friendly and exact; every sound one tap away.
+   IDEA: the TrailMate GPS from the game, used as a field recorder that plays back the game's sound log.
+   PICTURE: the device itself at the top: orange shell, LCD screen with the playing sound's waveform and playhead.
+   COLOUR and TYPE: night forest green ground, LCD greens, tool orange accent; Pixelify Sans on the device, DM Sans for reading.
+   LAYOUT: device first, then filters, what's needed from Wyatt, then every area as a list of rows. */
+:root{color-scheme:dark;--bg:#0F1712;--band:#142019;--panel:#18241C;--line:#283A2D;--ink:#E7EFDD;--muted:#A2B79E;--acc:#F6A13A;
+--lcd:#BAC995;--lcd2:#A0B37D;--lcdink:#1D2918;--made:#8BE04E;--ph:#F6BA55;--need:#FF8A73;--code:#8FB8F0}
+:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 'DM Sans',system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(22px,3.5vw,48px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+h1{font:700 clamp(28px,4vw,40px)/1.08 'DM Sans',sans-serif;margin:0 0 6px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 22px;max-width:70ch}
+.top{background:var(--band);border-bottom:1px solid var(--line)}
+/* the device */
+.dev{position:relative;border-radius:28px;padding:16px 16px 22px;background:linear-gradient(150deg,#F6BA55,#E0642E 70%);
+box-shadow:inset 0 2px 0 rgba(255,255,255,.35),inset 0 -3px 0 rgba(0,0,0,.25),0 18px 40px rgba(0,0,0,.45)}
+.dev:before,.dev:after{content:"";position:absolute;top:70px;width:6px;height:60px;border-radius:3px;background:#1C201E}
+.dev:before{left:-6px}.dev:after{right:-6px;height:90px}
+.bez{background:#1C201E;border-radius:18px;padding:12px}
+.lcd{position:relative;background:var(--lcd);color:var(--lcdink);border-radius:10px;padding:12px 14px 10px;overflow:hidden;font-family:'Pixelify Sans',monospace}
+.lcd:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(29,41,24,.07) 0 1px,transparent 1px 3px),radial-gradient(ellipse at 20% 0%,rgba(255,255,255,.28),transparent 55%)}
+.strip{display:flex;gap:12px;align-items:center;background:var(--lcdink);color:#BAC995;border-radius:5px;padding:4px 10px;font-size:13px;letter-spacing:.04em}
+.strip b{color:var(--acc);font-weight:600}.strip span:last-child{margin-left:auto}
+.np{font-size:clamp(20px,3vw,28px);line-height:1.1;margin:10px 0 2px;overflow-wrap:anywhere}
+.when{font:15px/1.4 'DM Sans',system-ui,sans-serif;color:#2B3A23;min-height:2.8em;max-width:80ch}
+.wave{position:relative;height:96px;margin-top:6px}.wave canvas{position:absolute;inset:0;width:100%;height:100%}
+.keys{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.key{font:600 14px 'Pixelify Sans',monospace;letter-spacing:.05em;min-height:44px;padding:0 16px;border-radius:12px;border:0;cursor:pointer;
+background:#1C201E;color:#F3E6C8;box-shadow:inset 0 -3px 0 rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.25)}
+.key:active{transform:translateY(1px)}.key:focus-visible,.chip:focus-visible,.pb:focus-visible,input:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.key.big{background:#2B3A23;color:#D3DFAF}
+.vol{display:flex;align-items:center;gap:8px;margin-left:auto;font:600 13px 'Pixelify Sans',monospace;color:#1C201E}
+.vol input{width:130px;accent-color:#1C201E}
+.counts{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;font-size:15px;color:var(--muted)}
+.counts b{color:var(--ink)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:0}
+/* filters */
+.bar{position:relative;z-index:5;background:rgba(15,23,18,.94);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 0}
+.chip{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 14px 'DM Sans',system-ui,sans-serif;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.bar input{flex:1 1 200px;min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:0 16px;font:16px 'DM Sans',system-ui,sans-serif}
+.bar .jump{display:flex;flex-wrap:nowrap;gap:14px;overflow-x:auto;padding:0 0 10px;font-size:14px;white-space:nowrap;scrollbar-width:thin}
+.jump a{flex:none;color:var(--muted);text-decoration:none}.jump a:hover{color:var(--ink)}
+/* needs */
+.need{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--need);border-radius:14px;padding:18px 20px;margin:26px 0 8px}
+.need h2{margin:0 0 6px;font-size:22px}.need ul{margin:8px 0 0;padding-left:20px}.need li{margin:4px 0}.need p{margin:8px 0;color:var(--muted)}
+.need .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:4px 28px}
+/* list */
+section{margin:34px 0 0}
+section h2{display:flex;align-items:baseline;gap:12px;font-size:22px;margin:0 0 8px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+section h2 small{color:var(--muted);font-weight:400;font-size:14px}
+section h2 .key{margin-left:auto;min-height:36px;font-size:12px;padding:0 12px;background:var(--panel);color:var(--ink);box-shadow:none;border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr) auto;gap:6px 16px;align-items:start;padding:12px 0;border-bottom:1px solid #1f2d23}
+.row.on{background:linear-gradient(90deg,rgba(246,161,58,.12),transparent 70%)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.pb{width:44px;height:44px;border-radius:12px;border:0;cursor:pointer;background:var(--lcd);color:var(--lcdink);font:600 15px 'Pixelify Sans',monospace}
+.pb.loop{width:auto;padding:0 12px}.pb.playing{background:var(--acc);color:#1C201E}
+.nofile{font-size:13px;color:var(--muted);padding-top:10px}
+.id{font:600 15px 'Pixelify Sans',monospace;color:var(--acc);overflow-wrap:anywhere}
+.w{color:var(--muted);font-size:15px;margin:2px 0}.s{margin:2px 0}.n{font-size:14px;color:var(--muted);font-style:italic}
+.badge{font-size:13px;font-weight:600;border-radius:999px;padding:3px 10px;white-space:nowrap;border:1px solid}
+.b-made{color:var(--made);border-color:var(--made)}.b-placeholder{color:var(--ph);border-color:var(--ph)}.b-need{color:var(--need);border-color:var(--need)}.b-code{color:var(--code);border-color:var(--code)}
+.empty{color:var(--muted);padding:30px 0}
+footer{color:var(--muted);font-size:14px}
+@media(min-width:900px){.bar{position:sticky;top:0}}
+@media(max-width:700px){.row{grid-template-columns:1fr;gap:6px}.row .badge{justify-self:start}.vol{margin-left:0}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<div class="top band"><div class="wrap">
+<h1>Hike in the Woods sound board</h1>
+<p class="sub">Every sound the game needs, where it plays, and a button to hear it. Loops can be layered (try the meadow at night with the fire and rain). Space replays, the arrow keys step through, Esc stops everything.</p>
+<div class="dev" aria-label="Player">
+ <div class="bez"><div class="lcd">
+  <div class="strip"><b>TRAILMATE</b><span>SOUND LOG</span><span id="st">READY</span></div>
+  <div class="np" id="np">PICK A SOUND</div>
+  <div class="when" id="nw">Tap any green button below.</div>
+  <div class="wave"><canvas id="cv"></canvas></div>
+ </div></div>
+ <div class="keys">
+  <button class="key" id="prev" aria-label="Previous sound">◀ PREV</button>
+  <button class="key big" id="again">▶ PLAY</button>
+  <button class="key" id="next" aria-label="Next sound">NEXT ▶</button>
+  <button class="key" id="stop">■ STOP ALL</button>
+  <label class="vol">VOLUME <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8"></label>
+ </div>
+</div>
+<div class="counts" id="counts"></div>
+</div></div>
+<div class="bar"><div class="wrap">
+ <button class="chip" data-f="all" aria-pressed="true">All</button>
+ <button class="chip" data-f="made" aria-pressed="false">Made</button>
+ <button class="chip" data-f="placeholder" aria-pressed="false">Placeholders</button>
+ <button class="chip" data-f="need" aria-pressed="false">Needs a recording</button>
+ <button class="chip" data-f="code" aria-pressed="false">Already in code</button>
+ <input id="q" type="search" placeholder="Search: footsteps, Dodge, rain…" aria-label="Search sounds">
+</div><div class="wrap jump" id="jump"></div></div>
+<main class="band" style="padding-top:8px"><div class="wrap">
+<div class="need" id="needbox">
+ <h2>What I still need from you</h2>
+ <p><b>Got them, thank you:</b> the bear growl (it also makes the Sleeping Bear waking, Bigfoot, the Abominable Snowgirl and the Bears night event), the leopard (also the Snow Leopard and Bobcats), the eagle, the occult chant, and the drunk hiker's can, laugh and hiccup. Pixabay sounds are perfect: keep sending them the same way.</p>
+ <div class="cols">
+  <div><b>Animals (4)</b><ul>
+   <li>A fox scream.</li>
+   <li>Coyote yips.</li>
+   <li>A hyena laugh.</li>
+   <li>Raccoon chitters (Whackoon, Raccoons, the Raccoon Gang; a placeholder is in).</li>
+  </ul></div>
+  <div><b>People (6), generic</b><ul>
+   <li><b>A man:</b> a happy "Yes!" or "Woo!", an "oof", a yawn.</li>
+   <li><b>A woman:</b> a happy "Yay!" or "Woo!", an "oof", a yawn.</li>
+   <li>They play on level-ups, passed challenges and Wonders, injuries and fails, and Sleep.</li>
+  </ul></div>
+  <div><b>Pets (6), generic</b><ul>
+   <li><b>A dog:</b> a happy bark, a whimper, a yawn or big sigh.</li>
+   <li><b>A cat:</b> a happy meow, a hiss, a purr.</li>
+   <li>Plush hikers squeak like a toy; I made those.</li>
+  </ul></div>
+  <div><b>Optional upgrades</b><ul>
+   <li>Real nature recordings for the biome ambience (forest birds by day, rainforest, alpine wind, a wolf howl). My synthesized ones work for now.</li>
+  </ul></div>
+ </div>
+</div>
+<div id="list"></div>
+<footer class="band" style="padding-inline:0">Most sounds are made in code (Python, at 44.1 kHz); the animals, the chant and the drunk hiker are Wyatt's Pixabay finds, trimmed and leveled. Everything is mastered to three loudness levels, plus a quieter one for loops. The game gets OGG files with MP3 as a fallback; this page plays the MP3s.</footer>
+</div></main>
+<script>
+{
+const DATA=/*DATA*/[];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const md=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/`(.+?)`/g,'<code>$1</code>');
+const LABEL={made:'Made',placeholder:'Placeholder',need:'Needs a recording',code:'In code'};
+const $=id=>document.getElementById(id);
+let filter='all',query='',ctx=null,master=null,cur=null,stopGroup=false;const bufs=new Map(),loops=new Map(),shots=new Set();
+const areas=[...new Set(DATA.map(r=>r.area))];
+const slug=a=>a.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const n={made:0,placeholder:0,need:0,code:0};DATA.forEach(r=>n[r.status]++);
+const files=DATA.reduce((a,r)=>a+r.files.length,0);
+$('counts').innerHTML=`<span><b>${DATA.length}</b> sounds (${files} files)</span>`+Object.keys(n).map(k=>`<span><i class="dot" style="background:var(--${k==='placeholder'?'ph':k})"></i><b>${n[k]}</b> ${LABEL[k].toLowerCase()}</span>`).join('');
+$('jump').innerHTML=areas.map(a=>`<a href="#${slug(a)}">${esc(a)}</a>`).join('');
+function visible(r){if(filter!=='all'&&r.status!==filter)return false;if(!query)return true;return (r.id+' '+r.when+' '+r.sound+' '+r.area).toLowerCase().includes(query)}
+function render(){
+ const out=areas.map(a=>{const rows=DATA.filter(r=>r.area===a&&visible(r));if(!rows.length)return'';
+  const hasOne=rows.some(r=>r.files.length&&!r.loop);
+  return `<section id="${slug(a)}"><h2>${esc(a)} <small>${rows.length}</small>${hasOne?`<button class="key" data-group="${esc(a)}">▶ PLAY ALL</button>`:''}</h2>`+rows.map(r=>{
+   const b=r.files.length?(r.loop?`<button class="pb loop${loops.has(r.id)?' playing':''}" data-id="${esc(r.id)}" data-v="0">${loops.has(r.id)?'■ LOOP':'▶ LOOP'}</button>`:r.files.map((f,i)=>`<button class="pb" data-id="${esc(r.id)}" data-v="${i}" aria-label="Play ${esc(r.id)}${r.files.length>1?' version '+(i+1):''}">${r.files.length>1?i+1:'▶'}</button>`).join('')):`<span class="nofile">${r.status==='code'?'In the game already':'No file yet'}</span>`;
+   return `<div class="row${cur&&cur.id===r.id?' on':''}" data-row="${esc(r.id)}"><div class="btns">${b}</div><div><div class="id">${esc(r.id)}</div><div class="w">${md(r.when)}</div><div class="s">${md(r.sound)}</div>${r.note?`<div class="n">${md(r.note)}</div>`:''}</div><span class="badge b-${r.status}">${LABEL[r.status]}</span></div>`}).join('')+'</section>'}).join('');
+ $('list').innerHTML=out||'<p class="empty">Nothing matches. Try another word or filter.</p>';
+}
+function audio(){if(!ctx){ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=+$('vol').value;master.connect(ctx.destination)}if(ctx.state==='suspended')ctx.resume();return ctx}
+async function buf(f){if(bufs.has(f))return bufs.get(f);const p=fetch('sfx/'+f+'.mp3').then(r=>r.arrayBuffer()).then(a=>audio().decodeAudioData(a));bufs.set(f,p);return p}
+let drawn=null,startAt=0,raf=0;
+function wave(b){const c=$('cv'),W=c.clientWidth,H=c.clientHeight,dpr=devicePixelRatio||1;c.width=W*dpr;c.height=H*dpr;const g=c.getContext('2d');g.scale(dpr,dpr);g.clearRect(0,0,W,H);
+ if(!b)return;const d=b.getChannelData(0),step=Math.max(1,Math.floor(d.length/W));g.fillStyle='#3C4E2F';
+ for(let x=0;x<W;x++){let lo=1,hi=-1;for(let i=x*step;i<(x+1)*step&&i<d.length;i+=4){const v=d[i];if(v<lo)lo=v;if(v>hi)hi=v}const y1=(1-hi)*H/2,y2=(1-lo)*H/2;g.fillRect(x,y1,1,Math.max(1,y2-y1))}
+ if(drawn&&drawn.b===b&&ctx){const t=(ctx.currentTime-startAt)/b.duration;if(t>=0&&t<=1){g.fillStyle='#E0642E';g.fillRect(t*W,0,2,H)}}}
+function tick(){if(drawn)wave(drawn.b);if(drawn&&ctx&&ctx.currentTime-startAt<drawn.b.duration)raf=requestAnimationFrame(tick)}
+function show(r,v){cur={id:r.id,v};$('np').textContent=r.id+(r.files.length>1?`  (${v+1} of ${r.files.length})`:'');$('nw').innerHTML=md(r.when);
+ document.querySelectorAll('.row.on').forEach(e=>e.classList.remove('on'));const el=document.querySelector(`[data-row="${CSS.escape(r.id)}"]`);if(el)el.classList.add('on')}
+async function play(id,v=0){const r=DATA.find(x=>x.id===id);if(!r||!r.files.length)return;show(r,v);
+ try{if(r.loop){if(loops.has(id)){loops.get(id).stop();loops.delete(id);status();render();return}const b=await buf(r.files[0]);const s=audio().createBufferSource();s.buffer=b;s.loop=true;s.connect(master);s.start();loops.set(id,s);drawn={b};startAt=ctx.currentTime;wave(b);status();render();return}
+  const b=await buf(r.files[v]);const s=audio().createBufferSource();s.buffer=b;s.playbackRate.value=1;s.connect(master);s.start();shots.add(s);drawn={b};startAt=ctx.currentTime;cancelAnimationFrame(raf);tick();$('st').textContent='PLAYING';s.onended=()=>{shots.delete(s);status()}}
+ catch(e){$('st').textContent='CAN\'T PLAY'}}
+function status(){$('st').textContent=loops.size?`${loops.size} LOOP${loops.size>1?'S':''} ON`:'READY'}
+function stopAll(){stopGroup=true;loops.forEach(s=>s.stop());loops.clear();shots.forEach(s=>{try{s.stop()}catch(e){}});shots.clear();status();render()}
+const order=()=>DATA.filter(r=>visible(r)&&r.files.length);
+function step(d){const L=order();if(!L.length)return;let i=cur?L.findIndex(r=>r.id===cur.id):-1;let v=cur?cur.v:0;const r0=L[i];
+ if(r0&&!r0.loop&&d>0&&v+1<r0.files.length){play(r0.id,v+1);return}if(r0&&!r0.loop&&d<0&&v>0){play(r0.id,v-1);return}
+ i=(i+d+L.length)%L.length;const r=L[i];play(r.id,d<0&&!r.loop?r.files.length-1:0);const el=document.querySelector(`[data-row="${CSS.escape(r.id)}"]`);if(el)el.scrollIntoView({block:'nearest'})}
+async function group(a){stopGroup=false;const L=DATA.filter(r=>r.area===a&&visible(r)&&r.files.length&&!r.loop);for(const r of L){for(let v=0;v<r.files.length;v++){if(stopGroup)return;await play(r.id,v);const b=await buf(r.files[v]);await new Promise(k=>setTimeout(k,b.duration*1000+350))}}}
+document.addEventListener('click',e=>{const p=e.target.closest('.pb');if(p){play(p.dataset.id,+p.dataset.v);return}const g=e.target.closest('[data-group]');if(g){group(g.dataset.group);return}
+ const c=e.target.closest('.chip');if(c){filter=c.dataset.f;document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));render()}});
+$('q').addEventListener('input',e=>{query=e.target.value.trim().toLowerCase();render()});
+$('again').onclick=()=>{if(cur)play(cur.id,cur.v);else step(1)};$('next').onclick=()=>step(1);$('prev').onclick=()=>step(-1);$('stop').onclick=stopAll;
+$('vol').oninput=e=>{if(master)master.gain.value=+e.target.value};
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key===' '){e.preventDefault();$('again').click()}else if(e.key==='ArrowRight'){e.preventDefault();step(1)}else if(e.key==='ArrowLeft'){e.preventDefault();step(-1)}else if(e.key==='Escape')stopAll()});
+new ResizeObserver(()=>wave(drawn&&drawn.b)).observe($('cv'));
+render();wave(null);
+}
+</script></body></html>

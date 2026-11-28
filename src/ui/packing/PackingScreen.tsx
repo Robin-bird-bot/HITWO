@@ -26,7 +26,6 @@ import {
   type ReelSymbol,
 } from '../../packing/logic';
 import { seatsFor } from '../../packing/seats';
-import { useDeviceSetting } from '../app/deviceSetting';
 import { useReducedMotion } from '../app/useReducedMotion';
 import { debugEnabled } from '../debug/debugEnabled';
 import { ConfirmDialog } from '../game/ConfirmDialog';
@@ -34,7 +33,8 @@ import { ItemCard } from '../items/ItemCard';
 import { MenuButton } from '../panels/TopBar';
 import { useStage } from '../stage/StageContext';
 import type { Kit, Rect, ReelHandlers, Skin, SkinFx } from './machine';
-import { PACKING_SOUND_SETTING, usePackingLook, type PackingLook } from './packingSettings';
+import { usePackingLook, type PackingLook } from './packingSettings';
+import { MUTE_SETTING, useMuted } from '../../audio/settings';
 import { Particles } from './particles';
 import { Drawers, Header, PartyRow } from './parts';
 import { CABINET } from './cabinet/skin';
@@ -89,7 +89,7 @@ export function PackingScreen({
   const [seats] = useState(() => seatsFor(seed, hikers));
   const fit = useStage();
   const reduced = useReducedMotion();
-  const sound = useDeviceSetting(PACKING_SOUND_SETTING);
+  const muted = useMuted();
   const root = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const particles = useRef<Particles | null>(null);
@@ -434,10 +434,10 @@ export function PackingScreen({
         <button
           type="button"
           className={styles.cornerButton}
-          aria-pressed={sound === 'on'}
-          onClick={() => PACKING_SOUND_SETTING.set(sound === 'on' ? 'off' : 'on')}
+          aria-pressed={!muted}
+          onClick={() => MUTE_SETTING.set(muted ? 'off' : 'on')}
         >
-          {sound === 'on' ? 'SOUND ON' : 'SOUND OFF'}
+          {muted ? 'SOUND OFF' : 'SOUND ON'}
         </button>
       </div>
       <MenuButton
