@@ -13,7 +13,14 @@ import { BALANCE } from '../../config/balance';
 import { ITEMS } from '../../content/items';
 import { countCrafted, countFoodCrafted } from '../counters';
 import { foodAppetiteEstimate } from '../items/foodValue';
-import { computeCost, fireCraft, fireAction, recipeSubs, wrapsPresents } from '../effects';
+import {
+  computeCost,
+  fireAction,
+  fireCraft,
+  freeCraftBy,
+  recipeSubs,
+  wrapsPresents,
+} from '../effects';
 import { bagSlots } from '../inventory';
 import {
   autoPay,
@@ -122,8 +129,12 @@ export function applyCraft(state: GameState, action: CraftAction): void {
   const biteMod = subs && recipe ? subs.perSwap * swapsIn(recipe, slots) : 0;
   if (!atWorkbench(state, hiker)) spendAction(state, hiker);
   spend(state, slots);
-  // Work costs Energy, a workbench visit too (29-core-loop.md, section 1).
-  payCost(state, hiker, { appetite: 0, energy: craftCost(state, hiker), morale: 0 }, 'Craft');
+  // Work costs Energy, a workbench visit too (29-core-loop.md, section 1),
+  // unless the crafter's step makes it free this time (section 4).
+  const energy = craftCost(state, hiker);
+  const free = energy > 0 ? freeCraftBy(state, hiker, action.itemType) : undefined;
+  if (free) pushEvent(state, { kind: 'trait', hikerId: hiker.id, trait: free, text: 'no Energy.' });
+  payCost(state, hiker, { appetite: 0, energy: free ? 0 : energy, morale: 0 }, 'Craft');
 
   if (action.blueprint) {
     const quality = craftQuality(state.rng, action.blueprint, setup);
