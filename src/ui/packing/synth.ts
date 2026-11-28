@@ -1,25 +1,19 @@
 /**
  * The packing machines' sounds, made in code like the prototypes (Web Audio:
- * tones, noise bursts and chiptune runs). Silent when the screen's sound is
- * off, or where there's no audio. Each look has its own set (`sounds.ts`).
+ * tones, noise bursts and chiptune runs). They play through the game's audio
+ * engine on the Sound effects bus (32-audio-system.md, section 2), so
+ * Settings → Sound and Mute cover them. Each look has its own set
+ * (`sounds.ts`).
  */
-import { PACKING_SOUND_SETTING } from './packingSettings';
+import { audio as engine } from '../../audio/engine';
 
-let context: AudioContext | null = null;
-
-/** The shared audio context, made on first use (after a click or key, so browsers allow it). */
+/** The game's audio context (made on the first click or key), or null where there's no audio. */
 export function audio(): AudioContext | null {
-  if (PACKING_SOUND_SETTING.get() === 'off') return null;
-  if (!context) {
-    try {
-      context = new AudioContext();
-    } catch {
-      return null;
-    }
-  }
-  if (context.state === 'suspended') void context.resume();
-  return context;
+  return engine.unlock();
 }
+
+/** Where the synth's sounds go: the Sound effects bus. */
+const out = (a: AudioContext): AudioNode => engine.busInput('sfx') ?? a.destination;
 
 /** A MIDI note number in hertz (69 is A 440). */
 export const note = (n: number): number => 440 * Math.pow(2, (n - 69) / 12);
@@ -43,7 +37,7 @@ export function tone(
   if (slide) osc.frequency.exponentialRampToValueAtTime(slide, t + seconds);
   gain.gain.setValueAtTime(volume, t);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + seconds);
-  osc.connect(gain).connect(a.destination);
+  osc.connect(gain).connect(out(a));
   osc.start(t);
   osc.stop(t + seconds + 0.02);
 }
@@ -64,7 +58,7 @@ export function noise(seconds: number, volume = 0.08, when = 0, highPass = 800):
   filter.frequency.value = highPass;
   gain.gain.value = volume;
   src.buffer = buf;
-  src.connect(filter).connect(gain).connect(a.destination);
+  src.connect(filter).connect(gain).connect(out(a));
   src.start(t);
 }
 
