@@ -31,7 +31,7 @@ import { CARDS } from '../content/challenges';
 import { placePool } from './challenges/pool';
 import { levelForXp } from './xp';
 
-export const SAVE_VERSION = 24;
+export const SAVE_VERSION = 25;
 
 export type LoadFailure = 'empty' | 'corrupt' | 'tooNew' | 'unsupported';
 export type LoadResult = { ok: true; state: GameState } | { ok: false; reason: LoadFailure };
@@ -99,6 +99,9 @@ const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
   // Nov 26 evening: Wyatt's new trees (26-fixes-and-wyatt-trees.md, section 5).
   // Steps that were removed or changed are unlearned and their points come back.
   23: (save) => wyattTrees(save),
+  // Phase 12: the party's starred recipes and resources (35-ui-overhaul.md, section 6).
+  // The field is optional, so an older save has none.
+  24: (save) => save,
 };
 
 function skillTrails(save: SaveData): SaveData {

@@ -10,7 +10,24 @@
  * A Sack keeps more cards: after the first take the window comes back with
  * that card marked Taken, for another take or Done.
  */
-import { useEffect, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
+import { RESOURCES } from '../../content/resources';
+import { useScavengeReveal } from '../app/lookSettings';
+import { useReducedMotion } from '../app/useReducedMotion';
+import { PosterScene } from './PosterScene';
+import { brushBits, burst, clearedShare, paintCover, seedOf, uncovers } from './brush';
+import { starredRecipes, wantedRibbon } from './needed';
+import type { RecipePart } from '../../engine/items/recipe';
 import { sfx } from '../../audio/engine';
 import { revealCues } from '../../audio/reveal';
 import { SCAVENGE_CARDS } from '../../content';
@@ -24,8 +41,11 @@ import {
   rerollsLeft,
   scavengeCost,
   validateAction,
+  RARITIES,
   type Action,
   type GameState,
+  type Hiker,
+  type NodeType,
   type ItemId,
   type ResourceId,
   type ScavengeBonus,
@@ -39,7 +59,7 @@ import { cardItemType, cardTitle, itemName, resourceName, resourcesTitle } from 
 import { ItemCard as CardFace } from '../items/ItemCard';
 import { ScavCard, type ScavCardProps } from './ScavCard';
 import { usePreview, withPreview } from '../preview/preview';
-import { fitCardRow, rowWidth } from '../layout/fitCardRow';
+import { fitCardRow } from '../layout/fitCardRow';
 import styles from './ScavengeWindow.module.css';
 import { HikerPortrait } from '../hikers/HikerPortrait';
 
@@ -53,6 +73,8 @@ interface ScavengeWindowProps {
   /** Glasses or Gambler: reroll one flipped card. */
   onReroll(card: number): void;
   onTake(action: TakeAction): void;
+  /** The scavenge just ended with a take: the cards left over fall away as the window goes. */
+  leaving?: boolean;
 }
 
 export function ScavengeWindow({
@@ -62,6 +84,7 @@ export function ScavengeWindow({
   onCancel,
   onReroll,
   onTake,
+  leaving = false,
 }: ScavengeWindowProps) {
   const open = state.scavenge;
   const [picked, setSelected] = useState<number | null>(null);
@@ -76,6 +99,11 @@ export function ScavengeWindow({
   // Copier: take the paid bonus resources too.
   const [paidBonus, setPaidBonus] = useState(false);
   const { ref: windowRef, windowProps, translate } = useDraggable<HTMLDivElement>('scavenge');
+  // The brush reveal (35-ui-overhaul.md, section 5), a setting: covers to brush away.
+  const brush = useScavengeReveal() === 'brush';
+  const reduced = useReducedMotion();
+  const groundRef = useRef<HTMLDivElement>(null);
+  const covers = useRef(new Map<number, CoverHandle>());
 
   const card = open && selected !== null ? open.cards[selected] : undefined;
   const offers = open?.bonusOffers ?? [];
@@ -128,8 +156,42 @@ export function ScavengeWindow({
     if (selected === null) choose(i);
   };
 
+  const nodes = [
+    ...new Set(
+      tile?.nodes.flatMap((n) => (n.type === 'caps' || !n.revealed ? [] : [n.type])) ?? [],
+    ),
+  ].slice(0, 2);
+  const seed = seedOf(open?.tileId ?? '');
+  const ground =
+    nodes.length > 1
+      ? `linear-gradient(100deg, ${GROUND[nodes[0]!]} 45%, ${GROUND[nodes[1]!]} 55%)`
+      : GROUND[nodes[0] ?? 'forest'];
+  const anyDown = !!open?.cards.some((c) => !c.flipped && !c.taken);
+  const message = !open
+    ? ''
+    : selected !== null
+      ? 'Take it, or pick another card.'
+      : anyDown
+        ? `${brush ? 'Drag across a card to brush it clear.' : 'Click a card to flip it.'}${
+            canCancel ? ' Not now is free until you look.' : ''
+          }`
+        : 'Pick one card to keep.';
+  const flipAll = async () => {
+    if (!open) return;
+    const down = open.cards.flatMap((c, i) => (c.flipped || c.taken ? [] : [i]));
+    if (selected === null && down[0] !== undefined) choose(down[0]);
+    if (brush) {
+      for (const i of down) {
+        await covers.current.get(i)?.brushAll();
+        await wait(reduced ? 0 : BALANCE.audio.flipGapSec * 1000);
+      }
+      return;
+    }
+    onFlip(down);
+  };
+
   return (
-    <div className={styles.overlay}>
+    <div className={styles.overlay} data-leaving={leaving || undefined}>
       <div
         ref={windowRef}
         className={styles.window}
@@ -141,136 +203,171 @@ export function ScavengeWindow({
         style={{ translate }}
         {...windowProps}
       >
-        <header className={styles.header} data-drag-handle>
-          <h2 className={styles.title}>SCAVENGE</h2>
-          <span className={styles.nodes}>
-            {tile?.nodes.map((n, i) =>
-              n.type === 'caps' ? (
-                <img key={i} src={ASSETS.icons.acornCaps} alt="Cap node" width={24} height={24} />
-              ) : (
-                <img
-                  key={i}
-                  src={NODE_IMAGE[n.type]}
-                  alt={`${NODE_NAME[n.type]} node`}
-                  width={22}
-                  height={25}
-                />
-              ),
-            )}
-          </span>
-          <span className={styles.spacer} />
-          {open && open.bonuses.length > 0 && (
-            <Bonuses
-              bonuses={open.bonuses}
-              open={bonusesOpen}
-              onToggle={() => setBonusesOpen((o) => !o)}
-            />
-          )}
-          {hiker && open && (
-            <span className={styles.hiker}>
-              <HikerPortrait
-                hikerId={hiker.id}
-                className={styles.portrait}
-                style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
+        <header className={styles.poster} data-drag-handle>
+          {nodes.map((n, i) => (
+            <div key={n} className={styles.art} data-second={i > 0 || undefined}>
+              <PosterScene node={n} seed={seed + i} />
+            </div>
+          ))}
+          <div className={styles.posterTitle}>
+            <small>SCAVENGE</small>
+            <h2 className={styles.title}>
+              {nodes.length ? nodes.map((n) => NODE_NAME[n].toUpperCase()).join(' + ') : 'TRAIL'}
+            </h2>
+          </div>
+          <div className={styles.who}>
+            {open && open.bonuses.length > 0 && (
+              <Bonuses
+                bonuses={open.bonuses}
+                open={bonusesOpen}
+                onToggle={() => setBonusesOpen((o) => !o)}
               />
-              <span className={styles.hikerName}>{hiker.name.toUpperCase()}</span>
-              {/* Work costs Energy (29-core-loop.md, section 1); Copier's bonus costs Appetite. */}
-              <Icon name="zap" size={14} />
-              <span className={styles.change}>
-                {hiker.stats.energy} →{' '}
-                <b>
-                  {Math.max(
-                    0,
-                    hiker.stats.energy -
-                      (open.took ? BALANCE.items.sackEnergy : scavengeCost(state, hiker)),
-                  )}
-                </b>
+            )}
+            {hiker && open && (
+              <span className={styles.hiker}>
+                <HikerPortrait
+                  hikerId={hiker.id}
+                  className={styles.portrait}
+                  style={{ boxShadow: `0 0 0 2px ${hikerColor(hiker)}` }}
+                />
+                <span className={styles.hikerName}>{hiker.name.toUpperCase()}</span>
+                {/* Work costs Energy (29-core-loop.md, section 1); Copier's bonus costs Appetite. */}
+                <Icon name="zap" size={14} />
+                <span className={styles.change}>
+                  {hiker.stats.energy} →{' '}
+                  <b>
+                    {Math.max(
+                      0,
+                      hiker.stats.energy -
+                        (open.took ? BALANCE.items.sackEnergy : scavengeCost(state, hiker)),
+                    )}
+                  </b>
+                </span>
+                {bonus.appetite > 0 && (
+                  <>
+                    <Icon name="utensils" size={14} />
+                    <span className={styles.change}>
+                      {hiker.stats.appetite} →{' '}
+                      <b>{Math.max(0, hiker.stats.appetite - bonus.appetite)}</b>
+                    </span>
+                  </>
+                )}
               </span>
-              {bonus.appetite > 0 && (
-                <>
-                  <Icon name="utensils" size={14} />
-                  <span className={styles.change}>
-                    {hiker.stats.appetite} →{' '}
-                    <b>{Math.max(0, hiker.stats.appetite - bonus.appetite)}</b>
-                  </span>
-                </>
-              )}
-            </span>
-          )}
+            )}
+          </div>
         </header>
 
         {open ? (
-          <>
-            <div
-              className={styles.cards}
-              data-count={open.cards.length}
-              style={{ maxWidth: rowWidth(cardFit(open.cards.length), CARD + 20, CARD_GAP) }}
-            >
-              {open.cards.map((c, i) =>
-                c.taken ? (
-                  <div key={i} className={styles.taken} aria-label="Taken">
-                    <ScavCard
-                      card={c}
-                      size={cardSize(open.cards.length)}
-                      faceUp
-                      caption={simple ? 'simple' : 'full'}
-                      selected={false}
-                      onClick={() => undefined}
-                    />
-                    <span className={styles.takenLabel}>TAKEN</span>
-                  </div>
-                ) : (
-                  <TableCard
-                    key={i}
-                    index={i}
-                    card={c}
-                    size={cardSize(open.cards.length)}
-                    faceUp={c.flipped}
-                    caption={simple ? 'simple' : 'full'}
-                    selected={selected === i}
-                    onClick={() => (c.flipped ? choose(i) : flip(i))}
-                  />
-                ),
+          <div ref={groundRef} className={styles.ground} style={{ background: ground }}>
+            <div className={styles.table}>
+              <div
+                className={styles.cards}
+                data-count={open.cards.length}
+                data-picking={selected !== null || undefined}
+              >
+                {open.cards.map((c, i) => {
+                  const size = cardSize(open.cards.length);
+                  const ribbon =
+                    c.flipped && hiker && !c.empty
+                      ? wantedRibbon(state, hiker, c.resources ?? [])
+                      : null;
+                  return (
+                    <DealtCard
+                      key={i}
+                      index={i}
+                      seed={seed}
+                      reduced={reduced}
+                      leaving={leaving}
+                      picked={selected === i}
+                      ribbon={ribbon}
+                      flipped={c.flipped}
+                      rarity={c.rarity}
+                      layer={groundRef}
+                    >
+                      {c.taken ? (
+                        <div className={styles.taken} aria-label="Taken">
+                          <ScavCard
+                            card={c}
+                            size={size}
+                            faceUp
+                            caption={simple ? 'simple' : 'full'}
+                            selected={false}
+                            onClick={() => undefined}
+                          />
+                          <span className={styles.takenLabel}>TAKEN</span>
+                        </div>
+                      ) : brush && !c.flipped ? (
+                        <Covered
+                          ref={(h) => {
+                            if (h) covers.current.set(i, h);
+                            else covers.current.delete(i);
+                          }}
+                          card={c}
+                          size={size}
+                          layer={groundRef}
+                          reduced={reduced}
+                          onUncover={() => flip(i)}
+                        />
+                      ) : (
+                        <TableCard
+                          index={i}
+                          card={c}
+                          size={size}
+                          faceUp={c.flipped}
+                          caption={simple ? 'simple' : 'full'}
+                          selected={selected === i}
+                          dim={selected !== null && selected !== i}
+                          onClick={() => (c.flipped ? choose(i) : flip(i))}
+                        />
+                      )}
+                    </DealtCard>
+                  );
+                })}
+              </div>
+
+              {card?.pick && !card.empty && (
+                <PickChips card={card} picks={picks} simple={simple} onPicks={setPicks} />
+              )}
+              {card?.items && !card.empty && SCAVENGE_CARDS[card.type].choiceItem && (
+                <ItemChips card={card} item={item} onItem={setItem} />
+              )}
+              {paidCount > 0 && hasResources && (
+                <div className={styles.chooser}>
+                  <button
+                    type="button"
+                    className={styles.chip}
+                    aria-pressed={paidBonus}
+                    onClick={() => setPaidBonus((b) => !b)}
+                  >
+                    <Icon name="plus" size={16} />
+                    {paidCount} BONUS
+                    <span className={styles.chipCost}>
+                      −
+                      {offers
+                        .filter((o) => o.appetiteEach > 0)
+                        .reduce((n, o) => n + o.count * o.appetiteEach, 0)}{' '}
+                      Appetite
+                    </span>
+                  </button>
+                </div>
               )}
             </div>
 
-            {card?.pick && !card.empty && (
-              <PickChips card={card} picks={picks} simple={simple} onPicks={setPicks} />
-            )}
-            {card?.items && !card.empty && SCAVENGE_CARDS[card.type].choiceItem && (
-              <ItemChips card={card} item={item} onItem={setItem} />
-            )}
-            {paidCount > 0 && hasResources && (
-              <div className={styles.chooser}>
-                <button
-                  type="button"
-                  className={styles.chip}
-                  aria-pressed={paidBonus}
-                  onClick={() => setPaidBonus((b) => !b)}
-                >
-                  <Icon name="plus" size={16} />
-                  {paidCount} BONUS
-                  <span className={styles.chipCost}>
-                    −
-                    {offers
-                      .filter((o) => o.appetiteEach > 0)
-                      .reduce((n, o) => n + o.count * o.appetiteEach, 0)}{' '}
-                    Appetite
-                  </span>
-                </button>
-              </div>
-            )}
+            {hiker && <LookingFor state={state} hiker={hiker} />}
 
             <footer className={styles.footer}>
-              <span className={styles.drain}>
-                {!simple && card && <Drain state={state} card={card} />}
+              <span className={styles.message} role="status">
+                {take && takeReason ? (
+                  takeReason
+                ) : canFinish ? (
+                  `Sack: keep ${keepMore} more card${keepMore === 1 ? '' : 's'}, or Done.`
+                ) : (
+                  <>
+                    {message}
+                    {!simple && card && <Drain state={state} card={card} />}
+                  </>
+                )}
               </span>
-              {take && takeReason && <span className={styles.reason}>{takeReason}</span>}
-              {canFinish && !takeReason && (
-                <span className={styles.reason}>
-                  Sack: keep {keepMore} more card{keepMore === 1 ? '' : 's'}, or Done.
-                </span>
-              )}
               {reroll && (
                 <button
                   type="button"
@@ -297,17 +394,9 @@ export function ScavengeWindow({
                   Done
                 </button>
               )}
-              {open.cards.some((c) => !c.flipped) && (
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => {
-                    const down = open.cards.flatMap((c, i) => (c.flipped ? [] : [i]));
-                    onFlip(down);
-                    if (selected === null && down[0] !== undefined) choose(down[0]);
-                  }}
-                >
-                  Flip all
+              {anyDown && (
+                <button type="button" className={styles.secondary} onClick={() => void flipAll()}>
+                  {brush ? 'Brush all' : 'Flip all'}
                 </button>
               )}
               <button
@@ -322,7 +411,7 @@ export function ScavengeWindow({
                   : 'PICK A CARD'}
               </button>
             </footer>
-          </>
+          </div>
         ) : null}
       </div>
     </div>
@@ -372,9 +461,9 @@ function useScavengeSounds(open: GameState['scavenge']) {
 }
 
 /** A scavenge card's normal size, the gap between cards, and the room for the row (the window's inside). */
-const CARD = 196;
+const CARD = 176;
 const CARD_GAP = 18;
-const ROW_ROOM = 916;
+const ROW_ROOM = 800;
 
 /**
  * Cards that don't fit (a Dog, a Forager, every bonus at once) shrink evenly
@@ -564,4 +653,396 @@ function ItemChips({
       </div>
     </div>
   );
+}
+
+/** The table under the cards, in the node's color (the prototype's `NODE_LOOK`). */
+const GROUND: Record<NodeType, string> = {
+  forest: '#2f5443',
+  river: '#284a66',
+  wildlife: '#6c5233',
+  mountain: '#55524c',
+};
+
+const RARITY_COLOR: Record<ScavengeCard['rarity'], string> = {
+  common: '#9c9585',
+  uncommon: '#4fa477',
+  rare: '#e0a631',
+  veryRare: '#a97bd8',
+  legendary: '#ee7a45',
+  mythic: '#4ec3dd',
+};
+
+const wait = (ms: number) => new Promise((done) => window.setTimeout(done, ms));
+
+/**
+ * A card dealt onto the table (35-ui-overhaul.md, section 5): it slides in
+ * from above, one after another, and lands with a small tilt and height of
+ * its own (seeded by the tile, so the table looks the same on a reload).
+ * Flipping pops it, and Rare and up burst confetti in the rarity's color; a
+ * card a starred recipe needs gets its NEEDED ribbon (`card.wanted`). The
+ * picked card lifts; when the window goes after a take, the rest fall away.
+ */
+function DealtCard({
+  index,
+  seed,
+  reduced,
+  leaving,
+  picked,
+  ribbon,
+  flipped,
+  rarity,
+  layer,
+  children,
+}: {
+  index: number;
+  seed: number;
+  reduced: boolean;
+  leaving: boolean;
+  picked: boolean;
+  ribbon: string | null;
+  flipped: boolean;
+  rarity: ScavengeCard['rarity'];
+  layer: RefObject<HTMLDivElement | null>;
+  children: ReactNode;
+}) {
+  const D = BALANCE.ui.overhaul.deal;
+  const ref = useRef<HTMLDivElement>(null);
+  const [dealt, setDealt] = useState(reduced);
+  const r = rngOf(seed + index * 7919);
+  const tilt = (r() * 2 - 1) * D.tiltDeg;
+  const lift = (r() * 2 - 1) * D.heightPx;
+  const fall = r() * 100 - 50;
+  useEffect(() => {
+    if (reduced) return;
+    const t = window.setTimeout(() => setDealt(true), 60 + index * BALANCE.audio.dealGapSec * 1000);
+    return () => window.clearTimeout(t);
+  }, [index, reduced]);
+  // A flip: the pop, and confetti for Rare and up.
+  const was = useRef(flipped);
+  useEffect(() => {
+    if (!flipped || was.current) {
+      was.current = flipped;
+      return;
+    }
+    was.current = flipped;
+    const el = ref.current;
+    const box = layer.current;
+    if (reduced || !el || !box) return;
+    el.animate([{ scale: '1' }, { scale: '1.1', offset: 0.4 }, { scale: '1' }], {
+      duration: D.popMs,
+      easing: 'cubic-bezier(.3,1.5,.5,1)',
+    });
+    const step = RARITIES.indexOf(rarity);
+    if (step >= 2) {
+      const a = el.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      const scale = b.width / box.offsetWidth || 1;
+      burst(
+        box,
+        (a.left + a.width / 2 - b.left) / scale,
+        (a.top + a.height / 2 - b.top) / scale,
+        [RARITY_COLOR[rarity], '#fff6dc', '#E9B44C'],
+        10 + step * 6,
+        110 + step * 15,
+      );
+    }
+  }, [flipped, rarity, reduced, layer, D.popMs]);
+  // The ribbon a moment after the flip, with its ping.
+  const [ribbonOn, setRibbonOn] = useState(false);
+  useEffect(() => {
+    if (!ribbon) return;
+    const t = window.setTimeout(
+      () => {
+        setRibbonOn(true);
+        sfx('card.wanted');
+      },
+      reduced ? 0 : D.ribbonMs,
+    );
+    return () => window.clearTimeout(t);
+  }, [ribbon, reduced, D.ribbonMs]);
+  const placed = `translate(0, ${lift - (picked ? 18 : 0)}px) rotate(${picked ? 0 : tilt}deg) scale(${picked ? 1.05 : 1})`;
+  return (
+    <div
+      ref={ref}
+      className={styles.dealt}
+      data-leaving={(leaving && !picked) || undefined}
+      style={{
+        transform: leaving
+          ? picked
+            ? placed
+            : `translate(0, 760px) rotate(${fall}deg)`
+          : dealt
+            ? placed
+            : 'translate(0, -620px) rotate(-28deg) scale(0.85)',
+        // The taken card flies off to the hiker (TakeFly); the rest fall away.
+        opacity: leaving ? 0 : 1,
+      }}
+    >
+      {ribbon && (
+        <div className={styles.ribbon} data-on={ribbonOn || undefined}>
+          ★ {ribbon}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** Brushes a card's cover away (for Brush all). */
+interface CoverHandle {
+  brushAll(): Promise<void>;
+}
+
+/**
+ * The brush reveal: the card under its node's cover. Drag across it to
+ * brush it away (a click brushes a patch); once half of it is clear, the rest
+ * blows away and the card turns face up, with its chimes.
+ */
+const Covered = forwardRef<
+  CoverHandle,
+  {
+    card: ScavengeCard;
+    size: number;
+    layer: RefObject<HTMLDivElement | null>;
+    reduced: boolean;
+    onUncover(): void;
+  }
+>(function Covered({ card, size, layer, reduced, onUncover }, ref) {
+  const B = BALANCE.ui.overhaul.brush;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const node = card.node ?? 'any';
+  const sound = `scav.brush.${card.node ?? 'forest'}`;
+  const [gone, setGone] = useState(false);
+  const state = useRef({
+    down: false,
+    last: null as [number, number] | null,
+    strokes: 0,
+    sound: 0,
+    done: false,
+  });
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (c) paintCover(c, node);
+  }, [node]);
+
+  const uncover = () => {
+    const s = state.current;
+    if (s.done) return;
+    s.done = true;
+    setGone(true);
+    sfx('scav.uncover');
+    const c = canvasRef.current;
+    const box = layer.current;
+    if (c && box && !reduced) {
+      const a = c.getBoundingClientRect();
+      const b = box.getBoundingClientRect();
+      const scale = b.width / box.offsetWidth || 1;
+      burst(
+        box,
+        (a.left + a.width / 2 - b.left) / scale,
+        (a.top + a.height / 2 - b.top) / scale,
+        COVER_DUST[node] ?? COVER_DUST.any,
+        22,
+        120,
+        160,
+      );
+    }
+    onUncover();
+  };
+  const check = () => {
+    const c = canvasRef.current;
+    if (c && uncovers(clearedShare(c))) uncover();
+  };
+  const at = (e: ReactPointerEvent<HTMLCanvasElement>): [number, number] => {
+    const r = e.currentTarget.getBoundingClientRect();
+    return [
+      ((e.clientX - r.left) * e.currentTarget.width) / r.width,
+      ((e.clientY - r.top) * e.currentTarget.height) / r.height,
+    ];
+  };
+  const erase = (p: [number, number], client: { x: number; y: number }) => {
+    const c = canvasRef.current;
+    const x = c?.getContext('2d');
+    const s = state.current;
+    if (!c || !x || s.done) return;
+    x.globalCompositeOperation = 'destination-out';
+    x.lineCap = 'round';
+    x.lineWidth = B.brushPx;
+    x.beginPath();
+    x.moveTo(...(s.last ?? p));
+    x.lineTo(...p);
+    x.stroke();
+    s.last = p;
+    const now = performance.now();
+    if (now - s.sound > B.soundMs) {
+      s.sound = now;
+      sfx(sound, { volume: 0.7 });
+      const box = layer.current;
+      if (box && !reduced) {
+        const b = box.getBoundingClientRect();
+        const scale = b.width / box.offsetWidth || 1;
+        brushBits(box, (client.x - b.left) / scale, (client.y - b.top) / scale, node);
+      }
+    }
+    s.strokes += 1;
+    if (s.strokes % 5 === 0) check();
+  };
+
+  useImperativeHandle(ref, () => ({
+    async brushAll() {
+      const c = canvasRef.current;
+      const x = c?.getContext('2d');
+      if (!c || !x || state.current.done) return;
+      x.globalCompositeOperation = 'destination-out';
+      x.lineWidth = B.brushPx * 1.1;
+      x.lineCap = 'round';
+      for (let k = 0; k < 6; k++) {
+        x.beginPath();
+        x.moveTo(20, 30 + k * 52);
+        x.lineTo(c.width - 20, 50 + k * 52);
+        x.stroke();
+        if (k % 2 === 0) sfx(sound, { volume: 0.6 });
+        if (!reduced) await wait(40);
+      }
+      uncover();
+    },
+  }));
+
+  return (
+    <div className={styles.covered} style={{ width: size, height: size }}>
+      <div aria-hidden={!gone || undefined}>
+        {/* No caption under a cover: it would say what's beneath. */}
+        <ScavCard card={card} size={size} faceUp caption="none" selected={false} />
+      </div>
+      <canvas
+        ref={canvasRef}
+        className={styles.cover}
+        data-gone={gone || undefined}
+        data-glow={RARITIES.indexOf(card.rarity) >= 2 || undefined}
+        style={{ width: size, height: size, '--rarc': RARITY_COLOR[card.rarity] } as CSSProperties}
+        width={B.canvasPx}
+        height={B.canvasPx}
+        role="button"
+        aria-label={`Covered card from ${card.node ? NODE_NAME[card.node] : 'any node'}. Drag across it to brush it clear.`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            void (ref && 'current' in ref ? ref.current?.brushAll() : undefined);
+          }
+        }}
+        onPointerDown={(e) => {
+          state.current.down = true;
+          state.current.last = null;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          erase(at(e), { x: e.clientX, y: e.clientY });
+          e.stopPropagation();
+        }}
+        onPointerMove={(e) => {
+          if (state.current.down) erase(at(e), { x: e.clientX, y: e.clientY });
+        }}
+        onPointerUp={() => {
+          state.current.down = false;
+          state.current.last = null;
+          check();
+        }}
+        onPointerCancel={() => {
+          state.current.down = false;
+          state.current.last = null;
+        }}
+      />
+    </div>
+  );
+});
+
+/** The dust when a cover blows away, by node. */
+const COVER_DUST: Record<NodeType | 'any', readonly string[]> & { any: readonly string[] } = {
+  forest: ['#6b8f3e', '#c46a2c', '#d9a441'],
+  any: ['#6b8f3e', '#c46a2c'],
+  river: ['#bfe3f5', '#8fb4d6', '#ffffff'],
+  wildlife: ['#c8a85a', '#d9c07a', '#8d7a3e'],
+  mountain: ['#a3a098', '#5f5d58', '#c2bdb1'],
+};
+
+/**
+ * Looking for (35-ui-overhaul.md, section 5): the party's starred recipes
+ * with what each still needs (filled: have it; dashed red: missing), and the
+ * starred resources.
+ */
+function LookingFor({ state, hiker }: { state: GameState; hiker: Hiker }) {
+  const recipes = starredRecipes(state, hiker);
+  const resources = (state.starred?.resources ?? []).filter((id): id is ResourceId =>
+    RESOURCES.some((r) => r.id === id),
+  );
+  return (
+    <aside className={styles.looking} aria-label="Looking for">
+      <h3 className={styles.lookingTitle}>LOOKING FOR</h3>
+      {recipes.length === 0 && resources.length === 0 && (
+        <p className={styles.hint}>Star recipes and resources when crafting to see them here.</p>
+      )}
+      {recipes.map((r) => (
+        <div key={r.key} className={styles.lookingRow}>
+          <span className={styles.lookingName}>
+            {r.name}
+            <span data-ready={r.missing === 0 || undefined}>
+              {r.missing ? `needs ${r.missing}` : '✓ ready'}
+            </span>
+          </span>
+          <span className={styles.tokens}>
+            {r.spaces.map((sp, k) => {
+              const part = r.parts[sp.part];
+              const id = part?.ids?.[0];
+              return (
+                <span
+                  key={k}
+                  className={styles.token}
+                  data-missing={!sp.paid || undefined}
+                  title={partWords(part)}
+                >
+                  {id ? (
+                    <img src={ASSETS.resources[id]} alt="" />
+                  ) : part?.nodes?.[0] ? (
+                    <img src={NODE_IMAGE[part.nodes[0]]} alt="" />
+                  ) : (
+                    '?'
+                  )}
+                </span>
+              );
+            })}
+          </span>
+        </div>
+      ))}
+      {resources.length > 0 && (
+        <div className={styles.lookingRow}>
+          <span className={styles.lookingName}>Starred resources</span>
+          <span className={styles.tokens}>
+            {resources.map((id) => (
+              <span key={id} className={styles.token} title={resourceName(id)}>
+                <img src={ASSETS.resources[id]} alt={resourceName(id)} />
+              </span>
+            ))}
+          </span>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+/** A recipe part in words, for its token's hint. */
+function partWords(part: RecipePart | undefined): string {
+  if (!part) return '';
+  if (part.ids) return part.ids.map(resourceName).join(' or ');
+  if (part.nodes?.length) return `Any ${part.nodes.map((n) => NODE_NAME[n]).join(' or ')}`;
+  return 'Any resource';
+}
+
+/** The table's own small seeded random (for the cards' tilt), so a reload looks the same. */
+function rngOf(seed: number): () => number {
+  let s = seed | 0;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
