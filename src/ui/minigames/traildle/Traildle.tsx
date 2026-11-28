@@ -15,6 +15,7 @@
  * clicking a sign; ← →; Backspace; Enter.
  */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { mgSfx, useClockTicks } from '../sound';
 import { asset } from '../../../config/assets';
 import { g } from '../../../minigames/greens';
 import {
@@ -72,6 +73,7 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const playing = game.phase === 'playing' && !still;
   const timed = game.timeLeft !== null;
+  useClockTicks(game.timeLeft, game.phase === 'playing' && !still);
 
   // The pair's clock.
   useEffect(() => {
@@ -95,9 +97,11 @@ export function Traildle({ settings, hikers, seed, onDone, still = false }: Puzz
   };
   const typeDigit = (digit: number) => {
     const i = hover ?? sel;
+    mgSfx('traildle.key');
     put(i, digit, true);
   };
   const back = () => {
+    mgSfx('traildle.key');
     if (cur[sel] !== null) put(sel, null, false);
     else if (sel > 0) {
       setSel(sel - 1);

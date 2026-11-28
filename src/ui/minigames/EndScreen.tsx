@@ -34,6 +34,7 @@ import type { MinigameHiker, MinigameResult } from '../../minigames/types';
 import { useReducedMotion } from '../app/useReducedMotion';
 import { HikerToken } from './HikerToken';
 import { PixelScreen } from './PixelScreen';
+import { mgSfx } from './sound';
 import styles from './EndScreen.module.css';
 
 const E = BALANCE.minigames.endScreen;
@@ -124,6 +125,16 @@ export function EndScreen({
   }, [ready, onContinue]);
 
   const titleOn = titleShown(t, tr);
+  // Challenge Passed's fanfare or Failed's sad tune, then the stamp as the title lands.
+  useEffect(() => {
+    mgSfx(passed ? 'mg.passed' : 'mg.failed');
+  }, [passed]);
+  const stamped = useRef(false);
+  useEffect(() => {
+    if (!titleOn || stamped.current) return;
+    stamped.current = true;
+    mgSfx('mg.stamp');
+  }, [titleOn]);
 
   // How the screen comes in.
   let screenStyle: CSSProperties;

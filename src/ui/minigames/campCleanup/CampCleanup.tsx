@@ -7,7 +7,7 @@
  *
  * Turning: the arrow keys or WASD, a swipe, or a tap on a side of the head.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -27,7 +27,7 @@ import { useLaneInput } from '../lanes/useLaneInput';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import { litKey, useLitArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -107,15 +107,14 @@ export function CampCleanup({ settings, hikers, seed, onDone, still = false }: P
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
-  // Sounds: a pickup pops, a crash hits.
-  const pickAt = game.lastPickup?.at;
-  const crashAt = game.lastCrash?.at;
-  useEffect(() => {
-    if (pickAt !== undefined && !still) playSound('pop');
-  }, [pickAt, still]);
-  useEffect(() => {
-    if (crashAt !== undefined && !still) playSound('hit');
-  }, [crashAt, still]);
+  // Sounds: a plastic crinkle for each pickup, a tumble when the line crashes.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.lastPickup && b.lastPickup !== a.lastPickup) out.push('cleanup.pick');
+    if (b.lastCrash && b.lastCrash !== a.lastCrash) out.push('cleanup.crash');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
 
   const head = game.snake[0];
   const input = useLaneInput({

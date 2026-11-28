@@ -21,7 +21,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -110,6 +110,18 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
       return p.x >= c.x - 20 && p.x <= c.x + 20 && p.y >= c.y - 14 && p.y <= c.y + 44;
     });
 
+  // A raccoon chitters as it pops up (a skunk just pops).
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    b.cans.forEach((m, i) => {
+      if (m && m !== a.cans[i] && m.upAt !== a.cans[i]?.upAt) {
+        out.push(m.kind === 'raccoon' ? 'raccoon.chitter' : 'mg.pop');
+      }
+    });
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
+
   const onDown = (e: ReactPointerEvent) => {
     if (!running) return;
     e.preventDefault();
@@ -118,7 +130,7 @@ export function Whackoon({ settings, hikers, seed, onDone, still = false }: Puzz
     const i = canAt(p);
     if (i < 0) return;
     const out = whack(game, i);
-    if (out.outcome === 'bonk') playSound('pop');
+    if (out.outcome === 'bonk') mgSfx('whackoon.bonk');
     if (out.outcome === 'spray' || out.outcome === 'wasted') playSound('miss');
     setGame(out.state);
   };

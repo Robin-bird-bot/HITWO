@@ -15,6 +15,7 @@
  * tap picks what's under it), or Dark + windy.
  */
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useClockTicks } from '../sound';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -104,6 +105,7 @@ export function FindObject({ settings, hikers, seed, onDone, still = false }: Pu
 
   // The clock (and the wind): a frame loop while a round is on.
   const running = !intro && game.phase === 'playing' && !still;
+  useClockTicks(game.timeLeft, running);
   useEffect(() => {
     if (!running) return;
     let last = performance.now();

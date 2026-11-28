@@ -98,6 +98,8 @@ interface MapViewProps {
   underlay?: ReactNode;
   /** The illustrated map's wood table behind the sheet (Phase 10.6). */
   table?: boolean;
+  /** It's snowing: people's footsteps crunch. */
+  snowing?: boolean;
   /** The Illustrated map's bridges, where paths cross water. */
   bridges?: readonly Bridge[];
   /** Over the tiles, under the tokens: the Illustrated map's place names. */
@@ -161,6 +163,7 @@ export function MapView({
   mapStyle = 'classic',
   underlay,
   table = false,
+  snowing = false,
   bridges,
   labels,
 }: MapViewProps) {
@@ -253,6 +256,8 @@ export function MapView({
     <div
       ref={viewportRef}
       className={styles.viewport}
+      // Tiles and tokens make no click or hover sound (picking a hiker has its own).
+      data-sound="none"
       data-dragging={dragged ? 'hiker' : undefined}
       data-routes={routes || undefined}
       data-style={mapStyle}
@@ -324,6 +329,7 @@ export function MapView({
             }}
             {...(hikerDrag ? { canDrag: hikerDrag.canDrag } : {})}
             {...(order ? { order } : {})}
+            snowing={snowing}
           />
           {overlay}
           {dragged && (

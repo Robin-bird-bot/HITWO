@@ -21,7 +21,7 @@ import { TIER_LABELS } from '../../../minigames/types';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { playSound, useClockTicks } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from './Quick.module.css';
@@ -56,6 +56,7 @@ export function TrailBlazes({ settings, hikers, seed, onDone, still = false }: P
   );
   const byId = (id: string) => hikers.find((h) => h.id === id)!;
   const running = !still && !game.over;
+  useClockTicks(game.mode === 'clock' ? game.clockLeft : null, running);
   const demo = useDemoMode();
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);

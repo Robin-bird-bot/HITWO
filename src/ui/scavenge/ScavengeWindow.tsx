@@ -10,7 +10,9 @@
  * A Sack keeps more cards: after the first take the window comes back with
  * that card marked Taken, for another take or Done.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { sfx } from '../../audio/engine';
+import { revealCues } from '../../audio/reveal';
 import { SCAVENGE_CARDS } from '../../content';
 import { hikerColor } from '../../content/characters';
 import { BALANCE } from '../../config/balance';
@@ -111,6 +113,7 @@ export function ScavengeWindow({
   useEffect(() => {
     windowRef.current?.focus();
   }, [windowRef]);
+  useScavengeSounds(open);
 
   const hiker = state.hikers.find((h) => h.id === open?.hikerId);
   const tile = open ? state.section.tiles[open.tileId] : undefined;
@@ -280,7 +283,12 @@ export function ScavengeWindow({
                 </button>
               )}
               {canCancel && (
-                <button type="button" className={styles.secondary} onClick={onCancel}>
+                <button
+                  type="button"
+                  className={styles.secondary}
+                  onClick={onCancel}
+                  data-sound="ui.cancel"
+                >
                   Not now
                 </button>
               )}
@@ -306,6 +314,7 @@ export function ScavengeWindow({
                 type="button"
                 className={styles.take}
                 disabled={!take || !!takeReason}
+                data-sound="card.take"
                 onClick={() => take && !takeReason && onTake(take)}
               >
                 {card
@@ -318,6 +327,48 @@ export function ScavengeWindow({
       </div>
     </div>
   );
+}
+
+/**
+ * The scavenge's sounds (32-audio-system.md, section 6): the node's rummage
+ * and a deal per card as the window opens; each card's flip with its reveal
+ * chimes; and, after a take, the cards left over sliding away.
+ */
+function useScavengeSounds(open: GameState['scavenge']) {
+  const flipped = useRef<boolean[] | null>(null);
+  // Once a card is face up, the window only closes after a take: the rest slide away.
+  const took = useRef(false);
+  useEffect(() => {
+    took.current = !!open?.took || !!open?.cards.some((c) => c.flipped);
+  });
+  const node = open?.cards.find((c) => c.node)?.node ?? null;
+  useEffect(() => {
+    const at = performance.now();
+    if (node) sfx(`act.scavenge.${node}`);
+    sfx('ui.windowOpen');
+    return () => {
+      // React's development double mount isn't a close.
+      if (performance.now() - at > 100) sfx(took.current ? 'card.discard' : 'ui.windowClose');
+    };
+  }, [node]);
+  const count = open?.cards.length ?? 0;
+  useEffect(() => {
+    for (let i = 0; i < count; i++) sfx('card.deal', { delay: i * BALANCE.audio.dealGapSec });
+  }, [count]);
+  useEffect(() => {
+    const now = open?.cards.map((c) => c.flipped) ?? [];
+    const was = flipped.current;
+    flipped.current = now;
+    if (!was || !open) return;
+    let k = 0;
+    open.cards.forEach((c, i) => {
+      if (!c.flipped || was[i]) return;
+      for (const cue of revealCues(c.rarity, k * BALANCE.audio.flipGapSec)) {
+        sfx(cue.id, cue.delay ? { delay: cue.delay } : {});
+      }
+      k += 1;
+    });
+  }, [open]);
 }
 
 /** A scavenge card's normal size, the gap between cards, and the room for the row (the window's inside). */

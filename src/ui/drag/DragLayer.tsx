@@ -3,6 +3,7 @@
  * few pixels, finds the spot under it, drops or cancels, and draws a copy of
  * the dragged thing under the pointer. Put it inside the Stage, around the game.
  */
+import { sfx } from '../../audio/engine';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useStage } from '../stage/StageContext';
@@ -88,6 +89,7 @@ export function DragLayer({
           if (!active && Math.hypot(ev.clientX - x0, ev.clientY - y0) < DRAG_START) return;
           if (!active) {
             active = true;
+            sfx('ui.dragPick');
             setGhost(g);
             update({ payload, hover: null });
           }
@@ -107,8 +109,13 @@ export function DragLayer({
           pointer.set(null);
           update(null);
           setGhost(null);
-          if (!drop || !ev) return;
+          if (!drop || !ev) {
+            sfx('ui.dragNo');
+            return;
+          }
           const spot = spotAt(ev.clientX, ev.clientY, payload, targets.current);
+          // Dropped somewhere it can't go: it slides back.
+          sfx(spot ? 'ui.dragDrop' : 'ui.dragNo');
           if (spot) {
             targets.current.get(spot.id)?.onDrop(payload, spot.arg, {
               x: (ev.clientX - fitRef.current.left) / fitRef.current.scale,

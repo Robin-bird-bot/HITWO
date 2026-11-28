@@ -6,6 +6,7 @@
  * From the top: the midnight-blue ribbon, the creature's art and name, one
  * line for each hiker hit (portrait, sentence, result chip), and who was safe.
  */
+import { useOpenSound } from '../../audio/uiSounds';
 import { colorOfHiker } from '../app/hikerLook';
 import { useEffect, useRef, useState } from 'react';
 import { ASSETS } from '../../config/assets';
@@ -30,6 +31,8 @@ export function NightEventWindow({
   event: NightEventShown;
   onClose(): void;
 }) {
+  // Something was lost or hurt (the window only opens when the event hit someone).
+  useOpenSound(null, 'night.bad');
   const [small, setSmall] = useState(false);
   const ok = useRef<HTMLButtonElement>(null);
   const { ref, windowProps, translate } = useDraggable<HTMLElement>('nightEvent');

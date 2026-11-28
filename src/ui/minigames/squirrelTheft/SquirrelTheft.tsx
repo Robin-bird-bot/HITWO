@@ -35,7 +35,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from '../quick/Quick.module.css';
@@ -71,6 +71,18 @@ export function SquirrelTheft({ settings, hikers, seed, onDone, still = false }:
   const running = !still && !game.over;
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
+  // Squirrels scurry up, chitter when they steal, and each nut lands well or not.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.targets.length > a.targets.length) out.push('squirrel.scurry');
+    if (b.stolen.length > a.stolen.length) out.push('squirrel.chitter');
+    if (b.last && b.last !== a.last) {
+      out.push(
+        b.last.kind === 'fed' ? 'mg.point' : b.last.kind === 'bear' ? 'mg.wrong' : 'mg.miss',
+      );
+    }
+    return out;
+  });
   const sceneRef = useRef<HTMLDivElement>(null);
   const byId = (id: string) => hikers.find((h) => h.id === id);
   const who = thrower(game);
@@ -79,7 +91,6 @@ export function SquirrelTheft({ settings, hikers, seed, onDone, still = false }:
   const act = (a: SquirrelAction) => {
     if (a.kind === 'skip') setGame((s) => skipIntro(s));
     else {
-      playSound('tick');
       setGame((s) => throwNut(s, a.to));
     }
   };

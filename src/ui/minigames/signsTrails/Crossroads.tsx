@@ -10,7 +10,7 @@
  *   hiker's icon in the middle, footprints on the way they came. An arrow
  *   key or WASD, a tap on that side's trail, or a swipe.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -30,7 +30,7 @@ import { useLaneInput } from '../lanes/useLaneInput';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound } from '../sound';
 import { litKey, useLitArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -89,7 +89,8 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
     const out = choose(game, d);
     if (out === game) return;
     // A step, a bump (the way you came), or a wrong turn.
-    playSound(out.phase === 'step' ? 'tick' : out.phase === 'walk' ? 'hit' : 'miss');
+    if (out.phase === 'step') mgSfx('mg.point');
+    else playSound(out.phase === 'walk' ? 'hit' : 'miss');
     setGame(out);
   };
   const input = useLaneInput({
@@ -108,6 +109,15 @@ export function Crossroads({ settings, hikers, seed, onDone, still = false }: Pu
   const color = who ? byId(who).color : '#d3dfaf';
   const since = game.time - game.phaseAt;
   const studying = game.phase === 'study';
+  // Each arrow of the row shows with a blip, higher for each.
+  const studyFor = studying && !still ? game.at : null;
+  const rowLength = Math.min(game.arrows.length, game.count);
+  useEffect(() => {
+    if (studyFor === null) return;
+    for (let k = 0; k < rowLength; k++) {
+      mgSfx('crossroads.arrow', { version: Math.min(3, k), delay: k * BALANCE.audio.arrowGapSec });
+    }
+  }, [studyFor, rowLength]);
   const missedBy = game.missed ? byId(game.missed.by) : null;
 
   // The icon walking out of this crossing, then into the next from the other side.

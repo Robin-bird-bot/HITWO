@@ -1091,6 +1091,7 @@ export function EndButton({ state, onEndPhase }: { state: GameState; onEndPhase(
       type="button"
       className={styles.end}
       onClick={onEndPhase}
+      data-sound="ui.endPhase"
       aria-label={`End the ${state.phase}. ${sub}.`}
     >
       <span className={styles.endLabel}>END {PHASE_NAME[state.phase].toUpperCase()}</span>

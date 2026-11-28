@@ -55,8 +55,17 @@ describe('limits', () => {
     if (a.play) expect(a.stop.map((v) => v.id)).toEqual([`s.${L.total - 1}`]);
   });
 
+  it('only counts sounds still playing when the new one starts', () => {
+    const done = { ...voice('card.deal', 0), ends: 150 };
+    const later = voice('card.deal', 900);
+    const playing = [done, voice('card.deal', 160), voice('card.deal', 320), later];
+    // At 480 ms the first has ended and the last hasn't started: room for one more.
+    expect(admit(playing, 'card.deal', 480, 320)).toEqual({ play: true, stop: [] });
+  });
+
   it('won’t start the same sound twice within a few milliseconds', () => {
     expect(admit([], 'ui.click', 1000, 1000 - L.retriggerMs + 1)).toEqual({ play: false });
+    expect(admit([], 'ui.click', 1000, 1000 + L.retriggerMs - 1)).toEqual({ play: false });
     expect(admit([], 'ui.click', 1000, 1000 - L.retriggerMs)).toEqual({ play: true, stop: [] });
   });
 

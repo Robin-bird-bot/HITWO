@@ -50,16 +50,33 @@ export function TitleScreen({
         </div>
         {saved ? (
           <>
-            <button type="button" className={styles.newHike} onClick={onContinue} autoFocus>
+            <button
+              type="button"
+              className={styles.newHike}
+              onClick={onContinue}
+              autoFocus
+              data-sound="title.start"
+            >
               <span>Continue</span>
               <span className={styles.saved}>{saved}</span>
             </button>
-            <button type="button" className={styles.secondary} onClick={onNewHike}>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={onNewHike}
+              data-sound="title.start"
+            >
               New Hike
             </button>
           </>
         ) : (
-          <button type="button" className={styles.newHike} onClick={onNewHike} autoFocus>
+          <button
+            type="button"
+            className={styles.newHike}
+            onClick={onNewHike}
+            autoFocus
+            data-sound="title.start"
+          >
             New Hike
           </button>
         )}

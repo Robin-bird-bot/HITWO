@@ -28,7 +28,7 @@ import {
 import { HikerToken } from '../HikerToken';
 import { PixelScreen } from '../PixelScreen';
 import { clock, pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx } from '../sound';
 import { useCountdown } from '../useCountdown';
 import ui from '../gpsUi.module.css';
 import panel from '../panel.module.css';
@@ -98,8 +98,9 @@ export function Minefield({ settings, hikers, seed, onDone, still = false }: Puz
     const out = check(game, c);
     if (out.state === game) return;
     setGame(out.state);
+    // The dog sniffs a square; stepping in it squishes.
+    mgSfx(out.fell ? 'minefield.squish' : 'minefield.sniff');
     if (out.fell) {
-      playSound('miss');
       setSplash((s) => ({ cell: c, n: (s?.n ?? 0) + 1 }));
       const next = front(out.state);
       setMessage(

@@ -12,6 +12,7 @@
  *   others, with the taker's face on it. Claim rewards applies them all.
  * - Once accomplished it turns grey and read-only, showing who took what.
  */
+import { useOpenSound } from '../../audio/uiSounds';
 import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { ITEMS } from '../../content';
 import { ASSETS, wonderArt } from '../../config/assets';
@@ -50,6 +51,7 @@ interface WonderWindowProps {
 }
 
 export function WonderWindow({ state, tileId, onClose, onAccomplish }: WonderWindowProps) {
+  useOpenSound('wonder.open');
   const p = wonderProgress(state, tileId);
   const { ref, windowProps, translate } = useDraggable<HTMLDivElement>('wonder', {
     keepOnStage: 120,

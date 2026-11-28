@@ -10,6 +10,7 @@
  *   both items: that's the confirm. One trade.
  * Esc or the X closes it.
  */
+import { useOpenSound } from '../../audio/uiSounds';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { ASSETS } from '../../config/assets';
 import { hikerColor } from '../../content/characters';
@@ -52,6 +53,7 @@ export function TrailShopWindow({
   onDispatch(action: Action): boolean;
   onClose(): void;
 }) {
+  useOpenSound();
   const shop = state.section.tiles[tileId]?.shop;
   const [buying, setBuying] = useState<string | null>(null);
   const windowRef = useFocusOnOpen<HTMLElement>();

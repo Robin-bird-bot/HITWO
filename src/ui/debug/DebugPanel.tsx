@@ -70,7 +70,8 @@ export function DebugPanel({ state, onQuit, onNewGame, onNewTestHike }: DebugPan
   };
 
   return (
-    <aside className={styles.panel} aria-label="Debug panel">
+    // The debug panel stays quiet, so the Sound tab's play buttons are heard alone.
+    <aside className={styles.panel} aria-label="Debug panel" data-sound="none">
       <header className={styles.header}>
         <span className={styles.title}>DEBUG</span>
         <span className={styles.meta}>

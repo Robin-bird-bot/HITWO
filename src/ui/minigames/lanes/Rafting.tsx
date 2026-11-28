@@ -24,7 +24,7 @@ import { HikerToken } from '../HikerToken';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
@@ -81,10 +81,13 @@ export function Rafting({ settings, hikers, seed, onDone, still = false }: Puzzl
     return () => cancelAnimationFrame(frame);
   }, [running]);
 
-  const hitAt = game.lastHit?.at;
-  useEffect(() => {
-    if (hitAt !== undefined && !still) playSound('hit');
-  }, [hitAt, still]);
+  // A paddle stroke to change lanes, a rubbery bump on a rock.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.slide && b.slide !== a.slide) out.push('raft.paddle');
+    if (b.lastHit && b.lastHit !== a.lastHit) out.push('raft.bump');
+    return out;
+  });
 
   useEffect(() => {
     if (!game.over || still || reported.current) return;

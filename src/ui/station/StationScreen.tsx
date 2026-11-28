@@ -13,6 +13,8 @@
  * - Preview Next Trail (see PreviewTrail.tsx) and Rest & Go (with a confirm).
  * - Simple mode keeps the same room; Preview Next Trail sits in the talk.
  */
+import { sfx } from '../../audio/engine';
+import { useOpenSound } from '../../audio/uiSounds';
 import { useState } from 'react';
 import { ITEMS } from '../../content';
 import { STATION_THEME_BY_ID } from '../../content/stations';
@@ -59,6 +61,8 @@ export function StationScreen({
   /** True when the action went through. */
   onDispatch(action: Action): boolean;
 }) {
+  // Into the station and out again (33-sound-list.md, "Ranger Station").
+  useOpenSound('station.enter', 'station.leave');
   const [talk, setTalk] = useState<Talk | null>('greet');
   const [buying, setBuying] = useState<string | null>(null);
   const [selling, setSelling] = useState<SaleRequest | null>(null);
@@ -178,6 +182,7 @@ export function StationScreen({
           role="tab"
           aria-selected={shown === 'workbench'}
           className={styles.tab}
+          data-sound="station.workbench"
           onClick={() => setTab('workbench')}
         >
           <Icon name="hammer" size={16} />
@@ -242,6 +247,7 @@ export function StationScreen({
           cancelLabel="Stay a while"
           onConfirm={() => {
             setResting(false);
+            sfx('station.rest');
             onDispatch({ type: 'restAndGo' });
           }}
           onCancel={() => setResting(false)}
@@ -303,6 +309,7 @@ function TalkBubble({
           type="button"
           className={styles.option}
           aria-pressed={talk === 'ahead'}
+          data-sound="station.ask"
           onClick={() => onTalk('ahead')}
         >
           <Icon name="sign" size={14} />

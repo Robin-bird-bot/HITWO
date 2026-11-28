@@ -7,6 +7,7 @@
 import type { ReactNode } from 'react';
 import type { MinigameHiker } from '../../../minigames/types';
 import { HikerToken } from '../HikerToken';
+import { useHikerResults, useTurnSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Quick.module.css';
@@ -29,6 +30,16 @@ export function TurnBar({
   /** Their squares, on the right of the slot. */
   extra?(id: string): ReactNode;
 }) {
+  // The next hiker's turn, and each hiker's part passing or failing.
+  useTurnSound(active);
+  useHikerResults(
+    Object.fromEntries(
+      hikers.map((h) => {
+        const w = word(h.id);
+        return [h.id, w === 'PASSED' ? 'passed' : w === 'FAILED' ? 'failed' : null];
+      }),
+    ),
+  );
   return (
     <div className={`${ui.box} ${hud.panel}`}>
       <span className={styles.slots}>

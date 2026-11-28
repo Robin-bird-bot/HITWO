@@ -11,6 +11,7 @@
  * miss changes it; mockup 9-memory-clock.png) and each hiker's sets left.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useClockTicks, useFrameSounds } from '../sound';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import {
@@ -105,6 +106,11 @@ export function MemoryPuzzle({ settings, hikers, seed, onDone, still = false }: 
 
   // The clock: fixed steps, as fast as the screen draws, after the preview.
   const running = !still && clockRuns(game);
+  // A bright chime when cards match, and the clock's last seconds.
+  useFrameSounds(game, (a, b) =>
+    b.matched.filter(Boolean).length > a.matched.filter(Boolean).length ? ['memory.match'] : [],
+  );
+  useClockTicks(game.timeLeft, running);
   useEffect(() => {
     if (!running) return;
     let last = performance.now();

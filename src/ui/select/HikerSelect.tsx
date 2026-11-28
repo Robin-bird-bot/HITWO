@@ -15,6 +15,7 @@
  *   designed hiker in a spot shows their 3 starting traits: pick one (it can
  *   change until START). BY STARTING TRAIT lists each hiker once per start.
  */
+import { sfx } from '../../audio/engine';
 import { useMemo, useRef, useState, type CSSProperties } from 'react';
 import { PARTY_COLORS } from '../../content/partyColors';
 import { ROSTER, ROSTER_BY_ID } from '../../content/roster';
@@ -122,6 +123,7 @@ function SelectScreen({
     accepts: (p, arg) => p.kind === 'pick' && canPlace(party, p.hikerId, Number(arg)),
     onDrop: (p, arg) => {
       if (p.kind !== 'pick') return;
+      if (p.spot === null) sfx('select.add');
       setParty((q) => place(q, p.hikerId, Number(arg)));
       withStart(p.hikerId, p.start);
     },
@@ -130,10 +132,13 @@ function SelectScreen({
   const away = useDrop('away', {
     accepts: (p) => p.kind === 'pick' && p.spot !== null,
     onDrop: (p) => {
-      if (p.kind === 'pick') setParty((q) => remove(q, spotOf(q, p.hikerId)));
+      if (p.kind !== 'pick') return;
+      sfx('select.remove');
+      setParty((q) => remove(q, spotOf(q, p.hikerId)));
     },
   });
   const addHiker = (id: string, start?: string) => {
+    sfx('select.add');
     setParty((q) => add(q, id));
     withStart(id, start);
   };
@@ -169,6 +174,7 @@ function SelectScreen({
           type="button"
           className={styles.start}
           disabled={!canStart(party, starts)}
+          data-sound="select.go"
           title={
             members(party).some((id) => needsStart(id, starts))
               ? 'Pick a starting trait for each hiker first.'
@@ -190,7 +196,10 @@ function SelectScreen({
             leaving={!!id && picking?.hikerId === id && picking.spot !== null}
             hovered={drag?.hover?.id === 'spot' && drag.hover.arg === String(i)}
             dropProps={spots.props(String(i))}
-            onRemove={() => setParty((q) => remove(q, i))}
+            onRemove={() => {
+              sfx('select.remove');
+              setParty((q) => remove(q, i));
+            }}
             start={id ? starts[id] : undefined}
             onPickStart={(tree) => id && setStarts((s) => ({ ...s, [id]: tree }))}
           />
@@ -222,6 +231,7 @@ function SelectScreen({
                 type="button"
                 className={styles.sortOption}
                 aria-pressed={sort === id}
+                data-sound="select.sort"
                 onClick={() => {
                   HIKER_SORT.set(id);
                   toTop();

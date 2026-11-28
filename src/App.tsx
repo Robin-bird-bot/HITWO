@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { sfx } from './audio/engine';
+import { useAmbience } from './audio/useAmbience';
 import { DEFAULT_PARTY } from './content/roster';
 import { TEST_HIKERS } from './content/testHikers';
 import {
@@ -63,6 +65,10 @@ export function App() {
     null,
   );
   const skipPacking = useSkipPacking();
+  // The title's evening forest; the game screen sets its own.
+  useAmbience(
+    screen === 'title' ? { place: 'title' } : screen === 'game' && game ? null : { place: 'none' },
+  );
 
   if (hash.startsWith('#debug-map')) return <DebugMap hash={hash} />;
   if (hash.startsWith('#debug-cards') && debugEnabled()) return <DebugCards />;
@@ -79,6 +85,7 @@ export function App() {
     packed?: NewGameOptions['packed'],
   ) => {
     gameStore.newGame(createGame({ seed, hikers, ...(packed ? { packed } : {}) }));
+    sfx('hike.start');
     setPending(null);
     setPacking(null);
     setSelection(null);

@@ -6,7 +6,7 @@
  * TOO SLOW to TOO FAST, with the right tempo lit and a marker for the
  * rhythm now. A and D either side; the one to press next is lit.
  */
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { BALANCE } from '../../../config/balance';
 import { fallenBranchBot } from '../../../minigames/fallenBranch/bot';
 import {
@@ -28,7 +28,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './FallenBranch.module.css';
@@ -83,14 +83,22 @@ export function FallenBranch({ settings, hikers, seed, onDone, still = false }: 
   });
   useDemoBot(demo && running, game, fallenBranchBot, (k) => saw(k));
 
-  // A sound for each stroke: a rasp for a cut, a clunk when it binds.
-  const strokeAt = game.lastStroke?.at;
-  const strokeKind = game.lastStroke?.kind;
-  useEffect(() => {
-    if (strokeAt === undefined || still) return;
-    if (strokeKind === 'cut') playSound('tick');
-    else if (strokeKind === 'bind') playSound('hit');
-  }, [strokeAt, strokeKind, still]);
+  // A rasp for each stroke (A pushes, D pulls), a clunk when it binds, a creak at a
+  // knot, and a crack and a thud when the branch falls.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    if (b.lastStroke && b.lastStroke !== a.lastStroke) {
+      const k = b.lastStroke.kind;
+      if (k === 'bind') out.push('saw.bind');
+      else if (k === 'cut' || k === 'slow') {
+        out.push(['saw.stroke', { version: b.lastKey === 'd' ? 1 : 0 }]);
+      }
+    }
+    if (b.knots.some((k) => a.cut < k.at && b.cut >= k.at)) out.push('saw.knot');
+    if (b.over && !a.over && b.passed) out.push('saw.through');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
 
   // Swiping back and forth (or tapping a half) on a phone.
   const swipe = useRef<{ anchor: number; dir: SawKey | null; moved: boolean; x: number } | null>(

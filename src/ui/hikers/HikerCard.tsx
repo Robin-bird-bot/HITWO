@@ -11,6 +11,7 @@
  * - A click (or Space) turns it over. Hovering a turned card lifts it to the
  *   middle of the screen, larger; on a phone, a long-press does.
  */
+import { sfx } from '../../audio/engine';
 import {
   useContext,
   useEffect,
@@ -136,6 +137,7 @@ export function HikerCard({
   const flip = () => {
     const next = !flipped;
     if (flippedProp === undefined) setOwn(next);
+    sfx('select.flip');
     onFlip?.(next);
     return next;
   };

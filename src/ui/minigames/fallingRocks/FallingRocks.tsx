@@ -9,6 +9,7 @@
  * left half) to back up; let go to stop.
  */
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useFrameSounds, type FrameSound } from '../sound';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { fallingRocksBot } from '../../../minigames/fallingRocks/bot';
@@ -78,6 +79,17 @@ export function FallingRocks({ settings, hikers, seed, onDone, still = false }: 
   const running = !still && !game.over;
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
+  // A rumble as a boulder (or a slide) warns, a whistle as a rock falls, a thud as it lands.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    for (const h of b.hazards) {
+      const crossed = (t: number) => a.time < t && b.time >= t;
+      if (h.kind === 'boulder' && crossed(h.warnAt)) out.push('rocks.rumble');
+      if (h.kind === 'rock' && crossed(h.warnAt)) out.push('rocks.fall');
+      if (h.kind === 'rock' && crossed(h.landAt)) out.push('rocks.impact');
+    }
+    return out;
+  });
   const sceneRef = useRef<HTMLDivElement>(null);
   const byId = (id: string) => hikers.find((h) => h.id === id);
   const tints = useTintedArt(

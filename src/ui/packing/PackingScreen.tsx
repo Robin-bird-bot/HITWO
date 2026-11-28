@@ -345,7 +345,13 @@ export function PackingScreen({
   const cx = skin.cx;
 
   return (
-    <div ref={root} className={`${styles.screen} ${cx.screen ?? ''}`} data-look={look}>
+    // The machines make their own sounds (in code), so its buttons don't click.
+    <div
+      ref={root}
+      className={`${styles.screen} ${cx.screen ?? ''}`}
+      data-look={look}
+      data-sound="none"
+    >
       <Header skin={skin} step={state.step} />
       <Drawers
         skin={skin}
@@ -428,7 +434,12 @@ export function PackingScreen({
         </div>
       )}
       <div className={styles.corner}>
-        <button type="button" className={styles.cornerButton} onClick={() => leave('back')}>
+        <button
+          type="button"
+          className={styles.cornerButton}
+          onClick={() => leave('back')}
+          data-sound="ui.cancel"
+        >
           ◂ BACK
         </button>
         <button

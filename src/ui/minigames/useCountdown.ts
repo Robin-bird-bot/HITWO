@@ -4,6 +4,7 @@
  * out. A new `resetKey` starts it over (a new round).
  */
 import { useEffect, useRef, useState } from 'react';
+import { useClockTicks } from './sound';
 
 export function useCountdown(
   total: number | null,
@@ -35,5 +36,8 @@ export function useCountdown(
       up.current();
     }
   }, [elapsed, total, running, resetKey]);
-  return total === null ? null : Math.max(0, total - elapsed);
+  const left = total === null ? null : Math.max(0, total - elapsed);
+  // The last five seconds tick, then time's up (32-audio-system.md, section 6).
+  useClockTicks(left, running);
+  return left;
 }

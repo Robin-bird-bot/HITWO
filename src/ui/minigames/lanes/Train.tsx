@@ -25,7 +25,7 @@ import { useTinted } from '../dodge/tint';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { playSound, useFrameSounds, useMgLoop, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import styles from './Lanes.module.css';
@@ -90,6 +90,19 @@ export function Train({ settings, hikers, seed, onDone, still = false }: PuzzleR
   useEffect(() => {
     if (hitAt !== undefined && !still) playSound('hit');
   }, [hitAt, still]);
+  // The horn with the headlight's flash, the rumble going past, and the crossing bell while one is near.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    for (const t of b.trains) {
+      if (a.time < t.warnAt && b.time >= t.warnAt) out.push('train.horn');
+      if (a.time < t.enterAt && b.time >= t.enterAt) out.push('train.pass');
+    }
+    return out;
+  });
+  useMgLoop(
+    'train.crossing',
+    running && game.trains.some((t) => game.time >= t.warnAt && game.time < t.leaveAt),
+  );
 
   useEffect(() => {
     if (!game.over || still || reported.current) return;

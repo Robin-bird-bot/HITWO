@@ -30,7 +30,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
-import { playSound } from '../sound';
+import { mgSfx, playSound } from '../sound';
 import { tintKey, useTintedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -79,7 +79,9 @@ export function Birdsong({ settings, hikers, seed, onDone, still = false }: Puzz
     if (!running) return;
     setGame((s) => {
       const out = pick(s, c);
-      if (out !== s) playSound(out.wrong.length > s.wrong.length ? 'miss' : 'note');
+      if (out === s) return out;
+      if (out.wrong.length > s.wrong.length) mgSfx('mg.wrong');
+      else playSound('note', c + 1);
       return out;
     });
   };
@@ -93,10 +95,12 @@ export function Birdsong({ settings, hikers, seed, onDone, still = false }: Puzz
 
   // Each note plays its tone as it lights up at the middle line.
   const notes = notesNow(game);
-  const lit = notes.filter((n) => n.lit && n.seen).length;
+  const litNotes = notes.filter((n) => n.lit && n.seen);
+  const lit = litNotes.length;
+  const litColor = litNotes.at(-1)?.color ?? 0;
   useEffect(() => {
-    if (lit > 0 && !still) playSound('note');
-  }, [lit, still]);
+    if (lit > 0 && !still) playSound('note', litColor + 1);
+  }, [lit, still, litColor]);
 
   const listening = game.phase === 'listen' || game.phase === 'handoff';
   const answering = game.phase === 'answer' || game.phase === 'after';
@@ -205,7 +209,7 @@ export function Birdsong({ settings, hikers, seed, onDone, still = false }: Puzz
                   data-blink={blinkRight === c || undefined}
                   style={{ width: sq, height: sq * 0.86, background: BS.palette[c]!.color }}
                   onClick={() => !demo && choose(c)}
-                  onPointerEnter={() => ukulele && !demo && playSound('note')}
+                  onPointerEnter={() => ukulele && !demo && playSound('note', c + 1)}
                   disabled={still || game.phase !== 'answer'}
                   aria-label={`${BS.palette[c]!.name} (${c + 1})`}
                 >

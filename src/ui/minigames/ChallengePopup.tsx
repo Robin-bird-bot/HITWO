@@ -364,7 +364,14 @@ export function ChallengePopup({
               )}
             </div>
           ) : (
-            <button type="button" className={styles.start} onClick={onStart} autoFocus>
+            <button
+              type="button"
+              className={styles.start}
+              onClick={onStart}
+              autoFocus
+              // START powers the GPS on with its own sound.
+              data-sound={skip ? undefined : 'none'}
+            >
               {skip ? 'SKIP IT' : 'START'}
             </button>
           )}

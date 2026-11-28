@@ -28,7 +28,7 @@ import { Bar } from '../Bar';
 import { PixelScreen } from '../PixelScreen';
 import { pickOf, tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { mgSfx, playSound, useClockTicks } from '../sound';
 import { outlineKey, useOutlinedArt } from '../tintArt';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
@@ -83,10 +83,12 @@ export function SizeUp({ settings, hikers, seed, onDone, still = false }: Puzzle
   const grow = (dir: 'grow' | 'shrink') => {
     const out = press(game, dir);
     if (out !== game) {
-      playSound('tick');
+      // A springy boing up or down.
+      mgSfx('sizeup.stretch', { version: dir === 'grow' ? 0 : 1 });
       setGame(out);
     }
   };
+  useClockTicks(game.timeLeft, running);
   const lock = () => {
     const out = lockIn(game);
     if (out === game) return;

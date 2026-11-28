@@ -6,7 +6,8 @@
  * BEARINGS list and HOLD TO LOCK on the right; A on the left and D on the
  * right, which are also the halves of the screen to tap.
  */
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { BALANCE } from '../../../config/balance';
 import { g, RED } from '../../../minigames/greens';
 import { prepNumber } from '../../../minigames/prepare';
 import { TIER_LABELS } from '../../../minigames/types';
@@ -27,7 +28,7 @@ import { useDemoBot, useDemoMode } from '../demo';
 import { PixelScreen } from '../PixelScreen';
 import { tierOf, type PuzzleRunProps } from '../puzzleProps';
 import { toScene } from '../sceneCoords';
-import { playSound } from '../sound';
+import { useClockTicks, useFrameSounds, type FrameSound } from '../sound';
 import ui from '../gpsUi.module.css';
 import hud from '../hud.module.css';
 import q from './Quick.module.css';
@@ -126,11 +127,16 @@ export function WrongTurn({ settings, hikers, seed, onDone, still = false }: Puz
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
 
-  // A lock: a click.
-  const lockAt = game.lastLock?.at;
-  useEffect(() => {
-    if (lockAt !== undefined && !still) playSound('pop');
-  }, [lockAt, still]);
+  // The needle ratchets as it turns, a tone while it holds in the notch, a click and a chime on a lock.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    const step = BALANCE.audio.compassTickDeg;
+    if (Math.floor(a.needle / step) !== Math.floor(b.needle / step)) out.push('compass.ratchet');
+    if (b.hold > 0 && a.hold <= 0) out.push('compass.hold');
+    if (b.lastLock && b.lastLock !== a.lastLock) out.push('compass.lock');
+    return out;
+  });
+  useClockTicks(game.timeLeft, running);
 
   const turn = (t: Turn) => setGame((s) => setTurn(s, t));
   const held = useRef<string | null>(null);

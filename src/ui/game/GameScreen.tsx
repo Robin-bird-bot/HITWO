@@ -5,6 +5,9 @@
  * Moving: select a hiker, click a gold tile, check the cost preview, confirm.
  * Move All: pick who comes along, then a tile. Sleep: confirm under the grid.
  */
+import { sfx } from '../../audio/engine';
+import { useGameSounds } from '../../audio/useGameSounds';
+import { useAmbience } from '../../audio/useAmbience';
 import { MAP_STYLE, u } from '../../config/mapStyle';
 import { landRect } from '../map/illustrated/land/model';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -442,6 +445,19 @@ export function GameScreen({
   const [weatherShown, setWeatherShown] = useWeatherChange(state);
   // The night event window, when something hit the party at camp.
   const [nightShown, setNightShown] = useNightEvent(state);
+  // Sound (Phase 12): what each action did, and the ambience of where the party is.
+  useGameSounds(state);
+  const selectedTile = selected ? section.tiles[selected.tileId] : undefined;
+  useAmbience({
+    place: state.station ? 'station' : 'trail',
+    biome: section.biome,
+    night: state.phase === 'night',
+    weather: state.weather.today,
+    river: !!selectedTile?.nodes.some((n) => n.type === 'river' && n.revealed),
+    fire: hikers.some(
+      (h) => h.status === 'active' && section.tiles[h.tileId]?.special === 'campsite',
+    ),
+  });
   // Skill Trails (Phase 10.7): a window from a hiker frame, full screen at night with points.
   const [trailsOpen, setTrailsOpen] = useSkillTrails(state);
   const partyToast = usePartyToast(state);
@@ -545,6 +561,8 @@ export function GameScreen({
 
   const pickHiker = (id: HikerId, add = false) => {
     setSkipNote(undefined);
+    // Picking up a wooden game piece (no hiker motifs: Wyatt).
+    if (id !== selected?.id || add) sfx('map.select');
     if (!add) {
       if (group.length) setGroup([]);
       setGroupAsk(null);
@@ -1219,6 +1237,7 @@ export function GameScreen({
                 geo={geo}
                 mapStyle={mapStyle}
                 table={mapStyle === 'illustrated'}
+                snowing={state.weather.today === 'snow'}
                 underlay={
                   mapStyle === 'illustrated' && sheet ? (
                     <>

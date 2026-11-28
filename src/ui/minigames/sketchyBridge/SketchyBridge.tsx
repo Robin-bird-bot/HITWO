@@ -10,6 +10,7 @@
  * let go and it falls.
  */
 import { useMemo, useState } from 'react';
+import { useFrameSounds, type FrameSound } from '../sound';
 import { asset } from '../../../config/assets';
 import { BALANCE } from '../../../config/balance';
 import { seedRng, shuffle } from '../../../engine/rng';
@@ -24,6 +25,7 @@ import {
   result,
   setHolding,
   tick,
+  type SketchyBridgeState,
 } from '../../../minigames/sketchyBridge/logic';
 import { TIER_LABELS } from '../../../minigames/types';
 import { useDemoBot, useDemoMode } from '../demo';
@@ -81,6 +83,17 @@ export function SketchyBridge({ settings, hikers, seed, onDone, still = false }:
   const running = !still && !game.over;
   useFixedLoop(running, setGame, tick);
   useReportOnce(game, still, onDone, result);
+  // Old wood creaks as the bridge weakens (louder the weaker it is), and snaps when it breaks.
+  useFrameSounds(game, (a, b) => {
+    const out: FrameSound[] = [];
+    const step = (s: SketchyBridgeState) =>
+      Math.floor((s.integrity / s.full) * BALANCE.audio.bridgeCreaks);
+    if (step(b) < step(a)) {
+      out.push(['bridge.creak', { volume: 0.5 + 0.5 * (1 - b.integrity / b.full) }]);
+    }
+    if (b.brokeOn && !a.brokeOn) out.push('bridge.break');
+    return out;
+  });
   const byId = (id: string) => hikers.find((h) => h.id === id);
   const tints = useTintedArt(
     HIKER_FILES,
