@@ -148,8 +148,14 @@ export const BALANCE = {
     maxNodes: 3,
     /** Hiking Crocs and Work Boots' free move: Appetite off it, and durability it takes. */
     freeMove: { discount: 1, wear: 1 },
-    /** Jeans: scavenging costs this much less Appetite. */
-    jeansAppetite: 1,
+    /**
+     * Drinks restore Energy (29-core-loop.md, section 3): the plain Energy
+     * each gives. Wine, Piña Colada and Vente Coffee Misto keep their own
+     * Quality values. TODO(wyatt): Coffee [+2], 7-Up [+1], Citro Drink [+2].
+     */
+    drinkEnergy: { coffee: 2, sevenUp: 1, citroDrink: 2 },
+    /** Jeans: scavenging costs this much less Energy (29-core-loop.md, section 1). */
+    jeansEnergy: 1,
     /** Shelters' own effects (03-items.md, "Shelters"). */
     shelter: {
       /** Cabin and RV: more Energy from sleeping there. */
@@ -165,6 +171,11 @@ export const BALANCE = {
     },
     /** Crafting (03-items.md, "Crafting"; Wyatt, Nov 7 and Nov 13). */
     craft: {
+      /**
+       * Crafting costs this much Energy, paid when it happens, a workbench
+       * visit too (29-core-loop.md, section 1; Wyatt: "for now"). TODO(wyatt): [1].
+       */
+      energy: 1,
       /** Every hiker crafts every type at this tier until a workbench raises it (Phase 9). */
       startTier: 1,
       maxTier: 3,
@@ -197,10 +208,10 @@ export const BALANCE = {
     /** Sleepy Socks also work at the start of a phase with at least this much Energy. */
     sleepySocksEnergy: 7,
     /**
-     * TODO(wyatt): the Appetite for each extra card a Sack keeps. First guess: none;
-     * the scavenge's cost is paid once.
+     * TODO(wyatt): the Energy for each extra card a Sack keeps (29-core-loop.md,
+     * section 1: [0]); the scavenge's cost is paid once.
      */
-    sackAppetite: 0,
+    sackEnergy: 0,
   },
 
   /** The medical items (Phase 7). */
@@ -332,11 +343,10 @@ export const BALANCE = {
     /** A night without sleep costs this much Energy. */
     noSleepEnergy: 2,
     /**
-     * Each hiker who scavenges at night pays this much extra Appetite.
-     * TODO(wyatt): "Move or Scavenge at the night penalty" (Phase 6), so the
-     * same as a night move for now.
+     * Each hiker who scavenges at night pays this much extra Energy
+     * (29-core-loop.md, section 1: work costs Energy). TODO(wyatt): [1].
      */
-    scavengeExtraAppetite: 1,
+    scavengeExtraEnergy: 1,
   },
 
   /**
@@ -408,7 +418,8 @@ export const BALANCE = {
   },
 
   scavenge: {
-    appetite: 1,
+    /** Scavenging costs this much Energy (29-core-loop.md, section 1: work costs Energy). TODO(wyatt): [1]. */
+    energy: 1,
     /** Cards dealt, before family, trait and Abundance changes ("draw 3, pick 1"). */
     cards: 3,
     /**
@@ -620,8 +631,8 @@ export const BALANCE = {
     bountyExtraDrain: 1,
     /** Tend raises it this much (day only). TODO(wyatt): [+2]. */
     tend: 2,
-    /** Tend costs this much Appetite (Nov 14 update; it was 1 Energy). */
-    tendAppetite: 1,
+    /** Tend costs this much Energy (29-core-loop.md, section 1: work costs Energy). TODO(wyatt): [1]. */
+    tendEnergy: 1,
     /** Returning a resource to nature raises it this much. */
     returnToNature: 1,
     /**
@@ -854,10 +865,14 @@ export const BALANCE = {
     slotWeights: { T: 4, U: 4, 'T/U': 2, 'T/M': 2, 'U/M': 2, W: 1 },
   },
 
-  /** Sleep (Wyatt, Nov 5: +1, or +2 in a shelter). A night without sleep still costs night.noSleepEnergy. */
+  /**
+   * Sleep (29-core-loop.md, section 2: now that work costs Energy, sleep gives
+   * more back; it was +1, or +2 in a shelter). A night without sleep still
+   * costs night.noSleepEnergy. TODO(wyatt): [+2] and [+4].
+   */
   sleep: {
-    energy: 1,
-    shelteredEnergy: 2,
+    energy: 2,
+    shelteredEnergy: 4,
   },
 
   chance: {

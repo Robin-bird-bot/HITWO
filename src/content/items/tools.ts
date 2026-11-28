@@ -193,13 +193,13 @@ const SCAVENGING: ItemDef[] = [
     name: 'Shovel',
     tier: 1,
     uses: q(2, 3, 3, 3, 4),
-    text: 'Scavenging this phase costs no Appetite.',
+    text: 'Scavenging this phase costs no Energy.',
     recipe: 'Metal 2, Wood 2, any 2',
     use: SCAVENGE_THIS_PHASE,
     boostHooks: () => ({
       modifyCost: (q) =>
-        q.key === 'scavenge.appetite' ? { source: 'Shovel', percent: -100 } : undefined,
-      modifyScavenge: onScavenge({ source: 'Shovel', label: 'Shovel: no Appetite cost' }),
+        q.key === 'scavenge.energy' ? { source: 'Shovel', percent: -100 } : undefined,
+      modifyScavenge: onScavenge({ source: 'Shovel', label: 'Shovel: no Energy cost' }),
     }),
   }),
   tool({

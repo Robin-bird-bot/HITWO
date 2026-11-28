@@ -30,6 +30,7 @@ import {
   type HikerId,
   type StatName,
   type Tile,
+  craftCost,
   craftOpenReason,
 } from '../../engine';
 import type { IconName } from '../icons/paths';
@@ -342,6 +343,8 @@ function soon(id: keyof typeof SOON, label: string, icon: IconName): ActionState
 }
 
 const costText = (appetite: number) => (appetite === 0 ? 'No Appetite' : `−${appetite} Appetite`);
+/** Work's cost: scavenging, tending and crafting take Energy (29-core-loop.md, section 1). */
+const energyText = (energy: number) => (energy === 0 ? 'No Energy' : `−${energy} Energy`);
 
 type Judgement = Pick<ActionState, 'status' | 'reason'>;
 
@@ -370,14 +373,14 @@ function judge(state: GameState, candidates: Action[], fallback: string): Judgem
 function craftAction(state: GameState, h: Hiker): ActionState {
   const probe: Action = { type: 'craft', hikerId: h.id, itemType: 'tool' };
   const reason = craftOpenReason(state, h);
-  if (!reason)
-    return { id: 'craft', label: 'Craft', icon: 'hammer', sub: 'Recipes', status: 'ready' };
+  const sub = energyText(craftCost(state, h));
+  if (!reason) return { id: 'craft', label: 'Craft', icon: 'hammer', sub, status: 'ready' };
   const red = blockedByStatus(state, probe);
   return {
     id: 'craft',
     label: 'Craft',
     icon: 'hammer',
-    sub: 'Recipes',
+    sub,
     status: red ? 'status' : 'blocked',
     reason: red ?? reason,
   };
@@ -431,7 +434,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     id: 'tend',
     label: 'Tend',
     icon: 'sprout',
-    sub: `−${tendCost(state, h)} Appetite`,
+    sub: energyText(tendCost(state, h)),
     ...judge(state, tends, 'There’s nothing to tend on this tile.'),
   };
 
@@ -439,7 +442,7 @@ export function actionStates(state: GameState, h: Hiker): ActionState[] {
     id: 'scavenge',
     label: 'Scavenge',
     icon: 'search',
-    sub: costText(scavengeCost(state, h)),
+    sub: energyText(scavengeCost(state, h)),
     ...judge(state, [{ type: 'scavenge', hikerId: h.id }], ''),
   };
 

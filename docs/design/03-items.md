@@ -192,6 +192,8 @@ Three slots: **Gear**, **Body** (Wyatt's "Outfit") and **Feet** (shoes or socks;
 
 ## Food
 
+**Changed Nov 27 (`29-core-loop.md`, section 3): drinks restore Energy, food restores Appetite.** Coffee (+[2] Energy), 7-Up (+[1] Energy), Citro Drink (+[2] Energy), Wine (+{energy} Energy), Piña Colada (+{energy} Energy) and Vente Coffee Misto (+{low}–{high} Energy and Morale, its Appetite roll dropped) are switched on as drinks: still food, but their cards say DRINK and count SIPS. Energy Drink stays off until it has art. Their extras and recipes are unchanged; the table below still shows their old Appetite wording. Jeans, the Shovel, Pirate and Rabbit Diet now work on scavenging's Energy (section 1).
+
 Phase 10.6 changed parts of this. See `08-overhaul-plan.md`, which wins where they disagree.
 
 Food with more than 1 bite can be eaten more than once, one bite at a time. Several foods share an effect but have different recipes (Salad and Salmon), so the party can make them from whatever it has.

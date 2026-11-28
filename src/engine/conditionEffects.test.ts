@@ -294,14 +294,14 @@ describe('scavenging', () => {
     expect(after.count).toBe(base.count - 1);
   });
 
-  it('Butterfingers: a chance the card slips away, and the scavenge still costs Appetite', () => {
+  it('Butterfingers: a chance the card slips away, and the scavenge still costs Energy', () => {
     const s = fixtureGame();
     place(s, 'ash', 'L');
     addCondition(s, ash(s), 'butterfingers', 1, 'days', 'test');
     expect(scavengeSetup(s, ash(s)).dropChance).toBe(BALANCE.chance.default);
     const open = run(s, { type: 'scavenge', hikerId: 'ash' });
     open.scavenge!.dropChance = 1;
-    const appetite = ash(open).stats.appetite;
+    const energy = ash(open).stats.energy;
     const after = run(
       open,
       { type: 'scavengeFlip', cards: [0] },
@@ -312,7 +312,7 @@ describe('scavenging', () => {
       resources: [],
     });
     expect(ash(after).inventory.resources).toEqual({});
-    expect(ash(after).stats.appetite).toBeLessThan(appetite);
+    expect(ash(after).stats.energy).toBeLessThan(energy);
   });
 });
 

@@ -105,9 +105,9 @@ describe('a three-day hike', () => {
     expect(stats(s)).toEqual({
       // Extrinsic: Ash wakes beside Birch on L (Morale stays 10); Dot has woken
       // alone on M two days running (9 → 8 → 7).
-      // Ash's Day 3 sleep in the open gives +1 Energy (Wyatt, Nov 5).
+      // Ash's Day 3 sleep in the open gives +2 Energy (29-core-loop.md, section 2).
       // No Appetite lost overnight (Nov 14 update): only moves cost it.
-      ash: { energy: 8, appetite: 3, morale: 10, at: 'L', injuries: 0 },
+      ash: { energy: 9, appetite: 3, morale: 10, at: 'L', injuries: 0 },
       birch: { energy: 4, appetite: 6, morale: 6, at: 'L', injuries: 0 },
       cedar: { energy: 2, appetite: 9, morale: 10, at: 'T', injuries: 0 },
       dot: { energy: 6, appetite: 10, morale: 7, at: 'M', injuries: 0 },

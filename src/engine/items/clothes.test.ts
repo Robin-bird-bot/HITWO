@@ -120,10 +120,11 @@ describe('scavenging and carrying', () => {
     expect(resourceLimit(s, hiker(s, 'ash'))).toBe(BALANCE.inventory.resourceLimit + 3);
   });
 
-  it('Jeans: scavenging costs 1 less Appetite, and the Jeans wear', () => {
+  it('Jeans: scavenging costs 1 less Energy, and the Jeans wear (29, section 1)', () => {
     let s = fixtureGame();
     const jeans = wear(s, 'ash', 'jeans');
     s = scavengeOnM(s);
+    expect(hiker(s, 'ash').stats.energy).toBe(10);
     expect(hiker(s, 'ash').stats.appetite).toBe(10);
     expect(worn(s, 'ash', 'body')?.durability).toBe(full(jeans) - 1);
   });

@@ -42,15 +42,17 @@ The player picks 4 hikers and drafts a starting kit from a random spread of card
 
 Each day has three phases — Morning, Afternoon and Night — and every hiker takes one action per phase, in any order the player likes.
 
+**Changed Nov 27 (`29-core-loop.md`, sections 1–3):** work costs Energy and moving costs Appetite. Scavenging, tending and crafting cost Energy, sleep gives more of it back, and drinks restore Energy as food restores Appetite.
+
 | Action | Morning / Afternoon | Night | Notes |
 | --- | --- | --- | --- |
 | Move | ✓ | ✓ | Costs 1 Appetite. Forward, sideways or back along a connection. Night moves cost 1 extra Appetite (traits and clothing can offset) |
 | Move All | ✓ | ✓ | Costs 1 Appetite plus 1 for each hiker brought along (bringing 3 = 4 Appetite); hikers on that tile who haven't acted this phase come along and use their action, even if they're too hungry or tired to move themselves (Nov 14) |
-| Scavenge | ✓ | ✓ | Costs 1 Appetite. Draw 3, pick 1 (see Scavenging) |
-| Craft | ✓ | ✓ | Generic or from a known blueprint |
+| Scavenge | ✓ | ✓ | Costs 1 Energy (1 extra at night). Draw 3, pick 1 (see Scavenging) |
+| Craft | ✓ | ✓ | Costs 1 Energy (Wyatt: "for now"). Generic or from a known blueprint |
 | Sit by the Fire | ✓ | ✓ | +1 Morale per other hiker at the fire (max +3), +1 XP |
-| Tend | ✓ |  | Costs 1 Appetite. Raises the biome's Abundance (+2) from a tile with a resource node |
-| Sleep |  | ✓ | +1 Energy, or +2 in a shelter. A night without sleep costs 2 Energy |
+| Tend | ✓ |  | Costs 1 Energy. Raises the biome's Abundance (+2) from a tile with a resource node |
+| Sleep |  | ✓ | +2 Energy, or +4 in a shelter. A night without sleep costs 2 Energy |
 | Keep Watch |  | ✓ | Protects hikers on this tile from night events |
 
 **Free actions** (no phase used): using an item, trading items or resources with hikers on the same tile, and teaching a known blueprint to a hiker on the same tile (costs Morale).
@@ -63,10 +65,10 @@ Every hiker has three stats on a 0–10 scale that start full and drop, plus up 
 
 | Stat | Drains from | Restored by | Threshold states | At 0 |
 | --- | --- | --- | --- | --- |
-| Energy | A night without sleep (−2), challenges, some trait costs | Sleeping (+1, or +2 in a shelter), some food | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
-| Appetite | Each move (−1), each scavenge (−1), Tend (−1); extra for night moves and moving the group. Nothing overnight (Nov 14 update) | Food | Hungry at 5 or less; Famished at 2 or less | Take an injury |
+| Energy | Each scavenge (−1), Tend (−1), each craft (−1), a steep line's extra, a night without sleep (−2), challenges, some trait costs | Sleeping (+2, or +4 in a shelter), drinks | Fatigued at 6 or less; Exhausted at 3 or less | Take an injury |
+| Appetite | Each move (−1); extra for night moves and moving the group. Nothing overnight (Nov 14 update) | Food | Hungry at 5 or less; Famished at 2 or less | Take an injury |
 
-Energy works as a sleep meter and Appetite as the fuel for actions. What each threshold state does, and every condition, is in Traits and Conditions.
+Energy works as the fuel for work (Nov 27) and Appetite as the fuel for moving. What each threshold state does, and every condition, is in Traits and Conditions.
 
 **Morale** (0–10) drains and refills through morale traits, events, the fire and food. It sets the hiker's base Luck (see Characters). Morale stops at 0 with no injury, and a hiker at 0 Morale can't do anything that costs Morale.
 

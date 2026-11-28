@@ -146,11 +146,12 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
     1,
     'neverHungry',
     'Never Hungry',
-    'Moves and scavenges have a 25% chance to cost no Appetite. Every food restores 1 less Appetite for this hiker.',
+    'Moves have a 25% chance to cost no Appetite. Every food restores 1 less Appetite for this hiker.',
     {
       hooks: {
+        // Scavenging costs Energy now (29-core-loop.md, section 1): only moves are left to waive.
         waiveAppetite: (e, ctx) =>
-          ['Move', 'Move All', 'Scavenge'].includes(e.cause) && ctx.roll(N.neverHungry.chance),
+          ['Move', 'Move All'].includes(e.cause) && ctx.roll(N.neverHungry.chance),
         modifyGain: foodAppetite('Never Hungry', N.neverHungry.food),
       },
     },
@@ -459,12 +460,12 @@ export const TRAIL_TRAITS: readonly TraitDef[] = [
     null,
     'rabbitDiet',
     'Rabbit Diet',
-    'Scavenging costs no Appetite, but can’t eat food cards. Can eat 1 Forest resource for 1 Appetite.',
+    'Scavenging costs no Energy, but can’t eat food cards. Can eat 1 Forest resource for 1 Appetite.',
     {
       ...special('leah'),
       hooks: {
         modifyCost: (q, ctx) =>
-          q.key === 'scavenge.appetite' && q.subjectId === ctx.self.id
+          q.key === 'scavenge.energy' && q.subjectId === ctx.self.id
             ? { source: 'Rabbit Diet', percent: -100 }
             : undefined,
         canAct: (q) =>

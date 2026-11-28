@@ -182,7 +182,7 @@ describe('eating', () => {
     expect(poisoned).toBeLessThan(20);
   });
 
-  it('Vente Coffee Misto rolls each stat separately, the same for the same seed', () => {
+  it('Vente Coffee Misto rolls Energy and Morale separately, the same for the same seed', () => {
     const once = () => {
       let s = fixtureGame({ seed: 7 });
       place(s, 'ash', 'T', { appetite: 0, energy: 0, morale: 0 });
@@ -191,7 +191,9 @@ describe('eating', () => {
     };
     const a = once();
     expect(a).toEqual(once());
-    for (const v of [a.appetite, a.energy, a.morale]) {
+    // A drink: its Appetite roll is dropped (29-core-loop.md, section 3).
+    expect(a.appetite).toBe(0);
+    for (const v of [a.energy, a.morale]) {
       expect(v).toBeGreaterThanOrEqual(1);
       expect(v).toBeLessThanOrEqual(10);
     }

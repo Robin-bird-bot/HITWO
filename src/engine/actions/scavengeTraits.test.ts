@@ -72,7 +72,7 @@ describe('scavenging traits', () => {
       card: 0,
     });
     expect(hiker(after, 'ash').inventory.resources.wood).toBe(2);
-    expect(hiker(after, 'ash').stats.appetite).toBe(9);
+    expect(hiker(after, 'ash').stats.energy).toBe(9);
     // The card's drain plus 1 for the bonus resource.
     expect(after.abundance).toBe(before - 2);
     expect(after.log.find((e) => e.kind === 'scavenge' && e.hikerId === 'ash')).toMatchObject({
@@ -91,14 +91,17 @@ describe('scavenging traits', () => {
       card: 0,
     });
     expect(hiker(without, 'ash').inventory.resources.wood).toBe(1);
-    expect(hiker(without, 'ash').stats.appetite).toBe(9);
+    expect(hiker(without, 'ash').stats.energy).toBe(9);
+    expect(hiker(without, 'ash').stats.appetite).toBe(10);
     const withBonus = run(openWith(s, { type: 'resource', resources: ['wood'] }), {
       type: 'scavengeTake',
       card: 0,
       bonus: 1,
     });
     expect(hiker(withBonus, 'ash').inventory.resources.wood).toBe(2);
-    expect(hiker(withBonus, 'ash').stats.appetite).toBe(8);
+    // The scavenge costs Energy; Copier's bonus still costs Appetite.
+    expect(hiker(withBonus, 'ash').stats.energy).toBe(9);
+    expect(hiker(withBonus, 'ash').stats.appetite).toBe(9);
   });
 
   it('gives no bonus on a card without resources', () => {

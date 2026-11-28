@@ -1144,7 +1144,7 @@ export function GameScreen({
         name={selected.name}
         from={from}
         to={Math.min(BALANCE.abundance.max, from + tendAmount(state, selected))}
-        appetite={tendCost(state, selected)}
+        energy={tendCost(state, selected)}
         onCancel={reset}
         onConfirm={() => dispatch({ type: 'tend', hikerId: selected.id })}
       />

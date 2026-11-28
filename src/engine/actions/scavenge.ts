@@ -261,8 +261,8 @@ export function applyTake(state: GameState, action: TakeAction): void {
   const bonus = first
     ? bonusTaken(open.bonusOffers ?? [], action.bonus ?? 0, gains.resources.length > 0)
     : { count: 0, appetite: 0 };
-  const base = first ? scavengeCost(state, hiker) : BALANCE.items.sackAppetite;
-  const cost = base + bonus.appetite;
+  // Work costs Energy (29-core-loop.md, section 1); Copier's bonus resources still cost Appetite.
+  const base = first ? scavengeCost(state, hiker) : BALANCE.items.sackEnergy;
   // With a Sack, the window stays open while there are cards left to keep.
   const more =
     (open.keeps ?? 0) > (open.took ?? 0) &&
@@ -282,7 +282,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     fireScavenge(state, hiker, open.tileId);
   }
 
-  // Butterfingers: the card slips away. The scavenge still costs its Appetite.
+  // Butterfingers: the card slips away. The scavenge still costs its Energy.
   if (open.dropChance && roll(state.rng, open.dropChance)) {
     pushEvent(state, {
       kind: 'scavenge',
@@ -293,7 +293,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
       dropped: true,
     });
     close();
-    payCost(state, hiker, { appetite: base, energy: 0, morale: 0 }, 'Scavenge');
+    payCost(state, hiker, { appetite: 0, energy: base, morale: 0 }, 'Scavenge');
     // No lucky draw, but "every scavenge" XP still counts (the Textbook).
     gainXp(state, hiker, 0, 'scavenge', 'Scavenged', { repeat: !first });
     if (first) {
@@ -358,7 +358,7 @@ export function applyTake(state: GameState, action: TakeAction): void {
     ...(card.empty ? { empty: true as const } : {}),
   });
   close();
-  payCost(state, hiker, { appetite: cost, energy: 0, morale: 0 }, 'Scavenge');
+  payCost(state, hiker, { appetite: bonus.appetite, energy: base, morale: 0 }, 'Scavenge');
   noteScavenged(state, hiker, kept);
   // A lucky draw (anything rarer than common) is worth XP (action XP, under the row rule).
   const lucky = card.rarity !== 'common' && !card.empty;

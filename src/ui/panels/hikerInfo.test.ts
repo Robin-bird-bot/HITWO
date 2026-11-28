@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BALANCE } from '../../config/balance';
 import { STARTING_PARTY } from '../../content/characters';
 import { createGame } from '../../engine';
 import { addCondition } from '../../engine/conditions';
@@ -26,7 +27,7 @@ describe('action grid', () => {
 
   it('makes Craft ready while the hiker has their action, and says why not', () => {
     const s = fixtureGame();
-    expect(byId(s, 'ash').craft).toMatchObject({ status: 'ready', sub: 'Recipes' });
+    expect(byId(s, 'ash').craft).toMatchObject({ status: 'ready', sub: '−1 Energy' });
     s.hikers[0]!.acted = true;
     expect(byId(s, 'ash').craft).toMatchObject({
       status: 'blocked',
@@ -62,7 +63,7 @@ describe('action grid', () => {
       reason: 'There’s nothing to scavenge on this tile.',
     });
     place(s, 'ash', 'L');
-    expect(byId(s, 'ash').scavenge).toMatchObject({ status: 'ready', sub: '−1 Appetite' });
+    expect(byId(s, 'ash').scavenge).toMatchObject({ status: 'ready', sub: '−1 Energy' });
     place(s, 'ash', 'L', { appetite: 5 });
     expect(byId(s, 'ash').scavenge?.reason).toMatch(/^Hungry/);
   });
@@ -81,7 +82,7 @@ describe('action grid', () => {
   it('readies Sleep at night, showing the Energy it gives', () => {
     expect(byId(toNight(fixtureGame()), 'ash').sleep).toMatchObject({
       status: 'ready',
-      sub: '+1 Energy',
+      sub: `+${BALANCE.sleep.energy} Energy`,
     });
   });
 

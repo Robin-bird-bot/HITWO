@@ -193,7 +193,11 @@ describe('Day Napper', () => {
     place(s, 'ash', 'L', { energy: 5 });
     expect(validateAction(s, { type: 'sleep', hikerId: 'birch' })).toBe('Hikers sleep at night.');
     s = run(s, { type: 'sleep', hikerId: 'ash' });
-    expect(ash(s)).toMatchObject({ acted: true, slept: false, stats: { energy: 6 } });
+    expect(ash(s)).toMatchObject({
+      acted: true,
+      slept: false,
+      stats: { energy: 5 + BALANCE.sleep.energy },
+    });
   });
 });
 

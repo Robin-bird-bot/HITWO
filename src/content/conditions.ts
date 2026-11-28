@@ -60,16 +60,14 @@ const capOn = (stat: StatName, cap: number): Hooks => ({
   modifyStatMax: (s) => (s === stat ? { cap } : undefined),
 });
 
-/** Costs this hiker pays in a stat (their own move, Tend, scavenging and the no-sleep drain). */
+/**
+ * Costs this hiker pays in a stat: their own move, Tend, scavenging,
+ * crafting and the no-sleep drain. Work costs Energy and moving costs
+ * Appetite (29-core-loop.md, section 1).
+ */
 const OWN_COSTS: Record<'energy' | 'appetite', readonly CostKey[]> = {
-  energy: ['move.energy', 'night.noSleepEnergy'],
-  appetite: [
-    'move.appetite',
-    'move.carry',
-    'moveAll.appetite',
-    'tend.appetite',
-    'scavenge.appetite',
-  ],
+  energy: ['move.energy', 'night.noSleepEnergy', 'scavenge.energy', 'tend.energy', 'craft.energy'],
+  appetite: ['move.appetite', 'move.carry', 'moveAll.appetite'],
 };
 
 /** Refreshed and Full: no loss of a stat at all, chosen costs included (Wyatt, Nov 6). */

@@ -716,6 +716,9 @@ function EatSection({
   const reason = validateAction(state, action);
   const bites = item.bitesLeft ?? 1;
   const after = bites - 1;
+  // Drinks are sipped (29-core-loop.md, section 3).
+  const drink = !!ITEMS[item.itemId]?.drink;
+  const bite = drink ? 'sip' : 'bite';
   const mod = biteAppetite(item, 0);
   const note =
     mod !== 0 ? `This card gives ${Math.abs(mod)} ${mod > 0 ? 'more' : 'less'} Appetite.` : '';
@@ -724,8 +727,11 @@ function EatSection({
     return (
       <div className={styles.confirm}>
         <span className={styles.none}>
-          {hiker.name} eats {bites > 1 ? `a bite of the ${name}` : `the ${name}`}?{' '}
-          {after > 0 ? `${after} bite${after === 1 ? '' : 's'} left after.` : 'That finishes it.'}
+          {hiker.name} {drink ? 'drinks' : 'eats'}{' '}
+          {bites > 1 ? `a ${bite} of the ${name}` : `the ${name}`}?{' '}
+          {after > 0
+            ? `${after} ${bite}${after === 1 ? '' : 's'} left after.`
+            : 'That finishes it.'}
         </span>
         <button
           type="button"
@@ -733,7 +739,7 @@ function EatSection({
           onClick={() => onEat(action)}
         >
           <Icon name="utensils" size={16} />
-          Yes, eat it
+          {drink ? 'Yes, drink it' : 'Yes, eat it'}
         </button>
         <button
           type="button"
@@ -756,7 +762,11 @@ function EatSection({
     >
       <Icon name="utensils" size={16} />
       <span className={styles.useText}>
-        {bites > 1 ? `Eat a bite (${bites} left)` : 'Eat it'}
+        {bites > 1
+          ? `${drink ? 'Drink a sip' : 'Eat a bite'} (${bites} left)`
+          : drink
+            ? 'Drink it'
+            : 'Eat it'}
         {(reason || note) && <span className={styles.effect}>{reason ?? note}</span>}
       </span>
     </button>

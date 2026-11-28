@@ -34,7 +34,7 @@ describe('trail log sentences', () => {
     const after = run(open, { type: 'scavengeTake', card: 0 });
     // An uncommon card is a lucky draw: XP too.
     expect(texts(after)).toEqual([
-      'Ash scavenged Wood ×2 (−1 Appetite).',
+      'Ash scavenged Wood ×2 (−1 Energy).',
       `Ash gained ${BALANCE.xp.luckyDraw} XP (A lucky draw).`,
     ]);
   });
@@ -52,7 +52,7 @@ describe('trail log sentences', () => {
       { type: 'returnToNature', hikerId: 'ash', resource: 'wood' },
     );
     expect(texts(after)).toEqual([
-      'Ash tended the land (Abundance 3 → 5, −1 Appetite).',
+      'Ash tended the land (Abundance 3 → 5, −1 Energy).',
       'Ash gave Wood to Birch.',
       'Ash returned Wood to nature (+1 Abundance).',
     ]);

@@ -6,8 +6,11 @@
  * a `poison` of 25 at Quality 1 and 0 above it, an extra of 0 at Quality 1.
  * Each food's `onEat` is what a bite does (src/engine/actions/eat.ts).
  */
+import { BALANCE } from '../../config/balance';
 import type { EatContext, ItemDef } from '../../engine/effects';
 import { item, q } from './build';
+
+const DRINK = BALANCE.items.drinkEnergy;
 
 /**
  * Only these foods are switched on for now (Phase 10.6, 08-overhaul-plan.md).
@@ -25,12 +28,28 @@ export const FOODS_ON: readonly string[] = [
   'fishAndChips',
   'rotisserieChicken',
   'dinTaiFung',
+  // The drinks (29-core-loop.md, section 3). Energy Drink stays off until it has art.
+  'coffee',
+  'sevenUp',
+  'citroDrink',
+  'wine',
+  'pinaColada',
+  'venteCoffeeMisto',
 ];
 const STAYS_ON = new Set([...FOODS_ON, 'pukedNuggets']);
 
 const food = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef => ({
   ...item({ ...def, type: 'food' }),
   ...(STAYS_ON.has(def.id) ? {} : { enabled: false as const }),
+});
+
+/**
+ * Drinks restore Energy, food restores Appetite (Wyatt; 29-core-loop.md,
+ * section 3). A drink is still food: it's sipped like a bite.
+ */
+const drink = (def: Omit<Parameters<typeof item>[0], 'type'>): ItemDef => ({
+  ...food(def),
+  drink: true,
 });
 
 /** A chance of Food Poisoning at Quality 1 only. */
@@ -122,17 +141,17 @@ export const FOOD: readonly ItemDef[] = [
     text: '+1 Appetite[, +{morale} Morale].[ A {nauseous}% chance of Nauseous.]',
     recipe: 'Grass 2, Oil 1, Salt 1, Mushroom 1',
   }),
-  food({
+  drink({
     id: 'coffee',
     name: 'Coffee',
     onEat: (e) => {
-      e.appetite(1);
+      e.stat('energy', DRINK.coffee);
       e.condition('energized', e.v('phases'), 'phases');
     },
     tier: 1,
     bites: 1,
     values: { phases: q(0, 1, 1, 1, 2) },
-    text: '+1 Appetite[, Energized for {phases} phase{phases:s}].',
+    text: `+${DRINK.coffee} Energy[, Energized for {phases} phase{phases:s}].`,
     recipe: 'Grass 2, Clay 1, any 1',
   }),
   food({
@@ -175,31 +194,31 @@ export const FOOD: readonly ItemDef[] = [
     text: '+{appetite} Appetite[, Inspired for {inspired} phase].',
     recipe: 'Grass 2, Oil 1, Salt 1, any 1',
   }),
-  food({
+  drink({
     id: 'sevenUp',
     name: '7-Up',
     onEat: (e) => {
-      e.appetite(1);
+      e.stat('energy', DRINK.sevenUp);
       e.cureRandomNegative(e.v('cure'));
     },
     tier: 1,
     bites: 1,
     values: { cure: q(0, 1, 1, 1, 1) },
-    text: '+1 Appetite[, and remove {cure} random negative condition].',
+    text: `+${DRINK.sevenUp} Energy[, and remove {cure} random negative condition].`,
     recipe: 'Grass 1, Salt 1, Shell 1, any 1',
   }),
-  food({
+  drink({
     // Also from the Citro Tub opportunity.
     id: 'citroDrink',
     name: 'Citro Drink',
     onEat: (e) => {
-      e.appetite(1);
+      e.stat('energy', DRINK.citroDrink);
       e.condition('energized', e.v('phases'), 'phases', { stacks: 2 });
     },
     tier: 2,
     bites: 1,
     values: { phases: q(0, 1, 1, 1, 2) },
-    text: '+1 Appetite[, 2 stacks of Energized for {phases} phase{phases:s}].',
+    text: `+${DRINK.citroDrink} Energy[, 2 stacks of Energized for {phases} phase{phases:s}].`,
     recipe: 'Grass 1, Salt 1, Seaweed 1, any 2',
   }),
   food({
@@ -248,30 +267,30 @@ export const FOOD: readonly ItemDef[] = [
     text: `+3 Appetite. Camp meal: anyone on this tile can eat a bite.${POISON}`,
     recipe: 'Meat 3, Salt 1, Oil 1, Grass 1, any 1',
   }),
-  food({
+  drink({
     id: 'wine',
     name: 'Wine',
     onEat: (e) => {
-      e.appetite(e.v('appetite'));
+      e.stat('energy', e.v('energy'));
       coinOr(e, 'lucky', 'unlucky');
     },
     tier: 2,
     bites: 1,
-    values: { appetite: q(1, 2, 2, 2, 3), coin: q(0, 1, 1, 1, 1), always: q(1, 0, 0, 0, 0) },
-    text: '+{appetite} Appetite, then [coin?Lucky or Unlucky (50/50)][always?Unlucky] for 1 day.',
+    values: { energy: q(1, 2, 2, 2, 3), coin: q(0, 1, 1, 1, 1), always: q(1, 0, 0, 0, 0) },
+    text: '+{energy} Energy, then [coin?Lucky or Unlucky (50/50)][always?Unlucky] for 1 day.',
     recipe: 'Grass 2, Clay 1, any 2',
   }),
-  food({
+  drink({
     id: 'pinaColada',
     name: 'Piña Colada',
     onEat: (e) => {
-      e.appetite(e.v('appetite'));
+      e.stat('energy', e.v('energy'));
       coinOr(e, 'energized', 'buzzed');
     },
     tier: 2,
     bites: 1,
-    values: { appetite: q(1, 2, 2, 2, 3), coin: q(0, 1, 1, 1, 1), always: q(1, 0, 0, 0, 0) },
-    text: '+{appetite} Appetite, then [coin?Energized or Buzzed (50/50)][always?Buzzed] for 1 day.',
+    values: { energy: q(1, 2, 2, 2, 3), coin: q(0, 1, 1, 1, 1), always: q(1, 0, 0, 0, 0) },
+    text: '+{energy} Energy, then [coin?Energized or Buzzed (50/50)][always?Buzzed] for 1 day.',
     recipe: 'Grass 1, Shell 1, Salt 1, any 2',
   }),
   food({
@@ -448,7 +467,7 @@ export const FOOD: readonly ItemDef[] = [
     text: `+{appetite} Appetite.${POISON}`,
     recipe: 'Grass 2, Mushroom 1, Seaweed 1, any 1',
   }),
-  food({
+  drink({
     id: 'energyDrink',
     name: 'Energy Drink',
     onEat: (e) => {
@@ -468,20 +487,19 @@ export const FOOD: readonly ItemDef[] = [
     text: '[energized?Energized for {energized} days, then ]Buzzed for {buzzed} day{buzzed:s}.',
     recipe: 'Grass 1, Salt 1, Metal 1, any 2',
   }),
-  food({
+  drink({
     // Full name: Vente Non-Fat Coffee Misto with Sugar-Free Vanilla.
     id: 'venteCoffeeMisto',
     name: 'Vente Coffee Misto',
     onEat: (e) => {
-      // Each rolled separately.
-      e.appetite(e.rollY(e.v('low'), e.v('high')));
+      // Each rolled separately. The Appetite roll is dropped (29-core-loop.md, section 3).
       e.stat('energy', e.rollY(e.v('low'), e.v('high')));
       e.stat('morale', e.rollY(e.v('low'), e.v('high')));
     },
     tier: 3,
     bites: 1,
     values: { low: q(0, 1, 1, 1, 1), high: q(5, 10, 10, 10, 10) },
-    text: '+{low}–{high} Appetite, +{low}–{high} Energy and +{low}–{high} Morale, each rolled separately.',
+    text: '+{low}–{high} Energy and +{low}–{high} Morale, each rolled separately.',
     recipe: 'Grass 2, Clay 2, Salt 1, Oil 1, Mushroom 1, any 2',
   }),
   food({
