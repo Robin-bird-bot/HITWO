@@ -163,6 +163,8 @@ Wyatt: "I don't want to use all of the old ones." The old list of 71 is retired.
 | Size Up | Size Up | Any | I | Lose X random resources | none yet |
 
 ### Cost cards (22)
+
+**Switched off Nov 27 (`29-core-loop.md`, section 6):** every challenge is a minigame for now. Incoming Bike!, Wrong Turn, Fallen Branch and Snagged Pack come back as quick minigames with the same names (`30-quick-minigames.md`); the other 18 keep their data, switched off.
 Wyatt: "Make the cost ones basic problems you might experience. About 20 in total." No risk cards for now: the weather ones (Blazing Sun, Storm, Lightning, Hypothermia) are out.
 
 - **How a cost card works:**

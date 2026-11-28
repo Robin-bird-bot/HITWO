@@ -436,6 +436,12 @@ export interface ChallengeDef extends BaseDef {
   risk?: RiskDef;
   /** A rule the game can't run yet; the card still shows, but this part waits. */
   waitingOn?: string;
+  /**
+   * Switched off for now: never placed or drawn (the cost cards since every
+   * challenge became a minigame; 29-core-loop.md, section 6). The data stays,
+   * so they can come back as minigames or opportunities.
+   */
+  enabled?: false;
 }
 
 export interface TrialDef extends BaseDef {

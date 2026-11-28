@@ -35,6 +35,16 @@ import {
   stat,
 } from './cardBuilders';
 
+/**
+ * Every challenge is a minigame now (29-core-loop.md, section 6; Wyatt:
+ * "Honestly the minigames are much more fun… every challenge is a
+ * minigame"): the cost cards are switched off, their data kept so they can
+ * come back as minigames or opportunities. Incoming Bike!, Wrong Turn, Fallen
+ * Branch and Snagged Pack return as quick minigames
+ * (30-quick-minigames.md) in src/content/minigameChallenges.ts.
+ */
+const off = (card: ChallengeDef): ChallengeDef => ({ ...card, enabled: false });
+
 export const COST_CARDS: readonly ChallengeDef[] = [
   // ── Tier I ──
   listed({
@@ -329,4 +339,4 @@ export const COST_CARDS: readonly ChallengeDef[] = [
     penalty: [P.bleeding, cond('weak', 1, 'days')],
     penaltyText: ['If failed: Bleeding for {y} phases, and Weak for 1 day.'],
   }),
-];
+].map(off);

@@ -35,6 +35,15 @@ export interface DifficultySettings {
   startingKitPicks: number | null;
 }
 
+/**
+ * Half the map is challenges and the rest is empty, at every difficulty, with
+ * no opportunities for now (29-core-loop.md, section 5; Wyatt: "only about
+ * 50% of the spaces are occupied by challenges, with the rest being empty.
+ * We'll incorporate opportunities later"). Difficulties still differ in
+ * section rows. TODO(wyatt): [50%].
+ */
+const MAP = { challengeShare: 0.5, opportunitiesPerSection: 0 } as const;
+
 const SAME = {
   challengeTierOffset: 0,
   luckBonus: 0,
@@ -45,35 +54,31 @@ const SAME = {
 } as const;
 
 export const DIFFICULTY: Readonly<Record<DifficultyId, DifficultySettings>> = {
-  /** TODO(wyatt): opportunities [3], section rows ×[0.8]. */
+  /** TODO(wyatt): section rows ×[0.8]. (Before Nov 27: 25% challenges, 3 opportunities.) */
   easy: {
     name: 'Easy',
-    challengeShare: 0.25,
-    opportunitiesPerSection: 3,
+    ...MAP,
     sectionRows: 0.8,
     ...SAME,
   },
-  /** TODO(wyatt): opportunities [2]. */
+  /** (Before Nov 27: 2 opportunities.) */
   medium: {
     name: 'Medium',
-    challengeShare: 0.5,
-    opportunitiesPerSection: 2,
+    ...MAP,
     sectionRows: 1,
     ...SAME,
   },
-  /** TODO(wyatt): opportunities [1], section rows ×[1.2]. */
+  /** TODO(wyatt): section rows ×[1.2]. (Before Nov 27: 75% challenges, 1 opportunity.) */
   hard: {
     name: 'Hard',
-    challengeShare: 0.75,
-    opportunitiesPerSection: 1,
+    ...MAP,
     sectionRows: 1.2,
     ...SAME,
   },
-  /** TODO(wyatt): section rows ×[1.4]. */
+  /** TODO(wyatt): section rows ×[1.4]. (Before Nov 27: every plain tile a challenge.) */
   nightmare: {
     name: 'Nightmare',
-    challengeShare: 1,
-    opportunitiesPerSection: 0,
+    ...MAP,
     sectionRows: 1.4,
     ...SAME,
   },
