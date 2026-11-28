@@ -83,4 +83,22 @@
   --sky-afternoon: linear-gradient(180deg, #4c8fcf 0%, #8fbbe0 45%, #e7c6a4 78%, #f2b07a 100%);
   --sky-night: linear-gradient(180deg, #0b1229 0%, #1a2547 55%, #2e3a63 100%);
   --land-night-filter: brightness(0.44) saturate(0.6);
+
+  /*
+   * Paper tags (35-ui-overhaul.md, section 2): cream paper with an ink border
+   * and a thin inner rule, pinned over the map, and the stat colors that
+   * read on paper.
+   */
+  --paper: #f4ecd8;
+  --paper-2: #eadfc4;
+  --paper-3: #dccead;
+  --ink: #2b2520;
+  --ink-2: #5e5347;
+  --ink-3: #8c8070;
+  --rust: #c4562e;
+  --ok: #3e8e5e;
+  --paper-energy: #4f9e6e;
+  --paper-appetite: #d9863a;
+  --paper-morale: #9466c4;
+  --paper-shadow: 0 8px 18px rgba(40, 25, 10, 0.28);
 }

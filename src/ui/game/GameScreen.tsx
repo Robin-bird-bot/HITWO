@@ -87,7 +87,7 @@ import type { TileMark } from '../map/MapTile';
 import { MapView } from '../map/MapView';
 import { SideRail } from '../map/SideRail';
 import type { ActionId } from '../panels/hikerInfo';
-import { PartyPanel } from '../panels/PartyPanel';
+import { PartyFrames } from '../panels/PartyFrames';
 import { AbundanceCard, BiomeCard, DayBar, MenuButton, ObjectiveCard } from '../panels/TopBar';
 import { setPanelCollapsed } from '../panels/panelState';
 import { TurnPanel, type AbilityFocus, type StashPick } from '../panels/TurnPanel';
@@ -126,8 +126,7 @@ import { ItemDropsContext, type ItemDrops } from '../drag/itemDrops';
 import type { ScoutFx } from '../map/MapView';
 import { usesAfter } from '../items/whatItDoes';
 import { STAT_META, tileName } from '../panels/hikerInfo';
-import { SimpleParty } from '../simple/SimpleParty';
-import { BiomePill, CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
+import { CapsPill, DayPill, GoalPill } from '../simple/SimpleTop';
 import { SimpleTurn } from '../simple/SimpleTurn';
 import { Stage } from '../stage/Stage';
 import { ConfirmDialog, DontAskAgain } from './ConfirmDialog';
@@ -1361,17 +1360,18 @@ export function GameScreen({
 
               {simple ? (
                 <>
-                  <BiomePill state={state} />
+                  {/* The biome pill went: the map's plaque already says it (35, section 2). */}
                   <DayPill state={state} />
                   <GoalPill />
                   <CapsPill state={state} />
                   <PartyLevel
                     state={state}
                     onOpen={() => openTrails()}
-                    style={{ left: 184, top: 16 }}
+                    style={{ left: 16, top: 16 }}
                   />
                   <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
-                  <SimpleParty
+                  <PartyFrames
+                    top={66}
                     state={state}
                     selectedId={selected?.id ?? null}
                     onSelect={pickHiker}
@@ -1427,7 +1427,8 @@ export function GameScreen({
                     style={{ left: 470, top: 86 }}
                   />
                   <MenuButton onTitle={onQuit} {...(debugOn ? { testing } : {})} />
-                  <PartyPanel
+                  <PartyFrames
+                    top={156}
                     state={state}
                     selectedId={selected?.id ?? null}
                     onSelect={pickHiker}

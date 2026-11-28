@@ -6,94 +6,6 @@
   letter-spacing: 0.06em;
 }
 
-.muted {
-  font-size: 12px;
-  color: var(--text-faint);
-}
-
-/* ── Party ── */
-
-.cards {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.card {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  padding: 10px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  text-align: left;
-  transition:
-    opacity 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.card:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.card[data-faded='true'] {
-  opacity: 0.5;
-}
-
-.portrait {
-  width: 48px;
-  height: 48px;
-  flex: none;
-  border-radius: 10px;
-  object-fit: cover;
-}
-
-.cardBody {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.nameRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.name {
-  font-family: var(--font-pixel);
-  font-size: 14px;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-}
-
-.family {
-  display: flex;
-  color: var(--text-faint);
-}
-
-.pips {
-  display: flex;
-  gap: 3px;
-  margin-left: auto;
-}
-
-.pips span {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  border: 1.5px solid rgba(229, 98, 74, 0.7);
-}
-
-.pips span[data-filled='true'] {
-  background: #e5624a;
-  border-color: #e5624a;
-}
-
 .popout {
   position: absolute;
   z-index: 15;
@@ -115,28 +27,26 @@
   }
 }
 
-.popoutHead {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.popoutName {
-  font-family: var(--font-pixel);
-  font-size: 16px;
-  letter-spacing: 0.04em;
-}
-
 /* ── Top pills ── */
 
+/* Paper tags pinned on the map (35-ui-overhaul.md, section 2). */
 .pill {
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-faint: var(--ink-3);
+  --track: var(--paper-2);
+  --track-border: 1.5px solid var(--ink);
   position: absolute;
   height: 44px;
   padding: 0 16px;
-  border-radius: 14px;
-  background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 26px rgba(15, 22, 19, 0.26);
+  border-radius: 5px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -163,37 +73,37 @@
 }
 
 .day {
-  color: var(--gold);
+  color: var(--ink);
 }
 
 .phaseIcon {
-  width: 30px;
+  width: 32px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.45;
+  color: var(--ink-3);
 }
 
 .phaseIcon[data-current='true'] {
-  opacity: 1;
   background: var(--gold);
-  color: var(--page);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
 }
 
 .divider {
-  width: 1px;
+  width: 1.5px;
   height: 22px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--ink-3);
 }
 
 .weatherButton {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.06);
+  border: 1.5px solid var(--ink-3);
+  background: var(--paper-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -355,78 +265,4 @@
   font-size: 11px;
   display: grid;
   place-items: center;
-}
-
-/* Condition badges on a Simple card (Phase 6 mockup). */
-.dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-/* Passing out and carrying, in one short line (Phase 7). */
-.carryNote {
-  font-family: var(--font-pixel);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-.carryNote[data-tone='danger'] {
-  color: #f39a86;
-}
-
-.carryNote[data-tone='carry'] {
-  color: var(--gold);
-}
-
-/* A portrait while a pack thing is dragged: it glows if they can take it (Nov 14 update). */
-.card[data-drop='ok'] {
-  box-shadow: 0 0 0 2px rgba(233, 180, 76, 0.8);
-}
-
-.card[data-drop='hover'] {
-  box-shadow:
-    0 0 0 3px var(--gold),
-    0 0 18px rgba(233, 180, 76, 0.5);
-}
-
-.card[data-drop='no'] {
-  opacity: 0.55;
-}
-
-/* Multi-select (Nov 14 update): the Select toggle beside the count, and a grouped card. */
-.asideRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card[data-grouped] {
-  border-color: rgba(233, 180, 76, 0.85);
-}
-
-/* The hiker card's trait badges (Phase 10a). */
-.badges {
-  display: block;
-  margin-top: 4px;
-}
-
-/* Skill Trails (Phase 10.7): the trail-fork mark at the end of the badge row. */
-.trailsMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-left: auto;
-  border-radius: 6px;
-  background: rgba(233, 180, 76, 0.14);
-  color: #e9b44c;
-  cursor: pointer;
-}
-
-.trailsMark:hover {
-  background: rgba(233, 180, 76, 0.28);
 }

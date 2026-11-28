@@ -1,0 +1,589 @@
+/*
+ * The party frames (35-ui-overhaul.md, section 3; prototype `.frame`):
+ * paper tags down the left of the map. Stage pixels (the prototype's sizes
+ * times 10/9).
+ */
+.column {
+  position: absolute;
+  left: 10px;
+  width: 322px;
+  padding: 2px 14px 14px 2px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 30;
+}
+
+.column::-webkit-scrollbar {
+  display: none;
+}
+
+.strip {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 12px;
+  background: var(--paper);
+  color: var(--ink-2);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  box-shadow: var(--paper-shadow);
+}
+
+.frame {
+  --text: var(--ink);
+  --text-muted: var(--ink-2);
+  --text-faint: var(--ink-3);
+  position: relative;
+  flex: none;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4px rgba(43, 37, 32, 0.35),
+    var(--paper-shadow);
+  transition:
+    transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1),
+    box-shadow 0.25s,
+    opacity 0.3s;
+}
+
+.frame:hover {
+  transform: translateX(3px);
+}
+
+.frame[data-selected] {
+  transform: translateX(var(--slide));
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 6px var(--c),
+    0 10px 22px rgba(40, 25, 10, 0.34);
+}
+
+.frame[data-out] {
+  opacity: 0.72;
+}
+
+.frame[data-nudge='0'] {
+  animation: nudgeA 0.32s ease;
+}
+
+.frame[data-nudge='1'] {
+  animation: nudgeB 0.32s ease;
+}
+
+@keyframes nudgeA {
+  30% {
+    translate: -4px 0;
+  }
+  65% {
+    translate: 3px 0;
+  }
+}
+
+@keyframes nudgeB {
+  30% {
+    translate: -4px 0;
+  }
+  65% {
+    translate: 3px 0;
+  }
+}
+
+/* The always-shown part: one big button (select, open, drop things on it). */
+.head {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 94px;
+  padding: 9px 12px 10px 94px;
+  border: none;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.head[data-drop='ok'] {
+  outline: 3px dashed var(--ok);
+  outline-offset: -3px;
+}
+
+.head[data-drop='hover'] {
+  outline: 3px solid var(--ok);
+  outline-offset: -3px;
+}
+
+.portrait {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 72px;
+  height: 72px;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--c);
+}
+
+/* The faint sunburst behind the portrait. */
+.portrait::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 70%,
+    rgba(255, 255, 255, 0.16) 0 7deg,
+    transparent 7deg 14deg
+  );
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  transition: filter 0.3s;
+}
+
+.frame[data-acted] .face,
+.frame[data-out] .face {
+  filter: grayscale(0.85) brightness(0.9);
+}
+
+.stamp {
+  position: absolute;
+  left: 3px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 1px 4px;
+  border: 1.5px solid var(--rust);
+  border-radius: 3px;
+  background: rgba(244, 236, 216, 0.9);
+  color: var(--rust);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  transform: rotate(-9deg) scale(0.6);
+  opacity: 0;
+  transition:
+    opacity 0.25s,
+    transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.frame[data-acted] .stamp {
+  opacity: 1;
+  transform: rotate(-9deg) scale(1);
+}
+
+/* The worst condition's color, with how many. */
+.dot {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  z-index: 3;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  color: #fff;
+  font: 700 12px/18px var(--font-body);
+  text-align: center;
+  animation: pop 0.5s cubic-bezier(0.3, 1.8, 0.5, 1);
+}
+
+.dot[data-tone='bad'] {
+  background: var(--rust);
+}
+
+.dot[data-tone='state'] {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+.dot[data-tone='good'] {
+  background: var(--ok);
+}
+
+.turn {
+  position: absolute;
+  left: 66px;
+  top: 4px;
+  z-index: 3;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* The ribbon in the party color, with the injury diamonds on its end. */
+.banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 25px;
+  margin: 0 -12px 7px -20px;
+  padding: 0 30px 0 18px;
+  background: var(--c);
+  color: #fff;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
+.name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.injuries {
+  display: flex;
+  gap: 4px;
+}
+
+.injuries i {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  transform: rotate(45deg);
+  transition: background 0.2s;
+}
+
+.injuries i[data-on] {
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 0 1.5px var(--rust);
+  animation: popDiamond 0.45s;
+}
+
+@keyframes popDiamond {
+  0% {
+    transform: rotate(45deg) scale(0.4);
+  }
+  60% {
+    transform: rotate(45deg) scale(1.35);
+  }
+}
+
+.bars {
+  display: grid;
+  gap: 5px;
+}
+
+.bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px 1fr 20px;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+}
+
+.bar b {
+  font-weight: 400;
+  text-align: right;
+  color: var(--ink);
+}
+
+.track {
+  position: relative;
+  height: 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+
+.track i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.ghost {
+  left: 0;
+  background: #f6e3a8;
+  transition: width 0.45s 0.35s ease-in;
+}
+
+.fill {
+  left: 0;
+  transition: width 0.35s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.bar[data-stat='energy'] .fill,
+.bar[data-stat='stuffing'] .fill {
+  background: var(--paper-energy);
+}
+
+.bar[data-stat='appetite'] .fill {
+  background: var(--paper-appetite);
+}
+
+.bar[data-stat='morale'] .fill {
+  background: var(--paper-morale);
+}
+
+.notch {
+  top: -2px !important;
+  bottom: -2px !important;
+  width: 2px;
+  background: var(--ink);
+}
+
+.gain {
+  background: rgba(62, 142, 94, 0.45);
+}
+
+/* The change floats up: −1 red, +1 green. */
+.float {
+  position: absolute;
+  top: -6px;
+  z-index: 4;
+  margin-left: 20px;
+  color: var(--rust);
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  pointer-events: none;
+  text-shadow:
+    1px 1px 0 var(--paper),
+    -1px -1px 0 var(--paper),
+    1px -1px 0 var(--paper),
+    -1px 1px 0 var(--paper);
+  animation: floatUp 1.1s ease-out forwards;
+}
+
+.float[data-up] {
+  color: var(--ok);
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -14px) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -34px) scale(1);
+    opacity: 0;
+  }
+}
+
+.note {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--rust);
+}
+
+/* The opened part. */
+.more {
+  padding: 2px 14px 14px;
+  animation: unfold 0.35s cubic-bezier(0.3, 1.2, 0.5, 1);
+  transform-origin: top;
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+}
+
+.stats {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.statRow {
+  display: grid;
+  grid-template-columns: 18px 80px 46px 1fr;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.statRow b {
+  font-family: var(--font-pixel);
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.statNote {
+  font-size: 13px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.labelRow .label {
+  margin: 0;
+}
+
+.xp {
+  width: 74px;
+  height: 8px;
+  border: 1.5px solid var(--ink);
+  border-radius: 4px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+
+.xp i {
+  display: block;
+  height: 100%;
+  background: var(--paper-morale);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Condition chips on paper (the prototype's `.chip`): ink on a pale tone. */
+.chips [data-tone] {
+  border: 1.5px solid var(--ink) !important;
+  color: var(--ink) !important;
+  background: var(--paper-2) !important;
+}
+
+.chips [data-tone='negative'],
+.chips [data-tone='injury'] {
+  background: #f3d2c4 !important;
+}
+
+.chips [data-tone='positive'] {
+  background: #d8ead9 !important;
+}
+
+.chips [data-tone='state'] {
+  background: #f6e3a8 !important;
+}
+
+.chips [class*='pillTime'] {
+  background: rgba(43, 37, 32, 0.12);
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.gear {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1.5px dashed var(--ink-3);
+  border-radius: 5px;
+  background: var(--paper-2);
+  color: var(--ink-3);
+}
+
+.gear[data-full] {
+  border-style: solid;
+  border-color: var(--ink);
+  background: #fff8e6;
+}
+
+.gear img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.lastResorts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lastResort {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid var(--rust);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rust);
+  font-size: 13px;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .ghost,
+  .fill,
+  .stamp,
+  .face {
+    transition: none;
+  }
+  .frame[data-nudge],
+  .dot,
+  .injuries i[data-on],
+  .more {
+    animation: none;
+  }
+  .float {
+    animation: fade 0.2s ease-out forwards;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
